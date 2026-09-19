@@ -66,8 +66,8 @@ brick = mat_img("Brick", load(BLEND / "brick.png"), 0.9, (5, 2.2))
 plaster = mat_col("Plaster", (0.92, 0.88, 0.80, 1), 0.85)
 wood_dark = mat_col("WoodDark", (0.35, 0.22, 0.12, 1), 0.7)
 metal = mat_col("Metal", (0.45, 0.45, 0.48, 1), 0.35, metal=0.7)
-glass = mat_col("GlassWarm", (1.0, 0.92, 0.75, 1), 0.08, emit=8)
-screen = mat_col("Screen", (0.25, 0.75, 1.0, 1), 0.15, emit=12)
+glass = mat_col("GlassWarm", (1.0, 0.92, 0.75, 1), 0.15, emit=1.2)
+screen = mat_col("Screen", (0.25, 0.75, 1.0, 1), 0.2, emit=2.5)
 plant = mat_col("Plant", (0.15, 0.55, 0.22, 1), 0.65)
 potm = mat_col("Pot", (0.72, 0.62, 0.48, 1), 0.8)
 sticky_y = mat_col("StickyY", (1.0, 0.92, 0.35, 1), 0.55)
@@ -109,8 +109,7 @@ cube("WallLeft", (-10.9, 0, 2.7), (0.4, 9.1, 3.1), plaster)
 cube("WallRight", (10.9, 0, 2.7), (0.4, 9.1, 3.1), brick)
 # Front half-wall / railing so room feels enclosed from overseer view
 cube("WallFrontLow", (0, 8.9, 0.55), (11.0, 0.25, 0.55), wood_dark)
-# Ceiling + beams
-cube("Ceil", (0, 0, 5.55), (11.2, 9.2, 0.15), plaster)
+# No full ceiling slab — blocks overseer god-view in Three.js
 # Corner posts
 for i,(x,y) in enumerate([(-10.7,-8.7),(10.7,-8.7),(-10.7,8.7),(10.7,8.7)]):
     cube(f"Post{i}", (x,y,2.9), (0.28,0.28,2.9), wood_dark)
@@ -155,12 +154,16 @@ for i, (x, y) in enumerate([(-8.5, 5.5), (-8.5, -5.5), (8.2, 5.5), (8.0, -5.8), 
     leaf.name = f"Leaf{i}"
     leaf.data.materials.append(plant)
 
-# Concept mural (loft-ref) on back wall — big visual win toward the painting
+# Concept mural as thin framed panel on back wall (not a giant plane)
 ref_path = BLEND / "loft-ref.jpg"
 if not ref_path.exists():
     ref_path = ROOT / "loft-ref.jpg"
 if ref_path.exists():
     mural_img = load(ref_path)
+    try:
+        mural_img.colorspace_settings.name = "sRGB"
+    except Exception:
+        pass
     mural_mat = bpy.data.materials.new("Mural")
     mural_mat.use_nodes = True
     n, l = mural_mat.node_tree.nodes, mural_mat.node_tree.links
@@ -169,15 +172,18 @@ if ref_path.exists():
     bsdf = n.new("ShaderNodeBsdfPrincipled")
     tex = n.new("ShaderNodeTexImage"); tex.image = mural_img
     l.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-    bsdf.inputs["Roughness"].default_value = 0.65
+    bsdf.inputs["Roughness"].default_value = 0.7
+    bsdf.inputs["Emission Strength"].default_value = 0.0
     l.new(bsdf.outputs[0], outn.inputs[0])
-    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, -8.55, 2.6))
-    mural = bpy.context.active_object
-    mural.name = "ConceptMural"
-    mural.scale = (7.5, 4.2, 1)
-    mural.rotation_euler = (math.radians(90), 0, 0)
-    bpy.ops.object.transform_apply(scale=True, rotation=True)
-    mural.data.materials.append(mural_mat)
+    # Thin box: width 6, height 3.4, depth 0.04 — sits on back wall
+    cube("ConceptMural", (0, -8.58, 2.55), (3.0, 0.04, 1.7), mural_mat)
+    # Force UV project so image maps to front face
+    mural = bpy.data.objects["ConceptMural"]
+    bpy.context.view_layer.objects.active = mural
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.cube_project(cube_size=1.0)
+    bpy.ops.object.mode_set(mode="OBJECT")
     print("MURAL", ref_path)
 else:
     print("NO MURAL IMAGE")
