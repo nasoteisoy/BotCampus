@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
+<title>Kingshot Renders</title>
+<style>
+  :root { color-scheme: dark; --bg:#12141a; --fg:#f4f1ea; --muted:#9aa3b2; --card:#1c212b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 16px 8px; position:sticky; top:0; background:rgba(18,20,26,0.92); backdrop-filter:blur(8px); z-index:2; }
+  h1 { margin:0; font-size:1.15rem; font-weight:700; }
+  p { margin:6px 0 0; color:var(--muted); font-size:0.85rem; }
+  main { padding:8px 12px 40px; display:flex; flex-direction:column; gap:18px; max-width:900px; margin:0 auto; }
+  figure { margin:0; background:var(--card); border-radius:14px; overflow:hidden; border:1px solid #2a3140; }
+  a.imgwrap { display:block; }
+  img { width:100%; height:auto; display:block; vertical-align:middle; }
+  figcaption { padding:10px 12px 12px; font-size:0.9rem; color:var(--muted); }
+  .hint { text-align:center; color:var(--muted); font-size:0.8rem; padding:4px 12px 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kingshot — heavy renders</h1>
+  <p>Tap an image to open fullscreen</p>
+</header>
+<main>
+  <figure>
+    <a class="imgwrap" href="kingshot/battle_heavy.png?v=1" target="_blank" rel="noopener">
+      <img src="kingshot/battle_heavy.png?v=1" alt="Battle iso heavy"/>
+    </a>
+    <figcaption>Battle iso — dense fence, tower, king vs red swarm</figcaption>
+  </figure>
+  <figure>
+    <a class="imgwrap" href="kingshot/king_heavy.png?v=1" target="_blank" rel="noopener">
+      <img src="kingshot/king_heavy.png?v=1" alt="King closeup heavy"/>
+    </a>
+    <figcaption>King closeup — crown, face, displaced cape</figcaption>
+  </figure>
+</main>
+<p class="hint">Scroll · tap to zoom</p>
+</body>
+</html>
