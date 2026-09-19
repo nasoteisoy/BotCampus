@@ -1,0 +1,80 @@
+Blender 4.3.2
+Fra:1 Mem:327.82M (Peak 334.83M) | Time:497181:14:15.96 | Mem:0.00M, Peak:0.00M | Scene | Synchronizing object | LoftRoom
+Fra:1 Mem:328.22M (Peak 334.83M) | Time:497181:14:15.97 | Mem:0.00M, Peak:0.00M | Scene | Initializing
+Fra:1 Mem:328.22M (Peak 334.83M) | Time:497181:14:15.97 | Mem:0.00M, Peak:0.00M | Scene | Updating Images | Loading LoftBake
+Fra:1 Mem:12.59M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | LoftRoom
+Fra:1 Mem:12.85M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:12.08M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:12.08M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:12.08M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:12.08M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:12.24M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.13M, Peak:0.13M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.13M, Peak:0.13M | Scene, ViewLayer | Updating Scene BVH | Building BVH
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.26M, Peak:0.26M | Scene, ViewLayer | Updating Scene BVH | Building BVH 0%
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.40M, Peak:0.53M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:12.36M (Peak 34.82M) | Time:00:00.00 | Mem:0.40M, Peak:0.53M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:12.50M (Peak 34.82M) | Time:00:00.00 | Mem:0.40M, Peak:0.53M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:12.50M (Peak 34.82M) | Time:00:00.00 | Mem:0.54M, Peak:0.54M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:12.50M (Peak 34.82M) | Time:00:00.00 | Mem:0.54M, Peak:0.54M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:12.50M (Peak 34.82M) | Time:00:00.00 | Mem:0.54M, Peak:0.54M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:12.50M (Peak 34.82M) | Time:00:00.00 | Mem:0.54M, Peak:0.54M | Scene, ViewLayer | Updating Images | Loading brick.png
+Fra:1 Mem:16.02M (Peak 34.82M) | Time:00:00.00 | Mem:0.54M, Peak:0.54M | Scene, ViewLayer | Updating Images | Loading wood-floor.png
+Fra:1 Mem:19.55M (Peak 34.82M) | Time:00:00.01 | Mem:7.57M, Peak:7.57M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:19.55M (Peak 34.82M) | Time:00:00.01 | Mem:7.57M, Peak:7.57M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:19.55M (Peak 34.82M) | Time:00:00.01 | Mem:7.66M, Peak:7.66M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:19.55M (Peak 34.82M) | Time:00:00.01 | Mem:7.66M, Peak:7.66M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.70M, Peak:7.70M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.70M, Peak:7.70M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.62M, Peak:7.70M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.70M, Peak:7.70M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.70M, Peak:7.70M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:19.59M (Peak 34.82M) | Time:00:00.01 | Mem:7.70M, Peak:7.70M | Scene, ViewLayer | Sample 0/48
+Fra:1 Mem:51.26M (Peak 51.26M) | Time:00:00.05 | Remaining:00:01.58 | Mem:39.35M, Peak:39.35M | Scene, ViewLayer | Sample 1/48
+Fra:1 Mem:65.33M (Peak 93.45M) | Time:00:01.21 | Mem:39.35M, Peak:39.35M | Scene, ViewLayer | Sample 48/48
+Fra:1 Mem:65.33M (Peak 93.45M) | Time:00:01.21 | Mem:39.35M, Peak:39.35M | Scene, ViewLayer | Finished
+Saved: '/workspace/bot-campus-publish/baked/loft_beauty.png'
+Time: 00:01.46 (Saving: 00:00.24)
+
+BAKE_START
+Info: Circular dependency for image "wood-floor.png" from object "LoftRoom"
+Info: Circular dependency for image "brick.png" from object "LoftRoom"
+Info: No active image found in material "GlassEmit" (3) for object "LoftRoom"
+Info: No active image found in material "Screen" (4) for object "LoftRoom"
+Info: No active image found in material "Desk2" (5) for object "LoftRoom"
+Info: No active image found in material "Desk3" (6) for object "LoftRoom"
+Info: No active image found in material "Desk4" (7) for object "LoftRoom"
+Info: No active image found in material "Desk5" (8) for object "LoftRoom"
+Info: No active image found in material "Pot0" (9) for object "LoftRoom"
+Info: No active image found in material "Plant" (10) for object "LoftRoom"
+Info: No active image found in material "Pot1" (11) for object "LoftRoom"
+Info: No active image found in material "Pot2" (12) for object "LoftRoom"
+Info: No active image found in material "Pot3" (13) for object "LoftRoom"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE_DONE
+SAVED /workspace/bot-campus-publish/baked/loft_lightmap.png
+BEAUTY /workspace/bot-campus-publish/baked/loft_beauty.png
+ERROR Draco mesh compression is not available because library could not be found at /usr/bin/4.3/python/lib/python3.13/site-packages/libextern_draco.so
+21:14:26 | INFO: Starting glTF 2.0 export
+21:14:26 | INFO: Extracting primitive: Cube.012
+21:14:26 | INFO: Primitives created: 14
+21:14:26 | INFO: Finished glTF 2.0 export in 0.27696895599365234 s
+
+GLB /workspace/bot-campus-publish/baked/loft_room.glb
+Info: Saved "bot_office_loft.blend"
+DONE
+
+Blender quit

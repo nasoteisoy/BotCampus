@@ -1,0 +1,46 @@
+Blender 4.3.2
+Fra:1 Mem:327.83M (Peak 334.83M) | Time:497181:14:04.86 | Mem:0.00M, Peak:0.00M | Scene | Synchronizing object | LoftRoom
+Fra:1 Mem:328.22M (Peak 334.83M) | Time:497181:14:04.86 | Mem:0.00M, Peak:0.00M | Scene | Initializing
+Fra:1 Mem:328.22M (Peak 334.83M) | Time:497181:14:04.86 | Mem:0.00M, Peak:0.00M | Scene | Updating Images | Loading LoftBake
+Failed to denoise, build has no OpenImageDenoise support
+Fra:1 Mem:12.59M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | LoftRoom
+Fra:1 Mem:12.85M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:12.08M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Failed to denoise, build has no OpenImageDenoise support
+Fra:1 Mem:12.09M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:12.09M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:12.09M (Peak 34.82M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:12.18M (Peak 34.82M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Failed to denoise, build has no OpenImageDenoise support
+Traceback (most recent call last):
+  File "/workspace/bot-campus-publish/blender/bake_loft.py", line 202, in <module>
+    bpy.ops.render.render(write_still=True)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/share/blender/scripts/modules/bpy/ops.py", line 109, in __call__
+    ret = _op_call(self.idname_py(), kw)
+RuntimeError: Error: Failed to denoise, build has no OpenImageDenoise support
+Error: Failed to denoise, build has no OpenImageDenoise support
+
+BAKE_START
+Info: Circular dependency for image "wood-floor.png" from object "LoftRoom"
+Info: Circular dependency for image "brick.png" from object "LoftRoom"
+Info: No active image found in material "GlassEmit" (3) for object "LoftRoom"
+Info: No active image found in material "Screen" (4) for object "LoftRoom"
+Info: No active image found in material "Desk2" (5) for object "LoftRoom"
+Info: No active image found in material "Desk3" (6) for object "LoftRoom"
+Info: No active image found in material "Desk4" (7) for object "LoftRoom"
+Info: No active image found in material "Desk5" (8) for object "LoftRoom"
+Info: No active image found in material "Pot0" (9) for object "LoftRoom"
+Info: No active image found in material "Plant" (10) for object "LoftRoom"
+Info: No active image found in material "Pot1" (11) for object "LoftRoom"
+Info: No active image found in material "Pot2" (12) for object "LoftRoom"
+Info: No active image found in material "Pot3" (13) for object "LoftRoom"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE_DONE
+SAVED /workspace/bot-campus-publish/baked/loft_lightmap.png
+Error: Failed to denoise, build has no OpenImageDenoise support
+Error: Failed to denoise, build has no OpenImageDenoise support
+
+Blender quit
