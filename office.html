@@ -55,7 +55,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#140e0a;color:#fff7ed;
 </script>
 </head>
 <body>
-<div id="loading">Loft look-pass…</div>
+<div id="loading">Loft v7…</div>
 <div id="hud">
   <div id="hud-top">
     <h1>Bot Office</h1>
@@ -82,7 +82,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
-const SAVE="botoffice-v6", SPEED=4.4, TALK_R=1.8;
+const SAVE="botoffice-v7", SPEED=4.4, TALK_R=1.8;
 const canvas=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -94,7 +94,7 @@ renderer.toneMappingExposure=1.35;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xb8956e);
-scene.fog=new THREE.FogExp2(0xb8956e,0.028);
+scene.fog=new THREE.FogExp2(0xb8956e,0.022);
 const camera=new THREE.PerspectiveCamera(40,1,0.1,90);
 const camOffset=new THREE.Vector3(2.2,11.2,10.5);
 let camPos=new THREE.Vector3(), camLook=new THREE.Vector3(), camReady=false;
@@ -198,12 +198,18 @@ function makeBot(f){
   hm.castShadow=true; head.add(hm);
   const screen=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.28,0.07), std(0x020617,{metalness:0.4,roughness:0.35}));
   screen.position.set(0,0.02,0.4); head.add(screen);
-  const eyeMat=std(f.color,{emissive:f.color,emissiveIntensity:1.35,roughness:0.2});
+  // glowing face plate (per-bot color tint)
+  const facePlane=new THREE.Mesh(
+    new THREE.PlaneGeometry(0.36,0.22),
+    new THREE.MeshStandardMaterial({color:f.color,emissive:f.color,emissiveIntensity:1.15,roughness:0.25,metalness:0.1})
+  );
+  facePlane.position.set(0,0.02,0.445); head.add(facePlane);
+  const eyeMat=std(0xffffff,{emissive:0xffffff,emissiveIntensity:0.9,roughness:0.2});
   const e1=new THREE.Mesh(new THREE.TorusGeometry(0.065,0.024,8,20,Math.PI), eyeMat);
-  const e2=e1.clone(); e1.position.set(-0.11,0.07,0.44); e2.position.set(0.11,0.07,0.44);
+  const e2=e1.clone(); e1.position.set(-0.11,0.07,0.455); e2.position.set(0.11,0.07,0.455);
   e1.rotation.z=.15; e2.rotation.z=-.15; head.add(e1,e2);
   const smile=new THREE.Mesh(new THREE.TorusGeometry(0.09,0.022,6,16,Math.PI), eyeMat);
-  smile.position.set(0,-0.07,0.44); smile.rotation.z=Math.PI; head.add(smile);
+  smile.position.set(0,-0.07,0.455); smile.rotation.z=Math.PI; head.add(smile);
   // cheek glow
   const cheek=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), std(0xfb7185,{emissive:0xfb7185,emissiveIntensity:0.4,transparent:true,opacity:0.7}));
   cheek.position.set(0.28,-0.02,0.32); head.add(cheek);
@@ -284,6 +290,8 @@ function buildOffice(){
 
   const brick=loader.load("assets/brick.png"); brick.colorSpace=THREE.SRGBColorSpace; brick.wrapS=brick.wrapT=THREE.RepeatWrapping; brick.repeat.set(8,3); brick.anisotropy=8;
   const wallMat=new THREE.MeshStandardMaterial({map:brick,roughness:0.88});
+  const metalMap=loader.load("assets/metal.png"); metalMap.colorSpace=THREE.SRGBColorSpace; metalMap.wrapS=metalMap.wrapT=THREE.RepeatWrapping; metalMap.repeat.set(4,1); metalMap.anisotropy=4;
+  const metalMat=new THREE.MeshStandardMaterial({map:metalMap,roughness:0.45,metalness:0.75});
   const back=new THREE.Mesh(new THREE.BoxGeometry(22,5.5,0.45), wallMat);
   back.position.set(0,2.6,-7.6); back.receiveShadow=true; scene.add(back);
   const right=new THREE.Mesh(new THREE.BoxGeometry(0.45,5.5,18), wallMat);
@@ -315,7 +323,7 @@ function buildOffice(){
   }
 
   for(let i=0;i<6;i++){
-    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,20,12), std(0x78716c,{metalness:0.6,roughness:0.32}));
+    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,20,12), metalMat);
     pipe.rotation.z=Math.PI/2; pipe.position.set(0,5.05,-5.5+i*2); scene.add(pipe);
   }
 
