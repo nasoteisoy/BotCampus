@@ -10,7 +10,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
-scene.cycles.samples = 128
+scene.cycles.samples = 160
 scene.cycles.use_denoising = False
 scene.render.resolution_x = 1600
 scene.render.resolution_y = 900
@@ -104,9 +104,9 @@ def cube(name, loc, scale, mat):
 # Floor thick platform
 cube("Floor", (0, 0, 0), (11, 9, 0.2), wood)
 # Walls sit on floor (bottom at z≈0.2)
-cube("WallBack", (0, -8.9, 2.9), (11.2, 0.35, 2.9), brick)
-cube("WallLeft", (-10.9, 0, 2.9), (0.35, 9.1, 2.9), plaster)
-cube("WallRight", (10.9, 0, 2.9), (0.35, 9.1, 2.9), brick)
+cube("WallBack", (0, -8.9, 2.7), (11.2, 0.4, 3.1), brick)  # extends below floor
+cube("WallLeft", (-10.9, 0, 2.7), (0.4, 9.1, 3.1), plaster)
+cube("WallRight", (10.9, 0, 2.7), (0.4, 9.1, 3.1), brick)
 # Front half-wall / railing so room feels enclosed from overseer view
 cube("WallFrontLow", (0, 8.9, 0.55), (11.0, 0.25, 0.55), wood_dark)
 # Ceiling + beams
@@ -155,11 +155,37 @@ for i, (x, y) in enumerate([(-8.5, 5.5), (-8.5, -5.5), (8.2, 5.5), (8.0, -5.8), 
     leaf.name = f"Leaf{i}"
     leaf.data.materials.append(plant)
 
-# Sticky notes on back wall
+# Concept mural (loft-ref) on back wall — big visual win toward the painting
+ref_path = BLEND / "loft-ref.jpg"
+if not ref_path.exists():
+    ref_path = ROOT / "loft-ref.jpg"
+if ref_path.exists():
+    mural_img = load(ref_path)
+    mural_mat = bpy.data.materials.new("Mural")
+    mural_mat.use_nodes = True
+    n, l = mural_mat.node_tree.nodes, mural_mat.node_tree.links
+    n.clear()
+    outn = n.new("ShaderNodeOutputMaterial")
+    bsdf = n.new("ShaderNodeBsdfPrincipled")
+    tex = n.new("ShaderNodeTexImage"); tex.image = mural_img
+    l.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.65
+    l.new(bsdf.outputs[0], outn.inputs[0])
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, -8.55, 2.6))
+    mural = bpy.context.active_object
+    mural.name = "ConceptMural"
+    mural.scale = (7.5, 4.2, 1)
+    mural.rotation_euler = (math.radians(90), 0, 0)
+    bpy.ops.object.transform_apply(scale=True, rotation=True)
+    mural.data.materials.append(mural_mat)
+    print("MURAL", ref_path)
+else:
+    print("NO MURAL IMAGE")
+
+# Sticky notes on back wall (around mural)
 for i, (x, z, mat) in enumerate([
-    (-6, 3.2, sticky_y), (-4.5, 2.6, sticky_p), (-3, 3.5, sticky_b),
-    (-1, 2.8, sticky_y), (1.5, 3.3, sticky_p), (3.5, 2.5, sticky_b),
-    (5.5, 3.1, sticky_y), (-7, 2.2, sticky_p),
+    (-8.2, 4.2, sticky_y), (-8.0, 2.4, sticky_p), (8.0, 4.0, sticky_b),
+    (8.2, 2.5, sticky_y), (-7.5, 1.5, sticky_p), (7.5, 1.6, sticky_b),
 ]):
     cube(f"Sticky{i}", (x, -8.68, z), (0.35, 0.02, 0.35), mat)
 
