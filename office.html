@@ -55,7 +55,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#140e0a;color:#fff7ed;
 </script>
 </head>
 <body>
-<div id="loading">Loft v7…</div>
+<div id="loading">Loft v8…</div>
 <div id="hud">
   <div id="hud-top">
     <h1>Bot Office</h1>
@@ -82,7 +82,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
-const SAVE="botoffice-v7", SPEED=4.4, TALK_R=1.8;
+const SAVE="botoffice-v8", SPEED=4.4, TALK_R=1.8;
 const canvas=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -327,7 +327,7 @@ function buildOffice(){
     pipe.rotation.z=Math.PI/2; pipe.position.set(0,5.05,-5.5+i*2); scene.add(pipe);
   }
 
-  scene.add(new THREE.HemisphereLight(0xffe7c8,0x3f2a1a,0.65));
+  scene.add(new THREE.HemisphereLight(0xffe7c8,0x3f2a1a,0.8));
   const sun=new THREE.DirectionalLight(0xfff1d6,2.05);
   sun.position.set(12,16,3); sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);
@@ -344,11 +344,13 @@ function buildOffice(){
   });
 
   [[-8.5,5.5],[-8.5,-4],[8.8,5.2],[8.2,-5.2],[-5.5,6.2],[5.5,6]].forEach(([x,z])=>{
-    const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,0.48,14), std(0xd6d3d1,{roughness:0.7}));
-    pot.position.set(x,0.24,z); pot.castShadow=true; scene.add(pot);
-    const leaf=new THREE.Mesh(new THREE.SphereGeometry(0.55,16,16), std(0x15803d,{roughness:0.68}));
-    leaf.position.set(x,1.05,z); leaf.castShadow=true; scene.add(leaf);
-    const leaf2=leaf.clone(); leaf2.scale.set(0.7,0.7,0.7); leaf2.position.set(x+0.25,0.95,z-0.15); scene.add(leaf2);
+    const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.34,0.42,14), std(0xc4b5a0,{roughness:0.75}));
+    pot.position.set(x,0.21,z); pot.castShadow=true; scene.add(pot);
+    const greens=[0x166534,0x22c55e,0x15803d];
+    [[0,1.0,0,0.42],[0.22,0.85,0.12,0.32],[-0.2,0.88,-0.1,0.3],[0.05,1.25,0.05,0.22]].forEach(([dx,dy,dz,r],i)=>{
+      const leaf=new THREE.Mesh(new THREE.SphereGeometry(r,14,14), std(greens[i%3],{roughness:0.7}));
+      leaf.position.set(x+dx,dy,z+dz); leaf.castShadow=true; scene.add(leaf);
+    });
   });
 
   const crate=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.05,1.1), std(0x92400e,{roughness:0.78}));
@@ -356,9 +358,9 @@ function buildOffice(){
   const cl=new THREE.Mesh(new THREE.PlaneGeometry(1.15,0.4), new THREE.MeshBasicMaterial({map:posterTex("DO EPIC STUFF","#78350f")}));
   cl.position.set(-7,0.75,5.08); scene.add(cl);
 
-  addHolo(-5.5,2.85,-3.5, holoTex("SPRINT BOARD",["TO DO  WIP  DONE","BUG SQUASH","NEW FEATURE","COFFEE BREAK"],"#0284c7"), 1.85, 1.25, 0.5);
-  addHolo(-0.6,3.05,-4.2, holoTex("TODAY",["CODE","TEST","IMPROVE","REPEAT"],"#db2777",480,300), 1.45, 1.05, 0.12);
-  addHolo(5.2,2.65,-3.2, holoTex("QUEUE",["1 OPTIMIZE","2 REFRESH","3 DEPLOY"],"#0ea5e9",400,240), 1.2, 0.85, -0.5);
+  addHolo(-4.8,2.95,-2.2, holoTex("SPRINT BOARD",["TO DO  WIP  DONE","BUG SQUASH","NEW FEATURE","COFFEE BREAK"],"#0284c7"), 2.35, 1.55, 0.35);
+  addHolo(0.2,3.15,-2.8, holoTex("TODAY",["CODE","TEST","IMPROVE","REPEAT"],"#db2777",480,300), 1.9, 1.35, 0.05);
+  addHolo(4.6,2.85,-2.0, holoTex("QUEUE",["1 OPTIMIZE","2 REFRESH","3 DEPLOY"],"#0ea5e9",400,240), 1.55, 1.05, -0.35);
 
   const n=280, pos=new Float32Array(n*3);
   for(let i=0;i<n;i++){ pos[i*3]=(Math.random()-.5)*18; pos[i*3+1]=.5+Math.random()*4.5; pos[i*3+2]=(Math.random()-.5)*14; }
@@ -367,9 +369,14 @@ function buildOffice(){
   scene.add(dust);
 
   FRIENDS.forEach((f,i)=>{
-    makeDesk(f.x,f.z-0.58,DESK[i], f.crown?"LEADER":(i===1?"PLAN.":null));
-    const mesh=makeBot(f); mesh.position.set(f.x,0,f.z);
-    mesh.rotation.y=f.crown?Math.PI*.12:Math.PI; scene.add(mesh); npcs.push({...f,mesh});
+    const deskZ=f.crown?f.z-0.7:f.z-0.65;
+    makeDesk(f.x, deskZ, DESK[i], f.crown?"LEADER":(i===1?"PLAN.":null));
+    const mesh=makeBot(f);
+    // sit slightly into chair height, face the monitor (toward -Z for front row)
+    mesh.position.set(f.x, 0.08, f.crown?f.z:f.z+0.05);
+    mesh.rotation.y = f.crown ? Math.PI*0.95 : 0; // face monitors / into room
+    mesh.scale.set(0.95,0.95,0.95);
+    scene.add(mesh); npcs.push({...f,mesh});
   });
   you.mesh=makeBot({id:"you",color:0x60a5fa,accent:0x3b82f6});
   you.mesh.position.set(you.x,0,you.z); scene.add(you.mesh);
@@ -399,7 +406,7 @@ function updateYou(dt){
   npcs.forEach(n=>{
     const d=Math.hypot(n.x-you.x,n.z-you.z);
     if(d<best){best=d;nearId=n.id;}
-    animateBot(n.mesh,false,dt,d<2.6?Math.atan2(you.x-n.x,you.z-n.z):n.mesh.rotation.y);
+    animateBot(n.mesh,false,dt,d<1.5?Math.atan2(you.x-n.x,you.z-n.z):n.mesh.rotation.y);
   });
   document.getElementById("btn-talk").disabled=!nearId;
   holos.forEach((h,i)=>{h.mesh.position.y=h.baseY+Math.sin(clock.elapsedTime*1.25+i)*0.06;});
@@ -464,7 +471,7 @@ function loop(){
 buildOffice(); setupStick(); hud();
 composer=new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene,camera));
-bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.55,0.6,0.78);
+bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.62,0.55,0.72);
 composer.addPass(bloomPass);
 
 document.getElementById("btn-talk").onclick=()=>{if(nearId) openTalk(nearId);};
