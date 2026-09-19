@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Bot Campus · World v2</title>
+<title>Bot Campus · World v3</title>
 <style>
   :root { --ink:#f2f6fc; --muted:#9aabcc; --sheet:#0e1624f2; --accent:#7aa2ff; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -65,8 +65,8 @@
 <body>
   <div id="loading">Building your world…</div>
   <div id="hud">
-    <h1>Bot Campus · World v2</h1>
-    <p class="sub">World-building · tap-drag to move · grow the colony</p>
+    <h1>Bot Campus · World v3</h1>
+    <p class="sub">Angled view · tap-drag to move · grow the colony</p>
     <div id="stats">
       <div class="pill" id="p-carry">Carry 0/20</div>
       <div class="pill" id="p-bank">Bank S0 E0 A0</div>
@@ -121,8 +121,8 @@ renderer.toneMappingExposure = 1.12;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x6fa8d6);
 scene.fog = new THREE.Fog(0x6fa8d6, 22, 55);
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
-const camOffset = new THREE.Vector3(0, 16, 0.01);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
+const camOffset = new THREE.Vector3(0, 11, 10); // high angled view
 
 let data, actors={}, zones={};
 let stick={active:false,dx:0,dy:0};
@@ -363,10 +363,10 @@ function updateYou(dt){
   if(closest && talkingTo!==closest && spd>0.05) openTalk(closest);
 
   const desired=_v.set(you.x, camOffset.y, you.z+camOffset.z);
-  const lookTarget=_look.set(you.x,0,you.z);
+  const lookTarget=_look.set(you.x,0.9,you.z);
   if(!camReady){ camPos.copy(desired); camLook.copy(lookTarget); camReady=true; }
   camPos.lerp(desired, 1-Math.exp(-3.2*dt)); camLook.lerp(lookTarget, 1-Math.exp(-4*dt));
-  camera.position.copy(camPos); camera.up.set(0,0,-1); camera.lookAt(camLook);
+  camera.position.copy(camPos); camera.up.set(0,1,0); camera.lookAt(camLook);
 }
 
 function updateBots(dt){
@@ -459,7 +459,7 @@ async function boot(){
     buildWorld(); setupJoystick(); setupUI(); updateHUD();
     addEventListener("resize", resize); resize();
     const you=actors[youId];
-    if(you){ camPos.set(you.x, camOffset.y, you.z); camLook.set(you.x,0,you.z); camera.up.set(0,0,-1); camera.position.copy(camPos); camera.lookAt(camLook); camReady=true; }
+    if(you){ camPos.set(you.x, camOffset.y, you.z); camLook.set(you.x,0.9,you.z); camera.up.set(0,1,0); camera.position.copy(camPos); camera.lookAt(camLook); camReady=true; }
     document.getElementById("loading").classList.add("hide");
     toast("Scavenge · deposit at HAB · build");
     loop();
