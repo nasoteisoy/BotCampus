@@ -55,7 +55,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#140e0a;color:#fff7ed;
 </script>
 </head>
 <body>
-<div id="loading">Lighting the loft…</div>
+<div id="loading">Loft look-pass…</div>
 <div id="hud">
   <div id="hud-top">
     <h1>Bot Office</h1>
@@ -82,7 +82,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
-const SAVE="botoffice-v5", SPEED=4.4, TALK_R=1.8;
+const SAVE="botoffice-v6", SPEED=4.4, TALK_R=1.8;
 const canvas=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -90,7 +90,7 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.28;
+renderer.toneMappingExposure=1.35;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xb8956e);
@@ -277,12 +277,13 @@ function addHolo(x,y,z,tex,sx,sy,ry){
 }
 
 function buildOffice(){
-  const wood=woodTex(); wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(8,6);
-  const floor=new THREE.Mesh(new THREE.BoxGeometry(22,0.3,18), new THREE.MeshStandardMaterial({map:wood,roughness:0.82}));
+  const loader=new THREE.TextureLoader();
+  const wood=loader.load("assets/wood-floor.png"); wood.colorSpace=THREE.SRGBColorSpace; wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(6,5); wood.anisotropy=8;
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(22,0.3,18), new THREE.MeshStandardMaterial({map:wood,roughness:0.78}));
   floor.position.y=-0.15; floor.receiveShadow=true; scene.add(floor);
 
-  const brick=brickTex(); brick.wrapS=brick.wrapT=THREE.RepeatWrapping; brick.repeat.set(10,3.5);
-  const wallMat=new THREE.MeshStandardMaterial({map:brick,roughness:0.9});
+  const brick=loader.load("assets/brick.png"); brick.colorSpace=THREE.SRGBColorSpace; brick.wrapS=brick.wrapT=THREE.RepeatWrapping; brick.repeat.set(8,3); brick.anisotropy=8;
+  const wallMat=new THREE.MeshStandardMaterial({map:brick,roughness:0.88});
   const back=new THREE.Mesh(new THREE.BoxGeometry(22,5.5,0.45), wallMat);
   back.position.set(0,2.6,-7.6); back.receiveShadow=true; scene.add(back);
   const right=new THREE.Mesh(new THREE.BoxGeometry(0.45,5.5,18), wallMat);
@@ -290,7 +291,6 @@ function buildOffice(){
   const left=right.clone(); left.position.x=-10.2; scene.add(left);
 
   // concept mural on back wall (the cool picture, in-world)
-  const loader=new THREE.TextureLoader();
   loader.load("loft-ref.jpg", (tex)=>{
     tex.colorSpace=THREE.SRGBColorSpace;
     const mural=new THREE.Mesh(new THREE.PlaneGeometry(4.2,2.5), new THREE.MeshStandardMaterial({map:tex,roughness:0.65}));
@@ -456,7 +456,7 @@ function loop(){
 buildOffice(); setupStick(); hud();
 composer=new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene,camera));
-bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.45,0.55,0.82);
+bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.55,0.6,0.78);
 composer.addPass(bloomPass);
 
 document.getElementById("btn-talk").onclick=()=>{if(nearId) openTalk(nearId);};
