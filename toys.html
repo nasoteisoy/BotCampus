@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
+<title>Toy Box — 3 Objects</title>
+<style>
+  :root { color-scheme: dark; --bg:#100e14; --panel:#1c1824; --fg:#f3eef8; --muted:#a89bb8; --accent:#a78bfa; }
+  * { box-sizing:border-box; touch-action:none; }
+  html,body { margin:0; height:100%; overflow:hidden; font-family:system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+  canvas { display:block; width:100%; height:100%; }
+  #ui { position:fixed; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:12px; }
+  #ui * { pointer-events:auto; }
+  header { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+  h1 { margin:0; font-size:1rem; font-weight:650; }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { border:1px solid #4c3f63; background:rgba(28,24,36,0.85); color:var(--fg); padding:10px 14px; border-radius:999px; font:inherit; cursor:pointer; backdrop-filter:blur(8px); }
+  .pill.active { border-color:var(--accent); background:#3b2d5c; box-shadow:0 0 0 1px var(--accent); }
+  .hint { color:var(--muted); font-size:0.8rem; text-align:center; padding:8px; background:rgba(16,14,20,0.55); border-radius:10px; align-self:center; }
+  #toast { position:fixed; left:50%; bottom:72px; transform:translateX(-50%); background:rgba(28,24,36,0.92); padding:8px 14px; border-radius:10px; font-size:0.85rem; opacity:0; transition:opacity .2s; pointer-events:none; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div id="ui">
+  <header>
+    <h1>Toy Box</h1>
+    <div class="pills" id="pills"></div>
+  </header>
+  <div class="hint">Drag to orbit · pinch/scroll zoom · tap a pill to switch</div>
+</div>
+<div id="toast"></div>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const TOYS = [
+  { id:"bot", name:"Cheeky Bot", file:"toys/bot.glb", thumb:"toys/bot_beauty.png" },
+  { id:"rocket", name:"Tiny Rocket", file:"toys/rocket.glb", thumb:"toys/rocket_beauty.png" },
+  { id:"crystal", name:"Scrap Crystal", file:"toys/crystal.glb", thumb:"toys/crystal_beauty.png" },
+];
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x100e14);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(2.8, 1.8, 3.4);
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.prepend(renderer.domElement);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+scene.add(new THREE.HemisphereLight(0xffe8ff, 0x221833, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(3,5,2); scene.add(key);
+
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(3.2, 64),
+  new THREE.MeshStandardMaterial({ color:0x1a1622, roughness:0.9, metalness:0.05 })
+);
+ground.rotation.x = -Math.PI/2; ground.position.y = 0; scene.add(ground);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.target.set(0, 0.75, 0);
+controls.minDistance = 1.4; controls.maxDistance = 8;
+
+const loader = new GLTFLoader();
+const roots = {};
+let current = null;
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(()=>el.classList.remove("show"), 1400);
+}
+
+function show(id){
+  Object.values(roots).forEach(r => { r.visible = false; });
+  const r = roots[id];
+  if(!r){ toast("Still loading…"); return; }
+  r.visible = true; current = id;
+  [...document.querySelectorAll(".pill")].forEach(p => p.classList.toggle("active", p.dataset.id===id));
+  toast(TOYS.find(t=>t.id===id).name);
+}
+
+const pills = document.getElementById("pills");
+TOYS.forEach(t => {
+  const b = document.createElement("button");
+  b.className = "pill"; b.dataset.id = t.id; b.type = "button"; b.textContent = t.name;
+  b.onclick = () => show(t.id);
+  pills.appendChild(b);
+  loader.load(t.file + "?v=1", (gltf) => {
+    const root = gltf.scene;
+    root.traverse(o => {
+      if(o.isMesh){
+        o.castShadow = true; o.receiveShadow = true;
+        const mats = Array.isArray(o.material)?o.material:[o.material];
+        mats.forEach(m => { if(m?.map) m.map.colorSpace = THREE.SRGBColorSpace; if(m?.emissiveIntensity!=null) m.emissiveIntensity = Math.min(m.emissiveIntensity, 2); });
+      }
+    });
+    // sit on ground
+    const box = new THREE.Box3().setFromObject(root);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const scale = 1.35 / Math.max(size.x, size.y, size.z);
+    root.scale.setScalar(scale);
+    box.setFromObject(root);
+    root.position.y -= box.min.y;
+    root.visible = false;
+    scene.add(root);
+    roots[t.id] = root;
+    if(Object.keys(roots).length === 1) show(t.id);
+  }, undefined, (e) => { console.error(e); toast("Failed: "+t.name); });
+});
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const clock = new THREE.Clock();
+(function tick(){
+  requestAnimationFrame(tick);
+  const t = clock.getElapsedTime();
+  if(current && roots[current]){
+    roots[current].rotation.y = t * 0.35;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
