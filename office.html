@@ -10,37 +10,43 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#1c1410;color:#fff7ed;
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;touch-action:none}
 #c{position:absolute;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:.55rem .75rem;pointer-events:none;
-  background:linear-gradient(180deg,#1c1410ee,transparent 90%)}
-#hud h1{margin:0;font-size:1rem;font-weight:800}
-#hud .sub{margin:.1rem 0 0;font-size:.68rem;color:#fdba74}
-#bars{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
-.chip{background:#0007;border:1px solid #fff3;border-radius:999px;padding:.2rem .55rem;font-size:.72rem;font-weight:800;backdrop-filter:blur(8px)}
-#quest{margin-top:.4rem;display:inline-block;background:#f59e0bcc;border:1px solid #fde68a99;border-radius:999px;padding:.3rem .7rem;font-size:.72rem;font-weight:800;color:#1c1917}
-#stick-wrap{position:fixed;width:128px;height:128px;z-index:60;left:0;top:0;margin-left:-64px;margin-top:-64px;
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;pointer-events:none;
+  padding:calc(.45rem + env(safe-area-inset-top)) .75rem .6rem;
+  background:linear-gradient(180deg,#1c1410f2 0%,#1c141088 55%,transparent)}
+#hud-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+#hud h1{margin:0;font-size:.95rem;font-weight:800;white-space:nowrap}
+#bars{display:flex;gap:.35rem;flex-shrink:0}
+.chip{background:#0008;border:1px solid #fff3;border-radius:999px;padding:.18rem .5rem;font-size:.68rem;font-weight:800}
+#quest{margin-top:.4rem;max-width:100%;background:#f59e0b;border-radius:10px;padding:.35rem .65rem;
+  font-size:.7rem;font-weight:800;color:#1c1917;line-height:1.25}
+#stick-wrap{position:fixed;width:120px;height:120px;z-index:60;left:0;top:0;margin-left:-60px;margin-top:-60px;
   display:none;pointer-events:none;opacity:0;transition:opacity .12s}
 #stick-wrap.show{display:block;opacity:1}
-#stick-base{width:128px;height:128px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#ffffff44,#0006);border:1px solid #fff5;box-shadow:0 12px 28px #0008}
-#stick-knob{position:absolute;left:44px;top:44px;width:40px;height:40px;border-radius:50%;
+#stick-base{width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffffff44,#0006);border:1px solid #fff5;box-shadow:0 10px 24px #0008}
+#stick-knob{position:absolute;left:40px;top:40px;width:40px;height:40px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#fff,#cbd5e1);border:1px solid #fff8}
-#dock{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;
-  padding:.65rem .75rem calc(.65rem + env(safe-area-inset-bottom));pointer-events:none}
-#dock button{pointer-events:auto;border:0;border-radius:999px;padding:.75rem 1.4rem;font-weight:800;font-size:.9rem;
-  color:#fff;background:linear-gradient(180deg,#fb923c,#ea580c);box-shadow:0 8px 22px #0007}
-#dock button:disabled{opacity:.35}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:35;background:#1c1410f2;border:1px solid #ffffff1a;
-  border-radius:1.25rem 1.25rem 0 0;padding:1rem 1.15rem 1.4rem;transform:translateY(110%);
-  transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:36dvh;overflow:auto;pointer-events:none;backdrop-filter:blur(14px)}
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;justify-content:center;
+  padding:.55rem .75rem calc(.55rem + env(safe-area-inset-bottom));pointer-events:none;
+  transition:opacity .15s, transform .15s}
+#dock.hidden{opacity:0;transform:translateY(12px);pointer-events:none !important}
+#dock button{pointer-events:auto;border:0;border-radius:999px;min-width:8rem;padding:.7rem 1.3rem;font-weight:800;font-size:.88rem;
+  color:#fff;background:linear-gradient(180deg,#fb923c,#ea580c);box-shadow:0 8px 20px #0007}
+#dock.hidden button{pointer-events:none}
+#dock button:disabled{opacity:.4}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#1c1410f5;border-top:1px solid #ffffff1a;
+  border-radius:1.15rem 1.15rem 0 0;padding:1rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));
+  transform:translateY(110%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
+  max-height:42dvh;overflow:auto;pointer-events:none;backdrop-filter:blur(14px)}
 #sheet.open{transform:translateY(0);pointer-events:auto}
-#sheet .close{position:absolute;right:.85rem;top:.75rem;background:#44403c;border:0;color:#fff;width:2rem;height:2rem;border-radius:999px}
-#toast{position:fixed;top:5.2rem;left:50%;transform:translateX(-50%);z-index:70;background:#000c;
-  border:1px solid #ffffff33;border-radius:999px;padding:.4rem .85rem;font-size:.75rem;font-weight:800;
-  opacity:0;transition:opacity .2s;pointer-events:none}
+#sheet .close{position:absolute;right:.8rem;top:.7rem;background:#44403c;border:0;color:#fff;width:2rem;height:2rem;border-radius:999px;font-size:1.1rem}
+#sheet h2{margin:.1rem 2.2rem .3rem 0;font-size:1.1rem}
+#sheet #s-role{margin:0;color:#fdba74;font-size:.72rem}
+#sheet #s-task{margin:.5rem 0 0;font-size:.9rem;line-height:1.4;color:#ffedd5}
+#toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:70;background:#000d;border:1px solid #ffffff33;border-radius:999px;padding:.4rem .85rem;
+  font-size:.74rem;font-weight:800;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
-#prompt{position:fixed;left:50%;bottom:5.4rem;transform:translateX(-50%);z-index:30;display:none;
-  background:#0ea5e9cc;border:1px solid #7dd3fc;border-radius:999px;padding:.4rem .8rem;font-size:.75rem;font-weight:800}
-#prompt.on{display:block}
 #loading{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:#1c1410;font-weight:800}
 #loading.hide{display:none}
 </style>
@@ -49,29 +55,29 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1c1410;color:#fff7ed;
 <body>
 <div id="loading">Opening the loft…</div>
 <div id="hud">
-  <h1>Bot Office</h1>
-  <p class="sub">Tap-drag to walk · talk to ship the sprint</p>
-  <div id="bars">
-    <div class="chip" id="c-scrap">⚡ Scrap 0</div>
-    <div class="chip" id="c-talked">Talked 0/5</div>
+  <div id="hud-top">
+    <h1>Bot Office</h1>
+    <div id="bars">
+      <div class="chip" id="c-scrap">Scrap 0</div>
+      <div class="chip" id="c-talked">0/5</div>
+    </div>
   </div>
-  <div id="quest">Quest: Talk to every bot, then Leader</div>
+  <div id="quest">Talk to every bot, then Leader</div>
 </div>
 <div id="toast"></div>
-<div id="prompt">Near bot · Talk</div>
 <canvas id="c"></canvas>
 <div id="stick-wrap"><div id="stick-base"></div><div id="stick-knob"></div></div>
 <div id="dock"><button type="button" id="btn-talk" disabled>Talk</button></div>
 <div id="sheet">
-  <button class="close" id="close" type="button">×</button>
-  <h2 id="s-name" style="margin:.15rem 0 .35rem;font-size:1.2rem"></h2>
-  <p id="s-role" style="margin:0;color:#fdba74;font-size:.75rem"></p>
-  <p id="s-task" style="margin:.55rem 0 0;font-size:.92rem;line-height:1.4;color:#ffedd5"></p>
+  <button class="close" id="close" type="button" aria-label="Close">×</button>
+  <h2 id="s-name"></h2>
+  <p id="s-role"></p>
+  <p id="s-task"></p>
 </div>
 <script type="module">
 import * as THREE from "three";
 
-const SAVE="botoffice-v3";
+const SAVE="botoffice-v4";
 const SPEED=4.5, TALK_R=1.75;
 const canvas=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
@@ -95,11 +101,11 @@ let accum=0; const DT=1/60;
 
 // Layout closer to photo: front desks L→R, Leader back-right
 const FRIENDS=[
-  {id:"findme",name:"Find Me",role:"Lookup",task:"Scanning desks for missing specs.",color:0x22d3ee,accent:0x0284c7,x:-3.6,z:0.6},
-  {id:"story",name:"Story",role:"Shipper",task:"Drafting the daily build note.",color:0xf472b6,accent:0xdb2777,x:-1.2,z:1.3},
-  {id:"builder",name:"Builder",role:"Maker",task:"Prototyping the next pad.",color:0x4ade80,accent:0x16a34a,x:1.3,z:0.9},
-  {id:"critic",name:"Critic",role:"Review",task:"Red-lining the sprint board.",color:0xc084fc,accent:0x7c3aed,x:3.7,z:1.1},
-  {id:"leader",name:"Leader",role:"Chief Bot",task:"Waiting on the team check-in.",color:0xfbbf24,accent:0xf59e0b,x:2.4,z:-2.8,crown:true},
+  {id:"findme",name:"Find Me",role:"Lookup",task:"Scanning desks for missing specs.",color:0x22d3ee,accent:0x0284c7,x:-4.2,z:1.0},
+  {id:"story",name:"Story",role:"Shipper",task:"Drafting the daily build note.",color:0xf472b6,accent:0xdb2777,x:-1.5,z:1.8},
+  {id:"builder",name:"Builder",role:"Maker",task:"Prototyping the next pad.",color:0x4ade80,accent:0x16a34a,x:1.5,z:1.6},
+  {id:"critic",name:"Critic",role:"Review",task:"Red-lining the sprint board.",color:0xc084fc,accent:0x7c3aed,x:4.3,z:1.2},
+  {id:"leader",name:"Leader",role:"Chief Bot",task:"Waiting on the team check-in.",color:0xfbbf24,accent:0xf59e0b,x:2.6,z:-3.2,crown:true},
 ];
 const DESK=[0x0ea5e9,0xf97316,0xef4444,0xa855f7,0xd97706];
 
@@ -109,14 +115,14 @@ function save(){localStorage.setItem(SAVE,JSON.stringify(state));}
 
 let stick={active:false,dx:0,dy:0};
 let you={x:0,z:4.5,vx:0,vz:0,facing:0,moving:false,mesh:null};
-let npcs=[], holos=[], dust=null, posters=[];
+let npcs=[], holos=[], dust=null;
 let nearId=null, talking=null;
 
 function toast(m){const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),1600);}
 function hud(){
   const n=Object.keys(state.talked).length;
-  document.getElementById("c-scrap").textContent="⚡ Scrap "+state.scrap;
-  document.getElementById("c-talked").textContent="Talked "+n+"/5";
+  document.getElementById("c-scrap").textContent="Scrap "+state.scrap;
+  document.getElementById("c-talked").textContent=n+"/5";
   const q=document.getElementById("quest");
   if(state.shipped) q.textContent="Sprint shipped — high fives > deadlines";
   else if(n>=5) q.textContent="Quest: Talk to Leader to ship";
@@ -314,9 +320,9 @@ function buildOffice(){
   crateLab.position.set(-6.5,0.7,4.72); scene.add(crateLab);
 
   // holograms like photo
-  addHolo(-4.2,2.8,-1.5, holoTex("SPRINT BOARD",["TO DO   WIP   DONE","BUG SQUASH","NEW FEATURE","UI POLISH","COFFEE BREAK"],"#0284c7"), 2.0, 1.35, 0.4);
-  addHolo(0.3,3.0,-2.0, holoTex("TODAY'S MISSION",["🚀 CODE","TEST","IMPROVE","REPEAT","HIGH FIVES > DEADLINES"],"#db2777",512,400), 1.7, 1.25, 0.1);
-  addHolo(2.2,2.4,0.2, holoTex("TASK QUEUE",["1. OPTIMIZE","2. REFRESH","3. DEPLOY"],"#0ea5e9",420,260), 1.1, 0.75, -0.2);
+  addHolo(-5.2,2.7,-3.2, holoTex("SPRINT BOARD",["TO DO   WIP   DONE","BUG SQUASH","NEW FEATURE","COFFEE BREAK"],"#0284c7"), 1.8, 1.2, 0.55);
+  addHolo(-0.8,2.9,-4.0, holoTex("TODAY",["CODE  TEST","IMPROVE","REPEAT"],"#db2777",480,300), 1.4, 1.0, 0.15);
+  addHolo(4.8,2.5,-3.0, holoTex("QUEUE",["1 OPTIMIZE","2 REFRESH","3 DEPLOY"],"#0ea5e9",400,240), 1.15, 0.8, -0.45);
 
   // dust
   const n=220, pos=new Float32Array(n*3);
@@ -363,7 +369,6 @@ function updateYou(dt){
     if(d<best){best=d;nearId=n.id;}
     animateBot(n.mesh,false,dt, d<2.5?Math.atan2(you.x-n.x,you.z-n.z):n.mesh.rotation.y);
   });
-  document.getElementById("prompt").classList.toggle("on",!!nearId&&talking!==nearId);
   document.getElementById("btn-talk").disabled=!nearId;
   holos.forEach((h,i)=>{ h.mesh.position.y=h.baseY+Math.sin(clock.elapsedTime*1.3+i)*0.07; });
   if(dust){const a=dust.geometry.attributes.position.array; for(let i=1;i<a.length;i+=3){a[i]+=dt*0.09; if(a[i]>4.8)a[i]=0.35;} dust.geometry.attributes.position.needsUpdate=true;}
@@ -388,13 +393,13 @@ function openTalk(id){
     else { line="Everyone checked in. Shipping the sprint!"; if(!state.shipped){state.shipped=true;state.scrap+=50;state.talked.leader=true;save();toast("+50 scrap · Sprint shipped!");} }
   } else if(!state.talked[id]){ state.talked[id]=true; state.scrap+=8; save(); toast("+8 scrap · "+n.name+" checked in"); }
   document.getElementById("s-task").textContent=line;
-  document.getElementById("sheet").classList.add("open"); hud();
+  document.getElementById("sheet").classList.add("open"); document.getElementById("dock").classList.add("hidden"); hud();
 }
 
 function setupStick(){
-  const wrap=document.getElementById("stick-wrap"), knob=document.getElementById("stick-knob"), max=40;
+  const wrap=document.getElementById("stick-wrap"), knob=document.getElementById("stick-knob"), max=38;
   let ox=0,oy=0;
-  const setK=(dx,dy)=>{knob.style.left=(44+dx)+"px";knob.style.top=(44+dy)+"px";};
+  const setK=(dx,dy)=>{knob.style.left=(40+dx)+"px";knob.style.top=(40+dy)+"px";};
   const hide=()=>{stick.active=false;stick.dx=0;stick.dy=0;setK(0,0);wrap.classList.remove("show");};
   canvas.addEventListener("pointerdown",e=>{
     e.preventDefault(); ox=e.clientX; oy=e.clientY;
@@ -418,7 +423,7 @@ function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;camera.upda
 
 buildOffice(); setupStick(); hud();
 document.getElementById("btn-talk").onclick=()=>{if(nearId) openTalk(nearId);};
-document.getElementById("close").onclick=()=>{talking=null;document.getElementById("sheet").classList.remove("open");};
+document.getElementById("close").onclick=()=>{talking=null;document.getElementById("sheet").classList.remove("open");document.getElementById("dock").classList.remove("hidden");};
 addEventListener("resize",resize); resize();
 camPos.set(you.x,camOffset.y,you.z+camOffset.z); camLook.set(you.x,1.1,you.z);
 camera.position.copy(camPos); camera.lookAt(camLook); camReady=true;
