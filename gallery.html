@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
+<title>Bot Office — Render Gallery</title>
+<style>
+  :root { color-scheme: dark; --bg:#1a1410; --panel:#2a211c; --fg:#f5ebe0; --muted:#b8a99a; --accent:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg); min-height:100vh; display:flex; flex-direction:column; }
+  header { padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; background:var(--panel); border-bottom:1px solid #3d322a; }
+  h1 { margin:0; font-size:1.05rem; font-weight:650; }
+  .links a { color:var(--accent); margin-left:12px; text-decoration:none; font-size:0.9rem; }
+  main { flex:1; display:flex; flex-direction:column; align-items:center; padding:12px; gap:12px; }
+  .stage { width:min(1100px,100%); background:#0d0a08; border-radius:12px; overflow:hidden; border:1px solid #3d322a; position:relative; }
+  .stage img { width:100%; height:auto; display:block; max-height:70vh; object-fit:contain; background:#0d0a08; }
+  .meta { width:min(1100px,100%); display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+  .title { font-size:1.1rem; font-weight:600; }
+  .desc { color:var(--muted); font-size:0.9rem; max-width:52ch; }
+  .nav { display:flex; gap:8px; flex-wrap:wrap; }
+  button { appearance:none; border:1px solid #5c4a3a; background:#3a2e26; color:var(--fg); padding:10px 14px; border-radius:10px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:#92400e; border-color:#f59e0b; }
+  .thumbs { width:min(1100px,100%); display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
+  .thumbs button { padding:0; border-radius:8px; overflow:hidden; flex:0 0 auto; width:110px; height:62px; opacity:0.55; }
+  .thumbs button.active { opacity:1; outline:2px solid var(--accent); }
+  .thumbs img { width:100%; height:100%; object-fit:cover; display:block; }
+  .hint { color:var(--muted); font-size:0.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bot Office — Render Gallery</h1>
+  <div class="links">
+    <a href="office.html?v=god6">Play god6 loft</a>
+    <a href="https://github.com/nasoteisoy/BotCampus">Repo</a>
+  </div>
+</header>
+<main>
+  <div class="stage"><img id="hero" alt="render" src=""/></div>
+  <div class="meta">
+    <div>
+      <div class="title" id="title"></div>
+      <div class="desc" id="desc"></div>
+      <div class="hint">← → keys · tap thumbs · swipe on phone</div>
+    </div>
+    <div class="nav">
+      <button type="button" id="prev">← Prev</button>
+      <button type="button" id="next" class="primary">Next →</button>
+    </div>
+  </div>
+  <div class="thumbs" id="thumbs"></div>
+</main>
+<script>
+const slides = [
+  { src: "gallery/concept-ref.jpg", title: "Concept painting (goal)", desc: "The cozy loft look we’re chasing." },
+  { src: "gallery/pass1-first-cycles.png", title: "Pass 1 — First Cycles", desc: "First Blender beauty. Too top-down; mostly floor + desk blocks." },
+  { src: "gallery/pass2-god3-richer.png", title: "Pass 2 — God3 richer loft", desc: "Brick, desks, plants, beams — still a bit exploded." },
+  { src: "gallery/pass3-god4-mural.png", title: "Pass 3 — God4 + mural", desc: "Concept art hung on the back wall." },
+  { src: "gallery/pass4-god5-no-ceiling.png", title: "Pass 4 — God5 no ceiling", desc: "Ceiling slab removed so overseer view isn’t whitewashed." },
+  { src: "gallery/pass5-god6-open-top.png", title: "Pass 5 — God6 open-top", desc: "No roof/beams, shorter walls, clearer god view." },
+  { src: "gallery/lightmap.png", title: "Lightmap experiment", desc: "Early bake attempt (sparse — not used in-game yet)." },
+];
+let i = 0;
+const hero = document.getElementById("hero");
+const title = document.getElementById("title");
+const desc = document.getElementById("desc");
+const thumbs = document.getElementById("thumbs");
+
+function show(n) {
+  i = (n + slides.length) % slides.length;
+  const s = slides[i];
+  hero.src = s.src + "?t=" + Date.now();
+  hero.alt = s.title;
+  title.textContent = s.title;
+  desc.textContent = s.desc;
+  [...thumbs.children].forEach((b, idx) => b.classList.toggle("active", idx === i));
+}
+
+slides.forEach((s, idx) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.innerHTML = `<img src="${s.src}" alt=""/>`;
+  b.onclick = () => show(idx);
+  thumbs.appendChild(b);
+});
+
+document.getElementById("prev").onclick = () => show(i - 1);
+document.getElementById("next").onclick = () => show(i + 1);
+window.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") show(i - 1);
+  if (e.key === "ArrowRight") show(i + 1);
+});
+
+let tx = null;
+window.addEventListener("touchstart", (e) => { tx = e.changedTouches[0].screenX; }, {passive:true});
+window.addEventListener("touchend", (e) => {
+  if (tx == null) return;
+  const dx = e.changedTouches[0].screenX - tx;
+  if (Math.abs(dx) > 40) show(i + (dx < 0 ? 1 : -1));
+  tx = null;
+}, {passive:true});
+
+show(0);
+</script>
+</body>
+</html>
