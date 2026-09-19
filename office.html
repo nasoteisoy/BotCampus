@@ -211,11 +211,16 @@ function buildWorld(){
   // Blender Cycles-exported loft (textured GLB)
   new GLTFLoader().load("baked/loft_room.glb", (gltf)=>{
     const root=gltf.scene;
-    // Blender Z-up → Three Y-up
-    root.rotation.x = -Math.PI/2;
+    // Blender glTF export is already Y-up
+    root.position.set(0, 0, 0);
+    root.scale.setScalar(1);
     root.traverse(o=>{
-      if(o.isMesh){ o.castShadow=true; o.receiveShadow=true;
-        if(o.material){ o.material.side=THREE.FrontSide; }
+      if(o.isMesh){
+        o.castShadow=true; o.receiveShadow=true;
+        if(o.material){
+          const mats=Array.isArray(o.material)?o.material:[o.material];
+          mats.forEach(m=>{ m.side=THREE.FrontSide; if(m.map) m.map.colorSpace=THREE.SRGBColorSpace; });
+        }
       }
     });
     scene.add(root);
