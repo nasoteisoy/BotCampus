@@ -459,7 +459,7 @@ async function boot(){
     buildWorld(); setupJoystick(); setupUI(); updateHUD();
     addEventListener("resize", resize); resize();
     const you=actors[youId];
-    if(you){ camPos.set(you.x, camOffset.y, you.z); camLook.set(you.x,0.9,you.z); camera.up.set(0,1,0); camera.position.copy(camPos); camera.lookAt(camLook); camReady=true; }
+    if(you){ camPos.set(you.x + camOffset.x, camOffset.y, you.z + camOffset.z); camLook.set(you.x,0.9,you.z); camera.up.set(0,1,0); camera.position.copy(camPos); camera.lookAt(camLook); camReady=true; }
     document.getElementById("loading").classList.add("hide");
     toast("Scavenge · deposit at HAB · build");
     loop();
