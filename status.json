@@ -1,0 +1,162 @@
+{
+  "project": "Bot Campus",
+  "sprint": "1 \u2014 Three.js 3D prototype",
+  "updated": "2026-09-19",
+  "style": {
+    "tone": "whimsical-silly",
+    "note": "cinematic light/shadows; articulated 3D walk; whimsical silly avatars",
+    "render": "threejs-3d-prototype"
+  },
+  "world": {
+    "width": 900,
+    "height": 700
+  },
+  "zones": [
+    {
+      "id": "library",
+      "label": "Library",
+      "x": 300,
+      "y": 40,
+      "w": 300,
+      "h": 160,
+      "color": "#1a3d32"
+    },
+    {
+      "id": "ops",
+      "label": "Ops",
+      "x": 40,
+      "y": 240,
+      "w": 260,
+      "h": 220,
+      "color": "#1a2a44"
+    },
+    {
+      "id": "courtyard",
+      "label": "Courtyard",
+      "x": 320,
+      "y": 240,
+      "w": 260,
+      "h": 220,
+      "color": "#243247"
+    },
+    {
+      "id": "workshop",
+      "label": "Workshop",
+      "x": 600,
+      "y": 240,
+      "w": 260,
+      "h": 220,
+      "color": "#2a2440"
+    },
+    {
+      "id": "arcade",
+      "label": "Arcade",
+      "x": 300,
+      "y": 500,
+      "w": 300,
+      "h": 160,
+      "color": "#3d2a1a"
+    }
+  ],
+  "friends": [
+    {
+      "id": "leader",
+      "status": "working",
+      "task": "T-041 Walkable campus build",
+      "project": "Bot Campus",
+      "zone": "ops",
+      "x": 140,
+      "y": 340,
+      "vibe": "Keeps the board honest and talks to you like a teammate.",
+      "avatar": {
+        "body": "stubby",
+        "color": "#7aa2ff",
+        "accent": "#f5a524",
+        "face": "goofy",
+        "expr": "focus",
+        "accessory": "crooked-crown",
+        "label": "Leader"
+      }
+    },
+    {
+      "id": "findme",
+      "status": "idle",
+      "task": "T-024 Queued \u2014 map UI refs",
+      "project": "Bot Campus",
+      "zone": "library",
+      "x": 420,
+      "y": 110,
+      "vibe": "Finds the missing piece fast, no essays.",
+      "avatar": {
+        "body": "stubby",
+        "color": "#3dd68c",
+        "accent": "#ff6b9d",
+        "face": "goofy",
+        "expr": "smirk",
+        "accessory": "magnifier-antenna",
+        "label": "Find Me"
+      }
+    },
+    {
+      "id": "story",
+      "status": "idle",
+      "task": "T-025 Queued \u2014 lasting app home",
+      "project": "Bot Campus",
+      "zone": "workshop",
+      "x": 720,
+      "y": 340,
+      "vibe": "Turns plans into something you can open again tomorrow.",
+      "avatar": {
+        "body": "stubby",
+        "color": "#c4b5fd",
+        "accent": "#38bdf8",
+        "face": "goofy",
+        "expr": "smirk",
+        "accessory": "pencil-hat",
+        "label": "Story"
+      }
+    },
+    {
+      "id": "sandbox",
+      "status": "blocked",
+      "task": "Awaiting game-bot consolidation",
+      "project": "Consolidation",
+      "zone": "arcade",
+      "x": 450,
+      "y": 580,
+      "vibe": "Will make the campus feel more like a game world.",
+      "avatar": {
+        "body": "stubby",
+        "color": "#fb923c",
+        "accent": "#22d3ee",
+        "face": "goofy",
+        "expr": "spiral",
+        "accessory": "controller-pack",
+        "label": "Sandbox"
+      }
+    },
+    {
+      "id": "you",
+      "status": "here",
+      "task": "Walking the campus",
+      "project": "Bot Campus",
+      "zone": "courtyard",
+      "x": 450,
+      "y": 360,
+      "vibe": "You\u2019re the one we sync with.",
+      "avatar": {
+        "body": "stubby",
+        "color": "#5b8def",
+        "accent": "#ff8a3d",
+        "face": "goofy",
+        "expr": "smirk",
+        "accessory": "spring-antenna",
+        "label": "You"
+      }
+    }
+  ],
+  "urls": {
+    "canvas2d": "campus.html",
+    "three3d": "campus3d.html"
+  }
+}
