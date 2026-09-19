@@ -104,20 +104,16 @@ def cube(name, loc, scale, mat):
 # Floor thick platform
 cube("Floor", (0, 0, 0), (11, 9, 0.2), wood)
 # Walls sit on floor (bottom at z≈0.2)
-cube("WallBack", (0, -8.9, 2.7), (11.2, 0.4, 3.1), brick)  # extends below floor
-cube("WallLeft", (-10.9, 0, 2.7), (0.4, 9.1, 3.1), plaster)
-cube("WallRight", (10.9, 0, 2.7), (0.4, 9.1, 3.1), brick)
+cube("WallBack", (0, -8.9, 2.0), (11.2, 0.4, 2.0), brick)  # lower for god-view
+cube("WallLeft", (-10.9, 0, 2.0), (0.4, 9.1, 2.0), brick)
+cube("WallRight", (10.9, 0, 2.0), (0.4, 9.1, 2.0), brick)
 # Front half-wall / railing so room feels enclosed from overseer view
 cube("WallFrontLow", (0, 8.9, 0.55), (11.0, 0.25, 0.55), wood_dark)
 # No full ceiling slab — blocks overseer god-view in Three.js
 # Corner posts
 for i,(x,y) in enumerate([(-10.7,-8.7),(10.7,-8.7),(-10.7,8.7),(10.7,8.7)]):
-    cube(f"Post{i}", (x,y,2.9), (0.28,0.28,2.9), wood_dark)
-for i, y in enumerate([-5.5, -2, 1.5, 5]):
-    cube(f"Beam{i}", (0, y, 5.05), (10.5, 0.22, 0.28), wood_dark)
+    cube(f"Post{i}", (x,y,2.0), (0.28,0.28,2.0), wood_dark)
 # Industrial pipes
-cube("PipeMain", (0, -1, 4.7), (9.5, 0.14, 0.14), metal)
-cube("PipeDrop", (6.5, -1, 4.2), (0.12, 0.12, 0.7), metal)
 
 # Warm window lights on right brick wall
 for i in range(4):
@@ -176,7 +172,7 @@ if ref_path.exists():
     bsdf.inputs["Emission Strength"].default_value = 0.0
     l.new(bsdf.outputs[0], outn.inputs[0])
     # Thin box: width 6, height 3.4, depth 0.04 — sits on back wall
-    cube("ConceptMural", (0, -8.58, 2.55), (3.0, 0.04, 1.7), mural_mat)
+    cube("ConceptMural", (0, -8.58, 2.1), (2.8, 0.04, 1.4), mural_mat)
     # Force UV project so image maps to front face
     mural = bpy.data.objects["ConceptMural"]
     bpy.context.view_layer.objects.active = mural
@@ -190,8 +186,8 @@ else:
 
 # Sticky notes on back wall (around mural)
 for i, (x, z, mat) in enumerate([
-    (-8.2, 4.2, sticky_y), (-8.0, 2.4, sticky_p), (8.0, 4.0, sticky_b),
-    (8.2, 2.5, sticky_y), (-7.5, 1.5, sticky_p), (7.5, 1.6, sticky_b),
+    (-8.2, 3.2, sticky_y), (-8.0, 2.0, sticky_p), (8.0, 3.0, sticky_b),
+    (8.2, 2.0, sticky_y), (-7.5, 1.3, sticky_p), (7.5, 1.4, sticky_b),
 ]):
     cube(f"Sticky{i}", (x, -8.68, z), (0.35, 0.02, 0.35), mat)
 

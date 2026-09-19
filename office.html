@@ -109,7 +109,7 @@ scene.fog=new THREE.FogExp2(0xb8956e,0.02);
 const camera=new THREE.PerspectiveCamera(38,1,0.1,100);
 // fixed overseer angle (god view)
 const camPivot=new THREE.Object3D(); scene.add(camPivot);
-camera.position.set(0,14,13); camPivot.add(camera);
+camera.position.set(0,16,11); camPivot.add(camera);
 camera.lookAt(0,0,0);
 
 const clock=new THREE.Clock();
@@ -132,7 +132,7 @@ function save(){localStorage.setItem(SAVE,JSON.stringify({scrap:state.scrap,mora
 
 let actors=[], holos=[], dust=null, selectRing=null, selected=null;
 let tool=null; // 'coffee' | 'focus' | null
-let drag={on:false,lx:0,ly:0,yaw:0.35,pitch:0}; // orbit-ish
+let drag={on:false,lx:0,ly:0,yaw:0.25,pitch:-0.35}; // orbit-ish
 const raycaster=new THREE.Raycaster();
 const pointer=new THREE.Vector2();
 const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
@@ -226,7 +226,7 @@ function buildWorld(){
             if(m.name&&/ceil/i.test(m.name+o.name)) m.visible=false;
             if(/Ceil|ConceptMural/.test(o.name)&&/Ceil/.test(o.name)) o.visible=false;
           });
-          if(/^Ceil/i.test(o.name)) o.visible=false;
+          if(/^(Ceil|Beam|Pipe)/i.test(o.name)) o.visible=false; // HIDE_ROOF
         }
       }
     });
@@ -348,7 +348,7 @@ function tickBots(dt){
 
 function applyCam(){
   camPivot.rotation.y=drag.yaw;
-  camera.position.set(0, 13.5, 12.5);
+  camera.position.set(0, 16, 11);
   camera.lookAt(0,0.5,0);
 }
 
