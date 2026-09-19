@@ -25,7 +25,7 @@
 <body>
 <div id="ui">
   <header>
-    <h1>Toy Box</h1>
+    <h1>Toy Box <span style="color:var(--muted);font-weight:500;font-size:0.85rem">v2</span></h1>
     <div class="pills" id="pills"></div>
   </header>
   <div class="hint">Drag to orbit · pinch/scroll zoom · tap a pill to switch</div>
@@ -41,9 +41,9 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const TOYS = [
-  { id:"bot", name:"Cheeky Bot", file:"toys/bot.glb", thumb:"toys/bot_beauty.png" },
-  { id:"rocket", name:"Tiny Rocket", file:"toys/rocket.glb", thumb:"toys/rocket_beauty.png" },
-  { id:"crystal", name:"Scrap Crystal", file:"toys/crystal.glb", thumb:"toys/crystal_beauty.png" },
+  { id:"bot", name:"Cheeky Bot", file:"toys/bot.glb?v=2", thumb:"toys/bot_beauty.png?v=2" },
+  { id:"rocket", name:"Tiny Rocket", file:"toys/rocket.glb?v=2", thumb:"toys/rocket_beauty.png?v=2" },
+  { id:"crystal", name:"Scrap Crystal", file:"toys/crystal.glb?v=2", thumb:"toys/crystal_beauty.png?v=2" },
 ];
 
 const scene = new THREE.Scene();
@@ -99,7 +99,7 @@ TOYS.forEach(t => {
   b.className = "pill"; b.dataset.id = t.id; b.type = "button"; b.textContent = t.name;
   b.onclick = () => show(t.id);
   pills.appendChild(b);
-  loader.load(t.file + "?v=1", (gltf) => {
+  loader.load(t.file, (gltf) => {
     const root = gltf.scene;
     root.traverse(o => {
       if(o.isMesh){
@@ -132,7 +132,7 @@ const clock = new THREE.Clock();
   requestAnimationFrame(tick);
   const t = clock.getElapsedTime();
   if(current && roots[current]){
-    roots[current].rotation.y = t * 0.35;
+    roots[current].rotation.y = t * 0.22;
   }
   controls.update();
   renderer.render(scene, camera);
