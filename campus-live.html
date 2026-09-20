@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=11 readable-fit tap-juice capture-fix -->
+<!-- CACHE_BUST v=npc1 NPC-FSM Dev B + fun pass v11 -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -548,6 +548,95 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 }
 #map-mini{border-color:#a855f7; background:#1e1040ee}
 
+
+/* === NPC-FSM (Dev B) npc1 — stations, motion, mute-safe emotion === */
+.station{
+  position:absolute; transform:translate(-50%,-50%);
+  z-index:2; pointer-events:none;
+  min-width:56px; padding:6px 8px 4px;
+  border-radius:12px;
+  background:#1e1b4bcc; border:2px solid #64748b88;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  box-shadow:0 2px 10px #0006;
+}
+.station-glyph{font-size:22px; line-height:1; filter:drop-shadow(0 1px 2px #000a)}
+.station-label{
+  font-size:8px; font-weight:800; color:#e2e8f0; letter-spacing:.02em;
+  text-shadow:0 1px 2px #000; white-space:nowrap; max-width:72px;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.station-vfx{
+  font-size:16px; line-height:1; min-height:16px;
+  opacity:0; transform:scale(.6);
+  transition:opacity .2s, transform .2s;
+}
+.station.on{
+  border-color:#fde68a; background:#312e81ee;
+  box-shadow:0 0 16px #a855f766, 0 0 28px #22d3ee33;
+}
+.station.on .station-vfx{opacity:1; transform:scale(1); animation:stationPulse 1.1s ease-in-out infinite}
+.station.kind-code.on{border-color:#22d3ee; box-shadow:0 0 18px #22d3ee66}
+.station.kind-art.on{border-color:#f472b6; box-shadow:0 0 18px #f472b666}
+.station.kind-research.on{border-color:#a3e635; box-shadow:0 0 18px #a3e63555}
+.station.kind-permission.on{border-color:#f43f5e; box-shadow:0 0 22px #f43f5e88}
+.station-vfx.vfx-code{filter:drop-shadow(0 0 6px #22d3ee)}
+.station-vfx.vfx-art{filter:drop-shadow(0 0 6px #f472b6)}
+.station-vfx.vfx-research{filter:drop-shadow(0 0 6px #a3e635)}
+.station-vfx.vfx-permission{filter:drop-shadow(0 0 8px #f43f5e); font-size:20px}
+@keyframes stationPulse{
+  0%,100%{transform:scale(1) translateY(0)}
+  50%{transform:scale(1.18) translateY(-3px)}
+}
+.sprite.npc-fsm{transition:none !important}
+.sprite.npc-fsm .body{
+  transform:scaleX(var(--npc-face, 1));
+}
+/* Walk bob only while moving — never walk-in-place */
+.sprite.npc-walk .body,.sprite.npc-run .body{
+  animation:npcWalkBob .34s ease-in-out infinite;
+  animation-delay:0s;
+}
+.sprite.npc-run .body{animation-duration:.22s}
+@keyframes npcWalkBob{
+  0%,100%{transform:scaleX(var(--npc-face,1)) translateY(0)}
+  50%{transform:scaleX(var(--npc-face,1)) translateY(-5px)}
+}
+.sprite.npc-busy .body{
+  animation:npcBusyPulse 1.05s ease-in-out infinite;
+}
+@keyframes npcBusyPulse{
+  0%,100%{transform:scaleX(var(--npc-face,1)) scale(1)}
+  50%{transform:scaleX(var(--npc-face,1)) scale(1.06)}
+}
+.sprite.npc-idle .body{
+  /* keep Dev A breathBob */
+}
+.npc-emotion{
+  position:absolute; left:50%; top:-18px; transform:translateX(-50%) scale(.5);
+  font-size:28px; line-height:1; opacity:0; pointer-events:none; z-index:6;
+  filter:drop-shadow(0 2px 4px #000c);
+  transition:opacity .12s, transform .12s;
+}
+.npc-emotion.show{
+  opacity:1; transform:translateX(-50%) scale(1);
+  animation:emotionPop .8s ease-out;
+}
+.npc-emotion.perm{font-size:32px; filter:drop-shadow(0 0 10px #f43f5ecc)}
+.npc-emotion.ready{font-size:30px; filter:drop-shadow(0 0 10px #22c55ecc)}
+@keyframes emotionPop{
+  0%{transform:translateX(-50%) scale(.4); opacity:0}
+  25%{transform:translateX(-50%) scale(1.25); opacity:1}
+  100%{transform:translateX(-50%) scale(1); opacity:1}
+}
+.npc-acc{
+  position:absolute; left:-10px; bottom:2px; font-size:14px; line-height:1;
+  pointer-events:none; z-index:4;
+  filter:drop-shadow(0 1px 2px #000a);
+}
+.sprite.intern .npc-acc{font-size:11px; left:-6px}
+.sprite.intern .npc-emotion{font-size:22px; top:-12px}
+.sprite.intern .npc-emotion.perm{font-size:26px}
+
 </style>
 </head>
 <body>
@@ -589,7 +678,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <button type="button" id="map-mini" aria-label="Minimap — tap to jump" title="Tap to jump">
       <canvas width="96" height="74"></canvas>
     </button>
-    <div id="map-hint">Drag · pinch · Fit cluster · hold Fit=all · ±</div>
+    <div id="map-hint">Drag · pinch · Fit · NPCs walk to stations · ±</div>
   </div>
 
   <ul id="legend">
@@ -599,6 +688,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <li><span class="sw" style="border-color:#f43f5e"></span> permission</li>
     <li><span class="sw" style="border-color:#a78bfa"></span> reviewing</li>
     <li><span class="sw" style="border-color:#fb923c"></span> collab</li>
+    <li><span class="sw" style="border-color:#fde68a"></span> station</li>
   </ul>
 
   <div class="section-title">Cast</div>
@@ -614,12 +704,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
+<script src="./campus-npc.js?v=npc1"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = '11';
+  const ASSET_V = 'npc1';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -1567,7 +1658,10 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       const src = castSrc(castEntry, frame);
       setCastOrFallback(el, src, color, initials(bot.name));
       el.querySelector('.tag').textContent = bot.name;
-      placeSprite(el, usePos, first && !animTargets[mainKey]);
+      // === NPC-FSM (Dev B) === initial seed only; FSM owns after first paint
+      if (!(window.CampusNpc && CampusNpc.ownsPositions && animTargets[mainKey])) {
+        placeSprite(el, usePos, first && !animTargets[mainKey]);
+      }
       animTargets[mainKey] = usePos;
 
       (bot.interns || []).forEach((intern) => {
@@ -1594,7 +1688,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         const isrc = castSrc(castEntry, internFrame) || castSrc(castEntry, 'intern_idle');
         setCastOrFallback(iel, isrc, color, 'i');
         iel.querySelector('.tag').textContent = shortInternLabel(intern);
-        placeSprite(iel, finalPos, first && !animTargets[key]);
+        if (!(window.CampusNpc && CampusNpc.ownsPositions && animTargets[key])) {
+          placeSprite(iel, finalPos, first && !animTargets[key]);
+        }
         animTargets[key] = finalPos;
       });
     });
@@ -1603,9 +1699,12 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       key: k, left: animTargets[k].left, top: animTargets[k].top
     }));
     separateSprites(pack, 8.0);
+    // === NPC-FSM (Dev B) === separation seeds targets; live positions owned by FSM after first paint
     pack.forEach(p => {
       animTargets[p.key] = { left: p.left, top: p.top };
-      if (spriteEls[p.key]) placeSprite(spriteEls[p.key], animTargets[p.key], first);
+      if (spriteEls[p.key] && !(window.CampusNpc && CampusNpc.ownsPositions && !first)) {
+        placeSprite(spriteEls[p.key], animTargets[p.key], first);
+      }
     });
 
     Object.keys(spriteEls).forEach(k => {
@@ -1653,6 +1752,24 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     renderDeploys(data.deploys);
     renderDesks(data.desks, data.jesusDeskId);
     renderSprites(data, first);
+    // === NPC-FSM (Dev B) === own sprite transforms after paint; poll retargets only
+    if (window.CampusNpc) {
+      CampusNpc.sync({
+        state: data,
+        spriteEls: spriteEls,
+        mapWorld: mapEl,
+        world: WORLD,
+        first: !!first,
+        helpers: {
+          castSrc: castSrc,
+          setCastOrFallback: setCastOrFallback,
+          resolveCastEntry: resolveCastEntry,
+          mainFrameForStatus: mainFrameForStatus,
+          initials: initials,
+          placeSprite: placeSprite
+        }
+      });
+    }
     renderBotList(data);
     renderAlert(data);
     if (!fittedOnce) {

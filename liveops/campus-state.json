@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T23:20:50Z",
+  "updatedAt": "2026-09-20T23:24:09Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -127,7 +127,8 @@
           "atDeskId": "desk-leader",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T21:34:37Z",
+          "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T21:34:37Z",
@@ -136,7 +137,18 @@
         "task": "Distribute campus live + crew",
         "atDeskId": "desk-leader",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
+      },
+      "personality": {
+        "vibe": "calm commander; always scanning the floor",
+        "idle": "stands with arms loosely crossed, occasional slow nod at the map",
+        "walk": "measured",
+        "emotionBias": "focus",
+        "accessory": "tiny rolled battle-map / clipboard",
+        "preferredStation": "desk-leader",
+        "speed": 1.0,
+        "fidgetRate": 0.2
       }
     },
     {
@@ -145,7 +157,7 @@
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
       "status": "ready_for_review",
-      "task": "Fun pass v11 \u2014 final Dev C QC",
+      "task": "Fun pass v11 — final Dev C QC",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -153,11 +165,12 @@
           "id": "deva-1",
           "label": "Frames map",
           "status": "working",
-          "task": "status\u2192cast PNG",
+          "task": "status→cast PNG",
           "atDeskId": "desk-dev-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T21:34:37Z",
+          "stationId": null
         },
         {
           "id": "deva-2",
@@ -167,16 +180,28 @@
           "atDeskId": "desk-dev-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T21:34:37Z",
+          "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T23:20:49Z",
       "main": {
         "status": "ready_for_review",
-        "task": "Fun pass v11 \u2014 final Dev C QC",
+        "task": "Fun pass v11 — final Dev C QC",
         "atDeskId": "desk-dev-a",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
+      },
+      "personality": {
+        "vibe": "builder energy; ships UI and Pages",
+        "idle": "taps an invisible keyboard in the air, then stretches",
+        "walk": "hurry",
+        "emotionBias": "cheer",
+        "accessory": "floating browser-tab halo / mini wrench",
+        "preferredStation": "station-code",
+        "speed": 1.2,
+        "fidgetRate": 0.35
       }
     },
     {
@@ -184,18 +209,31 @@
       "name": "Dev B",
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
-      "status": "idle",
-      "task": "",
+      "status": "ready_for_review",
+      "task": "NPC life FSM npc1 — stations + personality",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [],
-      "updatedAt": "2026-09-20T22:36:49Z",
+      "interns": [
+        {
+          "id": "devb-1",
+          "label": "NPC FSM",
+          "status": "ready_for_review",
+          "task": "campus-npc.js + stations",
+          "atDeskId": "desk-dev-b",
+          "stationId": "station-code",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T23:24:09Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T23:24:09Z",
       "main": {
-        "status": "idle",
-        "task": "",
+        "status": "ready_for_review",
+        "task": "NPC life FSM npc1 — stations + personality",
         "atDeskId": "desk-dev-b",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": "station-code"
       },
       "sprites": {
         "idle": "campus-cast/dev-b/idle.png",
@@ -205,6 +243,16 @@
         "reviewing": "campus-cast/dev-b/reviewing.png",
         "collaborating": "campus-cast/dev-b/collab.png",
         "intern": "campus-cast/dev-b/intern.png"
+      },
+      "personality": {
+        "vibe": "systems plumber; state, APIs, hooks",
+        "idle": "fiddles with a coil of cable, plugs/unplugs imaginary ports",
+        "walk": "hurry",
+        "emotionBias": "focus",
+        "accessory": "coiled cable / USB-C charm",
+        "preferredStation": "station-code",
+        "speed": 1.2,
+        "fidgetRate": 0.4
       }
     },
     {
@@ -213,17 +261,28 @@
       "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
       "deskId": "desk-dev-c",
       "status": "idle",
-      "task": "Await engineering assign",
+      "task": "Standby QC Campus Live fun",
       "color": "#86efac",
       "castFolder": "campus-cast/dev-c",
       "interns": [],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:58:23Z",
       "main": {
         "status": "idle",
-        "task": "Await engineering assign",
+        "task": "Standby QC Campus Live fun",
         "atDeskId": "desk-dev-c",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
+      },
+      "personality": {
+        "vibe": "skeptical reviewer; catches what others ship",
+        "idle": "slow head-tilt, then sudden jot on a checklist",
+        "walk": "saunter",
+        "emotionBias": "grump",
+        "accessory": "oversized magnifier / red stamp",
+        "preferredStation": "station-code",
+        "speed": 0.85,
+        "fidgetRate": 0.22
       }
     },
     {
@@ -232,7 +291,7 @@
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
       "deskId": "desk-render-a",
       "status": "working",
-      "task": "FLOW Air + Fire (with Researcher A)",
+      "task": "Game Rendering School + Fire/Air audit",
       "color": "#f97316",
       "castFolder": "campus-cast/render-a",
       "interns": [
@@ -244,7 +303,8 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-a-i-fire",
@@ -254,7 +314,8 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-a-i-sheet",
@@ -264,16 +325,18 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "FLOW Air + Fire (with Researcher A)",
+        "task": "Game Rendering School + Fire/Air audit",
         "atDeskId": "desk-render-a",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/render-a/idle.png",
@@ -283,6 +346,16 @@
         "reviewing": "campus-cast/render-a/reviewing.png",
         "collaborating": "campus-cast/render-a/collab.png",
         "intern": "campus-cast/render-a/intern.png"
+      },
+      "personality": {
+        "vibe": "soldier/FLOW artist; motion-obsessed",
+        "idle": "shadow-boxes weapon arcs, practices a shield swing",
+        "walk": "hurry",
+        "emotionBias": "cheer",
+        "accessory": "paintbrush crossed with a tiny shield",
+        "preferredStation": "station-art",
+        "speed": 1.25,
+        "fidgetRate": 0.45
       }
     },
     {
@@ -291,7 +364,7 @@
       "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
       "deskId": "desk-render-b",
       "status": "working",
-      "task": "FLOW Water + Earth (with Researcher B)",
+      "task": "Game Rendering School + Water/Earth audit",
       "color": "#fb923c",
       "castFolder": "campus-cast/render-b",
       "interns": [
@@ -303,7 +376,8 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-b-i-earth",
@@ -313,7 +387,8 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-b-i-sheet",
@@ -323,16 +398,18 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "FLOW Water + Earth (with Researcher B)",
+        "task": "Game Rendering School + Water/Earth audit",
         "atDeskId": "desk-render-b",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/render-b/idle.png",
@@ -342,6 +419,16 @@
         "reviewing": "campus-cast/render-b/reviewing.png",
         "collaborating": "campus-cast/render-b/collab.png",
         "intern": "campus-cast/render-b/intern.png"
+      },
+      "personality": {
+        "vibe": "campus cast stylist; loves the living floor",
+        "idle": "adjusts a sparkle sticker, poses like a cast photo",
+        "walk": "saunter",
+        "emotionBias": "cheer",
+        "accessory": "sparkle sticker sheet / mini spotlight",
+        "preferredStation": "station-art",
+        "speed": 0.85,
+        "fidgetRate": 0.38
       }
     },
     {
@@ -350,7 +437,7 @@
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
       "deskId": "desk-render-c",
       "status": "reviewing",
-      "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+      "task": "Head QC — Game Rendering School gate",
       "color": "#a78bfa",
       "castFolder": "campus-cast/render-c",
       "interns": [
@@ -362,7 +449,8 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-c-i-fire",
@@ -372,7 +460,8 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-c-i-water",
@@ -382,7 +471,8 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         },
         {
           "id": "render-c-i-earth",
@@ -392,16 +482,18 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:30:46Z",
+          "stationId": null
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "reviewing",
-        "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+        "task": "Head QC — Game Rendering School gate",
         "atDeskId": "desk-render-c",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/render-c/idle.png",
@@ -411,6 +503,16 @@
         "reviewing": "campus-cast/render-c/reviewing.png",
         "collaborating": "campus-cast/render-c/collab.png",
         "intern": "campus-cast/render-c/intern.png"
+      },
+      "personality": {
+        "vibe": "art QC hawk; identity and FLOW fail-closed",
+        "idle": "holds frames up to a lightbox, squints",
+        "walk": "hurry",
+        "emotionBias": "focus",
+        "accessory": "QC stamp + lightbox card",
+        "preferredStation": "station-art",
+        "speed": 1.2,
+        "fidgetRate": 0.28
       }
     },
     {
@@ -419,7 +521,7 @@
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
       "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Multi-agent + long-horizon standards (research)",
+      "task": "Game Rendering School (industry curriculum)",
       "color": "#38bdf8",
       "castFolder": "campus-cast/researcher-a",
       "interns": [
@@ -431,7 +533,8 @@
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
+          "updatedAt": "2026-09-20T22:35:51Z",
+          "stationId": null
         },
         {
           "id": "researcher-a-i-horizon",
@@ -441,16 +544,18 @@
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
+          "updatedAt": "2026-09-20T22:35:51Z",
+          "stationId": null
         }
       ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "Multi-agent + long-horizon standards (research)",
+        "task": "Game Rendering School (industry curriculum)",
         "atDeskId": "desk-researcher-a",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/researcher-a/idle.png",
@@ -460,6 +565,16 @@
         "reviewing": "campus-cast/researcher-a/reviewing.png",
         "collaborating": "campus-cast/researcher-a/collab.png",
         "intern": "campus-cast/researcher-a/intern.png"
+      },
+      "personality": {
+        "vibe": "quiet standards librarian",
+        "idle": "flips a thick reference tome, bookmarks mid-air",
+        "walk": "saunter",
+        "emotionBias": "focus",
+        "accessory": "floating bookmark ribbon / stack of papers",
+        "preferredStation": "station-research",
+        "speed": 0.8,
+        "fidgetRate": 0.18
       }
     },
     {
@@ -467,8 +582,8 @@
       "name": "Researcher B",
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
-      "status": "working",
-      "task": "Multi-agent + long-horizon standards (research)",
+      "status": "idle",
+      "task": "Game Rendering School (craft curriculum)",
       "color": "#0ea5e9",
       "castFolder": "campus-cast/researcher-b",
       "interns": [
@@ -480,7 +595,8 @@
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
+          "updatedAt": "2026-09-20T22:35:51Z",
+          "stationId": null
         },
         {
           "id": "researcher-b-i-horizon",
@@ -490,16 +606,18 @@
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
+          "updatedAt": "2026-09-20T22:35:51Z",
+          "stationId": null
         }
       ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "Multi-agent + long-horizon standards (research)",
+        "task": "Game Rendering School (craft curriculum)",
         "atDeskId": "desk-researcher-b",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/researcher-b/idle.png",
@@ -509,6 +627,16 @@
         "reviewing": "campus-cast/researcher-b/reviewing.png",
         "collaborating": "campus-cast/researcher-b/collab.png",
         "intern": "campus-cast/researcher-b/intern.png"
+      },
+      "personality": {
+        "vibe": "scavenger of best practices; sticky-note storm",
+        "idle": "peels and places sticky notes on a wall",
+        "walk": "hurry",
+        "emotionBias": "focus",
+        "accessory": "sticky-note halo",
+        "preferredStation": "station-research",
+        "speed": 1.15,
+        "fidgetRate": 0.42
       }
     },
     {
@@ -527,7 +655,18 @@
         "task": "Jesus profile maintained",
         "atDeskId": "desk-profile-a",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
+      },
+      "personality": {
+        "vibe": "quiet people-watcher; taste scout",
+        "idle": "sketches notes in a small notebook, glances toward Jesus desk",
+        "walk": "saunter",
+        "emotionBias": "focus",
+        "accessory": "pocket notebook + pencil",
+        "preferredStation": "desk-profile-a",
+        "speed": 0.85,
+        "fidgetRate": 0.25
       }
     },
     {
@@ -546,7 +685,18 @@
         "task": "Jesus profile maintained",
         "atDeskId": "desk-profile-b",
         "x": null,
-        "y": null
+        "y": null,
+        "stationId": null
+      },
+      "personality": {
+        "vibe": "twin scout; index-card sorter",
+        "idle": "shuffles index cards into neat piles",
+        "walk": "saunter",
+        "emotionBias": "focus",
+        "accessory": "rubber-banded index cards",
+        "preferredStation": "desk-profile-b",
+        "speed": 0.85,
+        "fidgetRate": 0.25
       }
     }
   ],
@@ -585,13 +735,47 @@
       "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live fun pass v11",
-      "updatedAt": "2026-09-20T23:20:50Z",
-      "updatedBy": "dev-a"
+      "note": "campus-live NPC life npc1",
+      "updatedAt": "2026-09-20T23:24:09Z",
+      "updatedBy": "dev-b"
     }
   ],
   "world": {
     "w": 1400,
     "h": 1100
-  }
+  },
+  "stations": [
+    {
+      "id": "station-code",
+      "label": "Code desk",
+      "kind": "code",
+      "x": 640,
+      "y": 260,
+      "zone": "ops"
+    },
+    {
+      "id": "station-art",
+      "label": "Art desk",
+      "kind": "art",
+      "x": 500,
+      "y": 500,
+      "zone": "workshop"
+    },
+    {
+      "id": "station-research",
+      "label": "Research shelf",
+      "kind": "research",
+      "x": 1180,
+      "y": 540,
+      "zone": "library"
+    },
+    {
+      "id": "station-permission",
+      "label": "Jesus permission pad",
+      "kind": "permission",
+      "x": 780,
+      "y": 175,
+      "zone": "ops"
+    }
+  ]
 }

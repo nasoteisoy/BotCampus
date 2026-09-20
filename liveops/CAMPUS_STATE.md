@@ -54,3 +54,27 @@ Owned by the bot shipping that deploy id. Fields: id, repo, branch?, label, stat
 ## Bot ids (canonical)
 Use **hyphen ids**: `dev-a`, `dev-b`, `dev-c`, `render-a`, `render-b`, `render-c`, `researcher-a`, `researcher-b`, `profile-a`, `profile-b`, `leader`.
 `castFolder` = `campus-cast/{bot-id}` (full path).
+
+
+## stations[] (NPC life — Dev B)
+Map props NPCs walk/run to when busy. Kinds: `code` | `art` | `research` | `permission`.
+```json
+{ "id": "station-code", "label": "Code desk", "kind": "code", "x": 640, "y": 260, "zone": "ops" }
+```
+Busy pick: needs_permission → station-permission; researcher-* → station-research; render-* → station-art; dev-*/leader → station-code; else own desk. Profile `preferredStation` overrides when set.
+
+## personality (per bot)
+Optional Profile kit. Defaults: speed 1, fidgetRate 0.25, emotionBias "neutral".
+Walk styles: saunter→~0.85, hurry→~1.2, measured→~1.0.
+```json
+"personality": {
+  "vibe": "...", "idle": "...", "walk": "hurry",
+  "emotionBias": "cheer", "accessory": "...",
+  "preferredStation": "station-code",
+  "speed": 1.2, "fidgetRate": 0.35
+}
+```
+Runtime may set `main.stationId` / `intern.stationId` (optional hint).
+
+## Live URL
+Phone: `campus-live.html?v=npc1` — NPCs path with campus-npc.js FSM (rAF); poll ~1–2s retargets only.

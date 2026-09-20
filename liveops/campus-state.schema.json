@@ -14,7 +14,8 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1
+      "minimum": 1,
+      "maximum": 2
     },
     "updatedAt": {
       "type": "string",
@@ -137,6 +138,12 @@
                   "number",
                   "null"
                 ]
+              },
+              "stationId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           },
@@ -190,6 +197,12 @@
                 "updatedAt": {
                   "type": "string",
                   "format": "date-time"
+                },
+                "stationId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             }
@@ -202,6 +215,44 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "personality": {
+            "type": "object",
+            "description": "Profile personality kit (Dev B NPC FSM)",
+            "properties": {
+              "vibe": {
+                "type": "string"
+              },
+              "idle": {
+                "type": "string"
+              },
+              "walk": {
+                "type": "string",
+                "enum": [
+                  "saunter",
+                  "hurry",
+                  "measured"
+                ]
+              },
+              "emotionBias": {
+                "type": "string"
+              },
+              "accessory": {
+                "type": "string"
+              },
+              "preferredStation": {
+                "type": "string"
+              },
+              "speed": {
+                "type": "number"
+              },
+              "fidgetRate": {
+                "type": "number"
+              }
+            }
+          },
+          "color": {
+            "type": "string"
           }
         }
       }
@@ -263,6 +314,60 @@
           }
         }
       }
+    },
+    "stations": {
+      "type": "array",
+      "description": "Map workstations NPCs path to when busy",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "code",
+              "art",
+              "research",
+              "permission"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "zone": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        }
+      }
+    },
+    "castFiles": {
+      "type": "object"
     }
   }
 }
