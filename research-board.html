@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Game Rendering Research</title>
+<style>
+body{margin:0;background:#0a0c10;color:#e8eef6;font-family:system-ui,sans-serif;padding:16px}
+h1{font-size:1.25rem;margin:0 0 8px}
+.sub{color:#8b93a7;font-size:.85rem;margin-bottom:16px}
+.sub a{color:#fb923c;font-weight:700;text-decoration:none}
+.card{background:#12161f;border:1px solid #243044;border-radius:14px;padding:14px 16px;margin-bottom:14px;max-width:720px}
+.path{font-size:.7rem;color:#8b93a7;margin-bottom:8px;font-weight:700}
+h2{font-size:1.05rem;margin:14px 0 6px}
+h3{font-size:.95rem;margin:12px 0 4px;color:#cbd5e1}
+p{margin:6px 0;line-height:1.45;font-size:.9rem}
+ul{margin:6px 0 6px 1.1rem;padding:0}
+li{margin:4px 0;font-size:.88rem;line-height:1.4}
+</style>
+</head>
+<body>
+<h1>Game rendering research</h1>
+<div class="sub">Live board · Researchers A/B · <a href="campus-cast-review.html?v=1">Cast review</a> · <a href="sprite-lab.html?v=7">Sprite Lab</a></div>
+<article class="card"><div class="path">game-rendering/NOTES.md</div><h1>Game rendering — research board notes</h1>
+<p>Updated: 2026-09-20 · Leader seed + Researcher A/B (live updates expected)</p>
+<p>Topic: **game rendering** for Jesus’s soldiers + campus (Clash/Kingshot/mobile-ad readable)</p>
+<br/>
+<h2>What “game rendering” means here</h2>
+<p>Not film VFX. Production look that **reads on a phone**, survives clutter, and matches a locked art bible across idle/walk/attack.</p>
+<br/>
+<p>Two pipelines we care about:</p>
+<ul><li>**Stylized 3D → sprites** (Clash-like): model/texture in 3D, render multi-angle frames to 2D.</li>
+<li>**Direct 2D / iso sheets** (what we’re shipping now): paint/gen frames; still obey the same readability rules.</li>
+</ul><br/>
+<h2>Industry bar (stylized mobile / Clash-adjacent)</h2>
+<p>Sources: Supercell Substance interview (Clash stylized PBR); stylized character production playbooks; Clash Royale readability writeups.</p>
+<br/>
+<h3>Must-haves</h3>
+<ul><li>**Silhouette first** — recognizable in black at gameplay size (phone). Test idle + walk + attack.</li>
+<li>**Exaggerated anchors** — crest, weapon, chest glow, shield emblem as identity locks (not tiny noise).</li>
+<li>**Stylized PBR discipline** — simple albedo, roughness does the “juice”; metals rougher than real life; don’t bake full lighting into color.</li>
+<li>**Value compression** — limited value range so characters don’t go muddy on OLED phones.</li>
+<li>**Detail hierarchy** — detail on face/chest/weapon; rest quieter (detail everywhere = noise).</li>
+<li>**Consistent lighting family** across every frame of a sheet (same key direction).</li>
+<li>**Transparent clean plates** — no white boxes; crop to character; stable foot baseline across facings.</li>
+</ul><br/>
+<h3>For our elemental soldiers (2D iso)</h3>
+<ul><li>Same bible + hero ref every frame.</li>
+<li>Walk: opposite feet A/B minimum; industry prefers 6–8 frames/dir — we’re at 2 until FLOW pass upgrades.</li>
+<li>Weapon/shield **re-armed every frame** with continuous tip arc (no cardboard glue, no teleport).</li>
+<li>Element color is identity, not a redesign (Fire/Water/Air/Earth = palette + VFX, same soldier language).</li>
+<li>Phone review: Sprite Lab walk row must visibly flip A↔B; play page required.</li>
+</ul><br/>
+<h3>Pitfalls (seen on our project)</h3>
+<ul><li>Bubble/sphere primitive 3D that doesn’t match refs</li>
+<li>White sprite backgrounds</li>
+<li>Same-leg walk / skate</li>
+<li>Frozen gear across walk frames</li>
+<li>Over-detail that dies at map scale</li>
+<li>Different lighting per facing (looks like different characters)</li>
+</ul><br/>
+<h2>Checklist before Render ships</h2>
+<ul><li>[ ] Silhouette reads at ~64–128px tall</li>
+<li>[ ] Hero ref locked; bible pasted every gen</li>
+<li>[ ] Idle→walk continuous stance</li>
+<li>[ ] Opposite-foot walk (A≠B)</li>
+<li>[ ] Weapon/shield natural motion</li>
+<li>[ ] Clean alpha + shared height</li>
+<li>[ ] Public preview strip + **play/review URL**</li>
+</ul><br/>
+<h2>Related notes</h2>
+<ul><li>`iso-walk-cycles.md` — walk frame standards (Researcher A)</li>
+<li>(pending Researcher B) 2D iso readability / emissive bloom pitfalls</li>
+</ul><br/>
+<h2>Refresh</h2>
+<ul><li>Pull more Supercell pipeline detail when Renders move back toward 3D→sprite.</li></ul></article><article class="card"><div class="path">game-rendering/README.md</div><h1>game-rendering</h1>
+<p>Public-facing research topic for Jesus’s crew.</p>
+<p>Primary: NOTES.md</p>
+<p>Also: iso-walk-cycles.md</p></article><article class="card"><div class="path">game-rendering/iso-walk-cycles.md</div><h1>Iso RTS walk cycles (AoE2-like soldiers)</h1>
+<p>**Date:** 2026-09-20 · **Researcher A** · **Board topic:** rendering / walk cycles</p>
+<br/>
+<h2>Checklist (must-haves)</h2>
+<ul><li>**8 frames per direction** (contact → down → pass → up × both feet). Economy: 6 if limbs still read; avoid 4 for full soldiers.</li>
+<li>**Opposite feet** each half-cycle; arms contralateral.</li>
+<li>**Weight bob** — lowest at contact, tallest at pass; pin foot-contact Y across facings.</li>
+<li>**Playback ~8–12 FPS**; stride matched to sim speed (**no skating**).</li>
+<li>**Walk: no soft smears**; clear limb silhouettes every frame.</li>
+<li>**Held weapon:** re-arm after body; tip arc continuous with shoulder bob; elemental trail follows same arc.</li>
+<li>**8 facings** (AoE2 bar); mirror L/R only when handedness survives.</li>
+</ul><br/>
+<h2>Top pitfalls</h2>
+<ul><li>Same-foot loop / skating</li>
+<li>Cardboard glued weapon</li>
+<li>Soft blur smears on walk</li>
+<li>Uneven bob height per facing</li>
+</ul><br/>
+<h2>Sources</h2>
+<ul><li>Gamedev.SE — Diablo walk ≈ 8 frames (4 poses × 2 steps)</li>
+<li>AoE2 forums — 8 angles; example sheets 16 frames/angle (unit-dependent)</li>
+<li>SLYNYRD Pixelblog 50 — 8-frame sweet spot; contact/down/pass/up</li>
+<li>Pixel art FPS guides — walk 8–12 FPS; contact dip sells weight</li>
+<li>SLYNYRD weapon walks — body first, then held-weapon arms</li>
+</ul><br/>
+<h2>Advise makers (Render A)</h2>
+<p>Use with Character sprite consistency QC FLOW + gear checks. Full counsel already messaged.</p></article><article class="card"><div class="path">iso-walk-cycles/NOTES.md</div><h1>Iso RTS walk cycles (AoE2-like soldiers)</h1>
+<p>**Date:** 2026-09-20 · **Researcher A** · **Board topic:** rendering / walk cycles</p>
+<br/>
+<h2>Checklist (must-haves)</h2>
+<ul><li>**8 frames per direction** (contact → down → pass → up × both feet). Economy: 6 if limbs still read; avoid 4 for full soldiers.</li>
+<li>**Opposite feet** each half-cycle; arms contralateral.</li>
+<li>**Weight bob** — lowest at contact, tallest at pass; pin foot-contact Y across facings.</li>
+<li>**Playback ~8–12 FPS**; stride matched to sim speed (**no skating**).</li>
+<li>**Walk: no soft smears**; clear limb silhouettes every frame.</li>
+<li>**Held weapon:** re-arm after body; tip arc continuous with shoulder bob; elemental trail follows same arc.</li>
+<li>**8 facings** (AoE2 bar); mirror L/R only when handedness survives.</li>
+</ul><br/>
+<h2>Top pitfalls</h2>
+<ul><li>Same-foot loop / skating</li>
+<li>Cardboard glued weapon</li>
+<li>Soft blur smears on walk</li>
+<li>Uneven bob height per facing</li>
+</ul><br/>
+<h2>Sources</h2>
+<ul><li>Gamedev.SE — Diablo walk ≈ 8 frames (4 poses × 2 steps)</li>
+<li>AoE2 forums — 8 angles; example sheets 16 frames/angle (unit-dependent)</li>
+<li>SLYNYRD Pixelblog 50 — 8-frame sweet spot; contact/down/pass/up</li>
+<li>Pixel art FPS guides — walk 8–12 FPS; contact dip sells weight</li>
+<li>SLYNYRD weapon walks — body first, then held-weapon arms</li>
+</ul><br/>
+<h2>Advise makers (Render A)</h2>
+<p>Use with Character sprite consistency QC FLOW + gear checks. Full counsel already messaged.</p></article>
+</body>
+</html>
