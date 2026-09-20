@@ -2,49 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <title>Lava Knight 2D</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b0c10;color:#f2efe8;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none}
-  #wrap{display:flex;flex-direction:column;height:100%}
-  header{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-  h1{margin:0;font-size:1rem}
-  .hint{color:#9aa3b2;font-size:.8rem}
-  canvas{display:block;width:100%;flex:1;background:linear-gradient(#1a2233,#0b0c10);touch-action:none}
-  #pad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px 16px;max-width:520px;margin:0 auto;width:100%}
-  button{appearance:none;border:1px solid #3a4558;background:#1c2433;color:#fff;border-radius:14px;padding:16px 10px;font:inherit;font-weight:650}
-  button:active{background:#2a3548}
-  #atk{background:#7c2d12;border-color:#fb923c}
+  html,body{margin:0;height:100%;background:#07080c;color:#f4f0e8;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{display:flex;flex-direction:column;height:100%;height:100dvh}
+  header{padding:10px 14px 6px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+  h1{margin:0;font-size:1.05rem;font-weight:750}
+  .hint{color:#8b93a7;font-size:.78rem}
+  canvas{display:block;width:100%;flex:1;min-height:180px;touch-action:none;background:#0c1018}
+  #pad{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;padding:10px 14px calc(14px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;width:100%}
+  button{appearance:none;border:1px solid #3a455c;background:#171e2b;color:#fff;border-radius:16px;padding:18px 8px;font:inherit;font-weight:700;font-size:1rem}
+  button:active{background:#2a3548;transform:scale(.98)}
+  #atk{grid-column:1/-1;background:#7c2d12;border-color:#fb923c;padding:20px}
 </style>
 </head>
 <body>
 <div id="wrap">
   <header>
     <h1>Lava Knight</h1>
-    <div class="hint">← → run · ↑ / Space jump · Z / Attack</div>
+    <div class="hint">← → · Jump · Attack</div>
   </header>
   <canvas id="c"></canvas>
   <div id="pad">
     <button type="button" id="left">◀</button>
     <button type="button" id="jump">Jump</button>
     <button type="button" id="right">▶</button>
-    <button type="button" id="atk" style="grid-column:1/-1">Attack</button>
+    <button type="button" id="atk">Attack 🔥</button>
   </div>
 </div>
 <script>
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
-const imgs={idle:new Image(),run:new Image(),jump:new Image(),attack:new Image()};
-imgs.idle.src="lava2d/idle.png?v=1";
-imgs.run.src="lava2d/run.png?v=1";
-imgs.jump.src="lava2d/jump.png?v=1";
-imgs.attack.src="lava2d/attack.png?v=1";
+const v="?v=2";
+const imgs={
+  idle:load("lava2d/idle.png"+v),
+  run1:load("lava2d/run1.png"+v),
+  run2:load("lava2d/run2.png"+v),
+  jump:load("lava2d/jump.png"+v),
+  attack:load("lava2d/attack.png"+v),
+};
+function load(src){const i=new Image(); i.src=src; return i;}
 
 const keys={};
-const state={
-  x:120,y:0,vx:0,vy:0,facing:1,
-  onGround:false,attackT:0,anim:0,
-  groundY:0,w:0,h:0
+const P={
+  x:140,y:0,vx:0,vy:0,facing:1,
+  onGround:false,coyote:0,jumpBuf:0,
+  attackT:0,anim:0,w:0,h:0,groundY:0,spawned:false
 };
 
 function resize(){
@@ -53,102 +57,110 @@ function resize(){
   canvas.width=Math.floor(r.width*dpr);
   canvas.height=Math.floor(r.height*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  state.w=r.width; state.h=r.height;
-  state.groundY=r.height-90;
-  if(!state._spawned){ state.y=state.groundY-140; state._spawned=true; }
+  P.w=r.width; P.h=r.height;
+  P.groundY=r.height-78;
+  if(!P.spawned){ P.y=P.groundY-155; P.spawned=true; }
 }
 addEventListener("resize",resize); resize();
 
-function bindHold(el,code){
+function hold(el,code){
   const down=e=>{e.preventDefault(); keys[code]=true;};
   const up=e=>{e.preventDefault(); keys[code]=false;};
   el.addEventListener("pointerdown",down);
-  el.addEventListener("pointerup",up);
-  el.addEventListener("pointerleave",up);
-  el.addEventListener("pointercancel",up);
+  ["pointerup","pointerleave","pointercancel"].forEach(t=>el.addEventListener(t,up));
 }
-bindHold(document.getElementById("left"),"ArrowLeft");
-bindHold(document.getElementById("right"),"ArrowRight");
-document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault(); keys.JumpPulse=true;});
-document.getElementById("atk").addEventListener("pointerdown",e=>{e.preventDefault(); keys.AtkPulse=true;});
+hold(document.getElementById("left"),"Left");
+hold(document.getElementById("right"),"Right");
+document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault(); P.jumpBuf=0.14;});
+document.getElementById("atk").addEventListener("pointerdown",e=>{e.preventDefault(); keys.Atk=true;});
 
 addEventListener("keydown",e=>{
-  keys[e.code]=true;
-  if(["ArrowLeft","ArrowRight","ArrowUp","Space","KeyZ"].includes(e.code)) e.preventDefault();
-  if(e.code==="ArrowUp"||e.code==="Space") keys.JumpPulse=true;
-  if(e.code==="KeyZ") keys.AtkPulse=true;
+  if(["ArrowLeft","KeyA"].includes(e.code)){ keys.Left=true; e.preventDefault(); }
+  if(["ArrowRight","KeyD"].includes(e.code)){ keys.Right=true; e.preventDefault(); }
+  if(["ArrowUp","Space","KeyW"].includes(e.code)){ P.jumpBuf=0.14; e.preventDefault(); }
+  if(e.code==="KeyZ"||e.code==="KeyJ"){ keys.Atk=true; e.preventDefault(); }
 });
-addEventListener("keyup",e=>{ keys[e.code]=false; });
+addEventListener("keyup",e=>{
+  if(["ArrowLeft","KeyA"].includes(e.code)) keys.Left=false;
+  if(["ArrowRight","KeyD"].includes(e.code)) keys.Right=false;
+});
 
 let last=performance.now();
-function frame(now){
+function tick(now){
   const dt=Math.min(0.033,(now-last)/1000); last=now;
-  const left=keys.ArrowLeft||keys.KeyA;
-  const right=keys.ArrowRight||keys.KeyD;
-  const speed=280;
-  if(state.attackT<=0){
-    state.vx=0;
-    if(left){ state.vx=-speed; state.facing=-1; }
-    if(right){ state.vx=speed; state.facing=1; }
-  }
-  if(keys.JumpPulse){
-    keys.JumpPulse=false;
-    if(state.onGround && state.attackT<=0){ state.vy=-520; state.onGround=false; }
-  }
-  if(keys.AtkPulse){
-    keys.AtkPulse=false;
-    if(state.attackT<=0) state.attackT=0.35;
-  }
-  if(state.attackT>0) state.attackT-=dt;
+  const speed=310, accel=2200, fric=1800, grav=2100, jumpV=-560;
 
-  state.vy+=1600*dt;
-  state.x+=state.vx*dt;
-  state.y+=state.vy*dt;
-  const foot=state.groundY-10;
-  const spriteH=150;
-  if(state.y+spriteH>=foot){ state.y=foot-spriteH; state.vy=0; state.onGround=true; }
-  else state.onGround=false;
-  state.x=Math.max(40, Math.min(state.w-40, state.x));
-  state.anim+=dt;
+  if(P.attackT<=0){
+    if(keys.Left){ P.vx=Math.max(P.vx-accel*dt,-speed); P.facing=-1; }
+    else if(keys.Right){ P.vx=Math.min(P.vx+accel*dt,speed); P.facing=1; }
+    else {
+      if(P.vx>0) P.vx=Math.max(0,P.vx-fric*dt);
+      if(P.vx<0) P.vx=Math.min(0,P.vx+fric*dt);
+    }
+  } else P.vx*=0.85;
 
-  // draw world
-  ctx.clearRect(0,0,state.w,state.h);
+  if(P.onGround) P.coyote=0.1; else P.coyote=Math.max(0,P.coyote-dt);
+  P.jumpBuf=Math.max(0,P.jumpBuf-dt);
+  if(P.jumpBuf>0 && P.coyote>0 && P.attackT<=0){
+    P.vy=jumpV; P.onGround=false; P.coyote=0; P.jumpBuf=0;
+  }
+
+  if(keys.Atk){ keys.Atk=false; if(P.attackT<=0) P.attackT=0.38; }
+  if(P.attackT>0) P.attackT-=dt;
+
+  P.vy+=grav*dt;
+  P.x+=P.vx*dt; P.y+=P.vy*dt;
+
+  const spriteH=155;
+  const floor=P.groundY-8;
+  if(P.y+spriteH>=floor){ P.y=floor-spriteH; P.vy=0; P.onGround=true; }
+  else P.onGround=false;
+  P.x=Math.max(50,Math.min(P.w-50,P.x));
+  P.anim+=dt*(1+Math.abs(P.vx)/speed);
+
+  // sky
+  const g=ctx.createLinearGradient(0,0,0,P.h);
+  g.addColorStop(0,"#152033"); g.addColorStop(1,"#0a0c12");
+  ctx.fillStyle=g; ctx.fillRect(0,0,P.w,P.h);
+  // distant hills
+  ctx.fillStyle="#121820";
+  ctx.beginPath(); ctx.moveTo(0,P.groundY-40);
+  for(let x=0;x<=P.w;x+=60) ctx.quadraticCurveTo(x+30,P.groundY-55-Math.sin(x*0.02)*12,x+60,P.groundY-40);
+  ctx.lineTo(P.w,P.h); ctx.lineTo(0,P.h); ctx.fill();
   // ground
-  ctx.fillStyle="#2a1f14";
-  ctx.fillRect(0,state.groundY,state.w,state.h-state.groundY);
-  ctx.fillStyle="#3d2a1a";
-  for(let i=0;i<state.w;i+=40) ctx.fillRect(i,state.groundY,20,8);
-  // soft platform glow
-  ctx.fillStyle="rgba(251,146,60,0.08)";
-  ctx.fillRect(0,state.groundY-6,state.w,6);
+  ctx.fillStyle="#2a1c12"; ctx.fillRect(0,P.groundY,P.w,P.h-P.groundY);
+  ctx.fillStyle="#3b2818";
+  for(let x=0;x<P.w;x+=36) ctx.fillRect(x,P.groundY,18,7);
+  ctx.fillStyle="rgba(251,146,60,0.12)"; ctx.fillRect(0,P.groundY-5,P.w,5);
 
+  // pick sprite
   let img=imgs.idle;
-  if(state.attackT>0) img=imgs.attack;
-  else if(!state.onGround) img=imgs.jump;
-  else if(Math.abs(state.vx)>10) img=imgs.run;
-  const bob=(state.onGround && Math.abs(state.vx)>10)? Math.sin(state.anim*14)*3 : 0;
+  if(P.attackT>0) img=imgs.attack;
+  else if(!P.onGround) img=imgs.jump;
+  else if(Math.abs(P.vx)>25) img=(Math.floor(P.anim*10)%2===0)?imgs.run1:imgs.run2;
 
-  const drawW=130, drawH=150;
+  const drawW=140, drawH=155;
+  const bob=(P.onGround&&Math.abs(P.vx)>25)?Math.sin(P.anim*16)*2.5:0;
   ctx.save();
-  ctx.translate(state.x, state.y+bob);
-  ctx.scale(state.facing,1);
-  if(img.complete && img.naturalWidth){
-    ctx.drawImage(img, -drawW/2, 0, drawW, drawH);
-  } else {
-    ctx.fillStyle="#444"; ctx.fillRect(-40,20,80,100);
-  }
-  // attack flash
-  if(state.attackT>0.15){
-    ctx.fillStyle="rgba(251,146,60,0.35)";
-    ctx.beginPath();
-    ctx.arc(55,70,28,0,Math.PI*2);
-    ctx.fill();
+  ctx.translate(P.x, P.y+bob);
+  // flip: run1 may face left in art — normalize so facing 1 = right
+  let flip=P.facing;
+  // if using run1 which faces left in some gens, invert when that frame
+  if(img===imgs.run1) flip*=-1;
+  ctx.scale(flip,1);
+  if(img.complete&&img.naturalWidth) ctx.drawImage(img,-drawW/2,0,drawW,drawH);
+  else { ctx.fillStyle="#555"; ctx.fillRect(-40,30,80,100); }
+  if(P.attackT>0.18){
+    ctx.globalAlpha=0.45;
+    ctx.fillStyle="#fb923c";
+    ctx.beginPath(); ctx.ellipse(58,72,34,22,0,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
   }
   ctx.restore();
 
-  requestAnimationFrame(frame);
+  requestAnimationFrame(tick);
 }
-requestAnimationFrame(frame);
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>
