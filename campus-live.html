@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
+<!-- CACHE_BUST v=3 no-overlap -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -75,7 +76,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 #map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 48px #f43f5e18}
 #map{
-  position:relative; width:100%; aspect-ratio:900/560; min-height:300px;
+  position:relative; width:100%; aspect-ratio:900/640; min-height:360px;
   background:
     radial-gradient(ellipse at 50% 8%, #fbbf2428 0%, transparent 32%),
     radial-gradient(ellipse at 50% 55%, #33415533 0%, transparent 50%),
@@ -248,7 +249,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 (function () {
   const STATE_URLS = ['./campus-state.json', './campus/campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 2000;
-  const WORLD = { w: 900, h: 560, pad: 40 };
+  const WORLD = { w: 900, h: 640, pad: 48 };
 
   const $ = (id) => document.getElementById(id);
   const mapEl = $('map');
@@ -302,19 +303,18 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   function offsetAround(base, slot, kind, jesus) {
     // slot: 0 = main, 1+ = interns; kind: 'main'|'intern'
     const ring = [
-      {dl:0, dt:-4.2},   // main: above desk
-      {dl:-4.5, dt:3.8},
-      {dl:4.5, dt:3.8},
-      {dl:0, dt:5.5},
-      {dl:-6.5, dt:0.5},
-      {dl:6.5, dt:0.5}
+      {dl:0, dt:-6.5},   // main: clearly above desk
+      {dl:-6.5, dt:5.5},
+      {dl:6.5, dt:5.5},
+      {dl:0, dt:8.0},
+      {dl:-9.0, dt:1.0},
+      {dl:9.0, dt:1.0}
     ];
     let o;
     if (kind === 'main') o = ring[0];
     else if (jesus) {
-      // permission line in front of Jesus desk (below)
       const j = [
-        {dl:0, dt:6}, {dl:-5, dt:7.5}, {dl:5, dt:7.5}, {dl:-9, dt:6}, {dl:9, dt:6}
+        {dl:0, dt:8}, {dl:-7, dt:9.5}, {dl:7, dt:9.5}, {dl:-12, dt:8}, {dl:12, dt:8}
       ];
       o = j[(slot - 1) % j.length];
     } else {
