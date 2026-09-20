@@ -193,6 +193,15 @@
                 }
               }
             }
+          },
+          "castFolder": {
+            "type": "string"
+          },
+          "sprites": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       }

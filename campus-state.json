@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:15:57Z",
+  "schemaVersion": 2,
+  "updatedAt": "2026-09-20T21:33:36Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -9,71 +9,103 @@
       "ownerBotId": null,
       "zone": "ops",
       "x": 450,
-      "y": 90
+      "y": 70
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 150,
-      "y": 280
+      "x": 120,
+      "y": 200
     },
     {
-      "id": "desk-leader-support",
-      "label": "LeaderSupport",
-      "ownerBotId": "leader-support",
+      "id": "desk-dev-a",
+      "label": "Dev A",
+      "ownerBotId": "dev-a",
       "zone": "ops",
-      "x": 450,
-      "y": 280
+      "x": 300,
+      "y": 200
     },
     {
-      "id": "desk-liveops",
-      "label": "LiveOps",
-      "ownerBotId": "liveops",
+      "id": "desk-dev-b",
+      "label": "Dev B",
+      "ownerBotId": "dev-b",
       "zone": "ops",
-      "x": 750,
-      "y": 280
+      "x": 480,
+      "y": 200
     },
     {
-      "id": "desk-campusdev",
-      "label": "CampusDev",
-      "ownerBotId": "campusdev",
-      "zone": "workshop",
-      "x": 150,
-      "y": 480
+      "id": "desk-dev-c",
+      "label": "Dev C",
+      "ownerBotId": "dev-c",
+      "zone": "ops",
+      "x": 660,
+      "y": 200
     },
     {
-      "id": "desk-spriteforge",
-      "label": "SpriteForge",
-      "ownerBotId": "spriteforge",
-      "zone": "workshop",
-      "x": 450,
-      "y": 480
+      "id": "desk-render-a",
+      "label": "Render A",
+      "ownerBotId": "render-a",
+      "zone": "art",
+      "x": 120,
+      "y": 360
     },
     {
-      "id": "desk-spriteforge-support",
-      "label": "SpriteForgeSupport",
-      "ownerBotId": "spriteforge-support",
-      "zone": "workshop",
-      "x": 750,
-      "y": 480
+      "id": "desk-render-b",
+      "label": "Render B",
+      "ownerBotId": "render-b",
+      "zone": "art",
+      "x": 300,
+      "y": 360
+    },
+    {
+      "id": "desk-render-c",
+      "label": "Render C",
+      "ownerBotId": "render-c",
+      "zone": "art",
+      "x": 480,
+      "y": 360
+    },
+    {
+      "id": "desk-researcher-a",
+      "label": "Researcher A",
+      "ownerBotId": "researcher-a",
+      "zone": "research",
+      "x": 660,
+      "y": 360
+    },
+    {
+      "id": "desk-researcher-b",
+      "label": "Researcher B",
+      "ownerBotId": "researcher-b",
+      "zone": "research",
+      "x": 120,
+      "y": 520
+    },
+    {
+      "id": "desk-profile-a",
+      "label": "Profile A",
+      "ownerBotId": "profile-a",
+      "zone": "profile",
+      "x": 300,
+      "y": 520
+    },
+    {
+      "id": "desk-profile-b",
+      "label": "Profile B",
+      "ownerBotId": "profile-b",
+      "zone": "profile",
+      "x": 480,
+      "y": 520
     },
     {
       "id": "desk-meeting",
       "label": "Meeting",
       "ownerBotId": null,
       "zone": "common",
-      "x": 450,
-      "y": 650
-    },
-    {
-      "id": "desk-campuscast",
-      "label": "CampusCast",
-      "ownerBotId": "campuscast",
-      "zone": "workshop",
-      "x": 750,
-      "y": 650
+      "x": 660,
+      "y": 520
     }
   ],
   "bots": [
@@ -83,137 +115,350 @@
       "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
       "deskId": "desk-leader",
       "status": "working",
-      "task": "Campus roles + board",
-      "updatedAt": "2026-09-20T18:08:47Z",
+      "task": "Distribute campus live + crew",
+      "color": "#22c55e",
+      "updatedAt": "2026-09-20T21:33:36Z",
       "main": {
         "status": "working",
-        "task": "Campus roles + board",
+        "task": "Distribute campus live + crew",
         "atDeskId": "desk-leader",
-        "x": null,
-        "y": null
-      },
-      "interns": []
-    },
-    {
-      "id": "leadersupport",
-      "name": "LeaderSupport",
-      "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
-      "deskId": "desk-leader-support",
-      "status": "idle",
-      "task": "",
-      "updatedAt": "2026-09-20T18:08:47Z",
-      "main": {
-        "status": "idle",
-        "task": "",
-        "atDeskId": "desk-leader-support",
-        "x": null,
-        "y": null
-      },
-      "interns": []
-    },
-    {
-      "id": "campusdev",
-      "name": "CampusDev",
-      "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
-      "deskId": "desk-campusdev",
-      "status": "ready_for_review",
-      "task": "campus-live on Pages \u2014 open on phone",
-      "updatedAt": "2026-09-20T18:08:47Z",
-      "main": {
-        "status": "ready_for_review",
-        "task": "campus-live on Pages \u2014 open on phone",
-        "atDeskId": "desk-campusdev",
         "x": null,
         "y": null
       },
       "interns": [
         {
-          "id": "cd-i-perm",
-          "label": "Confirm Pages live?",
-          "status": "needs_permission",
-          "task": "Ask Jesus after parent push",
-          "atDeskId": "desk-jesus",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T18:05:00Z"
-        },
-        {
-          "id": "cd-i-work",
-          "label": "HUD polish",
+          "id": "ldr-i1",
+          "label": "Review queue",
           "status": "working",
-          "task": "Safe-area + deploy strip",
-          "atDeskId": "desk-campusdev",
+          "task": "Track Jesus review links",
+          "atDeskId": "desk-leader",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T18:05:00Z"
+          "updatedAt": "2026-09-20T21:33:36Z"
         }
       ],
-      "color": "#34d399"
+      "castFolder": "campus-cast/leader"
     },
     {
-      "id": "liveops",
-      "name": "LiveOps",
-      "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
-      "deskId": "desk-liveops",
+      "id": "dev-a",
+      "name": "Dev A",
+      "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
+      "deskId": "desk-dev-a",
       "status": "working",
-      "task": "canonical publish sync + supports",
-      "updatedAt": "2026-09-20T18:08:47Z",
+      "task": "Wire cast sprites into campus-live",
+      "color": "#34d399",
+      "updatedAt": "2026-09-20T21:33:36Z",
       "main": {
         "status": "working",
-        "task": "canonical publish sync + supports",
-        "atDeskId": "desk-liveops",
+        "task": "Wire cast sprites into campus-live",
+        "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
       },
-      "interns": []
+      "interns": [
+        {
+          "id": "deva-i1",
+          "label": "Status\u2192frames",
+          "status": "working",
+          "task": "Map status to cast PNGs",
+          "atDeskId": "desk-dev-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        },
+        {
+          "id": "deva-i2",
+          "label": "Pages push",
+          "status": "working",
+          "task": "Ship campus-live v6",
+          "atDeskId": "desk-dev-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ],
+      "castFolder": "campus-cast/dev-a"
     },
     {
-      "id": "spriteforge",
-      "name": "SpriteForge",
+      "id": "dev-b",
+      "name": "Dev B",
+      "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
+      "deskId": "desk-dev-b",
+      "status": "working",
+      "task": "Live campus-state truth + intern protocol",
+      "color": "#2dd4bf",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "working",
+        "task": "Live campus-state truth + intern protocol",
+        "atDeskId": "desk-dev-b",
+        "x": null,
+        "y": null
+      },
+      "interns": [
+        {
+          "id": "devb-i1",
+          "label": "Roster remap",
+          "status": "working",
+          "task": "leader/dev-a/render-a ids",
+          "atDeskId": "desk-dev-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ],
+      "castFolder": "campus-cast/dev-b"
+    },
+    {
+      "id": "dev-c",
+      "name": "Dev C",
+      "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
+      "deskId": "desk-dev-c",
+      "status": "idle",
+      "task": "Await engineering assign",
+      "color": "#86efac",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "idle",
+        "task": "Await engineering assign",
+        "atDeskId": "desk-dev-c",
+        "x": null,
+        "y": null
+      },
+      "interns": [],
+      "castFolder": "campus-cast/dev-c"
+    },
+    {
+      "id": "render-a",
+      "name": "Render A",
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
-      "deskId": "desk-spriteforge",
+      "deskId": "desk-render-a",
+      "status": "working",
+      "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
+      "color": "#f97316",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "working",
+        "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
+        "atDeskId": "desk-render-a",
+        "x": null,
+        "y": null
+      },
+      "interns": [
+        {
+          "id": "ra-i1",
+          "label": "Air v1.4",
+          "status": "working",
+          "task": "Opposite-foot + gear arcs",
+          "atDeskId": "desk-render-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        },
+        {
+          "id": "ra-i2",
+          "label": "QC wait",
+          "status": "ready_for_review",
+          "task": "With Render C",
+          "atDeskId": "desk-meeting",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ],
+      "castFolder": "campus-cast/render-a"
+    },
+    {
+      "id": "render-b",
+      "name": "Render B",
+      "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
+      "deskId": "desk-render-b",
       "status": "idle",
-      "task": "",
-      "updatedAt": "2026-09-20T18:08:47Z",
+      "task": "Await art assign",
+      "color": "#fb923c",
+      "updatedAt": "2026-09-20T21:33:36Z",
       "main": {
         "status": "idle",
-        "task": "",
-        "atDeskId": "desk-spriteforge",
+        "task": "Await art assign",
+        "atDeskId": "desk-render-b",
         "x": null,
         "y": null
       },
       "interns": []
     },
     {
-      "id": "spriteforgesupport",
-      "name": "SpriteForgeSupport",
+      "id": "render-c",
+      "name": "Render C",
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
-      "deskId": "desk-spriteforge-support",
+      "deskId": "desk-render-c",
+      "status": "reviewing",
+      "task": "Air FLOW QC (fail-closed gear)",
+      "color": "#a78bfa",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "reviewing",
+        "task": "Air FLOW QC (fail-closed gear)",
+        "atDeskId": "desk-render-c",
+        "x": null,
+        "y": null
+      },
+      "interns": [
+        {
+          "id": "rc-i1",
+          "label": "Gear check",
+          "status": "reviewing",
+          "task": "A\u2194B + weapon arcs",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        },
+        {
+          "id": "rc-i2",
+          "label": "Meet RA",
+          "status": "collaborating",
+          "task": "Air FLOW review",
+          "atDeskId": "desk-meeting",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ],
+      "castFolder": "campus-cast/render-c"
+    },
+    {
+      "id": "researcher-a",
+      "name": "Researcher A",
+      "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
+      "deskId": "desk-researcher-a",
+      "status": "working",
+      "task": "Game rendering standards (crew notes)",
+      "color": "#38bdf8",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "working",
+        "task": "Game rendering standards (crew notes)",
+        "atDeskId": "desk-researcher-a",
+        "x": null,
+        "y": null
+      },
+      "interns": [
+        {
+          "id": "resa-i1",
+          "label": "Counsel Renders",
+          "status": "working",
+          "task": "FLOW checklist \u2192 Render A",
+          "atDeskId": "desk-render-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ]
+    },
+    {
+      "id": "researcher-b",
+      "name": "Researcher B",
+      "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
+      "deskId": "desk-researcher-b",
+      "status": "working",
+      "task": "2D/iso + held-weapon standards",
+      "color": "#0ea5e9",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "working",
+        "task": "2D/iso + held-weapon standards",
+        "atDeskId": "desk-researcher-b",
+        "x": null,
+        "y": null
+      },
+      "interns": [
+        {
+          "id": "resb-i1",
+          "label": "Crew notes",
+          "status": "working",
+          "task": "consistency + bloom pitfalls",
+          "atDeskId": "desk-researcher-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:33:36Z"
+        }
+      ]
+    },
+    {
+      "id": "profile-a",
+      "name": "Profile A",
+      "agentId": "4de39148-7c10-44bc-bf7d-a63e362ce11f",
+      "deskId": "desk-profile-a",
       "status": "idle",
-      "task": "",
-      "updatedAt": "2026-09-20T18:08:47Z",
+      "task": "Jesus profile docs maintained",
+      "color": "#f472b6",
+      "updatedAt": "2026-09-20T21:33:36Z",
       "main": {
         "status": "idle",
-        "task": "",
-        "atDeskId": "desk-spriteforge-support",
+        "task": "Jesus profile docs maintained",
+        "atDeskId": "desk-profile-a",
+        "x": null,
+        "y": null
+      },
+      "interns": []
+    },
+    {
+      "id": "profile-b",
+      "name": "Profile B",
+      "agentId": "ea9d0bea-48d8-49e6-887f-4b0f7f52a4b7",
+      "deskId": "desk-profile-b",
+      "status": "idle",
+      "task": "Jesus profile docs maintained",
+      "color": "#e879f9",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "main": {
+        "status": "idle",
+        "task": "Jesus profile docs maintained",
+        "atDeskId": "desk-profile-b",
         "x": null,
         "y": null
       },
       "interns": []
     }
   ],
+  "castFiles": {
+    "leader": {
+      "folder": "campus-cast/leader",
+      "prefix": "leader"
+    },
+    "dev-a": {
+      "folder": "campus-cast/dev-a",
+      "prefix": "dev2"
+    },
+    "dev-b": {
+      "folder": "campus-cast/dev-b",
+      "prefix": "devb"
+    },
+    "dev-c": {
+      "folder": "campus-cast/dev-c",
+      "prefix": "leader_support"
+    },
+    "render-a": {
+      "folder": "campus-cast/render-a",
+      "prefix": "spriteforge"
+    },
+    "render-c": {
+      "folder": "campus-cast/render-c",
+      "prefix": "spriteforge_support"
+    }
+  },
   "deploys": [
     {
       "id": "botcampus-pages",
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Core-desk map, no-overlap v4",
-      "updatedAt": "2026-09-20T18:15:57Z",
-      "updatedBy": "campusdev"
+      "note": "Live roster remap + cast wiring",
+      "updatedAt": "2026-09-20T21:33:36Z",
+      "updatedBy": "leader"
     }
   ]
 }
