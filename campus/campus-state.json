@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T21:36:29Z",
+  "updatedAt": "2026-09-20T22:30:30Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -8,104 +8,104 @@
       "label": "Jesus",
       "ownerBotId": null,
       "zone": "ops",
-      "x": 450,
-      "y": 70
+      "x": 700,
+      "y": 100
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 120,
-      "y": 200
+      "x": 200,
+      "y": 340
     },
     {
       "id": "desk-dev-a",
       "label": "Dev A",
       "ownerBotId": "dev-a",
       "zone": "ops",
-      "x": 300,
-      "y": 200
+      "x": 480,
+      "y": 340
     },
     {
       "id": "desk-dev-b",
       "label": "Dev B",
       "ownerBotId": "dev-b",
       "zone": "ops",
-      "x": 480,
-      "y": 200
+      "x": 760,
+      "y": 340
     },
     {
       "id": "desk-dev-c",
       "label": "Dev C",
       "ownerBotId": "dev-c",
       "zone": "ops",
-      "x": 660,
-      "y": 200
+      "x": 1040,
+      "y": 340
     },
     {
       "id": "desk-render-a",
       "label": "Render A",
       "ownerBotId": "render-a",
       "zone": "art",
-      "x": 120,
-      "y": 360
+      "x": 200,
+      "y": 580
     },
     {
       "id": "desk-render-b",
       "label": "Render B",
       "ownerBotId": "render-b",
       "zone": "art",
-      "x": 300,
-      "y": 360
+      "x": 480,
+      "y": 580
     },
     {
       "id": "desk-render-c",
       "label": "Render C",
       "ownerBotId": "render-c",
       "zone": "art",
-      "x": 480,
-      "y": 360
+      "x": 760,
+      "y": 580
     },
     {
       "id": "desk-researcher-a",
       "label": "Researcher A",
       "ownerBotId": "researcher-a",
       "zone": "research",
-      "x": 660,
-      "y": 360
+      "x": 1040,
+      "y": 580
     },
     {
       "id": "desk-researcher-b",
       "label": "Researcher B",
       "ownerBotId": "researcher-b",
       "zone": "research",
-      "x": 120,
-      "y": 520
+      "x": 200,
+      "y": 820
     },
     {
       "id": "desk-profile-a",
       "label": "Profile A",
       "ownerBotId": "profile-a",
       "zone": "profile",
-      "x": 300,
-      "y": 520
+      "x": 480,
+      "y": 820
     },
     {
       "id": "desk-profile-b",
       "label": "Profile B",
       "ownerBotId": "profile-b",
       "zone": "profile",
-      "x": 480,
-      "y": 520
+      "x": 760,
+      "y": 820
     },
     {
       "id": "desk-meeting",
       "label": "Meeting",
       "ownerBotId": null,
       "zone": "common",
-      "x": 660,
-      "y": 520
+      "x": 1040,
+      "y": 820
     }
   ],
   "bots": [
@@ -234,35 +234,45 @@
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
       "deskId": "desk-render-a",
       "status": "working",
-      "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
+      "task": "Deep FLOW: Air (post v1.7) \u2192 Fire",
       "color": "#f97316",
       "castFolder": "campus-cast/render-a",
       "interns": [
         {
           "id": "ra-1",
-          "label": "Air FLOW",
+          "label": "Air deep",
           "status": "working",
-          "task": "opposite-foot + gear",
+          "task": "More frames if 2-frame pops",
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:30Z"
         },
         {
           "id": "ra-2",
-          "label": "QC handoff",
+          "label": "Fire next",
+          "status": "working",
+          "task": "Queued after Air",
+          "atDeskId": "desk-render-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:30Z"
+        },
+        {
+          "id": "ra-3",
+          "label": "C handoff",
           "status": "ready_for_review",
-          "task": "with Render C",
+          "task": "Each sheet \u2192 Render C",
           "atDeskId": "desk-meeting",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:30Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:30:30Z",
       "main": {
         "status": "working",
-        "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
+        "task": "Deep FLOW: Air (post v1.7) \u2192 Fire",
         "atDeskId": "desk-render-a",
         "x": null,
         "y": null
@@ -273,15 +283,36 @@
       "name": "Render B",
       "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
       "deskId": "desk-render-b",
-      "status": "idle",
-      "task": "Await art assign",
+      "status": "working",
+      "task": "Deep FLOW: Water + Earth",
       "color": "#fb923c",
       "castFolder": null,
-      "interns": [],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "interns": [
+        {
+          "id": "rb-1",
+          "label": "Water",
+          "status": "working",
+          "task": "Opposite-foot + gear",
+          "atDeskId": "desk-render-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:30Z"
+        },
+        {
+          "id": "rb-2",
+          "label": "Earth",
+          "status": "working",
+          "task": "Queued / parallel",
+          "atDeskId": "desk-render-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:30Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:30:30Z",
       "main": {
-        "status": "idle",
-        "task": "Await art assign",
+        "status": "working",
+        "task": "Deep FLOW: Water + Earth",
         "atDeskId": "desk-render-b",
         "x": null,
         "y": null
@@ -293,35 +324,25 @@
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
       "deskId": "desk-render-c",
       "status": "reviewing",
-      "task": "Air FLOW QC (fail-closed gear)",
+      "task": "Fail-closed FLOW QC (all four)",
       "color": "#a78bfa",
       "castFolder": "campus-cast/render-c",
       "interns": [
         {
           "id": "rc-1",
-          "label": "Gear arcs",
+          "label": "Pair review",
           "status": "reviewing",
-          "task": "A\u2194B + weapons",
+          "task": "A\u2194B + gear side-by-side",
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
-        },
-        {
-          "id": "rc-2",
-          "label": "Meet RA",
-          "status": "collaborating",
-          "task": "Air FLOW",
-          "atDeskId": "desk-meeting",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:30Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:30:30Z",
       "main": {
         "status": "reviewing",
-        "task": "Air FLOW QC (fail-closed gear)",
+        "task": "Fail-closed FLOW QC (all four)",
         "atDeskId": "desk-render-c",
         "x": null,
         "y": null
@@ -333,25 +354,25 @@
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
       "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Counsel Renders (crew notes)",
+      "task": "Counsel Render A (Air/Fire FLOW)",
       "color": "#38bdf8",
       "castFolder": null,
       "interns": [
         {
           "id": "resa-1",
-          "label": "At RA desk",
+          "label": "At RA",
           "status": "working",
-          "task": "FLOW checklist",
+          "task": "Walk-cycle must-haves",
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:30Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:30:30Z",
       "main": {
         "status": "working",
-        "task": "Counsel Renders (crew notes)",
+        "task": "Counsel Render A (Air/Fire FLOW)",
         "atDeskId": "desk-researcher-a",
         "x": null,
         "y": null
@@ -363,25 +384,25 @@
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
       "status": "working",
-      "task": "2D/iso + held-weapon counsel",
+      "task": "Counsel Render B (Water/Earth FLOW)",
       "color": "#0ea5e9",
       "castFolder": null,
       "interns": [
         {
           "id": "resb-1",
-          "label": "Notes",
+          "label": "At RB",
           "status": "working",
-          "task": "crew-only standards",
-          "atDeskId": "desk-researcher-b",
+          "task": "Weapon arcs + phone read",
+          "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:30Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:30:30Z",
       "main": {
         "status": "working",
-        "task": "2D/iso + held-weapon counsel",
+        "task": "Counsel Render B (Water/Earth FLOW)",
         "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null
@@ -465,5 +486,9 @@
       "updatedAt": "2026-09-20T21:36:29Z",
       "updatedBy": "dev-a"
     }
-  ]
+  ],
+  "world": {
+    "w": 1400,
+    "h": 1100
+  }
 }
