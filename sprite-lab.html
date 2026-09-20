@@ -46,7 +46,7 @@
 <main id="main"></main>
 <script>
 const DIRS = ["n","ne","e","se","s","sw","w","nw"];
-const v = "?v=4";
+const v = "?v=5";
 
 const CHARACTERS = [
   {
@@ -62,7 +62,20 @@ const CHARACTERS = [
         frames: [`firesoldier/attack/attack_se.png${v}`], fps: 2 },
     ],
   },
-  {
+    {
+    id: "watersoldier",
+    name: "Water Soldier",
+    play: "watersoldier-play.html?v=1",
+    moves: [
+      { id: "idle", label: "Idle", kind: "dirs",
+        frames: d => `watersoldier/idle/idle_${d}.png${v}` },
+      { id: "walk", label: "Walk", kind: "dirsAB",
+        frames: d => [`watersoldier/walk/walk_${d}_a.png${v}`, `watersoldier/walk/walk_${d}_b.png${v}`], fps: 8 },
+      { id: "attack", label: "Attack", kind: "pulse",
+        frames: [`watersoldier/attack/attack_se.png${v}`], fps: 2 },
+    ],
+  },
+{
     id: "lavaknight",
     name: "Lava Knight",
     play: "lava-iso.html?v=2",

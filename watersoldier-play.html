@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>Water Soldier · Iso</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0c10;color:#f4f0e8;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{display:flex;flex-direction:column;height:100%;height:100dvh}
+  header{padding:8px 12px 4px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;flex-shrink:0}
+  h1{margin:0;font-size:1.02rem;font-weight:750;letter-spacing:.01em}
+  .hint{color:#8b93a7;font-size:.72rem}
+  canvas{display:block;width:100%;flex:1;min-height:160px;touch-action:none;background:#1a2a18}
+  #pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto auto auto;gap:8px;padding:8px 12px calc(12px + env(safe-area-inset-bottom));max-width:340px;margin:0 auto;width:100%;flex-shrink:0}
+  button{appearance:none;border:1px solid #3a455c;background:#171e2b;color:#fff;border-radius:14px;padding:14px 6px;font:inherit;font-weight:700;font-size:.95rem;min-height:48px}
+  button:active,.held{background:#2a3548;transform:scale(.97)}
+  #n{grid-column:2;grid-row:1}
+  #w{grid-column:1;grid-row:2}
+  #e{grid-column:3;grid-row:2}
+  #s{grid-column:2;grid-row:3}
+  #atk{grid-column:1/4;grid-row:4;background:#7c2d12;border-color:#fb923c;padding:16px;margin-top:4px}
+  #spacer{grid-column:2;grid-row:2;pointer-events:none;opacity:0}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Water Soldier · Iso</h1>
+    <div class="hint">Tap map · WASD 8-way (chord diagonals) · Attack</div>
+  </header>
+  <canvas id="c"></canvas>
+  <div id="pad">
+    <button type="button" id="n" aria-label="Up">▲</button>
+    <button type="button" id="w" aria-label="Left">◀</button>
+    <div id="spacer"></div>
+    <button type="button" id="e" aria-label="Right">▶</button>
+    <button type="button" id="s" aria-label="Down">▼</button>
+    <button type="button" id="atk">Attack 🔥</button>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const v = "?v=1";
+const DIRS = ["n","ne","e","se","s","sw","w","nw"];
+
+function load(src) {
+  const i = new Image();
+  i.src = src;
+  return i;
+}
+function loadDirMap(kind) {
+  const m = {};
+  for (const d of DIRS) m[d] = load(`watersoldier/${kind}/${kind}_${d}.png` + v);
+  return m;
+}
+
+function loadWalkAB() {
+  const m = {};
+  for (const d of DIRS) {
+    m[d] = [load(`watersoldier/walk/walk_${d}_a.png` + v), load(`watersoldier/walk/walk_${d}_b.png` + v)];
+  }
+  return m;
+}
+const imgs = {
+  idle: loadDirMap("idle"),
+  walk: loadDirMap("walk"),
+  walkAB: loadWalkAB(),
+  attack: load("watersoldier/attack/attack_se.png" + v),
+};
+
+// --- Iso world ---
+const TILE_W = 64, TILE_H = 32;
+const MAP_W = 18, MAP_H = 18;
+const keys = {};
+let viewW = 0, viewH = 0;
+const cam = { x: 0, y: 0 };
+const origin = { x: 0, y: 0 };
+
+const player = {
+  mapX: 8.5, mapY: 8.5,
+  facing: "se", // one of: n,ne,e,se,s,sw,w,nw
+  moving: false,
+  anim: 0,
+  attackT: 0,
+  slashT: 0,
+  target: null,
+  selected: true,
+};
+
+const enemy = {
+  mapX: 12.2, mapY: 10.8,
+  hp: 3,
+  hitFlash: 0,
+  alive: true,
+};
+
+const trees = [
+  [3, 4], [5, 2], [14, 3], [16, 6], [2, 12], [4, 15],
+  [15, 14], [10, 2], [7, 16], [16, 16], [1, 7], [12, 1],
+];
+
+function mapToScreen(mx, my) {
+  return {
+    x: (mx - my) * (TILE_W / 2) + origin.x - cam.x,
+    y: (mx + my) * (TILE_H / 2) + origin.y - cam.y,
+  };
+}
+
+function screenToMap(sx, sy) {
+  const x = sx + cam.x - origin.x;
+  const y = sy + cam.y - origin.y;
+  const mx = (x / (TILE_W / 2) + y / (TILE_H / 2)) / 2;
+  const my = (y / (TILE_H / 2) - x / (TILE_W / 2)) / 2;
+  return { x: mx, y: my };
+}
+
+function clampMap(val, max) {
+  return Math.max(0.4, Math.min(max - 0.4, val));
+}
+
+/**
+ * Map delta → screen vector → 8 octants.
+ * Screen: +mapX goes down-right, +mapY goes down-left.
+ * sx = dmx - dmy, sy = dmx + dmy; dirs clockwise from east.
+ */
+function facingFromMapDelta(dmx, dmy) {
+  const sx = dmx - dmy;
+  const sy = dmx + dmy;
+  if (Math.abs(sx) < 1e-8 && Math.abs(sy) < 1e-8) return player.facing;
+  const ang = Math.atan2(sy, sx); // screen +y down → CW from east
+  const order = ["e", "se", "s", "sw", "w", "nw", "n", "ne"];
+  let idx = Math.round(ang / (Math.PI / 4));
+  idx = ((idx % 8) + 8) % 8;
+  return order[idx];
+}
+
+function isWestish(dir) {
+  return dir === "w" || dir === "nw" || dir === "sw";
+}
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.floor(r.width * dpr);
+  canvas.height = Math.floor(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  viewW = r.width; viewH = r.height;
+  origin.x = viewW / 2;
+  origin.y = viewH * 0.22;
+}
+addEventListener("resize", resize);
+resize();
+
+function hold(el, code) {
+  const down = e => { e.preventDefault(); keys[code] = true; el.classList.add("held"); };
+  const up = e => { e.preventDefault(); keys[code] = false; el.classList.remove("held"); };
+  el.addEventListener("pointerdown", down);
+  ["pointerup", "pointerleave", "pointercancel"].forEach(t => el.addEventListener(t, up));
+}
+hold(document.getElementById("n"), "N");
+hold(document.getElementById("s"), "S");
+hold(document.getElementById("w"), "W");
+hold(document.getElementById("e"), "E");
+document.getElementById("atk").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  tryAttack();
+});
+
+addEventListener("keydown", e => {
+  const c = e.code;
+  if (["ArrowUp", "KeyW"].includes(c)) { keys.N = true; e.preventDefault(); }
+  if (["ArrowDown", "KeyS"].includes(c)) { keys.S = true; e.preventDefault(); }
+  if (["ArrowLeft", "KeyA"].includes(c)) { keys.W = true; e.preventDefault(); }
+  if (["ArrowRight", "KeyD"].includes(c)) { keys.E = true; e.preventDefault(); }
+  if (c === "Space" || c === "KeyZ" || c === "KeyJ") { tryAttack(); e.preventDefault(); }
+});
+addEventListener("keyup", e => {
+  const c = e.code;
+  if (["ArrowUp", "KeyW"].includes(c)) keys.N = false;
+  if (["ArrowDown", "KeyS"].includes(c)) keys.S = false;
+  if (["ArrowLeft", "KeyA"].includes(c)) keys.W = false;
+  if (["ArrowRight", "KeyD"].includes(c)) keys.E = false;
+});
+
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const t = e.changedTouches ? e.changedTouches[0] : e;
+  return { x: t.clientX - r.left, y: t.clientY - r.top };
+}
+
+canvas.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  const p = canvasPos(e);
+  const m = screenToMap(p.x, p.y);
+  player.target = {
+    x: clampMap(m.x, MAP_W),
+    y: clampMap(m.y, MAP_H),
+  };
+});
+
+function tryAttack() {
+  if (player.attackT > 0) return;
+  player.attackT = 0.42;
+  player.slashT = 0.28;
+  player.target = null;
+  if (enemy.alive) {
+    const dx = enemy.mapX - player.mapX;
+    const dy = enemy.mapY - player.mapY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1.65) {
+      enemy.hp -= 1;
+      enemy.hitFlash = 0.25;
+      if (enemy.hp <= 0) enemy.alive = false;
+      player.facing = facingFromMapDelta(dx, dy);
+    }
+  }
+}
+
+function drawTile(mx, my, fill, stroke) {
+  const p = mapToScreen(mx, my);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(p.x + TILE_W / 2, p.y + TILE_H / 2);
+  ctx.lineTo(p.x, p.y + TILE_H);
+  ctx.lineTo(p.x - TILE_W / 2, p.y + TILE_H / 2);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+}
+
+function drawSelectionRing(mx, my) {
+  const p = mapToScreen(mx, my);
+  ctx.save();
+  ctx.translate(p.x, p.y + TILE_H * 0.55);
+  ctx.scale(1, 0.45);
+  ctx.beginPath();
+  ctx.arc(0, 0, 22, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(250, 220, 60, 0.95)";
+  ctx.lineWidth = 3.2 / 0.45;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 18, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(80, 200, 70, 0.75)";
+  ctx.lineWidth = 2 / 0.45;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTree(mx, my) {
+  const p = mapToScreen(mx, my);
+  const baseY = p.y + TILE_H * 0.55;
+  ctx.fillStyle = "#5a3a22";
+  ctx.beginPath();
+  ctx.moveTo(p.x, baseY - 18);
+  ctx.lineTo(p.x + 6, baseY - 6);
+  ctx.lineTo(p.x, baseY + 2);
+  ctx.lineTo(p.x - 6, baseY - 6);
+  ctx.closePath();
+  ctx.fill();
+  const grd = ctx.createRadialGradient(p.x - 4, baseY - 34, 4, p.x, baseY - 28, 22);
+  grd.addColorStop(0, "#5dbe4a");
+  grd.addColorStop(1, "#2a6b28");
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(p.x, baseY - 30, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(40,100,40,0.45)";
+  ctx.beginPath();
+  ctx.arc(p.x + 8, baseY - 26, 11, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawEnemy() {
+  if (!enemy.alive && enemy.hitFlash <= 0) return;
+  const p = mapToScreen(enemy.mapX, enemy.mapY);
+  const flash = enemy.hitFlash > 0;
+  ctx.save();
+  ctx.translate(p.x, p.y + TILE_H * 0.55);
+  ctx.scale(1, 0.45);
+  ctx.beginPath();
+  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fill();
+  ctx.restore();
+  if (!enemy.alive) return;
+  const body = flash ? "#c44" : "#2a2430";
+  const rim = flash ? "#faa" : "#4a3f55";
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y + 8, 14, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = rim;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = flash ? "#fff" : "#e85";
+  ctx.beginPath();
+  ctx.arc(p.x - 4, p.y + 2, 2.2, 0, Math.PI * 2);
+  ctx.arc(p.x + 5, p.y + 2, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSlash(mx, my, dir) {
+  if (player.slashT <= 0) return;
+  const p = mapToScreen(mx, my);
+  const t = player.slashT / 0.28;
+  const facing = isWestish(dir) ? -1 : 1;
+  const ang = facing > 0 ? -0.4 : Math.PI + 0.4;
+  ctx.save();
+  ctx.translate(p.x + facing * 18, p.y + 10);
+  ctx.rotate(ang);
+  ctx.globalAlpha = Math.min(1, t * 1.4);
+  ctx.strokeStyle = "#fb923c";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(0, 0, 28 + (1 - t) * 10, -0.9, 0.9);
+  ctx.stroke();
+  ctx.strokeStyle = "#fde68a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 22 + (1 - t) * 8, -0.7, 0.7);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Idle/walk: pre-flipped PNGs — never canvas-scale flip. */
+function drawUnit(mx, my, img, height) {
+  if (!img || !img.complete || !img.naturalWidth) return;
+  const p = mapToScreen(mx, my);
+  const h = height || 72;
+  const aspect = img.naturalWidth / img.naturalHeight;
+  const w = h * aspect;
+  const footY = p.y + TILE_H * 0.55;
+  ctx.drawImage(img, p.x - w / 2, footY - h + 4, w, h);
+}
+
+/** Attack is a single shared art; flip horizontally for west-ish dirs. */
+function drawAttack(mx, my, dir, height) {
+  const img = imgs.attack;
+  if (!img || !img.complete || !img.naturalWidth) return;
+  const p = mapToScreen(mx, my);
+  const h = height || 78;
+  const aspect = img.naturalWidth / img.naturalHeight;
+  const w = h * aspect;
+  const footY = p.y + TILE_H * 0.55;
+  if (isWestish(dir)) {
+    ctx.save();
+    ctx.translate(p.x, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, -w / 2, footY - h + 4, w, h);
+    ctx.restore();
+  } else {
+    ctx.drawImage(img, p.x - w / 2, footY - h + 4, w, h);
+  }
+}
+
+function currentSprite() {
+  const dir = player.facing in imgs.idle ? player.facing : "se";
+  if (player.attackT > 0) return { kind: "attack", dir };
+  if (player.moving) {
+    const frame = Math.floor(player.anim * 8) % 2; // A/B
+    return { kind: "walkAB", dir, frame };
+  }
+  return { kind: "idle", dir };
+}
+
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+
+  // Chorded pad/WASD: N+E etc. combine on iso axes
+  // N = NW (-x,-y), S = SE (+x,+y), W = SW (-x,+y), E = NE (+x,-y)
+  let dx = 0, dy = 0;
+  const padMove = keys.N || keys.S || keys.W || keys.E;
+  if (keys.N) { dx -= 1; dy -= 1; }
+  if (keys.S) { dx += 1; dy += 1; }
+  if (keys.W) { dx -= 1; dy += 1; }
+  if (keys.E) { dx += 1; dy -= 1; }
+
+  const speed = 2.8;
+  player.moving = false;
+
+  if (player.attackT > 0) {
+    player.attackT -= dt;
+    player.target = null;
+  } else if (padMove) {
+    player.target = null;
+    const len = Math.hypot(dx, dy) || 1;
+    const dmx = (dx / len) * speed * dt;
+    const dmy = (dy / len) * speed * dt;
+    player.mapX = clampMap(player.mapX + dmx, MAP_W);
+    player.mapY = clampMap(player.mapY + dmy, MAP_H);
+    player.moving = true;
+    player.facing = facingFromMapDelta(dx, dy);
+  } else if (player.target) {
+    const tx = player.target.x - player.mapX;
+    const ty = player.target.y - player.mapY;
+    const dist = Math.hypot(tx, ty);
+    if (dist < 0.08) {
+      player.target = null;
+    } else {
+      const step = Math.min(dist, speed * dt);
+      const dmx = (tx / dist) * step;
+      const dmy = (ty / dist) * step;
+      player.mapX = clampMap(player.mapX + dmx, MAP_W);
+      player.mapY = clampMap(player.mapY + dmy, MAP_H);
+      player.moving = true;
+      player.facing = facingFromMapDelta(tx, ty);
+    }
+  }
+
+  if (player.moving) player.anim += dt;
+  if (player.slashT > 0) player.slashT -= dt;
+  if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
+
+  const desiredCamX = (player.mapX - player.mapY) * (TILE_W / 2) + origin.x - viewW / 2;
+  const desiredCamY = (player.mapX + player.mapY) * (TILE_H / 2) + origin.y - viewH * 0.55;
+  cam.x += (desiredCamX - cam.x) * Math.min(1, 4.5 * dt);
+  cam.y += (desiredCamY - cam.y) * Math.min(1, 4.5 * dt);
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+function render() {
+  const g = ctx.createLinearGradient(0, 0, 0, viewH);
+  g.addColorStop(0, "#6ec8f0");
+  g.addColorStop(0.35, "#b8d99a");
+  g.addColorStop(1, "#3d5c2e");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, viewW, viewH);
+
+  const grassA = "#4a8c3c";
+  const grassB = "#3f7a34";
+  const dirt = "#6b5a3e";
+  const edge = "rgba(0,0,0,0.08)";
+
+  for (let sum = 0; sum <= MAP_W + MAP_H; sum++) {
+    for (let mx = 0; mx < MAP_W; mx++) {
+      const my = sum - mx;
+      if (my < 0 || my >= MAP_H) continue;
+      const checker = ((mx + my) & 1) === 0;
+      let fill = checker ? grassA : grassB;
+      if ((mx * 7 + my * 13) % 17 === 0) fill = checker ? "#5c7a38" : dirt;
+      drawTile(mx, my, fill, edge);
+    }
+  }
+
+  const drawables = [];
+  for (const [tx, ty] of trees) {
+    drawables.push({ z: tx + ty, kind: "tree", x: tx + 0.5, y: ty + 0.5 });
+  }
+  drawables.push({ z: player.mapX + player.mapY, kind: "player" });
+  if (enemy.alive || enemy.hitFlash > 0) {
+    drawables.push({ z: enemy.mapX + enemy.mapY, kind: "enemy" });
+  }
+  drawables.sort((a, b) => a.z - b.z);
+
+  if (player.target) {
+    const tp = mapToScreen(player.target.x, player.target.y);
+    ctx.save();
+    ctx.translate(tp.x, tp.y + TILE_H * 0.35);
+    ctx.scale(1, 0.5);
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,230,100,0.85)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const d of drawables) {
+    if (d.kind === "tree") drawTree(d.x - 0.5, d.y - 0.5);
+    else if (d.kind === "enemy") drawEnemy();
+    else if (d.kind === "player") {
+      if (player.selected) drawSelectionRing(player.mapX, player.mapY);
+      const spr = currentSprite();
+      const h = spr.kind === "attack" ? 78 : 72;
+      if (spr.kind === "attack") {
+        drawAttack(player.mapX, player.mapY, spr.dir, h);
+      } else if (spr.kind === "walkAB") {
+        const pair = imgs.walkAB[spr.dir] || imgs.walkAB.se;
+        const img = (pair && pair[spr.frame]) || (pair && pair[0]) || imgs.idle.se;
+        drawUnit(player.mapX, player.mapY, img, h);
+      } else {
+        const img = imgs[spr.kind][spr.dir] || imgs.idle.se;
+        drawUnit(player.mapX, player.mapY, img, h);
+      }
+      drawSlash(player.mapX, player.mapY, player.facing);
+    }
+  }
+
+  if (enemy.alive) {
+    const ep = mapToScreen(enemy.mapX, enemy.mapY);
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(ep.x - 16, ep.y - 28, 32, 5);
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(ep.x - 16, ep.y - 28, 32 * (enemy.hp / 3), 5);
+  } else {
+    ctx.fillStyle = "rgba(255,240,200,0.85)";
+    ctx.font = "600 13px system-ui,sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Enemy down · AoE2 vibes", viewW / 2, 28);
+  }
+}
+
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
