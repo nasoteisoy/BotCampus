@@ -282,9 +282,17 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     <div id="map-hud">
       <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
       <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
-      <button type="button" id="zoom-reset" aria-label="Reset view">⟲</button>
+      <button type="button" id="zoom-reset" aria-label="Fit all">⟲</button>
     </div>
-    <div id="map-hint">Drag to pan · pinch or ± to zoom</div>
+    <div id="map-pad" aria-label="Pan pad">
+      <button type="button" id="pan-up" aria-label="Pan up">▲</button>
+      <span class="pad-mid">
+        <button type="button" id="pan-left" aria-label="Pan left">◀</button>
+        <button type="button" id="pan-right" aria-label="Pan right">▶</button>
+      </span>
+      <button type="button" id="pan-down" aria-label="Pan down">▼</button>
+    </div>
+    <div id="map-hint">Drag to pan · arrows · pinch or ± to zoom</div>
   </div>
 
   <ul id="legend">
@@ -464,7 +472,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   let lastTapT = 0, lastTapX = 0, lastTapY = 0;
 
   function isHudTarget(el) {
-    return !!(el && el.closest && el.closest('#map-hud'));
+    return !!(el && el.closest && (el.closest('#map-hud') || el.closest('#map-pad')));
   }
 
   function pointerList() {
@@ -636,7 +644,29 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     const r = mapWrap.getBoundingClientRect();
     zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale / 1.2);
   });
-  $('zoom-reset').addEventListener('click', (e) => {
+  
+  function nudgePan(dx, dy) {
+    stopInertia();
+    cam.x += dx; cam.y += dy;
+    clampCam(); applyCam();
+  }
+  const NUDGE = 110;
+  ['pan-up','pan-down','pan-left','pan-right'].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (id === 'pan-up') nudgePan(0, NUDGE);
+      if (id === 'pan-down') nudgePan(0, -NUDGE);
+      if (id === 'pan-left') nudgePan(NUDGE, 0);
+      if (id === 'pan-right') nudgePan(-NUDGE, 0);
+    });
+  });
+  const mapPad = $('map-pad');
+  if (mapPad) mapPad.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+$('zoom-reset').addEventListener('click', (e) => {
     e.stopPropagation();
     stopInertia();
     fitOverview();
