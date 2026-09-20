@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:05:30Z",
+  "updatedAt": "2026-09-20T18:08:47Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -8,21 +8,21 @@
       "label": "Jesus",
       "ownerBotId": null,
       "zone": "ops",
-      "x": 80,
-      "y": 280
+      "x": 450,
+      "y": 80
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 160,
-      "y": 340
+      "x": 120,
+      "y": 200
     },
     {
-      "id": "desk-leader-support",
+      "id": "desk-leadersupport",
       "label": "LeaderSupport",
-      "ownerBotId": "leader-support",
+      "ownerBotId": "leadersupport",
       "zone": "ops",
       "x": 280,
       "y": 200
@@ -32,120 +32,104 @@
       "label": "LiveOps",
       "ownerBotId": "liveops",
       "zone": "ops",
-      "x": 200,
-      "y": 300
+      "x": 440,
+      "y": 200
+    },
+    {
+      "id": "desk-meeting",
+      "label": "Meeting",
+      "ownerBotId": null,
+      "zone": "ops",
+      "x": 620,
+      "y": 200
     },
     {
       "id": "desk-campusdev",
       "label": "CampusDev",
       "ownerBotId": "campusdev",
       "zone": "workshop",
-      "x": 680,
-      "y": 300
+      "x": 120,
+      "y": 340
     },
     {
       "id": "desk-spriteforge",
       "label": "SpriteForge",
       "ownerBotId": "spriteforge",
       "zone": "workshop",
-      "x": 740,
-      "y": 360
-    },
-    {
-      "id": "desk-spriteforge-support",
-      "label": "SpriteForgeSupport",
-      "ownerBotId": "spriteforge-support",
-      "zone": "workshop",
-      "x": 780,
-      "y": 320
-    },
-    {
-      "id": "desk-story",
-      "label": "Story",
-      "ownerBotId": "story",
-      "zone": "lore",
-      "x": 120,
-      "y": 400
-    },
-    {
-      "id": "desk-onfriendg",
-      "label": "OnFriendG",
-      "ownerBotId": "onfriendg",
-      "zone": "social",
-      "x": 260,
-      "y": 420
-    },
-    {
-      "id": "desk-game-makers",
-      "label": "Game Makers",
-      "ownerBotId": "game-makers",
-      "zone": "games",
-      "x": 420,
-      "y": 420
-    },
-    {
-      "id": "desk-random",
-      "label": "Random",
-      "ownerBotId": "random",
-      "zone": "games",
-      "x": 560,
-      "y": 420
-    },
-    {
-      "id": "desk-fplanetg",
-      "label": "FPlanetG",
-      "ownerBotId": "fplanetg",
-      "zone": "games",
-      "x": 140,
-      "y": 500
-    },
-    {
-      "id": "desk-lotr",
-      "label": "LOTR Lookup",
-      "ownerBotId": "lotr-lookup",
-      "zone": "lookup",
-      "x": 320,
-      "y": 500
-    },
-    {
-      "id": "desk-psych",
-      "label": "My Psychiatrist",
-      "ownerBotId": "my-psychiatrist",
-      "zone": "wellness",
-      "x": 500,
-      "y": 500
-    },
-    {
-      "id": "desk-findme",
-      "label": "Find Me",
-      "ownerBotId": "findme",
-      "zone": "lookup",
-      "x": 680,
-      "y": 400
-    },
-    {
-      "id": "desk-meeting",
-      "label": "Meeting",
-      "ownerBotId": null,
-      "zone": "courtyard",
-      "x": 450,
-      "y": 300
-    },
-    {
-      "id": "desk-leadersupport",
-      "label": "LeaderSupport",
-      "ownerBotId": "leadersupport",
-      "zone": "ops",
-      "x": 120,
-      "y": 380
+      "x": 300,
+      "y": 340
     },
     {
       "id": "desk-spriteforgesupport",
       "label": "SpriteForgeSupport",
       "ownerBotId": "spriteforgesupport",
       "zone": "workshop",
-      "x": 700,
-      "y": 400
+      "x": 480,
+      "y": 340
+    },
+    {
+      "id": "desk-story",
+      "label": "Story",
+      "ownerBotId": "story",
+      "zone": "studio",
+      "x": 660,
+      "y": 340
+    },
+    {
+      "id": "desk-findme",
+      "label": "Find Me",
+      "ownerBotId": "findme",
+      "zone": "studio",
+      "x": 820,
+      "y": 340
+    },
+    {
+      "id": "desk-onfriendg",
+      "label": "OnFriendG",
+      "ownerBotId": "onfriendg",
+      "zone": "games",
+      "x": 120,
+      "y": 480
+    },
+    {
+      "id": "desk-game-makers",
+      "label": "Game Makers",
+      "ownerBotId": "game-makers",
+      "zone": "games",
+      "x": 300,
+      "y": 480
+    },
+    {
+      "id": "desk-random",
+      "label": "Random",
+      "ownerBotId": "random",
+      "zone": "games",
+      "x": 480,
+      "y": 480
+    },
+    {
+      "id": "desk-fplanetg",
+      "label": "FPlanetG",
+      "ownerBotId": "fplanetg",
+      "zone": "games",
+      "x": 660,
+      "y": 480
+    },
+    {
+      "id": "desk-lotr",
+      "label": "LOTR Lookup",
+      "ownerBotId": "lotr",
+      "zone": "games",
+      "x": 820,
+      "y": 480
+    },
+    {
+      "id": "desk-psych",
+      "label": "My Psychiatrist",
+      "ownerBotId": "psych",
+      "zone": "wellness",
+      "x": 450,
+      "y": 560
     }
   ],
   "bots": [
@@ -156,7 +140,7 @@
       "deskId": "desk-leader",
       "status": "working",
       "task": "Campus roles + board",
-      "updatedAt": "2026-09-20T18:03:51Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "working",
         "task": "Campus roles + board",
@@ -173,7 +157,7 @@
       "deskId": "desk-leadersupport",
       "status": "idle",
       "task": "",
-      "updatedAt": "2026-09-20T18:03:51Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "idle",
         "task": "",
@@ -190,7 +174,7 @@
       "deskId": "desk-campusdev",
       "status": "ready_for_review",
       "task": "campus-live on Pages \u2014 open on phone",
-      "updatedAt": "2026-09-20T18:05:30Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "ready_for_review",
         "task": "campus-live on Pages \u2014 open on phone",
@@ -229,7 +213,7 @@
       "deskId": "desk-liveops",
       "status": "working",
       "task": "canonical publish sync + supports",
-      "updatedAt": "2026-09-20T18:03:51Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "working",
         "task": "canonical publish sync + supports",
@@ -246,7 +230,7 @@
       "deskId": "desk-spriteforge",
       "status": "idle",
       "task": "",
-      "updatedAt": "2026-09-20T18:03:51Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "idle",
         "task": "",
@@ -263,7 +247,7 @@
       "deskId": "desk-spriteforgesupport",
       "status": "idle",
       "task": "",
-      "updatedAt": "2026-09-20T18:03:51Z",
+      "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "idle",
         "task": "",

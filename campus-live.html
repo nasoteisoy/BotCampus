@@ -298,6 +298,34 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     return deskPos(desk);
   }
 
+  // Spread sprites around a desk so mains/interns never stack on the same point.
+  function offsetAround(base, slot, kind, jesus) {
+    // slot: 0 = main, 1+ = interns; kind: 'main'|'intern'
+    const ring = [
+      {dl:0, dt:-4.2},   // main: above desk
+      {dl:-4.5, dt:3.8},
+      {dl:4.5, dt:3.8},
+      {dl:0, dt:5.5},
+      {dl:-6.5, dt:0.5},
+      {dl:6.5, dt:0.5}
+    ];
+    let o;
+    if (kind === 'main') o = ring[0];
+    else if (jesus) {
+      // permission line in front of Jesus desk (below)
+      const j = [
+        {dl:0, dt:6}, {dl:-5, dt:7.5}, {dl:5, dt:7.5}, {dl:-9, dt:6}, {dl:9, dt:6}
+      ];
+      o = j[(slot - 1) % j.length];
+    } else {
+      o = ring[1 + ((slot - 1) % (ring.length - 1))];
+    }
+    return {
+      left: Math.min(96, Math.max(4, base.left + o.dl)),
+      top: Math.min(96, Math.max(4, base.top + o.dt))
+    };
+  }
+
   function permissionInterns(data) {
     const jd = data.jesusDeskId;
     const out = [];
@@ -394,16 +422,26 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     const seen = new Set();
     const jesusId = data.jesusDeskId;
 
+    // Count interns per desk for slot assignment (incl. cross-bot at Jesus)
+    const deskInternSlot = {};
+    (data.bots || []).forEach(bot => {
+      (bot.interns || []).forEach(intern => {
+        const d = intern.atDeskId || bot.deskId;
+        deskInternSlot[d] = deskInternSlot[d] || 0;
+      });
+    });
+    const deskInternCursor = {};
+
     (data.bots || []).forEach(bot => {
       const color = bot.color || '#94a3b8';
       const mainKey = 'main:' + bot.id;
       seen.add(mainKey);
       const main = bot.main || {};
       const mainStatus = main.status || bot.status || 'idle';
-      const pos = resolvePos(main, desksById, bot.deskId);
-      // Main stays at desk — prefer deskId if atDeskId missing
       const deskPosMain = deskPos(desksById[bot.deskId] || desksById[main.atDeskId]);
-      const usePos = (main.x != null && main.y != null) ? pos : deskPosMain;
+      const usePos = (main.x != null && main.y != null)
+        ? resolvePos(main, desksById, bot.deskId)
+        : offsetAround(deskPosMain, 0, 'main', false);
 
       const el = ensureSprite(mainKey, { onTap: () => openSheet(bot) });
       el.className = 'sprite main status-' + mainStatus;
@@ -413,15 +451,20 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       placeSprite(el, usePos, first && !animTargets[mainKey]);
       animTargets[mainKey] = usePos;
 
-      (bot.interns || []).forEach((intern, idx) => {
+      (bot.interns || []).forEach((intern) => {
         const key = 'intern:' + bot.id + ':' + intern.id;
         seen.add(key);
         const ist = intern.status || 'idle';
-        const ipos = resolvePos(intern, desksById, bot.deskId);
-        // slight offset if multiple at same desk
-        const offset = ((idx % 3) - 1) * 2.2;
-        const finalPos = { left: ipos.left + offset, top: ipos.top + (idx > 0 ? 2.5 : 0) };
-        const isPerm = ist === 'needs_permission' && intern.atDeskId === jesusId;
+        const at = intern.atDeskId || bot.deskId;
+        deskInternCursor[at] = (deskInternCursor[at] || 0) + 1;
+        const slot = deskInternCursor[at]; // 1+
+        const base = (intern.x != null && intern.y != null)
+          ? resolvePos(intern, desksById, bot.deskId)
+          : deskPos(desksById[at] || desksById[bot.deskId]);
+        const isPerm = ist === 'needs_permission' && at === jesusId;
+        const finalPos = (intern.x != null && intern.y != null)
+          ? base
+          : offsetAround(base, slot, 'intern', at === jesusId);
         const iel = ensureSprite(key, { onTap: () => openSheet(bot) });
         iel.className = 'sprite intern status-' + ist + (isPerm ? ' perm-alert' : '');
         iel.querySelector('.body').style.background = color;
