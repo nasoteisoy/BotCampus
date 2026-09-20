@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bot-campus.local/campus-state.schema.json",
+  "title": "Bot Campus live state",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "jesusDeskId",
+    "desks",
+    "bots",
+    "deploys"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "jesusDeskId": {
+      "type": "string"
+    },
+    "desks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "ownerBotId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "zone": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "bots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "deskId",
+          "status",
+          "task",
+          "updatedAt",
+          "main",
+          "interns"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "deskId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "working",
+              "ready_for_review",
+              "needs_permission",
+              "reviewing",
+              "collaborating"
+            ]
+          },
+          "task": {
+            "type": "string",
+            "description": "Short label for phone UI"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "main": {
+            "type": "object",
+            "required": [
+              "status",
+              "atDeskId"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "idle",
+                  "working",
+                  "ready_for_review",
+                  "needs_permission",
+                  "reviewing",
+                  "collaborating"
+                ]
+              },
+              "task": {
+                "type": "string"
+              },
+              "atDeskId": {
+                "type": "string"
+              },
+              "x": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "y": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          },
+          "interns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "status",
+                "atDeskId",
+                "updatedAt"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "idle",
+                    "working",
+                    "ready_for_review",
+                    "needs_permission",
+                    "reviewing",
+                    "collaborating"
+                  ]
+                },
+                "task": {
+                  "type": "string"
+                },
+                "atDeskId": {
+                  "type": "string"
+                },
+                "x": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "y": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "repo",
+          "label",
+          "status",
+          "pagesUrl",
+          "repoUrl",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string",
+            "description": "owner/name"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "building",
+              "ready",
+              "failed"
+            ]
+          },
+          "pagesUrl": {
+            "type": "string"
+          },
+          "repoUrl": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string"
+          },
+          "checkUrl": {
+            "type": "string",
+            "description": "Alias of repoUrl for UI convenience"
+          }
+        }
+      }
+    }
+  }
+}

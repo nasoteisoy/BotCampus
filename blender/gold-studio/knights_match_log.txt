@@ -1,0 +1,14 @@
+=== knights_match v3 START ===
+--- lava_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/lava_knight.png bytes=1248620
+--- redgold_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/redgold_knight.png bytes=1152789
+--- hero_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/hero_knight.png bytes=1322856
+--- gold_plate_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/gold_plate_knight.png bytes=1338037
+=== DONE ===
+RESULT lava_knight.png exists=True bytes=1248620
+RESULT redgold_knight.png exists=True bytes=1152789
+RESULT hero_knight.png exists=True bytes=1322856
+RESULT gold_plate_knight.png exists=True bytes=1338037

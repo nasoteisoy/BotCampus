@@ -1,0 +1,15 @@
+=== plates_only HARD no-sphere START ===
+VERIFY: zero sphere/metaball bpy.ops calls in source OK
+--- plate_lava_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/plate_lava_knight.png bytes=1245612
+--- plate_redgold_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/plate_redgold_knight.png bytes=1147829
+--- plate_hero_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/plate_hero_knight.png bytes=1305647
+--- plate_gold_knight.png ---
+WROTE /workspace/bot-campus-publish/gold-studio/plate_gold_knight.png bytes=1324747
+=== DONE ===
+RESULT plate_lava_knight.png exists=True bytes=1245612
+RESULT plate_redgold_knight.png exists=True bytes=1147829
+RESULT plate_hero_knight.png exists=True bytes=1305647
+RESULT plate_gold_knight.png exists=True bytes=1324747

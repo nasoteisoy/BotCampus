@@ -1,0 +1,15 @@
+Gold Studio render log
+Blender 4.3.2 | samples=248 res=1400
+=== BUILD golden_chalice ===
+RENDER golden_chalice -> /workspace/bot-campus-publish/gold-studio/golden_chalice.png
+OK golden_chalice size=1645723
+ALL_DONE
+
+=== FINAL OUTPUTS ===
+golden_knight.png: 1444673 bytes exists=True
+golden_crown.png: 1191459 bytes exists=True
+golden_chalice.png: 1645723 bytes exists=True
+golden_throne.png: 1366916 bytes exists=True
+refs: 4
+gallery: /workspace/bot-campus-publish/gold-studio.html (4239 bytes)
+NOT pushed to GitHub (left ready for Leader)
