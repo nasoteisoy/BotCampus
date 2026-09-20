@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=3 no-overlap -->
+<!-- CACHE_BUST v=4 no-overlap -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -76,7 +76,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 #map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 48px #f43f5e18}
 #map{
-  position:relative; width:100%; aspect-ratio:900/640; min-height:360px;
+  position:relative; width:100%; aspect-ratio:900/720; min-height:420px;
   background:
     radial-gradient(ellipse at 50% 8%, #fbbf2428 0%, transparent 32%),
     radial-gradient(ellipse at 50% 55%, #33415533 0%, transparent 50%),
@@ -124,12 +124,14 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   position:absolute; inset:-5px; border-radius:50%; border:2.5px solid transparent; pointer-events:none;
 }
 .sprite .tag{
-  margin-top:2px; font-size:9px; font-weight:800; text-align:center;
-  color:#e2e8f0; text-shadow:0 1px 3px #000; max-width:64px;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  display:none; /* names live in bot list — tags caused overlaps */
 }
-.sprite.intern .body{width:18px;height:18px;font-size:8px; opacity:.95}
-.sprite.intern .tag{font-size:7px; max-width:52px}
+.sprite.intern .body{width:16px;height:16px;font-size:7px; opacity:.95}
+.sprite.intern .tag{display:none}
+.desk-label{
+  font-size:7px !important; max-width:56px !important;
+}
+.sprite.main .body{width:30px;height:30px;font-size:11px}
 .sprite.intern.perm-alert .body{
   box-shadow:0 0 0 3px #f43f5e, 0 0 16px #f43f5ecc; animation:pulse .9s ease-in-out infinite;
 }
@@ -249,7 +251,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 (function () {
   const STATE_URLS = ['./campus-state.json', './campus/campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 2000;
-  const WORLD = { w: 900, h: 640, pad: 48 };
+  const WORLD = { w: 900, h: 720, pad: 56 };
 
   const $ = (id) => document.getElementById(id);
   const mapEl = $('map');
@@ -301,20 +303,19 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   // Spread sprites around a desk so mains/interns never stack on the same point.
   function offsetAround(base, slot, kind, jesus) {
-    // slot: 0 = main, 1+ = interns; kind: 'main'|'intern'
     const ring = [
-      {dl:0, dt:-6.5},   // main: clearly above desk
-      {dl:-6.5, dt:5.5},
-      {dl:6.5, dt:5.5},
-      {dl:0, dt:8.0},
-      {dl:-9.0, dt:1.0},
-      {dl:9.0, dt:1.0}
+      {dl:0, dt:-7.5},
+      {dl:-8.0, dt:6.5},
+      {dl:8.0, dt:6.5},
+      {dl:0, dt:10.0},
+      {dl:-11.0, dt:1.5},
+      {dl:11.0, dt:1.5}
     ];
     let o;
     if (kind === 'main') o = ring[0];
     else if (jesus) {
       const j = [
-        {dl:0, dt:8}, {dl:-7, dt:9.5}, {dl:7, dt:9.5}, {dl:-12, dt:8}, {dl:12, dt:8}
+        {dl:0, dt:10}, {dl:-9, dt:11.5}, {dl:9, dt:11.5}, {dl:-15, dt:10}, {dl:15, dt:10}
       ];
       o = j[(slot - 1) % j.length];
     } else {
@@ -324,6 +325,30 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       left: Math.min(96, Math.max(4, base.left + o.dl)),
       top: Math.min(96, Math.max(4, base.top + o.dt))
     };
+  }
+
+  /** Push sprites apart if still too close (final anti-overlap pass). */
+  function separateSprites(positions, minDist) {
+    // positions: [{key, left, top}]
+    const min = minDist || 7.5;
+    for (let iter = 0; iter < 8; iter++) {
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const a = positions[i], b = positions[j];
+          let dx = b.left - a.left, dy = b.top - a.top;
+          let dist = Math.hypot(dx, dy) || 0.01;
+          if (dist < min) {
+            const push = (min - dist) / 2;
+            dx /= dist; dy /= dist;
+            a.left = Math.min(96, Math.max(4, a.left - dx * push));
+            a.top = Math.min(96, Math.max(4, a.top - dy * push));
+            b.left = Math.min(96, Math.max(4, b.left + dx * push));
+            b.top = Math.min(96, Math.max(4, b.top + dy * push));
+          }
+        }
+      }
+    }
+    return positions;
   }
 
   function permissionInterns(data) {
@@ -473,6 +498,16 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
         placeSprite(iel, finalPos, first && !animTargets[key]);
         animTargets[key] = finalPos;
       });
+    });
+
+    // Anti-overlap: separate all live sprites
+    const pack = Object.keys(animTargets).filter(k => seen.has(k)).map(k => ({
+      key: k, left: animTargets[k].left, top: animTargets[k].top
+    }));
+    separateSprites(pack, 8.0);
+    pack.forEach(p => {
+      animTargets[p.key] = { left: p.left, top: p.top };
+      if (spriteEls[p.key]) placeSprite(spriteEls[p.key], animTargets[p.key], first);
     });
 
     Object.keys(spriteEls).forEach(k => {

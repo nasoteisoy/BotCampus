@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:09:04Z",
+  "updatedAt": "2026-09-20T18:15:57Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -9,127 +9,71 @@
       "ownerBotId": null,
       "zone": "ops",
       "x": 450,
-      "y": 70
+      "y": 90
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 120,
-      "y": 200
+      "x": 150,
+      "y": 280
     },
     {
-      "id": "desk-leadersupport",
+      "id": "desk-leader-support",
       "label": "LeaderSupport",
-      "ownerBotId": "leadersupport",
+      "ownerBotId": "leader-support",
       "zone": "ops",
-      "x": 280,
-      "y": 200
+      "x": 450,
+      "y": 280
     },
     {
       "id": "desk-liveops",
       "label": "LiveOps",
       "ownerBotId": "liveops",
       "zone": "ops",
-      "x": 440,
-      "y": 200
-    },
-    {
-      "id": "desk-meeting",
-      "label": "Meeting",
-      "ownerBotId": null,
-      "zone": "ops",
-      "x": 620,
-      "y": 200
+      "x": 750,
+      "y": 280
     },
     {
       "id": "desk-campusdev",
       "label": "CampusDev",
       "ownerBotId": "campusdev",
       "zone": "workshop",
-      "x": 120,
-      "y": 340
+      "x": 150,
+      "y": 480
     },
     {
       "id": "desk-spriteforge",
       "label": "SpriteForge",
       "ownerBotId": "spriteforge",
       "zone": "workshop",
-      "x": 300,
-      "y": 340
+      "x": 450,
+      "y": 480
     },
     {
-      "id": "desk-spriteforgesupport",
+      "id": "desk-spriteforge-support",
       "label": "SpriteForgeSupport",
-      "ownerBotId": "spriteforgesupport",
+      "ownerBotId": "spriteforge-support",
       "zone": "workshop",
-      "x": 480,
-      "y": 340
-    },
-    {
-      "id": "desk-story",
-      "label": "Story",
-      "ownerBotId": "story",
-      "zone": "studio",
-      "x": 660,
-      "y": 340
-    },
-    {
-      "id": "desk-findme",
-      "label": "Find Me",
-      "ownerBotId": "findme",
-      "zone": "studio",
-      "x": 820,
-      "y": 340
-    },
-    {
-      "id": "desk-onfriendg",
-      "label": "OnFriendG",
-      "ownerBotId": "onfriendg",
-      "zone": "games",
-      "x": 120,
+      "x": 750,
       "y": 480
     },
     {
-      "id": "desk-game-makers",
-      "label": "Game Makers",
-      "ownerBotId": "game-makers",
-      "zone": "games",
-      "x": 300,
-      "y": 480
+      "id": "desk-meeting",
+      "label": "Meeting",
+      "ownerBotId": null,
+      "zone": "common",
+      "x": 450,
+      "y": 650
     },
     {
-      "id": "desk-random",
-      "label": "Random",
-      "ownerBotId": "random",
-      "zone": "games",
-      "x": 480,
-      "y": 480
-    },
-    {
-      "id": "desk-fplanetg",
-      "label": "FPlanetG",
-      "ownerBotId": "fplanetg",
-      "zone": "games",
-      "x": 660,
-      "y": 480
-    },
-    {
-      "id": "desk-lotr",
-      "label": "LOTR Lookup",
-      "ownerBotId": "lotr",
-      "zone": "games",
-      "x": 820,
-      "y": 480
-    },
-    {
-      "id": "desk-psych",
-      "label": "My Psychiatrist",
-      "ownerBotId": "psych",
-      "zone": "wellness",
-      "x": 820,
-      "y": 540
+      "id": "desk-campuscast",
+      "label": "CampusCast",
+      "ownerBotId": "campuscast",
+      "zone": "workshop",
+      "x": 750,
+      "y": 650
     }
   ],
   "bots": [
@@ -154,14 +98,14 @@
       "id": "leadersupport",
       "name": "LeaderSupport",
       "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
-      "deskId": "desk-leadersupport",
+      "deskId": "desk-leader-support",
       "status": "idle",
       "task": "",
       "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "idle",
         "task": "",
-        "atDeskId": "desk-leadersupport",
+        "atDeskId": "desk-leader-support",
         "x": null,
         "y": null
       },
@@ -244,14 +188,14 @@
       "id": "spriteforgesupport",
       "name": "SpriteForgeSupport",
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
-      "deskId": "desk-spriteforgesupport",
+      "deskId": "desk-spriteforge-support",
       "status": "idle",
       "task": "",
       "updatedAt": "2026-09-20T18:08:47Z",
       "main": {
         "status": "idle",
         "task": "",
-        "atDeskId": "desk-spriteforgesupport",
+        "atDeskId": "desk-spriteforge-support",
         "x": null,
         "y": null
       },
@@ -267,8 +211,8 @@
       "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Layout spread live",
-      "updatedAt": "2026-09-20T18:08:56Z",
+      "note": "Core-desk map, no-overlap v4",
+      "updatedAt": "2026-09-20T18:15:57Z",
       "updatedBy": "campusdev"
     }
   ]
