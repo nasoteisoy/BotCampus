@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=7 pan-zoom world -->
+<!-- CACHE_BUST v=7 castFiles pan-zoom -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -69,39 +69,49 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 #map-wrap{
   position:relative; background:var(--panel); border:1px solid var(--line);
   border-radius:16px; overflow:hidden; margin-bottom:.75rem;
-  touch-action:none; user-select:none; -webkit-user-select:none;
-  height:min(62vh, 540px); min-height:440px; cursor:grab;
+  touch-action:none; height:min(62vh, 520px); min-height:360px;
+  user-select:none; -webkit-user-select:none;
 }
-#map-wrap.panning{cursor:grabbing}
 #map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 48px #f43f5e18}
-#map{
+#map-world{
   position:absolute; left:0; top:0;
-  width:1400px; height:1100px;
-  transform-origin:0 0; will-change:transform;
+  width:1440px; height:1120px;
+  transform-origin:0 0;
+  will-change:transform;
   background:
     radial-gradient(ellipse at 50% 8%, #fbbf2428 0%, transparent 32%),
     radial-gradient(ellipse at 50% 55%, #33415533 0%, transparent 50%),
     linear-gradient(180deg,#1a2332 0%, #0f172a 100%);
 }
-#map-controls{
-  position:absolute; right:8px; bottom:8px; z-index:30;
-  display:flex; flex-direction:column; gap:6px; pointer-events:none;
-}
-#map-controls button{
-  pointer-events:auto; min-width:44px; min-height:44px; padding:0 .55rem;
-  border-radius:12px; border:1px solid var(--line);
-  background:#1e293bcc; color:var(--text); font-weight:800; font-size:.95rem;
-  backdrop-filter:blur(8px); cursor:pointer;
-  box-shadow:0 2px 10px #0006;
-}
-#map-controls button:active{transform:scale(.96)}
-#map-controls .reset{font-size:.62rem; letter-spacing:.02em; text-transform:uppercase; padding:0 .65rem}
 .floor-grid{
   position:absolute; inset:0; opacity:.12; pointer-events:none;
   background-image:
     linear-gradient(#fff 1px, transparent 1px),
     linear-gradient(90deg, #fff 1px, transparent 1px);
   background-size:40px 40px;
+}
+#map-hud{
+  position:absolute; z-index:20; right:max(.55rem, env(safe-area-inset-right));
+  bottom:max(.55rem, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+#map-hud button{
+  pointer-events:auto;
+  width:48px; height:48px; min-width:48px; min-height:48px;
+  border-radius:12px; border:1px solid #64748b88;
+  background:#0f172ae6; color:#e2e8f0; font-size:1.35rem; font-weight:800;
+  display:grid; place-items:center; cursor:pointer;
+  box-shadow:0 2px 10px #0006; backdrop-filter:blur(8px);
+  touch-action:manipulation; line-height:1; padding:0;
+}
+#map-hud button:active{transform:scale(.94); background:#1e293be6}
+#map-hint{
+  position:absolute; z-index:19; left:50%; transform:translateX(-50%);
+  bottom:max(.45rem, env(safe-area-inset-bottom));
+  font-size:.62rem; font-weight:700; color:#94a3b8;
+  background:#0f172acc; padding:.28rem .55rem; border-radius:999px;
+  pointer-events:none; white-space:nowrap; letter-spacing:.01em;
+  max-width:calc(100% - 120px); overflow:hidden; text-overflow:ellipsis;
 }
 .desk{
   position:absolute; transform:translate(-50%,-50%);
@@ -236,8 +246,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   <div>
     <h1>Bot Campus Live</h1>
     <div class="links">
-      <a href="research-board.html?v=1">Research</a>
-      <a href="campus-cast-review.html?v=1">Cast review</a>
+      <a href="research-board.html?v=7">Research</a>
+      <a href="campus-cast-review.html?v=7">Cast review</a>
       <a href="office.html">3D Office</a>
       <a href="liveops/CAMPUS_STATE.md">Protocol</a>
     </div>
@@ -254,14 +264,15 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   <div class="section-title">Campus map</div>
   <div id="map-wrap">
-    <div id="map">
+    <div id="map-world">
       <div class="floor-grid"></div>
     </div>
-    <div id="map-controls" aria-label="Map zoom">
-      <button type="button" id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
-      <button type="button" id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
-      <button type="button" id="zoom-reset" class="reset" title="Reset view" aria-label="Reset view">Reset</button>
+    <div id="map-hud">
+      <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+      <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+      <button type="button" id="zoom-reset" aria-label="Reset view">⟲</button>
     </div>
+    <div id="map-hint">Drag to pan · pinch or ± to zoom</div>
   </div>
 
   <ul id="legend">
@@ -292,7 +303,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1500;
   const ASSET_V = '7';
-  const WORLD = { w: 1400, h: 1100, pad: 72 };
+  const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
   const ID_ALIAS = {
@@ -330,7 +341,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   };
 
   const $ = (id) => document.getElementById(id);
-  const mapEl = $('map');
+  const mapWorld = $('map-world');
+  const mapEl = mapWorld; // desks/sprites live on map-world
   const mapWrap = $('map-wrap');
   const deploysEl = $('deploys');
   const botListEl = $('bot-list');
@@ -345,6 +357,286 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   let deskIndex = {};
   let spriteEls = {};
   let animTargets = {};
+
+  /* ——— Camera (transform only; no DOM re-layout per frame) ——— */
+  const ZOOM_MIN = 0.45, ZOOM_MAX = 2.5;
+  const cam = { x: 0, y: 0, scale: 1, vx: 0, vy: 0 };
+  let camRaf = 0;
+  let suppressClick = false;
+  let fittedOnce = false;
+
+  function applyCam() {
+    mapWorld.style.transform = 'translate(' + cam.x + 'px,' + cam.y + 'px) scale(' + cam.scale + ')';
+  }
+
+  function clampCam() {
+    const rect = mapWrap.getBoundingClientRect();
+    const vw = rect.width, vh = rect.height;
+    const sw = WORLD.w * cam.scale, sh = WORLD.h * cam.scale;
+    const padX = Math.min(vw * 0.15, 80);
+    const padY = Math.min(vh * 0.15, 80);
+    // Keep some world visible; allow overscroll pad
+    if (sw <= vw) {
+      cam.x = (vw - sw) / 2;
+    } else {
+      const minX = vw - sw - padX;
+      const maxX = padX;
+      cam.x = Math.min(maxX, Math.max(minX, cam.x));
+    }
+    if (sh <= vh) {
+      cam.y = (vh - sh) / 2;
+    } else {
+      const minY = vh - sh - padY;
+      const maxY = padY;
+      cam.y = Math.min(maxY, Math.max(minY, cam.y));
+    }
+  }
+
+  function softClampZoom(s) {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, s));
+  }
+
+  function zoomAt(screenX, screenY, newScale) {
+    const rect = mapWrap.getBoundingClientRect();
+    const fx = screenX - rect.left;
+    const fy = screenY - rect.top;
+    const wx = (fx - cam.x) / cam.scale;
+    const wy = (fy - cam.y) / cam.scale;
+    cam.scale = softClampZoom(newScale);
+    cam.x = fx - wx * cam.scale;
+    cam.y = fy - wy * cam.scale;
+    clampCam();
+    applyCam();
+  }
+
+  function fitOverview() {
+    const rect = mapWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const s = Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.96;
+    cam.scale = softClampZoom(s);
+    cam.x = (rect.width - WORLD.w * cam.scale) / 2;
+    cam.y = (rect.height - WORLD.h * cam.scale) / 2;
+    cam.vx = cam.vy = 0;
+    clampCam();
+    applyCam();
+  }
+
+  function stopInertia() {
+    cam.vx = cam.vy = 0;
+    if (camRaf) { cancelAnimationFrame(camRaf); camRaf = 0; }
+  }
+
+  function tickInertia() {
+    camRaf = 0;
+    cam.x += cam.vx;
+    cam.y += cam.vy;
+    cam.vx *= 0.92;
+    cam.vy *= 0.92;
+    clampCam();
+    applyCam();
+    if (Math.hypot(cam.vx, cam.vy) > 0.15) {
+      camRaf = requestAnimationFrame(tickInertia);
+    } else {
+      cam.vx = cam.vy = 0;
+    }
+  }
+
+  // Pointer / gesture state
+  const pointers = new Map();
+  let gestureMode = null; // 'pan' | 'pinch' | null
+  let panLast = null;
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let pinchMid = null;
+  let dragMoved = false;
+  let lastTapT = 0, lastTapX = 0, lastTapY = 0;
+
+  function isHudTarget(el) {
+    return !!(el && el.closest && el.closest('#map-hud'));
+  }
+
+  function pointerList() {
+    return Array.from(pointers.values());
+  }
+
+  function dist(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  function midpoint(a, b) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  mapWrap.addEventListener('pointerdown', (e) => {
+    if (isHudTarget(e.target)) return;
+    if (sheet.classList.contains('open')) return;
+    mapWrap.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, id: e.pointerId });
+    stopInertia();
+    dragMoved = false;
+    const pts = pointerList();
+    if (pts.length === 1) {
+      gestureMode = null; // wait for threshold
+      panLast = { x: e.clientX, y: e.clientY };
+    } else if (pts.length >= 2) {
+      gestureMode = 'pinch';
+      const [a, b] = pts;
+      pinchStartDist = Math.max(1, dist(a, b));
+      pinchStartScale = cam.scale;
+      pinchMid = midpoint(a, b);
+      panLast = null;
+    }
+  });
+
+  mapWrap.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, id: e.pointerId });
+    const pts = pointerList();
+
+    if (pts.length >= 2) {
+      if (gestureMode !== 'pinch') {
+        gestureMode = 'pinch';
+        const [a, b] = pts;
+        pinchStartDist = Math.max(1, dist(a, b));
+        pinchStartScale = cam.scale;
+        pinchMid = midpoint(a, b);
+      }
+      const [a, b] = pts;
+      const mid = midpoint(a, b);
+      const d = Math.max(1, dist(a, b));
+      const next = pinchStartScale * (d / pinchStartDist);
+      zoomAt(mid.x, mid.y, next);
+      // Also allow mild pan if midpoint moved
+      if (pinchMid) {
+        cam.x += mid.x - pinchMid.x;
+        cam.y += mid.y - pinchMid.y;
+        pinchMid = mid;
+        clampCam();
+        applyCam();
+      }
+      dragMoved = true;
+      suppressClick = true;
+      return;
+    }
+
+    if (pts.length === 1 && panLast) {
+      const p = pts[0];
+      const dx = p.x - panLast.x;
+      const dy = p.y - panLast.y;
+      const thresh = 8; // ~3mm / ≥8 CSS px floor
+      if (!mapWrap._panStart) mapWrap._panStart = { x: panLast.x, y: panLast.y };
+      if (gestureMode !== 'pan') {
+        if (Math.hypot(p.x - mapWrap._panStart.x, p.y - mapWrap._panStart.y) < thresh) {
+          panLast = { x: p.x, y: p.y };
+          return;
+        }
+        gestureMode = 'pan';
+        dragMoved = true;
+        suppressClick = true;
+      }
+      cam.x += dx;
+      cam.y += dy;
+      cam.vx = dx;
+      cam.vy = dy;
+      clampCam();
+      applyCam();
+      dragMoved = true;
+      suppressClick = true;
+      panLast = { x: p.x, y: p.y };
+    }
+  });
+
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    try { mapWrap.releasePointerCapture(e.pointerId); } catch (_) {}
+    const pts = pointerList();
+    if (pts.length === 0) {
+      mapWrap._panStart = null;
+      if (gestureMode === 'pan' && (Math.abs(cam.vx) > 0.5 || Math.abs(cam.vy) > 0.5)) {
+        if (!camRaf) camRaf = requestAnimationFrame(tickInertia);
+      } else {
+        cam.vx = cam.vy = 0;
+      }
+      // Double-tap zoom toggle
+      if (!dragMoved && e.pointerType !== 'mouse') {
+        const now = Date.now();
+        if (now - lastTapT < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 28) {
+          const mid = (ZOOM_MIN + ZOOM_MAX) / 2;
+          const target = cam.scale < mid ? Math.min(ZOOM_MAX, cam.scale * 1.7) : fitScale();
+          if (cam.scale < mid) zoomAt(e.clientX, e.clientY, target);
+          else fitOverview();
+          lastTapT = 0;
+        } else {
+          lastTapT = now; lastTapX = e.clientX; lastTapY = e.clientY;
+        }
+      } else if (!dragMoved && e.pointerType === 'mouse' && e.detail === 2) {
+        // handled via dblclick
+      }
+      gestureMode = null;
+      panLast = null;
+      setTimeout(() => { suppressClick = false; }, 40);
+    } else if (pts.length === 1) {
+      // Dropped from pinch to pan
+      gestureMode = null;
+      panLast = { x: pts[0].x, y: pts[0].y };
+      mapWrap._panStart = { x: pts[0].x, y: pts[0].y };
+      pinchMid = null;
+      stopInertia();
+    }
+  }
+
+  function fitScale() {
+    const rect = mapWrap.getBoundingClientRect();
+    return softClampZoom(Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.96);
+  }
+
+  mapWrap.addEventListener('pointerup', endPointer);
+  mapWrap.addEventListener('pointercancel', endPointer);
+  mapWrap.addEventListener('lostpointercapture', (e) => {
+    if (pointers.has(e.pointerId)) endPointer(e);
+  });
+
+  mapWrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    stopInertia();
+    const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+    zoomAt(e.clientX, e.clientY, cam.scale * factor);
+  }, { passive: false });
+
+  mapWrap.addEventListener('dblclick', (e) => {
+    if (isHudTarget(e.target)) return;
+    e.preventDefault();
+    const mid = (ZOOM_MIN + ZOOM_MAX) / 2;
+    if (cam.scale < mid) zoomAt(e.clientX, e.clientY, Math.min(ZOOM_MAX, cam.scale * 1.8));
+    else fitOverview();
+  });
+
+  $('zoom-in').addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopInertia();
+    const r = mapWrap.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale * 1.2);
+  });
+  $('zoom-out').addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopInertia();
+    const r = mapWrap.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale / 1.2);
+  });
+  $('zoom-reset').addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopInertia();
+    fitOverview();
+  });
+
+  // Prevent HUD from starting map gestures
+  $('map-hud').addEventListener('pointerdown', (e) => e.stopPropagation());
+
+  window.addEventListener('resize', () => {
+    clampCam();
+    applyCam();
+  });
 
   function initials(name) {
     return (name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -395,8 +687,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   function deskPos(desk) {
     if (!desk) return { left: 50, top: 50 };
-    const x = ((desk.x ?? 450) / WORLD.w) * 100;
-    const y = ((desk.y ?? 280) / WORLD.h) * 100;
+    const x = ((desk.x ?? 720) / WORLD.w) * 100;
+    const y = ((desk.y ?? 400) / WORLD.h) * 100;
     return { left: Math.min(96, Math.max(4, x)), top: Math.min(96, Math.max(4, y)) };
   }
 
@@ -531,7 +823,10 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
           '<span class="swatch-fallback" hidden></span>' +
         '</div>' +
         '<div class="tag"></div>';
-      el.addEventListener('click', () => { if (opts.onTap) opts.onTap(); });
+      el.addEventListener('click', (ev) => {
+        if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
+        if (opts.onTap) opts.onTap();
+      });
       mapEl.appendChild(el);
       spriteEls[key] = el;
     }
@@ -687,17 +982,15 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   function applyState(data, first) {
     state = data;
     lastGood = data;
-    if (data.world && data.world.w && data.world.h) {
-      WORLD.w = data.world.w;
-      WORLD.h = data.world.h;
-      mapEl.style.width = WORLD.w + 'px';
-      mapEl.style.height = WORLD.h + 'px';
-    }
     renderDeploys(data.deploys);
     renderDesks(data.desks, data.jesusDeskId);
     renderSprites(data, first);
     renderBotList(data);
     renderAlert(data);
+    if (!fittedOnce) {
+      fittedOnce = true;
+      requestAnimationFrame(fitOverview);
+    }
     const t = data.updatedAt || '';
     window.__stateUpdatedAt = t ? Date.parse(t) : Date.now();
     window.__lastFetchOk = Date.now();
@@ -706,6 +999,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   }
 
   function openSheet(bot) {
+    if (suppressClick || dragMoved) return;
     $('s-name').textContent = bot.name;
     const st = bot.status || 'idle';
     $('s-meta').textContent = st.replace(/_/g, ' ') + ' · desk ' + (bot.deskId || '—');
@@ -734,231 +1028,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   }
   $('sheet-close').addEventListener('click', closeSheet);
   backdrop.addEventListener('click', closeSheet);
-
-  /* —— Map pan / zoom (industry-bar: 1-finger pan, pinch mid, wheel, clamp) —— */
-  const MIN_ZOOM = 0.55;
-  const MAX_ZOOM = 2.5;
-  const view = { x: 0, y: 0, z: 1 };
-  let inertiaRaf = null;
-  let vel = { x: 0, y: 0 };
-  let dragging = false;
-  let lastPtr = null;
-  let moved = false;
-  const pointers = new Map(); // id -> {x,y}
-  let pinch = null; // {dist, midX, midY, viewX, viewY, viewZ}
-
-  function applyView(withTransition) {
-    if (withTransition) {
-      mapEl.style.transition = 'transform .2s ease-out';
-    } else {
-      mapEl.style.transition = 'none';
-    }
-    mapEl.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.z + ')';
-  }
-
-  function clampView() {
-    const vw = mapWrap.clientWidth;
-    const vh = mapWrap.clientHeight;
-    const mw = WORLD.w * view.z;
-    const mh = WORLD.h * view.z;
-    // Keep map covering viewport; if smaller on an axis, center it.
-    if (mw <= vw) {
-      view.x = (vw - mw) / 2;
-    } else {
-      view.x = Math.min(0, Math.max(vw - mw, view.x));
-    }
-    if (mh <= vh) {
-      view.y = (vh - mh) / 2;
-    } else {
-      view.y = Math.min(0, Math.max(vh - mh, view.y));
-    }
-  }
-
-  function setZoomAt(nx, ny, newZ) {
-    // Keep world point under (nx,ny) viewport coords fixed
-    const wz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZ));
-    const wx = (nx - view.x) / view.z;
-    const wy = (ny - view.y) / view.z;
-    view.z = wz;
-    view.x = nx - wx * view.z;
-    view.y = ny - wy * view.z;
-    clampView();
-    applyView(false);
-  }
-
-  function fitReset() {
-    const vw = mapWrap.clientWidth || 1;
-    const vh = mapWrap.clientHeight || 1;
-    // Fit whole map with a little padding, then clamp to zoom limits
-    const zFit = Math.min(vw / WORLD.w, vh / WORLD.h) * 0.96;
-    view.z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zFit));
-    view.x = (vw - WORLD.w * view.z) / 2;
-    view.y = (vh - WORLD.h * view.z) / 2;
-    clampView();
-    applyView(true);
-  }
-
-  function stopInertia() {
-    if (inertiaRaf) { cancelAnimationFrame(inertiaRaf); inertiaRaf = null; }
-    vel.x = 0; vel.y = 0;
-  }
-
-  function startInertia() {
-    stopInertia();
-    const friction = 0.92;
-    const minV = 0.35;
-    function step() {
-      if (Math.hypot(vel.x, vel.y) < minV) { inertiaRaf = null; return; }
-      view.x += vel.x;
-      view.y += vel.y;
-      clampView();
-      applyView(false);
-      vel.x *= friction;
-      vel.y *= friction;
-      inertiaRaf = requestAnimationFrame(step);
-    }
-    inertiaRaf = requestAnimationFrame(step);
-  }
-
-  function ptrPos(e) {
-    const r = mapWrap.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-
-  function updatePinch(e) {
-    const pts = [...pointers.values()];
-    if (pts.length < 2) return;
-    const dx = pts[1].x - pts[0].x;
-    const dy = pts[1].y - pts[0].y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const midX = (pts[0].x + pts[1].x) / 2;
-    const midY = (pts[0].y + pts[1].y) / 2;
-    if (!pinch) {
-      pinch = { dist, midX, midY, viewX: view.x, viewY: view.y, viewZ: view.z };
-      return;
-    }
-    const scale = dist / pinch.dist;
-    setZoomAt(midX, midY, pinch.viewZ * scale);
-    // also allow midpoint drift as pan
-    const dmx = midX - pinch.midX;
-    const dmy = midY - pinch.midY;
-    view.x += dmx;
-    view.y += dmy;
-    pinch.midX = midX;
-    pinch.midY = midY;
-    // rebase so subsequent scales compound from current
-    pinch.dist = dist;
-    pinch.viewZ = view.z;
-    pinch.viewX = view.x;
-    pinch.viewY = view.y;
-    clampView();
-    applyView(false);
-  }
-
-  mapWrap.addEventListener('pointerdown', (e) => {
-    if (e.target.closest && e.target.closest('#map-controls')) return;
-    const p = ptrPos(e);
-    pointers.set(e.pointerId, p);
-    stopInertia();
-    if (pointers.size === 1) {
-      dragging = true;
-      moved = false;
-      lastPtr = { ...p, t: performance.now() };
-      vel = { x: 0, y: 0 };
-    } else if (pointers.size === 2) {
-      dragging = false;
-      pinch = null;
-      // Capture both fingers for pinch
-      pointers.forEach((_, id) => { try { mapWrap.setPointerCapture(id); } catch (_) {} });
-      updatePinch(e);
-    }
-  });
-
-  mapWrap.addEventListener('pointermove', (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    const p = ptrPos(e);
-    pointers.set(e.pointerId, p);
-    if (pointers.size >= 2) {
-      updatePinch(e);
-      moved = true;
-      return;
-    }
-    if (!dragging || !lastPtr) return;
-    const dx = p.x - lastPtr.x;
-    const dy = p.y - lastPtr.y;
-    if (!moved && Math.hypot(dx, dy) > 4) {
-      moved = true;
-      mapWrap.classList.add('panning');
-      try { mapWrap.setPointerCapture(e.pointerId); } catch (_) {}
-    }
-    if (!moved) return; // preserve sprite taps
-    const now = performance.now();
-    const dt = Math.max(1, now - lastPtr.t);
-    vel.x = dx * (16 / dt);
-    vel.y = dy * (16 / dt);
-    view.x += dx;
-    view.y += dy;
-    lastPtr = { ...p, t: now };
-    clampView();
-    applyView(false);
-  });
-
-  function endPtr(e) {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinch = null;
-    if (pointers.size === 0) {
-      dragging = false;
-      mapWrap.classList.remove('panning');
-      lastPtr = null;
-      if (moved && (Math.hypot(vel.x, vel.y) > 0.8)) startInertia();
-    } else if (pointers.size === 1) {
-      // resume single-finger pan from remaining point
-      const rem = [...pointers.values()][0];
-      dragging = true;
-      lastPtr = { ...rem, t: performance.now() };
-      vel = { x: 0, y: 0 };
-    }
-  }
-  mapWrap.addEventListener('pointerup', endPtr);
-  mapWrap.addEventListener('pointercancel', endPtr);
-  mapWrap.addEventListener('lostpointercapture', endPtr);
-
-  // Suppress sprite click if we panned
-  mapWrap.addEventListener('click', (e) => {
-    if (moved) {
-      e.stopPropagation();
-      e.preventDefault();
-      moved = false;
-    }
-  }, true);
-
-  mapWrap.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    stopInertia();
-    const p = ptrPos(e);
-    const factor = e.deltaY < 0 ? 1.1 : (1 / 1.1);
-    setZoomAt(p.x, p.y, view.z * factor);
-  }, { passive: false });
-
-  $('zoom-in').addEventListener('click', () => {
-    stopInertia();
-    setZoomAt(mapWrap.clientWidth / 2, mapWrap.clientHeight / 2, view.z * 1.2);
-  });
-  $('zoom-out').addEventListener('click', () => {
-    stopInertia();
-    setZoomAt(mapWrap.clientWidth / 2, mapWrap.clientHeight / 2, view.z / 1.2);
-  });
-  $('zoom-reset').addEventListener('click', () => { stopInertia(); fitReset(); });
-
-  // Size map element to WORLD
-  mapEl.style.width = WORLD.w + 'px';
-  mapEl.style.height = WORLD.h + 'px';
-
-  window.addEventListener('resize', () => { clampView(); applyView(false); });
-  // Initial fit after layout
-  requestAnimationFrame(() => fitReset());
-
 
   function tickAge() {
     if (!window.__lastFetchOk) { updatedEl.textContent = 'connecting…'; return; }
@@ -991,6 +1060,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     if (lastGood) applyState(lastGood, false);
   }
 
+  // Initial camera before first paint of sprites
+  requestAnimationFrame(fitOverview);
   poll();
   setInterval(poll, POLL_MS);
 })();

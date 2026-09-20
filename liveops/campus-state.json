@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:30:46Z",
+  "updatedAt": "2026-09-20T22:32:38Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -144,8 +144,8 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
-      "status": "ready_for_review",
-      "task": "campus-live cast sprites on Pages v6",
+      "status": "working",
+      "task": "Ship campus-live pan/zoom v7",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:36:29Z",
+      "updatedAt": "2026-09-20T22:32:38Z",
       "main": {
-        "status": "ready_for_review",
-        "task": "campus-live cast sprites on Pages v6",
+        "status": "working",
+        "task": "Ship campus-live pan/zoom v7",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -185,25 +185,14 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
       "status": "working",
-      "task": "campus-state FLOW activity push",
+      "task": "campus-state live; FLOW map watching",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [
-        {
-          "id": "dev-b-i-sync",
-          "label": "Publish sync",
-          "status": "working",
-          "task": "Write + push campus-state",
-          "atDeskId": "desk-dev-b",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
-        }
-      ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "interns": [],
+      "updatedAt": "2026-09-20T22:31:28Z",
       "main": {
         "status": "working",
-        "task": "campus-state FLOW activity push",
+        "task": "campus-state live; FLOW map watching",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
@@ -596,9 +585,9 @@
       "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "FLOW activity state push",
-      "updatedAt": "2026-09-20T22:30:46Z",
-      "updatedBy": "dev-b"
+      "note": "Pushing campus-live pan/zoom v7",
+      "updatedAt": "2026-09-20T22:32:38Z",
+      "updatedBy": "dev-a"
     }
   ],
   "world": {

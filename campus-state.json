@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:31:28Z",
+  "updatedAt": "2026-09-20T22:32:38Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -144,8 +144,8 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
-      "status": "ready_for_review",
-      "task": "campus-live cast sprites on Pages v6",
+      "status": "working",
+      "task": "Ship campus-live pan/zoom v7",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:36:29Z",
+      "updatedAt": "2026-09-20T22:32:38Z",
       "main": {
-        "status": "ready_for_review",
-        "task": "campus-live cast sprites on Pages v6",
+        "status": "working",
+        "task": "Ship campus-live pan/zoom v7",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -582,12 +582,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "FLOW all-hands state live (3ed8952)",
-      "updatedAt": "2026-09-20T22:31:28Z",
-      "updatedBy": "deva"
+      "note": "Pushing campus-live pan/zoom v7",
+      "updatedAt": "2026-09-20T22:32:38Z",
+      "updatedBy": "dev-a"
     }
   ],
   "world": {
