@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=4 no-overlap -->
+<!-- CACHE_BUST v=6 castFiles -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -37,7 +37,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   text-transform:uppercase; color:var(--muted);
 }
 
-/* Deploy board */
 #deploys{display:flex; flex-direction:column; gap:.45rem; margin-bottom:.85rem}
 .deploy-card{
   display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
@@ -60,7 +59,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 .pill-dot{width:.4rem;height:.4rem;border-radius:50%;background:currentColor}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
-/* High alert */
 #alert-banner{
   display:none; margin-bottom:.7rem; padding:.55rem .7rem; border-radius:12px;
   background:linear-gradient(90deg,#7f1d1dcc,#9f1239aa); border:1px solid #fb7185;
@@ -68,7 +66,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 #alert-banner.show{display:block; animation:pulse 1.1s ease-in-out infinite}
 
-/* Map */
 #map-wrap{
   position:relative; background:var(--panel); border:1px solid var(--line);
   border-radius:16px; overflow:hidden; margin-bottom:.75rem;
@@ -102,38 +99,56 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 .desk.meeting{background:#1e3a5fcc; border-color:#38bdf888}
 .desk-label{
-  font-size:8px; font-weight:800; color:#cbd5e1; white-space:nowrap;
-  text-shadow:0 1px 2px #000; max-width:70px; overflow:hidden; text-overflow:ellipsis;
+  font-size:7px !important; font-weight:800; color:#cbd5e1; white-space:nowrap;
+  text-shadow:0 1px 2px #000; max-width:56px !important; overflow:hidden; text-overflow:ellipsis;
 }
-.desk.jesus .desk-label{color:#fef3c7; font-size:9px}
+.desk.jesus .desk-label{color:#fef3c7; font-size:9px !important}
 
 .sprite{
   position:absolute; transform:translate(-50%,-50%);
   z-index:5; cursor:pointer; touch-action:manipulation;
   transition:left .45s ease, top .45s ease;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  background:transparent; border:0; padding:0; color:inherit;
 }
 .sprite.main{z-index:6}
 .sprite .body{
-  width:28px; height:28px; border-radius:50%;
-  border:2px solid #fff8; box-shadow:0 2px 8px #0008;
-  display:grid; place-items:center; font-size:11px; font-weight:900; color:#0f172a;
   position:relative;
+  display:grid; place-items:center;
+  background:transparent; border:0; box-shadow:none;
 }
-.sprite.main .body{width:34px;height:34px;font-size:13px}
+.sprite.main .body{width:68px; height:68px}
+.sprite.intern .body{width:40px; height:40px}
+.sprite img.cast{
+  width:100%; height:100%; object-fit:contain; display:block;
+  pointer-events:none; image-rendering:auto;
+  filter:drop-shadow(0 2px 6px #000a);
+}
+.sprite .swatch-fallback{
+  width:100%; height:100%; border-radius:50%;
+  border:2px solid #fff8; box-shadow:0 2px 8px #0008;
+  display:grid; place-items:center; font-weight:900; color:#0f172a;
+  font-size:13px;
+}
+.sprite.intern .swatch-fallback{font-size:8px}
 .sprite .ring{
-  position:absolute; inset:-5px; border-radius:50%; border:2.5px solid transparent; pointer-events:none;
+  position:absolute; inset:-4px; border-radius:50%; border:2.5px solid transparent; pointer-events:none;
 }
+.sprite.main .ring{inset:-5px}
 .sprite .tag{
-  display:none; /* names live in bot list — tags caused overlaps */
+  display:block; font-size:8px; font-weight:800; color:#e2e8f0;
+  text-shadow:0 1px 2px #000, 0 0 4px #000c;
+  white-space:nowrap; max-width:72px; overflow:hidden; text-overflow:ellipsis;
+  text-align:center; line-height:1.1; margin-top:1px;
+  background:#0f172acc; padding:1px 4px; border-radius:4px;
 }
-.sprite.intern .body{width:16px;height:16px;font-size:7px; opacity:.95}
-.sprite.intern .tag{display:none}
-.desk-label{
-  font-size:7px !important; max-width:56px !important;
-}
-.sprite.main .body{width:30px;height:30px;font-size:11px}
+.sprite.main .tag{display:none} /* names in bot list */
+.sprite.intern .tag{display:block; font-size:7px; max-width:64px}
 .sprite.intern.perm-alert .body{
-  box-shadow:0 0 0 3px #f43f5e, 0 0 16px #f43f5ecc; animation:pulse .9s ease-in-out infinite;
+  filter:drop-shadow(0 0 8px #f43f5ecc);
+}
+.sprite.intern.perm-alert .ring{
+  border-color:#f43f5e; animation:pulse .9s ease-in-out infinite;
 }
 .status-idle .ring{border-color:#64748b}
 .status-working .ring{border-color:#38bdf8}
@@ -251,9 +266,46 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
 <script>
 (function () {
-  const STATE_URLS = ['./campus-state.json', './campus/campus-state.json', './liveops/campus-state.json'];
-  const POLL_MS = 2000;
+  // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
+  const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
+  const POLL_MS = 1500;
+  const ASSET_V = '6';
   const WORLD = { w: 900, h: 720, pad: 56 };
+
+  // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
+  const ID_ALIAS = {
+    leader: 'leader',
+    leadersupport: 'dev-c', 'leader-support': 'dev-c', leader_support: 'dev-c',
+    'dev-c': 'dev-c', devc: 'dev-c',
+    campusdev: 'dev-a', 'dev-a': 'dev-a', deva: 'dev-a', dev_a: 'dev-a',
+    liveops: 'dev-b', 'dev-b': 'dev-b', devb: 'dev-b', dev_b: 'dev-b',
+    spriteforge: 'render-a', 'render-a': 'render-a', rendera: 'render-a',
+    spriteforgesupport: 'render-c', 'render-c': 'render-c', renderc: 'render-c',
+    'render-b': 'render-b', renderb: 'render-b',
+    'researcher-a': 'researcher-a', researchera: 'researcher-a',
+    'researcher-b': 'researcher-b', researcherb: 'researcher-b',
+    'profile-a': 'profile-a', profilea: 'profile-a',
+    'profile-b': 'profile-b', profileb: 'profile-b'
+  };
+
+  // Builtin cast map (used when state.castFiles missing, or to fill gaps).
+  const BUILTIN_CAST = {
+    leader:   { folder: 'campus-cast/leader',   prefix: 'leader' },
+    'dev-a':  { folder: 'campus-cast/dev-a',    prefix: 'dev2' },
+    'dev-b':  { folder: 'campus-cast/dev-b',    prefix: 'devb' },
+    'dev-c':  { folder: 'campus-cast/dev-c',    prefix: 'leader_support' },
+    'render-a': { folder: 'campus-cast/render-a', prefix: 'spriteforge' },
+    'render-c': { folder: 'campus-cast/render-c', prefix: 'spriteforge_support' }
+  };
+
+  const STATUS_FRAME = {
+    idle: 'desk_idle',
+    working: 'desk_working',
+    collaborating: 'desk_working',
+    reviewing: 'desk_working',
+    ready_for_review: 'ready_review',
+    needs_permission: 'needs_permission'
+  };
 
   const $ = (id) => document.getElementById(id);
   const mapEl = $('map');
@@ -269,20 +321,54 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   let state = null;
   let lastGood = null;
   let deskIndex = {};
-  let spriteEls = {}; // key -> DOM
-  let animTargets = {}; // key -> {x%, y%}
-
-  const STATUS_COLOR = {
-    idle: '#64748b',
-    working: '#38bdf8',
-    ready_for_review: '#22c55e',
-    needs_permission: '#f43f5e',
-    reviewing: '#a78bfa',
-    collaborating: '#fb923c'
-  };
+  let spriteEls = {};
+  let animTargets = {};
 
   function initials(name) {
     return (name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  function normalizeBotId(id) {
+    if (!id) return id;
+    const raw = String(id);
+    if (ID_ALIAS[raw]) return ID_ALIAS[raw];
+    const compact = raw.toLowerCase().replace(/[_-]/g, '');
+    return ID_ALIAS[compact] || ID_ALIAS[raw.toLowerCase()] || raw;
+  }
+
+  function resolveCastEntry(bot, data) {
+    // Prefer explicit bot.castId / bot.cast / castFolder folder name
+    const explicit = bot.castId || bot.cast || null;
+    let key = explicit ? normalizeBotId(explicit) : normalizeBotId(bot.id);
+
+    const castFiles = (data && data.castFiles) || {};
+    if (castFiles[key]) return castFiles[key];
+    if (castFiles[bot.id]) return castFiles[bot.id];
+
+    // Legacy: bot.castFolder like "campus-cast/leader" or "leader"
+    if (bot.castFolder) {
+      const folder = String(bot.castFolder).replace(/^\.\//, '');
+      const parts = folder.split('/');
+      const leaf = parts[parts.length - 1];
+      const mapped = BUILTIN_CAST[normalizeBotId(leaf)] || BUILTIN_CAST[leaf];
+      if (mapped) return mapped;
+      // Dev B path: casts/{castFolder}/ — no prefix known → no cast
+      if (folder.indexOf('campus-cast/') === 0 && BUILTIN_CAST[normalizeBotId(leaf)]) {
+        return BUILTIN_CAST[normalizeBotId(leaf)];
+      }
+    }
+
+    return BUILTIN_CAST[key] || null;
+  }
+
+  function castSrc(entry, frame) {
+    if (!entry || !entry.folder || !entry.prefix) return null;
+    const folder = String(entry.folder).replace(/\/$/, '');
+    return './' + folder + '/' + entry.prefix + '_' + frame + '.png?v=' + ASSET_V;
+  }
+
+  function mainFrameForStatus(status) {
+    return STATUS_FRAME[status] || 'desk_idle';
   }
 
   function deskPos(desk) {
@@ -303,7 +389,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     return deskPos(desk);
   }
 
-  // Spread sprites around a desk so mains/interns never stack on the same point.
   function offsetAround(base, slot, kind, jesus) {
     const ring = [
       {dl:0, dt:-7.5},
@@ -329,9 +414,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     };
   }
 
-  /** Push sprites apart if still too close (final anti-overlap pass). */
   function separateSprites(positions, minDist) {
-    // positions: [{key, left, top}]
     const min = minDist || 7.5;
     for (let iter = 0; iter < 8; iter++) {
       for (let i = 0; i < positions.length; i++) {
@@ -366,6 +449,12 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     return out;
   }
 
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escapeAttr(s) { return escapeHtml(s).replace(/'/g,'&#39;'); }
+
   function renderDeploys(deploys) {
     deploysEl.innerHTML = '';
     const list = deploys || [];
@@ -394,12 +483,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     });
   }
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  function escapeAttr(s) { return escapeHtml(s).replace(/'/g,'&#39;'); }
-
   function renderDesks(desks, jesusDeskId) {
     mapEl.querySelectorAll('.desk').forEach(n => n.remove());
     (desks || []).forEach(d => {
@@ -419,14 +502,41 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       el = document.createElement('button');
       el.type = 'button';
       el.className = 'sprite';
-      el.innerHTML = '<div class="body"><span class="ring"></span><span class="letter"></span></div><div class="tag"></div>';
-      el.addEventListener('click', () => {
-        if (opts.onTap) opts.onTap();
-      });
+      el.innerHTML =
+        '<div class="body">' +
+          '<span class="ring"></span>' +
+          '<img class="cast" alt="" draggable="false"/>' +
+          '<span class="swatch-fallback" hidden></span>' +
+        '</div>' +
+        '<div class="tag"></div>';
+      el.addEventListener('click', () => { if (opts.onTap) opts.onTap(); });
       mapEl.appendChild(el);
       spriteEls[key] = el;
     }
     return el;
+  }
+
+  function setCastOrFallback(el, src, color, letter) {
+    const img = el.querySelector('img.cast');
+    const fb = el.querySelector('.swatch-fallback');
+    if (!src) {
+      img.hidden = true;
+      img.removeAttribute('src');
+      fb.hidden = false;
+      fb.style.background = color || '#94a3b8';
+      fb.textContent = letter || '?';
+      return;
+    }
+    fb.hidden = true;
+    img.hidden = false;
+    img.onerror = function () {
+      img.hidden = true;
+      img.removeAttribute('src');
+      fb.hidden = false;
+      fb.style.background = color || '#94a3b8';
+      fb.textContent = letter || '?';
+    };
+    if (img.getAttribute('src') !== src) img.src = src;
   }
 
   function placeSprite(el, pos, immediate) {
@@ -442,6 +552,11 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     }
   }
 
+  function shortInternLabel(intern) {
+    const raw = (intern.label || intern.task || intern.id || 'intern').trim();
+    return raw.length > 14 ? raw.slice(0, 13) + '…' : raw;
+  }
+
   function renderSprites(data, first) {
     const desksById = {};
     (data.desks || []).forEach(d => { desksById[d.id] = d; });
@@ -449,18 +564,11 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     const seen = new Set();
     const jesusId = data.jesusDeskId;
 
-    // Count interns per desk for slot assignment (incl. cross-bot at Jesus)
-    const deskInternSlot = {};
-    (data.bots || []).forEach(bot => {
-      (bot.interns || []).forEach(intern => {
-        const d = intern.atDeskId || bot.deskId;
-        deskInternSlot[d] = deskInternSlot[d] || 0;
-      });
-    });
     const deskInternCursor = {};
 
     (data.bots || []).forEach(bot => {
       const color = bot.color || '#94a3b8';
+      const castEntry = resolveCastEntry(bot, data);
       const mainKey = 'main:' + bot.id;
       seen.add(mainKey);
       const main = bot.main || {};
@@ -472,8 +580,9 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
       const el = ensureSprite(mainKey, { onTap: () => openSheet(bot) });
       el.className = 'sprite main status-' + mainStatus;
-      el.querySelector('.body').style.background = color;
-      el.querySelector('.letter').textContent = initials(bot.name);
+      const frame = mainFrameForStatus(mainStatus);
+      const src = castSrc(castEntry, frame);
+      setCastOrFallback(el, src, color, initials(bot.name));
       el.querySelector('.tag').textContent = bot.name;
       placeSprite(el, usePos, first && !animTargets[mainKey]);
       animTargets[mainKey] = usePos;
@@ -484,7 +593,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
         const ist = intern.status || 'idle';
         const at = intern.atDeskId || bot.deskId;
         deskInternCursor[at] = (deskInternCursor[at] || 0) + 1;
-        const slot = deskInternCursor[at]; // 1+
+        const slot = deskInternCursor[at];
         const base = (intern.x != null && intern.y != null)
           ? resolvePos(intern, desksById, bot.deskId)
           : deskPos(desksById[at] || desksById[bot.deskId]);
@@ -494,15 +603,17 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
           : offsetAround(base, slot, 'intern', at === jesusId);
         const iel = ensureSprite(key, { onTap: () => openSheet(bot) });
         iel.className = 'sprite intern status-' + ist + (isPerm ? ' perm-alert' : '');
-        iel.querySelector('.body').style.background = color;
-        iel.querySelector('.letter').textContent = 'i';
-        iel.querySelector('.tag').textContent = intern.label || 'intern';
+        // Interns always use intern_idle when cast exists (CAST_MAP).
+        // Exception: needs_permission uses needs_permission frame if available.
+        const internFrame = (ist === 'needs_permission') ? 'needs_permission' : 'intern_idle';
+        const isrc = castSrc(castEntry, internFrame) || castSrc(castEntry, 'intern_idle');
+        setCastOrFallback(iel, isrc, color, 'i');
+        iel.querySelector('.tag').textContent = shortInternLabel(intern);
         placeSprite(iel, finalPos, first && !animTargets[key]);
         animTargets[key] = finalPos;
       });
     });
 
-    // Anti-overlap: separate all live sprites
     const pack = Object.keys(animTargets).filter(k => seen.has(k)).map(k => ({
       key: k, left: animTargets[k].left, top: animTargets[k].top
     }));
@@ -564,14 +675,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     window.__lastFetchOk = Date.now();
     tickAge();
     errEl.classList.remove('show');
-    errEl.classList.remove('show');
-  }
-
-  function formatLocal(iso) {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-    } catch (e) { return iso; }
   }
 
   function openSheet(bot) {
@@ -603,7 +706,6 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   }
   $('sheet-close').addEventListener('click', closeSheet);
   backdrop.addEventListener('click', closeSheet);
-
 
   function tickAge() {
     if (!window.__lastFetchOk) { updatedEl.textContent = 'connecting…'; return; }

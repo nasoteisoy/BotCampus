@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T21:34:05Z",
+  "updatedAt": "2026-09-20T21:36:28Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -134,8 +134,8 @@
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-deva",
       "status": "working",
-      "task": "Wire campus-live cast sprites",
-      "updatedAt": "2026-09-20T21:33:31Z",
+      "task": "Pushing campus-live cast sprites v6",
+      "updatedAt": "2026-09-20T21:36:28Z",
       "castFolder": "deva",
       "sprites": {
         "idle": "casts/deva/idle.png",
@@ -148,7 +148,7 @@
       },
       "main": {
         "status": "working",
-        "task": "Wire campus-live cast sprites",
+        "task": "Pushing campus-live cast sprites v6",
         "atDeskId": "desk-deva",
         "x": null,
         "y": null
@@ -161,8 +161,8 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-devb",
       "status": "working",
-      "task": "campus-state live truth + cast keys",
-      "updatedAt": "2026-09-20T21:33:31Z",
+      "task": "campus-state synced; await cast wire",
+      "updatedAt": "2026-09-20T21:34:17Z",
       "castFolder": "devb",
       "sprites": {
         "idle": "casts/devb/idle.png",
@@ -175,7 +175,7 @@
       },
       "main": {
         "status": "working",
-        "task": "campus-state live truth + cast keys",
+        "task": "campus-state synced; await cast wire",
         "atDeskId": "desk-devb",
         "x": null,
         "y": null
@@ -437,12 +437,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
       "checkUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "main pushed for Pages",
-      "updatedAt": "2026-09-20T21:34:05Z",
+      "note": "Pushing campus-live cast sprites v6",
+      "updatedAt": "2026-09-20T21:36:28Z",
       "updatedBy": "dev-a"
     }
   ]
