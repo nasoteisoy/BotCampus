@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T21:33:31Z",
+  "updatedAt": "2026-09-20T21:34:05Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -437,13 +437,13 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
       "checkUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Dev A shipping campus-live cast wiring",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "updatedBy": "devb"
+      "note": "main pushed for Pages",
+      "updatedAt": "2026-09-20T21:34:05Z",
+      "updatedBy": "dev-a"
     }
   ]
 }
