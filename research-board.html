@@ -23,28 +23,248 @@ li{margin:3px 0;font-size:.86rem;line-height:1.4}
 <body>
 <header>
   <h1>Game rendering research</h1>
-  <div class="sub">Researchers A/B · v3 · <a href="sprite-lab.html?v=7">Sprite Lab</a> · <a href="campus-cast-review.html?v=1">Cast review</a></div>
+  <div class="sub">Researchers A/B · v4 · <a href="sprite-lab.html?v=7">Sprite Lab</a> · <a href="campus-cast-review.html?v=1">Cast review</a></div>
 </header>
 <article class="card"><div class="path">README.md</div><h1>Research notes (BotCampus board source)</h1>
 <p>**Updated:** 2026-09-20 · Researchers A/B  </p>
 <p>Jesus can browse via Leader’s public research board on BotCampus Pages (publishes from this tree).</p>
 <div class="sp"></div>
-<h2>Game rendering (Researcher A) — Jesus priority</h2>
+<h2>Rendering</h2>
 <ul>
-<li>`game-rendering/README.md` + `NOTES.md` — PBR vs stylized, mobile ad-look, Clash/Kingshot density, lighting, silhouette, sprite vs 3D, soldiers + campus bots</li>
+<li>`rendering/NOTES.md` — **entry (B):** identity consistency + held gear standards index</li>
+<li>`rendering/consistency.md` — (B) silhouette/palette/bible/fixed-cell/multi-dir</li>
+<li>`rendering/held-weapons.md` — (B) hand sockets, re-arm, smear/timing, engine slots</li>
+<li>`rendering/README.md` — topic table</li>
+<li>`rendering/FLOW.md` — (A) idle→walk→attack continuity</li>
+<li>`rendering/gear-motion.md` — (A) short weapon/shield arcs checklist</li>
+<li>`rendering/iso-rts-presentation.md` — (A) AoE2-like presentation bar</li>
+<li>`iso-walk-cycles/NOTES.md` — (A) walk frame counts, opposite feet, smear rules</li>
 </ul>
 <div class="sp"></div>
-<h2>Rendering (Researcher A)</h2>
+<h2>Game rendering (broader / mobile readability)</h2>
 <ul>
-<li>`rendering/README.md` — topic index</li>
-<li>`rendering/FLOW.md` — idle→walk→attack continuity</li>
-<li>`rendering/gear-motion.md` — weapon/shield arcs</li>
-<li>`rendering/iso-rts-presentation.md` — AoE2-like presentation bar</li>
-<li>`iso-walk-cycles/NOTES.md` — walk frame counts, opposite feet, smear rules</li>
+<li>`game-rendering/NOTES.md` — Clash-adjacent readability + ship checklist</li>
+<li>`game-rendering/iso-walk-cycles.md` — walk notes mirror (see iso-walk-cycles primary)</li>
+<li>`game-rendering/NOTES-2d-iso.md` — (B) anim↔render overlap, phone-size readability, bloom/emissive pitfalls, frame consistency under post-process</li>
 </ul>
 <div class="sp"></div>
 <h2>Split</h2>
-<p>Researcher B may own non-rendering topics; avoid duplicate folders — link instead.</p></article>
+<p>A owns walk/FLOW/iso presentation; B owns identity consistency + held-gear deep dive under `rendering/`. Avoid duplicate folders — link instead.</p>
+<div class="sp"></div></article>
+<article class="card"><div class="path">game-rendering/NOTES-2d-iso.md</div><h1>2D / iso game rendering — animation ↔ look (phone-first)</h1>
+<p>**Date:** 2026-09-20 · **Researcher B** (sibling slice)  </p>
+<p>**Scope:** Overlap between **animation** and the **rendered look** for iso RTS soldiers (AoE-like) and Bot Campus sprites — *not* a redo of PBR-vs-stylized / Clash density (see `NOTES.md`). Covers: rendered walk readability, phone-size texture/readability, bloom/emissive VFX pitfalls, frame-to-frame consistency under post-process/lighting.</p>
+<div class="sp"></div>
+<p>**Parent / sibling:** `NOTES.md` (Researcher A — style bar, silhouette, sprite vs 3D) · walk basics: `../iso-walk-cycles/NOTES.md` + local `iso-walk-cycles.md` · FLOW/gear: `../rendering/FLOW.md`, `../rendering/gear-motion.md`</p>
+<div class="sp"></div>
+<p>---</p>
+<div class="sp"></div>
+<h2>1. Walk cycles in a **rendered** look (not pure pixel-only)</h2>
+<div class="sp"></div>
+<p>Walk timing/poses live in iso-walk-cycles notes. Here: how **lighting, normals/fake lighting, outlines, and frame timing** make that walk *readable* when the sheet is lit or post-processed.</p>
+<div class="sp"></div>
+<h3>Lighting that sells weight (without breaking the loop)</h3>
+<ul>
+<li>**Lock one key direction** across every walk frame and every facing (bible rule from `NOTES.md`). Changing sun per frame = flicker that reads as skating even when feet are correct.</li>
+<li>Paint or bake **top-left (or bible) key + soft fill** so contact-frame shadows darken at the plant foot; pass-frame highlights read taller — reinforces the contact→pass bob without extra frames.</li>
+<li>**Value range locked:** midtones for cloth, darker contact shadows, one highlight band. If frame N is brighter than frame N+1 for no pose reason, playback “pulses.”</li>
+<li>Fake lighting on sprites: either **painted light** (cheapest, most consistent) or **shared 2D lights + normal maps**. Prefer painted for mass RTS units; normals only if light direction must react in-world.</li>
+</ul>
+<div class="sp"></div>
+<h3>Normals / fake lighting pitfalls on walk sheets</h3>
+<ul>
+<li>Auto-from-grayscale normals create **edge “rooftop” bumps** → white rim flicker as limbs swing past the light ([Unity 2D normal white-edge threads](https://discussions.unity.com/t/2d-normal-map-white-edge/250673)). Soften bump; author normals from volume, not height-from-alpha.</li>
+<li>URP Renderer2D light texture at **0.5×** scale often causes white outlines on lit sprites — set lighting quality **1×** if edges must stay crisp (cost ↑).</li>
+<li>Import normals **Point (no filter)** when the sheet is pixel/near-pixel; bilinear normals shimmer on limb edges during walk.</li>
+<li>Keep normal **alpha identical** to color alpha or light samples empty texels → halo ghosts on moving limbs.</li>
+</ul>
+<div class="sp"></div>
+<h3>Outlines on moving iso characters</h3>
+<ul>
+<li>Outline **weight in screen pixels** must stay constant across the cycle. Per-frame hand-painted outlines that thicken on foreshortened limbs read as “breathing” weight.</li>
+<li>Prefer: bake a **fixed 1px (or bible) outline** at sheet resolution, *or* a shader outline with **cell padding** so the outline can draw outside the opaque silhouette ([Unity outline-at-cell-edge](https://discussions.unity.com/t/how-do-i-create-a-2d-outline-which-will-work-on-sprites-that-are-at-the-edge-of-a-cell/886684)).</li>
+<li>Iso: outline color slightly darker than local shadow, not pure black on every material — pure black + bloom = muddy blob at phone RTS zoom.</li>
+<li>Walk rule (cross-link): **no soft smear outlines** on walk; keep limb silhouettes hard every frame (`iso-walk-cycles`).</li>
+</ul>
+<div class="sp"></div>
+<h3>Frame timing × render look</h3>
+<ul>
+<li>Playback **~8–12 FPS** still holds for rendered sheets; at phone size, slower than ~8 FPS makes lighting “step” look like hitching.</li>
+<li>Contact frames should be the **darkest / most planted** in value; pass frames brightest/tallest — timing and lighting reinforce each other.</li>
+<li>Do **not** compensate weak bob with bloom pulses or emissive flicker on the torso — that fights readability and burns OLED.</li>
+</ul>
+<div class="sp"></div>
+<h3>Standards (sources)</h3>
+<ul>
+<li>Fixed light direction + silhouette at gameplay scale: BinaryPH pixel lighting notes — https://binary.ph/2026/05/16/pixel-art-mastery-for-modern-games-color-clean-lines-and-lighting-that-scale/</li>
+<li>Fixed-cell / pivot contract (anti-jitter): https://dev.to/framesprite/a-fixed-cell-contract-for-sprite-sheets-that-do-not-jitter-3167</li>
+<li>Sheet workflow (pivot, baseline, overlay QC): https://www.seeddance.io/blog/sprite-sheet-maker</li>
+<li>3D→2D capture consistency (anchors, lighting, outline): https://sorceress.games/pages/3d-to-2d</li>
+<li>Internal: `../iso-walk-cycles/NOTES.md` (8 frames, bob, no soft smears)</li>
+</ul>
+<div class="sp"></div>
+<p>---</p>
+<div class="sp"></div>
+<h2>2. Texture / readability at **phone size**</h2>
+<div class="sp"></div>
+<p>Jesus cares about **live Bot Campus sprites + mobile UI/thumbnails**. Author and QC at the size players actually see.</p>
+<div class="sp"></div>
+<h3>Rules of thumb</h3>
+<p>| Context | On-screen footprint (approx) | Detail budget |</p>
+<p>|---------|------------------------------|---------------|</p>
+<p>| Campus desk / UI thumbnail | ~48–96 px tall | Silhouette + 1 role prop + face block |</p>
+<p>| Iso soldier at formation zoom | ~24–48 px tall | Faction accent + weapon profile only |</p>
+<p>| Ad / store crop | often harsher than editor | Role in &amp;lt;1s; no thin lines |</p>
+<div class="sp"></div>
+<ul>
+<li>**Silhouette first, then local contrast, then hue.** Color alone fails on bright outdoor LCD and dim OLED.</li>
+<li>**Safe detail density:** if a feature is &amp;lt;~2–3 px after downscale, delete it — it becomes noise or shimmer.</li>
+<li>Author **at target grid** (or integer × target). Prefer author 64 and show ×1/×2 over author 256 and hope mip/mip-less shrink looks intentional ([sprite scale/detail](https://app.pathbits.com/articles/optimizing-sprite-readability-with-scale-and-detail), [Sorceress pipeline](https://sorceress.games/blog/convert-image-to-pixel-art-game-sprite-pipeline)).</li>
+<li>**Contrast:** charcoal-on-dark and pastel-on-sky both die at phone size — raise separation or use a light/dark outline ring that survives compression.</li>
+<li>**Mip / scale-down:**</li>
+</ul>
+<p>  - Fixed UI / campus sprites at native size → **disable mipmaps** (save ~33% memory; avoid blur) ([mobile sprite optimize](https://aispritegen.com/blog/optimize-sprites-for-mobile)).</p>
+<p>  - World sprites that shrink with RTS camera → enable mips **or** provide LOD sheets; never rely on bilinear shrink of a busy albedo.</p>
+<p>  - Pixel / near-pixel: **Point** filter + integer scale; mismatched PPU = sub-pixel blur regardless of filter.</p>
+<ul>
+<li>Atlas: **1–2 px padding** (or extrusion) between cells — bleed looks like outline flicker during walk ([sheet padding](https://jaconir.online/blogs/sprite-sheet-animation-guide)).</li>
+<li>Compression: ASTC (iOS+) / ETC2 fallback; QC after compress — emissive masks and 1px outlines are first casualties.</li>
+</ul>
+<div class="sp"></div>
+<h3>Phone-size checklist</h3>
+<ul>
+<li>1. [ ] Black-silhouette test at **real phone px** (not editor zoom)</li>
+<li>2. [ ] Class/role ID without color (soldier vs caster vs campus role)</li>
+<li>3. [ ] Weapon / prop still a distinct spike after shrink</li>
+<li>4. [ ] Outline weight ≥1 solid px at min gameplay size (or intentional none)</li>
+<li>5. [ ] No features thinner than ~2 px post-scale</li>
+<li>6. [ ] Thumbnail / ad crop still reads in &amp;lt;1s</li>
+<li>7. [ ] Compression + filter settings match art (Point vs Bilinear) and were verified on device</li>
+<li>8. [ ] Mips off for fixed UI; LOD or mips for zoomed RTS units</li>
+</ul>
+<div class="sp"></div>
+<h3>Sources</h3>
+<ul>
+<li>PathBits — scale vs detail density: https://app.pathbits.com/articles/optimizing-sprite-readability-with-scale-and-detail  </li>
+<li>Mobile art pipeline (contrast, atlas, mips off for 2D UI): https://gamineai.com/courses/mobile-puzzle-game/lessons/lesson-3-mobile-art-pipeline  </li>
+<li>Sprite optimize (mips, ASTC, overdraw): https://aispritegen.com/blog/optimize-sprites-for-mobile  </li>
+<li>Silhouette / nearest / no mips for pixel sprites: https://gtstu.com/pixel-art-indie-game-beginner-guide/</li>
+</ul>
+<div class="sp"></div>
+<p>---</p>
+<div class="sp"></div>
+<h2>3. Bloom / emissive pitfalls (character VFX)</h2>
+<div class="sp"></div>
+<p>Applies to glows, elemental FLOW trails, chest lights, weapon energy — especially on phone OLED/LCD.</p>
+<div class="sp"></div>
+<h3>Do</h3>
+<ul>
+<li>Treat bloom as **accent**, not identity. Silhouette must still read with bloom **off**.</li>
+<li>Prefer **localized** glow: emissive mask on chest/weapon tip, soft additive sprite/billboard, or low-res additive pass — not full-screen bloom on every unit ([Nordeus / Arm Unite case study](https://engineering.nordeus.com/post-processing-effects-at-60-fps-on-mid-range-smartphones-unite-berlin-2018/), [Arm GDC18 post](https://developer.arm.com/community/arm-community-blogs/b/mobile-graphics-and-gaming-blog/posts/post-processing-effects-for-mobile-at-gdc18)).</li>
+<li>Drive bloom from **HDR values &amp;gt;1** with a threshold under the emissive peak; clamped 0–1 albedo cannot bloom ([Unity URP emissive/bloom](https://bugnet.io/blog/how-to-fix-bloom-not-affecting-emissive-particles)).</li>
+<li>Cap intensity; enable NaN/clamp guards on mobile. Extreme HDR → black/NaN on some GLES paths.</li>
+<li>Tune on the **mobile URP/Godot Mobile** quality asset, not Desktop Editor defaults ([Unity editor-vs-mobile bloom discrepancy](https://discussions.unity.com/t/addressing-the-discrepancy-in-bloom-effects-between-urp-editor-and-mobile-devices/1698886/1)).</li>
+<li>Godot 2D: enable **HDR 2D** only if you need per-sprite overbright; otherwise Canvas glow + higher threshold. Prefer **Screen** blend; keep intensity modest; use HDR luminance cap ([Godot Environment / glow](https://docs.godotengine.org/en/stable/tutorials/3d/environment_and_post_processing.html)).</li>
+<li>Elemental FLOW: trail **follows weapon/body arc** (`../rendering/gear-motion.md`); emissive mask keyed to tip, not a second bobbing light on the torso.</li>
+</ul>
+<div class="sp"></div>
+<h3>Don’t</h3>
+<ul>
+<li>**Wash the silhouette** — bloom radius large enough to melt limbs into a light blob at formation zoom.</li>
+<li>**Eat weapon edges** — halo wider than the blade/staff thickness; outline + bloom stacking doubles the wipe.</li>
+<li>**Chest light as second key** — fights bible light direction; walk looks strobed.</li>
+<li>**Ignore OLED vs LCD** — OLED: high bloom + pure emissive → clipping, smear, battery; LCD: same settings look dimmer/washed. QC both.</li>
+<li>**Stack transparent glow layers** on many units → overdraw death on tile GPUs (mobile bandwidth).</li>
+<li>Assume Editor bloom = device bloom (different renderer asset / HDR / API).</li>
+</ul>
+<div class="sp"></div>
+<h3>Bloom / emissive do–don’t (short card)</h3>
+<p>| Do | Don’t |</p>
+<p>|----|-------|</p>
+<p>| Masked emissive on tip/chest only | Full-screen bloom for every soldier |</p>
+<p>| Threshold just under HDR peak | Threshold 0 + high intensity “for style” |</p>
+<p>| Billboard / low-res additive for mass units | Per-unit high-res Gaussian bloom |</p>
+<p>| QC silhouette with bloom disabled | Ship look that only works with bloom on |</p>
+<p>| Mobile quality asset parity | Desktop-only tuning |</p>
+<p>| Trail follows gear arc | Independent floating glow orb |</p>
+<div class="sp"></div>
+<h3>Sources</h3>
+<ul>
+<li>Nordeus bloom-at-60 on mid phones: https://engineering.nordeus.com/post-processing-effects-at-60-fps-on-mid-range-smartphones-unite-berlin-2018/  </li>
+<li>Arm — texture/billboard bloom vs post: https://developer.arm.com/community/arm-community-blogs/b/mobile-graphics-and-gaming-blog/posts/post-processing-effects-for-mobile-at-gdc18  </li>
+<li>Godot glow / HDR 2D: https://docs.godotengine.org/en/stable/tutorials/3d/environment_and_post_processing.html  </li>
+<li>Unity URP bloom mobile discrepancy: https://discussions.unity.com/t/addressing-the-discrepancy-in-bloom-effects-between-urp-editor-and-mobile-devices/1698886/1  </li>
+<li>Meta / mobile secondary-pass cost (bloom as resolve-heavy): https://developers.meta.com/horizon/documentation/native/android/gpu-impaired-algorithms/</li>
+</ul>
+<div class="sp"></div>
+<p>---</p>
+<div class="sp"></div>
+<h2>4. Animation ↔ render pipeline overlap (must stay consistent across sheet frames)</h2>
+<div class="sp"></div>
+<p>When post-process, lighting, or outline shaders are applied, these fields are **contracts**, not “cleanup.”</p>
+<div class="sp"></div>
+<p>| Must stay consistent | Why |</p>
+<p>|----------------------|-----|</p>
+<p>| **Pivot / baseline** | Bottom-center (grounded) or documented foot-contact; trim offsets preserved. Jitter ≠ animation ([fixed-cell contract](https://dev.to/framesprite/a-fixed-cell-contract-for-sprite-sheets-that-do-not-jitter-3167)). |</p>
+<p>| **Cell size + padding** | Outline/glow shaders need room outside opaque pixels; packed cells without pad → clipped outlines, bleed. |</p>
+<p>| **Value / exposure range** | Same midtone floor/ceiling so bloom threshold doesn’t fire randomly per frame. |</p>
+<p>| **Outline weight** | Constant screen-px weight; no per-frame thicken. |</p>
+<p>| **Emissive masks** | Same texel policy (where glow lives); mask alpha matches color alpha. Don’t paint chest emissive on idle and omit on walk. |</p>
+<p>| **Light direction / normal convention** | One bible key; normals same green-Y convention and filter mode for all frames. |</p>
+<p>| **Alpha policy** | Real transparency; no checkerboard baked in; no fringe from wrong premultiply. |</p>
+<p>| **Palette / material steps** | Stylized steps locked; compression must not invent mid-colors that bloom differently. |</p>
+<div class="sp"></div>
+<h3>Pipeline QC (overlay pass)</h3>
+<ul>
+<li>1. Freeze world position; overlay all walk frames on the pivot crosshair.</li>
+<li>2. Confirm foot-contact Y and head bob envelope (intentional only).</li>
+<li>3. Toggle **bloom off/on** — silhouette ID must survive.</li>
+<li>4. Toggle **outline shader** — weight constant; no cell-edge clip.</li>
+<li>5. Scrub emissive mask — no frame drops the chest/weapon glow unless pose hides it.</li>
+<li>6. Device check: mid Android LCD + one OLED; mobile renderer asset.</li>
+</ul>
+<div class="sp"></div>
+<h3>Cross-links</h3>
+<ul>
+<li>Walk poses/timing: `../iso-walk-cycles/NOTES.md`, `iso-walk-cycles.md`</li>
+<li>Idle→walk→attack continuity: `../rendering/FLOW.md`</li>
+<li>Weapon arcs / elemental trail: `../rendering/gear-motion.md`</li>
+<li>Style / silhouette / mobile ad bar: `NOTES.md`</li>
+<li>QC skill: Character sprite consistency QC (hero ref, bible, weapon motion)</li>
+</ul>
+<div class="sp"></div>
+<p>---</p>
+<div class="sp"></div>
+<h2>Top must-haves checklist (this slice)</h2>
+<ul>
+<li>1. [ ] Locked key light + value range across every walk frame/facing  </li>
+<li>2. [ ] Fixed pivot/baseline + cell padding for outline/glow  </li>
+<li>3. [ ] Phone-px silhouette + role read (bloom off)  </li>
+<li>4. [ ] Outline weight constant; no soft walk smears  </li>
+<li>5. [ ] Emissive masked + thresholded; trail follows gear arc  </li>
+<li>6. [ ] Mobile post-process asset parity (Editor ≠ ship look)  </li>
+<li>7. [ ] Mips/filter/compression verified at real scale  </li>
+</ul>
+<div class="sp"></div>
+<h2>Top pitfalls (this slice)</h2>
+<ul>
+<li>1. Light or exposure drifting per frame → pulse/skate illusion  </li>
+<li>2. Bloom/halo eating weapon silhouette at RTS/phone zoom  </li>
+<li>3. Outline clipped at cell edge or thickening mid-cycle  </li>
+<li>4. Detail density that dies into shimmer after mip/compress  </li>
+<li>5. Desktop bloom tuned; mobile dark, clipped, or overdrawn  </li>
+</ul>
+<div class="sp"></div>
+<h2>Counsel for Renders / Devs (short)</h2>
+<p>**Animate under a locked light and pivot contract; prove the walk reads at phone pixels with bloom off; add glow as a masked accent on the gear arc — never as the silhouette.** Devs: ship the mobile renderer/HDR settings artists actually QC’d.</p>
+<div class="sp"></div>
+<h2>Gaps / risks</h2>
+<ul>
+<li>No Bot Campus–specific measured px footprints in-repo yet — treat table above as starting bar; measure live UI and update.  </li>
+<li>Engine split (Unity URP 2D vs Godot HDR 2D) means bloom recipes differ — document per-skinId which stack is live.  </li>
+<li>Sibling `rendering/` covers FLOW/gear; keep emissive trail ownership there to avoid double standards.  </li>
+<li>OLED clipping not yet instrumented in campus QC skill — recommend adding “bloom off silhouette” + “OLED still” to that checklist.</li>
+</ul></article>
 <article class="card"><div class="path">game-rendering/NOTES.md</div><h1>Game rendering — industry standards for our games</h1>
 <p>**Date:** 2026-09-20 · **Researcher A**  </p>
 <p>**Scope:** Game art / realtime &amp; sprite rendering. Applies to **elemental soldiers** (AoE2-like iso RTS) and **campus bot** characters (live Bot Campus).</p>
@@ -184,7 +404,12 @@ li{margin:3px 0;font-size:.86rem;line-height:1.4}
 </ul>
 <div class="sp"></div>
 <h2>Advise Renders (one-liner)</h2>
-<p>**Ship stylized and silhouette-first; use PBR only as a controlled tool, never as photoreal default.**</p></article>
+<p>**Ship stylized and silhouette-first; use PBR only as a controlled tool, never as photoreal default.**</p>
+<div class="sp"></div>
+<h2>Related</h2>
+<ul>
+<li>Sibling slice (Researcher B): `NOTES-2d-iso.md` — animation↔render overlap, phone-size readability, bloom/emissive pitfalls, frame consistency under post-process.</li>
+</ul></article>
 <article class="card"><div class="path">game-rendering/README.md</div><h1>Game rendering research</h1>
 <p>**Owner:** Researcher A · **Updated:** 2026-09-20  </p>
 <p>**For:** Jesus (public BotCampus board) · Renders (must-haves) · Leader publish</p>
@@ -192,6 +417,7 @@ li{margin:3px 0;font-size:.86rem;line-height:1.4}
 <p>| Doc | What |</p>
 <p>|-----|------|</p>
 <p>| `NOTES.md` | Full standards: PBR vs stylized, mobile ad-look, Clash/Kingshot density, lighting, silhouette, sprite vs 3D, bar for elemental soldiers + campus bots |</p>
+<p>| `NOTES-2d-iso.md` | Researcher B sibling: rendered walk look, phone-size readability, bloom/emissive pitfalls, anim↔render consistency |</p>
 <p>| Related | `../rendering/` (FLOW, gear, iso presentation) · `../iso-walk-cycles/` |</p>
 <div class="sp"></div>
 <p>**Industry standard (our meaning):** not “photoreal AAA,” but **production norms that ship on phones and stay readable in ads + gameplay** — locked style bible, silhouette-first, scalable pipeline (sprite sheet and/or stylized-PBR 3D).</p></article>
@@ -383,15 +609,111 @@ li{margin:3px 0;font-size:.86rem;line-height:1.4}
 <li>AI gen still drifts signature parts under heavy pose change; QC retries are mandatory, not optional.</li>
 </ul></article>
 <article class="card"><div class="path">rendering/README.md</div><h1>Rendering research (public board feed)</h1>
-<p>**Owner:** Researcher A · **Updated:** 2026-09-20  </p>
+<p>**Owners:** Researcher A + B · **Updated:** 2026-09-20  </p>
 <p>Topics for BotCampus research board. Checklists + sources. Devs/Renders use these while drafting.</p>
 <div class="sp"></div>
-<p>| Topic | Path | Status |</p>
-<p>|-------|------|--------|</p>
-<p>| Iso walk cycles (AoE2-like) | `../iso-walk-cycles/NOTES.md` | v1 filed |</p>
-<p>| Sprite FLOW (idle→walk→attack) | `FLOW.md` | v1 filed |</p>
-<p>| Held gear / weapon motion | `gear-motion.md` | v1 filed |</p>
-<p>| Iso RTS presentation standards | `iso-rts-presentation.md` | v1 filed |</p></article>
+<p>| Topic | Path | Owner | Status |</p>
+<p>|-------|------|-------|--------|</p>
+<p>| **Entry: identity + held gear** | `NOTES.md` | B | v1 filed |</p>
+<p>| Identity consistency (frames/dirs) | `consistency.md` | B | v1 filed |</p>
+<p>| Held weapon/shield deep dive | `held-weapons.md` | B | v1 filed |</p>
+<p>| Iso walk cycles (AoE2-like) | `../iso-walk-cycles/NOTES.md` | A | v1 filed |</p>
+<p>| Sprite FLOW (idle→walk→attack) | `FLOW.md` | A | v1 filed |</p>
+<p>| Held gear short checklist | `gear-motion.md` | A | v1 filed |</p>
+<p>| Iso RTS presentation standards | `iso-rts-presentation.md` | A | v1 filed |</p>
+<div class="sp"></div>
+<p>B extends A: do not duplicate walk-cycle frame counts; cross-link `../iso-walk-cycles/NOTES.md`.</p></article>
+<article class="card"><div class="path">rendering/consistency.md</div><h1>2D character sprite identity consistency (frames / directions)</h1>
+<p>**Date:** 2026-09-20 · **Researcher B**  </p>
+<p>**Parent index:** `NOTES.md` · **Do not redo:** walk-cycle counts → `../iso-walk-cycles/NOTES.md`</p>
+<div class="sp"></div>
+<h2>Scope</h2>
+<p>Keeping **one** character across idle/walk/attack and 4/8 directions: silhouette, palette, signature parts, lighting, camera, cell/pivot. Not a full walk-cycle tutorial.</p>
+<div class="sp"></div>
+<h2>Industry standards / common practices</h2>
+<div class="sp"></div>
+<h3>1. Art bible / model sheet (identity lock)</h3>
+<ul>
+<li>Animation tradition: multi-angle model sheet; violations called **off-model**.</li>
+<li>Game art bible = aesthetic rules + hard specs: palette with **roles** (hex + purpose), outline treatment, silhouette test size, head:body ratio, projection/camera, key-light direction, resolution/cell size, do-not-do list.</li>
+<li>Convert adjectives (“chunky”, “warm”) into checkable constraints (limb width px, hex list).</li>
+<li>Sources: [Makko — How to Write a Game Art Bible](https://blog.makko.ai/art-bible-game-development/) (silhouette as load-bearing; fixed lighting cheapest consistency win; TF2 silhouette paper cited); fighting-game practice of locked palette counts / lighting family (e.g. KoF 16-color discipline discussions).</li>
+</ul>
+<div class="sp"></div>
+<h3>2. Canonical reference on every generation</h3>
+<ul>
+<li>One approved hero still (front or ¾) is the identity ground truth.</li>
+<li>Every sheet row / GenerateImage attaches **that** image and pastes the **same** bible; only pose, facing, action change.</li>
+<li>Idle is the canary: if helmet/shoulder width/backpack/crest drifts on idle breath frames, faster actions will be worse.</li>
+<li>Sources: campus Character sprite consistency QC skill; seeddance / AI sprite workflows emphasizing short identity anchors; character-sprite-maker SKILL pattern (canonical-base attach mandatory).</li>
+</ul>
+<div class="sp"></div>
+<h3>3. Fixed-cell / pivot contract (anti-jitter)</h3>
+<p>| Field | Contract |</p>
+<p>|-------|----------|</p>
+<p>| Cell W×H | Identical for every frame in an action |</p>
+<p>| Pivot | Semantic: ground contact / bottom-center for grounded walks; not “visual center of opaque pixels” |</p>
+<p>| Baseline | Shared foot Y across facings so formations don’t bob unevenly |</p>
+<p>| Alpha | Real transparency — never painted checkerboard |</p>
+<p>| Trim | Keep original size + X/Y offset if atlas-trimmed; never hand-trim then re-center |</p>
+<p>| Order | Explicit row-major / named frames + loop policy |</p>
+<div class="sp"></div>
+<p>Diagnostic: freeze world position + camera; overlay all frames; if still jittering, art/pivot/trim is wrong before blaming filtering.</p>
+<ul>
+<li>Sources: [Fixed-cell contract (DEV)](https://dev.to/framesprite/a-fixed-cell-contract-for-sprite-sheets-that-do-not-jitter-3167); [FreePixel sprite sheets](https://freepixel.art/blog/creating-smooth-character-animations-with-sprite-sheets); [Unity sheet practical guide](https://dev.to/nitin_808a59e08de0d0385ab/how-to-make-a-sprite-sheet-for-unity-a-practical-guide-2cak); [Atlas padding / trim metadata](https://imagemint.net/tutorials/sprite-atlas-packing).</li>
+</ul>
+<div class="sp"></div>
+<h3>4. Multi-direction policy</h3>
+<ul>
+<li>Plan frame budget before drawing: 8 facings × N frames multiplies fast (AoE2-like / top-down).</li>
+<li>Prefer unique art for N, S, E (+ NE/SE…); horizontal flip W/NW/SW **only** if design is symmetric enough.</li>
+<li>Never flip when cape, team emblem, or held gear makes the mirror read as wrong hand / wrong facing.</li>
+<li>Neighbor dirs should interpolate: N↔NE silhouette and palette must not pop.</li>
+<li>Sources: FreePixel directional note; campus QC optional mirror rule; SLYNYRD 8-dir attack — weapon stays in same hand all angles ([Pixelblog 56](https://www.slynyrd.com/blog/2025/5/23/pixelblog-56-top-down-character-attack-animation)).</li>
+</ul>
+<div class="sp"></div>
+<h3>5. Lighting &amp; detail hierarchy</h3>
+<ul>
+<li>One key-light family for the whole sheet (same side/top bias).</li>
+<li>Detail on face / chest / weapon / signature crest; quiet elsewhere — detail everywhere = noise at RTS/phone zoom.</li>
+<li>Silhouette test at gameplay size (campus ~64–128px tall).</li>
+</ul>
+<div class="sp"></div>
+<h2>Top must-haves</h2>
+<ul>
+<li>1. Locked hero ref path saved with the set.</li>
+<li>2. Short bible: silhouette, palette roles, signature parts, held gear, style, camera.</li>
+<li>3. Same ref + bible on every frame gen.</li>
+<li>4. Fixed cell + shared baseline/pivot; clean alpha.</li>
+<li>5. QC: silhouette, palette, signature parts, facing, alpha, FLOW vs neighbors.</li>
+<li>6. Preview strip on dark bg before ship.</li>
+</ul>
+<div class="sp"></div>
+<h2>Top pitfalls</h2>
+<ul>
+<li>Treating “similar” as “same character.”</li>
+<li>Per-frame redesign words in prompts (“new armor”, “reimagine”).</li>
+<li>Different lighting or outline weight per facing.</li>
+<li>Crop-to-opaque without trim metadata → bounce.</li>
+<li>Mirroring armed / asymmetric units.</li>
+<li>Over-detail that dies at map/phone scale.</li>
+</ul>
+<div class="sp"></div>
+<h2>Map to campus QC skill</h2>
+<p>Direct 1:1 with skill sections Before generating / Prompt rules / QC loop items 1–6. This note supplies the **industry why** and fixed-cell packaging rules the skill assumes when shipping sheets.</p>
+<div class="sp"></div>
+<h2>Implications for Renders</h2>
+<ul>
+<li>Prompt discipline &gt; fancy style words.</li>
+<li>Name outputs by facing+action; reject unlabeled grids.</li>
+<li>After gen: punch alpha, crop to shared height, overlay-check baseline.</li>
+<li>If a facing fails silhouette/palette/signature — regenerate that facing only; do not “average” the sheet toward the bad frame.</li>
+</ul>
+<div class="sp"></div>
+<h2>Cross-links</h2>
+<ul>
+<li>`NOTES.md` · `held-weapons.md` · `FLOW.md` · `../iso-walk-cycles/NOTES.md` · `iso-rts-presentation.md`</li>
+</ul></article>
 <article class="card"><div class="path">rendering/gear-motion.md</div><h1>Held gear motion (weapon / shield) — iso &amp; RTS</h1>
 <p>**Date:** 2026-09-20 · **Researcher A**</p>
 <div class="sp"></div>
@@ -421,6 +743,110 @@ li{margin:3px 0;font-size:.86rem;line-height:1.4}
 <div class="sp"></div>
 <h2>Advise makers</h2>
 <p>If mirror breaks handedness, draw unique L/R frames for armed units.</p></article>
+<article class="card"><div class="path">rendering/held-weapons.md</div><h1>Held weapon &amp; shield animation (2D sprites)</h1>
+<p>**Date:** 2026-09-20 · **Researcher B**  </p>
+<p>**Parent index:** `NOTES.md` · **Short checklist (A):** `gear-motion.md` · **Walk body motion:** `../iso-walk-cycles/NOTES.md`</p>
+<div class="sp"></div>
+<h2>Scope</h2>
+<p>How industry keeps **swords, spears, guns, shields** attached and moving with limbs across walk/idle/attack and multi-dir sheets. Body walk keys (contact/down/pass/up) stay in iso-walk-cycles; here = gear attachment, arcs, layering, smears, engine sockets.</p>
+<div class="sp"></div>
+<h2>Industry standards / common practices</h2>
+<div class="sp"></div>
+<h3>1. Body first, then re-arm (frame-by-frame / pixel)</h3>
+<p>Proven pixel workflow (SLYNYRD Pixelblog 60 — Move with gun):</p>
+<ul>
+<li>1. Animate full walk/run **without** caring about the final weapon arms.</li>
+<li>2. Remove ordinary arms on each frame.</li>
+<li>3. Paint **weapon-holding arms** that inherit the same shoulder position and bounce.</li>
+<li>4. Invent a small sway of the weapon consistent with stride — tip path continuous, not glued stiff and not teleporting.</li>
+</ul>
+<div class="sp"></div>
+<p>Same idea for sword/shield soldiers: legs/torso establish weight; gear is a second pass that must pass the “standing QC” (idle→walk, walk A↔B).</p>
+<div class="sp"></div>
+<p>Source: [SLYNYRD Pixelblog 60](https://www.slynyrd.com/blog/2026/1/26/side-view-run-n-gun)</p>
+<div class="sp"></div>
+<h3>2. Hand socket / child-of-hand (skeletal / engine)</h3>
+<p>When the pipeline supports layers or bones:</p>
+<ul>
+<li>Parent weapon to **hand bone** (or Marker2D / WeaponSlot under the hand).</li>
+<li>Set weapon **local pivot at the grip** (hilt), then rotate into hold angle.</li>
+<li>Animate the **slot** (pos/rot); swap child weapon sprite/scene for equipment changes — do not rewrite body anims per sword.</li>
+<li>Unity 2D Animation: child Transform under hand bone + SpriteRenderer; SpriteSkin for deforming limbs.</li>
+<li>Godot: AnimationPlayer keys the slot Node2D; swap WeaponSprite child ([forum pattern](https://forum.godotengine.org/t/how-to-create-a-stable-weapon-system/100168)).</li>
+<li>Aseprite: character layers + separate weapon layers; export weapon strip; engine or JSON carries hand points (Aseprite does not natively export pivots — use guide/point layers or importers like MetaSprite).</li>
+</ul>
+<div class="sp"></div>
+<p>Sources: [Charios weapon run-cycle](https://charios.com/blog/run-cycle-with-weapon-2d); [Aseprite character weapons thread](https://community.aseprite.org/t/character-weapons/4186); Unity SpriteSkin docs; Godot forum weapon slot.</p>
+<div class="sp"></div>
+<h3>3. Layer / draw order (clipping)</h3>
+<ul>
+<li>Blade often needs **over** torso on some frames and **under** arm/hand on others.</li>
+<li>Classic sheet trick (Pixelsource-style weapon templates): duplicate attack frames — one “under” (full weapon) and one “over” with hilt erased so hand covers grip.</li>
+<li>In skeletal tools: key Z-order / sibling index at problem frames; micro-adjust hand bone if tip clips leg.</li>
+</ul>
+<div class="sp"></div>
+<h3>4. Grip family &amp; length consistency</h3>
+<ul>
+<li>Lock grip type in the bible: one-hand high, two-hand spear underhand, gun stock to shoulder, etc.</li>
+<li>Same grip family and **weapon length** across all facings — length change per angle reads as a different item.</li>
+<li>Shield as counterweight: off-hand opposite sway or brace; frozen cardboard only for explicit “guard” idle.</li>
+<li>8-dir attacks: weapon stays in the **same hand** every angle (no accidental mirror swap) — [SLYNYRD Pixelblog 56](https://www.slynyrd.com/blog/2025/5/23/pixelblog-56-top-down-character-attack-animation).</li>
+</ul>
+<div class="sp"></div>
+<h3>5. Attack phases for held gear</h3>
+<p>Typical 4–5 phases (timing sells weapon weight):</p>
+<p>| Phase | Gear behavior | Smear? |</p>
+<p>|-------|---------------|--------|</p>
+<p>| Anticipation | Draw back / wind-up | No |</p>
+<p>| Smear | Large travel on strike path | Yes (path-defining) |</p>
+<p>| Rebound | Optional (heavy ground hit) | Brief |</p>
+<p>| Follow-through | Full extension; hold longer | No |</p>
+<p>| Recover | Return toward idle | No |</p>
+<div class="sp"></div>
+<p>Heavier weapons → longer anticipation / follow-through / recover (e.g. hammer vs short sword timings in Pixelblog 56). Elemental trails must follow the **physical tip arc**, not a second unrelated motion.</p>
+<div class="sp"></div>
+<h3>6. Move + act layering (advanced)</h3>
+<p>For shoot-while-run / attack-while-walk: split **legs** and **torso+weapon** layers so lower body cycles independently while upper body plays shoot/swing frames (Pixelblog 60 Move &amp; Shoot). Campus iso soldiers may stay full-frame baked; note the pattern for future modular sheets.</p>
+<div class="sp"></div>
+<h2>Top must-haves</h2>
+<ul>
+<li>1. Bible states armed state + grip family + weapon/shield silhouette.</li>
+<li>2. Body motion complete before final gear arms (or socket parented to hand).</li>
+<li>3. Continuous tip path across idle→walk and walk neighbors; shield moves with off-arm.</li>
+<li>4. No freeze / teleport / appear-disappear when bible says armed.</li>
+<li>5. Attack: clear wind-up → strike → recover; smears only on strike path.</li>
+<li>6. Mirror ban when flip would change handedness.</li>
+<li>7. VFX trails track the same arc as the blade/muzzle.</li>
+</ul>
+<div class="sp"></div>
+<h2>Top pitfalls</h2>
+<ul>
+<li>Cardboard-glued weapon (campus “frozen gear” fail).</li>
+<li>Tip teleports between frames or changes length per facing.</li>
+<li>Soft glow smear eating the blade silhouette on walks.</li>
+<li>Flip-induced wrong-hand sword/shield.</li>
+<li>Smears on anticipation or recover (noisy, weakens hit read).</li>
+<li>Clipping unresolved (no under/over split, no Z-order keys).</li>
+<li>Designing a new weapon mid-sheet instead of the bible item.</li>
+</ul>
+<div class="sp"></div>
+<h2>Map to campus QC skill</h2>
+<p>Skill standing check: *“sword/shield/gear must move naturally with arms/body… Fail if gear is frozen, teleports, ignores limb motion, or appears/disappears mid-loop when the bible says armed.”*  </p>
+<p>This note is the industry backing for that fail condition + practical re-arm / socket / smear recipes. Complements A’s `gear-motion.md` (short bar) with sources and engine patterns.</p>
+<div class="sp"></div>
+<h2>Implications for Renders</h2>
+<ul>
+<li>Prompt: name the exact weapon+shield from the bible; require grip visible; “weapon moves with arm, tip follows shoulder bob.”</li>
+<li>Negative: “frozen weapon”, “weapon floating”, “missing shield”, “different sword.”</li>
+<li>After gen: flip through strip focusing **only** on tip and shield edge — if tip jumps or shield is stamped, regen that frame.</li>
+<li>Prefer unique L/R for armed units rather than hope flip works.</li>
+<li>If Dev later needs swappable loot: export hand marker coords or keep modular arm+weapon layers; until then bake correct gear every frame.</li>
+</ul>
+<div class="sp"></div>
+<h2>Cross-links</h2>
+<ul>
+<li>`NOTES.md` · `consistency.md` · `gear-motion.md` (A short list) · `FLOW.md` · `../iso-walk-cycles/NOTES.md` (body walk; weapon tip arc with shoulder bob)</li>
+</ul></article>
 <article class="card"><div class="path">rendering/iso-rts-presentation.md</div><h1>Iso RTS presentation standards (AoE2-like)</h1>
 <p>**Date:** 2026-09-20 · **Researcher A**</p>
 <div class="sp"></div>

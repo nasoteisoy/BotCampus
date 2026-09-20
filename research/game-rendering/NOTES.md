@@ -118,3 +118,6 @@ Test as **black silhouette** at gameplay and ad sizes.
 
 ## Advise Renders (one-liner)
 **Ship stylized and silhouette-first; use PBR only as a controlled tool, never as photoreal default.**
+
+## Related
+- Sibling slice (Researcher B): `NOTES-2d-iso.md` — animation↔render overlap, phone-size readability, bloom/emissive pitfalls, frame consistency under post-process.
