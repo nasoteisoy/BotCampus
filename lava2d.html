@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Lava Knight 2D</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0c10;color:#f2efe8;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none}
+  #wrap{display:flex;flex-direction:column;height:100%}
+  header{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  h1{margin:0;font-size:1rem}
+  .hint{color:#9aa3b2;font-size:.8rem}
+  canvas{display:block;width:100%;flex:1;background:linear-gradient(#1a2233,#0b0c10);touch-action:none}
+  #pad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px 16px;max-width:520px;margin:0 auto;width:100%}
+  button{appearance:none;border:1px solid #3a4558;background:#1c2433;color:#fff;border-radius:14px;padding:16px 10px;font:inherit;font-weight:650}
+  button:active{background:#2a3548}
+  #atk{background:#7c2d12;border-color:#fb923c}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Lava Knight</h1>
+    <div class="hint">← → run · ↑ / Space jump · Z / Attack</div>
+  </header>
+  <canvas id="c"></canvas>
+  <div id="pad">
+    <button type="button" id="left">◀</button>
+    <button type="button" id="jump">Jump</button>
+    <button type="button" id="right">▶</button>
+    <button type="button" id="atk" style="grid-column:1/-1">Attack</button>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+const imgs={idle:new Image(),run:new Image(),jump:new Image(),attack:new Image()};
+imgs.idle.src="lava2d/idle.png?v=1";
+imgs.run.src="lava2d/run.png?v=1";
+imgs.jump.src="lava2d/jump.png?v=1";
+imgs.attack.src="lava2d/attack.png?v=1";
+
+const keys={};
+const state={
+  x:120,y:0,vx:0,vy:0,facing:1,
+  onGround:false,attackT:0,anim:0,
+  groundY:0,w:0,h:0
+};
+
+function resize(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const r=canvas.getBoundingClientRect();
+  canvas.width=Math.floor(r.width*dpr);
+  canvas.height=Math.floor(r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  state.w=r.width; state.h=r.height;
+  state.groundY=r.height-90;
+  if(!state._spawned){ state.y=state.groundY-140; state._spawned=true; }
+}
+addEventListener("resize",resize); resize();
+
+function bindHold(el,code){
+  const down=e=>{e.preventDefault(); keys[code]=true;};
+  const up=e=>{e.preventDefault(); keys[code]=false;};
+  el.addEventListener("pointerdown",down);
+  el.addEventListener("pointerup",up);
+  el.addEventListener("pointerleave",up);
+  el.addEventListener("pointercancel",up);
+}
+bindHold(document.getElementById("left"),"ArrowLeft");
+bindHold(document.getElementById("right"),"ArrowRight");
+document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault(); keys.JumpPulse=true;});
+document.getElementById("atk").addEventListener("pointerdown",e=>{e.preventDefault(); keys.AtkPulse=true;});
+
+addEventListener("keydown",e=>{
+  keys[e.code]=true;
+  if(["ArrowLeft","ArrowRight","ArrowUp","Space","KeyZ"].includes(e.code)) e.preventDefault();
+  if(e.code==="ArrowUp"||e.code==="Space") keys.JumpPulse=true;
+  if(e.code==="KeyZ") keys.AtkPulse=true;
+});
+addEventListener("keyup",e=>{ keys[e.code]=false; });
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.033,(now-last)/1000); last=now;
+  const left=keys.ArrowLeft||keys.KeyA;
+  const right=keys.ArrowRight||keys.KeyD;
+  const speed=280;
+  if(state.attackT<=0){
+    state.vx=0;
+    if(left){ state.vx=-speed; state.facing=-1; }
+    if(right){ state.vx=speed; state.facing=1; }
+  }
+  if(keys.JumpPulse){
+    keys.JumpPulse=false;
+    if(state.onGround && state.attackT<=0){ state.vy=-520; state.onGround=false; }
+  }
+  if(keys.AtkPulse){
+    keys.AtkPulse=false;
+    if(state.attackT<=0) state.attackT=0.35;
+  }
+  if(state.attackT>0) state.attackT-=dt;
+
+  state.vy+=1600*dt;
+  state.x+=state.vx*dt;
+  state.y+=state.vy*dt;
+  const foot=state.groundY-10;
+  const spriteH=150;
+  if(state.y+spriteH>=foot){ state.y=foot-spriteH; state.vy=0; state.onGround=true; }
+  else state.onGround=false;
+  state.x=Math.max(40, Math.min(state.w-40, state.x));
+  state.anim+=dt;
+
+  // draw world
+  ctx.clearRect(0,0,state.w,state.h);
+  // ground
+  ctx.fillStyle="#2a1f14";
+  ctx.fillRect(0,state.groundY,state.w,state.h-state.groundY);
+  ctx.fillStyle="#3d2a1a";
+  for(let i=0;i<state.w;i+=40) ctx.fillRect(i,state.groundY,20,8);
+  // soft platform glow
+  ctx.fillStyle="rgba(251,146,60,0.08)";
+  ctx.fillRect(0,state.groundY-6,state.w,6);
+
+  let img=imgs.idle;
+  if(state.attackT>0) img=imgs.attack;
+  else if(!state.onGround) img=imgs.jump;
+  else if(Math.abs(state.vx)>10) img=imgs.run;
+  const bob=(state.onGround && Math.abs(state.vx)>10)? Math.sin(state.anim*14)*3 : 0;
+
+  const drawW=130, drawH=150;
+  ctx.save();
+  ctx.translate(state.x, state.y+bob);
+  ctx.scale(state.facing,1);
+  if(img.complete && img.naturalWidth){
+    ctx.drawImage(img, -drawW/2, 0, drawW, drawH);
+  } else {
+    ctx.fillStyle="#444"; ctx.fillRect(-40,20,80,100);
+  }
+  // attack flash
+  if(state.attackT>0.15){
+    ctx.fillStyle="rgba(251,146,60,0.35)";
+    ctx.beginPath();
+    ctx.arc(55,70,28,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
