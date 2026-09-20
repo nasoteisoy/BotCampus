@@ -1,11 +1,12 @@
-/*! Campus NPC FSM (Dev B) — npc1
+/*! Campus NPC FSM (Dev B) — npc2
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce)
  *  - no idle while pathing; no busy pose at wrong place
  *  - station VFX match kind (code/art/research/permission)
  *  - per-bot personality kits
- *  - mute-safe emotion spikes
+ *  - mute-safe emotion spikes (pulse while ready/permission holds)
+ *  - first spawn ALWAYS at desk (never station) so mute-10s shows pathing
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -16,6 +17,7 @@
   var BASE_SPEED = 130;
   var RUN_MULT = 1.75;
   var EMOTION_MS = 800;
+  var EMOTION_PULSE_MS = 2600; // soft re-spike while ready/permission holds
   var WALK_FRAME_MS = 170;
   var IDLE_DEBOUNCE_MS = 100;
   var FIDGET_MAX = 10;
@@ -82,15 +84,35 @@
     if (entity && entity.stationId) return entity.stationId;
     var pers = normalizePersonality(bot && bot.personality);
     if (pers.preferredStation) {
-      if (stationById(state, pers.preferredStation) || deskById(state, pers.preferredStation)) {
+      // Prefer craft stations over home desks so working bots actually path
+      if (stationById(state, pers.preferredStation)) {
         return pers.preferredStation;
       }
+      // desk preferredStation only when idle/home — for busy, fall through to role default
     }
     var id = (bot && bot.id) || '';
     if (id.indexOf('researcher') === 0) return 'station-research';
     if (id.indexOf('render') === 0) return 'station-art';
     if (id.indexOf('dev') === 0 || id === 'leader') return 'station-code';
     return (bot && bot.deskId) || (entity && entity.atDeskId) || null;
+  }
+
+  function homeSpawnPos(bot, entity, state, isIntern) {
+    var homeId = (entity && entity.atDeskId) || bot.deskId;
+    var home = deskById(state, homeId) || deskById(state, bot.deskId);
+    if (!home) return null;
+    var ox = 0, oy = 0;
+    if (isIntern) {
+      var h = 0;
+      var s = String((entity && entity.id) || '');
+      for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      var a = (Math.abs(h) % 360) * Math.PI / 180;
+      ox = Math.cos(a) * 36;
+      oy = Math.sin(a) * 28 + 40;
+    } else {
+      oy = -48;
+    }
+    return { x: home.x + ox, y: home.y + oy };
   }
 
   function resolveTarget(bot, entity, state, isIntern) {
@@ -257,14 +279,23 @@
       bubble.setAttribute('aria-hidden', 'true');
       (el.querySelector('.body') || el).appendChild(bubble);
     }
-    if (agent.fsm === 'emotion' && agent.emotionKind) {
-      bubble.textContent = emotionGlyph(agent.emotionKind, agent.personality && agent.personality.emotionBias);
+    // Mute-readable: while ready/permission holds, keep emotion visible (soft pulse),
+    // plus full .show spike on transition / periodic re-spike.
+    var emoKind = agent.emotionKind;
+    var st = agent.status || '';
+    var holdEmo = (st === 'ready_for_review' || st === 'needs_permission') && emoKind;
+    var spike = (agent.fsm === 'emotion' || agent._emoPulseOn) && emoKind;
+    if (holdEmo || spike) {
+      if (!emoKind) emoKind = st === 'needs_permission' ? 'permission' : 'ready';
+      bubble.textContent = emotionGlyph(emoKind, agent.personality && agent.personality.emotionBias);
       bubble.classList.add('show');
-      bubble.classList.toggle('perm', agent.emotionKind === 'permission');
-      bubble.classList.toggle('ready', agent.emotionKind === 'ready');
+      bubble.classList.toggle('perm', emoKind === 'permission');
+      bubble.classList.toggle('ready', emoKind === 'ready');
+      // persistent soft pulse while holding; full pop when spiking
+      bubble.classList.toggle('pulse-hold', holdEmo && !spike);
     } else {
       bubble.textContent = '';
-      bubble.classList.remove('show', 'perm', 'ready');
+      bubble.classList.remove('show', 'perm', 'ready', 'pulse-hold');
     }
 
     var acc = el.querySelector('.npc-acc');
@@ -314,6 +345,15 @@
     applyFrame(agent, el);
   }
 
+  function triggerEmotion(agent, kind, now) {
+    agent.fsm = 'emotion';
+    agent.emotionKind = kind;
+    agent.emotionUntil = now + EMOTION_MS;
+    agent.visualFrame = kind === 'permission' ? 'emotion_permission' : 'emotion_ready';
+    agent._emoPulseOn = true;
+    agent._emoNextPulse = now + EMOTION_PULSE_MS;
+  }
+
   function syncAgent(key, bot, entity, isIntern) {
     var state = ctx.state;
     var el = ctx.spriteEls[key];
@@ -324,13 +364,22 @@
     var status = (entity && entity.status) || bot.status || 'idle';
     var rk = retargetKey(bot, entity);
     var agent = agents.get(key);
+    var now = performance.now();
 
     if (!agent) {
-      var left = parseFloat(el.style.left);
-      var top = parseFloat(el.style.top);
-      var pos = (!isNaN(left) && !isNaN(top))
-        ? worldFromPct(left, top, ctx.world)
-        : { x: target.x, y: target.y };
+      // npc2: ALWAYS spawn at DESK — never initialize x/y at station target
+      // so mute-10s watch sees real walk/run pathing even when status=working.
+      var deskPos = homeSpawnPos(bot, entity, state, isIntern);
+      var pos;
+      if (deskPos) {
+        pos = deskPos;
+      } else {
+        var left = parseFloat(el.style.left);
+        var top = parseFloat(el.style.top);
+        pos = (!isNaN(left) && !isNaN(top))
+          ? worldFromPct(left, top, ctx.world)
+          : { x: target.x, y: target.y };
+      }
       agent = {
         key: key, bot: bot, isIntern: !!isIntern,
         x: pos.x, y: pos.y, vx: 0, vy: 0, speed: 0,
@@ -340,8 +389,15 @@
         retargetKey: rk, visualFrame: 'idle', framePhase: 0, frameAcc: 0,
         emotionUntil: 0, emotionKind: null, lastStatus: status,
         stillMs: 0, facing: 1, _fx: 0, _fy: 0,
-        fidgetAcc: Math.random() * 2
+        fidgetAcc: Math.random() * 2,
+        _emoPulseOn: false, _emoNextPulse: 0
       };
+      // If already ready/permission at load, start mute-readable pulse immediately
+      if (status === 'ready_for_review') {
+        triggerEmotion(agent, 'ready', now);
+      } else if (status === 'needs_permission') {
+        triggerEmotion(agent, 'permission', now);
+      }
       agents.set(key, agent);
     } else {
       agent.bot = bot;
@@ -355,15 +411,12 @@
         agent.targetKind = target.kind;
         agent.urgent = !!target.urgent;
         if (status === 'ready_for_review' && agent.lastStatus !== 'ready_for_review') {
-          agent.fsm = 'emotion';
-          agent.emotionKind = 'ready';
-          agent.emotionUntil = performance.now() + EMOTION_MS;
-          agent.visualFrame = 'emotion_ready';
+          triggerEmotion(agent, 'ready', now);
         } else if (status === 'needs_permission' && agent.lastStatus !== 'needs_permission') {
-          agent.fsm = 'emotion';
-          agent.emotionKind = 'permission';
-          agent.emotionUntil = performance.now() + EMOTION_MS;
-          agent.visualFrame = 'emotion_permission';
+          triggerEmotion(agent, 'permission', now);
+        } else if (status !== 'ready_for_review' && status !== 'needs_permission') {
+          agent._emoPulseOn = false;
+          agent.emotionKind = null;
         }
         agent.lastStatus = status;
       }
@@ -405,20 +458,61 @@
     return phase ? 'walk_b' : 'walk_a';
   }
 
+  function tickEmotionPulse(agent, now) {
+    var status = agent.status || 'idle';
+    var hold = status === 'ready_for_review' || status === 'needs_permission';
+    if (!hold) {
+      agent._emoPulseOn = false;
+      if (agent.fsm !== 'emotion') agent.emotionKind = null;
+      return;
+    }
+    // Keep kind assigned while status holds
+    if (!agent.emotionKind) {
+      agent.emotionKind = status === 'needs_permission' ? 'permission' : 'ready';
+    }
+    // Soft re-spike every EMOTION_PULSE_MS while holding
+    if (!agent._emoNextPulse) agent._emoNextPulse = now + EMOTION_PULSE_MS;
+    if (now >= agent._emoNextPulse) {
+      // brief show window
+      agent._emoPulseOn = true;
+      agent.emotionUntil = now + EMOTION_MS;
+      agent._emoNextPulse = now + EMOTION_PULSE_MS;
+      // Don't interrupt walk/run — overlay bubble only unless idle/arrived
+      if (agent.fsm === 'idle' || agent.fsm === 'emotion' || agent.speed < MOVE_EPS) {
+        if (agent.fsm !== 'walk' && agent.fsm !== 'run' && agent.fsm !== 'busy_at_station') {
+          agent.fsm = 'emotion';
+          agent.visualFrame = agent.emotionKind === 'permission' ? 'emotion_permission' : 'emotion_ready';
+        }
+      }
+    }
+    // Clear pulse-on after flash window (bubble still gated by _emoPulseOn until end)
+    if (agent._emoPulseOn && agent.emotionUntil && now >= agent.emotionUntil && agent.fsm !== 'emotion') {
+      agent._emoPulseOn = false;
+    }
+  }
+
   function tickAgent(agent, dt) {
     var now = performance.now();
     var pers = agent.personality || normalizePersonality(null);
     var status = agent.status || 'idle';
 
+    // Periodic mute-readable emotion while ready/permission holds
+    tickEmotionPulse(agent, now);
+
     // Emotion flash (mute-safe big glyph) — HARD FAIL #5
     if (agent.fsm === 'emotion' && now < agent.emotionUntil) {
       agent.visualFrame = agent.emotionKind === 'permission' ? 'emotion_permission' : 'emotion_ready';
       agent.speed = 0;
+      agent._emoPulseOn = true;
       placeAgent(agent);
       return;
     }
     if (agent.fsm === 'emotion' && now >= agent.emotionUntil) {
-      agent.emotionKind = null;
+      // keep emotionKind for pulse-hold; clear only the FSM lock
+      agent._emoPulseOn = false;
+      if (status !== 'ready_for_review' && status !== 'needs_permission') {
+        agent.emotionKind = null;
+      }
     }
 
     var dx = agent.targetX - agent.x;
@@ -487,7 +581,7 @@
       } else {
         // idle / ready — chill, NO fake busy (MUST-HAVE)
         agent.fsm = 'idle';
-        agent.visualFrame = 'idle';
+        agent.visualFrame = status === 'ready_for_review' ? 'emotion_ready' : 'idle';
         agent.fidgetAcc += dt;
         var rate = pers.fidgetRate || 0.25;
         if (agent.fidgetAcc > (1.2 - rate)) {
@@ -531,7 +625,7 @@
   }
 
   global.CampusNpc = {
-    version: 'npc1',
+    version: 'npc2',
     ownsPositions: true,
     sync: sync,
     agents: agents,

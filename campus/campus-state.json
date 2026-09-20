@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T23:24:09Z",
+  "updatedAt": "2026-09-20T23:37:49Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -115,26 +115,26 @@
       "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
       "deskId": "desk-leader",
       "status": "working",
-      "task": "Distribute campus live + crew",
+      "task": "Ship NPC npc2 pathing demo",
       "color": "#22c55e",
       "castFolder": "campus-cast/leader",
       "interns": [
         {
           "id": "ldr-1",
-          "label": "Review links",
-          "status": "working",
-          "task": "Jesus review queue",
+          "label": "Permission",
+          "status": "needs_permission",
+          "task": "Ask Jesus: ship npc2?",
           "atDeskId": "desk-leader",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
         "status": "working",
-        "task": "Distribute campus live + crew",
+        "task": "Ship NPC npc2 pathing demo",
         "atDeskId": "desk-leader",
         "x": null,
         "y": null,
@@ -146,7 +146,7 @@
         "walk": "measured",
         "emotionBias": "focus",
         "accessory": "tiny rolled battle-map / clipboard",
-        "preferredStation": "desk-leader",
+        "preferredStation": "station-code",
         "speed": 1.0,
         "fidgetRate": 0.2
       }
@@ -156,8 +156,8 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
-      "status": "ready_for_review",
-      "task": "Fun pass v11 — final Dev C QC",
+      "status": "working",
+      "task": "Campus Live npc2 movers",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -165,11 +165,11 @@
           "id": "deva-1",
           "label": "Frames map",
           "status": "working",
-          "task": "status→cast PNG",
+          "task": "status\u2192cast PNG",
           "atDeskId": "desk-dev-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -180,14 +180,14 @@
           "atDeskId": "desk-dev-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T23:20:49Z",
       "main": {
-        "status": "ready_for_review",
-        "task": "Fun pass v11 — final Dev C QC",
+        "status": "working",
+        "task": "Campus Live npc2 movers",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null,
@@ -210,7 +210,7 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
       "status": "ready_for_review",
-      "task": "NPC life FSM npc1 — stations + personality",
+      "task": "NPC life FSM npc2 \u2014 ready for Dev C QC",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
       "interns": [
@@ -220,20 +220,20 @@
           "status": "ready_for_review",
           "task": "campus-npc.js + stations",
           "atDeskId": "desk-dev-b",
-          "stationId": "station-code",
+          "stationId": null,
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T23:24:09Z"
+          "updatedAt": "2026-09-20T23:37:49Z"
         }
       ],
       "updatedAt": "2026-09-20T23:24:09Z",
       "main": {
         "status": "ready_for_review",
-        "task": "NPC life FSM npc1 — stations + personality",
+        "task": "NPC life FSM npc2 \u2014 ready for Dev C QC",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null,
-        "stationId": "station-code"
+        "stationId": null
       },
       "sprites": {
         "idle": "campus-cast/dev-b/idle.png",
@@ -303,7 +303,7 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -314,7 +314,7 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -325,7 +325,7 @@
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
@@ -376,7 +376,7 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -387,7 +387,7 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -398,7 +398,7 @@
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
@@ -437,7 +437,7 @@
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
       "deskId": "desk-render-c",
       "status": "reviewing",
-      "task": "Head QC — Game Rendering School gate",
+      "task": "Head QC \u2014 Game Rendering School gate",
       "color": "#a78bfa",
       "castFolder": "campus-cast/render-c",
       "interns": [
@@ -449,7 +449,7 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -460,7 +460,7 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -471,7 +471,7 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -482,14 +482,14 @@
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "reviewing",
-        "task": "Head QC — Game Rendering School gate",
+        "task": "Head QC \u2014 Game Rendering School gate",
         "atDeskId": "desk-render-c",
         "x": null,
         "y": null,
@@ -533,7 +533,7 @@
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
@@ -544,7 +544,7 @@
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
@@ -583,37 +583,37 @@
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
       "status": "idle",
-      "task": "Game Rendering School (craft curriculum)",
+      "task": "Stand by \u2014 Game Rendering School",
       "color": "#0ea5e9",
       "castFolder": "campus-cast/researcher-b",
       "interns": [
         {
           "id": "researcher-b-i-multi",
           "label": "Multi-agent",
-          "status": "working",
+          "status": "idle",
           "task": "Cross-check multi-agent practice notes",
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         },
         {
           "id": "researcher-b-i-horizon",
           "label": "Long-horizon",
-          "status": "working",
+          "status": "idle",
           "task": "Cross-check long-horizon / eval standards",
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z",
+          "updatedAt": "2026-09-20T23:37:49Z",
           "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
-        "status": "working",
-        "task": "Game Rendering School (craft curriculum)",
+        "status": "idle",
+        "task": "Stand by \u2014 Game Rendering School",
         "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null,

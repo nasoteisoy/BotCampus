@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc1 NPC-FSM Dev B + fun pass v11 -->
+<!-- CACHE_BUST v=npc2 NPC-FSM Dev B + fun pass v11 -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -549,7 +549,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 #map-mini{border-color:#a855f7; background:#1e1040ee}
 
 
-/* === NPC-FSM (Dev B) npc1 — stations, motion, mute-safe emotion === */
+/* === NPC-FSM (Dev B) npc2 — stations, motion, mute-safe emotion === */
 .station{
   position:absolute; transform:translate(-50%,-50%);
   z-index:2; pointer-events:none;
@@ -623,6 +623,15 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 }
 .npc-emotion.perm{font-size:32px; filter:drop-shadow(0 0 10px #f43f5ecc)}
 .npc-emotion.ready{font-size:30px; filter:drop-shadow(0 0 10px #22c55ecc)}
+.npc-emotion.pulse-hold{
+  opacity:.85; transform:translateX(-50%) scale(.92);
+  animation:emotionSoftPulse 2.6s ease-in-out infinite;
+}
+@keyframes emotionSoftPulse{
+  0%,100%{opacity:.55; transform:translateX(-50%) scale(.88)}
+  40%{opacity:1; transform:translateX(-50%) scale(1.08)}
+  70%{opacity:.75; transform:translateX(-50%) scale(.95)}
+}
 @keyframes emotionPop{
   0%{transform:translateX(-50%) scale(.4); opacity:0}
   25%{transform:translateX(-50%) scale(1.25); opacity:1}
@@ -704,13 +713,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc1"></script>
+<script src="./campus-npc.js?v=npc2"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc1';
+  const ASSET_V = 'npc2';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -1416,8 +1425,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const out = [];
     for (const bot of data.bots || []) {
       for (const intern of bot.interns || []) {
-        if (intern.status === 'needs_permission' && intern.atDeskId === jd) {
-          out.push({ bot, intern });
+        // npc2: surface any needs_permission (pathing toward pad), not only arrived at Jesus
+        if (intern.status === 'needs_permission') {
+          out.push({ bot, intern, atJesus: intern.atDeskId === jd });
         }
       }
     }
@@ -1737,7 +1747,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const hits = permissionInterns(data);
     if (hits.length) {
       const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
-      alertEl.textContent = '⚠ PERMISSION at Jesus desk — ' + labels;
+      const anyThere = hits.some(h => h.atJesus);
+      alertEl.textContent = (anyThere ? '⚠ PERMISSION at Jesus desk — ' : '⚠ PERMISSION needed — running to pad — ') + labels;
       alertEl.classList.add('show');
       mapWrap.classList.add('high-alert');
     } else {
