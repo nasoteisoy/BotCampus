@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Review — Bot Campus</title>
+<!-- CACHE_BUST v=1 review-queue -->
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0c1118; --panel:#151c27; --line:#243044; --text:#e8eef6; --muted:#8b9bb0;
+  --jesus:#fbbf24; --alert:#f43f5e; --ready:#22c55e; --build:#f59e0b; --accent:#7dd3fc;
+}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{padding:0 0 calc(1rem + env(safe-area-inset-bottom)); overscroll-behavior:none}
+
+header.sticky{
+  position:sticky; top:0; z-index:50;
+  padding:calc(.55rem + env(safe-area-inset-top)) .85rem .55rem;
+  background:linear-gradient(180deg,#0c1118f5,#0c1118e8); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:baseline; justify-content:space-between; gap:.5rem;
+}
+header h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+#updated{font-size:.7rem;color:var(--muted);font-weight:600;text-align:right}
+#updated.stale{color:var(--alert)}
+header .links{display:flex;gap:.55rem;margin-top:.15rem;flex-wrap:wrap}
+header .links a{font-size:.68rem;font-weight:700;color:var(--accent);text-decoration:none}
+
+main{padding:.75rem .75rem 1.6rem; max-width:560px; margin:0 auto}
+
+.note{
+  font-size:.68rem; color:var(--muted); font-weight:600; line-height:1.35;
+  margin:0 0 .75rem; padding:.5rem .65rem; border-radius:10px;
+  background:#0f172a88; border:1px solid var(--line);
+}
+
+.section-title{
+  margin:.85rem 0 .45rem; font-size:.66rem; font-weight:800; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted);
+}
+.section-title:first-of-type{margin-top:.15rem}
+
+#open-list,#waiting-list,#dismissed-list{display:flex; flex-direction:column; gap:.55rem}
+
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:16px;
+  padding:.85rem .85rem .75rem;
+  transition:opacity .28s ease, transform .28s ease, max-height .28s ease, margin .28s ease, padding .28s ease;
+  max-height:480px; overflow:hidden;
+}
+.card.leaving{opacity:0; transform:translateY(-10px) scale(.97); max-height:0; margin:0; padding:0; border-width:0}
+.card.waiting{opacity:.72; border-style:dashed}
+.card.dismissed-hist{opacity:.55}
+
+.card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem}
+.card-title{margin:0; font-size:.95rem; font-weight:800; letter-spacing:-.015em; line-height:1.25}
+.card-summary{margin:.4rem 0 0; font-size:.78rem; color:#c5d0de; line-height:1.4; font-weight:500}
+.card-meta{margin-top:.45rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center}
+.owner{font-size:.68rem; color:var(--muted); font-weight:700}
+
+.pill{
+  display:inline-flex; align-items:center; gap:.28rem;
+  border-radius:999px; padding:.16rem .5rem; font-size:.62rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.pill.open{background:#14532d55; color:var(--ready); border:1px solid #22c55e66}
+.pill.waiting{background:#78350f55; color:var(--build); border:1px solid #f59e0b66}
+.pill.done{background:#1e293b88; color:var(--muted); border:1px solid #47556966}
+.pill.kind{background:#1e3a5f55; color:#93c5fd; border:1px solid #38bdf866}
+
+.actions{margin-top:.7rem; display:flex; flex-direction:column; gap:.45rem}
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:.4rem;
+  width:100%; min-height:48px; border-radius:14px; border:2px solid transparent;
+  font-size:.92rem; font-weight:800; cursor:pointer; text-decoration:none;
+  touch-action:manipulation; -webkit-user-select:none; user-select:none;
+}
+.btn:active{transform:scale(.97)}
+.btn.open{
+  background:linear-gradient(180deg,#38bdf8,#0ea5e9); color:#0c1118; border-color:#7dd3fc;
+  box-shadow:0 2px 12px #0ea5e955;
+}
+.btn.done{
+  background:#0b1220; color:#f8fafc; border-color:#64748b;
+}
+.btn.done:disabled,.btn:disabled{
+  opacity:.4; cursor:not-allowed; transform:none;
+}
+.btn.copy{
+  background:transparent; color:var(--muted); border:1px dashed var(--line);
+  min-height:40px; font-size:.72rem; font-weight:700;
+}
+.btn.copy.ok{color:var(--ready); border-color:#22c55e66}
+
+.empty{
+  text-align:center; padding:2.2rem 1rem; border-radius:16px;
+  background:var(--panel); border:1px dashed var(--line);
+}
+.empty h2{margin:0 0 .35rem; font-size:1.05rem; font-weight:800}
+.empty p{margin:0; font-size:.78rem; color:var(--muted); font-weight:600}
+
+details.dismissed-wrap{margin-top:1.1rem}
+details.dismissed-wrap summary{
+  cursor:pointer; font-size:.66rem; font-weight:800; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); list-style:none;
+  padding:.35rem 0;
+}
+details.dismissed-wrap summary::-webkit-details-marker{display:none}
+details.dismissed-wrap summary::before{content:"▸ "; opacity:.7}
+details.dismissed-wrap[open] summary::before{content:"▾ "}
+
+#err{display:none; margin-bottom:.7rem; padding:.55rem .7rem; border-radius:12px;
+  background:#7f1d1dcc; border:1px solid #fb7185; font-size:.78rem; font-weight:700; color:#ffe4e6}
+#err.show{display:block}
+</style>
+</head>
+<body>
+<header class="sticky">
+  <div>
+    <h1>Review</h1>
+    <div class="links">
+      <a href="campus-live.html?v=8">Campus Live</a>
+      <a href="sprite-lab.html?v=flow1">Sprite Lab</a>
+      <a href="research-board.html?v=8">Research</a>
+    </div>
+  </div>
+  <div id="updated">Connecting…</div>
+</header>
+
+<main>
+  <div id="err" role="alert"></div>
+  <p class="note">Clears on this phone. Tell Leader if you want it cleared for everyone.</p>
+
+  <div id="open-section">
+    <div class="section-title">Needs you</div>
+    <div id="open-list"></div>
+    <div id="empty" class="empty" hidden>
+      <h2>Nothing to review — nice.</h2>
+      <p>New items will pop up here when Leader queues them.</p>
+    </div>
+  </div>
+
+  <div id="waiting-section" hidden>
+    <div class="section-title">Coming soon</div>
+    <div id="waiting-list"></div>
+  </div>
+
+  <details class="dismissed-wrap" id="dismissed-section" hidden>
+    <summary>Dismissed on this phone</summary>
+    <div id="dismissed-list" style="margin-top:.45rem"></div>
+  </details>
+</main>
+
+<script>
+(function () {
+  var LS_KEY = 'botcampus-review-dismissed';
+  var POLL_MS = 1500;
+  var DATA_URL = 'campus/review-queue.json';
+
+  var updatedEl = document.getElementById('updated');
+  var errEl = document.getElementById('err');
+  var openList = document.getElementById('open-list');
+  var waitingList = document.getElementById('waiting-list');
+  var waitingSection = document.getElementById('waiting-section');
+  var dismissedList = document.getElementById('dismissed-list');
+  var dismissedSection = document.getElementById('dismissed-section');
+  var emptyEl = document.getElementById('empty');
+
+  var lastJson = null;
+  var leaving = {};
+
+  function loadDismissed() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter(function (x) { return typeof x === 'string'; }) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveDismissed(ids) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(ids)); } catch (e) {}
+  }
+
+  function isDismissedLocal(id, dismissed) {
+    return dismissed.indexOf(id) !== -1;
+  }
+
+  // ?reset=1 clears local dismissals for testing
+  if (/(?:^|[?&])reset=1(?:&|$)/.test(location.search)) {
+    try { localStorage.removeItem(LS_KEY); } catch (e) {}
+    history.replaceState(null, '', location.pathname + '?v=1');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, '&#39;');
+  }
+
+  function kindLabel(k) {
+    if (k === 'campus') return 'Campus';
+    if (k === 'sprites') return 'Sprites';
+    if (k === 'research') return 'Research';
+    return 'Other';
+  }
+
+  function relativeTime(iso) {
+    if (!iso) return '';
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '';
+    var sec = Math.round((Date.now() - t) / 1000);
+    if (sec < 60) return 'just now';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
+    if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
+    return Math.floor(sec / 86400) + 'd ago';
+  }
+
+  function dismissNote(item) {
+    return 'Dismiss review: ' + item.id + ' — ' + item.title +
+      '\n(Leader: set status to done + dismissedAt in campus/review-queue.json)';
+  }
+
+  function renderCard(item, mode) {
+    // mode: open | waiting | dismissed
+    var pillClass = mode === 'waiting' ? 'waiting' : (mode === 'dismissed' ? 'done' : 'open');
+    var pillText = mode === 'waiting' ? 'Waiting' : (mode === 'dismissed' ? 'Done' : 'Open');
+    var cardClass = 'card' + (mode === 'waiting' ? ' waiting' : '') + (mode === 'dismissed' ? ' dismissed-hist' : '');
+    var actions = '';
+    actions += '<a class="btn open" href="' + escapeAttr(item.url) + '" target="_blank" rel="noopener">Open</a>';
+    if (mode === 'open') {
+      actions += '<button type="button" class="btn done" data-dismiss="' + escapeAttr(item.id) + '">Done / Dismiss</button>';
+      actions += '<button type="button" class="btn copy" data-copy="' + escapeAttr(item.id) + '">Copy dismiss note</button>';
+    } else if (mode === 'waiting') {
+      actions += '<button type="button" class="btn done" disabled title="Not ready yet — peek only">Done (not ready)</button>';
+    }
+
+    return (
+      '<article class="' + cardClass + '" data-id="' + escapeAttr(item.id) + '">' +
+        '<div class="card-top">' +
+          '<h2 class="card-title">' + escapeHtml(item.title) + '</h2>' +
+          '<span class="pill ' + pillClass + '">' + pillText + '</span>' +
+        '</div>' +
+        '<p class="card-summary">' + escapeHtml(item.summary) + '</p>' +
+        '<div class="card-meta">' +
+          '<span class="pill kind">' + escapeHtml(kindLabel(item.kind)) + '</span>' +
+          '<span class="owner">' + escapeHtml(item.owner || '') + '</span>' +
+        '</div>' +
+        '<div class="actions">' + actions + '</div>' +
+      '</article>'
+    );
+  }
+
+  function render(data) {
+    var dismissed = loadDismissed();
+    var items = (data && data.items) ? data.items.slice() : [];
+    items.sort(function (a, b) {
+      return (a.priority || 0) - (b.priority || 0) || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+    });
+
+    var openHtml = [];
+    var waitingHtml = [];
+    var dismissedHtml = [];
+
+    items.forEach(function (item) {
+      if (!item || !item.id) return;
+      var status = item.status || 'open';
+      var localDone = isDismissedLocal(item.id, dismissed) || status === 'done';
+
+      if (status === 'waiting' && !localDone) {
+        waitingHtml.push(renderCard(item, 'waiting'));
+        return;
+      }
+      if (localDone || status === 'done') {
+        dismissedHtml.push(renderCard(item, 'dismissed'));
+        return;
+      }
+      if (status === 'open' && !leaving[item.id]) {
+        openHtml.push(renderCard(item, 'open'));
+      }
+    });
+
+    openList.innerHTML = openHtml.join('');
+    waitingList.innerHTML = waitingHtml.join('');
+    dismissedList.innerHTML = dismissedHtml.join('');
+
+    emptyEl.hidden = openHtml.length > 0;
+    waitingSection.hidden = waitingHtml.length === 0;
+    dismissedSection.hidden = dismissedHtml.length === 0;
+
+    // Wire dismiss + copy
+    openList.querySelectorAll('[data-dismiss]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-dismiss');
+        var card = btn.closest('.card');
+        var ids = loadDismissed();
+        if (ids.indexOf(id) === -1) {
+          ids.push(id);
+          saveDismissed(ids);
+        }
+        leaving[id] = true;
+        if (card) {
+          card.classList.add('leaving');
+          setTimeout(function () {
+            delete leaving[id];
+            if (lastJson) render(lastJson);
+          }, 300);
+        } else if (lastJson) {
+          render(lastJson);
+        }
+      });
+    });
+
+    openList.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-copy');
+        var item = items.find(function (x) { return x.id === id; });
+        if (!item) return;
+        var text = dismissNote(item);
+        function ok() {
+          btn.textContent = 'Copied — tell Leader';
+          btn.classList.add('ok');
+          setTimeout(function () {
+            btn.textContent = 'Copy dismiss note';
+            btn.classList.remove('ok');
+          }, 2000);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok).catch(function () {
+            window.prompt('Copy this dismiss note:', text);
+          });
+        } else {
+          window.prompt('Copy this dismiss note:', text);
+          ok();
+        }
+      });
+    });
+
+    var when = data && data.updatedAt ? relativeTime(data.updatedAt) : '';
+    updatedEl.textContent = when ? ('Updated ' + when) : 'Live';
+    updatedEl.classList.remove('stale');
+  }
+
+  function fetchQueue() {
+    var url = DATA_URL + '?t=' + Date.now();
+    return fetch(url, { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        errEl.classList.remove('show');
+        errEl.textContent = '';
+        lastJson = data;
+        render(data);
+      })
+      .catch(function (e) {
+        updatedEl.textContent = 'Offline?';
+        updatedEl.classList.add('stale');
+        errEl.textContent = 'Could not load review queue. Pull to retry.';
+        errEl.classList.add('show');
+      });
+  }
+
+  fetchQueue();
+  setInterval(fetchQueue, POLL_MS);
+})();
+</script>
+</body>
+</html>
