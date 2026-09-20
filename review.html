@@ -4,9 +4,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0c1118"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <title>Review — Bot Campus</title>
-<!-- CACHE_BUST v=1 review-queue -->
+<!-- CACHE_BUST v=2 live-poll -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -22,10 +23,25 @@ header.sticky{
   padding:calc(.55rem + env(safe-area-inset-top)) .85rem .55rem;
   background:linear-gradient(180deg,#0c1118f5,#0c1118e8); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);
-  display:flex; align-items:baseline; justify-content:space-between; gap:.5rem;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem;
 }
-header h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
-#updated{font-size:.7rem;color:var(--muted);font-weight:600;text-align:right}
+header h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:.45rem}
+.live-badge{
+  display:none; align-items:center; gap:.28rem;
+  font-size:.58rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+  color:#052e16; background:var(--ready); border-radius:999px; padding:.18rem .45rem;
+}
+.live-badge.on{display:inline-flex}
+.live-pulse{
+  width:.45rem; height:.45rem; border-radius:50%; background:#052e16;
+  box-shadow:0 0 0 0 #22c55e88; animation:pulse 1.2s ease-out infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 #22c55eaa}
+  70%{box-shadow:0 0 0 6px #22c55e00}
+  100%{box-shadow:0 0 0 0 #22c55e00}
+}
+#updated{font-size:.7rem;color:var(--muted);font-weight:600;text-align:right;line-height:1.25}
 #updated.stale{color:var(--alert)}
 header .links{display:flex;gap:.55rem;margin-top:.15rem;flex-wrap:wrap}
 header .links a{font-size:.68rem;font-weight:700;color:var(--accent);text-decoration:none}
@@ -55,6 +71,7 @@ main{padding:.75rem .75rem 1.6rem; max-width:560px; margin:0 auto}
 .card.leaving{opacity:0; transform:translateY(-10px) scale(.97); max-height:0; margin:0; padding:0; border-width:0}
 .card.waiting{opacity:.72; border-style:dashed}
 .card.dismissed-hist{opacity:.55}
+.card.auto{border-color:#38bdf866}
 
 .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem}
 .card-title{margin:0; font-size:.95rem; font-weight:800; letter-spacing:-.015em; line-height:1.25}
@@ -113,19 +130,19 @@ details.dismissed-wrap summary::-webkit-details-marker{display:none}
 details.dismissed-wrap summary::before{content:"▸ "; opacity:.7}
 details.dismissed-wrap[open] summary::before{content:"▾ "}
 
-#err{display:none; margin-bottom:.7rem; padding:.55rem .7rem; border-radius:12px;
-  background:#7f1d1dcc; border:1px solid #fb7185; font-size:.78rem; font-weight:700; color:#ffe4e6}
+#err{display:none; margin-bottom:.7rem; padding:.75rem .85rem; border-radius:14px;
+  background:#7f1d1dee; border:2px solid #fb7185; font-size:.95rem; font-weight:800; color:#ffe4e6;
+  text-align:center; line-height:1.35}
 #err.show{display:block}
 </style>
 </head>
 <body>
 <header class="sticky">
   <div>
-    <h1>Review</h1>
+    <h1>Review <span id="live-badge" class="live-badge" aria-live="polite"><span class="live-pulse" aria-hidden="true"></span>LIVE</span></h1>
     <div class="links">
-      <a href="campus-live.html?v=9">Campus Live</a>
+      <a href="campus-live.html?v=11">Campus Live</a>
       <a href="sprite-lab.html?v=flow1">Sprite Lab</a>
-      <a href="research-board.html?v=8">Research</a>
     </div>
   </div>
   <div id="updated">Connecting…</div>
@@ -140,7 +157,7 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
     <div id="open-list"></div>
     <div id="empty" class="empty" hidden>
       <h2>Nothing to review — nice.</h2>
-      <p>New items will pop up here when Leader queues them.</p>
+      <p>New items will pop up here when crew marks ready_for_review.</p>
     </div>
   </div>
 
@@ -158,10 +175,14 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
 <script>
 (function () {
   var LS_KEY = 'botcampus-review-dismissed';
-  var POLL_MS = 1500;
+  var POLL_MS = 1000;
+  var LIVE_MS = 5000;
   var DATA_URL = 'campus/review-queue.json';
+  var STATE_URL = 'campus/campus-state.json';
+  var CAMPUS_LIVE_URL = 'https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11';
 
   var updatedEl = document.getElementById('updated');
+  var liveBadge = document.getElementById('live-badge');
   var errEl = document.getElementById('err');
   var openList = document.getElementById('open-list');
   var waitingList = document.getElementById('waiting-list');
@@ -171,7 +192,10 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
   var emptyEl = document.getElementById('empty');
 
   var lastJson = null;
+  var lastFetchOkAt = 0;
+  var queueUpdatedAt = null;
   var leaving = {};
+  var tickTimer = null;
 
   function loadDismissed() {
     try {
@@ -189,10 +213,9 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
     return dismissed.indexOf(id) !== -1;
   }
 
-  // ?reset=1 clears local dismissals for testing
   if (/(?:^|[?&])reset=1(?:&|$)/.test(location.search)) {
     try { localStorage.removeItem(LS_KEY); } catch (e) {}
-    history.replaceState(null, '', location.pathname + '?v=1');
+    history.replaceState(null, '', location.pathname + '?v=2');
   }
 
   function escapeHtml(s) {
@@ -207,19 +230,44 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
   function kindLabel(k) {
     if (k === 'campus') return 'Campus';
     if (k === 'sprites') return 'Sprites';
-    if (k === 'research') return 'Research';
+    if (k === 'auto') return 'Live crew';
     return 'Other';
   }
 
-  function relativeTime(iso) {
-    if (!iso) return '';
+  function ageSeconds(iso) {
+    if (!iso) return null;
     var t = Date.parse(iso);
-    if (isNaN(t)) return '';
-    var sec = Math.round((Date.now() - t) / 1000);
-    if (sec < 60) return 'just now';
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 1000));
+  }
+
+  function formatAgo(sec) {
+    if (sec == null) return '';
+    if (sec < 60) return sec + 's ago';
     if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
     if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
     return Math.floor(sec / 86400) + 'd ago';
+  }
+
+  function refreshHeaderClock() {
+    var fetchAge = lastFetchOkAt ? Math.floor((Date.now() - lastFetchOkAt) / 1000) : null;
+    var live = lastFetchOkAt && (Date.now() - lastFetchOkAt) < LIVE_MS;
+    if (live) liveBadge.classList.add('on');
+    else liveBadge.classList.remove('on');
+
+    if (!lastFetchOkAt) {
+      updatedEl.textContent = 'Connecting…';
+      updatedEl.classList.add('stale');
+      return;
+    }
+    if (!live) {
+      updatedEl.textContent = 'Stale · last fetch ' + formatAgo(fetchAge);
+      updatedEl.classList.add('stale');
+      return;
+    }
+    var qAge = ageSeconds(queueUpdatedAt);
+    updatedEl.textContent = qAge != null ? ('Updated ' + formatAgo(qAge)) : 'Live';
+    updatedEl.classList.remove('stale');
   }
 
   function dismissNote(item) {
@@ -228,10 +276,9 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
   }
 
   function renderCard(item, mode) {
-    // mode: open | waiting | dismissed
     var pillClass = mode === 'waiting' ? 'waiting' : (mode === 'dismissed' ? 'done' : 'open');
     var pillText = mode === 'waiting' ? 'Waiting' : (mode === 'dismissed' ? 'Done' : 'Open');
-    var cardClass = 'card' + (mode === 'waiting' ? ' waiting' : '') + (mode === 'dismissed' ? ' dismissed-hist' : '');
+    var cardClass = 'card' + (mode === 'waiting' ? ' waiting' : '') + (mode === 'dismissed' ? ' dismissed-hist' : '') + (item._auto ? ' auto' : '');
     var actions = '';
     actions += '<a class="btn open" href="' + escapeAttr(item.url) + '" target="_blank" rel="noopener">Open</a>';
     if (mode === 'open') {
@@ -257,9 +304,59 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
     );
   }
 
+  function normKey(s) {
+    return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function mergeAutoItems(queueItems, state) {
+    var items = (queueItems || []).slice();
+    var seenTitle = {};
+    var seenUrl = {};
+    items.forEach(function (it) {
+      if (it && it.title) seenTitle[normKey(it.title)] = true;
+      if (it && it.url) seenUrl[normKey(it.url)] = true;
+    });
+    var bots = (state && state.bots) ? state.bots : [];
+    bots.forEach(function (bot) {
+      if (!bot || bot.status !== 'ready_for_review') return;
+      var botId = bot.id || 'bot';
+      var title = (bot.name || botId) + ' — ready for review';
+      var summary = bot.task || 'Crew marked ready_for_review on Campus Live.';
+      var url = CAMPUS_LIVE_URL;
+      // De-dupe against queue by title or same campus-live url already covering same owner title
+      if (seenTitle[normKey(title)]) return;
+      // Also skip if an open/waiting item already mentions this bot's task heavily
+      var taskKey = normKey(bot.task || '');
+      var dup = items.some(function (it) {
+        if (!it) return false;
+        if (normKey(it.url) === normKey(url) && normKey(it.owner) === normKey(bot.name || '')) return true;
+        if (taskKey && normKey(it.summary).indexOf(taskKey.slice(0, 24)) !== -1) return true;
+        if (taskKey && normKey(it.title).indexOf(taskKey.slice(0, 18)) !== -1) return true;
+        return false;
+      });
+      if (dup) return;
+      var auto = {
+        id: 'auto-' + botId,
+        title: title,
+        summary: summary,
+        url: url,
+        owner: bot.name || botId,
+        kind: 'auto',
+        priority: 5,
+        status: 'open',
+        createdAt: bot.updatedAt || (state && state.updatedAt) || null,
+        dismissedAt: null,
+        _auto: true
+      };
+      seenTitle[normKey(auto.title)] = true;
+      items.push(auto);
+    });
+    return items;
+  }
+
   function render(data) {
     var dismissed = loadDismissed();
-    var items = (data && data.items) ? data.items.slice() : [];
+    var items = mergeAutoItems((data && data.items) ? data.items : [], data && data._state);
     items.sort(function (a, b) {
       return (a.priority || 0) - (b.priority || 0) || String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
     });
@@ -294,7 +391,6 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
     waitingSection.hidden = waitingHtml.length === 0;
     dismissedSection.hidden = dismissedHtml.length === 0;
 
-    // Wire dismiss + copy
     openList.querySelectorAll('[data-dismiss]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-dismiss');
@@ -342,34 +438,50 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
       });
     });
 
-    var when = data && data.updatedAt ? relativeTime(data.updatedAt) : '';
-    updatedEl.textContent = when ? ('Updated ' + when) : 'Live';
-    updatedEl.classList.remove('stale');
+    queueUpdatedAt = data && data.updatedAt ? data.updatedAt : queueUpdatedAt;
+    refreshHeaderClock();
   }
 
   function fetchQueue() {
-    var url = DATA_URL + '?t=' + Date.now();
-    return fetch(url, { cache: 'no-store' })
+    var bust = '?t=' + Date.now();
+    var queueP = fetch(DATA_URL + bust, { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
-      })
-      .then(function (data) {
+      });
+    var stateP = fetch(STATE_URL + bust, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+
+    return Promise.all([queueP, stateP])
+      .then(function (pair) {
+        var data = pair[0];
+        var state = pair[1];
         errEl.classList.remove('show');
         errEl.textContent = '';
+        lastFetchOkAt = Date.now();
+        data._state = state;
+        // Prefer fresher of queue vs state for "Updated Xs ago" feel when state moved
+        if (state && state.updatedAt && data.updatedAt) {
+          if (Date.parse(state.updatedAt) > Date.parse(data.updatedAt)) {
+            // keep queue updatedAt as source of queue file; clock still uses queue
+          }
+        }
         lastJson = data;
         render(data);
       })
-      .catch(function (e) {
-        updatedEl.textContent = 'Offline?';
+      .catch(function () {
+        liveBadge.classList.remove('on');
+        updatedEl.textContent = 'Offline';
         updatedEl.classList.add('stale');
-        errEl.textContent = 'Could not load review queue. Pull to retry.';
+        errEl.textContent = 'Queue offline — retrying';
         errEl.classList.add('show');
       });
   }
 
   fetchQueue();
   setInterval(fetchQueue, POLL_MS);
+  tickTimer = setInterval(refreshHeaderClock, 250);
 })();
 </script>
 </body>
