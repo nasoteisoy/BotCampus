@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:39:02Z",
+  "updatedAt": "2026-09-20T22:39:03Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -144,8 +144,8 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
-      "status": "working",
-      "task": "Ship campus-live camera UX v8",
+      "status": "ready_for_review",
+      "task": "campus-live camera UX on Pages v8",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:39:02Z",
+      "updatedAt": "2026-09-20T22:39:03Z",
       "main": {
-        "status": "working",
-        "task": "Ship campus-live camera UX v8",
+        "status": "ready_for_review",
+        "task": "campus-live camera UX on Pages v8",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -582,11 +582,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Pushing campus-live camera UX v8",
-      "updatedAt": "2026-09-20T22:39:02Z",
+      "note": "campus-live camera UX v8",
+      "updatedAt": "2026-09-20T22:39:03Z",
       "updatedBy": "dev-a"
     }
   ],
