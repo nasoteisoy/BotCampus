@@ -26,7 +26,7 @@
 <div id="wrap">
   <header>
     <h1>Lava Knight · Iso</h1>
-    <div class="hint">Tap map · WASD · Attack</div>
+    <div class="hint">Tap map · WASD 8-way (chord diagonals) · Attack</div>
   </header>
   <canvas id="c"></canvas>
   <div id="pad">
@@ -41,14 +41,25 @@
 <script>
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
-const v = "?v=1";
+const v = "?v=2";
+const DIRS = ["n","ne","e","se","s","sw","w","nw"];
+
+function load(src) {
+  const i = new Image();
+  i.src = src;
+  return i;
+}
+function loadDirMap(kind) {
+  const m = {};
+  for (const d of DIRS) m[d] = load(`lava2d/iso/8/${kind}_${d}.png` + v);
+  return m;
+}
+
 const imgs = {
-  idle: load("lava2d/iso/idle.png" + v),
-  walk1: load("lava2d/iso/walk1.png" + v),
-  walk2: load("lava2d/iso/walk2.png" + v),
+  idle: loadDirMap("idle"),
+  walk: loadDirMap("walk"),
   attack: load("lava2d/iso/attack.png" + v),
 };
-function load(src){ const i = new Image(); i.src = src; return i; }
 
 // --- Iso world ---
 const TILE_W = 64, TILE_H = 32;
@@ -56,16 +67,16 @@ const MAP_W = 18, MAP_H = 18;
 const keys = {};
 let viewW = 0, viewH = 0;
 const cam = { x: 0, y: 0 };
-const origin = { x: 0, y: 0 }; // set on resize relative to cam
+const origin = { x: 0, y: 0 };
 
 const player = {
   mapX: 8.5, mapY: 8.5,
-  facing: 1, // 1 = SE-ish (sprite faces right), -1 flip
+  facing: "se", // one of: n,ne,e,se,s,sw,w,nw
   moving: false,
   anim: 0,
   attackT: 0,
   slashT: 0,
-  target: null, // {x,y} map cell center to move toward
+  target: null,
   selected: true,
 };
 
@@ -76,7 +87,6 @@ const enemy = {
   alive: true,
 };
 
-// Decorative trees in map coords
 const trees = [
   [3, 4], [5, 2], [14, 3], [16, 6], [2, 12], [4, 15],
   [15, 14], [10, 2], [7, 16], [16, 16], [1, 7], [12, 1],
@@ -90,7 +100,6 @@ function mapToScreen(mx, my) {
 }
 
 function screenToMap(sx, sy) {
-  // Inverse of mapToScreen (with cam/origin)
   const x = sx + cam.x - origin.x;
   const y = sy + cam.y - origin.y;
   const mx = (x / (TILE_W / 2) + y / (TILE_H / 2)) / 2;
@@ -98,8 +107,28 @@ function screenToMap(sx, sy) {
   return { x: mx, y: my };
 }
 
-function clampMap(v, max) {
-  return Math.max(0.4, Math.min(max - 0.4, v));
+function clampMap(val, max) {
+  return Math.max(0.4, Math.min(max - 0.4, val));
+}
+
+/**
+ * Map delta → screen vector → 8 octants.
+ * Screen: +mapX goes down-right, +mapY goes down-left.
+ * sx = dmx - dmy, sy = dmx + dmy; dirs clockwise from east.
+ */
+function facingFromMapDelta(dmx, dmy) {
+  const sx = dmx - dmy;
+  const sy = dmx + dmy;
+  if (Math.abs(sx) < 1e-8 && Math.abs(sy) < 1e-8) return player.facing;
+  const ang = Math.atan2(sy, sx); // screen +y down → CW from east
+  const order = ["e", "se", "s", "sw", "w", "nw", "n", "ne"];
+  let idx = Math.round(ang / (Math.PI / 4));
+  idx = ((idx % 8) + 8) % 8;
+  return order[idx];
+}
+
+function isWestish(dir) {
+  return dir === "w" || dir === "nw" || dir === "sw";
 }
 
 function resize() {
@@ -115,7 +144,6 @@ function resize() {
 addEventListener("resize", resize);
 resize();
 
-// --- Input ---
 function hold(el, code) {
   const down = e => { e.preventDefault(); keys[code] = true; el.classList.add("held"); };
   const up = e => { e.preventDefault(); keys[code] = false; el.classList.remove("held"); };
@@ -157,7 +185,6 @@ canvas.addEventListener("pointerdown", e => {
   e.preventDefault();
   const p = canvasPos(e);
   const m = screenToMap(p.x, p.y);
-  // clamp to map
   player.target = {
     x: clampMap(m.x, MAP_W),
     y: clampMap(m.y, MAP_H),
@@ -169,7 +196,6 @@ function tryAttack() {
   player.attackT = 0.42;
   player.slashT = 0.28;
   player.target = null;
-  // hit enemy if close
   if (enemy.alive) {
     const dx = enemy.mapX - player.mapX;
     const dy = enemy.mapY - player.mapY;
@@ -178,15 +204,11 @@ function tryAttack() {
       enemy.hp -= 1;
       enemy.hitFlash = 0.25;
       if (enemy.hp <= 0) enemy.alive = false;
-      // face enemy
-      const s = mapToScreen(enemy.mapX, enemy.mapY);
-      const p = mapToScreen(player.mapX, player.mapY);
-      player.facing = s.x >= p.x ? 1 : -1;
+      player.facing = facingFromMapDelta(dx, dy);
     }
   }
 }
 
-// --- Draw helpers ---
 function drawTile(mx, my, fill, stroke) {
   const p = mapToScreen(mx, my);
   ctx.beginPath();
@@ -206,7 +228,6 @@ function drawTile(mx, my, fill, stroke) {
 
 function drawSelectionRing(mx, my) {
   const p = mapToScreen(mx, my);
-  // AoE2-style elliptical ring under feet
   ctx.save();
   ctx.translate(p.x, p.y + TILE_H * 0.55);
   ctx.scale(1, 0.45);
@@ -226,7 +247,6 @@ function drawSelectionRing(mx, my) {
 function drawTree(mx, my) {
   const p = mapToScreen(mx, my);
   const baseY = p.y + TILE_H * 0.55;
-  // diamond trunk
   ctx.fillStyle = "#5a3a22";
   ctx.beginPath();
   ctx.moveTo(p.x, baseY - 18);
@@ -235,7 +255,6 @@ function drawTree(mx, my) {
   ctx.lineTo(p.x - 6, baseY - 6);
   ctx.closePath();
   ctx.fill();
-  // canopy
   const grd = ctx.createRadialGradient(p.x - 4, baseY - 34, 4, p.x, baseY - 28, 22);
   grd.addColorStop(0, "#5dbe4a");
   grd.addColorStop(1, "#2a6b28");
@@ -253,7 +272,6 @@ function drawEnemy() {
   if (!enemy.alive && enemy.hitFlash <= 0) return;
   const p = mapToScreen(enemy.mapX, enemy.mapY);
   const flash = enemy.hitFlash > 0;
-  // shadow / ring
   ctx.save();
   ctx.translate(p.x, p.y + TILE_H * 0.55);
   ctx.scale(1, 0.45);
@@ -263,7 +281,6 @@ function drawEnemy() {
   ctx.fill();
   ctx.restore();
   if (!enemy.alive) return;
-  // dark blob unit
   const body = flash ? "#c44" : "#2a2430";
   const rim = flash ? "#faa" : "#4a3f55";
   ctx.fillStyle = body;
@@ -273,7 +290,6 @@ function drawEnemy() {
   ctx.strokeStyle = rim;
   ctx.lineWidth = 2;
   ctx.stroke();
-  // eyes
   ctx.fillStyle = flash ? "#fff" : "#e85";
   ctx.beginPath();
   ctx.arc(p.x - 4, p.y + 2, 2.2, 0, Math.PI * 2);
@@ -281,10 +297,11 @@ function drawEnemy() {
   ctx.fill();
 }
 
-function drawSlash(mx, my, facing) {
+function drawSlash(mx, my, dir) {
   if (player.slashT <= 0) return;
   const p = mapToScreen(mx, my);
   const t = player.slashT / 0.28;
+  const facing = isWestish(dir) ? -1 : 1;
   const ang = facing > 0 ? -0.4 : Math.PI + 0.4;
   ctx.save();
   ctx.translate(p.x + facing * 18, p.y + 10);
@@ -304,40 +321,54 @@ function drawSlash(mx, my, facing) {
   ctx.restore();
 }
 
-function drawUnit(mx, my, img, facing, height) {
+/** Idle/walk: pre-flipped PNGs — never canvas-scale flip. */
+function drawUnit(mx, my, img, height) {
   if (!img || !img.complete || !img.naturalWidth) return;
   const p = mapToScreen(mx, my);
   const h = height || 72;
   const aspect = img.naturalWidth / img.naturalHeight;
   const w = h * aspect;
   const footY = p.y + TILE_H * 0.55;
-  ctx.save();
-  if (facing < 0) {
+  ctx.drawImage(img, p.x - w / 2, footY - h + 4, w, h);
+}
+
+/** Attack is a single shared art; flip horizontally for west-ish dirs. */
+function drawAttack(mx, my, dir, height) {
+  const img = imgs.attack;
+  if (!img || !img.complete || !img.naturalWidth) return;
+  const p = mapToScreen(mx, my);
+  const h = height || 78;
+  const aspect = img.naturalWidth / img.naturalHeight;
+  const w = h * aspect;
+  const footY = p.y + TILE_H * 0.55;
+  if (isWestish(dir)) {
+    ctx.save();
     ctx.translate(p.x, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(img, -w / 2, footY - h + 4, w, h);
+    ctx.restore();
   } else {
     ctx.drawImage(img, p.x - w / 2, footY - h + 4, w, h);
   }
-  ctx.restore();
 }
 
 function currentSprite() {
-  if (player.attackT > 0) return imgs.attack;
+  const dir = player.facing in imgs.idle ? player.facing : "se";
+  if (player.attackT > 0) return { kind: "attack", dir };
   if (player.moving) {
-    return (Math.floor(player.anim * 6) % 2 === 0) ? imgs.walk1 : imgs.walk2;
+    const useWalk = (Math.floor(player.anim * 6) % 2 === 0);
+    return { kind: useWalk ? "walk" : "idle", dir };
   }
-  return imgs.idle;
+  return { kind: "idle", dir };
 }
 
-// --- Update / render ---
 let last = performance.now();
 function tick(now) {
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
 
-  // iso axes: N = northwest (-x,-y), S = southeast (+x,+y),
-  // W = southwest (-x,+y), E = northeast (+x,-y)
+  // Chorded pad/WASD: N+E etc. combine on iso axes
+  // N = NW (-x,-y), S = SE (+x,+y), W = SW (-x,+y), E = NE (+x,-y)
   let dx = 0, dy = 0;
   const padMove = keys.N || keys.S || keys.W || keys.E;
   if (keys.N) { dx -= 1; dy -= 1; }
@@ -345,7 +376,7 @@ function tick(now) {
   if (keys.W) { dx -= 1; dy += 1; }
   if (keys.E) { dx += 1; dy -= 1; }
 
-  const speed = 2.8; // map cells / sec
+  const speed = 2.8;
   player.moving = false;
 
   if (player.attackT > 0) {
@@ -354,13 +385,12 @@ function tick(now) {
   } else if (padMove) {
     player.target = null;
     const len = Math.hypot(dx, dy) || 1;
-    player.mapX = clampMap(player.mapX + (dx / len) * speed * dt, MAP_W);
-    player.mapY = clampMap(player.mapY + (dy / len) * speed * dt, MAP_H);
+    const dmx = (dx / len) * speed * dt;
+    const dmy = (dy / len) * speed * dt;
+    player.mapX = clampMap(player.mapX + dmx, MAP_W);
+    player.mapY = clampMap(player.mapY + dmy, MAP_H);
     player.moving = true;
-    // face by screen x delta
-    const before = mapToScreen(0, 0);
-    const after = mapToScreen(dx, dy);
-    if (Math.abs(after.x - before.x) > 0.01) player.facing = after.x >= before.x ? 1 : -1;
+    player.facing = facingFromMapDelta(dx, dy);
   } else if (player.target) {
     const tx = player.target.x - player.mapX;
     const ty = player.target.y - player.mapY;
@@ -369,12 +399,12 @@ function tick(now) {
       player.target = null;
     } else {
       const step = Math.min(dist, speed * dt);
-      player.mapX = clampMap(player.mapX + (tx / dist) * step, MAP_W);
-      player.mapY = clampMap(player.mapY + (ty / dist) * step, MAP_H);
+      const dmx = (tx / dist) * step;
+      const dmy = (ty / dist) * step;
+      player.mapX = clampMap(player.mapX + dmx, MAP_W);
+      player.mapY = clampMap(player.mapY + dmy, MAP_H);
       player.moving = true;
-      const a = mapToScreen(player.mapX, player.mapY);
-      const b = mapToScreen(player.target.x, player.target.y);
-      if (Math.abs(b.x - a.x) > 0.5) player.facing = b.x >= a.x ? 1 : -1;
+      player.facing = facingFromMapDelta(tx, ty);
     }
   }
 
@@ -382,9 +412,6 @@ function tick(now) {
   if (player.slashT > 0) player.slashT -= dt;
   if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
 
-  // soft camera follow (screen space of player toward center)
-  const ps = mapToScreen(player.mapX, player.mapY);
-  // mapToScreen already subtracts cam, so desired cam offsets player to center-ish
   const desiredCamX = (player.mapX - player.mapY) * (TILE_W / 2) + origin.x - viewW / 2;
   const desiredCamY = (player.mapX + player.mapY) * (TILE_H / 2) + origin.y - viewH * 0.55;
   cam.x += (desiredCamX - cam.x) * Math.min(1, 4.5 * dt);
@@ -395,7 +422,6 @@ function tick(now) {
 }
 
 function render() {
-  // sky / ground backdrop
   const g = ctx.createLinearGradient(0, 0, 0, viewH);
   g.addColorStop(0, "#6ec8f0");
   g.addColorStop(0.35, "#b8d99a");
@@ -403,7 +429,6 @@ function render() {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, viewW, viewH);
 
-  // grass diamonds — draw back-to-front (mapX+mapY)
   const grassA = "#4a8c3c";
   const grassB = "#3f7a34";
   const dirt = "#6b5a3e";
@@ -415,13 +440,11 @@ function render() {
       if (my < 0 || my >= MAP_H) continue;
       const checker = ((mx + my) & 1) === 0;
       let fill = checker ? grassA : grassB;
-      // dirt patches
       if ((mx * 7 + my * 13) % 17 === 0) fill = checker ? "#5c7a38" : dirt;
       drawTile(mx, my, fill, edge);
     }
   }
 
-  // gather drawables for depth sort
   const drawables = [];
   for (const [tx, ty] of trees) {
     drawables.push({ z: tx + ty, kind: "tree", x: tx + 0.5, y: ty + 0.5 });
@@ -432,7 +455,6 @@ function render() {
   }
   drawables.sort((a, b) => a.z - b.z);
 
-  // target marker
   if (player.target) {
     const tp = mapToScreen(player.target.x, player.target.y);
     ctx.save();
@@ -452,13 +474,17 @@ function render() {
     else if (d.kind === "player") {
       if (player.selected) drawSelectionRing(player.mapX, player.mapY);
       const spr = currentSprite();
-      const h = player.attackT > 0 ? 78 : 72;
-      drawUnit(player.mapX, player.mapY, spr, player.facing, h);
+      const h = spr.kind === "attack" ? 78 : 72;
+      if (spr.kind === "attack") {
+        drawAttack(player.mapX, player.mapY, spr.dir, h);
+      } else {
+        const img = imgs[spr.kind][spr.dir] || imgs.idle.se;
+        drawUnit(player.mapX, player.mapY, img, h);
+      }
       drawSlash(player.mapX, player.mapY, player.facing);
     }
   }
 
-  // HP hint
   if (enemy.alive) {
     const ep = mapToScreen(enemy.mapX, enemy.mapY);
     ctx.fillStyle = "rgba(0,0,0,0.45)";
