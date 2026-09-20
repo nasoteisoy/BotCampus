@@ -41,7 +41,7 @@
 <script>
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
-const v = "?v=2";
+const v = "?v=3";
 const DIRS = ["n","ne","e","se","s","sw","w","nw"];
 
 function load(src) {
@@ -55,9 +55,20 @@ function loadDirMap(kind) {
   return m;
 }
 
+function loadWalkAB() {
+  const m = {};
+  for (const d of DIRS) {
+    m[d] = [
+      load(`lava2d/iso/8/walk_${d}_a.png` + v),
+      load(`lava2d/iso/8/walk_${d}_b.png` + v),
+    ];
+  }
+  return m;
+}
 const imgs = {
   idle: loadDirMap("idle"),
   walk: loadDirMap("walk"),
+  walkAB: loadWalkAB(),
   attack: load("lava2d/iso/attack.png" + v),
 };
 
@@ -356,8 +367,8 @@ function currentSprite() {
   const dir = player.facing in imgs.idle ? player.facing : "se";
   if (player.attackT > 0) return { kind: "attack", dir };
   if (player.moving) {
-    const useWalk = (Math.floor(player.anim * 6) % 2 === 0);
-    return { kind: useWalk ? "walk" : "idle", dir };
+    const frame = Math.floor(player.anim * 8) % 2;
+    return { kind: "walkAB", dir, frame };
   }
   return { kind: "idle", dir };
 }
@@ -477,6 +488,10 @@ function render() {
       const h = spr.kind === "attack" ? 78 : 72;
       if (spr.kind === "attack") {
         drawAttack(player.mapX, player.mapY, spr.dir, h);
+      } else if (spr.kind === "walkAB") {
+        const pair = imgs.walkAB[spr.dir] || imgs.walkAB.se;
+        const img = (pair && pair[spr.frame]) || (pair && pair[0]) || imgs.idle.se;
+        drawUnit(player.mapX, player.mapY, img, h);
       } else {
         const img = imgs[spr.kind][spr.dir] || imgs.idle.se;
         drawUnit(player.mapX, player.mapY, img, h);

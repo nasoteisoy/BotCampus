@@ -46,7 +46,7 @@
 <main id="main"></main>
 <script>
 const DIRS = ["n","ne","e","se","s","sw","w","nw"];
-const v = "?v=2";
+const v = "?v=3";
 
 const CHARACTERS = [
   {
@@ -69,8 +69,8 @@ const CHARACTERS = [
     moves: [
       { id: "idle", label: "Idle", kind: "dirs",
         frames: d => `lava2d/iso/8/idle_${d}.png${v}` },
-      { id: "walk", label: "Walk", kind: "dirs",
-        frames: d => `lava2d/iso/8/walk_${d}.png${v}`, fps: 7 },
+      { id: "walk", label: "Walk", kind: "dirsAB",
+        frames: d => [`lava2d/iso/8/walk_${d}_a.png${v}`, `lava2d/iso/8/walk_${d}_b.png${v}`], fps: 8 },
       { id: "attack", label: "Attack", kind: "pulse",
         frames: [`lava2d/iso/attack.png${v}`], fps: 2 },
     ],
