@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:51:43Z",
+  "updatedAt": "2026-09-20T23:00:27Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -145,7 +145,7 @@
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
       "status": "ready_for_review",
-      "task": "campus-live camera UX on Pages v8",
+      "task": "Fun pass v9 \u2014 awaiting Dev C QC",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:39:03Z",
+      "updatedAt": "2026-09-20T23:00:27Z",
       "main": {
         "status": "ready_for_review",
-        "task": "campus-live camera UX on Pages v8",
+        "task": "Fun pass v9 \u2014 awaiting Dev C QC",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -213,14 +213,14 @@
       "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
       "deskId": "desk-dev-c",
       "status": "idle",
-      "task": "Await engineering assign",
+      "task": "Standby QC Campus Live fun",
       "color": "#86efac",
       "castFolder": "campus-cast/dev-c",
       "interns": [],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:58:23Z",
       "main": {
         "status": "idle",
-        "task": "Await engineering assign",
+        "task": "Standby QC Campus Live fun",
         "atDeskId": "desk-dev-c",
         "x": null,
         "y": null
@@ -467,7 +467,7 @@
       "name": "Researcher B",
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
-      "status": "working",
+      "status": "idle",
       "task": "Game Rendering School (craft curriculum)",
       "color": "#0ea5e9",
       "castFolder": "campus-cast/researcher-b",
@@ -582,11 +582,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live camera UX v8",
-      "updatedAt": "2026-09-20T22:39:03Z",
+      "note": "Pushing campus-live fun pass v9",
+      "updatedAt": "2026-09-20T23:00:27Z",
       "updatedBy": "dev-a"
     }
   ],

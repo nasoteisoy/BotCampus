@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=8 castFiles pan-zoom -->
+<!-- CACHE_BUST v=9 fun-pass idle status tap ambient -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -252,6 +252,231 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 #err{display:none; margin-bottom:.6rem; padding:.45rem .6rem; border-radius:10px;
   background:#7f1d1d66; border:1px solid #ef444488; font-size:.72rem; font-weight:700; color:#fecaca}
 #err.show{display:block}
+
+
+button.desk{
+  appearance:none; -webkit-appearance:none; margin:0; font:inherit; color:inherit;
+  padding-bottom:2px; padding-top:0; padding-left:0; padding-right:0;
+  transform:translate(-50%,-50%);
+}
+button.bot-row{appearance:none;-webkit-appearance:none;width:100%;text-align:left;color:inherit;font:inherit}
+
+/* ——— Fun pass v9: alive map, thin chrome, mute-OK juice ——— */
+:root{
+  --bg:#0a0e1a; --panel:#1a1040; --line:#5b21b6; --text:#fff7ed; --muted:#c4b5fd;
+  --jesus:#fbbf24; --alert:#f43f5e; --ready:#22c55e; --build:#f59e0b; --fail:#ef4444;
+  --fun-cyan:#22d3ee; --fun-pink:#f472b6; --fun-lime:#a3e635; --fun-orange:#fb923c;
+}
+html,body{background:var(--bg);color:var(--text)}
+header.sticky{
+  padding:calc(.35rem + env(safe-area-inset-top)) .7rem .35rem;
+  background:linear-gradient(180deg,#1a1040f2,#0a0e1ae8);
+  border-bottom:2px solid #7c3aed88;
+}
+header h1{font-size:.92rem;color:#fde68a}
+header .links{gap:.45rem;margin-top:.05rem}
+header .links a{font-size:.62rem;color:#67e8f9}
+#updated{font-size:.62rem;color:#c4b5fd}
+main{padding:.4rem .55rem 1rem; max-width:560px}
+.section-title{margin:.05rem 0 .25rem; font-size:.58rem; color:#a78bfa}
+
+/* Thin deploy / bot chrome — characters dominate */
+#deploys{gap:.28rem; margin-bottom:.45rem}
+.deploy-card{
+  background:linear-gradient(135deg,#2e1065cc,#1e1b4bcc);
+  border:1.5px solid #a855f788; border-radius:10px;
+  padding:.4rem .55rem;
+}
+.deploy-repo{font-size:.74rem;color:#fde68a}
+.deploy-label,.deploy-note{font-size:.6rem;color:#c4b5fd}
+.deploy-links{margin-top:.22rem; gap:.55rem}
+.deploy-links a{font-size:.64rem;color:#67e8f9}
+.pill{font-size:.55rem; padding:.1rem .4rem}
+
+#bot-list{gap:.22rem; margin-bottom:.45rem}
+.bot-row{
+  background:linear-gradient(90deg,#1e1b4bcc,#312e81aa);
+  border:1.5px solid #6366f166; border-radius:10px;
+  padding:.35rem .5rem; gap:.4rem;
+}
+.bot-row:active{transform:scale(.97)}
+.bot-row .name{font-size:.74rem;color:#fef3c7}
+.bot-row .task{font-size:.6rem;color:#c4b5fd}
+.status-chip{font-size:.52rem;padding:.1rem .32rem}
+
+#map-wrap{
+  height:min(84vh, 820px); min-height:520px;
+  margin-bottom:.5rem;
+  border:2px solid #a855f7aa;
+  box-shadow:0 0 24px #7c3aed33, inset 0 0 60px #f472b608;
+  background:#12081f;
+}
+#map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e55, inset 0 0 48px #f43f5e22}
+#map-world{
+  background:
+    radial-gradient(ellipse at 50% 6%, #fbbf2435 0%, transparent 30%),
+    radial-gradient(ellipse at 18% 40%, #22d3ee22 0%, transparent 28%),
+    radial-gradient(ellipse at 82% 55%, #f472b622 0%, transparent 28%),
+    radial-gradient(ellipse at 50% 70%, #a3e63515 0%, transparent 35%),
+    linear-gradient(180deg,#1e1040 0%, #0c0820 100%);
+}
+.floor-grid{opacity:.08}
+
+/* Desks — bold + monitor ambient */
+.desk{
+  width:54px; height:38px; border-radius:9px;
+  background:linear-gradient(180deg,#4c1d95cc,#312e81cc);
+  border:1.5px solid #c084fc88;
+  pointer-events:auto; cursor:pointer; z-index:1;
+  overflow:visible;
+}
+.desk.jesus{
+  width:68px; height:46px;
+  background:linear-gradient(180deg,#fbbf2455,#f59e0b44);
+  border:2.5px solid var(--jesus); box-shadow:0 0 20px #fbbf2455;
+}
+.desk.meeting{background:linear-gradient(180deg,#0e7490cc,#1e3a5fcc); border-color:#22d3eeaa}
+.desk .monitor{
+  position:absolute; top:3px; left:50%; transform:translateX(-50%);
+  width:20px; height:9px; border-radius:2px;
+  background:#22d3ee66; border:1px solid #67e8f9aa;
+  animation:monitorGlow 2.6s ease-in-out infinite;
+  animation-delay:var(--mon-delay, 0s);
+  pointer-events:none;
+}
+.desk.jesus .monitor{width:26px; height:11px; background:#fde68a88; border-color:#fbbf24; animation-duration:2.1s}
+@keyframes monitorGlow{
+  0%,100%{opacity:.4; box-shadow:0 0 3px #22d3ee44}
+  50%{opacity:1; box-shadow:0 0 12px #22d3eecc, 0 0 4px #fff8}
+}
+
+/* Idle breath on body — CSS only, per-bot --breath-delay phase */
+.sprite .body{
+  animation:breathBob 2.9s ease-in-out infinite;
+  animation-delay:var(--breath-delay, 0s);
+  will-change:transform;
+}
+.sprite.intern .body{
+  animation:breathBob 2.45s ease-in-out infinite;
+  animation-delay:var(--breath-delay, 0s);
+}
+@keyframes breathBob{
+  0%,100%{transform:translateY(0) scale(1,1)}
+  40%{transform:translateY(-2.5px) scale(1.035, .97)}
+  70%{transform:translateY(-1px) scale(1.015, .99)}
+}
+/* Soft accessory lag feel via ring pulse phase */
+.sprite .ring{
+  animation:ringSoft 3.4s ease-in-out infinite;
+  animation-delay:var(--breath-delay, 0s);
+}
+@keyframes ringSoft{
+  0%,100%{opacity:.85; transform:scale(1)}
+  50%{opacity:1; transform:scale(1.04)}
+}
+
+/* Status glow / scent beyond chips */
+.status-working .body{filter:drop-shadow(0 0 7px #22d3eecc)}
+.status-ready_for_review .body{filter:drop-shadow(0 0 9px #22c55ecc)}
+.status-needs_permission .body{filter:drop-shadow(0 0 10px #f43f5eee)}
+.status-reviewing .body{filter:drop-shadow(0 0 7px #a78bfacc)}
+.status-collaborating .body{filter:drop-shadow(0 0 8px #fb923ccc)}
+.status-idle .body{filter:drop-shadow(0 2px 5px #000a)}
+
+.status-working .ring{border-color:#22d3ee; box-shadow:0 0 8px #22d3ee66}
+.status-ready_for_review .ring{border-color:#22c55e; box-shadow:0 0 10px #22c55e66}
+.status-needs_permission .ring{border-color:#f43f5e; box-shadow:0 0 12px #f43f5e88}
+.status-reviewing .ring{border-color:#a78bfa; box-shadow:0 0 8px #a78bfa66}
+.status-collaborating .ring{border-color:#fb923c; box-shadow:0 0 8px #fb923c66}
+.status-idle .ring{border-color:#94a3b8}
+
+/* Status prop badge on sprite */
+.status-prop{
+  position:absolute; top:-6px; right:-8px; z-index:3;
+  font-size:13px; line-height:1;
+  filter:drop-shadow(0 1px 2px #000c);
+  pointer-events:none;
+  animation:propBob 1.8s ease-in-out infinite;
+  animation-delay:var(--breath-delay, 0s);
+}
+.sprite.intern .status-prop{font-size:10px; top:-4px; right:-5px}
+.status-prop:empty{display:none}
+@keyframes propBob{
+  0%,100%{transform:translateY(0) rotate(-6deg)}
+  50%{transform:translateY(-3px) rotate(6deg)}
+}
+
+/* Tap juice ≤200ms */
+@keyframes tapPop{
+  0%{transform:translate(-50%,-50%) scale(1)}
+  35%{transform:translate(-50%,-50%) scale(1.18)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes tapFlashRing{
+  0%{box-shadow:0 0 0 0 #fde68acc}
+  100%{box-shadow:0 0 0 14px transparent}
+}
+.sprite.tap-juice{
+  animation:tapPop 180ms cubic-bezier(.2,1.6,.4,1);
+  z-index:25 !important;
+}
+.sprite.tap-juice .body{
+  animation:none;
+  filter:drop-shadow(0 0 14px #fde68aee) brightness(1.25) !important;
+}
+.sprite.tap-juice .ring{animation:tapFlashRing 180ms ease-out; border-color:#fde68a !important}
+.desk.tap-juice{
+  animation:deskFlash 180ms ease-out;
+  z-index:4;
+}
+@keyframes deskFlash{
+  0%{filter:brightness(1.6); transform:translate(-50%,-50%) scale(1.12)}
+  100%{filter:brightness(1); transform:translate(-50%,-50%) scale(1)}
+}
+
+/* Particle burst */
+.juice-burst{
+  position:absolute; pointer-events:none; z-index:30;
+  width:0; height:0;
+}
+.juice-burst i{
+  position:absolute; left:0; top:0;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--pcol, #fde68a);
+  animation:burstOut 200ms ease-out forwards;
+}
+@keyframes burstOut{
+  0%{transform:translate(0,0) scale(1); opacity:1}
+  100%{transform:translate(var(--dx), var(--dy)) scale(.3); opacity:0}
+}
+
+/* Working sparkle ambient */
+.sparkle{
+  position:absolute; pointer-events:none; z-index:8;
+  font-size:11px; line-height:1;
+  animation:sparkleOut .85s ease-out forwards;
+  filter:drop-shadow(0 0 4px #fde68a);
+}
+@keyframes sparkleOut{
+  0%{opacity:1; transform:translate(-50%,-50%) scale(.5) rotate(0deg)}
+  60%{opacity:1}
+  100%{opacity:0; transform:translate(-50%,-120%) scale(1.15) rotate(25deg)}
+}
+
+#alert-banner{
+  background:linear-gradient(90deg,#9f1239ee,#f43f5ecc);
+  border:2px solid #fb7185; color:#fff1f2;
+  font-size:.74rem; padding:.45rem .6rem; margin-bottom:.45rem;
+}
+#legend{margin:.1rem 0 .5rem}
+#legend li{color:#c4b5fd}
+#sheet{background:#1e1040f5; border-top:2px solid #a855f7}
+#map-hint{color:#c4b5fd; background:#1e1040cc}
+#map-hud button{
+  border-color:#c084fc; background:#1e1040f2; color:#fde68a;
+}
+#map-mini{border-color:#a855f7; background:#1e1040ee}
+
 </style>
 </head>
 <body>
@@ -259,9 +484,9 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   <div>
     <h1>Bot Campus Live</h1>
     <div class="links">
-      <a href="review.html?v=1">Review</a>
-      <a href="research-board.html?v=8">Research</a>
-      <a href="campus-cast-review.html?v=8">Cast review</a>
+      <a href="review.html?v=9">Review</a>
+      <a href="research-board.html?v=9">Research</a>
+      <a href="campus-cast-review.html?v=9">Cast review</a>
       <a href="office.html">3D Office</a>
       <a href="liveops/CAMPUS_STATE.md">Protocol</a>
     </div>
@@ -320,7 +545,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = '8';
+  const ASSET_V = '9';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -964,15 +1189,82 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   function renderDesks(desks, jesusDeskId) {
     mapEl.querySelectorAll('.desk').forEach(n => n.remove());
-    (desks || []).forEach(d => {
-      const el = document.createElement('div');
+    (desks || []).forEach((d, i) => {
+      const el = document.createElement('button');
+      el.type = 'button';
       el.className = 'desk' + (d.id === jesusDeskId ? ' jesus' : '') + (d.id === 'desk-meeting' ? ' meeting' : '');
       const p = deskPos(d);
       el.style.left = p.left + '%';
       el.style.top = p.top + '%';
-      el.innerHTML = '<span class="desk-label">' + escapeHtml(d.label) + '</span>';
+      el.style.setProperty('--mon-delay', (-(i * 0.47) % 2.6).toFixed(2) + 's');
+      el.innerHTML = '<span class="monitor" aria-hidden="true"></span><span class="desk-label">' + escapeHtml(d.label) + '</span>';
+      el.addEventListener('click', (ev) => {
+        if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
+        ev.stopPropagation();
+        tapJuice(el, true);
+        // Open first bot assigned to this desk if any
+        const bot = (state && state.bots || []).find(b => b.deskId === d.id);
+        if (bot) openSheet(bot);
+      });
       mapEl.appendChild(el);
     });
+  }
+
+
+  const STATUS_PROP = {
+    working: '🔧',
+    ready_for_review: '📋',
+    needs_permission: '🚨',
+    collaborating: '🤝',
+    reviewing: '📋',
+    idle: ''
+  };
+
+  function phaseDelay(key, span) {
+    // Stable per-bot phase offset — avoid army-sync (F10)
+    let h = 0;
+    const s = String(key || '');
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    const t = Math.abs(h) % 1000;
+    return (-(t / 1000) * (span || 2.9)).toFixed(2) + 's';
+  }
+
+  function tapJuice(el, withBurst) {
+    if (!el) return;
+    el.classList.remove('tap-juice');
+    void el.offsetWidth;
+    el.classList.add('tap-juice');
+    setTimeout(() => { el.classList.remove('tap-juice'); }, 200);
+    if (withBurst) spawnBurst(el);
+  }
+
+  function spawnBurst(el) {
+    const wrap = mapWrap.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2 - wrap.left;
+    const cy = r.top + r.height / 2 - wrap.top;
+    const burst = document.createElement('div');
+    burst.className = 'juice-burst';
+    burst.style.left = cx + 'px';
+    burst.style.top = cy + 'px';
+    const cols = ['#fde68a', '#f472b6', '#22d3ee', '#a3e635', '#fb923c'];
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('i');
+      const ang = (Math.PI * 2 * i) / 6 + Math.random() * 0.4;
+      const dist = 14 + Math.random() * 16;
+      p.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+      p.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(1) + 'px');
+      p.style.setProperty('--pcol', cols[i % cols.length]);
+      burst.appendChild(p);
+    }
+    mapWrap.appendChild(burst);
+    setTimeout(() => burst.remove(), 220);
+  }
+
+  function setStatusProp(el, status) {
+    const prop = el.querySelector('.status-prop');
+    if (!prop) return;
+    prop.textContent = STATUS_PROP[status] || '';
   }
 
   function ensureSprite(key, opts) {
@@ -986,10 +1278,12 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
           '<span class="ring"></span>' +
           '<img class="cast" alt="" draggable="false"/>' +
           '<span class="swatch-fallback" hidden></span>' +
+          '<span class="status-prop" aria-hidden="true"></span>' +
         '</div>' +
         '<div class="tag"></div>';
       el.addEventListener('click', (ev) => {
         if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
+        tapJuice(el, true);
         if (opts.onTap) opts.onTap();
       });
       mapEl.appendChild(el);
@@ -1062,6 +1356,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
       const el = ensureSprite(mainKey, { onTap: () => openSheet(bot) });
       el.className = 'sprite main status-' + mainStatus;
+      el.style.setProperty('--breath-delay', phaseDelay(mainKey, 2.9));
+      setStatusProp(el, mainStatus);
       const frame = mainFrameForStatus(mainStatus);
       const src = castSrc(castEntry, frame);
       setCastOrFallback(el, src, color, initials(bot.name));
@@ -1085,6 +1381,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
           : offsetAround(base, slot, 'intern', at === jesusId);
         const iel = ensureSprite(key, { onTap: () => openSheet(bot) });
         iel.className = 'sprite intern status-' + ist + (isPerm ? ' perm-alert' : '');
+        iel.style.setProperty('--breath-delay', phaseDelay(key, 2.45));
+        setStatusProp(iel, ist);
         // Interns always use intern_idle when cast exists (CAST_MAP).
         // Exception: needs_permission uses needs_permission frame if available.
         const internFrame = (ist === 'needs_permission') ? 'needs_permission' : 'intern_idle';
@@ -1126,7 +1424,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
         '<span class="name">' + escapeHtml(bot.name) + '</span>' +
         '<span class="task">' + escapeHtml(bot.task || '') + '</span>' +
         '<span class="status-chip ' + st + '">' + escapeHtml(st.replace(/_/g,' ')) + '</span>';
-      row.addEventListener('click', () => openSheet(bot));
+      row.addEventListener('click', () => { tapJuice(row, false); openSheet(bot); });
       botListEl.appendChild(row);
     });
   }
@@ -1226,6 +1524,36 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     errEl.classList.add('show');
     if (lastGood) applyState(lastGood, false);
   }
+
+
+  /* Occasional tiny sparkle near working bots — calm, not casino */
+  const SPARKLE_GLYPHS = ['✦', '✧', '·'];
+  function spawnWorkingSparkles() {
+    if (!state) return;
+    const working = Object.keys(spriteEls).filter(k => {
+      const el = spriteEls[k];
+      return el && (el.classList.contains('status-working') || el.classList.contains('status-collaborating'));
+    });
+    if (!working.length) return;
+    // At most 1–2 sparkles per tick
+    const n = Math.min(2, working.length);
+    for (let i = 0; i < n; i++) {
+      if (Math.random() > 0.55) continue;
+      const key = working[(Math.random() * working.length) | 0];
+      const el = spriteEls[key];
+      if (!el) continue;
+      const sp = document.createElement('span');
+      sp.className = 'sparkle';
+      sp.textContent = SPARKLE_GLYPHS[(Math.random() * SPARKLE_GLYPHS.length) | 0];
+      const left = parseFloat(el.style.left) || 50;
+      const top = parseFloat(el.style.top) || 50;
+      sp.style.left = (left + (Math.random() * 4 - 2)) + '%';
+      sp.style.top = (top - 3 - Math.random() * 2) + '%';
+      mapEl.appendChild(sp);
+      setTimeout(() => sp.remove(), 900);
+    }
+  }
+  setInterval(spawnWorkingSparkles, 2200);
 
   // Initial camera before first paint of sprites
   requestAnimationFrame(fitOverview);

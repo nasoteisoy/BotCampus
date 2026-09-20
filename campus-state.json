@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:39:03Z",
+  "updatedAt": "2026-09-20T23:00:27Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -145,7 +145,7 @@
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
       "status": "ready_for_review",
-      "task": "campus-live camera UX on Pages v8",
+      "task": "Fun pass v9 \u2014 awaiting Dev C QC",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:39:03Z",
+      "updatedAt": "2026-09-20T23:00:27Z",
       "main": {
         "status": "ready_for_review",
-        "task": "campus-live camera UX on Pages v8",
+        "task": "Fun pass v9 \u2014 awaiting Dev C QC",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -582,11 +582,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live camera UX v8",
-      "updatedAt": "2026-09-20T22:39:03Z",
+      "note": "Pushing campus-live fun pass v9",
+      "updatedAt": "2026-09-20T23:00:27Z",
       "updatedBy": "dev-a"
     }
   ],
