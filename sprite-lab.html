@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Sprite Lab</title>
+<style>
+  :root { --bg:#0a0c10; --card:#12161f; --muted:#8b93a7; --line:#243044; --accent:#fb923c; }
+  * { box-sizing: border-box; }
+  html,body { margin:0; background:var(--bg); color:#f4f0e8; font-family:system-ui,-apple-system,sans-serif; }
+  header { padding:14px 16px 8px; position:sticky; top:0; background:rgba(10,12,16,.92); backdrop-filter:blur(8px); z-index:2; border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:1.15rem; font-weight:750; }
+  .sub { color:var(--muted); font-size:.8rem; margin-top:4px; }
+  main { padding:12px 12px 40px; max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+  .char { background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .char-head { padding:12px 14px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; border-bottom:1px solid var(--line); }
+  .char-head h2 { margin:0; font-size:1rem; }
+  .char-head a { color:var(--accent); font-size:.78rem; text-decoration:none; }
+  .row { display:grid; grid-template-columns:72px 1fr; gap:10px; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(36,48,68,.65); }
+  .row:last-child { border-bottom:none; }
+  .label { font-size:.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .stage {
+    height:120px; border-radius:12px; background:
+      linear-gradient(180deg,#1a2230 0%,#0e131c 100%);
+    display:flex; align-items:flex-end; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .stage::before {
+    content:""; position:absolute; left:50%; bottom:18px; width:52px; height:14px;
+    transform:translateX(-50%); border-radius:50%;
+    background:rgba(251,146,60,.18); filter:blur(1px);
+  }
+  .stage canvas { display:block; width:100%; height:100%; position:relative; z-index:1; }
+  .dirchip {
+    position:absolute; top:8px; right:8px; z-index:2;
+    font-size:.65rem; color:var(--muted); background:rgba(0,0,0,.35);
+    padding:2px 6px; border-radius:999px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sprite Lab</h1>
+  <div class="sub">Characters ↓ · each row is a live movement</div>
+</header>
+<main id="main"></main>
+<script>
+const DIRS = ["n","ne","e","se","s","sw","w","nw"];
+const v = "?v=1";
+
+const CHARACTERS = [
+  {
+    id: "firesoldier",
+    name: "Fire Soldier",
+    play: "firesoldier-play.html?v=1",
+    moves: [
+      { id: "idle", label: "Idle", kind: "dirs",
+        frames: d => `firesoldier/idle/idle_${d}.png${v}` },
+      { id: "walk", label: "Walk", kind: "dirs",
+        frames: d => `firesoldier/walk/walk_${d}.png${v}`, fps: 7 },
+      { id: "attack", label: "Attack", kind: "pulse",
+        frames: [`firesoldier/attack/attack_se.png${v}`], fps: 2 },
+    ],
+  },
+  {
+    id: "lavaknight",
+    name: "Lava Knight",
+    play: "lava-iso.html?v=2",
+    moves: [
+      { id: "idle", label: "Idle", kind: "dirs",
+        frames: d => `lava2d/iso/8/idle_${d}.png${v}` },
+      { id: "walk", label: "Walk", kind: "dirs",
+        frames: d => `lava2d/iso/8/walk_${d}.png${v}`, fps: 7 },
+      { id: "attack", label: "Attack", kind: "pulse",
+        frames: [`lava2d/iso/attack.png${v}`], fps: 2 },
+    ],
+  },
+];
+
+function loadImg(src) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => res(null);
+    i.src = src;
+  });
+}
+
+async function prepMove(move) {
+  if (move.kind === "dirs") {
+    const imgs = [];
+    for (const d of DIRS) imgs.push({ dir: d, img: await loadImg(move.frames(d)) });
+    return { ...move, sheet: imgs.filter(x => x.img) };
+  }
+  const imgs = [];
+  for (const src of move.frames) imgs.push(await loadImg(src));
+  return { ...move, sheet: imgs.filter(Boolean) };
+}
+
+function animateStage(canvas, move, chip) {
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  function size() {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(r.width * dpr);
+    canvas.height = Math.floor(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return r;
+  }
+  let t0 = performance.now();
+  let dirIdx = 0;
+  let lastDirSwitch = t0;
+  const fps = move.fps || 5;
+  const dirDwell = move.kind === "dirs" ? 700 : 999999; // ms per facing
+
+  function draw(now) {
+    const r = size();
+    ctx.clearRect(0, 0, r.width, r.height);
+    if (!move.sheet.length) {
+      ctx.fillStyle = "#556";
+      ctx.fillRect(r.width/2 - 20, r.height/2 - 30, 40, 60);
+      requestAnimationFrame(draw);
+      return;
+    }
+
+    let img, label = "";
+    if (move.kind === "dirs") {
+      if (now - lastDirSwitch > dirDwell) {
+        dirIdx = (dirIdx + 1) % move.sheet.length;
+        lastDirSwitch = now;
+      }
+      // walk: also bob between same-dir if we only have one frame per dir — pulse scale
+      const entry = move.sheet[dirIdx];
+      img = entry.img;
+      label = entry.dir.toUpperCase();
+      if (chip) chip.textContent = label;
+    } else {
+      const frame = Math.floor((now - t0) / (1000 / fps)) % move.sheet.length;
+      img = move.sheet[frame];
+      // pulse opacity for single-frame attack to feel "live"
+      if (chip) chip.textContent = "SE";
+    }
+
+    if (img) {
+      const maxH = r.height * 0.86;
+      const maxW = r.width * 0.9;
+      let dw = img.naturalWidth, dh = img.naturalHeight;
+      const scale = Math.min(maxW / dw, maxH / dh);
+      dw *= scale; dh *= scale;
+      const bob = (move.id === "walk") ? Math.sin(now / 90) * 2.2 : 0;
+      const pulse = (move.id === "attack") ? 0.85 + 0.15 * Math.sin(now / 140) : 1;
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.drawImage(img, (r.width - dw) / 2, r.height - dh - 10 + bob, dw, dh);
+      ctx.restore();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+async function mount() {
+  const main = document.getElementById("main");
+  for (const ch of CHARACTERS) {
+    const card = document.createElement("section");
+    card.className = "char";
+    card.innerHTML = `
+      <div class="char-head">
+        <h2>${ch.name}</h2>
+        ${ch.play ? `<a href="${ch.play}">Play →</a>` : ""}
+      </div>
+      <div class="moves"></div>`;
+    const movesEl = card.querySelector(".moves");
+    for (const raw of ch.moves) {
+      const move = await prepMove(raw);
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `
+        <div class="label">${move.label}</div>
+        <div class="stage"><span class="dirchip">—</span><canvas></canvas></div>`;
+      const canvas = row.querySelector("canvas");
+      const chip = row.querySelector(".dirchip");
+      movesEl.appendChild(row);
+      animateStage(canvas, move, chip);
+    }
+    main.appendChild(card);
+  }
+}
+mount();
+</script>
+</body>
+</html>
