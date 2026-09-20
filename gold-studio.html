@@ -2,163 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<meta http-equiv="Cache-Control" content="no-cache"/>
-<title>Gold Studio — Knight Characters</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Gold Studio — Knights</title>
 <style>
-  :root {
-    color-scheme: dark;
-    --bg: #050505;
-    --panel: #121012;
-    --fg: #f5edd8;
-    --muted: #a89878;
-    --gold: #d4a84b;
-    --gold2: #f0d080;
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; min-height: 100%;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    -webkit-tap-highlight-color: transparent;
-  }
-  header {
-    position: sticky; top: 0; z-index: 10;
-    padding: 14px 16px 10px;
-    background: linear-gradient(180deg, #0a0908 70%, transparent);
-    border-bottom: 1px solid #2a2218;
-  }
-  h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--gold2);
-  }
-  .sub {
-    margin: 4px 0 0;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 18px;
-    padding: 12px 14px 40px;
-    max-width: 720px;
-    margin: 0 auto;
-  }
-  @media (min-width: 640px) {
-    .grid { grid-template-columns: 1fr 1fr; }
-  }
-  figure {
-    margin: 0;
-    background: var(--panel);
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid #2c2418;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.55);
-  }
-  figure a { display: block; }
-  figure img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
-    background: #000;
-  }
-  figcaption {
-    padding: 10px 12px 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--gold);
-    letter-spacing: 0.03em;
-  }
-  figcaption span {
-    display: block;
-    margin-top: 2px;
-    font-size: 0.72rem;
-    font-weight: 400;
-    color: var(--muted);
-  }
-  .refs {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 14px 48px;
-  }
-  .refs h2 {
-    font-size: 0.85rem;
-    color: var(--muted);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin: 8px 0 12px;
-  }
-  .ref-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .ref-row img {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: 10px;
-    border: 1px solid #2a2218;
-    background: #000;
-  }
-  footer {
-    text-align: center;
-    padding: 8px 16px 28px;
-    font-size: 0.7rem;
-    color: #66553a;
-  }
+:root{color-scheme:dark;--bg:#0c0c0e;--fg:#f3f0ea;--muted:#9a958c;--card:#16161a}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--fg)}
+header{padding:14px 16px;position:sticky;top:0;background:rgba(12,12,14,.92);backdrop-filter:blur(8px);z-index:2}
+h1{margin:0;font-size:1.1rem}p{margin:6px 0 0;color:var(--muted);font-size:.85rem}
+h2{margin:18px 12px 8px;font-size:.95rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+main{max-width:900px;margin:0 auto;padding:0 12px 40px;display:flex;flex-direction:column;gap:16px}
+figure{margin:0;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid #2a2a32}
+img{width:100%;height:auto;display:block}
+figcaption{padding:10px 12px;color:var(--muted);font-size:.88rem}
 </style>
 </head>
 <body>
 <header>
-  <h1>Gold Studio</h1>
-  <p class="sub">Clash-style knight characters · black studio · Cycles beauty</p>
+  <h1>Knights — painted + plate Blender</h1>
+  <p>Tap an image for fullscreen</p>
 </header>
-
-<main class="grid">
-  <figure>
-    <a href="gold-studio/lava_knight.png" target="_blank" rel="noopener">
-      <img src="gold-studio/lava_knight.png" alt="Lava Knight" loading="eager"/>
-    </a>
-    <figcaption>Lava Knight<span>Gunmetal · copper · lava core · flame crest</span></figcaption>
-  </figure>
-  <figure>
-    <a href="gold-studio/redgold_knight.png" target="_blank" rel="noopener">
-      <img src="gold-studio/redgold_knight.png" alt="Redgold Knight" loading="lazy"/>
-    </a>
-    <figcaption>Redgold Knight<span>Gold helm · red armor · flame · combat crouch</span></figcaption>
-  </figure>
-  <figure>
-    <a href="gold-studio/hero_knight.png" target="_blank" rel="noopener">
-      <img src="gold-studio/hero_knight.png" alt="Hero Knight" loading="lazy"/>
-    </a>
-    <figcaption>Hero Knight<span>Young face · gold plate · cape · fireball</span></figcaption>
-  </figure>
-  <figure>
-    <a href="gold-studio/gold_plate_knight.png" target="_blank" rel="noopener">
-      <img src="gold-studio/gold_plate_knight.png" alt="Gold Plate Knight" loading="lazy"/>
-    </a>
-    <figcaption>Gold Plate Knight<span>Closed helm · sun belt · flaming broadsword</span></figcaption>
-  </figure>
+<h2>Painted (from your refs)</h2>
+<main id="paint">
+<figure><a href="gold-studio/paint_lava_knight.png?v=1"><img src="gold-studio/paint_lava_knight.png?v=1" alt="Painted lava knight"/></a><figcaption>Lava knight — painted</figcaption></figure>
+<figure><a href="gold-studio/paint_redgold_knight.png?v=1"><img src="gold-studio/paint_redgold_knight.png?v=1" alt="Painted red-gold knight"/></a><figcaption>Red/gold knight — painted</figcaption></figure>
+<figure><a href="gold-studio/paint_hero_knight.png?v=1"><img src="gold-studio/paint_hero_knight.png?v=1" alt="Painted hero knight"/></a><figcaption>Hero knight — painted</figcaption></figure>
+<figure><a href="gold-studio/paint_gold_plate_knight.png?v=1"><img src="gold-studio/paint_gold_plate_knight.png?v=1" alt="Painted gold plate knight"/></a><figcaption>Gold plate knight — painted</figcaption></figure>
 </main>
-
-<section class="refs">
-  <h2>Style refs</h2>
-  <div class="ref-row">
-    <img src="gold-studio/ref4_dark_emissive.png" alt="ref lava"/>
-    <img src="gold-studio/ref3_redgold_knight.png" alt="ref redgold"/>
-    <img src="gold-studio/ref2_warrior.png" alt="ref hero"/>
-    <img src="gold-studio/ref1_gold_knight.png" alt="ref gold plate"/>
-  </div>
-</section>
-
-<footer>bot-campus · gold-studio · Cycles 4.3 · character match</footer>
+<h2>Plate-only Blender (no spheres)</h2>
+<main id="plate">
+<figure><img src="gold-studio/plate_lava_knight.png?v=1" alt="Plate lava"/><figcaption>Lava — plate Blender (when ready)</figcaption></figure>
+<figure><img src="gold-studio/plate_redgold_knight.png?v=1" alt="Plate redgold"/><figcaption>Red/gold — plate Blender (when ready)</figcaption></figure>
+<figure><img src="gold-studio/plate_hero_knight.png?v=1" alt="Plate hero"/><figcaption>Hero — plate Blender (when ready)</figcaption></figure>
+<figure><img src="gold-studio/plate_gold_knight.png?v=1" alt="Plate gold"/><figcaption>Gold plate — plate Blender (when ready)</figcaption></figure>
+</main>
 </body>
 </html>
