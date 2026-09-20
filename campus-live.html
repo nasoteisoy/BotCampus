@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=10 fun-pass idle glow sparkles cast-HUD -->
+<!-- CACHE_BUST v=11 readable-fit tap-juice capture-fix -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -261,7 +261,7 @@ button.desk{
 }
 button.bot-row{appearance:none;-webkit-appearance:none;width:100%;text-align:left;color:inherit;font:inherit}
 
-/* ——— Fun pass v10: phone-alive idle, glow/sparkles, cast-HUD ——— */
+/* ——— Fun pass v11: readable Fit zoom, glanceable life, tap-capture fix ——— */
 :root{
   --bg:#0a0e1a; --panel:#1a1040; --line:#5b21b6; --text:#fff7ed; --muted:#c4b5fd;
   --jesus:#fbbf24; --alert:#f43f5e; --ready:#22c55e; --build:#f59e0b; --fail:#ef4444;
@@ -375,17 +375,17 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .desk.meeting{background:linear-gradient(180deg,#0e7490cc,#1e3a5fcc); border-color:#22d3eeaa}
 .desk .monitor{
   position:absolute; top:1px; left:50%; transform:translateX(-50%);
-  width:38px; height:16px; border-radius:3px;
-  background:#22d3ee99; border:1.5px solid #a5f3fc;
+  width:52px; height:22px; border-radius:4px;
+  background:#22d3ee99; border:2px solid #a5f3fc;
   animation:monitorGlow 2.2s ease-in-out infinite;
   animation-delay:var(--mon-delay, 0s);
   pointer-events:none;
-  box-shadow:0 0 10px #22d3eeaa, 0 0 22px #22d3ee66;
+  box-shadow:0 0 12px #22d3eeaa, 0 0 26px #22d3ee66;
 }
 .desk.jesus .monitor{
-  width:48px; height:20px; background:#fde68acc; border-color:#fbbf24;
+  width:64px; height:26px; background:#fde68acc; border-color:#fbbf24;
   animation-duration:1.8s;
-  box-shadow:0 0 14px #fbbf24cc, 0 0 28px #f59e0b88;
+  box-shadow:0 0 16px #fbbf24cc, 0 0 32px #f59e0b88;
 }
 @keyframes monitorGlow{
   0%,100%{opacity:.55; filter:brightness(.95); box-shadow:0 0 8px #22d3ee88, 0 0 18px #22d3ee44}
@@ -405,9 +405,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 }
 @keyframes breathBob{
   0%,100%{transform:translateY(0) scale(1,1) rotate(0deg)}
-  20%{transform:translateY(-5px) scale(1.09, .93) rotate(-2.8deg)}
-  45%{transform:translateY(-3px) scale(1.06, .96) rotate(2.2deg)}
-  70%{transform:translateY(-4.5px) scale(1.08, .94) rotate(-1.6deg)}
+  20%{transform:translateY(-6px) scale(1.11, .92) rotate(-3.2deg)}
+  45%{transform:translateY(-3.5px) scale(1.07, .95) rotate(2.6deg)}
+  70%{transform:translateY(-5.5px) scale(1.10, .93) rotate(-1.9deg)}
 }
 /* Occasional soft blink on cast art */
 .sprite img.cast{
@@ -448,15 +448,15 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
 /* Status prop badge — tip sway more obvious */
 .status-prop{
-  position:absolute; top:-8px; right:-10px; z-index:3;
-  font-size:15px; line-height:1;
+  position:absolute; top:-10px; right:-12px; z-index:3;
+  font-size:18px; line-height:1;
   filter:drop-shadow(0 1px 2px #000c);
   pointer-events:none;
   animation:propBob 1.55s ease-in-out infinite;
   animation-delay:var(--breath-delay, 0s);
   transform-origin:50% 100%;
 }
-.sprite.intern .status-prop{font-size:12px; top:-5px; right:-6px}
+.sprite.intern .status-prop{font-size:14px; top:-6px; right:-8px}
 .status-prop:empty{display:none}
 @keyframes propBob{
   0%,100%{transform:translateY(0) rotate(-14deg) scale(1)}
@@ -499,7 +499,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 }
 .juice-burst i{
   position:absolute; left:0; top:0;
-  width:6px; height:6px; border-radius:50%;
+  width:8px; height:8px; border-radius:50%;
   background:var(--pcol, #fde68a);
   animation:burstOut 200ms ease-out forwards;
 }
@@ -511,16 +511,20 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 /* Working sparkle ambient — glanceable, capped */
 .sparkle{
   position:absolute; pointer-events:none; z-index:8;
-  font-size:20px; line-height:1;
+  font-size:28px; line-height:1;
   animation:sparkleOut .95s ease-out forwards;
-  filter:drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 14px #22d3eecc);
+  filter:drop-shadow(0 0 10px #fde68a) drop-shadow(0 0 18px #22d3eecc);
   color:#fffbeb;
-  text-shadow:0 0 6px #fbbf24, 0 0 12px #22d3ee;
+  text-shadow:0 0 8px #fbbf24, 0 0 16px #22d3ee;
 }
 @keyframes sparkleOut{
   0%{opacity:1; transform:translate(-50%,-50%) scale(.55) rotate(0deg)}
   45%{opacity:1; transform:translate(-50%,-90%) scale(1.25) rotate(12deg)}
   100%{opacity:0; transform:translate(-50%,-140%) scale(1.45) rotate(28deg)}
+}
+#zoom-fit.fit-all-flash{
+  background:#fbbf24ee !important; color:#1a1040 !important;
+  box-shadow:0 0 16px #fbbf24cc;
 }
 
 #alert-banner{
@@ -551,9 +555,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div>
     <h1>Bot Campus Live</h1>
     <div class="links">
-      <a href="review.html?v=10">Review</a>
-      <a href="research-board.html?v=10">Research</a>
-      <a href="campus-cast-review.html?v=10">Cast review</a>
+      <a href="review.html?v=11">Review</a>
+      <a href="research-board.html?v=11">Research</a>
+      <a href="campus-cast-review.html?v=11">Cast review</a>
       <a href="office.html">3D Office</a>
       <a href="liveops/CAMPUS_STATE.md">Protocol</a>
     </div>
@@ -579,13 +583,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <div id="map-hud">
       <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
       <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
-      <button type="button" id="zoom-fit" class="fit-btn" aria-label="Fit all">Fit</button>
+      <button type="button" id="zoom-fit" class="fit-btn" aria-label="Fit cluster (hold for all)">Fit</button>
       <button type="button" id="zoom-reset" aria-label="Reset view">⟲</button>
     </div>
     <button type="button" id="map-mini" aria-label="Minimap — tap to jump" title="Tap to jump">
       <canvas width="96" height="74"></canvas>
     </button>
-    <div id="map-hint">Drag · pinch · Fit all · ±</div>
+    <div id="map-hint">Drag · pinch · Fit cluster · hold Fit=all · ±</div>
   </div>
 
   <ul id="legend">
@@ -615,7 +619,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = '10';
+  const ASSET_V = '11';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -675,6 +679,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   /* ——— Camera (transform only; no DOM re-layout per frame) ——— */
   const ZOOM_MAX = 2.5;
+  const MAIN_SPRITE_CSS = 104; // .sprite.main .body
+  const TARGET_MAIN_ON_SCREEN = 76; // ≥70–100 CSS-px on phone after transform
+  const READABLE_ZOOM_MIN = TARGET_MAIN_ON_SCREEN / MAIN_SPRITE_CSS; // ≈0.731
   const cam = { x: 0, y: 0, scale: 1, vx: 0, vy: 0 };
   let camRaf = 0;
   let camDirty = false;
@@ -686,6 +693,46 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     if (!rect.width || !rect.height) return 0.22;
     // Allow zooming out far enough to see the whole world with a little padding
     return Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.88;
+  }
+
+  function homeClusterBBox() {
+    // Jesus + ops-row desks (readable default framing)
+    const desks = (state && state.desks) || [];
+    const ops = desks.filter(function (d) {
+      return d.zone === 'ops' || d.id === 'desk-jesus' || d.id === (state && state.jesusDeskId);
+    });
+    const pts = ops.length ? ops : desks;
+    if (!pts.length) {
+      return { x: WORLD.w * 0.25, y: 40, w: WORLD.w * 0.5, h: WORLD.h * 0.35 };
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    pts.forEach(function (d) {
+      const x = d.x != null ? d.x : WORLD.w / 2;
+      const y = d.y != null ? d.y : WORLD.h / 3;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    });
+    // Padding for cast sprites above desks + labels
+    const padX = 160, padYTop = 180, padYBot = 140;
+    minX = Math.max(0, minX - padX);
+    minY = Math.max(0, minY - padYTop);
+    maxX = Math.min(WORLD.w, maxX + padX);
+    maxY = Math.min(WORLD.h, maxY + padYBot);
+    return { x: minX, y: minY, w: Math.max(280, maxX - minX), h: Math.max(220, maxY - minY) };
+  }
+
+  function centerOnBBox(bbox, scale) {
+    const rect = mapWrap.getBoundingClientRect();
+    cam.scale = softClampZoom(scale);
+    const cx = bbox.x + bbox.w / 2;
+    const cy = bbox.y + bbox.h / 2;
+    cam.x = rect.width / 2 - cx * cam.scale;
+    cam.y = rect.height / 2 - cy * cam.scale;
+    cam.vx = cam.vy = 0;
+    clampCam();
+    applyCamNow();
   }
 
   function applyCamNow() {
@@ -750,10 +797,10 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     applyCamNow();
   }
 
-  function fitOverview() {
+  function fitAllWorld() {
     const rect = mapWrap.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    // Fit WORLD into viewport with modest padding
+    // True full-campus overview (postage-stamp sprites OK — opt-in via long-press Fit)
     const s = Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.94;
     cam.scale = softClampZoom(s);
     cam.x = (rect.width - WORLD.w * cam.scale) / 2;
@@ -761,6 +808,22 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     cam.vx = cam.vy = 0;
     clampCam();
     applyCamNow();
+  }
+
+  function fitHomeCluster() {
+    const rect = mapWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const bbox = homeClusterBBox();
+    // Fit cluster, then clamp so mains stay ≥ TARGET_MAIN_ON_SCREEN on screen
+    let s = Math.min(rect.width / bbox.w, rect.height / bbox.h) * 0.9;
+    s = Math.max(s, READABLE_ZOOM_MIN);
+    s = Math.min(ZOOM_MAX, s);
+    centerOnBBox(bbox, s);
+  }
+
+  // Default Fit = readable home cluster (not full-world postage stamps)
+  function fitOverview() {
+    fitHomeCluster();
   }
 
   function recenterKeepZoom() {
@@ -881,19 +944,40 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
 
+  function isSpriteOrDesk(el) {
+    return !!(el && el.closest && el.closest('.sprite, .desk'));
+  }
+
+  // Deferred capture: capturing on pointerdown steals .sprite/.desk clicks (no tapPop).
+  // Capture only after pan threshold, or immediately when target is empty map chrome.
   mapWrap.addEventListener('pointerdown', (e) => {
     if (isHudTarget(e.target)) return;
     if (sheet.classList.contains('open')) return;
-    mapWrap.setPointerCapture(e.pointerId);
+    const interactive = isSpriteOrDesk(e.target);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, id: e.pointerId });
     stopAllMotion();
     dragMoved = false;
+    // Tap juice on pointerdown (before any capture) — visible within 200ms
+    if (interactive && pointers.size === 1) {
+      const hit = e.target.closest('.sprite, .desk');
+      if (hit) {
+        tapJuice(hit, true);
+        mapWrap._juicedEl = hit;
+      }
+    } else {
+      mapWrap._juicedEl = null;
+    }
+    if (!interactive) {
+      try { mapWrap.setPointerCapture(e.pointerId); } catch (_) {}
+    }
     const pts = pointerList();
     if (pts.length === 1) {
       gestureMode = null; // wait for threshold
       panLast = { x: e.clientX, y: e.clientY };
       mapWrap._panStart = { x: e.clientX, y: e.clientY };
     } else if (pts.length >= 2) {
+      // Multi-touch: always capture for pinch/pan
+      try { mapWrap.setPointerCapture(e.pointerId); } catch (_) {}
       // Mode-lock: if already panning, stay pan (2-finger drag = pan)
       if (gestureMode === 'pan') {
         panLast = midpoint(pts[0], pts[1]);
@@ -974,6 +1058,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         gestureMode = 'pan';
         dragMoved = true;
         suppressClick = true;
+        // Crossed pan threshold — capture so pan keeps tracking off-sprite
+        try { mapWrap.setPointerCapture(e.pointerId); } catch (_) {}
       }
       cam.x += dx;
       cam.y += dy;
@@ -1028,7 +1114,10 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   function fitScale() {
     const rect = mapWrap.getBoundingClientRect();
-    return softClampZoom(Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.94);
+    if (!rect.width || !rect.height) return READABLE_ZOOM_MIN;
+    const bbox = homeClusterBBox();
+    let s = Math.min(rect.width / bbox.w, rect.height / bbox.h) * 0.9;
+    return Math.min(ZOOM_MAX, Math.max(READABLE_ZOOM_MIN, s));
   }
 
   mapWrap.addEventListener('pointerup', endPointer);
@@ -1070,25 +1159,44 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const r = mapWrap.getBoundingClientRect();
     zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale / 1.25);
   });
-  $('zoom-fit').addEventListener('click', (e) => {
-    e.stopPropagation();
-    stopAllMotion();
-    fitOverview();
-  });
+  (function bindFitButton() {
+    const btn = $('zoom-fit');
+    let holdTimer = 0;
+    let heldAll = false;
+    btn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      heldAll = false;
+      holdTimer = setTimeout(function () {
+        heldAll = true;
+        stopAllMotion();
+        fitAllWorld();
+        btn.classList.add('fit-all-flash');
+        setTimeout(function () { btn.classList.remove('fit-all-flash'); }, 280);
+      }, 480);
+    });
+    function clearHold(e) {
+      if (e) e.stopPropagation();
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
+    }
+    btn.addEventListener('pointerup', clearHold);
+    btn.addEventListener('pointerleave', clearHold);
+    btn.addEventListener('pointercancel', clearHold);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (heldAll) { heldAll = false; return; }
+      stopAllMotion();
+      fitHomeCluster();
+    });
+  })();
   $('zoom-reset').addEventListener('click', (e) => {
     e.stopPropagation();
     stopAllMotion();
-    // Recenter at a comfortable mid zoom (or fit if already overview-ish)
-    const mid = (zoomMin() + ZOOM_MAX) / 2;
-    if (cam.scale <= zoomMin() * 1.08) {
-      const r = mapWrap.getBoundingClientRect();
-      cam.scale = softClampZoom(Math.min(1.15, mid));
-      cam.x = (r.width - WORLD.w * cam.scale) / 2;
-      cam.y = (r.height - WORLD.h * cam.scale) / 2;
-      clampCam();
-      applyCamNow();
+    // Recenter on home cluster at readable zoom (or keep zoom if already close-up)
+    if (cam.scale <= READABLE_ZOOM_MIN * 1.05) {
+      fitHomeCluster();
     } else {
-      recenterKeepZoom();
+      const bbox = homeClusterBBox();
+      centerOnBBox(bbox, cam.scale);
     }
   });
 
@@ -1296,7 +1404,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       el.addEventListener('click', (ev) => {
         if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
         ev.stopPropagation();
-        tapJuice(el, true);
+        // Juice already fired on pointerdown; only re-fire if that path missed
+        if (mapWrap._juicedEl !== el) tapJuice(el, true);
+        mapWrap._juicedEl = null;
         // Desk tap = juice only; sheet opens from cast/bot-list (keep map readable)
       });
       mapEl.appendChild(el);
@@ -1376,7 +1486,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         '<div class="tag"></div>';
       el.addEventListener('click', (ev) => {
         if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
-        tapJuice(el, true);
+        // Juice on pointerdown; click opens sheet without losing juice
+        if (mapWrap._juicedEl !== el) tapJuice(el, true);
+        mapWrap._juicedEl = null;
         if (opts.onTap) opts.onTap();
       });
       mapEl.appendChild(el);
@@ -1645,7 +1757,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       const top = parseFloat(el.style.top) || 50;
       sp.style.left = (left + (Math.random() * 5 - 2.5)) + '%';
       sp.style.top = (top - 4 - Math.random() * 3) + '%';
-      const sz = 18 + ((Math.random() * 8) | 0);
+      const sz = 26 + ((Math.random() * 12) | 0);
       sp.style.fontSize = sz + 'px';
       mapEl.appendChild(sp);
       setTimeout(() => sp.remove(), 1000);
