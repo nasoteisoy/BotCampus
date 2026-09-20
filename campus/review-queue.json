@@ -1,10 +1,22 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T23:24:29Z",
+  "updatedAt": "2026-09-20T23:29:12Z",
   "items": [
     {
+      "id": "rv-campus-live-fun-v11",
+      "title": "Campus Live \u2014 fun pass (Fit / idle / tap juice)",
+      "summary": "Dev C PASSed v11. Check on Android: bots readable size, idle/glow glanceable, tap feedback, pan/zoom still OK.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
+      "owner": "Dev A",
+      "kind": "campus",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-20T23:29:12Z",
+      "dismissedAt": null
+    },
+    {
       "id": "rv-campus-live-v11",
-      "title": "Campus Live — Fit / juice + pan / zoom",
+      "title": "Campus Live \u2014 Fit / juice + pan / zoom",
       "summary": "Fun pass v11: Fit all, tap juice, smoother pan/zoom. Still open for Jesus to try on phone.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
       "owner": "Dev A",
@@ -16,8 +28,8 @@
     },
     {
       "id": "rv-sprite-lab-flow",
-      "title": "Elementals — paused (rendering school)",
-      "summary": "Render crew in Game Rendering School — elementals paused until they pass school QC. Peek only.",
+      "title": "Elementals \u2014 paused (rendering school)",
+      "summary": "Render crew in Game Rendering School \u2014 elementals paused until they pass school QC. Peek only.",
       "url": "https://nasoteisoy.github.io/BotCampus/sprite-lab.html?v=flow1",
       "owner": "Render A/B/C",
       "kind": "sprites",
@@ -28,14 +40,26 @@
     },
     {
       "id": "rv-npc-life-peek",
-      "title": "Campus NPC life — peek (Dev B)",
-      "summary": "NPC life FSM npc1 — stations + personality on Campus Live. Peek while Dev B finishes; not a must-try yet.",
+      "title": "Campus NPC life \u2014 peek (Dev B)",
+      "summary": "NPC life FSM npc1 \u2014 stations + personality on Campus Live. Peek while Dev B finishes; not a must-try yet.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
       "owner": "Dev B",
       "kind": "campus",
       "priority": 1,
       "status": "waiting",
       "createdAt": "2026-09-20T23:24:29Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "rv-campus-npc-life",
+      "title": "Campus NPC life \u2014 walk/stations",
+      "summary": "Idle vs walk-to-station busy NPCs. QC in progress \u2014 peek only until Dev C PASSes.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc1",
+      "owner": "Dev B",
+      "kind": "campus",
+      "priority": 1,
+      "status": "waiting",
+      "createdAt": "2026-09-20T23:29:12Z",
       "dismissedAt": null
     }
   ]
