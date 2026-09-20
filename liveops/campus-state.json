@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:08:47Z",
+  "updatedAt": "2026-09-20T18:08:55Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -9,7 +9,7 @@
       "ownerBotId": null,
       "zone": "ops",
       "x": 450,
-      "y": 80
+      "y": 70
     },
     {
       "id": "desk-leader",
@@ -128,8 +128,8 @@
       "label": "My Psychiatrist",
       "ownerBotId": "psych",
       "zone": "wellness",
-      "x": 450,
-      "y": 560
+      "x": 200,
+      "y": 540
     }
   ],
   "bots": [
@@ -264,11 +264,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live.html live",
-      "updatedAt": "2026-09-20T18:05:30Z",
+      "note": "Desk layout spread \u2014 no overlap",
+      "updatedAt": "2026-09-20T18:08:55Z",
       "updatedBy": "campusdev"
     }
   ]
