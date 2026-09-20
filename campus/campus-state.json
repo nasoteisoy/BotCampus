@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:30:46Z",
+  "updatedAt": "2026-09-20T22:31:28Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -185,25 +185,14 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
       "status": "working",
-      "task": "campus-state FLOW activity push",
+      "task": "campus-state live; FLOW map watching",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [
-        {
-          "id": "dev-b-i-sync",
-          "label": "Publish sync",
-          "status": "working",
-          "task": "Write + push campus-state",
-          "atDeskId": "desk-dev-b",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
-        }
-      ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "interns": [],
+      "updatedAt": "2026-09-20T22:31:28Z",
       "main": {
         "status": "working",
-        "task": "campus-state FLOW activity push",
+        "task": "campus-state live; FLOW map watching",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
@@ -593,12 +582,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "FLOW activity state push",
-      "updatedAt": "2026-09-20T22:30:46Z",
-      "updatedBy": "dev-b"
+      "note": "FLOW all-hands state live (3ed8952)",
+      "updatedAt": "2026-09-20T22:31:28Z",
+      "updatedBy": "deva"
     }
   ],
   "world": {
