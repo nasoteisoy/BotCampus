@@ -1,54 +1,51 @@
-# Campus state protocol (LiveOps)
+# Campus state protocol
 
 Source of truth for the phone live Bot Campus: `campus-state.json`.
 
+Jesus judges research and work by **watching the map** — state must stay honest.
+
 ## Canonical paths
-- Working: `/workspace/bot-campus/campus-state.json` (+ `liveops/` docs)
-- **Pages publish tree:** `/workspace/bot-campus-publish/campus/campus-state.json` (keep in sync — this feeds `nasoteisoy/BotCampus`)
-- LiveOps must update **both** trees when the schema or seed changes.
+- Working: `/workspace/bot-campus/campus-state.json`
+- Docs/schema: `/workspace/bot-campus/liveops/` (or `/workspace/bot-campus-publish/campus/`)
+- **Pages publish tree (required sync):** `/workspace/bot-campus-publish/campus/campus-state.json` and `/workspace/bot-campus-publish/campus-state.json`
+- Live phone site: https://nasoteisoy.github.io/BotCampus/ (campus-live.html)
+
+Update **all** publish copies when status changes.
 
 ## Ownership (hard)
-- Each bot may update **only** their object in `bots[]` (matched by `id` / `agentId`).
-- That includes their `main` sprite and their `interns[]`.
+- Each bot may update **only** their object in `bots[]` (match `id` or `agentId`).
+- That includes `status`, `task`, `main`, `interns[]`, `castFolder`, `sprites`, `updatedAt`.
 - **Never** move, create, or delete another bot’s main/interns.
-- **Never** rewrite another bot’s `status` / `task` / `updatedAt`.
-- Desk layout (`desks[]`) and `jesusDeskId` are owned by **LiveOps** (+ CampusDev for layout). Genre bots don’t edit desks.
+- **Never** rewrite another bot’s task/status.
+- Desk layout (`desks[]`) + `jesusDeskId`: Dev A / Dev B layout ownership (spread — no overlapping desks).
 
-## Permission rule
-`needs_permission` only counts for Jesus when an **intern** from the requesting bot has `atDeskId === jesusDeskId`. Chat alone is not Campus permission UX.
+## Interns (parallel work Jesus can read)
+When you run parallel work, **spawn intern(s)** on your slice:
+- `label` — short name on the map (e.g. "Sheet regen")
+- `task` — what they’re doing
+- `status` — same enum as main
+- `atDeskId` — usually your desk; for permission asks use `jesusDeskId`
 
-## How to patch your slice
-1. Read `campus-state.json`.
-2. Find `bots[i]` where `id` is you (or `agentId` matches).
-3. Change only that object’s fields + its `interns`.
-4. Set `bots[i].updatedAt` and document root `updatedAt` to now (ISO-8601).
-5. Write the file back immediately (target: phone feels live within ~1s).
-
-### Pseudo-API (for CampusDev writers / Pages)
-- `GET /campus-state.json` — full document
-- `PATCH /bots/:botId` — body is a partial bot slice; server merges **only if** caller owns `:botId`
-- Reject cross-bot writes
+### Permission rule
+`needs_permission` only counts when an intern has `atDeskId === jesusDeskId`. Chat alone is not Campus permission UX.
 
 ## Status enum
 `idle` | `working` | `ready_for_review` | `needs_permission` | `reviewing` | `collaborating`
 
-## Intern placement
-- Default: `atDeskId` = owner’s `deskId`
-- Meeting: both bots’ interns share a meeting desk / courtyard desk id
-- Permission ask: set intern `status=needs_permission` and `atDeskId=jesusDeskId`
+Researchers use `working` while researching (optional task prefix like "Research: …"). There is no separate `researching` status.
 
+## Cast / sprites
+- `castFolder` — folder under `casts/` for this bot
+- `sprites` — map status → image path (idle/working/ready_for_review/needs_permission/reviewing/collaborating + intern)
 
-## Deploy board (`deploys[]`)
-Phone strip so Jesus sees Pages/GitHub status and can tap through.
+Dev A wires these into campus-live. Bot ids: `leader`, `deva`, `devb`, `devc`, `rendera`, `renderb`, `renderc`, `researchera`, `researcherb`, `profilea`, `profileb`.
 
-Fields per entry: `id`, `repo` (owner/name), `branch?`, `label`, `status` (`building`|`ready`|`failed`), `pagesUrl`, `repoUrl` (optional alias `checkUrl` = repoUrl), `note?`, `updatedAt`, `updatedBy?`.
+## Patch steps (every bot, every status change)
+1. Read `campus-state.json`
+2. Find your entry in `bots[]`
+3. Update only that object (status/task/main/interns)
+4. Bump your `updatedAt` and root `updatedAt`
+5. Write publish copies immediately (phone poll ~2s)
 
-### Who writes deploys
-- The bot (or CI) that owns that deploy `id` updates it when a push/Pages build starts or finishes.
-- Example: CampusDev owns `botcampus-pages`.
-- Do **not** invent extra top-level boards — keep one `deploys[]` array.
-
-### Poll (phone UI)
-- Poll `campus-state.json` every **2s** (1s if hosting allows; feel-live target ~1–2s).
-- Highlight `needs_permission` interns where `atDeskId === jesusDeskId`.
-- Render `deploys[]` as a strip with status chip + links to `pagesUrl` / `repoUrl`.
+## deploys[]
+Owned by the bot shipping that deploy id. Fields: id, repo, branch?, label, status (`building`|`ready`|`failed`), pagesUrl, repoUrl, checkUrl?, note?, updatedAt, updatedBy?.
