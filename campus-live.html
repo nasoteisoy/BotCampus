@@ -69,7 +69,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 #map-wrap{
   position:relative; background:var(--panel); border:1px solid var(--line);
   border-radius:16px; overflow:hidden; margin-bottom:.75rem;
-  touch-action:none; height:min(78vh, 720px); min-height:420px; cursor:grab;
+  touch-action:none; overscroll-behavior:none; overscroll-behavior-x:none;
+  height:min(78vh, 720px); min-height:420px; cursor:grab;
   user-select:none; -webkit-user-select:none;
 }
 #map-wrap:active{cursor:grabbing}
@@ -78,6 +79,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   position:absolute; left:0; top:0;
   width:1440px; height:1120px;
   transform-origin:0 0;
+  touch-action:none;
   will-change:transform;
   background:
     radial-gradient(ellipse at 50% 8%, #fbbf2428 0%, transparent 32%),
@@ -94,36 +96,35 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 #map-hud{
   position:absolute; z-index:20; right:max(.55rem, env(safe-area-inset-right));
   bottom:max(.55rem, env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+  display:flex; flex-direction:column; gap:10px; pointer-events:none;
 }
 #map-hud button{
   pointer-events:auto;
-  width:48px; height:48px; min-width:48px; min-height:48px;
-  border-radius:12px; border:1px solid #64748b88;
-  background:#0f172ae6; color:#e2e8f0; font-size:1.35rem; font-weight:800;
+  width:52px; height:52px; min-width:52px; min-height:52px;
+  border-radius:14px; border:2px solid #94a3b8;
+  background:#0b1220f2; color:#f8fafc; font-size:1.45rem; font-weight:900;
   display:grid; place-items:center; cursor:pointer;
-  box-shadow:0 2px 10px #0006; backdrop-filter:blur(8px);
+  box-shadow:0 2px 12px #000a; backdrop-filter:blur(8px);
   touch-action:manipulation; line-height:1; padding:0;
 }
-#map-hud button:active{transform:scale(.94); background:#1e293be6}
-#map-pad{
-  position:absolute; z-index:20; left:10px; bottom:12px;
-  display:flex; flex-direction:column; align-items:center; gap:4px;
+#map-hud button:active{transform:scale(.94); background:#1e293bf2}
+#map-hud button.fit-btn{font-size:.62rem; letter-spacing:.04em; text-transform:uppercase; font-weight:900}
+#map-mini{
+  position:absolute; z-index:20; left:max(.5rem, env(safe-area-inset-left));
+  bottom:max(.5rem, env(safe-area-inset-bottom));
+  width:96px; height:74px; border-radius:10px;
+  border:2px solid #64748bcc; background:#0b1220ee;
+  box-shadow:0 2px 10px #0008; cursor:pointer; touch-action:manipulation;
+  overflow:hidden; padding:0;
 }
-#map-pad .pad-mid{display:flex; gap:28px}
-#map-pad button{
-  width:48px;height:48px;border-radius:12px;border:1px solid #475569;
-  background:#0f172ae6;color:#e2e8f0;font-size:1rem;font-weight:800;
-  touch-action:manipulation;
-}
-#map-pad button:active{transform:scale(.94);background:#1e293be6}
+#map-mini canvas{display:block; width:100%; height:100%}
 #map-hint{
   position:absolute; z-index:19; left:50%; transform:translateX(-50%);
   bottom:max(.45rem, env(safe-area-inset-bottom));
   font-size:.62rem; font-weight:700; color:#94a3b8;
   background:#0f172acc; padding:.28rem .55rem; border-radius:999px;
   pointer-events:none; white-space:nowrap; letter-spacing:.01em;
-  max-width:calc(100% - 120px); overflow:hidden; text-overflow:ellipsis;
+  max-width:calc(100% - 200px); overflow:hidden; text-overflow:ellipsis;
 }
 .desk{
   position:absolute; transform:translate(-50%,-50%);
@@ -145,7 +146,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
 .sprite{
   position:absolute; transform:translate(-50%,-50%);
-  z-index:5; cursor:pointer; touch-action:manipulation;
+  z-index:5; cursor:pointer; touch-action:none;
   transition:left .45s ease, top .45s ease;
   display:flex; flex-direction:column; align-items:center; gap:1px;
   background:transparent; border:0; padding:0; color:inherit;
@@ -282,17 +283,13 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     <div id="map-hud">
       <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
       <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
-      <button type="button" id="zoom-reset" aria-label="Fit all">⟲</button>
+      <button type="button" id="zoom-fit" class="fit-btn" aria-label="Fit all">Fit</button>
+      <button type="button" id="zoom-reset" aria-label="Reset view">⟲</button>
     </div>
-    <div id="map-pad" aria-label="Pan pad">
-      <button type="button" id="pan-up" aria-label="Pan up">▲</button>
-      <span class="pad-mid">
-        <button type="button" id="pan-left" aria-label="Pan left">◀</button>
-        <button type="button" id="pan-right" aria-label="Pan right">▶</button>
-      </span>
-      <button type="button" id="pan-down" aria-label="Pan down">▼</button>
-    </div>
-    <div id="map-hint">Drag to pan · arrows · pinch or ± to zoom</div>
+    <button type="button" id="map-mini" aria-label="Minimap — tap to jump" title="Tap to jump">
+      <canvas width="96" height="74"></canvas>
+    </button>
+    <div id="map-hint">Drag · pinch · Fit all · ±</div>
   </div>
 
   <ul id="legend">
@@ -321,7 +318,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
-  const POLL_MS = 1200;
+  const POLL_MS = 1000;
   const ASSET_V = '8';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
@@ -379,23 +376,48 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   let animTargets = {};
 
   /* ——— Camera (transform only; no DOM re-layout per frame) ——— */
-  const ZOOM_MIN = 0.45, ZOOM_MAX = 2.5;
+  const ZOOM_MAX = 2.5;
   const cam = { x: 0, y: 0, scale: 1, vx: 0, vy: 0 };
   let camRaf = 0;
+  let camDirty = false;
   let suppressClick = false;
   let fittedOnce = false;
 
-  function applyCam() {
+  function zoomMin() {
+    const rect = mapWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return 0.22;
+    // Allow zooming out far enough to see the whole world with a little padding
+    return Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.88;
+  }
+
+  function applyCamNow() {
     mapWorld.style.transform = 'translate(' + cam.x + 'px,' + cam.y + 'px) scale(' + cam.scale + ')';
+    updateMinimap();
+  }
+
+  function scheduleCam() {
+    camDirty = true;
+    if (camRaf) return;
+    camRaf = requestAnimationFrame(function () {
+      camRaf = 0;
+      if (!camDirty) return;
+      camDirty = false;
+      clampCam();
+      applyCamNow();
+    });
+  }
+
+  function applyCam() {
+    clampCam();
+    applyCamNow();
   }
 
   function clampCam() {
     const rect = mapWrap.getBoundingClientRect();
     const vw = rect.width, vh = rect.height;
     const sw = WORLD.w * cam.scale, sh = WORLD.h * cam.scale;
-    const padX = Math.min(vw * 0.15, 80);
-    const padY = Math.min(vh * 0.15, 80);
-    // Keep some world visible; allow overscroll pad
+    const padX = Math.min(vw * 0.12, 64);
+    const padY = Math.min(vh * 0.12, 64);
     if (sw <= vw) {
       cam.x = (vw - sw) / 2;
     } else {
@@ -413,7 +435,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   }
 
   function softClampZoom(s) {
-    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, s));
+    const zmin = zoomMin();
+    return Math.min(ZOOM_MAX, Math.max(zmin, s));
   }
 
   function zoomAt(screenX, screenY, newScale) {
@@ -426,42 +449,113 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     cam.x = fx - wx * cam.scale;
     cam.y = fy - wy * cam.scale;
     clampCam();
-    applyCam();
+    applyCamNow();
   }
 
   function fitOverview() {
     const rect = mapWrap.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const s = Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 1.15; // prefer readable desks, scroll for rest
+    // Fit WORLD into viewport with modest padding
+    const s = Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.94;
     cam.scale = softClampZoom(s);
     cam.x = (rect.width - WORLD.w * cam.scale) / 2;
     cam.y = (rect.height - WORLD.h * cam.scale) / 2;
     cam.vx = cam.vy = 0;
     clampCam();
-    applyCam();
+    applyCamNow();
   }
 
-  function stopInertia() {
+  function recenterKeepZoom() {
+    const rect = mapWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    cam.x = (rect.width - WORLD.w * cam.scale) / 2;
+    cam.y = (rect.height - WORLD.h * cam.scale) / 2;
     cam.vx = cam.vy = 0;
-    if (camRaf) { cancelAnimationFrame(camRaf); camRaf = 0; }
+    clampCam();
+    applyCamNow();
   }
 
+  let inertiaRaf = 0;
   function tickInertia() {
-    camRaf = 0;
+    inertiaRaf = 0;
     cam.x += cam.vx;
     cam.y += cam.vy;
-    cam.vx *= 0.92;
-    cam.vy *= 0.92;
+    cam.vx *= 0.94;
+    cam.vy *= 0.94;
     clampCam();
-    applyCam();
-    if (Math.hypot(cam.vx, cam.vy) > 0.15) {
-      camRaf = requestAnimationFrame(tickInertia);
+    applyCamNow();
+    if (Math.hypot(cam.vx, cam.vy) > 0.18) {
+      inertiaRaf = requestAnimationFrame(tickInertia);
     } else {
       cam.vx = cam.vy = 0;
     }
   }
 
-  // Pointer / gesture state
+  function stopAllMotion() {
+    cam.vx = cam.vy = 0;
+    if (inertiaRaf) { cancelAnimationFrame(inertiaRaf); inertiaRaf = 0; }
+    if (camRaf) { cancelAnimationFrame(camRaf); camRaf = 0; }
+    camDirty = false;
+  }
+
+  // Minimap
+  const miniBtn = $('map-mini');
+  const miniCanvas = miniBtn ? miniBtn.querySelector('canvas') : null;
+  const miniCtx = miniCanvas ? miniCanvas.getContext('2d') : null;
+
+  function updateMinimap() {
+    if (!miniCtx || !miniCanvas) return;
+    const mw = miniCanvas.width, mh = miniCanvas.height;
+    miniCtx.clearRect(0, 0, mw, mh);
+    miniCtx.fillStyle = '#152033';
+    miniCtx.fillRect(0, 0, mw, mh);
+    // world fill
+    miniCtx.fillStyle = '#1e293b';
+    miniCtx.fillRect(2, 2, mw - 4, mh - 4);
+    // desks dots
+    if (state && state.desks) {
+      miniCtx.fillStyle = '#64748b';
+      state.desks.forEach(function (d) {
+        const x = 2 + (d.x / WORLD.w) * (mw - 4);
+        const y = 2 + (d.y / WORLD.h) * (mh - 4);
+        miniCtx.fillRect(x - 1.5, y - 1.5, 3, 3);
+      });
+    }
+    // viewport rect
+    const rect = mapWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height || !cam.scale) return;
+    const vx0 = (-cam.x / cam.scale) / WORLD.w;
+    const vy0 = (-cam.y / cam.scale) / WORLD.h;
+    const vw = (rect.width / cam.scale) / WORLD.w;
+    const vh = (rect.height / cam.scale) / WORLD.h;
+    const rx = 2 + vx0 * (mw - 4);
+    const ry = 2 + vy0 * (mh - 4);
+    const rw = vw * (mw - 4);
+    const rh = vh * (mh - 4);
+    miniCtx.strokeStyle = '#38bdf8';
+    miniCtx.lineWidth = 1.5;
+    miniCtx.strokeRect(rx, ry, rw, rh);
+  }
+
+  if (miniBtn) {
+    miniBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    miniBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      stopAllMotion();
+      const rect = miniBtn.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / rect.width;
+      const my = (e.clientY - rect.top) / rect.height;
+      const worldX = mx * WORLD.w;
+      const worldY = my * WORLD.h;
+      const wrap = mapWrap.getBoundingClientRect();
+      cam.x = wrap.width / 2 - worldX * cam.scale;
+      cam.y = wrap.height / 2 - worldY * cam.scale;
+      clampCam();
+      applyCamNow();
+    });
+  }
+
+  // Pointer / gesture state — mode-lock: first gesture wins
   const pointers = new Map();
   let gestureMode = null; // 'pan' | 'pinch' | null
   let panLast = null;
@@ -470,9 +564,11 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   let pinchMid = null;
   let dragMoved = false;
   let lastTapT = 0, lastTapX = 0, lastTapY = 0;
+  const PAN_THRESH = 5; // CSS px — lower than v7's 8, still cancels tap
+  const PINCH_SENS = 1.35; // >1 = more sensitive pinch
 
   function isHudTarget(el) {
-    return !!(el && el.closest && (el.closest('#map-hud') || el.closest('#map-pad')));
+    return !!(el && el.closest && (el.closest('#map-hud') || el.closest('#map-mini')));
   }
 
   function pointerList() {
@@ -492,13 +588,19 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     if (sheet.classList.contains('open')) return;
     mapWrap.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, id: e.pointerId });
-    stopInertia();
+    stopAllMotion();
     dragMoved = false;
     const pts = pointerList();
     if (pts.length === 1) {
       gestureMode = null; // wait for threshold
       panLast = { x: e.clientX, y: e.clientY };
+      mapWrap._panStart = { x: e.clientX, y: e.clientY };
     } else if (pts.length >= 2) {
+      // Mode-lock: if already panning, stay pan (2-finger drag = pan)
+      if (gestureMode === 'pan') {
+        panLast = midpoint(pts[0], pts[1]);
+        return;
+      }
       gestureMode = 'pinch';
       const [a, b] = pts;
       pinchStartDist = Math.max(1, dist(a, b));
@@ -506,14 +608,34 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       pinchMid = midpoint(a, b);
       panLast = null;
     }
-  });
+  }, { passive: false });
 
   mapWrap.addEventListener('pointermove', (e) => {
     if (!pointers.has(e.pointerId)) return;
+    e.preventDefault();
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, id: e.pointerId });
     const pts = pointerList();
 
-    if (pts.length >= 2) {
+    // Mode-lock: pan wins — 2 fingers still pan if locked to pan
+    if (gestureMode === 'pan' && pts.length >= 1) {
+      const p = pts.length >= 2 ? midpoint(pts[0], pts[1]) : pts[0];
+      if (panLast) {
+        const dx = p.x - panLast.x;
+        const dy = p.y - panLast.y;
+        cam.x += dx;
+        cam.y += dy;
+        cam.vx = dx * 1.25;
+        cam.vy = dy * 1.25;
+        scheduleCam();
+        dragMoved = true;
+        suppressClick = true;
+        panLast = { x: p.x, y: p.y };
+      }
+      return;
+    }
+
+    // Mode-lock: pinch wins
+    if (pts.length >= 2 && gestureMode !== 'pan') {
       if (gestureMode !== 'pinch') {
         gestureMode = 'pinch';
         const [a, b] = pts;
@@ -524,15 +646,17 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       const [a, b] = pts;
       const mid = midpoint(a, b);
       const d = Math.max(1, dist(a, b));
-      const next = pinchStartScale * (d / pinchStartDist);
+      const ratio = d / pinchStartDist;
+      // Higher sensitivity: amplify zoom rate around 1.0
+      const boosted = Math.pow(ratio, PINCH_SENS);
+      const next = pinchStartScale * boosted;
       zoomAt(mid.x, mid.y, next);
-      // Also allow mild pan if midpoint moved
       if (pinchMid) {
         cam.x += mid.x - pinchMid.x;
         cam.y += mid.y - pinchMid.y;
         pinchMid = mid;
         clampCam();
-        applyCam();
+        applyCamNow();
       }
       dragMoved = true;
       suppressClick = true;
@@ -543,10 +667,9 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       const p = pts[0];
       const dx = p.x - panLast.x;
       const dy = p.y - panLast.y;
-      const thresh = 2; // easy pan start
       if (!mapWrap._panStart) mapWrap._panStart = { x: panLast.x, y: panLast.y };
       if (gestureMode !== 'pan') {
-        if (Math.hypot(p.x - mapWrap._panStart.x, p.y - mapWrap._panStart.y) < thresh) {
+        if (Math.hypot(p.x - mapWrap._panStart.x, p.y - mapWrap._panStart.y) < PAN_THRESH) {
           panLast = { x: p.x, y: p.y };
           return;
         }
@@ -556,15 +679,14 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       }
       cam.x += dx;
       cam.y += dy;
-      cam.vx = dx;
-      cam.vy = dy;
-      clampCam();
-      applyCam();
+      cam.vx = dx * 1.25;
+      cam.vy = dy * 1.25;
+      scheduleCam();
       dragMoved = true;
       suppressClick = true;
       panLast = { x: p.x, y: p.y };
     }
-  });
+  }, { passive: false });
 
   function endPointer(e) {
     if (!pointers.has(e.pointerId)) return;
@@ -573,8 +695,10 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
     const pts = pointerList();
     if (pts.length === 0) {
       mapWrap._panStart = null;
-      if (gestureMode === 'pan' && (Math.abs(cam.vx) > 0.5 || Math.abs(cam.vy) > 0.5)) {
-        if (!camRaf) camRaf = requestAnimationFrame(tickInertia);
+      if (camDirty) { camDirty = false; clampCam(); applyCamNow(); }
+      if (camRaf) { cancelAnimationFrame(camRaf); camRaf = 0; }
+      if (gestureMode === 'pan' && (Math.abs(cam.vx) > 0.45 || Math.abs(cam.vy) > 0.45)) {
+        if (!inertiaRaf) inertiaRaf = requestAnimationFrame(tickInertia);
       } else {
         cam.vx = cam.vy = 0;
       }
@@ -582,33 +706,31 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
       if (!dragMoved && e.pointerType !== 'mouse') {
         const now = Date.now();
         if (now - lastTapT < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 28) {
-          const mid = (ZOOM_MIN + ZOOM_MAX) / 2;
-          const target = cam.scale < mid ? Math.min(ZOOM_MAX, cam.scale * 1.7) : fitScale();
-          if (cam.scale < mid) zoomAt(e.clientX, e.clientY, target);
+          const mid = (zoomMin() + ZOOM_MAX) / 2;
+          if (cam.scale < mid) zoomAt(e.clientX, e.clientY, Math.min(ZOOM_MAX, cam.scale * 1.7));
           else fitOverview();
           lastTapT = 0;
         } else {
           lastTapT = now; lastTapX = e.clientX; lastTapY = e.clientY;
         }
-      } else if (!dragMoved && e.pointerType === 'mouse' && e.detail === 2) {
-        // handled via dblclick
       }
       gestureMode = null;
       panLast = null;
+      pinchMid = null;
       setTimeout(() => { suppressClick = false; }, 40);
     } else if (pts.length === 1) {
-      // Dropped from pinch to pan
+      // Dropped from pinch — re-arm pan wait (mode unlock)
       gestureMode = null;
       panLast = { x: pts[0].x, y: pts[0].y };
       mapWrap._panStart = { x: pts[0].x, y: pts[0].y };
       pinchMid = null;
-      stopInertia();
+      stopAllMotion();
     }
   }
 
   function fitScale() {
     const rect = mapWrap.getBoundingClientRect();
-    return softClampZoom(Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.96);
+    return softClampZoom(Math.min(rect.width / WORLD.w, rect.height / WORLD.h) * 0.94);
   }
 
   mapWrap.addEventListener('pointerup', endPointer);
@@ -619,57 +741,57 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   mapWrap.addEventListener('wheel', (e) => {
     e.preventDefault();
-    stopInertia();
-    const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+    stopAllMotion();
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
     zoomAt(e.clientX, e.clientY, cam.scale * factor);
   }, { passive: false });
 
   mapWrap.addEventListener('dblclick', (e) => {
     if (isHudTarget(e.target)) return;
     e.preventDefault();
-    const mid = (ZOOM_MIN + ZOOM_MAX) / 2;
+    const mid = (zoomMin() + ZOOM_MAX) / 2;
     if (cam.scale < mid) zoomAt(e.clientX, e.clientY, Math.min(ZOOM_MAX, cam.scale * 1.8));
     else fitOverview();
   });
 
+  // Block browser back-swipe / overscroll while interacting with map
+  mapWrap.addEventListener('touchstart', (e) => {
+    if (isHudTarget(e.target)) return;
+    stopAllMotion();
+  }, { passive: true });
+
   $('zoom-in').addEventListener('click', (e) => {
     e.stopPropagation();
-    stopInertia();
+    stopAllMotion();
     const r = mapWrap.getBoundingClientRect();
-    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale * 1.2);
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale * 1.25);
   });
   $('zoom-out').addEventListener('click', (e) => {
     e.stopPropagation();
-    stopInertia();
+    stopAllMotion();
     const r = mapWrap.getBoundingClientRect();
-    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale / 1.2);
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, cam.scale / 1.25);
   });
-  
-  function nudgePan(dx, dy) {
-    stopInertia();
-    cam.x += dx; cam.y += dy;
-    clampCam(); applyCam();
-  }
-  const NUDGE = 110;
-  ['pan-up','pan-down','pan-left','pan-right'].forEach((id) => {
-    const el = $(id);
-    if (!el) return;
-    el.addEventListener('pointerdown', (e) => e.stopPropagation());
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (id === 'pan-up') nudgePan(0, NUDGE);
-      if (id === 'pan-down') nudgePan(0, -NUDGE);
-      if (id === 'pan-left') nudgePan(NUDGE, 0);
-      if (id === 'pan-right') nudgePan(-NUDGE, 0);
-    });
-  });
-  const mapPad = $('map-pad');
-  if (mapPad) mapPad.addEventListener('pointerdown', (e) => e.stopPropagation());
-
-$('zoom-reset').addEventListener('click', (e) => {
+  $('zoom-fit').addEventListener('click', (e) => {
     e.stopPropagation();
-    stopInertia();
+    stopAllMotion();
     fitOverview();
+  });
+  $('zoom-reset').addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopAllMotion();
+    // Recenter at a comfortable mid zoom (or fit if already overview-ish)
+    const mid = (zoomMin() + ZOOM_MAX) / 2;
+    if (cam.scale <= zoomMin() * 1.08) {
+      const r = mapWrap.getBoundingClientRect();
+      cam.scale = softClampZoom(Math.min(1.15, mid));
+      cam.x = (r.width - WORLD.w * cam.scale) / 2;
+      cam.y = (r.height - WORLD.h * cam.scale) / 2;
+      clampCam();
+      applyCamNow();
+    } else {
+      recenterKeepZoom();
+    }
   });
 
   // Prevent HUD from starting map gestures
@@ -677,7 +799,7 @@ $('zoom-reset').addEventListener('click', (e) => {
 
   window.addEventListener('resize', () => {
     clampCam();
-    applyCam();
+    applyCamNow();
   });
 
   function initials(name) {
@@ -1032,6 +1154,8 @@ $('zoom-reset').addEventListener('click', (e) => {
     if (!fittedOnce) {
       fittedOnce = true;
       requestAnimationFrame(fitOverview);
+    } else {
+      updateMinimap();
     }
     const t = data.updatedAt || '';
     window.__stateUpdatedAt = t ? Date.parse(t) : Date.now();

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:35:51Z",
+  "updatedAt": "2026-09-20T22:39:02Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -144,8 +144,8 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-dev-a",
-      "status": "ready_for_review",
-      "task": "campus-live pan/zoom on Pages v7",
+      "status": "working",
+      "task": "Ship campus-live camera UX v8",
       "color": "#34d399",
       "castFolder": "campus-cast/dev-a",
       "interns": [
@@ -170,10 +170,10 @@
           "updatedAt": "2026-09-20T21:34:37Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:32:40Z",
+      "updatedAt": "2026-09-20T22:39:02Z",
       "main": {
-        "status": "ready_for_review",
-        "task": "campus-live pan/zoom on Pages v7",
+        "status": "working",
+        "task": "Ship campus-live camera UX v8",
         "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
@@ -184,26 +184,15 @@
       "name": "Dev B",
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
-      "status": "working",
-      "task": "Patch researcher campus slices + push",
+      "status": "idle",
+      "task": "",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [
-        {
-          "id": "dev-b-i-push",
-          "label": "Push",
-          "status": "working",
-          "task": "Commit + request Pages push",
-          "atDeskId": "desk-dev-b",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
-        }
-      ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "interns": [],
+      "updatedAt": "2026-09-20T22:36:49Z",
       "main": {
-        "status": "working",
-        "task": "Patch researcher campus slices + push",
+        "status": "idle",
+        "task": "",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
@@ -596,9 +585,9 @@
       "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Researchers \u2192 multi-agent + long-horizon",
-      "updatedAt": "2026-09-20T22:35:51Z",
-      "updatedBy": "dev-b"
+      "note": "Pushing campus-live camera UX v8",
+      "updatedAt": "2026-09-20T22:39:02Z",
+      "updatedBy": "dev-a"
     }
   ],
   "world": {
