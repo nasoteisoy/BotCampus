@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Campus Cast Review</title>
+<style>
+  :root{--bg:#0a0c10;--card:#12161f;--muted:#8b93a7;--line:#243044;--accent:#fb923c}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:#f4f0e8;font-family:system-ui,-apple-system,sans-serif}
+  header{padding:14px 16px 8px;position:sticky;top:0;background:rgba(10,12,16,.94);backdrop-filter:blur(8px);z-index:2;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:1.15rem;font-weight:750}
+  .sub{color:var(--muted);font-size:.8rem;margin-top:4px}
+  .sub a{color:var(--accent);text-decoration:none;font-weight:700}
+  main{padding:12px;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .char{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .char-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+  .char-head h2{margin:0;font-size:1rem}
+  .row{display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(36,48,68,.65)}
+  .row:last-child{border-bottom:none}
+  .label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stage{height:110px;border-radius:12px;background:linear-gradient(180deg,#1a2230,#0e131c);display:flex;align-items:flex-end;justify-content:center;position:relative;overflow:hidden}
+  .stage img{max-height:96px;max-width:90%;object-fit:contain;image-rendering:auto}
+  .strip{width:100%;display:block;background:#0c1018}
+</style>
+</head>
+<body>
+<header>
+  <h1>Campus Cast Review</h1>
+  <div class="sub">Chibi desk bots · also <a href="campus-live.html?v=5">Campus Live</a> · <a href="sprite-lab.html?v=7">Sprite Lab</a></div>
+</header>
+<main id="main"></main>
+<script>
+const v='?v=1';
+const CAST=[
+  {id:'leader', name:'Leader', folder:'campus-cast/leader', prefix:'leader'},
+  {id:'dev-c', name:'Dev C', folder:'campus-cast/dev-c', prefix:'leader_support'},
+  {id:'dev-a', name:'Dev A', folder:'campus-cast/dev-a', prefix:'dev2'},
+  {id:'dev-b', name:'Dev B', folder:'campus-cast/dev-b', prefix:'devb'},
+  {id:'render-a', name:'Render A', folder:'campus-cast/render-a', prefix:'spriteforge'},
+  {id:'render-c', name:'Render C', folder:'campus-cast/render-c', prefix:'spriteforge_support'},
+];
+const MOVES=[
+  {key:'idle', label:'Idle', file:p=>`${p}_desk_idle.png`},
+  {key:'working', label:'Working', file:p=>`${p}_desk_working.png`},
+  {key:'ready', label:'Ready', file:p=>`${p}_ready_review.png`},
+  {key:'permission', label:'Permission', file:p=>`${p}_needs_permission.png`},
+  {key:'intern', label:'Intern', file:p=>`${p}_intern_idle.png`},
+];
+const main=document.getElementById('main');
+for(const ch of CAST){
+  const card=document.createElement('section');
+  card.className='char';
+  card.innerHTML=`<div class="char-head"><h2>${ch.name}</h2></div>`;
+  const strip=document.createElement('img');
+  strip.className='strip';
+  strip.alt=ch.name+' strip';
+  strip.src=`${ch.folder}/preview_strip.png${v}`;
+  card.appendChild(strip);
+  for(const m of MOVES){
+    const row=document.createElement('div');
+    row.className='row';
+    row.innerHTML=`<div class="label">${m.label}</div><div class="stage"><img alt="${m.label}" src="${ch.folder}/${m.file(ch.prefix)}${v}"/></div>`;
+    card.appendChild(row);
+  }
+  main.appendChild(card);
+}
+</script>
+</body>
+</html>
