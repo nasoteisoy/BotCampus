@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:35:51Z",
+  "updatedAt": "2026-09-20T22:36:49Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -184,26 +184,15 @@
       "name": "Dev B",
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
-      "status": "working",
-      "task": "Patch researcher campus slices + push",
+      "status": "idle",
+      "task": "",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [
-        {
-          "id": "dev-b-i-push",
-          "label": "Push",
-          "status": "working",
-          "task": "Commit + request Pages push",
-          "atDeskId": "desk-dev-b",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-20T22:35:51Z"
-        }
-      ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "interns": [],
+      "updatedAt": "2026-09-20T22:36:49Z",
       "main": {
-        "status": "working",
-        "task": "Patch researcher campus slices + push",
+        "status": "idle",
+        "task": "",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
@@ -593,12 +582,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Researchers \u2192 multi-agent + long-horizon",
-      "updatedAt": "2026-09-20T22:35:51Z",
-      "updatedBy": "dev-b"
+      "note": "033086a live",
+      "updatedAt": "2026-09-20T22:36:49Z",
+      "updatedBy": "deva"
     }
   ],
   "world": {
