@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T22:47:00Z",
+  "updatedAt": "2026-09-20T22:51:43Z",
   "items": [
     {
       "id": "rv-campus-live-v8",
@@ -16,8 +16,8 @@
     },
     {
       "id": "rv-sprite-lab-flow",
-      "title": "Elemental soldiers \u2014 FLOW (Sprite Lab)",
-      "summary": "Fire / Water / Air / Earth walk+attack flow. Still in deep FLOW pass \u2014 open only if you want a peek; not ready to pass yet.",
+      "title": "Elementals \u2014 paused (rendering school)",
+      "summary": "Render crew in Game Rendering School \u2014 elementals paused until they pass school QC. Peek only.",
       "url": "https://nasoteisoy.github.io/BotCampus/sprite-lab.html?v=flow1",
       "owner": "Render A/B/C",
       "kind": "sprites",

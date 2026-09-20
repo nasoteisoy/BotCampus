@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:39:03Z",
+  "updatedAt": "2026-09-20T22:51:43Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -232,7 +232,7 @@
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
       "deskId": "desk-render-a",
       "status": "working",
-      "task": "FLOW Air + Fire (with Researcher A)",
+      "task": "Game Rendering School + Fire/Air audit",
       "color": "#f97316",
       "castFolder": "campus-cast/render-a",
       "interns": [
@@ -267,10 +267,10 @@
           "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "FLOW Air + Fire (with Researcher A)",
+        "task": "Game Rendering School + Fire/Air audit",
         "atDeskId": "desk-render-a",
         "x": null,
         "y": null
@@ -291,7 +291,7 @@
       "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
       "deskId": "desk-render-b",
       "status": "working",
-      "task": "FLOW Water + Earth (with Researcher B)",
+      "task": "Game Rendering School + Water/Earth audit",
       "color": "#fb923c",
       "castFolder": "campus-cast/render-b",
       "interns": [
@@ -326,10 +326,10 @@
           "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "FLOW Water + Earth (with Researcher B)",
+        "task": "Game Rendering School + Water/Earth audit",
         "atDeskId": "desk-render-b",
         "x": null,
         "y": null
@@ -350,7 +350,7 @@
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
       "deskId": "desk-render-c",
       "status": "reviewing",
-      "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+      "task": "Head QC \u2014 Game Rendering School gate",
       "color": "#a78bfa",
       "castFolder": "campus-cast/render-c",
       "interns": [
@@ -395,10 +395,10 @@
           "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "reviewing",
-        "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+        "task": "Head QC \u2014 Game Rendering School gate",
         "atDeskId": "desk-render-c",
         "x": null,
         "y": null
@@ -419,7 +419,7 @@
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
       "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Multi-agent + long-horizon standards (research)",
+      "task": "Game Rendering School (industry curriculum)",
       "color": "#38bdf8",
       "castFolder": "campus-cast/researcher-a",
       "interns": [
@@ -444,10 +444,10 @@
           "updatedAt": "2026-09-20T22:35:51Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "Multi-agent + long-horizon standards (research)",
+        "task": "Game Rendering School (industry curriculum)",
         "atDeskId": "desk-researcher-a",
         "x": null,
         "y": null
@@ -468,7 +468,7 @@
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
       "status": "working",
-      "task": "Multi-agent + long-horizon standards (research)",
+      "task": "Game Rendering School (craft curriculum)",
       "color": "#0ea5e9",
       "castFolder": "campus-cast/researcher-b",
       "interns": [
@@ -493,10 +493,10 @@
           "updatedAt": "2026-09-20T22:35:51Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:35:51Z",
+      "updatedAt": "2026-09-20T22:51:43Z",
       "main": {
         "status": "working",
-        "task": "Multi-agent + long-horizon standards (research)",
+        "task": "Game Rendering School (craft curriculum)",
         "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null
