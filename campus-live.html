@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=9 fun-pass idle status tap ambient -->
+<!-- CACHE_BUST v=10 fun-pass idle glow sparkles cast-HUD -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -157,8 +157,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   display:grid; place-items:center;
   background:transparent; border:0; box-shadow:none;
 }
-.sprite.main .body{width:68px; height:68px}
-.sprite.intern .body{width:40px; height:40px}
+.sprite.main .body{width:96px; height:96px}
+.sprite.intern .body{width:56px; height:56px}
 .sprite img.cast{
   width:100%; height:100%; object-fit:contain; display:block;
   pointer-events:none; image-rendering:auto;
@@ -233,7 +233,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   border-radius:1.1rem 1.1rem 0 0;
   padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));
   transform:translateY(110%); transition:transform .25s ease;
-  max-height:55dvh; overflow:auto; backdrop-filter:blur(14px);
+  max-height:30dvh; overflow:auto; backdrop-filter:blur(14px);
 }
 #sheet.open{transform:translateY(0)}
 #sheet .close{
@@ -261,7 +261,7 @@ button.desk{
 }
 button.bot-row{appearance:none;-webkit-appearance:none;width:100%;text-align:left;color:inherit;font:inherit}
 
-/* ——— Fun pass v9: alive map, thin chrome, mute-OK juice ——— */
+/* ——— Fun pass v10: phone-alive idle, glow/sparkles, cast-HUD ——— */
 :root{
   --bg:#0a0e1a; --panel:#1a1040; --line:#5b21b6; --text:#fff7ed; --muted:#c4b5fd;
   --jesus:#fbbf24; --alert:#f43f5e; --ready:#22c55e; --build:#f59e0b; --fail:#ef4444;
@@ -281,32 +281,62 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .section-title{margin:.05rem 0 .25rem; font-size:.58rem; color:#a78bfa}
 
 /* Thin deploy / bot chrome — characters dominate */
-#deploys{gap:.28rem; margin-bottom:.45rem}
+#deploys{gap:.22rem; margin-bottom:.35rem}
+#deploys.collapsed{display:none}
 .deploy-card{
   background:linear-gradient(135deg,#2e1065cc,#1e1b4bcc);
-  border:1.5px solid #a855f788; border-radius:10px;
-  padding:.4rem .55rem;
+  border:1.5px solid #a855f788; border-radius:8px;
+  padding:.28rem .45rem;
 }
-.deploy-repo{font-size:.74rem;color:#fde68a}
-.deploy-label,.deploy-note{font-size:.6rem;color:#c4b5fd}
-.deploy-links{margin-top:.22rem; gap:.55rem}
-.deploy-links a{font-size:.64rem;color:#67e8f9}
-.pill{font-size:.55rem; padding:.1rem .4rem}
+.deploy-repo{font-size:.68rem;color:#fde68a}
+.deploy-label,.deploy-note{font-size:.55rem;color:#c4b5fd}
+.deploy-links{margin-top:.15rem; gap:.45rem}
+.deploy-links a{font-size:.58rem;color:#67e8f9}
+.pill{font-size:.5rem; padding:.08rem .32rem}
 
-#bot-list{gap:.22rem; margin-bottom:.45rem}
+/* Deploy strip toggle — collapsed by default */
+.section-toggle{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  width:100%; margin:.05rem 0 .25rem; padding:0; border:0; background:transparent;
+  font:inherit; cursor:pointer; color:#a78bfa; text-align:left;
+  font-size:.58rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  touch-action:manipulation;
+}
+.section-toggle .chev{color:#fde68a; font-size:.7rem; transition:transform .2s}
+.section-toggle[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.deploy-strip{
+  display:flex; flex-wrap:wrap; gap:.28rem; margin-bottom:.35rem;
+  min-height:0;
+}
+.deploy-strip .mini-pill{
+  display:inline-flex; align-items:center; gap:.22rem;
+  border-radius:999px; padding:.12rem .42rem;
+  font-size:.55rem; font-weight:800; letter-spacing:.02em;
+  background:#2e1065cc; border:1px solid #a855f766; color:#fde68a;
+}
+.deploy-strip .mini-pill .dot{
+  width:.32rem; height:.32rem; border-radius:50%; background:currentColor;
+}
+.deploy-strip .mini-pill.building{color:#fbbf24}
+.deploy-strip .mini-pill.ready{color:#86efac}
+.deploy-strip .mini-pill.failed{color:#fecdd3}
+.deploy-strip.hidden{display:none}
+
+#bot-list{gap:.14rem; margin-bottom:.3rem}
 .bot-row{
   background:linear-gradient(90deg,#1e1b4bcc,#312e81aa);
-  border:1.5px solid #6366f166; border-radius:10px;
-  padding:.35rem .5rem; gap:.4rem;
+  border:1px solid #6366f155; border-radius:8px;
+  padding:.22rem .4rem; gap:.3rem;
 }
 .bot-row:active{transform:scale(.97)}
-.bot-row .name{font-size:.74rem;color:#fef3c7}
-.bot-row .task{font-size:.6rem;color:#c4b5fd}
-.status-chip{font-size:.52rem;padding:.1rem .32rem}
+.bot-row .name{font-size:.66rem;color:#fef3c7}
+.bot-row .task{font-size:.52rem;color:#c4b5fd}
+.status-chip{font-size:.46rem;padding:.06rem .26rem}
+.swatch{width:8px;height:8px;border-radius:3px}
 
 #map-wrap{
-  height:min(84vh, 820px); min-height:520px;
-  margin-bottom:.5rem;
+  height:min(88vh, 860px); min-height:560px;
+  margin-bottom:.4rem;
   border:2px solid #a855f7aa;
   box-shadow:0 0 24px #7c3aed33, inset 0 0 60px #f472b608;
   background:#12081f;
@@ -322,57 +352,83 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 }
 .floor-grid{opacity:.08}
 
-/* Desks — bold + monitor ambient */
+/* Cast art dominates frame */
+.sprite.main .body{width:104px; height:104px}
+.sprite.intern .body{width:62px; height:62px}
+.sprite.main .ring{inset:-6px; border-width:3px}
+.sprite.intern .tag{font-size:8px; max-width:72px}
+.sprite .tag{font-size:9px; max-width:88px}
+
+/* Desks — bold + glanceable monitor ambient */
 .desk{
-  width:54px; height:38px; border-radius:9px;
+  width:58px; height:42px; border-radius:9px;
   background:linear-gradient(180deg,#4c1d95cc,#312e81cc);
   border:1.5px solid #c084fc88;
   pointer-events:auto; cursor:pointer; z-index:1;
   overflow:visible;
 }
 .desk.jesus{
-  width:68px; height:46px;
+  width:74px; height:50px;
   background:linear-gradient(180deg,#fbbf2455,#f59e0b44);
   border:2.5px solid var(--jesus); box-shadow:0 0 20px #fbbf2455;
 }
 .desk.meeting{background:linear-gradient(180deg,#0e7490cc,#1e3a5fcc); border-color:#22d3eeaa}
 .desk .monitor{
-  position:absolute; top:3px; left:50%; transform:translateX(-50%);
-  width:20px; height:9px; border-radius:2px;
-  background:#22d3ee66; border:1px solid #67e8f9aa;
-  animation:monitorGlow 2.6s ease-in-out infinite;
+  position:absolute; top:1px; left:50%; transform:translateX(-50%);
+  width:38px; height:16px; border-radius:3px;
+  background:#22d3ee99; border:1.5px solid #a5f3fc;
+  animation:monitorGlow 2.2s ease-in-out infinite;
   animation-delay:var(--mon-delay, 0s);
   pointer-events:none;
+  box-shadow:0 0 10px #22d3eeaa, 0 0 22px #22d3ee66;
 }
-.desk.jesus .monitor{width:26px; height:11px; background:#fde68a88; border-color:#fbbf24; animation-duration:2.1s}
+.desk.jesus .monitor{
+  width:48px; height:20px; background:#fde68acc; border-color:#fbbf24;
+  animation-duration:1.8s;
+  box-shadow:0 0 14px #fbbf24cc, 0 0 28px #f59e0b88;
+}
 @keyframes monitorGlow{
-  0%,100%{opacity:.4; box-shadow:0 0 3px #22d3ee44}
-  50%{opacity:1; box-shadow:0 0 12px #22d3eecc, 0 0 4px #fff8}
+  0%,100%{opacity:.55; filter:brightness(.95); box-shadow:0 0 8px #22d3ee88, 0 0 18px #22d3ee44}
+  50%{opacity:1; filter:brightness(1.55); box-shadow:0 0 22px #22d3ee, 0 0 40px #67e8f9dd, 0 0 10px #fff}
 }
 
-/* Idle breath on body — CSS only, per-bot --breath-delay phase */
+/* Idle breath — phone-readable amplitude (scale ~9%, translate ~5px, rotate wobble) */
 .sprite .body{
-  animation:breathBob 2.9s ease-in-out infinite;
+  animation:breathBob 2.7s ease-in-out infinite;
   animation-delay:var(--breath-delay, 0s);
   will-change:transform;
+  transform-origin:50% 85%;
 }
 .sprite.intern .body{
-  animation:breathBob 2.45s ease-in-out infinite;
+  animation:breathBob 2.35s ease-in-out infinite;
   animation-delay:var(--breath-delay, 0s);
 }
 @keyframes breathBob{
-  0%,100%{transform:translateY(0) scale(1,1)}
-  40%{transform:translateY(-2.5px) scale(1.035, .97)}
-  70%{transform:translateY(-1px) scale(1.015, .99)}
+  0%,100%{transform:translateY(0) scale(1,1) rotate(0deg)}
+  20%{transform:translateY(-5px) scale(1.09, .93) rotate(-2.8deg)}
+  45%{transform:translateY(-3px) scale(1.06, .96) rotate(2.2deg)}
+  70%{transform:translateY(-4.5px) scale(1.08, .94) rotate(-1.6deg)}
 }
-/* Soft accessory lag feel via ring pulse phase */
+/* Occasional soft blink on cast art */
+.sprite img.cast{
+  animation:softBlink 5.6s ease-in-out infinite;
+  animation-delay:var(--breath-delay, 0s);
+}
+@keyframes softBlink{
+  0%, 82%, 100%{opacity:1; filter:drop-shadow(0 2px 6px #000a)}
+  84%{opacity:.28; filter:drop-shadow(0 2px 6px #000a) brightness(.7)}
+  86%{opacity:1; filter:drop-shadow(0 2px 6px #000a)}
+  88%{opacity:.2; filter:drop-shadow(0 2px 6px #000a) brightness(.65)}
+  91%{opacity:1; filter:drop-shadow(0 2px 6px #000a)}
+}
+/* Soft accessory lag via ring pulse phase */
 .sprite .ring{
-  animation:ringSoft 3.4s ease-in-out infinite;
+  animation:ringSoft 3.1s ease-in-out infinite;
   animation-delay:var(--breath-delay, 0s);
 }
 @keyframes ringSoft{
-  0%,100%{opacity:.85; transform:scale(1)}
-  50%{opacity:1; transform:scale(1.04)}
+  0%,100%{opacity:.8; transform:scale(1)}
+  50%{opacity:1; transform:scale(1.07)}
 }
 
 /* Status glow / scent beyond chips */
@@ -390,20 +446,21 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .status-collaborating .ring{border-color:#fb923c; box-shadow:0 0 8px #fb923c66}
 .status-idle .ring{border-color:#94a3b8}
 
-/* Status prop badge on sprite */
+/* Status prop badge — tip sway more obvious */
 .status-prop{
-  position:absolute; top:-6px; right:-8px; z-index:3;
-  font-size:13px; line-height:1;
+  position:absolute; top:-8px; right:-10px; z-index:3;
+  font-size:15px; line-height:1;
   filter:drop-shadow(0 1px 2px #000c);
   pointer-events:none;
-  animation:propBob 1.8s ease-in-out infinite;
+  animation:propBob 1.55s ease-in-out infinite;
   animation-delay:var(--breath-delay, 0s);
+  transform-origin:50% 100%;
 }
-.sprite.intern .status-prop{font-size:10px; top:-4px; right:-5px}
+.sprite.intern .status-prop{font-size:12px; top:-5px; right:-6px}
 .status-prop:empty{display:none}
 @keyframes propBob{
-  0%,100%{transform:translateY(0) rotate(-6deg)}
-  50%{transform:translateY(-3px) rotate(6deg)}
+  0%,100%{transform:translateY(0) rotate(-14deg) scale(1)}
+  50%{transform:translateY(-5px) rotate(14deg) scale(1.08)}
 }
 
 /* Tap juice ≤200ms */
@@ -424,6 +481,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   animation:none;
   filter:drop-shadow(0 0 14px #fde68aee) brightness(1.25) !important;
 }
+.sprite.tap-juice img.cast{animation:none}
 .sprite.tap-juice .ring{animation:tapFlashRing 180ms ease-out; border-color:#fde68a !important}
 .desk.tap-juice{
   animation:deskFlash 180ms ease-out;
@@ -450,17 +508,19 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   100%{transform:translate(var(--dx), var(--dy)) scale(.3); opacity:0}
 }
 
-/* Working sparkle ambient */
+/* Working sparkle ambient — glanceable, capped */
 .sparkle{
   position:absolute; pointer-events:none; z-index:8;
-  font-size:11px; line-height:1;
-  animation:sparkleOut .85s ease-out forwards;
-  filter:drop-shadow(0 0 4px #fde68a);
+  font-size:20px; line-height:1;
+  animation:sparkleOut .95s ease-out forwards;
+  filter:drop-shadow(0 0 8px #fde68a) drop-shadow(0 0 14px #22d3eecc);
+  color:#fffbeb;
+  text-shadow:0 0 6px #fbbf24, 0 0 12px #22d3ee;
 }
 @keyframes sparkleOut{
-  0%{opacity:1; transform:translate(-50%,-50%) scale(.5) rotate(0deg)}
-  60%{opacity:1}
-  100%{opacity:0; transform:translate(-50%,-120%) scale(1.15) rotate(25deg)}
+  0%{opacity:1; transform:translate(-50%,-50%) scale(.55) rotate(0deg)}
+  45%{opacity:1; transform:translate(-50%,-90%) scale(1.25) rotate(12deg)}
+  100%{opacity:0; transform:translate(-50%,-140%) scale(1.45) rotate(28deg)}
 }
 
 #alert-banner{
@@ -468,9 +528,16 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   border:2px solid #fb7185; color:#fff1f2;
   font-size:.74rem; padding:.45rem .6rem; margin-bottom:.45rem;
 }
-#legend{margin:.1rem 0 .5rem}
-#legend li{color:#c4b5fd}
-#sheet{background:#1e1040f5; border-top:2px solid #a855f7}
+#legend{margin:.05rem 0 .35rem}
+#legend li{color:#c4b5fd; font-size:.55rem}
+#sheet{
+  background:#1e1040f5; border-top:2px solid #a855f7;
+  max-height:30dvh; padding:.65rem .85rem calc(.65rem + env(safe-area-inset-bottom));
+}
+#sheet h2{font-size:.95rem; margin:.05rem 2rem .1rem 0}
+#sheet .meta{font-size:.65rem}
+#sheet .task{font-size:.78rem; margin:.3rem 0 0}
+#sheet .interns{margin-top:.4rem}
 #map-hint{color:#c4b5fd; background:#1e1040cc}
 #map-hud button{
   border-color:#c084fc; background:#1e1040f2; color:#fde68a;
@@ -484,9 +551,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div>
     <h1>Bot Campus Live</h1>
     <div class="links">
-      <a href="review.html?v=9">Review</a>
-      <a href="research-board.html?v=9">Research</a>
-      <a href="campus-cast-review.html?v=9">Cast review</a>
+      <a href="review.html?v=10">Review</a>
+      <a href="research-board.html?v=10">Research</a>
+      <a href="campus-cast-review.html?v=10">Cast review</a>
       <a href="office.html">3D Office</a>
       <a href="liveops/CAMPUS_STATE.md">Protocol</a>
     </div>
@@ -498,8 +565,11 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div id="err"></div>
   <div id="alert-banner" role="alert"></div>
 
-  <div class="section-title">Deploy board</div>
-  <div id="deploys"></div>
+  <button type="button" class="section-toggle" id="deploy-toggle" aria-expanded="false" aria-controls="deploys">
+    <span>Deploy board</span><span class="chev" aria-hidden="true">▸</span>
+  </button>
+  <div id="deploy-strip" class="deploy-strip" aria-live="polite"></div>
+  <div id="deploys" class="collapsed" hidden></div>
 
   <div class="section-title">Campus map</div>
   <div id="map-wrap">
@@ -527,7 +597,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <li><span class="sw" style="border-color:#fb923c"></span> collab</li>
   </ul>
 
-  <div class="section-title">Bots</div>
+  <div class="section-title">Cast</div>
   <div id="bot-list"></div>
 </main>
 
@@ -545,7 +615,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = '9';
+  const ASSET_V = '10';
   const WORLD = { w: 1440, h: 1120, pad: 72 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -588,6 +658,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   const mapEl = mapWorld; // desks/sprites live on map-world
   const mapWrap = $('map-wrap');
   const deploysEl = $('deploys');
+  const deployStripEl = $('deploy-strip');
+  const deployToggle = $('deploy-toggle');
   const botListEl = $('bot-list');
   const alertEl = $('alert-banner');
   const updatedEl = $('updated');
@@ -1161,9 +1233,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   function renderDeploys(deploys) {
     deploysEl.innerHTML = '';
+    if (deployStripEl) deployStripEl.innerHTML = '';
     const list = deploys || [];
     if (!list.length) {
       deploysEl.innerHTML = '<div class="deploy-card"><div class="deploy-repo">No deploys yet</div></div>';
+      if (deployStripEl) {
+        deployStripEl.innerHTML = '<span class="mini-pill">no deploys</span>';
+      }
       return;
     }
     list.forEach(d => {
@@ -1184,6 +1260,25 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
           '<a href="' + escapeAttr(repo) + '" target="_blank" rel="noopener">GitHub</a>' +
         '</div>';
       deploysEl.appendChild(card);
+
+      if (deployStripEl) {
+        const mini = document.createElement('span');
+        mini.className = 'mini-pill ' + st;
+        mini.innerHTML = '<span class="dot"></span>' + escapeHtml((d.label || d.repo || 'deploy').slice(0, 18)) + ' · ' + escapeHtml(st);
+        deployStripEl.appendChild(mini);
+      }
+    });
+  }
+
+  if (deployToggle) {
+    deployToggle.addEventListener('click', () => {
+      const open = deployToggle.getAttribute('aria-expanded') === 'true';
+      const next = !open;
+      deployToggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+      deploysEl.classList.toggle('collapsed', !next);
+      if (next) deploysEl.removeAttribute('hidden');
+      else deploysEl.setAttribute('hidden', '');
+      if (deployStripEl) deployStripEl.classList.toggle('hidden', next);
     });
   }
 
@@ -1202,9 +1297,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
         ev.stopPropagation();
         tapJuice(el, true);
-        // Open first bot assigned to this desk if any
-        const bot = (state && state.bots || []).find(b => b.deskId === d.id);
-        if (bot) openSheet(bot);
+        // Desk tap = juice only; sheet opens from cast/bot-list (keep map readable)
       });
       mapEl.appendChild(el);
     });
@@ -1526,19 +1619,22 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   }
 
 
-  /* Occasional tiny sparkle near working bots — calm, not casino */
-  const SPARKLE_GLYPHS = ['✦', '✧', '·'];
+  /* Working sparkles — glanceable, capped concurrent (not casino) */
+  const SPARKLE_GLYPHS = ['✦', '✧', '✦', '⋆'];
+  const SPARKLE_MAX = 4;
   function spawnWorkingSparkles() {
     if (!state) return;
+    const live = mapEl.querySelectorAll('.sparkle').length;
+    if (live >= SPARKLE_MAX) return;
     const working = Object.keys(spriteEls).filter(k => {
       const el = spriteEls[k];
       return el && (el.classList.contains('status-working') || el.classList.contains('status-collaborating'));
     });
     if (!working.length) return;
-    // At most 1–2 sparkles per tick
-    const n = Math.min(2, working.length);
+    const room = SPARKLE_MAX - live;
+    const n = Math.min(room, 2, working.length);
     for (let i = 0; i < n; i++) {
-      if (Math.random() > 0.55) continue;
+      if (Math.random() > 0.72) continue; // ~72% chance per slot → frequent but not spam
       const key = working[(Math.random() * working.length) | 0];
       const el = spriteEls[key];
       if (!el) continue;
@@ -1547,13 +1643,15 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       sp.textContent = SPARKLE_GLYPHS[(Math.random() * SPARKLE_GLYPHS.length) | 0];
       const left = parseFloat(el.style.left) || 50;
       const top = parseFloat(el.style.top) || 50;
-      sp.style.left = (left + (Math.random() * 4 - 2)) + '%';
-      sp.style.top = (top - 3 - Math.random() * 2) + '%';
+      sp.style.left = (left + (Math.random() * 5 - 2.5)) + '%';
+      sp.style.top = (top - 4 - Math.random() * 3) + '%';
+      const sz = 18 + ((Math.random() * 8) | 0);
+      sp.style.fontSize = sz + 'px';
       mapEl.appendChild(sp);
-      setTimeout(() => sp.remove(), 900);
+      setTimeout(() => sp.remove(), 1000);
     }
   }
-  setInterval(spawnWorkingSparkles, 2200);
+  setInterval(spawnWorkingSparkles, 1100);
 
   // Initial camera before first paint of sprites
   requestAnimationFrame(fitOverview);
