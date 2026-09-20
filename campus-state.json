@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:32:40Z",
+  "updatedAt": "2026-09-20T22:35:51Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -185,14 +185,25 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
       "status": "working",
-      "task": "campus-state live; FLOW map watching",
+      "task": "Patch researcher campus slices + push",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
-      "interns": [],
-      "updatedAt": "2026-09-20T22:31:28Z",
+      "interns": [
+        {
+          "id": "dev-b-i-push",
+          "label": "Push",
+          "status": "working",
+          "task": "Commit + request Pages push",
+          "atDeskId": "desk-dev-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:35:51Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:35:51Z",
       "main": {
         "status": "working",
-        "task": "campus-state live; FLOW map watching",
+        "task": "Patch researcher campus slices + push",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
@@ -419,35 +430,35 @@
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
       "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Research notes for Air + Fire FLOW",
+      "task": "Multi-agent + long-horizon standards (research)",
       "color": "#38bdf8",
       "castFolder": "campus-cast/researcher-a",
       "interns": [
         {
-          "id": "researcher-a-i-air",
-          "label": "Air refs",
+          "id": "researcher-a-i-multi",
+          "label": "Multi-agent",
           "status": "working",
-          "task": "Air FLOW industry/refs checklist",
+          "task": "Industry standards for multi-agent crews",
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:35:51Z"
         },
         {
-          "id": "researcher-a-i-fire",
-          "label": "Fire refs",
+          "id": "researcher-a-i-horizon",
+          "label": "Long-horizon",
           "status": "working",
-          "task": "Fire FLOW industry/refs checklist",
+          "task": "Long-horizon planning / memory standards",
           "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:35:51Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:35:51Z",
       "main": {
         "status": "working",
-        "task": "Research notes for Air + Fire FLOW",
+        "task": "Multi-agent + long-horizon standards (research)",
         "atDeskId": "desk-researcher-a",
         "x": null,
         "y": null
@@ -468,35 +479,35 @@
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
       "status": "working",
-      "task": "Research notes for Water + Earth FLOW",
+      "task": "Multi-agent + long-horizon standards (research)",
       "color": "#0ea5e9",
       "castFolder": "campus-cast/researcher-b",
       "interns": [
         {
-          "id": "researcher-b-i-water",
-          "label": "Water refs",
+          "id": "researcher-b-i-multi",
+          "label": "Multi-agent",
           "status": "working",
-          "task": "Water FLOW industry/refs checklist",
+          "task": "Cross-check multi-agent practice notes",
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:35:51Z"
         },
         {
-          "id": "researcher-b-i-earth",
-          "label": "Earth refs",
+          "id": "researcher-b-i-horizon",
+          "label": "Long-horizon",
           "status": "working",
-          "task": "Earth FLOW industry/refs checklist",
+          "task": "Cross-check long-horizon / eval standards",
           "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:46Z"
+          "updatedAt": "2026-09-20T22:35:51Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedAt": "2026-09-20T22:35:51Z",
       "main": {
         "status": "working",
-        "task": "Research notes for Water + Earth FLOW",
+        "task": "Multi-agent + long-horizon standards (research)",
         "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null
@@ -582,12 +593,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live pan/zoom v7",
-      "updatedAt": "2026-09-20T22:32:40Z",
-      "updatedBy": "dev-a"
+      "note": "Researchers \u2192 multi-agent + long-horizon",
+      "updatedAt": "2026-09-20T22:35:51Z",
+      "updatedBy": "dev-b"
     }
   ],
   "world": {
