@@ -246,7 +246,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
 <script>
 (function () {
-  const STATE_URL = './campus-state.json';
+  const STATE_URLS = ['./campus-state.json', './campus/campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 2000;
   const WORLD = { w: 900, h: 560, pad: 40 };
 
@@ -535,20 +535,25 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
   let firstLoad = true;
   async function poll() {
-    const url = STATE_URL + '?t=' + Date.now();
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      applyState(data, firstLoad);
-      firstLoad = false;
-    } catch (e) {
-      updatedEl.textContent = 'Offline — last good';
-      updatedEl.classList.add('stale');
-      errEl.textContent = 'Fetch failed: ' + e.message + (lastGood ? ' (showing last good state)' : '');
-      errEl.classList.add('show');
-      if (lastGood) applyState(lastGood, false);
+    const bust = '?t=' + Date.now();
+    let lastErr = null;
+    for (const base of STATE_URLS) {
+      try {
+        const res = await fetch(base + bust, { cache: 'no-store' });
+        if (!res.ok) { lastErr = new Error('HTTP ' + res.status + ' ' + base); continue; }
+        const data = await res.json();
+        applyState(data, firstLoad);
+        firstLoad = false;
+        return;
+      } catch (e) {
+        lastErr = e;
+      }
     }
+    updatedEl.textContent = 'Offline — last good';
+    updatedEl.classList.add('stale');
+    errEl.textContent = 'Fetch failed: ' + (lastErr && lastErr.message ? lastErr.message : 'unknown') + (lastGood ? ' (showing last good state)' : '');
+    errEl.classList.add('show');
+    if (lastGood) applyState(lastGood, false);
   }
 
   poll();
