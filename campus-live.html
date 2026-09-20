@@ -4,187 +4,216 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0f1419; --panel:#1a222c; --line:#2a3544; --text:#e8eef6; --muted:#8b9bb0;
+  --bg:#0c1118; --panel:#151c27; --line:#243044; --text:#e8eef6; --muted:#8b9bb0;
   --jesus:#fbbf24; --alert:#f43f5e; --ready:#22c55e; --build:#f59e0b; --fail:#ef4444;
 }
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
   font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-body{padding:0 0 calc(.75rem + env(safe-area-inset-bottom))}
+body{padding:0 0 calc(.85rem + env(safe-area-inset-bottom)); overscroll-behavior:none}
 
 header.sticky{
   position:sticky; top:0; z-index:50;
   padding:calc(.55rem + env(safe-area-inset-top)) .85rem .55rem;
-  background:linear-gradient(180deg,#0f1419f2,#0f1419e6); backdrop-filter:blur(10px);
+  background:linear-gradient(180deg,#0c1118f5,#0c1118e8); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);
   display:flex; align-items:baseline; justify-content:space-between; gap:.5rem;
 }
 header h1{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
-#updated{font-size:.72rem;color:var(--muted);font-weight:600;white-space:nowrap}
+#updated{font-size:.7rem;color:var(--muted);font-weight:600;text-align:right}
 #updated.stale{color:var(--alert)}
+header .links{display:flex;gap:.55rem;margin-top:.15rem}
+header .links a{font-size:.68rem;font-weight:700;color:#7dd3fc;text-decoration:none}
 
-main{padding:.7rem .75rem 1.2rem; max-width:520px; margin:0 auto}
+main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 
 .section-title{
-  margin:.15rem 0 .45rem; font-size:.68rem; font-weight:800; letter-spacing:.08em;
+  margin:.1rem 0 .4rem; font-size:.66rem; font-weight:800; letter-spacing:.08em;
   text-transform:uppercase; color:var(--muted);
 }
 
 /* Deploy board */
-#deploys{display:flex; flex-direction:column; gap:.5rem; margin-bottom:.9rem}
+#deploys{display:flex; flex-direction:column; gap:.45rem; margin-bottom:.85rem}
 .deploy-card{
-  display:block; text-decoration:none; color:inherit;
-  background:var(--panel); border:1px solid var(--line); border-radius:14px;
-  padding:.7rem .8rem; transition:border-color .15s, transform .1s;
+  display:block; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:.65rem .75rem;
 }
-.deploy-card:active{transform:scale(.985)}
 .deploy-top{display:flex; align-items:center; justify-content:space-between; gap:.5rem}
-.deploy-repo{font-weight:800; font-size:.88rem}
-.deploy-label{font-size:.68rem; color:var(--muted); margin-top:.15rem}
-.deploy-note{font-size:.7rem; color:var(--muted); margin-top:.4rem}
-.deploy-links{margin-top:.45rem; display:flex; gap:.65rem; flex-wrap:wrap}
+.deploy-repo{font-weight:800; font-size:.86rem}
+.deploy-label{font-size:.68rem; color:var(--muted); margin-top:.12rem}
+.deploy-note{font-size:.68rem; color:var(--muted); margin-top:.35rem}
+.deploy-links{margin-top:.4rem; display:flex; gap:.7rem; flex-wrap:wrap}
 .deploy-links a{font-size:.72rem; font-weight:700; color:#7dd3fc; text-decoration:none}
 .pill{
-  display:inline-flex; align-items:center; gap:.3rem;
-  border-radius:999px; padding:.18rem .55rem; font-size:.65rem; font-weight:800;
+  display:inline-flex; align-items:center; gap:.28rem;
+  border-radius:999px; padding:.16rem .5rem; font-size:.62rem; font-weight:800;
   text-transform:uppercase; letter-spacing:.04em;
 }
 .pill.ready{background:#14532d55; color:var(--ready); border:1px solid #22c55e66}
 .pill.building{background:#78350f55; color:var(--build); border:1px solid #f59e0b66; animation:pulse 1.2s ease-in-out infinite}
 .pill.failed{background:#7f1d1d55; color:var(--fail); border:1px solid #ef444466}
-.pill-dot{width:.45rem;height:.45rem;border-radius:50%;background:currentColor}
+.pill-dot{width:.4rem;height:.4rem;border-radius:50%;background:currentColor}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
-/* High alert banner */
+/* High alert */
 #alert-banner{
-  display:none; margin-bottom:.75rem; padding:.55rem .7rem; border-radius:12px;
+  display:none; margin-bottom:.7rem; padding:.55rem .7rem; border-radius:12px;
   background:linear-gradient(90deg,#7f1d1dcc,#9f1239aa); border:1px solid #fb7185;
   font-size:.78rem; font-weight:800; color:#ffe4e6;
 }
-#alert-banner.show{display:block}
-#alert-banner .blink{animation:pulse 1s ease-in-out infinite}
+#alert-banner.show{display:block; animation:pulse 1.1s ease-in-out infinite}
 
-/* Campus map */
+/* Map */
 #map-wrap{
   position:relative; background:var(--panel); border:1px solid var(--line);
   border-radius:16px; overflow:hidden; margin-bottom:.75rem;
+  touch-action:manipulation;
 }
-#map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 40px #f43f5e22}
+#map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 48px #f43f5e18}
 #map{
-  position:relative; width:100%; aspect-ratio:3/4; min-height:340px;
+  position:relative; width:100%; aspect-ratio:900/560; min-height:300px;
   background:
-    radial-gradient(ellipse at 50% 8%, #fbbf2422 0%, transparent 35%),
-    linear-gradient(180deg,#1e293b 0%, #0f172a 100%);
+    radial-gradient(ellipse at 50% 8%, #fbbf2428 0%, transparent 32%),
+    radial-gradient(ellipse at 50% 55%, #33415533 0%, transparent 50%),
+    linear-gradient(180deg,#1a2332 0%, #0f172a 100%);
 }
 .floor-grid{
-  position:absolute; inset:0; opacity:.18;
+  position:absolute; inset:0; opacity:.12; pointer-events:none;
   background-image:
-    linear-gradient(#fff1 1px, transparent 1px),
-    linear-gradient(90deg, #fff1 1px, transparent 1px);
-  background-size:12% 10%;
-  pointer-events:none;
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size:40px 40px;
 }
-
 .desk{
   position:absolute; transform:translate(-50%,-50%);
-  display:flex; flex-direction:column; align-items:center; gap:.18rem;
-  width:28%; max-width:110px; z-index:2;
+  width:52px; height:36px; border-radius:8px;
+  background:#334155cc; border:1px solid #64748b88;
+  display:flex; align-items:flex-end; justify-content:center;
+  padding-bottom:2px; pointer-events:none; z-index:1;
 }
-.desk.jesus{z-index:5; width:34%; max-width:130px}
-.desk-pad{
-  width:100%; border-radius:12px; padding:.35rem .3rem .4rem;
-  background:#0b1220cc; border:1px solid #334155; text-align:center;
-}
-.desk.jesus .desk-pad{
-  background:linear-gradient(180deg,#422006cc,#1c1917cc);
+.desk.jesus{
+  width:64px; height:44px; background:linear-gradient(180deg,#fbbf2444,#f59e0b33);
   border:2px solid var(--jesus); box-shadow:0 0 18px #fbbf2444;
 }
-.desk.jesus.needs-perm .desk-pad{
-  border-color:var(--alert); box-shadow:0 0 22px #f43f5e88;
-  animation:pulse 1.1s ease-in-out infinite;
+.desk.meeting{background:#1e3a5fcc; border-color:#38bdf888}
+.desk-label{
+  font-size:8px; font-weight:800; color:#cbd5e1; white-space:nowrap;
+  text-shadow:0 1px 2px #000; max-width:70px; overflow:hidden; text-overflow:ellipsis;
 }
-.desk-label{font-size:.58rem; font-weight:800; color:var(--muted); letter-spacing:.04em; text-transform:uppercase}
-.desk.jesus .desk-label{color:var(--jesus); font-size:.62rem}
+.desk.jesus .desk-label{color:#fef3c7; font-size:9px}
 
 .sprite{
-  width:2.4rem; height:2.4rem; border-radius:50%; margin:0 auto .15rem;
-  display:grid; place-items:center; font-weight:900; font-size:.72rem; color:#0b1220;
-  border:2px solid #fff6; box-shadow:0 2px 8px #0008;
+  position:absolute; transform:translate(-50%,-50%);
+  z-index:5; cursor:pointer; touch-action:manipulation;
+  transition:left .45s ease, top .45s ease;
 }
-.desk.jesus .sprite{width:2.7rem;height:2.7rem;background:var(--jesus); font-size:.85rem}
-.status-chip{
-  display:inline-block; margin-top:.1rem; border-radius:999px;
-  padding:.1rem .35rem; font-size:.52rem; font-weight:800; text-transform:uppercase;
-  background:#334155; color:#cbd5e1;
+.sprite.main{z-index:6}
+.sprite .body{
+  width:28px; height:28px; border-radius:50%;
+  border:2px solid #fff8; box-shadow:0 2px 8px #0008;
+  display:grid; place-items:center; font-size:11px; font-weight:900; color:#0f172a;
+  position:relative;
 }
-.status-chip.idle{background:#334155;color:#94a3b8}
-.status-chip.working{background:#1e3a8a;color:#93c5fd}
-.status-chip.ready_for_review{background:#14532d;color:#86efac}
-.status-chip.needs_permission{background:#9f1239;color:#fecdd3}
-.status-chip.reviewing{background:#4c1d95;color:#d8b4fe}
-.status-chip.collaborating{background:#854d0e;color:#fde68a}
-.task-text{
-  margin-top:.2rem; font-size:.58rem; line-height:1.25; color:#cbd5e1;
-  max-height:2.4em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+.sprite.main .body{width:34px;height:34px;font-size:13px}
+.sprite .ring{
+  position:absolute; inset:-5px; border-radius:50%; border:2.5px solid transparent; pointer-events:none;
 }
-
-.interns{display:flex; flex-wrap:wrap; justify-content:center; gap:.2rem; margin-top:.25rem; min-height:.5rem}
-.intern{
-  width:1.35rem; height:1.35rem; border-radius:50%;
-  display:grid; place-items:center; font-size:.42rem; font-weight:900; color:#0b1220;
-  border:1.5px solid #fff5; position:relative;
-}
-.intern.needs_permission{box-shadow:0 0 8px #f43f5e; animation:pulse 1s ease-in-out infinite}
-.intern-tip{
-  position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%);
-  white-space:nowrap; font-size:.48rem; font-weight:700; background:#000c;
-  padding:.08rem .25rem; border-radius:4px; color:#fff; pointer-events:none; opacity:0;
-  transition:opacity .15s; z-index:10;
-}
-.intern:hover .intern-tip, .intern:focus .intern-tip{opacity:1}
-
-/* Floating interns at Jesus / meeting midpoints rendered as absolute on map */
-.float-intern{
-  position:absolute; transform:translate(-50%,-50%); z-index:8;
-  display:flex; flex-direction:column; align-items:center; gap:.1rem;
-}
-.float-intern .intern{width:1.55rem;height:1.55rem;font-size:.48rem}
-.float-intern .float-label{
-  font-size:.5rem; font-weight:800; color:#fecdd3; background:#000a;
-  padding:.08rem .28rem; border-radius:999px; max-width:5.5rem;
+.sprite .tag{
+  margin-top:2px; font-size:9px; font-weight:800; text-align:center;
+  color:#e2e8f0; text-shadow:0 1px 3px #000; max-width:64px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.float-intern.meeting .float-label{color:#fde68a}
-
-/* Legend */
-#legend{
-  background:var(--panel); border:1px solid var(--line); border-radius:14px;
-  padding:.65rem .75rem; margin-bottom:.5rem;
+.sprite.intern .body{width:18px;height:18px;font-size:8px; opacity:.95}
+.sprite.intern .tag{font-size:7px; max-width:52px}
+.sprite.intern.perm-alert .body{
+  box-shadow:0 0 0 3px #f43f5e, 0 0 16px #f43f5ecc; animation:pulse .9s ease-in-out infinite;
 }
-#legend ul{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:.35rem .5rem}
-#legend li{font-size:.68rem; color:var(--muted); display:flex; align-items:center; gap:.35rem}
-#legend .sw{width:.7rem;height:.7rem;border-radius:50%; flex-shrink:0}
-#err{display:none; margin:.5rem 0; padding:.5rem .65rem; border-radius:10px;
-  background:#7f1d1d55; border:1px solid #ef4444; font-size:.75rem; color:#fecaca}
+.status-idle .ring{border-color:#64748b}
+.status-working .ring{border-color:#38bdf8}
+.status-ready_for_review .ring{border-color:#22c55e}
+.status-needs_permission .ring{border-color:#f43f5e}
+.status-reviewing .ring{border-color:#a78bfa}
+.status-collaborating .ring{border-color:#fb923c}
+
+#bot-list{display:flex; flex-direction:column; gap:.4rem; margin-bottom:.8rem}
+.bot-row{
+  display:flex; align-items:center; gap:.55rem;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:.55rem .65rem; cursor:pointer;
+}
+.bot-row:active{transform:scale(.985)}
+.swatch{width:12px;height:12px;border-radius:4px; flex-shrink:0}
+.bot-row .name{font-weight:800; font-size:.82rem; flex:1; min-width:0}
+.bot-row .task{font-size:.68rem; color:var(--muted); flex:1.4; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.status-chip{
+  font-size:.58rem; font-weight:800; text-transform:uppercase; letter-spacing:.03em;
+  padding:.14rem .4rem; border-radius:999px; background:#334155; color:#e2e8f0; flex-shrink:0;
+}
+.status-chip.working{background:#0c4a6e;color:#7dd3fc}
+.status-chip.ready_for_review{background:#14532d;color:#86efac}
+.status-chip.needs_permission{background:#9f1239;color:#fecdd3}
+.status-chip.reviewing{background:#4c1d95;color:#ddd6fe}
+.status-chip.collaborating{background:#9a3412;color:#fed7aa}
+.status-chip.idle{background:#334155;color:#94a3b8}
+
+#legend{display:flex; flex-wrap:wrap; gap:.35rem .7rem; margin:.2rem 0 .9rem; padding:0; list-style:none}
+#legend li{font-size:.62rem; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:.28rem}
+#legend .sw{width:8px;height:8px;border-radius:50%; border:2px solid}
+
+#sheet-backdrop{
+  display:none; position:fixed; inset:0; background:#0007; z-index:80;
+}
+#sheet-backdrop.open{display:block}
+#sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:90;
+  background:#121926f5; border-top:1px solid var(--line);
+  border-radius:1.1rem 1.1rem 0 0;
+  padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  transform:translateY(110%); transition:transform .25s ease;
+  max-height:55dvh; overflow:auto; backdrop-filter:blur(14px);
+}
+#sheet.open{transform:translateY(0)}
+#sheet .close{
+  position:absolute; right:.75rem; top:.65rem; background:#334155; border:0; color:#fff;
+  width:2rem; height:2rem; border-radius:999px; font-size:1.1rem; font-weight:700;
+}
+#sheet h2{margin:.1rem 2.2rem .2rem 0; font-size:1.1rem}
+#sheet .meta{color:var(--muted); font-size:.72rem}
+#sheet .task{margin:.45rem 0 0; font-size:.9rem; line-height:1.35; color:#ffedd5}
+#sheet .interns{margin-top:.7rem}
+#sheet .interns h3{margin:0 0 .35rem; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+#sheet .intern-item{
+  display:flex; gap:.4rem; align-items:center; font-size:.78rem;
+  padding:.35rem 0; border-top:1px solid #ffffff10;
+}
+#err{display:none; margin-bottom:.6rem; padding:.45rem .6rem; border-radius:10px;
+  background:#7f1d1d66; border:1px solid #ef444488; font-size:.72rem; font-weight:700; color:#fecaca}
 #err.show{display:block}
-.foot{font-size:.62rem; color:var(--muted); text-align:center; margin-top:.4rem}
 </style>
 </head>
 <body>
 <header class="sticky">
-  <h1>Bot Campus Live</h1>
-  <div id="updated">updated —</div>
+  <div>
+    <h1>Bot Campus Live</h1>
+    <div class="links">
+      <a href="office.html">3D Office</a>
+      <a href="liveops/CAMPUS_STATE.md">Protocol</a>
+    </div>
+  </div>
+  <div id="updated">Connecting…</div>
 </header>
+
 <main>
   <div id="err"></div>
+  <div id="alert-banner" role="alert"></div>
 
   <div class="section-title">Deploy board</div>
   <div id="deploys"></div>
-
-  <div id="alert-banner"><span class="blink">⚠ HIGH ALERT</span> — intern at Jesus desk needs permission</div>
 
   <div class="section-title">Campus map</div>
   <div id="map-wrap">
@@ -193,250 +222,337 @@ main{padding:.7rem .75rem 1.2rem; max-width:520px; margin:0 auto}
     </div>
   </div>
 
-  <div class="section-title">Legend</div>
-  <div id="legend">
-    <ul>
-      <li><span class="sw" style="background:#94a3b8"></span> idle</li>
-      <li><span class="sw" style="background:#93c5fd"></span> working</li>
-      <li><span class="sw" style="background:#86efac"></span> ready_for_review</li>
-      <li><span class="sw" style="background:#fecdd3"></span> needs_permission</li>
-      <li><span class="sw" style="background:#d8b4fe"></span> reviewing</li>
-      <li><span class="sw" style="background:#fde68a"></span> collaborating</li>
-      <li><span class="sw" style="background:#fbbf24;border:2px solid #fbbf24"></span> Jesus desk</li>
-      <li><span class="sw" style="background:#fb7185"></span> intern mini-sprite</li>
-    </ul>
-  </div>
-  <p class="foot">Only owning bots move their sprites · permission = intern at Jesus</p>
+  <ul id="legend">
+    <li><span class="sw" style="border-color:#64748b"></span> idle</li>
+    <li><span class="sw" style="border-color:#38bdf8"></span> working</li>
+    <li><span class="sw" style="border-color:#22c55e"></span> ready</li>
+    <li><span class="sw" style="border-color:#f43f5e"></span> permission</li>
+    <li><span class="sw" style="border-color:#a78bfa"></span> reviewing</li>
+    <li><span class="sw" style="border-color:#fb923c"></span> collab</li>
+  </ul>
+
+  <div class="section-title">Bots</div>
+  <div id="bot-list"></div>
 </main>
+
+<div id="sheet-backdrop"></div>
+<div id="sheet" aria-live="polite">
+  <button class="close" id="sheet-close" type="button" aria-label="Close">×</button>
+  <h2 id="s-name"></h2>
+  <p class="meta" id="s-meta"></p>
+  <p class="task" id="s-task"></p>
+  <div class="interns" id="s-interns"></div>
+</div>
+
 <script>
-(function(){
+(function () {
   const STATE_URL = 'campus/campus-state.json';
-  const pollMs = 1000;
-  let lastUpdatedAt = null;
-  let lastFetchOk = 0;
-  let state = null;
+  const POLL_MS = 1000;
+  const WORLD = { w: 900, h: 560, pad: 40 };
 
   const $ = (id) => document.getElementById(id);
-  const deploysEl = $('deploys');
   const mapEl = $('map');
   const mapWrap = $('map-wrap');
-  const alertBanner = $('alert-banner');
+  const deploysEl = $('deploys');
+  const botListEl = $('bot-list');
+  const alertEl = $('alert-banner');
   const updatedEl = $('updated');
   const errEl = $('err');
+  const sheet = $('sheet');
+  const backdrop = $('sheet-backdrop');
 
-  function initials(name){
-    if(!name) return '?';
-    const parts = String(name).replace(/([a-z])([A-Z])/g,'$1 $2').split(/[\s_-]+/).filter(Boolean);
-    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
-    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  let state = null;
+  let lastGood = null;
+  let deskIndex = {};
+  let spriteEls = {}; // key -> DOM
+  let animTargets = {}; // key -> {x%, y%}
+
+  const STATUS_COLOR = {
+    idle: '#64748b',
+    working: '#38bdf8',
+    ready_for_review: '#22c55e',
+    needs_permission: '#f43f5e',
+    reviewing: '#a78bfa',
+    collaborating: '#fb923c'
+  };
+
+  function initials(name) {
+    return (name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   }
 
-  function agoText(ms){
-    const s = Math.max(0, Math.floor(ms/1000));
-    if(s < 60) return 'updated ' + s + 's ago';
-    const m = Math.floor(s/60);
-    return 'updated ' + m + 'm ago';
+  function deskPos(desk) {
+    if (!desk) return { left: 50, top: 50 };
+    const x = ((desk.x ?? 450) / WORLD.w) * 100;
+    const y = ((desk.y ?? 280) / WORLD.h) * 100;
+    return { left: Math.min(96, Math.max(4, x)), top: Math.min(96, Math.max(4, y)) };
   }
 
-  function tickUpdated(){
-    if(!lastFetchOk){ updatedEl.textContent = 'connecting…'; return; }
-    const age = Date.now() - lastFetchOk;
-    updatedEl.textContent = agoText(age);
-    updatedEl.classList.toggle('stale', age > 5000);
+  function resolvePos(entity, desksById, fallbackDeskId) {
+    if (entity.x != null && entity.y != null) {
+      return {
+        left: Math.min(96, Math.max(4, (entity.x / WORLD.w) * 100)),
+        top: Math.min(96, Math.max(4, (entity.y / WORLD.h) * 100))
+      };
+    }
+    const desk = desksById[entity.atDeskId] || desksById[fallbackDeskId];
+    return deskPos(desk);
   }
 
-  function pillClass(status){
-    const s = (status||'').toLowerCase();
-    if(s === 'building' || s === 'queued' || s === 'in_progress') return 'building';
-    if(s === 'failed' || s === 'error') return 'failed';
-    return 'ready';
+  function permissionInterns(data) {
+    const jd = data.jesusDeskId;
+    const out = [];
+    for (const bot of data.bots || []) {
+      for (const intern of bot.interns || []) {
+        if (intern.status === 'needs_permission' && intern.atDeskId === jd) {
+          out.push({ bot, intern });
+        }
+      }
+    }
+    return out;
   }
 
-  function pillLabel(status){
-    const s = (status||'').toLowerCase();
-    if(s === 'building' || s === 'queued' || s === 'in_progress') return 'building';
-    if(s === 'failed' || s === 'error') return 'failed';
-    return 'ready';
-  }
-
-  function renderDeploys(deploys){
+  function renderDeploys(deploys) {
     deploysEl.innerHTML = '';
-    (deploys||[]).forEach(d => {
-      const href = d.pagesUrl || d.repoUrl || '#';
-      const card = document.createElement('a');
+    const list = deploys || [];
+    if (!list.length) {
+      deploysEl.innerHTML = '<div class="deploy-card"><div class="deploy-repo">No deploys yet</div></div>';
+      return;
+    }
+    list.forEach(d => {
+      const card = document.createElement('div');
       card.className = 'deploy-card';
-      card.href = href;
-      card.target = '_blank';
-      card.rel = 'noopener';
-      const pc = pillClass(d.status);
+      const st = d.status || 'building';
+      const pages = d.pagesUrl || d.url || '#';
+      const repo = d.repoUrl || d.checkUrl || '#';
       card.innerHTML =
         '<div class="deploy-top">' +
-          '<div><div class="deploy-repo">' + esc(d.repo||d.label||'repo') + '</div>' +
-          '<div class="deploy-label">' + esc(d.label||'Deploy') + ' · ' + esc(d.branch||'') + '</div></div>' +
-          '<span class="pill ' + pc + '"><span class="pill-dot"></span>' + esc(pillLabel(d.status)) + '</span>' +
+          '<div><div class="deploy-repo">' + escapeHtml(d.label || d.repo) + '</div>' +
+          '<div class="deploy-label">' + escapeHtml(d.repo || '') + (d.branch ? ' · ' + escapeHtml(d.branch) : '') + '</div></div>' +
+          '<span class="pill ' + st + '"><span class="pill-dot"></span>' + escapeHtml(st) + '</span>' +
         '</div>' +
-        (d.note ? '<div class="deploy-note">' + esc(d.note) + '</div>' : '') +
+        (d.note ? '<div class="deploy-note">' + escapeHtml(d.note) + '</div>' : '') +
         '<div class="deploy-links">' +
-          (d.checkUrl ? '<a href="' + escAttr(d.checkUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Check repo</a>' : '') +
-          (d.pagesUrl ? '<a href="' + escAttr(d.pagesUrl) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open Pages</a>' : '') +
+          '<a href="' + escapeAttr(pages) + '" target="_blank" rel="noopener">Open site</a>' +
+          '<a href="' + escapeAttr(repo) + '" target="_blank" rel="noopener">GitHub</a>' +
         '</div>';
       deploysEl.appendChild(card);
     });
-    if(!(deploys||[]).length){
-      deploysEl.innerHTML = '<div class="deploy-card"><div class="deploy-repo">No deploys yet</div></div>';
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escapeAttr(s) { return escapeHtml(s).replace(/'/g,'&#39;'); }
+
+  function renderDesks(desks, jesusDeskId) {
+    mapEl.querySelectorAll('.desk').forEach(n => n.remove());
+    (desks || []).forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'desk' + (d.id === jesusDeskId ? ' jesus' : '') + (d.id === 'desk-meeting' ? ' meeting' : '');
+      const p = deskPos(d);
+      el.style.left = p.left + '%';
+      el.style.top = p.top + '%';
+      el.innerHTML = '<span class="desk-label">' + escapeHtml(d.label) + '</span>';
+      mapEl.appendChild(el);
+    });
+  }
+
+  function ensureSprite(key, opts) {
+    let el = spriteEls[key];
+    if (!el) {
+      el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'sprite';
+      el.innerHTML = '<div class="body"><span class="ring"></span><span class="letter"></span></div><div class="tag"></div>';
+      el.addEventListener('click', () => {
+        if (opts.onTap) opts.onTap();
+      });
+      mapEl.appendChild(el);
+      spriteEls[key] = el;
+    }
+    return el;
+  }
+
+  function placeSprite(el, pos, immediate) {
+    if (immediate) {
+      el.style.transition = 'none';
+      el.style.left = pos.left + '%';
+      el.style.top = pos.top + '%';
+      void el.offsetWidth;
+      el.style.transition = '';
+    } else {
+      el.style.left = pos.left + '%';
+      el.style.top = pos.top + '%';
     }
   }
 
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function escAttr(s){ return esc(s).replace(/`/g,''); }
+  function renderSprites(data, first) {
+    const desksById = {};
+    (data.desks || []).forEach(d => { desksById[d.id] = d; });
+    deskIndex = desksById;
+    const seen = new Set();
+    const jesusId = data.jesusDeskId;
 
-  function botById(id){
-    return (state.bots||[]).find(b => b.id === id);
-  }
+    (data.bots || []).forEach(bot => {
+      const color = bot.color || '#94a3b8';
+      const mainKey = 'main:' + bot.id;
+      seen.add(mainKey);
+      const main = bot.main || {};
+      const mainStatus = main.status || bot.status || 'idle';
+      const pos = resolvePos(main, desksById, bot.deskId);
+      // Main stays at desk — prefer deskId if atDeskId missing
+      const deskPosMain = deskPos(desksById[bot.deskId] || desksById[main.atDeskId]);
+      const usePos = (main.x != null && main.y != null) ? pos : deskPosMain;
 
-  function collectPermissionAlert(bots){
-    let count = 0;
-    (bots||[]).forEach(b => {
-      (b.interns||[]).forEach(i => {
-        if(i.at === 'jesus' && i.status === 'needs_permission') count++;
-      });
-    });
-    return count;
-  }
+      const el = ensureSprite(mainKey, { onTap: () => openSheet(bot) });
+      el.className = 'sprite main status-' + mainStatus;
+      el.querySelector('.body').style.background = color;
+      el.querySelector('.letter').textContent = initials(bot.name);
+      el.querySelector('.tag').textContent = bot.name;
+      placeSprite(el, usePos, first && !animTargets[mainKey]);
+      animTargets[mainKey] = usePos;
 
-  function renderMap(data){
-    const jesus = data.jesusDesk || {label:'Jesus', x:0.5, y:0.12};
-    mapEl.innerHTML = '<div class="floor-grid"></div>';
-
-    // Jesus desk
-    const jDesk = document.createElement('div');
-    jDesk.className = 'desk jesus';
-    jDesk.style.left = (jesus.x*100) + '%';
-    jDesk.style.top = (jesus.y*100) + '%';
-    jDesk.innerHTML =
-      '<div class="desk-pad">' +
-        '<div class="sprite">JC</div>' +
-        '<div class="desk-label">' + esc(jesus.label||'Jesus') + '</div>' +
-        '<div class="status-chip">permission desk</div>' +
-        '<div class="interns" id="jesus-interns"></div>' +
-      '</div>';
-    mapEl.appendChild(jDesk);
-
-    const jesusInterns = jDesk.querySelector('#jesus-interns');
-    let anyPerm = false;
-
-    (data.bots||[]).forEach(bot => {
-      const desk = bot.desk || {x:0.5,y:0.5};
-      const el = document.createElement('div');
-      el.className = 'desk';
-      el.style.left = (desk.x*100) + '%';
-      el.style.top = (desk.y*100) + '%';
-      const chip = bot.status || 'idle';
-      el.innerHTML =
-        '<div class="desk-pad">' +
-          '<div class="sprite" style="background:' + escAttr(bot.color||'#64748b') + '">' + esc(initials(bot.name)) + '</div>' +
-          '<div class="desk-label">' + esc(bot.name) + '</div>' +
-          '<div class="status-chip ' + escAttr(chip) + '">' + esc(chip.replace(/_/g,' ')) + '</div>' +
-          '<div class="task-text">' + esc(bot.task||'') + '</div>' +
-          '<div class="interns" data-bot-interns="' + escAttr(bot.id) + '"></div>' +
-        '</div>';
-      mapEl.appendChild(el);
-
-      const deskInterns = el.querySelector('[data-bot-interns]');
-      (bot.interns||[]).forEach(intern => {
-        if(intern.at === 'desk'){
-          deskInterns.appendChild(makeIntern(intern, bot));
-        } else if(intern.at === 'jesus'){
-          if(intern.status === 'needs_permission') anyPerm = true;
-          // place near Jesus desk with slight offset by hash
-          const fi = document.createElement('div');
-          fi.className = 'float-intern';
-          const ox = ((hash(intern.id)%7)-3) * 0.035;
-          const oy = 0.08 + ((hash(intern.id+'y')%5)) * 0.02;
-          fi.style.left = ((jesus.x + ox)*100) + '%';
-          fi.style.top = ((jesus.y + oy)*100) + '%';
-          const mini = makeIntern(intern, bot);
-          fi.appendChild(mini);
-          const lab = document.createElement('div');
-          lab.className = 'float-label';
-          lab.textContent = intern.label || bot.name;
-          fi.appendChild(lab);
-          mapEl.appendChild(fi);
-          // also show under Jesus pad
-          jesusInterns.appendChild(makeIntern(intern, bot));
-        } else if(intern.at === 'meeting'){
-          const other = botById(intern.with);
-          const ax = desk.x, ay = desk.y;
-          const bx = other && other.desk ? other.desk.x : 0.5;
-          const by = other && other.desk ? other.desk.y : 0.5;
-          const fi = document.createElement('div');
-          fi.className = 'float-intern meeting';
-          fi.style.left = (((ax+bx)/2)*100) + '%';
-          fi.style.top = (((ay+by)/2)*100) + '%';
-          fi.appendChild(makeIntern(intern, bot));
-          const lab = document.createElement('div');
-          lab.className = 'float-label';
-          lab.textContent = intern.label || 'meeting';
-          fi.appendChild(lab);
-          mapEl.appendChild(fi);
-        }
+      (bot.interns || []).forEach((intern, idx) => {
+        const key = 'intern:' + bot.id + ':' + intern.id;
+        seen.add(key);
+        const ist = intern.status || 'idle';
+        const ipos = resolvePos(intern, desksById, bot.deskId);
+        // slight offset if multiple at same desk
+        const offset = ((idx % 3) - 1) * 2.2;
+        const finalPos = { left: ipos.left + offset, top: ipos.top + (idx > 0 ? 2.5 : 0) };
+        const isPerm = ist === 'needs_permission' && intern.atDeskId === jesusId;
+        const iel = ensureSprite(key, { onTap: () => openSheet(bot) });
+        iel.className = 'sprite intern status-' + ist + (isPerm ? ' perm-alert' : '');
+        iel.querySelector('.body').style.background = color;
+        iel.querySelector('.letter').textContent = 'i';
+        iel.querySelector('.tag').textContent = intern.label || 'intern';
+        placeSprite(iel, finalPos, first && !animTargets[key]);
+        animTargets[key] = finalPos;
       });
     });
 
-    if(anyPerm){
-      jDesk.classList.add('needs-perm');
-      alertBanner.classList.add('show');
+    Object.keys(spriteEls).forEach(k => {
+      if (!seen.has(k)) {
+        spriteEls[k].remove();
+        delete spriteEls[k];
+        delete animTargets[k];
+      }
+    });
+  }
+
+  function renderBotList(data) {
+    botListEl.innerHTML = '';
+    (data.bots || []).forEach(bot => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'bot-row';
+      const st = bot.status || 'idle';
+      row.innerHTML =
+        '<span class="swatch" style="background:' + escapeAttr(bot.color || '#94a3b8') + '"></span>' +
+        '<span class="name">' + escapeHtml(bot.name) + '</span>' +
+        '<span class="task">' + escapeHtml(bot.task || '') + '</span>' +
+        '<span class="status-chip ' + st + '">' + escapeHtml(st.replace(/_/g,' ')) + '</span>';
+      row.addEventListener('click', () => openSheet(bot));
+      botListEl.appendChild(row);
+    });
+  }
+
+  function renderAlert(data) {
+    const hits = permissionInterns(data);
+    if (hits.length) {
+      const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
+      alertEl.textContent = '⚠ PERMISSION at Jesus desk — ' + labels;
+      alertEl.classList.add('show');
       mapWrap.classList.add('high-alert');
     } else {
-      alertBanner.classList.remove('show');
+      alertEl.classList.remove('show');
       mapWrap.classList.remove('high-alert');
     }
   }
 
-  function makeIntern(intern, bot){
-    const el = document.createElement('div');
-    el.className = 'intern' + (intern.status === 'needs_permission' ? ' needs_permission' : '');
-    el.style.background = bot.color || '#64748b';
-    el.title = (intern.label||'') + ' · ' + (intern.status||'');
-    el.innerHTML = '<span class="intern-tip">' + esc(intern.label||intern.id) + '</span>' +
-      esc(initials(intern.label||bot.name).slice(0,1));
-    return el;
-  }
-
-  function hash(s){
-    let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0;
-    return Math.abs(h);
-  }
-
-  function render(data){
+  function applyState(data, first) {
     state = data;
+    lastGood = data;
     renderDeploys(data.deploys);
-    renderMap(data);
+    renderDesks(data.desks, data.jesusDeskId);
+    renderSprites(data, first);
+    renderBotList(data);
+    renderAlert(data);
+    const t = data.updatedAt || '';
+    window.__stateUpdatedAt = t ? Date.parse(t) : Date.now();
+    window.__lastFetchOk = Date.now();
+    tickAge();
+    errEl.classList.remove('show');
+    errEl.classList.remove('show');
   }
 
-  async function poll(){
-    try{
-      const url = STATE_URL + '?t=' + Date.now();
-      const res = await fetch(url, {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP ' + res.status);
+  function formatLocal(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    } catch (e) { return iso; }
+  }
+
+  function openSheet(bot) {
+    $('s-name').textContent = bot.name;
+    const st = bot.status || 'idle';
+    $('s-meta').textContent = st.replace(/_/g, ' ') + ' · desk ' + (bot.deskId || '—');
+    $('s-task').textContent = bot.task || (bot.main && bot.main.task) || '—';
+    const box = $('s-interns');
+    const interns = bot.interns || [];
+    if (!interns.length) {
+      box.innerHTML = '<h3>Interns</h3><div class="intern-item" style="border:0;color:var(--muted)">None active</div>';
+    } else {
+      box.innerHTML = '<h3>Interns</h3>' + interns.map(i => {
+        const perm = i.status === 'needs_permission' && i.atDeskId === (state && state.jesusDeskId);
+        return '<div class="intern-item">' +
+          '<span class="status-chip ' + (i.status||'') + '">' + escapeHtml((i.status||'').replace(/_/g,' ')) + '</span>' +
+          '<span>' + escapeHtml(i.label || i.id) + (i.task ? ' — ' + escapeHtml(i.task) : '') +
+          (perm ? ' <strong style="color:#fb7185">@ Jesus</strong>' : '') +
+          ' <span style="color:var(--muted);font-size:.68rem">(' + escapeHtml(i.atDeskId||'') + ')</span></span></div>';
+      }).join('');
+    }
+    sheet.classList.add('open');
+    backdrop.classList.add('open');
+  }
+
+  function closeSheet() {
+    sheet.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+  $('sheet-close').addEventListener('click', closeSheet);
+  backdrop.addEventListener('click', closeSheet);
+
+
+  function tickAge() {
+    if (!window.__lastFetchOk) { updatedEl.textContent = 'connecting…'; return; }
+    const age = Math.max(0, Math.floor((Date.now() - window.__lastFetchOk) / 1000));
+    updatedEl.textContent = 'updated ' + age + 's ago';
+    updatedEl.classList.toggle('stale', age > 5);
+  }
+  setInterval(tickAge, 250);
+
+  let firstLoad = true;
+  async function poll() {
+    const url = STATE_URL + '?t=' + Date.now();
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      lastFetchOk = Date.now();
-      errEl.classList.remove('show');
-      if(data.updatedAt !== lastUpdatedAt || !lastUpdatedAt){
-        lastUpdatedAt = data.updatedAt;
-        render(data);
-      }
-      tickUpdated();
-    }catch(e){
-      errEl.textContent = 'State fetch failed: ' + e.message;
+      applyState(data, firstLoad);
+      firstLoad = false;
+    } catch (e) {
+      updatedEl.textContent = 'Offline — last good';
+      updatedEl.classList.add('stale');
+      errEl.textContent = 'Fetch failed: ' + e.message + (lastGood ? ' (showing last good state)' : '');
       errEl.classList.add('show');
-      tickUpdated();
+      if (lastGood) applyState(lastGood, false);
     }
   }
 
-  setInterval(tickUpdated, 250);
-  setInterval(poll, pollMs);
   poll();
+  setInterval(poll, POLL_MS);
 })();
 </script>
 </body>

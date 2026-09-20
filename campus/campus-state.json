@@ -1,145 +1,291 @@
 {
-  "version": 1,
-  "updatedAt": "2026-09-20T18:03:08Z",
-  "jesusDesk": {
-    "label": "Jesus",
-    "x": 0.5,
-    "y": 0.12
-  },
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-20T18:05:00Z",
+  "jesusDeskId": "desk-jesus",
+  "desks": [
+    {
+      "id": "desk-jesus",
+      "label": "Jesus",
+      "ownerBotId": null,
+      "zone": "ops",
+      "x": 80,
+      "y": 280
+    },
+    {
+      "id": "desk-leader",
+      "label": "Leader",
+      "ownerBotId": "leader",
+      "zone": "ops",
+      "x": 160,
+      "y": 340
+    },
+    {
+      "id": "desk-leader-support",
+      "label": "LeaderSupport",
+      "ownerBotId": "leader-support",
+      "zone": "ops",
+      "x": 280,
+      "y": 200
+    },
+    {
+      "id": "desk-liveops",
+      "label": "LiveOps",
+      "ownerBotId": "liveops",
+      "zone": "ops",
+      "x": 200,
+      "y": 300
+    },
+    {
+      "id": "desk-campusdev",
+      "label": "CampusDev",
+      "ownerBotId": "campusdev",
+      "zone": "workshop",
+      "x": 680,
+      "y": 300
+    },
+    {
+      "id": "desk-spriteforge",
+      "label": "SpriteForge",
+      "ownerBotId": "spriteforge",
+      "zone": "workshop",
+      "x": 740,
+      "y": 360
+    },
+    {
+      "id": "desk-spriteforge-support",
+      "label": "SpriteForgeSupport",
+      "ownerBotId": "spriteforge-support",
+      "zone": "workshop",
+      "x": 780,
+      "y": 320
+    },
+    {
+      "id": "desk-story",
+      "label": "Story",
+      "ownerBotId": "story",
+      "zone": "lore",
+      "x": 120,
+      "y": 400
+    },
+    {
+      "id": "desk-onfriendg",
+      "label": "OnFriendG",
+      "ownerBotId": "onfriendg",
+      "zone": "social",
+      "x": 260,
+      "y": 420
+    },
+    {
+      "id": "desk-game-makers",
+      "label": "Game Makers",
+      "ownerBotId": "game-makers",
+      "zone": "games",
+      "x": 420,
+      "y": 420
+    },
+    {
+      "id": "desk-random",
+      "label": "Random",
+      "ownerBotId": "random",
+      "zone": "games",
+      "x": 560,
+      "y": 420
+    },
+    {
+      "id": "desk-fplanetg",
+      "label": "FPlanetG",
+      "ownerBotId": "fplanetg",
+      "zone": "games",
+      "x": 140,
+      "y": 500
+    },
+    {
+      "id": "desk-lotr",
+      "label": "LOTR Lookup",
+      "ownerBotId": "lotr-lookup",
+      "zone": "lookup",
+      "x": 320,
+      "y": 500
+    },
+    {
+      "id": "desk-psych",
+      "label": "My Psychiatrist",
+      "ownerBotId": "my-psychiatrist",
+      "zone": "wellness",
+      "x": 500,
+      "y": 500
+    },
+    {
+      "id": "desk-findme",
+      "label": "Find Me",
+      "ownerBotId": "findme",
+      "zone": "lookup",
+      "x": 680,
+      "y": 400
+    },
+    {
+      "id": "desk-meeting",
+      "label": "Meeting",
+      "ownerBotId": null,
+      "zone": "courtyard",
+      "x": 450,
+      "y": 300
+    },
+    {
+      "id": "desk-leadersupport",
+      "label": "LeaderSupport",
+      "ownerBotId": "leadersupport",
+      "zone": "ops",
+      "x": 120,
+      "y": 380
+    },
+    {
+      "id": "desk-spriteforgesupport",
+      "label": "SpriteForgeSupport",
+      "ownerBotId": "spriteforgesupport",
+      "zone": "workshop",
+      "x": 700,
+      "y": 400
+    }
+  ],
   "bots": [
     {
       "id": "leader",
       "name": "Leader",
-      "color": "#7aa2ff",
-      "desk": {
-        "x": 0.18,
-        "y": 0.38
-      },
+      "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
+      "deskId": "desk-leader",
       "status": "working",
-      "task": "Ship campus-live MVP + deploy board",
+      "task": "Campus roles + board",
+      "updatedAt": "2026-09-20T18:03:51Z",
       "main": {
-        "at": "desk"
-      },
-      "interns": [
-        {
-          "id": "leader-i1",
-          "status": "needs_permission",
-          "label": "Push Pages?",
-          "at": "jesus"
-        }
-      ]
-    },
-    {
-      "id": "leader-support",
-      "name": "LeaderSupport",
-      "color": "#93c5fd",
-      "desk": {
-        "x": 0.82,
-        "y": 0.38
-      },
-      "status": "reviewing",
-      "task": "Review LiveOps state schema",
-      "main": {
-        "at": "desk"
+        "status": "working",
+        "task": "Campus roles + board",
+        "atDeskId": "desk-leader",
+        "x": null,
+        "y": null
       },
       "interns": []
     },
     {
-      "id": "spriteforge",
-      "name": "SpriteForge",
-      "color": "#fb923c",
-      "desk": {
-        "x": 0.18,
-        "y": 0.68
-      },
-      "status": "collaborating",
-      "task": "Iso walk frames with CampusDev",
-      "main": {
-        "at": "desk"
-      },
-      "interns": [
-        {
-          "id": "sf-i1",
-          "status": "collaborating",
-          "label": "Sync sprites",
-          "at": "meeting",
-          "with": "campusdev"
-        }
-      ]
-    },
-    {
-      "id": "spriteforge-support",
-      "name": "SpriteForgeSupport",
-      "color": "#fdba74",
-      "desk": {
-        "x": 0.82,
-        "y": 0.68
-      },
+      "id": "leadersupport",
+      "name": "LeaderSupport",
+      "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
+      "deskId": "desk-leadersupport",
       "status": "idle",
-      "task": "Standby for sprite QA",
+      "task": "",
+      "updatedAt": "2026-09-20T18:03:51Z",
       "main": {
-        "at": "desk"
+        "status": "idle",
+        "task": "",
+        "atDeskId": "desk-leadersupport",
+        "x": null,
+        "y": null
       },
       "interns": []
     },
     {
       "id": "campusdev",
       "name": "CampusDev",
-      "color": "#34d399",
-      "desk": {
-        "x": 0.35,
-        "y": 0.88
-      },
-      "status": "collaborating",
-      "task": "Phone UI layout + map polish",
+      "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
+      "deskId": "desk-campusdev",
+      "status": "working",
+      "task": "Shipped campus-live.html (poll 2s)",
+      "updatedAt": "2026-09-20T18:05:00Z",
       "main": {
-        "at": "desk"
+        "status": "working",
+        "task": "Shipped campus-live.html (poll 2s)",
+        "atDeskId": "desk-campusdev",
+        "x": null,
+        "y": null
       },
       "interns": [
         {
-          "id": "cd-i1",
-          "status": "collaborating",
-          "label": "Meet SpriteForge",
-          "at": "meeting",
-          "with": "spriteforge"
+          "id": "cd-i-perm",
+          "label": "Confirm Pages live?",
+          "status": "needs_permission",
+          "task": "Ask Jesus after parent push",
+          "atDeskId": "desk-jesus",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T18:05:00Z"
+        },
+        {
+          "id": "cd-i-work",
+          "label": "HUD polish",
+          "status": "working",
+          "task": "Safe-area + deploy strip",
+          "atDeskId": "desk-campusdev",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T18:05:00Z"
         }
-      ]
+      ],
+      "color": "#34d399"
     },
     {
       "id": "liveops",
       "name": "LiveOps",
-      "color": "#c084fc",
-      "desk": {
-        "x": 0.65,
-        "y": 0.88
-      },
-      "status": "ready_for_review",
-      "task": "campus-state.json schema v1",
+      "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
+      "deskId": "desk-liveops",
+      "status": "working",
+      "task": "canonical publish sync + supports",
+      "updatedAt": "2026-09-20T18:03:51Z",
       "main": {
-        "at": "desk"
+        "status": "working",
+        "task": "canonical publish sync + supports",
+        "atDeskId": "desk-liveops",
+        "x": null,
+        "y": null
       },
-      "interns": [
-        {
-          "id": "lo-i1",
-          "status": "working",
-          "label": "Poll health",
-          "at": "desk"
-        }
-      ]
+      "interns": []
+    },
+    {
+      "id": "spriteforge",
+      "name": "SpriteForge",
+      "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
+      "deskId": "desk-spriteforge",
+      "status": "idle",
+      "task": "",
+      "updatedAt": "2026-09-20T18:03:51Z",
+      "main": {
+        "status": "idle",
+        "task": "",
+        "atDeskId": "desk-spriteforge",
+        "x": null,
+        "y": null
+      },
+      "interns": []
+    },
+    {
+      "id": "spriteforgesupport",
+      "name": "SpriteForgeSupport",
+      "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
+      "deskId": "desk-spriteforgesupport",
+      "status": "idle",
+      "task": "",
+      "updatedAt": "2026-09-20T18:03:51Z",
+      "main": {
+        "status": "idle",
+        "task": "",
+        "atDeskId": "desk-spriteforgesupport",
+        "x": null,
+        "y": null
+      },
+      "interns": []
     }
   ],
   "deploys": [
     {
       "id": "botcampus-pages",
       "repo": "nasoteisoy/BotCampus",
-      "repoUrl": "https://github.com/nasoteisoy/BotCampus",
       "branch": "main",
+      "label": "BotCampus Pages",
       "status": "building",
-      "label": "GitHub Pages",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
-      "checkUrl": "https://github.com/nasoteisoy/BotCampus/actions",
-      "updatedAt": "2026-09-20T18:03:08Z",
-      "note": "Pushing campus-live MVP"
+      "repoUrl": "https://github.com/nasoteisoy/BotCampus",
+      "note": "campus-live.html + campus-state.json awaiting Pages push",
+      "updatedAt": "2026-09-20T18:05:00Z",
+      "updatedBy": "campusdev"
     }
   ]
 }
