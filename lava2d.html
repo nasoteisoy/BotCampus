@@ -34,7 +34,7 @@
 <script>
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
-const v="?v=4";
+const v="?v=5";
 const imgs={
   idle:load("lava2d/idle.png"+v),
   run1:load("lava2d/run1.png"+v),
@@ -139,21 +139,26 @@ function tick(now){
   else if(!P.onGround) img=imgs.jump;
   else if(Math.abs(P.vx)>25) img=(Math.floor(P.anim*10)%2===0)?imgs.run1:imgs.run2;
 
-  const drawW=140, drawH=155;
+  const maxH=155;
+  let drawW=110, drawH=maxH;
+  if(img.complete&&img.naturalWidth){
+    const ar=img.naturalWidth/img.naturalHeight;
+    drawH=maxH; drawW=Math.min(220, Math.round(maxH*ar));
+  }
   const bob=(P.onGround&&Math.abs(P.vx)>25)?Math.sin(P.anim*16)*2.5:0;
+  // keep feet on ground when sprite width changes
+  const feetY=P.y+bob+(155-drawH);
   ctx.save();
-  ctx.translate(P.x, P.y+bob);
-  // flip: run1 may face left in art — normalize so facing 1 = right
+  ctx.translate(P.x, feetY);
   let flip=P.facing;
-  // if using run1 which faces left in some gens, invert when that frame
   if(img===imgs.run1) flip*=-1;
   ctx.scale(flip,1);
   if(img.complete&&img.naturalWidth) ctx.drawImage(img,-drawW/2,0,drawW,drawH);
   else { ctx.fillStyle="#555"; ctx.fillRect(-40,30,80,100); }
   if(P.attackT>0.18){
-    ctx.globalAlpha=0.45;
+    ctx.globalAlpha=0.4;
     ctx.fillStyle="#fb923c";
-    ctx.beginPath(); ctx.ellipse(58,72,34,22,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(drawW*0.35, drawH*0.45, 28, 18, 0, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha=1;
   }
   ctx.restore();
