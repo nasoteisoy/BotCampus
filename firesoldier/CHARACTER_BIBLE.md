@@ -35,3 +35,10 @@ Reuse verbatim in every frame prompt. Same character as hero_ref.png. Do not red
 - Unique art: N, NE, E, SE, S for idle + walk
 - W / NW / SW = horizontal flip of E / NE / SE after QC (shield/spear mirrored carefully)
 - Attack: SE primary (+ E, S if time)
+
+## Flow rules (v2)
+- Idle is the locked stance per facing: feet planted, spear upright-ish, shield close to body.
+- Walk A = same facing, left foot forward mid-stride, spear/shield follow through from idle (not a new pose family).
+- Walk B = opposite foot forward (right foot forward), continuous cycle with Walk A — same lean, same weapon angles family.
+- Neighbor dirs must look like a small turn of the SAME body, not a redesign. Keep plume, chest core, shield emblem, lava veins identical.
+- Keep spear closer to body on E profile to avoid extreme width.

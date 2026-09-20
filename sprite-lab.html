@@ -46,7 +46,7 @@
 <main id="main"></main>
 <script>
 const DIRS = ["n","ne","e","se","s","sw","w","nw"];
-const v = "?v=1";
+const v = "?v=2";
 
 const CHARACTERS = [
   {
@@ -56,8 +56,8 @@ const CHARACTERS = [
     moves: [
       { id: "idle", label: "Idle", kind: "dirs",
         frames: d => `firesoldier/idle/idle_${d}.png${v}` },
-      { id: "walk", label: "Walk", kind: "dirs",
-        frames: d => `firesoldier/walk/walk_${d}.png${v}`, fps: 7 },
+      { id: "walk", label: "Walk", kind: "dirsAB",
+        frames: d => [`firesoldier/walk/walk_${d}_a.png${v}`, `firesoldier/walk/walk_${d}_b.png${v}`], fps: 8 },
       { id: "attack", label: "Attack", kind: "pulse",
         frames: [`firesoldier/attack/attack_se.png${v}`], fps: 2 },
     ],
@@ -92,6 +92,17 @@ async function prepMove(move) {
     for (const d of DIRS) imgs.push({ dir: d, img: await loadImg(move.frames(d)) });
     return { ...move, sheet: imgs.filter(x => x.img) };
   }
+  if (move.kind === "dirsAB") {
+    const imgs = [];
+    for (const d of DIRS) {
+      const pair = move.frames(d);
+      const a = await loadImg(pair[0]);
+      const b = await loadImg(pair[1]);
+      if (a && b) imgs.push({ dir: d, imgs: [a, b] });
+      else if (a || b) imgs.push({ dir: d, imgs: [a || b] });
+    }
+    return { ...move, sheet: imgs };
+  }
   const imgs = [];
   for (const src of move.frames) imgs.push(await loadImg(src));
   return { ...move, sheet: imgs.filter(Boolean) };
@@ -124,14 +135,18 @@ function animateStage(canvas, move, chip) {
     }
 
     let img, label = "";
-    if (move.kind === "dirs") {
+    if (move.kind === "dirs" || move.kind === "dirsAB") {
       if (now - lastDirSwitch > dirDwell) {
         dirIdx = (dirIdx + 1) % move.sheet.length;
         lastDirSwitch = now;
       }
-      // walk: also bob between same-dir if we only have one frame per dir — pulse scale
       const entry = move.sheet[dirIdx];
-      img = entry.img;
+      if (move.kind === "dirsAB") {
+        const fi = Math.floor(now / (1000 / fps)) % entry.imgs.length;
+        img = entry.imgs[fi];
+      } else {
+        img = entry.img;
+      }
       label = entry.dir.toUpperCase();
       if (chip) chip.textContent = label;
     } else {

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Fire Soldier — SpriteForge</title>
+<style>
+  body{margin:0;background:#111318;color:#e8e6f0;font-family:system-ui,sans-serif}
+  header{padding:1rem 1.25rem;border-bottom:1px solid #2a2d38}
+  h1{margin:0;font-size:1.1rem}
+  p{margin:.35rem 0 0;color:#9a96a8;font-size:.85rem}
+  section{padding:1rem 1.25rem}
+  h2{font-size:.95rem;margin:0 0 .75rem;color:#c8c4d8}
+  img.strip{width:100%;max-width:1100px;border-radius:8px;background:#0b0c10}
+  .row{display:flex;flex-wrap:wrap;gap:.5rem}
+  .card{background:#1a1d27;border:1px solid #2a2d38;border-radius:8px;padding:.5rem;text-align:center}
+  .card img{height:140px;width:auto;image-rendering:auto}
+  .card span{display:block;font-size:.7rem;color:#8b8798;margin-top:.25rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fire Soldier</h1>
+  <p>Flow pass v2 — idle + walk A/B per unique dir (W/NW/SW mirrored). Locked hero + bible.</p>
+</header>
+<section>
+  <h2>Flow strip (N→S unique: idle · walkA · walkB)</h2>
+  <img class="strip" src="preview/flow_preview.png" alt="flow preview"/>
+</section>
+<section>
+  <h2>Hero ref</h2>
+  <div class="row"><div class="card"><img src="ref/hero_ref.png"/><span>hero_ref</span></div></div>
+</section>
+<section>
+  <h2>Idle 8-way</h2>
+  <div class="row" id="idle"></div>
+</section>
+<section>
+  <h2>Walk A (canonical walk_*)</h2>
+  <div class="row" id="walk"></div>
+</section>
+<script>
+const dirs=['n','ne','e','se','s','sw','w','nw'];
+function fill(id, prefix, folder){
+  const el=document.getElementById(id);
+  dirs.forEach(d=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<img src="${folder}/${prefix}_${d}.png"/><span>${prefix}_${d}</span>`;
+    el.appendChild(c);
+  });
+}
+fill('idle','idle','idle');
+fill('walk','walk','walk');
+</script>
+</body>
+</html>
