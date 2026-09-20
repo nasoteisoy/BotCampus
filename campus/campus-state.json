@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T23:00:27Z",
+  "updatedAt": "2026-09-20T23:00:29Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -582,11 +582,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Pushing campus-live fun pass v9",
-      "updatedAt": "2026-09-20T23:00:27Z",
+      "note": "campus-live fun pass v9",
+      "updatedAt": "2026-09-20T23:00:29Z",
       "updatedBy": "dev-a"
     }
   ],
