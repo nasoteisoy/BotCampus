@@ -46,7 +46,7 @@
 <main id="main"></main>
 <script>
 const DIRS = ["n","ne","e","se","s","sw","w","nw"];
-const v = "?v=5";
+const v = "?v=6";
 
 const CHARACTERS = [
   {
@@ -73,6 +73,19 @@ const CHARACTERS = [
         frames: d => [`watersoldier/walk/walk_${d}_a.png${v}`, `watersoldier/walk/walk_${d}_b.png${v}`], fps: 8 },
       { id: "attack", label: "Attack", kind: "pulse",
         frames: [`watersoldier/attack/attack_se.png${v}`], fps: 2 },
+    ],
+  },
+  {
+    id: "airsoldier",
+    name: "Air Soldier",
+    play: "airsoldier-play.html?v=1",
+    moves: [
+      { id: "idle", label: "Idle", kind: "dirs",
+        frames: d => `airsoldier/idle/idle_${d}.png${v}` },
+      { id: "walk", label: "Walk", kind: "dirsAB",
+        frames: d => [`airsoldier/walk/walk_${d}_a.png${v}`, `airsoldier/walk/walk_${d}_b.png${v}`], fps: 8 },
+      { id: "attack", label: "Attack", kind: "pulse",
+        frames: [`airsoldier/attack/attack_se.png${v}`], fps: 2 },
     ],
   },
 {
