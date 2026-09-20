@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T21:36:28Z",
+  "updatedAt": "2026-09-20T21:36:29Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -133,9 +133,9 @@
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-deva",
-      "status": "working",
-      "task": "Pushing campus-live cast sprites v6",
-      "updatedAt": "2026-09-20T21:36:28Z",
+      "status": "ready_for_review",
+      "task": "campus-live cast sprites on Pages v6",
+      "updatedAt": "2026-09-20T21:36:29Z",
       "castFolder": "deva",
       "sprites": {
         "idle": "casts/deva/idle.png",
@@ -147,8 +147,8 @@
         "intern": "casts/deva/intern.png"
       },
       "main": {
-        "status": "working",
-        "task": "Pushing campus-live cast sprites v6",
+        "status": "ready_for_review",
+        "task": "campus-live cast sprites on Pages v6",
         "atDeskId": "desk-deva",
         "x": null,
         "y": null
@@ -437,12 +437,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
       "checkUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Pushing campus-live cast sprites v6",
-      "updatedAt": "2026-09-20T21:36:28Z",
+      "note": "campus-live cast sprites v6",
+      "updatedAt": "2026-09-20T21:36:29Z",
       "updatedBy": "dev-a"
     }
   ]
