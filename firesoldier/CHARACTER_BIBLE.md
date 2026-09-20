@@ -42,3 +42,8 @@ Reuse verbatim in every frame prompt. Same character as hero_ref.png. Do not red
 - Walk B = opposite foot forward (right foot forward), continuous cycle with Walk A — same lean, same weapon angles family.
 - Neighbor dirs must look like a small turn of the SAME body, not a redesign. Keep plume, chest core, shield emblem, lava veins identical.
 - Keep spear closer to body on E profile to avoid extreme width.
+
+## Gear motion (mandatory)
+- Spear angle and tip move with the spear arm each frame (idle planted → walk A arc → walk B opposite phase).
+- Round shield tilts/translates with off-hand and gait — never identical transform across idle/walk A/walk B.
+- No frozen gear; no teleport; gear always present per bible.

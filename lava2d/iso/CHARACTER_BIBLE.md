@@ -26,3 +26,8 @@ Canonical playable ref: iso/ref/hero_ref.png (= idle_se). Do not redesign.
 - Walk A / Walk B = opposite-foot mid-stride continuing from that dir's idle (same gear, lean, camera)
 - Neighbor dirs interpolate silhouette; no SE bias on N/NE/E labels
 - W/NW/SW = horizontal flips of E/NE/SE after QC
+
+## Gear motion (mandatory)
+- Molten sword angle moves with sword-arm each frame (idle → walk A arc → walk B opposite phase).
+- Heater shield tilts/translates with off-hand and gait — never identical pose across idle/walk A/walk B.
+- No frozen gear; no teleport; sword+shield always present.
