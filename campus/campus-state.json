@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T22:30:30Z",
+  "updatedAt": "2026-09-20T22:30:46Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -8,104 +8,104 @@
       "label": "Jesus",
       "ownerBotId": null,
       "zone": "ops",
-      "x": 700,
-      "y": 100
+      "x": 720,
+      "y": 110
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 200,
-      "y": 340
+      "x": 220,
+      "y": 300
     },
     {
       "id": "desk-dev-a",
       "label": "Dev A",
       "ownerBotId": "dev-a",
       "zone": "ops",
-      "x": 480,
-      "y": 340
+      "x": 500,
+      "y": 300
     },
     {
       "id": "desk-dev-b",
       "label": "Dev B",
       "ownerBotId": "dev-b",
       "zone": "ops",
-      "x": 760,
-      "y": 340
+      "x": 780,
+      "y": 300
     },
     {
       "id": "desk-dev-c",
       "label": "Dev C",
       "ownerBotId": "dev-c",
       "zone": "ops",
-      "x": 1040,
-      "y": 340
+      "x": 1060,
+      "y": 300
     },
     {
       "id": "desk-render-a",
       "label": "Render A",
       "ownerBotId": "render-a",
-      "zone": "art",
-      "x": 200,
-      "y": 580
+      "zone": "workshop",
+      "x": 220,
+      "y": 540
     },
     {
       "id": "desk-render-b",
       "label": "Render B",
       "ownerBotId": "render-b",
-      "zone": "art",
-      "x": 480,
-      "y": 580
+      "zone": "workshop",
+      "x": 500,
+      "y": 540
     },
     {
       "id": "desk-render-c",
       "label": "Render C",
       "ownerBotId": "render-c",
-      "zone": "art",
-      "x": 760,
-      "y": 580
+      "zone": "workshop",
+      "x": 780,
+      "y": 540
     },
     {
       "id": "desk-researcher-a",
       "label": "Researcher A",
       "ownerBotId": "researcher-a",
-      "zone": "research",
-      "x": 1040,
-      "y": 580
+      "zone": "library",
+      "x": 1060,
+      "y": 540
     },
     {
       "id": "desk-researcher-b",
       "label": "Researcher B",
       "ownerBotId": "researcher-b",
-      "zone": "research",
-      "x": 200,
-      "y": 820
+      "zone": "library",
+      "x": 220,
+      "y": 780
     },
     {
       "id": "desk-profile-a",
       "label": "Profile A",
       "ownerBotId": "profile-a",
-      "zone": "profile",
-      "x": 480,
-      "y": 820
+      "zone": "courtyard",
+      "x": 500,
+      "y": 780
     },
     {
       "id": "desk-profile-b",
       "label": "Profile B",
       "ownerBotId": "profile-b",
-      "zone": "profile",
-      "x": 760,
-      "y": 820
+      "zone": "courtyard",
+      "x": 780,
+      "y": 780
     },
     {
       "id": "desk-meeting",
       "label": "Meeting",
       "ownerBotId": null,
       "zone": "common",
-      "x": 1040,
-      "y": 820
+      "x": 1060,
+      "y": 780
     }
   ],
   "bots": [
@@ -185,28 +185,37 @@
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
       "deskId": "desk-dev-b",
       "status": "working",
-      "task": "campus-state live truth + intern protocol",
+      "task": "campus-state FLOW activity push",
       "color": "#2dd4bf",
       "castFolder": "campus-cast/dev-b",
       "interns": [
         {
-          "id": "devb-1",
-          "label": "Slice rules",
+          "id": "dev-b-i-sync",
+          "label": "Publish sync",
           "status": "working",
-          "task": "bots patch own slice",
+          "task": "Write + push campus-state",
           "atDeskId": "desk-dev-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:34:37Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "campus-state live truth + intern protocol",
+        "task": "campus-state FLOW activity push",
         "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/dev-b/idle.png",
+        "working": "campus-cast/dev-b/working.png",
+        "ready_for_review": "campus-cast/dev-b/ready.png",
+        "needs_permission": "campus-cast/dev-b/permission.png",
+        "reviewing": "campus-cast/dev-b/reviewing.png",
+        "collaborating": "campus-cast/dev-b/collab.png",
+        "intern": "campus-cast/dev-b/intern.png"
       }
     },
     {
@@ -234,48 +243,57 @@
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
       "deskId": "desk-render-a",
       "status": "working",
-      "task": "Deep FLOW: Air (post v1.7) \u2192 Fire",
+      "task": "FLOW Air + Fire (with Researcher A)",
       "color": "#f97316",
       "castFolder": "campus-cast/render-a",
       "interns": [
         {
-          "id": "ra-1",
-          "label": "Air deep",
+          "id": "render-a-i-air",
+          "label": "Air FLOW",
           "status": "working",
-          "task": "More frames if 2-frame pops",
+          "task": "Air elemental FLOW frames",
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         },
         {
-          "id": "ra-2",
-          "label": "Fire next",
+          "id": "render-a-i-fire",
+          "label": "Fire FLOW",
           "status": "working",
-          "task": "Queued after Air",
+          "task": "Fire elemental FLOW frames",
           "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         },
         {
-          "id": "ra-3",
-          "label": "C handoff",
-          "status": "ready_for_review",
-          "task": "Each sheet \u2192 Render C",
-          "atDeskId": "desk-meeting",
+          "id": "render-a-i-sheet",
+          "label": "Sheet regen",
+          "status": "working",
+          "task": "Regen Air/Fire sheets",
+          "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:30Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Deep FLOW: Air (post v1.7) \u2192 Fire",
+        "task": "FLOW Air + Fire (with Researcher A)",
         "atDeskId": "desk-render-a",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-a/idle.png",
+        "working": "campus-cast/render-a/working.png",
+        "ready_for_review": "campus-cast/render-a/ready.png",
+        "needs_permission": "campus-cast/render-a/permission.png",
+        "reviewing": "campus-cast/render-a/reviewing.png",
+        "collaborating": "campus-cast/render-a/collab.png",
+        "intern": "campus-cast/render-a/intern.png"
       }
     },
     {
@@ -284,38 +302,57 @@
       "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
       "deskId": "desk-render-b",
       "status": "working",
-      "task": "Deep FLOW: Water + Earth",
+      "task": "FLOW Water + Earth (with Researcher B)",
       "color": "#fb923c",
-      "castFolder": null,
+      "castFolder": "campus-cast/render-b",
       "interns": [
         {
-          "id": "rb-1",
-          "label": "Water",
+          "id": "render-b-i-water",
+          "label": "Water FLOW",
           "status": "working",
-          "task": "Opposite-foot + gear",
+          "task": "Water elemental FLOW frames",
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         },
         {
-          "id": "rb-2",
-          "label": "Earth",
+          "id": "render-b-i-earth",
+          "label": "Earth FLOW",
           "status": "working",
-          "task": "Queued / parallel",
+          "task": "Earth elemental FLOW frames",
           "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-b-i-sheet",
+          "label": "Sheet regen",
+          "status": "working",
+          "task": "Regen Water/Earth sheets",
+          "atDeskId": "desk-render-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:30Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Deep FLOW: Water + Earth",
+        "task": "FLOW Water + Earth (with Researcher B)",
         "atDeskId": "desk-render-b",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-b/idle.png",
+        "working": "campus-cast/render-b/working.png",
+        "ready_for_review": "campus-cast/render-b/ready.png",
+        "needs_permission": "campus-cast/render-b/permission.png",
+        "reviewing": "campus-cast/render-b/reviewing.png",
+        "collaborating": "campus-cast/render-b/collab.png",
+        "intern": "campus-cast/render-b/intern.png"
       }
     },
     {
@@ -324,28 +361,67 @@
       "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
       "deskId": "desk-render-c",
       "status": "reviewing",
-      "task": "Fail-closed FLOW QC (all four)",
+      "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
       "color": "#a78bfa",
       "castFolder": "campus-cast/render-c",
       "interns": [
         {
-          "id": "rc-1",
-          "label": "Pair review",
+          "id": "render-c-i-air",
+          "label": "Air QC",
           "status": "reviewing",
-          "task": "A\u2194B + gear side-by-side",
+          "task": "QC Air FLOW",
           "atDeskId": "desk-render-c",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-fire",
+          "label": "Fire QC",
+          "status": "reviewing",
+          "task": "QC Fire FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-water",
+          "label": "Water QC",
+          "status": "reviewing",
+          "task": "QC Water FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-earth",
+          "label": "Earth QC",
+          "status": "reviewing",
+          "task": "QC Earth FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:30Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "reviewing",
-        "task": "Fail-closed FLOW QC (all four)",
+        "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
         "atDeskId": "desk-render-c",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-c/idle.png",
+        "working": "campus-cast/render-c/working.png",
+        "ready_for_review": "campus-cast/render-c/ready.png",
+        "needs_permission": "campus-cast/render-c/permission.png",
+        "reviewing": "campus-cast/render-c/reviewing.png",
+        "collaborating": "campus-cast/render-c/collab.png",
+        "intern": "campus-cast/render-c/intern.png"
       }
     },
     {
@@ -354,28 +430,47 @@
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
       "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Counsel Render A (Air/Fire FLOW)",
+      "task": "Research notes for Air + Fire FLOW",
       "color": "#38bdf8",
-      "castFolder": null,
+      "castFolder": "campus-cast/researcher-a",
       "interns": [
         {
-          "id": "resa-1",
-          "label": "At RA",
+          "id": "researcher-a-i-air",
+          "label": "Air refs",
           "status": "working",
-          "task": "Walk-cycle must-haves",
-          "atDeskId": "desk-render-a",
+          "task": "Air FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "researcher-a-i-fire",
+          "label": "Fire refs",
+          "status": "working",
+          "task": "Fire FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:30Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Counsel Render A (Air/Fire FLOW)",
+        "task": "Research notes for Air + Fire FLOW",
         "atDeskId": "desk-researcher-a",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/researcher-a/idle.png",
+        "working": "campus-cast/researcher-a/working.png",
+        "ready_for_review": "campus-cast/researcher-a/ready.png",
+        "needs_permission": "campus-cast/researcher-a/permission.png",
+        "reviewing": "campus-cast/researcher-a/reviewing.png",
+        "collaborating": "campus-cast/researcher-a/collab.png",
+        "intern": "campus-cast/researcher-a/intern.png"
       }
     },
     {
@@ -384,28 +479,47 @@
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
       "deskId": "desk-researcher-b",
       "status": "working",
-      "task": "Counsel Render B (Water/Earth FLOW)",
+      "task": "Research notes for Water + Earth FLOW",
       "color": "#0ea5e9",
-      "castFolder": null,
+      "castFolder": "campus-cast/researcher-b",
       "interns": [
         {
-          "id": "resb-1",
-          "label": "At RB",
+          "id": "researcher-b-i-water",
+          "label": "Water refs",
           "status": "working",
-          "task": "Weapon arcs + phone read",
-          "atDeskId": "desk-render-b",
+          "task": "Water FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T22:30:30Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "researcher-b-i-earth",
+          "label": "Earth refs",
+          "status": "working",
+          "task": "Earth FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
       ],
-      "updatedAt": "2026-09-20T22:30:30Z",
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Counsel Render B (Water/Earth FLOW)",
+        "task": "Research notes for Water + Earth FLOW",
         "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/researcher-b/idle.png",
+        "working": "campus-cast/researcher-b/working.png",
+        "ready_for_review": "campus-cast/researcher-b/ready.png",
+        "needs_permission": "campus-cast/researcher-b/permission.png",
+        "reviewing": "campus-cast/researcher-b/reviewing.png",
+        "collaborating": "campus-cast/researcher-b/collab.png",
+        "intern": "campus-cast/researcher-b/intern.png"
       }
     },
     {
@@ -416,7 +530,7 @@
       "status": "idle",
       "task": "Jesus profile maintained",
       "color": "#f472b6",
-      "castFolder": null,
+      "castFolder": "campus-cast/profile-a",
       "interns": [],
       "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
@@ -435,7 +549,7 @@
       "status": "idle",
       "task": "Jesus profile maintained",
       "color": "#e879f9",
-      "castFolder": null,
+      "castFolder": "campus-cast/profile-b",
       "interns": [],
       "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
@@ -479,12 +593,12 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live cast sprites v6",
-      "updatedAt": "2026-09-20T21:36:29Z",
-      "updatedBy": "dev-a"
+      "note": "FLOW activity state push",
+      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedBy": "dev-b"
     }
   ],
   "world": {

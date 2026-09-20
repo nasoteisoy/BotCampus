@@ -49,3 +49,8 @@ Dev A wires these into campus-live. Bot ids: `leader`, `deva`, `devb`, `devc`, `
 
 ## deploys[]
 Owned by the bot shipping that deploy id. Fields: id, repo, branch?, label, status (`building`|`ready`|`failed`), pagesUrl, repoUrl, checkUrl?, note?, updatedAt, updatedBy?.
+
+
+## Bot ids (canonical)
+Use **hyphen ids**: `dev-a`, `dev-b`, `dev-c`, `render-a`, `render-b`, `render-c`, `researcher-a`, `researcher-b`, `profile-a`, `profile-b`, `leader`.
+`castFolder` = `campus-cast/{bot-id}` (full path).

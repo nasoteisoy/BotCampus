@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-09-20T21:36:29Z",
+  "schemaVersion": 2,
+  "updatedAt": "2026-09-20T22:30:46Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -8,96 +8,104 @@
       "label": "Jesus",
       "ownerBotId": null,
       "zone": "ops",
-      "x": 60,
-      "y": 260
+      "x": 720,
+      "y": 110
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 180,
+      "x": 220,
       "y": 300
     },
     {
-      "id": "desk-deva",
+      "id": "desk-dev-a",
       "label": "Dev A",
-      "ownerBotId": "deva",
+      "ownerBotId": "dev-a",
       "zone": "ops",
-      "x": 300,
-      "y": 280
+      "x": 500,
+      "y": 300
     },
     {
-      "id": "desk-devb",
+      "id": "desk-dev-b",
       "label": "Dev B",
-      "ownerBotId": "devb",
+      "ownerBotId": "dev-b",
       "zone": "ops",
-      "x": 300,
-      "y": 380
+      "x": 780,
+      "y": 300
     },
     {
-      "id": "desk-devc",
+      "id": "desk-dev-c",
       "label": "Dev C",
-      "ownerBotId": "devc",
+      "ownerBotId": "dev-c",
       "zone": "ops",
-      "x": 180,
-      "y": 400
+      "x": 1060,
+      "y": 300
     },
     {
-      "id": "desk-rendera",
+      "id": "desk-render-a",
       "label": "Render A",
-      "ownerBotId": "rendera",
+      "ownerBotId": "render-a",
       "zone": "workshop",
-      "x": 620,
-      "y": 260
+      "x": 220,
+      "y": 540
     },
     {
-      "id": "desk-renderb",
+      "id": "desk-render-b",
       "label": "Render B",
-      "ownerBotId": "renderb",
+      "ownerBotId": "render-b",
       "zone": "workshop",
-      "x": 740,
-      "y": 260
+      "x": 500,
+      "y": 540
     },
     {
-      "id": "desk-renderc",
+      "id": "desk-render-c",
       "label": "Render C",
-      "ownerBotId": "renderc",
+      "ownerBotId": "render-c",
       "zone": "workshop",
-      "x": 680,
-      "y": 360
+      "x": 780,
+      "y": 540
     },
     {
-      "id": "desk-researchera",
+      "id": "desk-researcher-a",
       "label": "Researcher A",
-      "ownerBotId": "researchera",
+      "ownerBotId": "researcher-a",
       "zone": "library",
-      "x": 360,
-      "y": 100
+      "x": 1060,
+      "y": 540
     },
     {
-      "id": "desk-researcherb",
+      "id": "desk-researcher-b",
       "label": "Researcher B",
-      "ownerBotId": "researcherb",
+      "ownerBotId": "researcher-b",
       "zone": "library",
-      "x": 480,
-      "y": 100
+      "x": 220,
+      "y": 780
     },
     {
-      "id": "desk-profilea",
+      "id": "desk-profile-a",
       "label": "Profile A",
-      "ownerBotId": "profilea",
+      "ownerBotId": "profile-a",
       "zone": "courtyard",
-      "x": 360,
-      "y": 340
+      "x": 500,
+      "y": 780
     },
     {
-      "id": "desk-profileb",
+      "id": "desk-profile-b",
       "label": "Profile B",
-      "ownerBotId": "profileb",
+      "ownerBotId": "profile-b",
       "zone": "courtyard",
-      "x": 480,
-      "y": 340
+      "x": 780,
+      "y": 780
+    },
+    {
+      "id": "desk-meeting",
+      "label": "Meeting",
+      "ownerBotId": null,
+      "zone": "common",
+      "x": 1060,
+      "y": 780
     }
   ],
   "bots": [
@@ -107,343 +115,494 @@
       "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
       "deskId": "desk-leader",
       "status": "working",
-      "task": "Distribute work + campus live",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "leader",
-      "sprites": {
-        "idle": "casts/leader/idle.png",
-        "working": "casts/leader/working.png",
-        "ready_for_review": "casts/leader/ready.png",
-        "needs_permission": "casts/leader/permission.png",
-        "reviewing": "casts/leader/reviewing.png",
-        "collaborating": "casts/leader/collab.png",
-        "intern": "casts/leader/intern.png"
-      },
+      "task": "Distribute campus live + crew",
+      "color": "#22c55e",
+      "castFolder": "campus-cast/leader",
+      "interns": [
+        {
+          "id": "ldr-1",
+          "label": "Review links",
+          "status": "working",
+          "task": "Jesus review queue",
+          "atDeskId": "desk-leader",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:34:37Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
         "status": "working",
-        "task": "Distribute work + campus live",
+        "task": "Distribute campus live + crew",
         "atDeskId": "desk-leader",
         "x": null,
         "y": null
-      },
-      "interns": []
+      }
     },
     {
-      "id": "deva",
+      "id": "dev-a",
       "name": "Dev A",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
-      "deskId": "desk-deva",
+      "deskId": "desk-dev-a",
       "status": "ready_for_review",
       "task": "campus-live cast sprites on Pages v6",
+      "color": "#34d399",
+      "castFolder": "campus-cast/dev-a",
+      "interns": [
+        {
+          "id": "deva-1",
+          "label": "Frames map",
+          "status": "working",
+          "task": "status\u2192cast PNG",
+          "atDeskId": "desk-dev-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:34:37Z"
+        },
+        {
+          "id": "deva-2",
+          "label": "Pages",
+          "status": "working",
+          "task": "push campus-live",
+          "atDeskId": "desk-dev-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T21:34:37Z"
+        }
+      ],
       "updatedAt": "2026-09-20T21:36:29Z",
-      "castFolder": "deva",
-      "sprites": {
-        "idle": "casts/deva/idle.png",
-        "working": "casts/deva/working.png",
-        "ready_for_review": "casts/deva/ready.png",
-        "needs_permission": "casts/deva/permission.png",
-        "reviewing": "casts/deva/reviewing.png",
-        "collaborating": "casts/deva/collab.png",
-        "intern": "casts/deva/intern.png"
-      },
       "main": {
         "status": "ready_for_review",
         "task": "campus-live cast sprites on Pages v6",
-        "atDeskId": "desk-deva",
+        "atDeskId": "desk-dev-a",
         "x": null,
         "y": null
-      },
-      "interns": []
+      }
     },
     {
-      "id": "devb",
+      "id": "dev-b",
       "name": "Dev B",
       "agentId": "7d852cd3-2487-42c5-b9cb-5ca906615647",
-      "deskId": "desk-devb",
+      "deskId": "desk-dev-b",
       "status": "working",
-      "task": "campus-state synced; await cast wire",
-      "updatedAt": "2026-09-20T21:34:17Z",
-      "castFolder": "devb",
-      "sprites": {
-        "idle": "casts/devb/idle.png",
-        "working": "casts/devb/working.png",
-        "ready_for_review": "casts/devb/ready.png",
-        "needs_permission": "casts/devb/permission.png",
-        "reviewing": "casts/devb/reviewing.png",
-        "collaborating": "casts/devb/collab.png",
-        "intern": "casts/devb/intern.png"
-      },
+      "task": "campus-state FLOW activity push",
+      "color": "#2dd4bf",
+      "castFolder": "campus-cast/dev-b",
+      "interns": [
+        {
+          "id": "dev-b-i-sync",
+          "label": "Publish sync",
+          "status": "working",
+          "task": "Write + push campus-state",
+          "atDeskId": "desk-dev-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "campus-state synced; await cast wire",
-        "atDeskId": "desk-devb",
+        "task": "campus-state FLOW activity push",
+        "atDeskId": "desk-dev-b",
         "x": null,
         "y": null
       },
-      "interns": []
+      "sprites": {
+        "idle": "campus-cast/dev-b/idle.png",
+        "working": "campus-cast/dev-b/working.png",
+        "ready_for_review": "campus-cast/dev-b/ready.png",
+        "needs_permission": "campus-cast/dev-b/permission.png",
+        "reviewing": "campus-cast/dev-b/reviewing.png",
+        "collaborating": "campus-cast/dev-b/collab.png",
+        "intern": "campus-cast/dev-b/intern.png"
+      }
     },
     {
-      "id": "devc",
+      "id": "dev-c",
       "name": "Dev C",
       "agentId": "aa5652f6-a5a9-40a9-ade5-3542c1b39642",
-      "deskId": "desk-devc",
-      "status": "ready_for_review",
-      "task": "Idle / review-ready",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "devc",
-      "sprites": {
-        "idle": "casts/devc/idle.png",
-        "working": "casts/devc/working.png",
-        "ready_for_review": "casts/devc/ready.png",
-        "needs_permission": "casts/devc/permission.png",
-        "reviewing": "casts/devc/reviewing.png",
-        "collaborating": "casts/devc/collab.png",
-        "intern": "casts/devc/intern.png"
-      },
+      "deskId": "desk-dev-c",
+      "status": "idle",
+      "task": "Await engineering assign",
+      "color": "#86efac",
+      "castFolder": "campus-cast/dev-c",
+      "interns": [],
+      "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
-        "status": "ready_for_review",
-        "task": "Idle / review-ready",
-        "atDeskId": "desk-devc",
+        "status": "idle",
+        "task": "Await engineering assign",
+        "atDeskId": "desk-dev-c",
         "x": null,
         "y": null
-      },
-      "interns": []
+      }
     },
     {
-      "id": "rendera",
+      "id": "render-a",
       "name": "Render A",
       "agentId": "cf9983f5-10bf-432c-9451-99f09cb99fef",
-      "deskId": "desk-rendera",
+      "deskId": "desk-render-a",
       "status": "working",
-      "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "render-a",
-      "sprites": {
-        "idle": "casts/render-a/idle.png",
-        "working": "casts/render-a/working.png",
-        "ready_for_review": "casts/render-a/ready.png",
-        "needs_permission": "casts/render-a/permission.png",
-        "reviewing": "casts/render-a/reviewing.png",
-        "collaborating": "casts/render-a/collab.png",
-        "intern": "casts/render-a/intern.png"
-      },
-      "main": {
-        "status": "working",
-        "task": "FLOW reflow Air\u2192Earth\u2192Water\u2192Fire",
-        "atDeskId": "desk-rendera",
-        "x": null,
-        "y": null
-      },
+      "task": "FLOW Air + Fire (with Researcher A)",
+      "color": "#f97316",
+      "castFolder": "campus-cast/render-a",
       "interns": [
         {
-          "id": "rendera-i1",
-          "label": "Research checklist",
+          "id": "render-a-i-air",
+          "label": "Air FLOW",
           "status": "working",
-          "task": "Apply research checklist to FLOW",
-          "atDeskId": "desk-rendera",
+          "task": "Air elemental FLOW frames",
+          "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:33:31Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         },
         {
-          "id": "rendera-i2",
+          "id": "render-a-i-fire",
+          "label": "Fire FLOW",
+          "status": "working",
+          "task": "Fire elemental FLOW frames",
+          "atDeskId": "desk-render-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-a-i-sheet",
           "label": "Sheet regen",
           "status": "working",
-          "task": "Regenerate character sheets",
-          "atDeskId": "desk-rendera",
+          "task": "Regen Air/Fire sheets",
+          "atDeskId": "desk-render-a",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:33:31Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
-      ]
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
+      "main": {
+        "status": "working",
+        "task": "FLOW Air + Fire (with Researcher A)",
+        "atDeskId": "desk-render-a",
+        "x": null,
+        "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-a/idle.png",
+        "working": "campus-cast/render-a/working.png",
+        "ready_for_review": "campus-cast/render-a/ready.png",
+        "needs_permission": "campus-cast/render-a/permission.png",
+        "reviewing": "campus-cast/render-a/reviewing.png",
+        "collaborating": "campus-cast/render-a/collab.png",
+        "intern": "campus-cast/render-a/intern.png"
+      }
     },
     {
-      "id": "renderb",
+      "id": "render-b",
       "name": "Render B",
       "agentId": "aa28ffd0-e2d6-4fed-9a91-b29187cede20",
-      "deskId": "desk-renderb",
-      "status": "idle",
-      "task": "Cast polish standby",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "render-b",
-      "sprites": {
-        "idle": "casts/render-b/idle.png",
-        "working": "casts/render-b/working.png",
-        "ready_for_review": "casts/render-b/ready.png",
-        "needs_permission": "casts/render-b/permission.png",
-        "reviewing": "casts/render-b/reviewing.png",
-        "collaborating": "casts/render-b/collab.png",
-        "intern": "casts/render-b/intern.png"
-      },
-      "main": {
-        "status": "idle",
-        "task": "Cast polish standby",
-        "atDeskId": "desk-renderb",
-        "x": null,
-        "y": null
-      },
-      "interns": []
-    },
-    {
-      "id": "renderc",
-      "name": "Render C",
-      "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
-      "deskId": "desk-renderc",
-      "status": "reviewing",
-      "task": "Air FLOW QC review",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "render-c",
-      "sprites": {
-        "idle": "casts/render-c/idle.png",
-        "working": "casts/render-c/working.png",
-        "ready_for_review": "casts/render-c/ready.png",
-        "needs_permission": "casts/render-c/permission.png",
-        "reviewing": "casts/render-c/reviewing.png",
-        "collaborating": "casts/render-c/collab.png",
-        "intern": "casts/render-c/intern.png"
-      },
-      "main": {
-        "status": "reviewing",
-        "task": "Air FLOW QC review",
-        "atDeskId": "desk-renderc",
-        "x": null,
-        "y": null
-      },
+      "deskId": "desk-render-b",
+      "status": "working",
+      "task": "FLOW Water + Earth (with Researcher B)",
+      "color": "#fb923c",
+      "castFolder": "campus-cast/render-b",
       "interns": [
         {
-          "id": "renderc-i1",
-          "label": "Air QC",
-          "status": "reviewing",
-          "task": "Parallel Air FLOW QC notes",
-          "atDeskId": "desk-renderc",
+          "id": "render-b-i-water",
+          "label": "Water FLOW",
+          "status": "working",
+          "task": "Water elemental FLOW frames",
+          "atDeskId": "desk-render-b",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T21:33:31Z"
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-b-i-earth",
+          "label": "Earth FLOW",
+          "status": "working",
+          "task": "Earth elemental FLOW frames",
+          "atDeskId": "desk-render-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-b-i-sheet",
+          "label": "Sheet regen",
+          "status": "working",
+          "task": "Regen Water/Earth sheets",
+          "atDeskId": "desk-render-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
         }
-      ]
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
+      "main": {
+        "status": "working",
+        "task": "FLOW Water + Earth (with Researcher B)",
+        "atDeskId": "desk-render-b",
+        "x": null,
+        "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-b/idle.png",
+        "working": "campus-cast/render-b/working.png",
+        "ready_for_review": "campus-cast/render-b/ready.png",
+        "needs_permission": "campus-cast/render-b/permission.png",
+        "reviewing": "campus-cast/render-b/reviewing.png",
+        "collaborating": "campus-cast/render-b/collab.png",
+        "intern": "campus-cast/render-b/intern.png"
+      }
     },
     {
-      "id": "researchera",
+      "id": "render-c",
+      "name": "Render C",
+      "agentId": "51b9a58a-b5f1-433d-b3ec-6a9619ce9506",
+      "deskId": "desk-render-c",
+      "status": "reviewing",
+      "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+      "color": "#a78bfa",
+      "castFolder": "campus-cast/render-c",
+      "interns": [
+        {
+          "id": "render-c-i-air",
+          "label": "Air QC",
+          "status": "reviewing",
+          "task": "QC Air FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-fire",
+          "label": "Fire QC",
+          "status": "reviewing",
+          "task": "QC Fire FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-water",
+          "label": "Water QC",
+          "status": "reviewing",
+          "task": "QC Water FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "render-c-i-earth",
+          "label": "Earth QC",
+          "status": "reviewing",
+          "task": "QC Earth FLOW",
+          "atDeskId": "desk-render-c",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
+      "main": {
+        "status": "reviewing",
+        "task": "Reviewing elemental FLOW (Air/Fire/Water/Earth)",
+        "atDeskId": "desk-render-c",
+        "x": null,
+        "y": null
+      },
+      "sprites": {
+        "idle": "campus-cast/render-c/idle.png",
+        "working": "campus-cast/render-c/working.png",
+        "ready_for_review": "campus-cast/render-c/ready.png",
+        "needs_permission": "campus-cast/render-c/permission.png",
+        "reviewing": "campus-cast/render-c/reviewing.png",
+        "collaborating": "campus-cast/render-c/collab.png",
+        "intern": "campus-cast/render-c/intern.png"
+      }
+    },
+    {
+      "id": "researcher-a",
       "name": "Researcher A",
       "agentId": "74a8c02a-368a-48dd-b973-b9313b10369f",
-      "deskId": "desk-researchera",
+      "deskId": "desk-researcher-a",
       "status": "working",
-      "task": "Game-rendering industry notes (crew-private)",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "researcher-a",
-      "sprites": {
-        "idle": "casts/researcher-a/idle.png",
-        "working": "casts/researcher-a/working.png",
-        "ready_for_review": "casts/researcher-a/ready.png",
-        "needs_permission": "casts/researcher-a/permission.png",
-        "reviewing": "casts/researcher-a/reviewing.png",
-        "collaborating": "casts/researcher-a/collab.png",
-        "intern": "casts/researcher-a/intern.png"
-      },
+      "task": "Research notes for Air + Fire FLOW",
+      "color": "#38bdf8",
+      "castFolder": "campus-cast/researcher-a",
+      "interns": [
+        {
+          "id": "researcher-a-i-air",
+          "label": "Air refs",
+          "status": "working",
+          "task": "Air FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "researcher-a-i-fire",
+          "label": "Fire refs",
+          "status": "working",
+          "task": "Fire FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-a",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Game-rendering industry notes (crew-private)",
-        "atDeskId": "desk-researchera",
+        "task": "Research notes for Air + Fire FLOW",
+        "atDeskId": "desk-researcher-a",
         "x": null,
         "y": null
       },
-      "interns": []
+      "sprites": {
+        "idle": "campus-cast/researcher-a/idle.png",
+        "working": "campus-cast/researcher-a/working.png",
+        "ready_for_review": "campus-cast/researcher-a/ready.png",
+        "needs_permission": "campus-cast/researcher-a/permission.png",
+        "reviewing": "campus-cast/researcher-a/reviewing.png",
+        "collaborating": "campus-cast/researcher-a/collab.png",
+        "intern": "campus-cast/researcher-a/intern.png"
+      }
     },
     {
-      "id": "researcherb",
+      "id": "researcher-b",
       "name": "Researcher B",
       "agentId": "1a561b0a-5669-486e-92e3-5afd9c7806b9",
-      "deskId": "desk-researcherb",
+      "deskId": "desk-researcher-b",
       "status": "working",
-      "task": "Game-rendering reference pack (crew-private)",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "researcher-b",
-      "sprites": {
-        "idle": "casts/researcher-b/idle.png",
-        "working": "casts/researcher-b/working.png",
-        "ready_for_review": "casts/researcher-b/ready.png",
-        "needs_permission": "casts/researcher-b/permission.png",
-        "reviewing": "casts/researcher-b/reviewing.png",
-        "collaborating": "casts/researcher-b/collab.png",
-        "intern": "casts/researcher-b/intern.png"
-      },
+      "task": "Research notes for Water + Earth FLOW",
+      "color": "#0ea5e9",
+      "castFolder": "campus-cast/researcher-b",
+      "interns": [
+        {
+          "id": "researcher-b-i-water",
+          "label": "Water refs",
+          "status": "working",
+          "task": "Water FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        },
+        {
+          "id": "researcher-b-i-earth",
+          "label": "Earth refs",
+          "status": "working",
+          "task": "Earth FLOW industry/refs checklist",
+          "atDeskId": "desk-researcher-b",
+          "x": null,
+          "y": null,
+          "updatedAt": "2026-09-20T22:30:46Z"
+        }
+      ],
+      "updatedAt": "2026-09-20T22:30:46Z",
       "main": {
         "status": "working",
-        "task": "Game-rendering reference pack (crew-private)",
-        "atDeskId": "desk-researcherb",
+        "task": "Research notes for Water + Earth FLOW",
+        "atDeskId": "desk-researcher-b",
         "x": null,
         "y": null
       },
-      "interns": []
+      "sprites": {
+        "idle": "campus-cast/researcher-b/idle.png",
+        "working": "campus-cast/researcher-b/working.png",
+        "ready_for_review": "campus-cast/researcher-b/ready.png",
+        "needs_permission": "campus-cast/researcher-b/permission.png",
+        "reviewing": "campus-cast/researcher-b/reviewing.png",
+        "collaborating": "campus-cast/researcher-b/collab.png",
+        "intern": "campus-cast/researcher-b/intern.png"
+      }
     },
     {
-      "id": "profilea",
+      "id": "profile-a",
       "name": "Profile A",
       "agentId": "4de39148-7c10-44bc-bf7d-a63e362ce11f",
-      "deskId": "desk-profilea",
+      "deskId": "desk-profile-a",
       "status": "idle",
-      "task": "Documenting Jesus work patterns",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "profile-a",
-      "sprites": {
-        "idle": "casts/profile-a/idle.png",
-        "working": "casts/profile-a/working.png",
-        "ready_for_review": "casts/profile-a/ready.png",
-        "needs_permission": "casts/profile-a/permission.png",
-        "reviewing": "casts/profile-a/reviewing.png",
-        "collaborating": "casts/profile-a/collab.png",
-        "intern": "casts/profile-a/intern.png"
-      },
+      "task": "Jesus profile maintained",
+      "color": "#f472b6",
+      "castFolder": "campus-cast/profile-a",
+      "interns": [],
+      "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
         "status": "idle",
-        "task": "Documenting Jesus work patterns",
-        "atDeskId": "desk-profilea",
+        "task": "Jesus profile maintained",
+        "atDeskId": "desk-profile-a",
         "x": null,
         "y": null
-      },
-      "interns": []
+      }
     },
     {
-      "id": "profileb",
+      "id": "profile-b",
       "name": "Profile B",
       "agentId": "ea9d0bea-48d8-49e6-887f-4b0f7f52a4b7",
-      "deskId": "desk-profileb",
+      "deskId": "desk-profile-b",
       "status": "idle",
-      "task": "Documenting tastes / direction",
-      "updatedAt": "2026-09-20T21:33:31Z",
-      "castFolder": "profile-b",
-      "sprites": {
-        "idle": "casts/profile-b/idle.png",
-        "working": "casts/profile-b/working.png",
-        "ready_for_review": "casts/profile-b/ready.png",
-        "needs_permission": "casts/profile-b/permission.png",
-        "reviewing": "casts/profile-b/reviewing.png",
-        "collaborating": "casts/profile-b/collab.png",
-        "intern": "casts/profile-b/intern.png"
-      },
+      "task": "Jesus profile maintained",
+      "color": "#e879f9",
+      "castFolder": "campus-cast/profile-b",
+      "interns": [],
+      "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
         "status": "idle",
-        "task": "Documenting tastes / direction",
-        "atDeskId": "desk-profileb",
+        "task": "Jesus profile maintained",
+        "atDeskId": "desk-profile-b",
         "x": null,
         "y": null
-      },
-      "interns": []
+      }
     }
   ],
+  "castFiles": {
+    "leader": {
+      "folder": "campus-cast/leader",
+      "prefix": "leader"
+    },
+    "dev-a": {
+      "folder": "campus-cast/dev-a",
+      "prefix": "dev2"
+    },
+    "dev-b": {
+      "folder": "campus-cast/dev-b",
+      "prefix": "devb"
+    },
+    "dev-c": {
+      "folder": "campus-cast/dev-c",
+      "prefix": "leader_support"
+    },
+    "render-a": {
+      "folder": "campus-cast/render-a",
+      "prefix": "spriteforge"
+    },
+    "render-c": {
+      "folder": "campus-cast/render-c",
+      "prefix": "spriteforge_support"
+    }
+  },
   "deploys": [
     {
       "id": "botcampus-pages",
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "ready",
+      "status": "building",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "checkUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live cast sprites v6",
-      "updatedAt": "2026-09-20T21:36:29Z",
-      "updatedBy": "dev-a"
+      "note": "FLOW activity state push",
+      "updatedAt": "2026-09-20T22:30:46Z",
+      "updatedBy": "dev-b"
     }
-  ]
+  ],
+  "world": {
+    "w": 1400,
+    "h": 1100
+  }
 }
