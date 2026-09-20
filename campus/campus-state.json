@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-20T18:03:08Z",
+  "jesusDesk": {
+    "label": "Jesus",
+    "x": 0.5,
+    "y": 0.12
+  },
+  "bots": [
+    {
+      "id": "leader",
+      "name": "Leader",
+      "color": "#7aa2ff",
+      "desk": {
+        "x": 0.18,
+        "y": 0.38
+      },
+      "status": "working",
+      "task": "Ship campus-live MVP + deploy board",
+      "main": {
+        "at": "desk"
+      },
+      "interns": [
+        {
+          "id": "leader-i1",
+          "status": "needs_permission",
+          "label": "Push Pages?",
+          "at": "jesus"
+        }
+      ]
+    },
+    {
+      "id": "leader-support",
+      "name": "LeaderSupport",
+      "color": "#93c5fd",
+      "desk": {
+        "x": 0.82,
+        "y": 0.38
+      },
+      "status": "reviewing",
+      "task": "Review LiveOps state schema",
+      "main": {
+        "at": "desk"
+      },
+      "interns": []
+    },
+    {
+      "id": "spriteforge",
+      "name": "SpriteForge",
+      "color": "#fb923c",
+      "desk": {
+        "x": 0.18,
+        "y": 0.68
+      },
+      "status": "collaborating",
+      "task": "Iso walk frames with CampusDev",
+      "main": {
+        "at": "desk"
+      },
+      "interns": [
+        {
+          "id": "sf-i1",
+          "status": "collaborating",
+          "label": "Sync sprites",
+          "at": "meeting",
+          "with": "campusdev"
+        }
+      ]
+    },
+    {
+      "id": "spriteforge-support",
+      "name": "SpriteForgeSupport",
+      "color": "#fdba74",
+      "desk": {
+        "x": 0.82,
+        "y": 0.68
+      },
+      "status": "idle",
+      "task": "Standby for sprite QA",
+      "main": {
+        "at": "desk"
+      },
+      "interns": []
+    },
+    {
+      "id": "campusdev",
+      "name": "CampusDev",
+      "color": "#34d399",
+      "desk": {
+        "x": 0.35,
+        "y": 0.88
+      },
+      "status": "collaborating",
+      "task": "Phone UI layout + map polish",
+      "main": {
+        "at": "desk"
+      },
+      "interns": [
+        {
+          "id": "cd-i1",
+          "status": "collaborating",
+          "label": "Meet SpriteForge",
+          "at": "meeting",
+          "with": "spriteforge"
+        }
+      ]
+    },
+    {
+      "id": "liveops",
+      "name": "LiveOps",
+      "color": "#c084fc",
+      "desk": {
+        "x": 0.65,
+        "y": 0.88
+      },
+      "status": "ready_for_review",
+      "task": "campus-state.json schema v1",
+      "main": {
+        "at": "desk"
+      },
+      "interns": [
+        {
+          "id": "lo-i1",
+          "status": "working",
+          "label": "Poll health",
+          "at": "desk"
+        }
+      ]
+    }
+  ],
+  "deploys": [
+    {
+      "id": "botcampus-pages",
+      "repo": "nasoteisoy/BotCampus",
+      "repoUrl": "https://github.com/nasoteisoy/BotCampus",
+      "branch": "main",
+      "status": "building",
+      "label": "GitHub Pages",
+      "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
+      "checkUrl": "https://github.com/nasoteisoy/BotCampus/actions",
+      "updatedAt": "2026-09-20T18:03:08Z",
+      "note": "Pushing campus-live MVP"
+    }
+  ]
+}
