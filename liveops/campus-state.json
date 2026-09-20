@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:05:27Z",
+  "updatedAt": "2026-09-20T18:05:30Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -188,12 +188,12 @@
       "name": "CampusDev",
       "agentId": "44165ff4-7440-42dc-ad28-6f5562793e3f",
       "deskId": "desk-campusdev",
-      "status": "working",
-      "task": "Shipping campus-live to Pages",
-      "updatedAt": "2026-09-20T18:05:27Z",
+      "status": "ready_for_review",
+      "task": "campus-live on Pages \u2014 open on phone",
+      "updatedAt": "2026-09-20T18:05:30Z",
       "main": {
-        "status": "working",
-        "task": "Shipping campus-live to Pages",
+        "status": "ready_for_review",
+        "task": "campus-live on Pages \u2014 open on phone",
         "atDeskId": "desk-campusdev",
         "x": null,
         "y": null
@@ -280,11 +280,11 @@
       "repo": "nasoteisoy/BotCampus",
       "branch": "main",
       "label": "BotCampus Pages",
-      "status": "building",
+      "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "Pushing campus-live.html",
-      "updatedAt": "2026-09-20T18:05:27Z",
+      "note": "campus-live.html live",
+      "updatedAt": "2026-09-20T18:05:30Z",
       "updatedBy": "campusdev"
     }
   ]
