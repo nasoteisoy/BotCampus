@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T18:08:47Z",
+  "updatedAt": "2026-09-20T18:08:53Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -267,8 +267,8 @@
       "status": "ready",
       "pagesUrl": "https://nasoteisoy.github.io/BotCampus/",
       "repoUrl": "https://github.com/nasoteisoy/BotCampus",
-      "note": "campus-live.html live",
-      "updatedAt": "2026-09-20T18:05:30Z",
+      "note": "No-overlap layout pushed",
+      "updatedAt": "2026-09-20T18:08:53Z",
       "updatedBy": "campusdev"
     }
   ]
