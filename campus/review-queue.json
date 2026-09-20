@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T23:30:40Z",
+  "updatedAt": "2026-09-20T23:56:20Z",
   "items": [
     {
       "id": "rv-campus-live-fun-v11",
@@ -28,13 +28,13 @@
     },
     {
       "id": "rv-campus-npc-life",
-      "title": "Campus NPC life \u2014 peek (Dev B)",
-      "summary": "NPC life FSM npc1 \u2014 walk/stations + personality. Peek only until Dev C PASSes.",
-      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc1",
+      "title": "Campus NPC life \u2014 walk / stations / emotions",
+      "summary": "Dev C PASSed npc2. Mute 10s: desk\u2192station walks, permission RUN, ready pulse. Soft nits OK for now.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc2",
       "owner": "Dev B",
       "kind": "campus",
-      "priority": 1,
-      "status": "waiting",
+      "priority": 0,
+      "status": "open",
       "createdAt": "2026-09-20T23:24:29Z",
       "dismissedAt": null
     }
