@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc5c (+ Dev A COLLISION-LAYOUT)
+/*! Campus NPC FSM (Dev B) — npc6 (+ Dev A COLLISION-LAYOUT)
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
@@ -9,10 +9,9 @@
  *  - first spawn ALWAYS at desk (never station) so mute-10s shows pathing
  * npc3: larger intern radii, soft separation, Jesus/home loc badges
  * npc4: per-bot craft slots (no stacks), truthful loc badges, permission RUN+pad.on
- * npc5: mains INNER / interns OUTER|owner-orbit slots; sep 130/100/80;
- *       stuck walk→idle/retarget; banner on-arrive-only (host)
- * npc5 Dev A: hold stuck-nudge vs slot overwrite; post-sep frameDisp walk clear; slotAround export
- * npc5c: COLLISION-LAYOUT markers; intern ring/orbit clear of main bodies
+ * npc5–5c: craft slots / stuck / banner (Dev B + Dev A assists)
+ * npc6 COLLISION-LAYOUT (Dev A): intern SIDE RAILS/BAY + hard AABB gap vs every main;
+ *       stuck → snap-to-target or idle (no walk micro-jitter). FSM left/top still Dev B.
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -28,13 +27,20 @@
   var IDLE_DEBOUNCE_MS = 100;
   var FIDGET_MAX = 10;
   var SLOT_MIN_DIST = 130; // world px between MAIN craft ARRIVE slots (inner ring)
-  var SLOT_INTERN_RING = 220; // outer ring — clear of main body (~104px) + margin
-  var OWNER_ORBIT_R = 140; // intern orbit around owner main (clear of main body)
-  var SEP_MAIN = 130;
-  var SEP_MIX = 110;
-  var SEP_INTERN = 80;
-  var STUCK_MS = 500;
-  var STUCK_DISP_PX = 2;
+  var SLOT_INTERN_RING = 220; // legacy outer ring (npc6 prefers side rails)
+  var OWNER_ORBIT_R = 140; // legacy orbit — npc6 home uses east/west bay
+  // AABB half-extents (sprite body + name tag). Main tag max-width ~120, body 96.
+  var MAIN_HALF_W = 64;
+  var MAIN_HALF_H = 72; // body 48 + tag/badge below center
+  var INTERN_HALF_W = 46;
+  var INTERN_HALF_H = 44;
+  var AABB_GAP = 18; // hard min gap between intern AABB and every main AABB
+  var INTERN_RAIL_SPACING = 78; // along side rail
+  var SEP_MAIN = 140;
+  var SEP_MIX = 120; // soft sep; hard AABB enforce follows
+  var SEP_INTERN = 72;
+  var STUCK_MS = 350; // faster snap for walk-in-place (coord Dev B stuck)
+  var STUCK_DISP_PX = 3;
   var HOME_ARRIVE_BADGE = 100;
   var STATION_NEAR_BADGE = 150;
 
@@ -122,10 +128,10 @@
       var h = 0;
       var s = String((entity && entity.id) || '');
       for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-      var a = (Math.abs(h) % 360) * Math.PI / 180;
-      // Clear of main body (~104px) — orbit past main desk slot
-      ox = Math.cos(a) * 110;
-      oy = Math.sin(a) * 88 + 96;
+      var idx = Math.abs(h) % 5;
+      // npc6: east bay spawn — clear of main AABB/name
+      ox = MAIN_HALF_W + AABB_GAP + INTERN_HALF_W + 12;
+      oy = (idx - 2) * (INTERN_HALF_H * 2 + 8) + 28;
     } else {
       oy = -72;
     }
@@ -133,13 +139,16 @@
   }
 
   // === COLLISION-LAYOUT (Dev A) ===
-  // Intern/main slot math + soft sep. Do NOT own FSM left/top after first paint.
-  // Dev B owns stuck-walker + permissionArrived / banner timing.
+  // Intern SIDE RAILS / BAY + hard min gap from every main AABB.
+  // Soft sep assists; hard enforceAabbGaps is authoritative for intern∩main.
+  // Do NOT own FSM left/top after first paint. Dev B: stuck-walker core + banner.
+
+  function mainHalf() { return { hw: MAIN_HALF_W, hh: MAIN_HALF_H }; }
+  function internHalf() { return { hw: INTERN_HALF_W, hh: INTERN_HALF_H }; }
 
   /** Inner ring for MAINS — spaced so chord >= SLOT_MIN_DIST. */
   function mainSlotOffset(index, mainCount) {
     var n = Math.max(mainCount || 1, 1);
-    // Prefer even spread on a circle sized for min chord
     var baseR = Math.max(SLOT_MIN_DIST * 1.1, (SLOT_MIN_DIST / (2 * Math.sin(Math.PI / Math.max(n, 2)))) * 1.05);
     if (n === 1) baseR = SLOT_MIN_DIST * 0.85;
     var ring = Math.floor(index / Math.max(n, 6));
@@ -150,23 +159,59 @@
     return { x: Math.cos(a) * baseR, y: Math.sin(a) * baseR * 0.92 };
   }
 
-  /** Outer ring for interns — always past main ring so never bury a main. */
-  function internStationOffset(index, mainCount) {
-    var perRing = 8;
-    var ring = Math.floor(index / perRing);
-    var i = index % perRing;
-    var mainR = Math.max(SLOT_MIN_DIST * 1.1, (SLOT_MIN_DIST / (2 * Math.sin(Math.PI / Math.max(mainCount || 2, 2)))) * 1.05);
-    var baseR = Math.max(SLOT_INTERN_RING, mainR + 110) + ring * 100;
-    var a = -Math.PI / 2 + (i / perRing) * Math.PI * 2 + ring * 0.22 + 0.35;
-    return { x: Math.cos(a) * baseR, y: Math.sin(a) * baseR * 0.9 + 18 };
+  /**
+   * Intern SIDE RAIL at a craft/permission station.
+   * South bay first (below mains); overflow wraps to east then west rails.
+   * Guarantees target centers clear of main AABB + AABB_GAP when mains sit on inner ring.
+   */
+  function internSideRailOffset(index, internCount, mainCount) {
+    var mc = Math.max(mainCount || 1, 1);
+    var mainR = Math.max(SLOT_MIN_DIST * 1.1, (SLOT_MIN_DIST / (2 * Math.sin(Math.PI / Math.max(mc, 2)))) * 1.05);
+    if (mc === 1) mainR = SLOT_MIN_DIST * 0.85;
+    // Clear main body/name south of farthest main slot
+    var southY = mainR * 0.92 + MAIN_HALF_H + AABB_GAP + INTERN_HALF_H + 8;
+    var eastX = mainR + MAIN_HALF_W + AABB_GAP + INTERN_HALF_W + 8;
+    var perRail = Math.max(internCount || 1, 1);
+    // Pack: south rail first (up to 6), then east, then west
+    var southCap = 6;
+    var i = index;
+    var spacing = INTERN_RAIL_SPACING;
+    if (i < southCap) {
+      var nS = Math.min(perRail, southCap);
+      var x = (i - (nS - 1) / 2) * spacing;
+      return { x: x, y: southY, rail: 'south' };
+    }
+    i -= southCap;
+    var eastCap = 4;
+    if (i < eastCap) {
+      var y = southY * 0.35 + i * (INTERN_HALF_H * 2 + 10);
+      return { x: eastX, y: y - 20, rail: 'east' };
+    }
+    i -= eastCap;
+    var y2 = southY * 0.35 + i * (INTERN_HALF_H * 2 + 10);
+    return { x: -eastX, y: y2 - 20, rail: 'west' };
   }
 
-  /** Orbit around owner main — home desks / single-main stations only. */
+  /** Legacy outer ring — kept for slotAround API; prefer side rail. */
+  function internStationOffset(index, mainCount) {
+    return internSideRailOffset(index, 8, mainCount);
+  }
+
+  /**
+   * Home / owner bay: EAST rail of owner (or desk), stacked southward.
+   * Never orbit through the main's name plate.
+   */
+  function internHomeBayOffset(index, count) {
+    var spacing = INTERN_RAIL_SPACING;
+    var x = MAIN_HALF_W + AABB_GAP + INTERN_HALF_W + 12;
+    var y = (index - (Math.max(count, 1) - 1) / 2) * (INTERN_HALF_H * 2 + 8);
+    // Bias slightly south so names don't collide north of desk
+    return { x: x, y: y + 28, rail: 'home-east' };
+  }
+
+  /** Orbit API retained; maps to home bay for compatibility. */
   function ownerOrbitOffset(index, count) {
-    var n = Math.max(count || 1, 3);
-    var a = -Math.PI / 2 + (index / n) * Math.PI * 2 + 0.4;
-    var r = OWNER_ORBIT_R + Math.floor(index / n) * 70;
-    return { x: Math.cos(a) * r, y: Math.sin(a) * r * 0.88 + 12 };
+    return internHomeBayOffset(index, count);
   }
 
   function ownerMainKey(internAgent) {
@@ -179,9 +224,58 @@
     return a && a._slotKind === 'stuck-nudge' && (a.fsm === 'walk' || a.fsm === 'run');
   }
 
+  /** True if intern AABB at (ix,iy) overlaps main AABB at (mx,my) within gap. */
+  function aabbOverlapsMain(ix, iy, mx, my) {
+    var needX = MAIN_HALF_W + INTERN_HALF_W + AABB_GAP;
+    var needY = MAIN_HALF_H + INTERN_HALF_H + AABB_GAP;
+    return Math.abs(ix - mx) < needX && Math.abs(iy - my) < needY;
+  }
+
   /**
-   * Craft/permission ARRIVE slots: mains INNER; interns OUTER (clear of mains).
-   * Owner-orbit only when a single main shares the station. Dev A may refine.
+   * Push (x,y) out of every main AABB (+ gap). Prefers east then south.
+   * Only used for INTERNS — mains never move here.
+   */
+  function clearOfAllMains(x, y, mainList) {
+    var px = x, py = y;
+    for (var pass = 0; pass < 8; pass++) {
+      var moved = false;
+      for (var i = 0; i < mainList.length; i++) {
+        var m = mainList[i];
+        var mx = m.x, my = m.y;
+        // Prefer target position if main still pathing toward slot
+        if (m.targetX != null) { mx = m.targetX; my = m.targetY; }
+        if (!aabbOverlapsMain(px, py, mx, my)) continue;
+        var needX = MAIN_HALF_W + INTERN_HALF_W + AABB_GAP;
+        var needY = MAIN_HALF_H + INTERN_HALF_H + AABB_GAP;
+        var dx = px - mx, dy = py - my;
+        var pushX = needX - Math.abs(dx);
+        var pushY = needY - Math.abs(dy);
+        // Resolve along cheaper axis; bias east/south for stable rails
+        if (pushX <= pushY) {
+          var sx = dx >= 0 ? 1 : -1;
+          if (Math.abs(dx) < 1) sx = 1; // default east
+          px = mx + sx * needX;
+        } else {
+          var sy = dy >= 0 ? 1 : -1;
+          if (Math.abs(dy) < 1) sy = 1; // default south
+          py = my + sy * needY;
+        }
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    return { x: px, y: py };
+  }
+
+  function listMains() {
+    var out = [];
+    agents.forEach(function (a) { if (!a.isIntern) out.push(a); });
+    return out;
+  }
+
+  /**
+   * Craft/permission ARRIVE slots: mains INNER; interns on SIDE RAILS/BAY.
+   * Then harden targets with clearOfAllMains.
    */
   function applyCraftSlots() {
     if (!ctx || !ctx.state) return;
@@ -217,32 +311,30 @@
         a._slotKind = 'main-inner';
       });
 
-      // Crowded multi-main stations: ALL interns on OUTER ring (never under a main).
-      // Single-main: owner-orbit is fine (>= OWNER_ORBIT_R).
-      if (mc <= 1 && mains.length === 1) {
-        var owner = mains[0];
-        interns.forEach(function (a, i) {
-          if (holdStuckNudge(a)) return;
-          var off = ownerOrbitOffset(i, interns.length);
-          a.targetX = owner.targetX + off.x;
-          a.targetY = owner.targetY + off.y;
-          a.slotIndex = i;
-          a._slotKind = 'owner-orbit';
-        });
-      } else {
-        interns.forEach(function (a, i) {
-          if (holdStuckNudge(a)) return;
-          var off = internStationOffset(i, Math.max(mc, 2));
-          a.targetX = st.x + off.x;
-          a.targetY = st.y + off.y;
-          a.slotIndex = i;
-          a._slotKind = 'intern-outer';
-        });
-      }
+      // Always side rails (not orbit) so names never clip mains
+      interns.forEach(function (a, i) {
+        if (holdStuckNudge(a)) return;
+        var off = internSideRailOffset(i, interns.length, Math.max(mc, 1));
+        a.targetX = st.x + off.x;
+        a.targetY = st.y + off.y;
+        a.slotIndex = i;
+        a._slotKind = 'intern-rail-' + (off.rail || 'south');
+      });
+
+      // Harden vs ALL mains at this station (use live list for AABB)
+      var mainRefs = mains.length ? mains : listMains().filter(function (m) {
+        return m.targetId === tid;
+      });
+      interns.forEach(function (a) {
+        if (holdStuckNudge(a)) return;
+        var c = clearOfAllMains(a.targetX, a.targetY, mainRefs.length ? mainRefs : listMains());
+        a.targetX = c.x;
+        a.targetY = c.y;
+      });
     });
   }
 
-  /** Home-desk slots: mains north of desk; interns clear orbit. */
+  /** Home-desk: mains north; interns on EAST bay rail, AABB-cleared. */
   function applyHomeSlots() {
     if (!ctx || !ctx.state) return;
     var groups = {};
@@ -268,7 +360,7 @@
       });
       mains.forEach(function (a, i) {
         if (holdStuckNudge(a)) return;
-        a.targetX = desk.x + (i - (mains.length - 1) / 2) * 36;
+        a.targetX = desk.x + (i - (mains.length - 1) / 2) * 40;
         a.targetY = desk.y - 72;
         a._slotKind = 'home-main';
       });
@@ -279,23 +371,112 @@
         if (holdStuckNudge(a)) { oi++; return; }
         var ok = ownerMainKey(a);
         var owner = ok && mainByKey[ok];
-        var off = ownerOrbitOffset(oi, Math.max(interns.length, 3));
-        if (owner) {
-          a.targetX = owner.targetX + off.x;
-          a.targetY = owner.targetY + off.y;
-          a._slotKind = 'home-orbit';
-        } else {
-          var a2 = -Math.PI / 2 + (oi / Math.max(interns.length, 1)) * Math.PI * 2;
-          a.targetX = desk.x + Math.cos(a2) * 110;
-          a.targetY = desk.y + Math.sin(a2) * 88 + 96;
-          a._slotKind = 'home-outer';
-        }
+        var off = internHomeBayOffset(oi, interns.length);
+        var ax = owner ? owner.targetX : desk.x;
+        var ay = owner ? owner.targetY : desk.y - 72;
+        a.targetX = ax + off.x;
+        a.targetY = ay + off.y;
+        a._slotKind = 'home-bay-east';
         oi++;
+      });
+      var refs = mains.length ? mains : listMains();
+      interns.forEach(function (a) {
+        if (holdStuckNudge(a)) return;
+        var c = clearOfAllMains(a.targetX, a.targetY, refs);
+        a.targetX = c.x;
+        a.targetY = c.y;
       });
     });
   }
 
-  // === /COLLISION-LAYOUT (Dev A) — slot targets only; FSM still walks left/top ===
+  /**
+   * Hard AABB enforce on live positions — interns yield; mains hold.
+   * Runs after soft sep so walk-in-place can't leave intern∩main.
+   */
+  function enforceAabbGaps() {
+    var mains = listMains();
+    if (!mains.length) return;
+    agents.forEach(function (a) {
+      if (!a.isIntern) return;
+      // Use live main positions (not only targets) so pathing mains still clear
+      var liveMains = mains.map(function (m) {
+        return { x: m.x, y: m.y, targetX: m.targetX, targetY: m.targetY };
+      });
+      // Check against both live and target boxes
+      var px = a.x, py = a.y;
+      for (var pass = 0; pass < 6; pass++) {
+        var moved = false;
+        for (var i = 0; i < mains.length; i++) {
+          var m = mains[i];
+          var boxes = [
+            { x: m.x, y: m.y },
+            { x: m.targetX, y: m.targetY }
+          ];
+          for (var b = 0; b < boxes.length; b++) {
+            var mx = boxes[b].x, my = boxes[b].y;
+            if (mx == null || my == null) continue;
+            if (!aabbOverlapsMain(px, py, mx, my)) continue;
+            var needX = MAIN_HALF_W + INTERN_HALF_W + AABB_GAP;
+            var needY = MAIN_HALF_H + INTERN_HALF_H + AABB_GAP;
+            var dx = px - mx, dy = py - my;
+            var pushX = needX - Math.abs(dx);
+            var pushY = needY - Math.abs(dy);
+            if (pushX <= pushY) {
+              var sx = dx >= 0 ? 1 : -1;
+              if (Math.abs(dx) < 1) sx = 1;
+              px = mx + sx * needX;
+            } else {
+              var sy = dy >= 0 ? 1 : -1;
+              if (Math.abs(dy) < 1) sy = 1;
+              py = my + sy * needY;
+            }
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      a.x = px;
+      a.y = py;
+    });
+  }
+
+  /** Stuck / micro-jitter: snap to target or idle — no walk class with ~0 motion. */
+  function resolveStuckMotion() {
+    agents.forEach(function (agent) {
+      var frameDisp = Math.hypot(
+        agent.x - (agent._frameX0 || agent.x),
+        agent.y - (agent._frameY0 || agent.y)
+      );
+      var dT = Math.hypot(agent.targetX - agent.x, agent.targetY - agent.y);
+      var locomoting = agent.fsm === 'walk' || agent.fsm === 'run';
+      if (!locomoting) return;
+
+      // Near target → snap idle
+      if (dT < ARRIVE_PX * 2.4) {
+        agent.x = agent.targetX;
+        agent.y = agent.targetY;
+        agent.vx = 0; agent.vy = 0; agent.speed = 0;
+        agent.fsm = 'idle';
+        agent.visualFrame = 'idle';
+        if (agent._slotKind === 'stuck-nudge') agent._slotKind = null;
+        return;
+      }
+      // Sep/AABB fight canceled net motion → idle (kill walk-in-place / micro-jitter)
+      if (agent.speed <= MOVE_EPS || frameDisp < 1.1) {
+        agent.fsm = 'idle';
+        agent.visualFrame = 'idle';
+        agent.vx = 0; agent.vy = 0; agent.speed = 0;
+        // If still far, snap toward cleared target so they don't vibrate
+        if (frameDisp < 0.5 && dT < 80) {
+          agent.x = agent.targetX;
+          agent.y = agent.targetY;
+        }
+      }
+    });
+  }
+
+  // === /COLLISION-LAYOUT (Dev A) — slot targets + AABB; FSM still walks left/top ===
+
 
   function resolveTarget(bot, entity, state, isIntern) {
     var status = (entity && entity.status) || bot.status || 'idle';
@@ -324,9 +505,10 @@
         var h = 0;
         var s = String((entity && entity.id) || '');
         for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-        var a = (Math.abs(h) % 360) * Math.PI / 180;
-        ox = Math.cos(a) * 110;
-        oy = Math.sin(a) * 88 + 96;
+        var idx = Math.abs(h) % 5;
+        // npc6 east bay — applyHomeSlots will AABB-harden
+        ox = MAIN_HALF_W + AABB_GAP + INTERN_HALF_W + 12;
+        oy = (idx - 2) * (INTERN_HALF_H * 2 + 8) + 28;
       } else {
         oy = -72;
       }
@@ -579,46 +761,39 @@
     ctx.helpers.setLocBadge(el, 'clear');
   }
 
-  // === COLLISION-LAYOUT (Dev A) sep — soft push; never claim DOM left/top ownership ===
+  // === COLLISION-LAYOUT (Dev A) soft sep — hard AABB follows in enforceAabbGaps ===
   function separateAgents() {
     var list = [];
     agents.forEach(function (a) { list.push(a); });
-    for (var iter = 0; iter < 6; iter++) {
+    for (var iter = 0; iter < 5; iter++) {
       for (var i = 0; i < list.length; i++) {
         for (var j = i + 1; j < list.length; j++) {
           var a = list[i], b = list[j];
           var aMoving = a.fsm === 'walk' || a.fsm === 'run' || a.speed > MOVE_EPS;
           var bMoving = b.fsm === 'walk' || b.fsm === 'run' || b.speed > MOVE_EPS;
-          var aBusy = a.fsm === 'busy_at_station' || a.fsm === 'idle';
-          var bBusy = b.fsm === 'busy_at_station' || b.fsm === 'idle';
           var dx = b.x - a.x, dy = b.y - a.y;
           var dist = Math.hypot(dx, dy) || 0.01;
           var need;
           if (!a.isIntern && !b.isIntern) need = SEP_MAIN;
           else if (a.isIntern && b.isIntern) need = SEP_INTERN;
           else need = SEP_MIX;
-          // Prefer pushing interns away from mains (never bury main)
-          var strength = 1;
-          if (aMoving && bMoving && !aBusy && !bBusy) strength = 0.45;
-          else if (aMoving || bMoving) strength = 0.7;
-          else strength = 1.0;
+          var strength = (aMoving && bMoving) ? 0.4 : (aMoving || bMoving ? 0.65 : 1.0);
           if (dist < need) {
             var push = ((need - dist) / 2) * strength;
             dx /= dist; dy /= dist;
             if (!a.isIntern && b.isIntern) {
-              // main holds; intern yields more
-              b.x += dx * push * 1.55;
-              b.y += dy * push * 1.55;
-              a.x -= dx * push * 0.35;
-              a.y -= dy * push * 0.35;
+              b.x += dx * push * 1.7;
+              b.y += dy * push * 1.7;
+              // mains hold harder in npc6
             } else if (a.isIntern && !b.isIntern) {
-              a.x -= dx * push * 1.55;
-              a.y -= dy * push * 1.55;
-              b.x += dx * push * 0.35;
-              b.y += dy * push * 0.35;
-            } else {
+              a.x -= dx * push * 1.7;
+              a.y -= dy * push * 1.7;
+            } else if (a.isIntern && b.isIntern) {
               a.x -= dx * push; a.y -= dy * push;
               b.x += dx * push; b.y += dy * push;
+            } else {
+              a.x -= dx * push * 0.5; a.y -= dy * push * 0.5;
+              b.x += dx * push * 0.5; b.y += dy * push * 0.5;
             }
           }
         }
@@ -1010,28 +1185,8 @@
       tickAgent(agent, dt);
     });
     separateAgents();
-    // Dev A: drop walk-in-place when sep cancels net motion this frame
-    agents.forEach(function (agent) {
-      var frameDisp = Math.hypot(
-        agent.x - (agent._frameX0 || agent.x),
-        agent.y - (agent._frameY0 || agent.y)
-      );
-      if ((agent.fsm === 'walk' || agent.fsm === 'run') &&
-          (agent.speed <= MOVE_EPS || frameDisp < 0.65)) {
-        agent.fsm = 'idle';
-        agent.visualFrame = 'idle';
-        agent.vx = 0; agent.vy = 0; agent.speed = 0;
-      }
-      var dT = Math.hypot(agent.targetX - agent.x, agent.targetY - agent.y);
-      if ((agent.fsm === 'walk' || agent.fsm === 'run') && dT < ARRIVE_PX * 2.0 && frameDisp < 1.2) {
-        agent.x = agent.targetX;
-        agent.y = agent.targetY;
-        agent.vx = 0; agent.vy = 0; agent.speed = 0;
-        agent.fsm = 'idle';
-        agent.visualFrame = 'idle';
-        if (agent._slotKind === 'stuck-nudge') agent._slotKind = null;
-      }
-    });
+    enforceAabbGaps(); // hard intern∩main AABB (Dev A COLLISION-LAYOUT)
+    resolveStuckMotion(); // stuck → snap or idle (coord Dev B stuck-walker)
     // Re-place after separation so DOM matches pushed coords + badges
     agents.forEach(function (agent) { placeAgent(agent); });
     if (ctx.state) renderStations(ctx.state);
@@ -1055,7 +1210,7 @@
   }
 
   global.CampusNpc = {
-    version: 'npc5c',
+    version: 'npc6',
     ownsPositions: true,
     sync: sync,
     agents: agents,
@@ -1066,9 +1221,15 @@
     SEP_MAIN: SEP_MAIN,
     SEP_MIX: SEP_MIX,
     SEP_INTERN: SEP_INTERN,
+    MAIN_HALF_W: MAIN_HALF_W,
+    MAIN_HALF_H: MAIN_HALF_H,
+    AABB_GAP: AABB_GAP,
     slotAround: function (index, isIntern, mainCount) {
-      return isIntern ? internStationOffset(index, mainCount) : mainSlotOffset(index, mainCount);
+      return isIntern ? internSideRailOffset(index, 8, mainCount) : mainSlotOffset(index, mainCount);
     },
-    ownerOrbitOffset: ownerOrbitOffset
+    internSideRailOffset: internSideRailOffset,
+    internHomeBayOffset: internHomeBayOffset,
+    ownerOrbitOffset: ownerOrbitOffset,
+    enforceAabbGaps: enforceAabbGaps
   };
 })(typeof window !== 'undefined' ? window : globalThis);
