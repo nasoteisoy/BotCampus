@@ -1,21 +1,44 @@
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  // Illustrated sprites (Render A sheets) — prefer sheet cells; stamp fallbacks
   function loadImg(src) {
-    var im = new Image();
+    const im = new Image();
     im.ok = false;
     im.onload = function () { im.ok = true; };
     im.onerror = function () { im.ok = false; };
     im.src = src;
     return im;
   }
-  var heroImg = loadImg('./art/player.png?v=opt8');
-  var heroImg2 = loadImg('./art/player_f2.png?v=opt8');
-  var blobImg = loadImg('./art/enemy_blob.png?v=opt8');
-  var blobAlt = loadImg('./art/enemy_blob_alt.png?v=opt8');
+  const CACHE = '?v=opt8b';
+  const heroImg = loadImg('./art/player.png' + CACHE);
+  const heroImg2 = loadImg('./art/player_f2.png' + CACHE);
+  const heroIdleSheet = loadImg('./art/player_idle_sheet.png' + CACHE);
+  const heroWalkSheet = loadImg('./art/player_walk_sheet.png' + CACHE);
+  const heroAttackSheet = loadImg('./art/player_attack_sheet.png' + CACHE);
+  const blobImg = loadImg('./art/enemy_blob.png' + CACHE);
+  const blobAlt = loadImg('./art/enemy_blob_alt.png' + CACHE);
+  const blobSheet = loadImg('./art/enemy_blob_sheet.png' + CACHE);
+  const blobAltSheet = loadImg('./art/enemy_blob_alt_sheet.png' + CACHE);
+  const blobHitDeath = loadImg('./art/enemy_blob_hitdeath_sheet.png' + CACHE);
+  const blobAltHitDeath = loadImg('./art/enemy_blob_alt_hitdeath_sheet.png' + CACHE);
 
-(function () {
-  "use strict";
+  const CELL = 256;
+  const FPS_IDLE = 6;
+  const FPS_WALK = 10;
+  const FPS_ATTACK = 12;
+  const MOVE_THRESH = 35;
 
-  const canvas = document.getElementById("c");
-  const ctx = canvas.getContext("2d");
+  function drawFrame(img, frameIndex, dx, dy, dw, dh) {
+    if (!img || !img.ok || !img.width) return false;
+    const n = Math.max(1, (img.width / CELL) | 0);
+    const f = ((frameIndex % n) + n) % n;
+    ctx.drawImage(img, f * CELL, 0, CELL, CELL, dx, dy, dw, dh);
+    return true;
+  }
   const hudScore = document.getElementById("hudScore");
   const hudCombo = document.getElementById("hudCombo");
   const hudHp = document.getElementById("hudHp");
@@ -152,6 +175,9 @@
       slashCd: 0,
       gunCd: 0,
       anim: 0,
+      animT: 0,
+      animFrame: 0,
+      attackT: -1, // >=0 playing attack sheet once
       landDust: false,
       wasOnGround: true,
       windFlash: 0,
@@ -236,6 +262,8 @@
       onGround: true,
       dying: 0, // >0 = death poof/flatten in progress
       dead: false,
+      animT: Math.random() * 4,
+      animFrame: 0,
     });
   }
 
@@ -643,7 +671,6 @@
       p.vx += ax * accel * DT;
       p.facing = ax > 0 ? 1 : -1;
       // Walk anim ONLY while |vx| meaningful
-      if (Math.abs(p.vx) > 35) p.anim += DT * 12;
     } else {
       p.vx *= friction;
       if (Math.abs(p.vx) < 12) p.vx = 0;
@@ -746,6 +773,7 @@
         trailed: false,
         impactFlash: false,
       };
+      p.attackT = 0; // play attack sheet once
     }
     if (state.slash) {
       const ph = slashPhase(state.slash);
@@ -782,6 +810,28 @@
         r: 4,
       });
       muzzlePuff(mx, my, p.facing);
+      if (p.attackT < 0) p.attackT = 0; // brief attack pose on gun
+    }
+
+    // --- sprite anim (sheets): attack once → idle/walk; walk only while moving ---
+    {
+      const moving = Math.abs(p.vx) > MOVE_THRESH && p.onGround;
+      if (p.attackT >= 0) {
+        p.attackT += DT;
+        const nFrames = 4;
+        p.animFrame = Math.min(nFrames - 1, (p.attackT * FPS_ATTACK) | 0);
+        if (p.attackT >= nFrames / FPS_ATTACK) {
+          p.attackT = -1;
+          p.animT = 0;
+        }
+      } else if (moving) {
+        p.animT += DT;
+        p.animFrame = ((p.animT * FPS_WALK) | 0) % 4;
+        p.anim += DT * 12;
+      } else {
+        p.animT += DT;
+        p.animFrame = ((p.animT * FPS_IDLE) | 0) % 4;
+      }
     }
 
     // bullets
@@ -826,6 +876,12 @@
       if (e.hurtCd > 0) e.hurtCd -= DT;
       if (e.stun > 0) e.stun -= DT;
       if (e.hitFlash > 0) e.hitFlash -= DT;
+      e.animT += DT;
+      {
+        const emoving = Math.abs(e.vx) > 20 && e.onGround;
+        if (emoving) e.animFrame = ((e.animT * FPS_WALK) | 0) % 4;
+        else e.animFrame = ((e.animT * FPS_IDLE) | 0) % 4;
+      }
       e.scale += (1 - e.scale) * 0.18;
       e.sx += (1 - e.sx) * 0.18;
       e.sy += (1 - e.sy) * 0.18;
@@ -1049,31 +1105,46 @@
     }
     ctx.globalAlpha = 1;
 
-    // enemies
+    // enemies — sheet cells (idle/walk); hitdeath flash + death→poof
     for (const e of state.enemies) {
       const ey = floorY - e.y;
       const face = e.x < (state.player ? state.player.x : e.x) ? 1 : -1;
       const scx = e.sx * e.scale;
       const scy = e.sy * e.scale;
+      const isAlt = e.kind === "brute";
+      const sheet = isAlt ? blobAltSheet : blobSheet;
+      const hd = isAlt ? blobAltHitDeath : blobHitDeath;
+      const stamp = isAlt ? blobAlt : blobImg;
       ctx.save();
       ctx.translate(e.x, ey);
       ctx.scale(face * scx, scy);
       if (e.dying > 0) {
-        ctx.globalAlpha = Math.max(0, e.dying / 0.28);
+        ctx.globalAlpha = Math.max(0.15, e.dying / 0.28);
       }
-      const bimg = (e.kind === "brute" || (e.id | 0) % 2) ? blobAlt : blobImg;
-      if (bimg.ok) {
-        const s = Math.max(e.w, e.h) * 1.55;
+      const s = Math.max(e.w, e.h) * 1.55;
+      const dx = -s / 2;
+      const dy = -s * 0.95;
+      let drew = false;
+      if (e.dying > 0 && hd.ok) {
+        // hitdeath: idle, hit flash, death×3, poof — drive 2..5 from dying timer
+        const t = 1 - Math.max(0, e.dying) / 0.28;
+        const frame = 2 + Math.min(3, (t * 4) | 0);
+        drew = drawFrame(hd, frame, dx, dy, s, s);
+      } else if (e.hitFlash > 0 && hd.ok) {
+        drew = drawFrame(hd, 1, dx, dy, s, s);
+      } else if (sheet.ok) {
+        drew = drawFrame(sheet, e.animFrame | 0, dx, dy, s, s);
+      }
+      if (!drew && stamp.ok) {
         if (e.hitFlash > 0) {
           ctx.globalAlpha = (e.dying > 0 ? Math.max(0, e.dying / 0.28) : 1) * 0.95;
-          // white flash tint via brighter redraw
-          ctx.drawImage(bimg, -s / 2, -s * 0.95, s, s);
+          ctx.drawImage(stamp, dx, dy, s, s);
           ctx.globalCompositeOperation = "source-atop";
           ctx.fillStyle = "rgba(255,255,255,0.55)";
-          ctx.fillRect(-s / 2, -s * 0.95, s, s);
+          ctx.fillRect(dx, dy, s, s);
           ctx.globalCompositeOperation = "source-over";
         } else {
-          ctx.drawImage(bimg, -s / 2, -s * 0.95, s, s);
+          ctx.drawImage(stamp, dx, dy, s, s);
         }
       }
       ctx.globalAlpha = 1;
@@ -1163,15 +1234,22 @@
         ctx.shadowBlur = 12;
       }
       {
-        // Walk anim ONLY while moving; clean idle (no skate)
-        const moving = Math.abs(p.vx) > 35 && p.onGround;
-        const himg =
-          moving && heroImg2.ok && (((p.anim * 0.5) | 0) % 2)
-            ? heroImg2
-            : heroImg;
-        if (himg.ok) {
-          const s = Math.max(p.w, p.h) * 2.2;
-          ctx.drawImage(himg, -s * 0.42, -s * 0.98, s, s);
+        // Sheets: attack once → idle loop / walk loop (walk ONLY while moving)
+        const s = Math.max(p.w, p.h) * 2.2;
+        const dx = -s * 0.42;
+        const dy = -s * 0.98;
+        const moving = Math.abs(p.vx) > MOVE_THRESH && p.onGround;
+        let sheet = null;
+        if (p.attackT >= 0 && heroAttackSheet.ok) sheet = heroAttackSheet;
+        else if (moving && heroWalkSheet.ok) sheet = heroWalkSheet;
+        else if (heroIdleSheet.ok) sheet = heroIdleSheet;
+        let drew = sheet ? drawFrame(sheet, p.animFrame | 0, dx, dy, s, s) : false;
+        if (!drew) {
+          const himg =
+            moving && heroImg2.ok && (((p.anim * 0.5) | 0) % 2)
+              ? heroImg2
+              : heroImg;
+          if (himg.ok) ctx.drawImage(himg, dx, dy, s, s);
         }
       }
       ctx.shadowBlur = 0;
