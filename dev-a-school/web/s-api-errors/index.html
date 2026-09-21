@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dev A · Website STANDARDS · API / error UX</title>
+  <style>
+    :root{--bg:#0c1118;--panel:#151c27;--line:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#38bdf8;--err:#f43f5e;--ok:#22c55e;--focus:#fbbf24}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font:400 1rem/1.5 system-ui,sans-serif}
+    a{color:var(--accent)}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+    header{background:var(--panel);border-bottom:1px solid var(--line);padding:.75rem 1rem}
+    header .wrap{max-width:40rem;margin:0 auto}
+    h1{margin:0;font-size:1.15rem}
+    header p{margin:.25rem 0 0;color:var(--muted);font-size:.85rem}
+    main{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 2.5rem}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin:1rem 0}
+    .actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0}
+    button{min-height:48px;min-width:48px;padding:0 1rem;border-radius:10px;border:1px solid var(--line);
+      background:var(--accent);color:#0c4a6e;font-weight:800;font:inherit;cursor:pointer}
+    button.secondary{background:#1e293b;color:var(--text)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    #status{min-height:1.4em;font-size:.9rem;color:var(--muted)}
+    #status[data-state="loading"]{color:#fde68a}
+    #status[data-state="ok"]{color:#86efac}
+    #status[data-state="empty"]{color:#cbd5e1}
+    #status[data-state="error"]{color:#fecdd3}
+    ul#list{list-style:none;margin:0;padding:0}
+    ul#list li{padding:.75rem 0;border-bottom:1px solid var(--line)}
+    ul#list li:last-child{border-bottom:0}
+    .badge{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+      padding:.15rem .45rem;border-radius:999px;background:#0f172a;border:1px solid var(--line)}
+    .badge.open{border-color:var(--ok);color:#86efac}
+    .badge.waiting{border-color:#f59e0b;color:#fde68a}
+    code{font-size:.85em;background:#0f172a;padding:.1rem .35rem;border-radius:4px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>STANDARDS · API / error UX</h1>
+      <p>Website Dev kind drill · clear fetch contract · loading / empty / error · not a game loop</p>
+    </div>
+  </header>
+  <main>
+    <p>
+      Contract: <code>GET ./data.json</code> → <code>{ items: [{ id, name, status }] }</code>.
+      Demo also supports forced error / empty via buttons (no swallowed failures).
+    </p>
+    <div class="panel">
+      <div class="actions">
+        <button type="button" id="btn-load">Load list</button>
+        <button type="button" class="secondary" id="btn-empty">Simulate empty</button>
+        <button type="button" class="secondary" id="btn-fail">Simulate 500</button>
+      </div>
+      <p id="status" role="status" aria-live="polite" data-state="idle">Idle — press Load list.</p>
+      <ul id="list" aria-label="Items"></ul>
+    </div>
+    <p><a href="../?v=w01">← W0–W1 semantic page</a> · <a href="../../game/s-camera/?v=sc1">Game camera drill</a></p>
+  </main>
+  <script>
+    (function () {
+      var status = document.getElementById('status');
+      var list = document.getElementById('list');
+      var btnLoad = document.getElementById('btn-load');
+      var btnEmpty = document.getElementById('btn-empty');
+      var btnFail = document.getElementById('btn-fail');
+      var mode = 'ok'; // ok | empty | fail
+
+      function setStatus(state, text) {
+        status.dataset.state = state;
+        status.textContent = text;
+      }
+
+      function renderItems(items) {
+        list.innerHTML = '';
+        items.forEach(function (it) {
+          var li = document.createElement('li');
+          li.innerHTML = '<strong></strong> <span class="badge"></span>';
+          li.querySelector('strong').textContent = it.name;
+          var b = li.querySelector('.badge');
+          b.textContent = it.status;
+          b.classList.add(it.status === 'open' ? 'open' : 'waiting');
+          list.appendChild(li);
+        });
+      }
+
+      function setBusy(busy) {
+        btnLoad.disabled = busy;
+        btnEmpty.disabled = busy;
+        btnFail.disabled = busy;
+      }
+
+      async function load() {
+        setBusy(true);
+        list.innerHTML = '';
+        setStatus('loading', 'Loading — fetching contract…');
+        try {
+          if (mode === 'fail') {
+            await new Promise(function (r) { setTimeout(r, 400); });
+            throw new Error('Simulated HTTP 500 — upstream failed');
+          }
+          if (mode === 'empty') {
+            await new Promise(function (r) { setTimeout(r, 350); });
+            renderItems([]);
+            setStatus('empty', 'Empty — no items in response.');
+            return;
+          }
+          var res = await fetch('./data.json?v=sa1', { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+          var data = await res.json();
+          if (!data || !Array.isArray(data.items)) throw new Error('Contract break — missing items[]');
+          renderItems(data.items);
+          if (!data.items.length) setStatus('empty', 'Empty — items[] length 0.');
+          else setStatus('ok', 'OK — loaded ' + data.items.length + ' items.');
+        } catch (err) {
+          list.innerHTML = '';
+          setStatus('error', 'Error — ' + (err && err.message ? err.message : String(err)));
+        } finally {
+          setBusy(false);
+          mode = 'ok';
+        }
+      }
+
+      btnLoad.addEventListener('click', function () { mode = 'ok'; load(); });
+      btnEmpty.addEventListener('click', function () { mode = 'empty'; load(); });
+      btnFail.addEventListener('click', function () { mode = 'fail'; load(); });
+    })();
+  </script>
+</body>
+</html>

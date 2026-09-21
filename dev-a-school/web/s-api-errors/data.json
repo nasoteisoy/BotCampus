@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": "a1", "name": "Campus Live", "status": "open" },
+    { "id": "a2", "name": "Review queue", "status": "open" },
+    { "id": "a3", "name": "School drills", "status": "waiting" }
+  ]
+}
