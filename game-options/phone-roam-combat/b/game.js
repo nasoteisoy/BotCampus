@@ -788,9 +788,22 @@
       ctx.fillStyle = "#e9d5ff";
       ctx.font = "bold 22px system-ui,sans-serif";
       ctx.textAlign = "center";
-      const scr = worldToScreen(state.player.x, state.player.y + state.player.h + 20, viewH);
-      ctx.fillText("x" + state.combo, scr.x + shx, scr.y + shy);
+      // already in world+shake space — place above player in world coords
+      ctx.fillText(
+        "x" + state.combo,
+        state.player.x,
+        floorY - (state.player.y + state.player.h + 20)
+      );
       ctx.restore();
+    }
+
+    // pop world translate + shake (were missing — transform stacked every frame)
+    ctx.restore();
+    ctx.restore();
+
+    if (state.flash > 0) {
+      ctx.fillStyle = "rgba(255,255,255," + Math.min(0.45, state.flash).toFixed(3) + ")";
+      ctx.fillRect(0, 0, viewW, viewH);
     }
   }
 
