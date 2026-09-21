@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc6 (+ Dev A COLLISION-LAYOUT)
+/*! Campus NPC FSM (Dev B) — circles1 (+ Dev A COLLISION-LAYOUT)
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
@@ -12,6 +12,9 @@
  * npc5–5c: craft slots / stuck / banner (Dev B + Dev A assists)
  * npc6 COLLISION-LAYOUT (Dev A): intern SIDE RAILS/BAY + hard AABB gap vs every main;
  *       stuck → snap-to-target or idle (no walk micro-jitter). FSM left/top still Dev B.
+ * circles1 (Dev B): CIRCLE markers — applyFrame does NOT load walk/busy PNGs / castSrc.
+ *       Status ring colors via .sprite.status-* only; visualFrame kept for FSM bookkeeping.
+ *       Host name-circles DOM/CSS owned by Dev A (MARKERS-CIRCLES). Don't break COLLISION-LAYOUT.
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -29,11 +32,13 @@
   var SLOT_MIN_DIST = 130; // world px between MAIN craft ARRIVE slots (inner ring)
   var SLOT_INTERN_RING = 220; // legacy outer ring (npc6 prefers side rails)
   var OWNER_ORBIT_R = 140; // legacy orbit — npc6 home uses east/west bay
-  // AABB half-extents (sprite body + name tag). Main tag max-width ~120, body 96.
-  var MAIN_HALF_W = 64;
-  var MAIN_HALF_H = 72; // body 48 + tag/badge below center
-  var INTERN_HALF_W = 46;
-  var INTERN_HALF_H = 44;
+  // AABB half-extents — circles1 name circles (no cast PNG, no .tag under mains).
+  // Main diam ~72–100px; intern ~48–64px; loc badge above/beside (not name-below).
+  // COLLISION-LAYOUT (Dev A) still owns rails/bay + enforceAabbGaps.
+  var MAIN_HALF_W = 58;
+  var MAIN_HALF_H = 62; // circle + loc badge above
+  var INTERN_HALF_W = 38;
+  var INTERN_HALF_H = 42;
   var AABB_GAP = 18; // hard min gap between intern AABB and every main AABB
   var INTERN_RAIL_SPACING = 78; // along side rail
   var SEP_MAIN = 140;
@@ -634,12 +639,25 @@
 
   function applyFrame(agent, el) {
     if (!el || !ctx || !ctx.helpers) return;
-    var h = ctx.helpers;
-    var frame = agent.visualFrame || 'idle';
-    var src = tryNpcFrame(agent.bot, frame);
-    if (!src) src = fallbackStatusFrame(agent.bot, agent.status, agent.isIntern);
-    h.setCastOrFallback(el, src, agent.bot.color || '#94a3b8',
-      agent.isIntern ? 'i' : h.initials(agent.bot.name));
+    // === CIRCLES1 (Dev B) === name-circle markers — NO walk/busy PNG frames.
+    // Do not call setCastOrFallback / castSrc / tryNpcFrame here.
+    // Host (Dev A MARKERS-CIRCLES) paints colored circles + .name-in / .job-in.
+    // Keep status-* on .sprite so ring colors stay truthful; visualFrame is FSM-only.
+    var stRing = agent.status || 'idle';
+    var wantStatus = 'status-' + stRing;
+    if (!el.classList.contains(wantStatus)) {
+      Array.prototype.slice.call(el.classList).forEach(function (c) {
+        if (c.indexOf('status-') === 0) el.classList.remove(c);
+      });
+      el.classList.add(wantStatus);
+    }
+    // Hide leftover cast <img> if host has not removed it yet (belt; ignore castSrc).
+    var castImg = el.querySelector('img.cast');
+    if (castImg) {
+      castImg.hidden = true;
+      castImg.removeAttribute('src');
+      castImg.style.display = 'none';
+    }
 
     var bubble = el.querySelector('.npc-emotion');
     if (!bubble) {
@@ -1210,7 +1228,7 @@
   }
 
   global.CampusNpc = {
-    version: 'npc6',
+    version: 'circles1',
     ownsPositions: true,
     sync: sync,
     agents: agents,
