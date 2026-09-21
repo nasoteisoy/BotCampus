@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc5 inner/outer slots + stuck-idle + banner-clear Dev B -->
+<!-- CACHE_BUST v=npc5b Dev A: banner-on-arrive + stuck-nudge hold + frameDisp walk clear -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -786,13 +786,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc5"></script>
+<script src="./campus-npc.js?v=npc5b"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc5';
+  const ASSET_V = 'npc5b';
   const WORLD = { w: 2100, h: 1600, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -1935,31 +1935,18 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   }
 
   function renderAlert(data) {
-    const hits = permissionInterns(data);
-    // npc5: banner clears when NONE need permission OR ALL have arrived at pad
-    if (!hits.length) {
+    // npc5 Dev A host: SHOW only when intern ARRIVED at Jesus pad (Jesus must act).
+    // CLEAR while pathing / when none waiting — no sticky "running to pad".
+    const waiting = permissionInterns(data).filter(h => h.atJesus);
+    if (!waiting.length) {
       alertEl.classList.remove('show', 'running');
       alertEl.textContent = '';
       mapWrap.classList.remove('high-alert');
       return;
     }
-    const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
-    const allThere = hits.every(h => h.atJesus);
-    const anyThere = hits.some(h => h.atJesus);
-    if (allThere) {
-      // Arrived — clear banner (do not leave stuck .show "at Jesus pad")
-      alertEl.classList.remove('show', 'running');
-      alertEl.textContent = '';
-      mapWrap.classList.remove('high-alert');
-      return;
-    }
-    if (anyThere) {
-      alertEl.textContent = '⚠ PERMISSION partial @ pad — ' + labels;
-      alertEl.classList.add('running');
-    } else {
-      alertEl.textContent = '⚠ PERMISSION needed — running to pad — ' + labels;
-      alertEl.classList.add('running');
-    }
+    const labels = waiting.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
+    alertEl.textContent = '⚠ PERMISSION at Jesus pad — ' + labels;
+    alertEl.classList.remove('running');
     alertEl.classList.add('show');
     mapWrap.classList.add('high-alert');
   }

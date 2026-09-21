@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc5
+/*! Campus NPC FSM (Dev B) — npc5b (Dev A collision/host assist)
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
@@ -10,7 +10,8 @@
  * npc3: larger intern radii, soft separation, Jesus/home loc badges
  * npc4: per-bot craft slots (no stacks), truthful loc badges, permission RUN+pad.on
  * npc5: mains INNER / interns OUTER|owner-orbit slots; sep 130/100/80;
- *       stuck walk→idle/retarget; banner clears on arrive (host side)
+ *       stuck walk→idle/retarget; banner on-arrive-only (host)
+ * npc5 Dev A: hold stuck-nudge vs slot overwrite; post-sep frameDisp walk clear; slotAround export
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -169,6 +170,10 @@
     return null;
   }
 
+  function holdStuckNudge(a) {
+    return a && a._slotKind === 'stuck-nudge' && (a.fsm === 'walk' || a.fsm === 'run');
+  }
+
   /**
    * Craft/permission ARRIVE slots: mains INNER; interns OUTER (clear of mains).
    * Owner-orbit only when a single main shares the station. Dev A may refine.
@@ -199,6 +204,7 @@
 
       var mc = mains.length;
       mains.forEach(function (a, i) {
+        if (holdStuckNudge(a)) return;
         var off = mainSlotOffset(i, mc);
         a.targetX = st.x + off.x;
         a.targetY = st.y + off.y;
@@ -211,6 +217,7 @@
       if (mc <= 1 && mains.length === 1) {
         var owner = mains[0];
         interns.forEach(function (a, i) {
+          if (holdStuckNudge(a)) return;
           var off = ownerOrbitOffset(i, interns.length);
           a.targetX = owner.targetX + off.x;
           a.targetY = owner.targetY + off.y;
@@ -219,6 +226,7 @@
         });
       } else {
         interns.forEach(function (a, i) {
+          if (holdStuckNudge(a)) return;
           var off = internStationOffset(i, Math.max(mc, 2));
           a.targetX = st.x + off.x;
           a.targetY = st.y + off.y;
@@ -254,6 +262,7 @@
         return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
       });
       mains.forEach(function (a, i) {
+        if (holdStuckNudge(a)) return;
         a.targetX = desk.x + (i - (mains.length - 1) / 2) * 36;
         a.targetY = desk.y - 72;
         a._slotKind = 'home-main';
@@ -262,6 +271,7 @@
       mains.forEach(function (a) { mainByKey[a.key] = a; });
       var oi = 0;
       interns.forEach(function (a) {
+        if (holdStuckNudge(a)) { oi++; return; }
         var ok = ownerMainKey(a);
         var owner = ok && mainByKey[ok];
         var off = ownerOrbitOffset(oi, Math.max(interns.length, 3));
@@ -986,14 +996,32 @@
     occupied = new Set();
     applyCraftSlots(); // keep arrive slots stable every tick
     applyHomeSlots();
-    agents.forEach(function (agent) { tickAgent(agent, dt); });
-    separateAgents();
-    // After separation: if walk/run but barely moved this frame, drop walk class
     agents.forEach(function (agent) {
-      if ((agent.fsm === 'walk' || agent.fsm === 'run') && agent.speed <= MOVE_EPS) {
+      agent._frameX0 = agent.x;
+      agent._frameY0 = agent.y;
+      tickAgent(agent, dt);
+    });
+    separateAgents();
+    // Dev A: drop walk-in-place when sep cancels net motion this frame
+    agents.forEach(function (agent) {
+      var frameDisp = Math.hypot(
+        agent.x - (agent._frameX0 || agent.x),
+        agent.y - (agent._frameY0 || agent.y)
+      );
+      if ((agent.fsm === 'walk' || agent.fsm === 'run') &&
+          (agent.speed <= MOVE_EPS || frameDisp < 0.65)) {
         agent.fsm = 'idle';
         agent.visualFrame = 'idle';
         agent.vx = 0; agent.vy = 0; agent.speed = 0;
+      }
+      var dT = Math.hypot(agent.targetX - agent.x, agent.targetY - agent.y);
+      if ((agent.fsm === 'walk' || agent.fsm === 'run') && dT < ARRIVE_PX * 2.0 && frameDisp < 1.2) {
+        agent.x = agent.targetX;
+        agent.y = agent.targetY;
+        agent.vx = 0; agent.vy = 0; agent.speed = 0;
+        agent.fsm = 'idle';
+        agent.visualFrame = 'idle';
+        if (agent._slotKind === 'stuck-nudge') agent._slotKind = null;
       }
     });
     // Re-place after separation so DOM matches pushed coords + badges
@@ -1019,7 +1047,7 @@
   }
 
   global.CampusNpc = {
-    version: 'npc5',
+    version: 'npc5b',
     ownsPositions: true,
     sync: sync,
     agents: agents,
@@ -1029,6 +1057,10 @@
     SLOT_MIN_DIST: SLOT_MIN_DIST,
     SEP_MAIN: SEP_MAIN,
     SEP_MIX: SEP_MIX,
-    SEP_INTERN: SEP_INTERN
+    SEP_INTERN: SEP_INTERN,
+    slotAround: function (index, isIntern, mainCount) {
+      return isIntern ? internStationOffset(index, mainCount) : mainSlotOffset(index, mainCount);
+    },
+    ownerOrbitOffset: ownerOrbitOffset
   };
 })(typeof window !== 'undefined' ? window : globalThis);
