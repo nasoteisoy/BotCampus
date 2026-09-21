@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — circles1 (+ Dev A COLLISION-LAYOUT)
+/*! Campus NPC FSM (Dev B) — circles2 (+ Dev A COLLISION-LAYOUT)
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
@@ -15,6 +15,7 @@
  * circles1 (Dev B): CIRCLE markers — applyFrame does NOT load walk/busy PNGs / castSrc.
  *       Status ring colors via .sprite.status-* only; visualFrame kept for FSM bookkeeping.
  *       Host name-circles DOM/CSS owned by Dev A (MARKERS-CIRCLES). Don't break COLLISION-LAYOUT.
+ * circles2 (Dev A): larger circle AABB + intern∩intern/main∩main hard gaps (Fire∩Earth FLOW).
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -35,15 +36,15 @@
   // AABB half-extents — circles1 name circles (no cast PNG, no .tag under mains).
   // Main diam ~72–100px; intern ~48–64px; loc badge above/beside (not name-below).
   // COLLISION-LAYOUT (Dev A) still owns rails/bay + enforceAabbGaps.
-  var MAIN_HALF_W = 58;
-  var MAIN_HALF_H = 62; // circle + loc badge above
-  var INTERN_HALF_W = 38;
-  var INTERN_HALF_H = 42;
-  var AABB_GAP = 18; // hard min gap between intern AABB and every main AABB
-  var INTERN_RAIL_SPACING = 78; // along side rail
-  var SEP_MAIN = 140;
-  var SEP_MIX = 120; // soft sep; hard AABB enforce follows
-  var SEP_INTERN = 72;
+  var MAIN_HALF_W = 56; // circles2: ~104px circle half + glow
+  var MAIN_HALF_H = 56;
+  var INTERN_HALF_W = 48; // ~80px circle + two-line name/job
+  var INTERN_HALF_H = 52;
+  var AABB_GAP = 28; // hard min gap (Fire FLOW ∩ Earth FLOW fix)
+  var INTERN_RAIL_SPACING = 104; // along side rail / home bay
+  var SEP_MAIN = 170;
+  var SEP_MIX = 150; // soft sep; hard AABB enforce follows
+  var SEP_INTERN = 110;
   var STUCK_MS = 350; // faster snap for walk-in-place (coord Dev B stuck)
   var STUCK_DISP_PX = 3;
   var HOME_ARRIVE_BADGE = 100;
@@ -394,55 +395,81 @@
     });
   }
 
+  function halfFor(a) {
+    return a.isIntern
+      ? { hw: INTERN_HALF_W, hh: INTERN_HALF_H }
+      : { hw: MAIN_HALF_W, hh: MAIN_HALF_H };
+  }
+
+  function aabbOverlapPair(ax, ay, ah, bx, by, bh) {
+    var needX = ah.hw + bh.hw + AABB_GAP;
+    var needY = ah.hh + bh.hh + AABB_GAP;
+    return Math.abs(ax - bx) < needX && Math.abs(ay - by) < needY;
+  }
+
+  function pushApart(a, b, equal) {
+    var ha = halfFor(a), hb = halfFor(b);
+    var needX = ha.hw + hb.hw + AABB_GAP;
+    var needY = ha.hh + hb.hh + AABB_GAP;
+    var dx = b.x - a.x, dy = b.y - a.y;
+    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) { dx = 1; dy = 0.2; }
+    var pushX = needX - Math.abs(dx);
+    var pushY = needY - Math.abs(dy);
+    if (pushX <= pushY) {
+      var sx = dx >= 0 ? 1 : -1;
+      var dist = needX;
+      if (equal) {
+        var mid = (a.x + b.x) / 2;
+        a.x = mid - sx * dist / 2;
+        b.x = mid + sx * dist / 2;
+      } else if (a.isIntern && !b.isIntern) {
+        a.x = b.x - sx * dist;
+      } else if (!a.isIntern && b.isIntern) {
+        b.x = a.x + sx * dist;
+      } else {
+        var mid2 = (a.x + b.x) / 2;
+        a.x = mid2 - sx * dist / 2;
+        b.x = mid2 + sx * dist / 2;
+      }
+    } else {
+      var sy = dy >= 0 ? 1 : -1;
+      var distY = needY;
+      if (equal) {
+        var midy = (a.y + b.y) / 2;
+        a.y = midy - sy * distY / 2;
+        b.y = midy + sy * distY / 2;
+      } else if (a.isIntern && !b.isIntern) {
+        a.y = b.y - sy * distY;
+      } else if (!a.isIntern && b.isIntern) {
+        b.y = a.y + sy * distY;
+      } else {
+        var midy2 = (a.y + b.y) / 2;
+        a.y = midy2 - sy * distY / 2;
+        b.y = midy2 + sy * distY / 2;
+      }
+    }
+  }
+
   /**
-   * Hard AABB enforce on live positions — interns yield; mains hold.
-   * Runs after soft sep so walk-in-place can't leave intern∩main.
+   * Hard AABB enforce — circles2: intern∩main, intern∩intern, main∩main.
+   * Interns yield to mains; peers split equally.
    */
   function enforceAabbGaps() {
-    var mains = listMains();
-    if (!mains.length) return;
-    agents.forEach(function (a) {
-      if (!a.isIntern) return;
-      // Use live main positions (not only targets) so pathing mains still clear
-      var liveMains = mains.map(function (m) {
-        return { x: m.x, y: m.y, targetX: m.targetX, targetY: m.targetY };
-      });
-      // Check against both live and target boxes
-      var px = a.x, py = a.y;
-      for (var pass = 0; pass < 6; pass++) {
-        var moved = false;
-        for (var i = 0; i < mains.length; i++) {
-          var m = mains[i];
-          var boxes = [
-            { x: m.x, y: m.y },
-            { x: m.targetX, y: m.targetY }
-          ];
-          for (var b = 0; b < boxes.length; b++) {
-            var mx = boxes[b].x, my = boxes[b].y;
-            if (mx == null || my == null) continue;
-            if (!aabbOverlapsMain(px, py, mx, my)) continue;
-            var needX = MAIN_HALF_W + INTERN_HALF_W + AABB_GAP;
-            var needY = MAIN_HALF_H + INTERN_HALF_H + AABB_GAP;
-            var dx = px - mx, dy = py - my;
-            var pushX = needX - Math.abs(dx);
-            var pushY = needY - Math.abs(dy);
-            if (pushX <= pushY) {
-              var sx = dx >= 0 ? 1 : -1;
-              if (Math.abs(dx) < 1) sx = 1;
-              px = mx + sx * needX;
-            } else {
-              var sy = dy >= 0 ? 1 : -1;
-              if (Math.abs(dy) < 1) sy = 1;
-              py = my + sy * needY;
-            }
-            moved = true;
-          }
+    var list = [];
+    agents.forEach(function (a) { list.push(a); });
+    for (var pass = 0; pass < 8; pass++) {
+      var moved = false;
+      for (var i = 0; i < list.length; i++) {
+        for (var j = i + 1; j < list.length; j++) {
+          var a = list[i], b = list[j];
+          if (!aabbOverlapPair(a.x, a.y, halfFor(a), b.x, b.y, halfFor(b))) continue;
+          var equal = (!!a.isIntern === !!b.isIntern);
+          pushApart(a, b, equal);
+          moved = true;
         }
-        if (!moved) break;
       }
-      a.x = px;
-      a.y = py;
-    });
+      if (!moved) break;
+    }
   }
 
   /** Stuck / micro-jitter: snap to target or idle — no walk class with ~0 motion. */
@@ -1228,7 +1255,7 @@
   }
 
   global.CampusNpc = {
-    version: 'circles1',
+    version: 'circles2',
     ownsPositions: true,
     sync: sync,
     agents: agents,

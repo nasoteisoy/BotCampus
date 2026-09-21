@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T01:10:41Z",
+  "updatedAt": "2026-09-21T01:30:46Z",
   "items": [
     {
       "id": "rv-campus-layout-npc6",
@@ -15,10 +15,10 @@
       "dismissedAt": null
     },
     {
-      "id": "rv-campus-circles1",
-      "title": "Campus markers — name circles (no sprites)",
-      "summary": "circles1: main = full name inside circle; intern = parent name + job. Waiting on Dev C QC before open.",
-      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles1",
+      "id": "rv-campus-circles2",
+      "title": "Campus markers — name circles (circles2)",
+      "summary": "circles2: larger AABB clearance + Fit floor after C FAIL on Fire∩Earth FLOW overlap. Waiting Dev C QC.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
       "owner": "Dev A + Dev B",
       "kind": "campus",
       "priority": 1,

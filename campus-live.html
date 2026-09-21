@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- POLL=10s Pages429cool CACHE_BUST v=circles1 named circle markers (no sprites) Dev A + Dev B FSM -->
+<!-- POLL=10s Pages429cool CACHE_BUST v=circles2 larger AABB + Fit (Dev A COLLISION) -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -177,10 +177,10 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   filter:none !important; /* status glow via ring/box-shadow instead of drop-shadow on art */
 }
 .sprite.circle-mode.main .body{
-  width:96px; height:96px;
+  width:104px; height:104px;
 }
 .sprite.circle-mode.intern .body{
-  width:72px; height:72px;
+  width:80px; height:80px;
   padding:5px 4px;
   border-width:2px;
 }
@@ -210,8 +210,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   max-width:100%;
   hyphens:auto;
 }
-.sprite.circle-mode.main .mark-name{font-size:12px}
-.sprite.circle-mode.intern .mark-name{font-size:9px; font-weight:800}
+.sprite.circle-mode.main .mark-name{font-size:12.5px}
+.sprite.circle-mode.intern .mark-name{font-size:9.5px; font-weight:800}
 .sprite.circle-mode .mark-job{
   display:none;
   font-size:7.5px;
@@ -488,8 +488,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 /* Cast art sizes (ignored when .circle-mode) */
 .sprite.main .body{width:104px; height:104px}
 .sprite.intern .body{width:62px; height:62px}
-.sprite.circle-mode.main .body{width:96px; height:96px}
-.sprite.circle-mode.intern .body{width:72px; height:72px}
+.sprite.circle-mode.main .body{width:104px; height:104px}
+.sprite.circle-mode.intern .body{width:80px; height:80px}
 .sprite.main .ring{inset:-6px; border-width:3px}
 .sprite.intern .tag{font-size:8px; max-width:90px}
 .sprite .tag{font-size:9px; max-width:100px}
@@ -898,13 +898,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=circles1"></script>
+<script src="./campus-npc.js?v=circles2"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 10000; // Pages 429 cool-down — do not lower
-  const ASSET_V = 'circles1';
+  const ASSET_V = 'circles2';
   const WORLD = { w: 2100, h: 1600, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -964,9 +964,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   /* ——— Camera (transform only; no DOM re-layout per frame) ——— */
   const ZOOM_MAX = 2.5;
-  const MAIN_SPRITE_CSS = 96; // .sprite.circle-mode.main .body
-  const TARGET_MAIN_ON_SCREEN = 76; // ≥70–100 CSS-px on phone after transform
-  const READABLE_ZOOM_MIN = TARGET_MAIN_ON_SCREEN / MAIN_SPRITE_CSS; // ≈0.731
+  const MAIN_SPRITE_CSS = 104; // .sprite.circle-mode.main .body (circles2)
+  const TARGET_MAIN_ON_SCREEN = 92; // circles2: not postage-stamp Fit
+  const READABLE_ZOOM_MIN = TARGET_MAIN_ON_SCREEN / MAIN_SPRITE_CSS; // ≈0.885
   const cam = { x: 0, y: 0, scale: 1, vx: 0, vy: 0 };
   let camRaf = 0;
   let camDirty = false;
