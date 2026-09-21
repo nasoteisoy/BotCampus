@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T03:13:06Z",
+  "updatedAt": "2026-09-21T03:43:39Z",
   "items": [
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
-      "summary": "opt6b: A neon HUMAN verified on Pages (curl MD5). Not ship.",
+      "summary": "opt6b: A neon HUMAN verified on Pages (curl MD5). Not ship. \u00b7 B camera fix live ?v=opt6c.",
       "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt6b",
       "owner": "Dev A (+ Dev B on B)",
       "kind": "game",
@@ -16,7 +16,7 @@
       "links": [
         "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt6b",
         "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt6b",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6b",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6c",
         "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6b"
       ]
     },
