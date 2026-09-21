@@ -1,19 +1,16 @@
 
-  var heroImg = new Image();
-  var heroReady = false;
-  heroImg.onload = function () { heroReady = true; };
-  heroImg.onerror = function () {
-    heroImg.onerror = null;
-    heroImg.src = './art/hero_silhouette.png';
-  };
-  heroImg.src = './art/player.png';
-
-  var blobImg = new Image(); var blobOk = false;
-  blobImg.onload = function () { blobOk = true; };
-  blobImg.src = './art/enemy_blob.png';
-  var blobAlt = new Image(); var blobAltOk = false;
-  blobAlt.onload = function () { blobAltOk = true; };
-  blobAlt.src = './art/enemy_blob_alt.png';
+  function loadImg(src) {
+    var im = new Image();
+    im.ok = false;
+    im.onload = function () { im.ok = true; };
+    im.onerror = function () { im.ok = false; };
+    im.src = src;
+    return im;
+  }
+  var heroImg = loadImg('./art/player.png');
+  var heroImg2 = loadImg('./art/player_f2.png');
+  var blobImg = loadImg('./art/enemy_blob.png');
+  var blobAlt = loadImg('./art/enemy_blob_alt.png');
 
 (function () {
   "use strict";
@@ -717,20 +714,13 @@
       ctx.scale(face * e.scale, e.scale);
       ctx.fillStyle = e.hitFlash > 0 ? "#fff" : e.kind === "brute" ? "#78350f" : "#ec4899";
       const bimg = (e.kind === "brute" || (e.id|0) % 2) ? blobAlt : blobImg;
-      const bok = (e.kind === "brute" || (e.id|0) % 2) ? blobAltOk : blobOk;
-      if (bok) {
-        const s = Math.max(e.w, e.h) * 1.35;
+      if (bimg.ok) {
+        const s = Math.max(e.w, e.h) * 1.55;
         if (e.hitFlash > 0) ctx.globalAlpha = 0.9;
         ctx.drawImage(bimg, -s/2, -s*0.95, s, s);
         ctx.globalAlpha = 1;
-      } else {
-        ctx.beginPath(); ctx.ellipse(0, -e.h/2, e.w/2, e.h/2, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#450a0a";
-        ctx.fillRect(-e.w * 0.15, -e.h * 0.75, e.w * 0.35, e.h * 0.2);
-        ctx.fillStyle = e.kind === "brute" ? "#7f1d1d" : "#881337";
-        ctx.fillRect(-e.w * 0.35, -4, e.w * 0.25, 8);
-        ctx.fillRect(e.w * 0.1, -4, e.w * 0.25, 8);
       }
+      // no ellipse/face shape fallback
       ctx.restore();
     }
 
@@ -778,18 +768,14 @@
       ctx.scale(p.facing * p.scale, p.scale);
       const blink = p.invuln > 0 && Math.floor(p.invuln * 18) % 2 === 0;
       if (blink) ctx.globalAlpha = 0.4;
-      if (typeof heroReady !== "undefined" && heroReady) {
-        const s = Math.max(p.w, p.h) * 2.2;
-        ctx.drawImage(heroImg, -s * 0.42, -s * 0.98, s, s);
-      } else {
-        ctx.fillStyle = p.hitFlash > 0 ? "#fff" : "#166534";
-        ctx.beginPath();
-        ctx.roundRect(-p.w / 2, -p.h, p.w, p.h, 8);
-        ctx.fill();
-        ctx.fillStyle = "#fde68a";
-        ctx.beginPath();
-        ctx.arc(0, -p.h * 0.72, p.w * 0.35, 0, Math.PI * 2);
-        ctx.fill();
+      {
+        const running = Math.abs(p.vx) > 30;
+        const himg = (running && heroImg2.ok && (((performance.now() / 140) | 0) % 2)) ? heroImg2 : heroImg;
+        if (himg.ok) {
+          const s = Math.max(p.w, p.h) * 2.2;
+          ctx.drawImage(himg, -s * 0.42, -s * 0.98, s, s);
+        }
+        // no stubby shape fallback
       }
       ctx.globalAlpha = 1;
       ctx.restore();

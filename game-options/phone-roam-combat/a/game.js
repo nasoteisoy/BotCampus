@@ -2,21 +2,20 @@
   "use strict";
 
   // STYLE_LOCK assets
-  const heroImg = new Image();
-  let heroReady = false;
-  heroImg.onload = () => { heroReady = true; };
-  heroImg.onerror = () => { heroImg.onerror = null; heroImg.src = './art/hero_silhouette.png'; };
-  heroImg.src = './art/player.png';
-
-  var enemyTri = new Image(); var enemyTriOk = false;
-  enemyTri.onload = function () { enemyTriOk = true; };
-  enemyTri.src = './art/enemy_tri.png';
-  var enemyPod = new Image(); var enemyPodOk = false;
-  enemyPod.onload = function () { enemyPodOk = true; };
-  enemyPod.src = './art/enemy_pod.png';
-  var enemyRock = new Image(); var enemyRockOk = false;
-  enemyRock.onload = function () { enemyRockOk = true; };
-  enemyRock.src = './art/enemy_rock.png';
+  // Illustrated sprites (Render A) — drawImage only, never canvas shapes / _old_shape_*
+  function loadImg(src) {
+    const im = new Image();
+    im.ok = false;
+    im.onload = () => { im.ok = true; };
+    im.onerror = () => { im.ok = false; };
+    im.src = src;
+    return im;
+  }
+  const heroImg = loadImg('./art/player.png');
+  const heroImg2 = loadImg('./art/player_f2.png');
+  const enemyTri = loadImg('./art/enemy_tri.png');
+  const enemyPod = loadImg('./art/enemy_pod.png');
+  const enemyRock = loadImg('./art/enemy_rock.png');
 
 
   const canvas = document.getElementById("c");
@@ -481,67 +480,6 @@
     updateHUD();
   }
 
-  function drawEnemyShape(e) {
-    const flash = e.hitFlash > 0;
-    ctx.lineWidth = 2.5;
-    if (e.kind === "tri") {
-      ctx.strokeStyle = flash ? "#fff" : "#22d3ee";
-      ctx.shadowColor = "#22d3ee";
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      const r = e.r;
-      ctx.moveTo(0, -r);
-      ctx.lineTo(r * 0.9, r * 0.75);
-      ctx.lineTo(-r * 0.9, r * 0.75);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    } else if (e.kind === "pod") {
-      ctx.strokeStyle = flash ? "#fff" : "#d946ef";
-      ctx.fillStyle = flash ? "rgba(255,255,255,0.35)" : "rgba(217,70,239,0.18)";
-      ctx.shadowColor = "#d946ef";
-      ctx.shadowBlur = 14;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, e.r * 0.55, e.r, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    } else if (e.kind === "orb") {
-      const col = flash ? "#fff" : (Math.floor(e.rot * 3) % 2 ? "#22d3ee" : "#d946ef");
-      ctx.strokeStyle = col;
-      ctx.shadowColor = col;
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      const spikes = 7;
-      for (let i = 0; i < spikes; i++) {
-        const a = e.rot + (i / spikes) * Math.PI * 2;
-        const rr = i % 2 === 0 ? e.r : e.r * 0.45;
-        const x = Math.cos(a) * rr;
-        const y = Math.sin(a) * rr;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    } else {
-      // faceted rock
-      ctx.fillStyle = flash ? "#fff" : "#4c1d95";
-      ctx.strokeStyle = flash ? "#fff" : "#a78bfa";
-      ctx.shadowColor = "#a78bfa";
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      const pts = [
-        [0, -e.r], [e.r * 0.85, -e.r * 0.35], [e.r * 0.7, e.r * 0.55],
-        [-e.r * 0.15, e.r], [-e.r * 0.9, e.r * 0.25], [-e.r * 0.65, -e.r * 0.55],
-      ];
-      pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-  }
 
   function draw() {
     const viewW = canvas.clientWidth;
@@ -601,19 +539,16 @@
       ctx.translate(e.x, e.y);
       ctx.scale(e.scale, e.scale);
       const flash = e.hitFlash > 0;
-      const spriteFor = e.kind === "tri" ? [enemyTri, enemyTriOk]
-        : e.kind === "pod" || e.kind === "orb" ? [enemyPod, enemyPodOk]
-        : [enemyRock, enemyRockOk];
-      const img = spriteFor[0];
-      const ok = spriteFor[1];
-      if (ok) {
-        const s = e.r * 2.4;
+      const img = e.kind === "tri" ? enemyTri
+        : e.kind === "pod" || e.kind === "orb" ? enemyPod
+        : enemyRock;
+      if (img.ok) {
+        const s = e.r * 2.8;
         if (flash) ctx.globalAlpha = 0.85;
         ctx.drawImage(img, -s / 2, -s / 2, s, s);
         ctx.globalAlpha = 1;
-      } else {
-        drawEnemyShape(e);
       }
+      // no shape fallback — wait for PNG
       ctx.restore();
     }
 
@@ -640,25 +575,14 @@
       ctx.rotate(p.facing);
       const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
       if (blink) ctx.globalAlpha = 0.35;
-      if (heroReady) {
-        const s = p.r * 3.4;
-        ctx.drawImage(heroImg, -s / 2, -s / 2, s, s);
-      } else {
-        ctx.fillStyle = p.hitFlash > 0 ? "#fff" : "#c084fc";
-        ctx.shadowColor = "#22d3ee";
-        ctx.shadowBlur = 16;
-        ctx.beginPath();
-        ctx.moveTo(p.r + 6, 0);
-        ctx.lineTo(-p.r * 0.7, p.r * 0.8);
-        ctx.lineTo(-p.r * 0.35, 0);
-        ctx.lineTo(-p.r * 0.7, -p.r * 0.8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#22d3ee";
-        ctx.beginPath();
-        ctx.arc(3, 0, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
+      {
+        const moving = Math.hypot(p.vx, p.vy) > 20;
+        const himg = (moving && heroImg2.ok && (((performance.now() / 120) | 0) % 2)) ? heroImg2 : heroImg;
+        if (himg.ok) {
+          const s = p.r * 3.6;
+          ctx.drawImage(himg, -s / 2, -s / 2, s, s);
+        }
+        // no ship-shape fallback
       }
       ctx.globalAlpha = 1;
       ctx.restore();

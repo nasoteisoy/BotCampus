@@ -1,16 +1,15 @@
 
-  var heroImg = new Image();
-  var heroReady = false;
-  heroImg.onload = function () { heroReady = true; };
-  heroImg.onerror = function () {
-    heroImg.onerror = null;
-    heroImg.src = './art/hero_silhouette.png';
-  };
-  heroImg.src = './art/player.png';
-
-  var guardImg = new Image(); var guardOk = false;
-  guardImg.onload = function () { guardOk = true; };
-  guardImg.src = './art/guard.png';
+  function loadImg(src) {
+    var im = new Image();
+    im.ok = false;
+    im.onload = function () { im.ok = true; };
+    im.onerror = function () { im.ok = false; };
+    im.src = src;
+    return im;
+  }
+  var heroImg = loadImg('./art/player.png');
+  var heroImg2 = loadImg('./art/player_f2.png');
+  var guardImg = loadImg('./art/guard.png');
 
 (function () {
   "use strict";
@@ -677,22 +676,14 @@
         ctx.save();
         ctx.translate(s.x + ox, s.y + oy);
         ctx.scale(g.scale, g.scale);
-        // body — prefer dedicated guard sprite
-        if (typeof guardOk !== "undefined" && guardOk) {
-          const gs = 36;
+        // illustrated guard only
+        if (guardImg.ok) {
+          const gs = 40;
           if (g.hitFlash > 0) ctx.globalAlpha = 0.9;
           ctx.drawImage(guardImg, -gs / 2, -gs * 0.85, gs, gs);
           ctx.globalAlpha = 1;
-        } else {
-          ctx.fillStyle = g.hitFlash > 0 ? "#fff" : g.state === "hunt" ? "#f87171" : "#64748b";
-          ctx.beginPath();
-          ctx.moveTo(0, -18);
-          ctx.lineTo(10, -8);
-          ctx.lineTo(0, 2);
-          ctx.lineTo(-10, -8);
-          ctx.closePath();
-          ctx.fill();
         }
+        // no diamond shape fallback
         // facing tick
         ctx.strokeStyle = "#0f172a";
         ctx.lineWidth = 2;
@@ -712,19 +703,15 @@
         ctx.save();
         ctx.translate(s.x + ox, s.y + oy);
         ctx.scale(p.scale, p.scale);
-        if (typeof heroReady !== "undefined" && heroReady) {
-          const s = 36 * p.scale;
-          ctx.rotate(p.facing * 0.15);
-          ctx.drawImage(heroImg, -s / 2, -s * 0.85, s, s);
-        } else {
-          ctx.fillStyle = p.hidden ? "#1e3a5f" : "#0f172a";
-          ctx.beginPath();
-          ctx.ellipse(0, -6, 8, 12, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#fbbf24";
-          ctx.beginPath();
-          ctx.arc(3, -12, 2.2, 0, Math.PI * 2);
-          ctx.fill();
+        {
+          const dashing = p.dashT > 0;
+          const himg = (dashing && heroImg2.ok) ? heroImg2 : heroImg;
+          if (himg.ok) {
+            const s = 40 * p.scale;
+            ctx.rotate(p.facing * 0.15);
+            ctx.drawImage(himg, -s / 2, -s * 0.85, s, s);
+          }
+          // no ellipse assassin fallback
         }
         ctx.strokeStyle = "#f87171";
         ctx.lineWidth = 2;
