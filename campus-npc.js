@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc5b (Dev A collision/host assist)
+/*! Campus NPC FSM (Dev B) — npc5c (+ Dev A COLLISION-LAYOUT)
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
@@ -12,6 +12,7 @@
  * npc5: mains INNER / interns OUTER|owner-orbit slots; sep 130/100/80;
  *       stuck walk→idle/retarget; banner on-arrive-only (host)
  * npc5 Dev A: hold stuck-nudge vs slot overwrite; post-sep frameDisp walk clear; slotAround export
+ * npc5c: COLLISION-LAYOUT markers; intern ring/orbit clear of main bodies
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -27,10 +28,10 @@
   var IDLE_DEBOUNCE_MS = 100;
   var FIDGET_MAX = 10;
   var SLOT_MIN_DIST = 130; // world px between MAIN craft ARRIVE slots (inner ring)
-  var SLOT_INTERN_RING = 200; // outer ring start for interns around station
-  var OWNER_ORBIT_R = 125; // intern orbit around owner main (>= main body)
+  var SLOT_INTERN_RING = 220; // outer ring — clear of main body (~104px) + margin
+  var OWNER_ORBIT_R = 140; // intern orbit around owner main (clear of main body)
   var SEP_MAIN = 130;
-  var SEP_MIX = 100;
+  var SEP_MIX = 110;
   var SEP_INTERN = 80;
   var STUCK_MS = 500;
   var STUCK_DISP_PX = 2;
@@ -130,6 +131,10 @@
     }
     return { x: home.x + ox, y: home.y + oy };
   }
+
+  // === COLLISION-LAYOUT (Dev A) ===
+  // Intern/main slot math + soft sep. Do NOT own FSM left/top after first paint.
+  // Dev B owns stuck-walker + permissionArrived / banner timing.
 
   /** Inner ring for MAINS — spaced so chord >= SLOT_MIN_DIST. */
   function mainSlotOffset(index, mainCount) {
@@ -289,6 +294,8 @@
       });
     });
   }
+
+  // === /COLLISION-LAYOUT (Dev A) — slot targets only; FSM still walks left/top ===
 
   function resolveTarget(bot, entity, state, isIntern) {
     var status = (entity && entity.status) || bot.status || 'idle';
@@ -572,6 +579,7 @@
     ctx.helpers.setLocBadge(el, 'clear');
   }
 
+  // === COLLISION-LAYOUT (Dev A) sep — soft push; never claim DOM left/top ownership ===
   function separateAgents() {
     var list = [];
     agents.forEach(function (a) { list.push(a); });
@@ -1047,7 +1055,7 @@
   }
 
   global.CampusNpc = {
-    version: 'npc5b',
+    version: 'npc5c',
     ownsPositions: true,
     sync: sync,
     agents: agents,

@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc5b Dev A: banner-on-arrive + stuck-nudge hold + frameDisp walk clear -->
+<!-- CACHE_BUST v=npc5c COLLISION-LAYOUT (Dev A) + banner-on-arrive (Dev B host OK) -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -786,13 +786,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc5b"></script>
+<script src="./campus-npc.js?v=npc5c"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc5b';
+  const ASSET_V = 'npc5c';
   const WORLD = { w: 2100, h: 1600, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
