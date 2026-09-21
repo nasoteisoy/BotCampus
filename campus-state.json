@@ -1,86 +1,86 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-20T23:37:49Z",
+  "updatedAt": "2026-09-21T00:08:41Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
       "id": "desk-jesus",
       "label": "Jesus",
       "ownerBotId": null,
-      "zone": "ops",
-      "x": 720,
-      "y": 110
+      "zone": "jesus",
+      "x": 960,
+      "y": 140
     },
     {
       "id": "desk-leader",
       "label": "Leader",
       "ownerBotId": "leader",
       "zone": "ops",
-      "x": 220,
-      "y": 300
+      "x": 240,
+      "y": 420
     },
     {
       "id": "desk-dev-a",
       "label": "Dev A",
       "ownerBotId": "dev-a",
       "zone": "ops",
-      "x": 500,
-      "y": 300
+      "x": 580,
+      "y": 420
     },
     {
       "id": "desk-dev-b",
       "label": "Dev B",
       "ownerBotId": "dev-b",
       "zone": "ops",
-      "x": 780,
-      "y": 300
+      "x": 920,
+      "y": 420
     },
     {
       "id": "desk-dev-c",
       "label": "Dev C",
       "ownerBotId": "dev-c",
       "zone": "ops",
-      "x": 1060,
-      "y": 300
+      "x": 1260,
+      "y": 420
     },
     {
       "id": "desk-render-a",
       "label": "Render A",
       "ownerBotId": "render-a",
       "zone": "workshop",
-      "x": 220,
-      "y": 540
+      "x": 240,
+      "y": 780
     },
     {
       "id": "desk-render-b",
       "label": "Render B",
       "ownerBotId": "render-b",
       "zone": "workshop",
-      "x": 500,
-      "y": 540
+      "x": 580,
+      "y": 780
     },
     {
       "id": "desk-render-c",
       "label": "Render C",
       "ownerBotId": "render-c",
       "zone": "workshop",
-      "x": 780,
-      "y": 540
+      "x": 920,
+      "y": 780
     },
     {
       "id": "desk-researcher-a",
       "label": "Researcher A",
       "ownerBotId": "researcher-a",
       "zone": "library",
-      "x": 1060,
-      "y": 540
+      "x": 1340,
+      "y": 780
     },
     {
       "id": "desk-researcher-b",
       "label": "Researcher B",
       "ownerBotId": "researcher-b",
       "zone": "library",
-      "x": 220,
+      "x": 1680,
       "y": 780
     },
     {
@@ -88,24 +88,24 @@
       "label": "Profile A",
       "ownerBotId": "profile-a",
       "zone": "courtyard",
-      "x": 500,
-      "y": 780
+      "x": 360,
+      "y": 1140
     },
     {
       "id": "desk-profile-b",
       "label": "Profile B",
       "ownerBotId": "profile-b",
       "zone": "courtyard",
-      "x": 780,
-      "y": 780
+      "x": 720,
+      "y": 1140
     },
     {
       "id": "desk-meeting",
       "label": "Meeting",
       "ownerBotId": null,
       "zone": "common",
-      "x": 1060,
-      "y": 780
+      "x": 1200,
+      "y": 1140
     }
   ],
   "bots": [
@@ -741,41 +741,91 @@
     }
   ],
   "world": {
-    "w": 1400,
-    "h": 1100
+    "w": 1920,
+    "h": 1480
   },
   "stations": [
     {
       "id": "station-code",
       "label": "Code desk",
       "kind": "code",
-      "x": 640,
-      "y": 260,
+      "x": 1600,
+      "y": 360,
       "zone": "ops"
     },
     {
       "id": "station-art",
       "label": "Art desk",
       "kind": "art",
-      "x": 500,
-      "y": 500,
+      "x": 1100,
+      "y": 660,
       "zone": "workshop"
     },
     {
       "id": "station-research",
       "label": "Research shelf",
       "kind": "research",
-      "x": 1180,
-      "y": 540,
+      "x": 1510,
+      "y": 640,
       "zone": "library"
     },
     {
       "id": "station-permission",
       "label": "Jesus permission pad",
       "kind": "permission",
-      "x": 780,
-      "y": 175,
-      "zone": "ops"
+      "x": 1120,
+      "y": 210,
+      "zone": "jesus"
+    }
+  ],
+  "zones": [
+    {
+      "id": "jesus",
+      "label": "Jesus's room",
+      "x": 700,
+      "y": 40,
+      "w": 560,
+      "h": 260
+    },
+    {
+      "id": "ops",
+      "label": "Ops bay",
+      "x": 80,
+      "y": 300,
+      "w": 1640,
+      "h": 280
+    },
+    {
+      "id": "workshop",
+      "label": "Workshop",
+      "x": 80,
+      "y": 620,
+      "w": 1100,
+      "h": 280
+    },
+    {
+      "id": "library",
+      "label": "Library",
+      "x": 1180,
+      "y": 620,
+      "w": 680,
+      "h": 280
+    },
+    {
+      "id": "courtyard",
+      "label": "Courtyard",
+      "x": 80,
+      "y": 980,
+      "w": 1000,
+      "h": 320
+    },
+    {
+      "id": "common",
+      "label": "Meeting nook",
+      "x": 1080,
+      "y": 980,
+      "w": 520,
+      "h": 320
     }
   ]
 }

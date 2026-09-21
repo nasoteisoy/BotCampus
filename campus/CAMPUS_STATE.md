@@ -77,4 +77,4 @@ Walk styles: saunter→~0.85, hurry→~1.2, measured→~1.0.
 Runtime may set `main.stationId` / `intern.stationId` (optional hint).
 
 ## Live URL
-Phone: `campus-live.html?v=npc1` — NPCs path with campus-npc.js FSM (rAF); poll ~1–2s retargets only.
+Phone: `campus-live.html?v=npc3` — NPCs path with campus-npc.js FSM (rAF); poll ~1–2s retargets only.

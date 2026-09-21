@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc2
+/*! Campus NPC FSM (Dev B) — npc3
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce)
@@ -7,6 +7,7 @@
  *  - per-bot personality kits
  *  - mute-safe emotion spikes (pulse while ready/permission holds)
  *  - first spawn ALWAYS at desk (never station) so mute-10s shows pathing
+ * npc3: larger intern radii, soft separation, Jesus/home loc badges
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -107,10 +108,10 @@
       var s = String((entity && entity.id) || '');
       for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
       var a = (Math.abs(h) % 360) * Math.PI / 180;
-      ox = Math.cos(a) * 36;
-      oy = Math.sin(a) * 28 + 40;
+      ox = Math.cos(a) * 58;
+      oy = Math.sin(a) * 44 + 62;
     } else {
-      oy = -48;
+      oy = -64;
     }
     return { x: home.x + ox, y: home.y + oy };
   }
@@ -143,10 +144,10 @@
         var s = String((entity && entity.id) || '');
         for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
         var a = (Math.abs(h) % 360) * Math.PI / 180;
-        ox = Math.cos(a) * 36;
-        oy = Math.sin(a) * 28 + 40;
+        ox = Math.cos(a) * 58;
+        oy = Math.sin(a) * 44 + 62;
       } else {
-        oy = -48;
+        oy = -64;
       }
       return { id: home.id, x: home.x + ox, y: home.y + oy, kind: 'home', urgent: false };
     }
@@ -322,6 +323,62 @@
     else if (agent.fsm === 'emotion') el.classList.add('npc-emotion-flash');
   }
 
+
+  function jesusZoneRect(state) {
+    var zones = (state && state.zones) || [];
+    for (var i = 0; i < zones.length; i++) if (zones[i].id === 'jesus') return zones[i];
+    var jd = deskById(state, (state && state.jesusDeskId) || 'desk-jesus');
+    if (jd) return { x: jd.x - 220, y: jd.y - 90, w: 440, h: 240 };
+    return null;
+  }
+
+  function pointInZone(x, y, z) {
+    if (!z) return false;
+    return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
+  }
+
+  function updateLocBadge(agent) {
+    if (!ctx || !ctx.helpers || !ctx.helpers.setLocBadge) return;
+    var el = ctx.spriteEls && ctx.spriteEls[agent.key];
+    if (!el) return;
+    var state = ctx.state || {};
+    var z = jesusZoneRect(state);
+    var atJesus = false;
+    if (agent.targetKind === 'permission' && agent.fsm !== 'walk' && agent.fsm !== 'run') {
+      atJesus = true;
+    }
+    if (!atJesus && pointInZone(agent.x, agent.y, z)) atJesus = true;
+    var homeDesk = deskById(state, agent.bot && agent.bot.deskId);
+    var homeLabel = (homeDesk && homeDesk.label) || (agent.bot && agent.bot.name) || 'home';
+    if (atJesus) ctx.helpers.setLocBadge(el, 'jesus');
+    else ctx.helpers.setLocBadge(el, 'home', homeLabel);
+  }
+
+  function separateAgents() {
+    var list = [];
+    agents.forEach(function (a) { list.push(a); });
+    var minMain = 112;
+    var minMix = 80;
+    for (var iter = 0; iter < 4; iter++) {
+      for (var i = 0; i < list.length; i++) {
+        for (var j = i + 1; j < list.length; j++) {
+          var a = list[i], b = list[j];
+          if (a.speed > MOVE_EPS || b.speed > MOVE_EPS) continue;
+          if (a.fsm === 'walk' || a.fsm === 'run' || b.fsm === 'walk' || b.fsm === 'run') continue;
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var dist = Math.hypot(dx, dy) || 0.01;
+          var need = (!a.isIntern && !b.isIntern) ? minMain : minMix;
+          if (dist < need) {
+            var push = (need - dist) / 2;
+            dx /= dist; dy /= dist;
+            a.x -= dx * push; a.y -= dy * push;
+            b.x += dx * push; b.y += dy * push;
+          }
+        }
+      }
+    }
+  }
+
   function placeAgent(agent) {
     if (!ctx || !ctx.spriteEls) return;
     var el = ctx.spriteEls[agent.key];
@@ -343,6 +400,7 @@
       else el.style.setProperty('--npc-face', '1');
     }
     applyFrame(agent, el);
+    updateLocBadge(agent);
   }
 
   function triggerEmotion(agent, kind, now) {
@@ -607,6 +665,7 @@
     if (!ctx) return;
     occupied = new Set();
     agents.forEach(function (agent) { tickAgent(agent, dt); });
+    separateAgents();
     if (ctx.state) renderStations(ctx.state);
   }
 
@@ -619,13 +678,13 @@
   function sync(nextCtx) {
     ctx = nextCtx || ctx;
     if (!ctx || !ctx.state) return;
-    if (!ctx.world) ctx.world = { w: 1440, h: 1120 };
+    if (!ctx.world) ctx.world = { w: 1920, h: 1480 };
     syncFromState();
     start();
   }
 
   global.CampusNpc = {
-    version: 'npc2',
+    version: 'npc3',
     ownsPositions: true,
     sync: sync,
     agents: agents,

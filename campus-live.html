@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc2 NPC-FSM Dev B + fun pass v11 -->
+<!-- CACHE_BUST v=npc3 layout+names Dev B — full names, zones, no overlap -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -77,7 +77,7 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 #map-wrap.high-alert{border-color:#fb7185; box-shadow:0 0 0 2px #f43f5e44, inset 0 0 48px #f43f5e18}
 #map-world{
   position:absolute; left:0; top:0;
-  width:1440px; height:1120px;
+  width:1920px; height:1480px;
   transform-origin:0 0;
   touch-action:none;
   will-change:transform;
@@ -139,8 +139,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 .desk.meeting{background:#1e3a5fcc; border-color:#38bdf888}
 .desk-label{
-  font-size:7px !important; font-weight:800; color:#cbd5e1; white-space:nowrap;
-  text-shadow:0 1px 2px #000; max-width:56px !important; overflow:hidden; text-overflow:ellipsis;
+  font-size:8px !important; font-weight:800; color:#cbd5e1; white-space:nowrap;
+  text-shadow:0 1px 2px #000; max-width:72px !important; overflow:hidden; text-overflow:ellipsis;
 }
 .desk.jesus .desk-label{color:#fef3c7; font-size:9px !important}
 
@@ -178,12 +178,31 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 .sprite .tag{
   display:block; font-size:8px; font-weight:800; color:#e2e8f0;
   text-shadow:0 1px 2px #000, 0 0 4px #000c;
-  white-space:nowrap; max-width:72px; overflow:hidden; text-overflow:ellipsis;
-  text-align:center; line-height:1.1; margin-top:1px;
-  background:#0f172acc; padding:1px 4px; border-radius:4px;
+  white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis;
+  text-align:center; line-height:1.15; margin-top:2px;
+  background:#0f172acc; padding:2px 6px; border-radius:5px;
 }
-.sprite.main .tag{display:none} /* names in bot list */
-.sprite.intern .tag{display:block; font-size:7px; max-width:64px}
+.sprite.main .tag{
+  display:block; font-size:11px; max-width:120px; overflow:visible; text-overflow:clip;
+  background:#0b1220ee; border:1px solid #94a3b866; padding:2px 7px; border-radius:6px;
+  letter-spacing:.01em;
+}
+.sprite.intern .tag{display:block; font-size:8px; max-width:86px}
+.sprite .loc-badge{
+  display:none; font-size:7px; font-weight:900; letter-spacing:.04em; text-transform:uppercase;
+  padding:1px 5px; border-radius:999px; margin-top:2px; line-height:1.2;
+  text-shadow:none; white-space:nowrap; pointer-events:none;
+}
+.sprite .loc-badge.show{display:inline-block}
+.sprite .loc-badge.jesus{
+  background:linear-gradient(90deg,#fbbf24,#f59e0b); color:#422006;
+  box-shadow:0 0 10px #fbbf2466; border:1px solid #fde68a;
+}
+.sprite .loc-badge.home{
+  background:#334155dd; color:#cbd5e1; border:1px solid #64748b99;
+}
+.sprite.main .loc-badge{font-size:8px; padding:2px 7px}
+.sprite.at-jesus .ring{border-color:#fbbf24 !important; box-shadow:0 0 12px #fbbf2444}
 .sprite.intern.perm-alert .body{
   filter:drop-shadow(0 0 8px #f43f5ecc);
 }
@@ -356,8 +375,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .sprite.main .body{width:104px; height:104px}
 .sprite.intern .body{width:62px; height:62px}
 .sprite.main .ring{inset:-6px; border-width:3px}
-.sprite.intern .tag{font-size:8px; max-width:72px}
-.sprite .tag{font-size:9px; max-width:88px}
+.sprite.intern .tag{font-size:8px; max-width:90px}
+.sprite .tag{font-size:9px; max-width:100px}
+.sprite.main .tag{font-size:12px; max-width:128px}
 
 /* Desks — bold + glanceable monitor ambient */
 .desk{
@@ -549,7 +569,54 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 #map-mini{border-color:#a855f7; background:#1e1040ee}
 
 
-/* === NPC-FSM (Dev B) npc2 — stations, motion, mute-safe emotion === */
+
+/* === Layout npc3 — room zones + Jesus suite === */
+.zone{
+  position:absolute; z-index:0; pointer-events:none;
+  border-radius:18px; border:2px dashed #64748b55;
+  box-sizing:border-box;
+}
+.zone-label{
+  position:absolute; left:10px; top:8px;
+  font-size:11px; font-weight:900; letter-spacing:.04em;
+  text-transform:uppercase; opacity:.85;
+  text-shadow:0 1px 3px #000c; pointer-events:none;
+  background:#0b1220aa; padding:2px 8px; border-radius:8px;
+}
+.zone-jesus{
+  background:linear-gradient(160deg,#fbbf2433 0%, #f59e0b18 55%, #78350f22 100%);
+  border:3px solid #fbbf24cc; box-shadow:inset 0 0 40px #fbbf2428, 0 0 24px #fbbf2433;
+}
+.zone-jesus .zone-label{color:#fef3c7; border:1px solid #fbbf2488; background:#78350fcc}
+.zone-ops{
+  background:linear-gradient(180deg,#22d3ee14 0%, #0e749014 100%);
+  border-color:#22d3ee55;
+}
+.zone-ops .zone-label{color:#a5f3fc}
+.zone-workshop{
+  background:linear-gradient(180deg,#f472b614 0%, #9d174414 100%);
+  border-color:#f472b655;
+}
+.zone-workshop .zone-label{color:#fbcfe8}
+.zone-library{
+  background:linear-gradient(180deg,#a3e63514 0%, #3f621214 100%);
+  border-color:#a3e63555;
+}
+.zone-library .zone-label{color:#d9f99d}
+.zone-courtyard{
+  background:linear-gradient(180deg,#a78bfa14 0%, #4c1d9514 100%);
+  border-color:#a78bfa55;
+}
+.zone-courtyard .zone-label{color:#ddd6fe}
+.zone-common{
+  background:linear-gradient(180deg,#38bdf814 0%, #0c4a6e14 100%);
+  border-color:#38bdf855;
+}
+.zone-common .zone-label{color:#bae6fd}
+.desk.jesus{z-index:2}
+.desk.owner-home{box-shadow:0 0 0 1px #94a3b844}
+
+/* === NPC-FSM (Dev B) npc3 — stations, motion, mute-safe emotion === */
 .station{
   position:absolute; transform:translate(-50%,-50%);
   z-index:2; pointer-events:none;
@@ -687,7 +754,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <button type="button" id="map-mini" aria-label="Minimap — tap to jump" title="Tap to jump">
       <canvas width="96" height="74"></canvas>
     </button>
-    <div id="map-hint">Drag · pinch · Fit · NPCs walk to stations · ±</div>
+    <div id="map-hint">Drag · pinch · Fit · names on map · gold = Jesus room · ±</div>
   </div>
 
   <ul id="legend">
@@ -698,6 +765,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     <li><span class="sw" style="border-color:#a78bfa"></span> reviewing</li>
     <li><span class="sw" style="border-color:#fb923c"></span> collab</li>
     <li><span class="sw" style="border-color:#fde68a"></span> station</li>
+    <li><span class="sw" style="border-color:#fbbf24"></span> @ Jesus</li>
+    <li><span class="sw" style="border-color:#94a3b8"></span> home</li>
   </ul>
 
   <div class="section-title">Cast</div>
@@ -713,14 +782,14 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc2"></script>
+<script src="./campus-npc.js?v=npc3"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc2';
-  const WORLD = { w: 1440, h: 1120, pad: 72 };
+  const ASSET_V = 'npc3';
+  const WORLD = { w: 1920, h: 1480, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
   const ID_ALIAS = {
@@ -1374,19 +1443,22 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   }
 
   function offsetAround(base, slot, kind, jesus) {
+    // Percent offsets — larger radius so mains + interns + desks do not stack
     const ring = [
-      {dl:0, dt:-7.5},
-      {dl:-8.0, dt:6.5},
-      {dl:8.0, dt:6.5},
-      {dl:0, dt:10.0},
-      {dl:-11.0, dt:1.5},
-      {dl:11.0, dt:1.5}
+      {dl:0, dt:-5.8},
+      {dl:-6.2, dt:5.2},
+      {dl:6.2, dt:5.2},
+      {dl:0, dt:7.8},
+      {dl:-8.5, dt:1.2},
+      {dl:8.5, dt:1.2},
+      {dl:-4.5, dt:7.2},
+      {dl:4.5, dt:7.2}
     ];
     let o;
     if (kind === 'main') o = ring[0];
     else if (jesus) {
       const j = [
-        {dl:0, dt:10}, {dl:-9, dt:11.5}, {dl:9, dt:11.5}, {dl:-15, dt:10}, {dl:15, dt:10}
+        {dl:0, dt:7.5}, {dl:-7, dt:8.5}, {dl:7, dt:8.5}, {dl:-12, dt:7.2}, {dl:12, dt:7.2}
       ];
       o = j[(slot - 1) % j.length];
     } else {
@@ -1399,7 +1471,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   }
 
   function separateSprites(positions, minDist) {
-    const min = minDist || 7.5;
+    const min = minDist || 9.5;
     for (let iter = 0; iter < 8; iter++) {
       for (let i = 0; i < positions.length; i++) {
         for (let j = i + 1; j < positions.length; j++) {
@@ -1584,7 +1656,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
           '<span class="swatch-fallback" hidden></span>' +
           '<span class="status-prop" aria-hidden="true"></span>' +
         '</div>' +
-        '<div class="tag"></div>';
+        '<div class="tag"></div>' +
+        '<span class="loc-badge" aria-hidden="true"></span>';
       el.addEventListener('click', (ev) => {
         if (suppressClick || dragMoved) { ev.preventDefault(); ev.stopPropagation(); return; }
         // Juice on pointerdown; click opens sheet without losing juice
@@ -1636,7 +1709,92 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   function shortInternLabel(intern) {
     const raw = (intern.label || intern.task || intern.id || 'intern').trim();
-    return raw.length > 14 ? raw.slice(0, 13) + '…' : raw;
+    return raw.length > 18 ? raw.slice(0, 17) + '…' : raw;
+  }
+
+  function fullBotName(bot) {
+    return String((bot && bot.name) || (bot && bot.id) || 'Bot').trim();
+  }
+
+  function setLocBadge(el, kind, homeLabel) {
+    const badge = el.querySelector('.loc-badge');
+    if (!badge) return;
+    el.classList.remove('at-jesus');
+    if (kind === 'jesus') {
+      badge.textContent = '@ Jesus';
+      badge.className = 'loc-badge show jesus';
+      el.classList.add('at-jesus');
+    } else if (kind === 'home') {
+      badge.textContent = homeLabel ? ('home · ' + homeLabel) : 'home';
+      badge.className = 'loc-badge show home';
+    } else {
+      badge.textContent = '';
+      badge.className = 'loc-badge';
+    }
+  }
+
+  function inJesusZone(entity, desksById, jesusId, data) {
+    const jd = desksById[jesusId];
+    const at = entity && entity.atDeskId;
+    if (at && at === jesusId) return true;
+    if (entity && entity.status === 'needs_permission') {
+      // pathing / pad still counts as Jesus ownership for the badge
+      return true;
+    }
+    if (entity && entity.x != null && entity.y != null && data && data.zones) {
+      const z = (data.zones || []).find(z => z.id === 'jesus');
+      if (z) {
+        return entity.x >= z.x && entity.x <= z.x + z.w &&
+               entity.y >= z.y && entity.y <= z.y + z.h;
+      }
+    }
+    if (entity && entity.x != null && entity.y != null && jd) {
+      return Math.hypot(entity.x - jd.x, entity.y - jd.y) < 140;
+    }
+    return false;
+  }
+
+  function applyWorldSize(data) {
+    const w = (data && data.world && data.world.w) || WORLD.w;
+    const h = (data && data.world && data.world.h) || WORLD.h;
+    WORLD.w = w; WORLD.h = h;
+    mapWorld.style.width = w + 'px';
+    mapWorld.style.height = h + 'px';
+  }
+
+  function renderZones(data) {
+    mapEl.querySelectorAll('.zone').forEach(n => n.remove());
+    const zones = (data && data.zones) || [
+      { id: 'jesus', label: "Jesus's room", x: 700, y: 40, w: 560, h: 260 },
+      { id: 'ops', label: 'Ops bay', x: 80, y: 300, w: 1640, h: 280 },
+      { id: 'workshop', label: 'Workshop', x: 80, y: 620, w: 1100, h: 280 },
+      { id: 'library', label: 'Library', x: 1180, y: 620, w: 680, h: 280 },
+      { id: 'courtyard', label: 'Courtyard', x: 80, y: 980, w: 1000, h: 320 },
+      { id: 'common', label: 'Meeting nook', x: 1080, y: 980, w: 520, h: 320 }
+    ];
+    const silly = {
+      jesus: "👑 Jesus's room",
+      ops: '🛠️ Ops bay',
+      workshop: '🎨 Workshop',
+      library: '📚 Library',
+      courtyard: '🌿 Courtyard',
+      common: '☕ Meeting nook'
+    };
+    const grid = mapEl.querySelector('.floor-grid');
+    const frag = document.createDocumentFragment();
+    zones.forEach(z => {
+      const el = document.createElement('div');
+      el.className = 'zone zone-' + (z.id || 'ops');
+      el.style.left = ((z.x / WORLD.w) * 100) + '%';
+      el.style.top = ((z.y / WORLD.h) * 100) + '%';
+      el.style.width = ((z.w / WORLD.w) * 100) + '%';
+      el.style.height = ((z.h / WORLD.h) * 100) + '%';
+      el.innerHTML = '<span class="zone-label">' + escapeHtml(silly[z.id] || z.label || z.id) + '</span>';
+      frag.appendChild(el);
+    });
+    if (grid && grid.nextSibling) mapEl.insertBefore(frag, grid.nextSibling);
+    else if (grid) mapEl.appendChild(frag);
+    else mapEl.insertBefore(frag, mapEl.firstChild);
   }
 
   function renderSprites(data, first) {
@@ -1667,7 +1825,18 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       const frame = mainFrameForStatus(mainStatus);
       const src = castSrc(castEntry, frame);
       setCastOrFallback(el, src, color, initials(bot.name));
-      el.querySelector('.tag').textContent = bot.name;
+      el.querySelector('.tag').textContent = fullBotName(bot);
+      {
+        const homeDesk = desksById[bot.deskId];
+        const homeLabel = (homeDesk && homeDesk.label) || bot.name;
+        if (inJesusZone(main, desksById, jesusId, data) || main.atDeskId === jesusId) {
+          setLocBadge(el, 'jesus');
+        } else if (!main.atDeskId || main.atDeskId === bot.deskId || mainStatus === 'idle' || mainStatus === 'ready_for_review') {
+          setLocBadge(el, 'home', homeLabel);
+        } else {
+          setLocBadge(el, 'home', homeLabel);
+        }
+      }
       // === NPC-FSM (Dev B) === initial seed only; FSM owns after first paint
       if (!(window.CampusNpc && CampusNpc.ownsPositions && animTargets[mainKey])) {
         placeSprite(el, usePos, first && !animTargets[mainKey]);
@@ -1698,6 +1867,17 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         const isrc = castSrc(castEntry, internFrame) || castSrc(castEntry, 'intern_idle');
         setCastOrFallback(iel, isrc, color, 'i');
         iel.querySelector('.tag').textContent = shortInternLabel(intern);
+        {
+          const homeDesk = desksById[bot.deskId];
+          const homeLabel = (homeDesk && homeDesk.label) || bot.name;
+          if (ist === 'needs_permission' || at === jesusId || inJesusZone(intern, desksById, jesusId, data)) {
+            setLocBadge(iel, 'jesus');
+          } else if (!at || at === bot.deskId) {
+            setLocBadge(iel, 'home', homeLabel);
+          } else {
+            setLocBadge(iel, 'home', homeLabel);
+          }
+        }
         if (!(window.CampusNpc && CampusNpc.ownsPositions && animTargets[key])) {
           placeSprite(iel, finalPos, first && !animTargets[key]);
         }
@@ -1708,7 +1888,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const pack = Object.keys(animTargets).filter(k => seen.has(k)).map(k => ({
       key: k, left: animTargets[k].left, top: animTargets[k].top
     }));
-    separateSprites(pack, 8.0);
+    separateSprites(pack, 10.0);
     // === NPC-FSM (Dev B) === separation seeds targets; live positions owned by FSM after first paint
     pack.forEach(p => {
       animTargets[p.key] = { left: p.left, top: p.top };
@@ -1760,7 +1940,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   function applyState(data, first) {
     state = data;
     lastGood = data;
+    applyWorldSize(data);
     renderDeploys(data.deploys);
+    renderZones(data);
     renderDesks(data.desks, data.jesusDeskId);
     renderSprites(data, first);
     // === NPC-FSM (Dev B) === own sprite transforms after paint; poll retargets only
@@ -1777,7 +1959,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
           resolveCastEntry: resolveCastEntry,
           mainFrameForStatus: mainFrameForStatus,
           initials: initials,
-          placeSprite: placeSprite
+          placeSprite: placeSprite,
+          setLocBadge: setLocBadge
         }
       });
     }
