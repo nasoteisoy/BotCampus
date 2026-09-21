@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dev A · Website STANDARDS · Security basics</title>
+  <style>
+    :root{--bg:#0c1118;--panel:#151c27;--line:#334155;--text:#f1f5f9;--muted:#94a3b8;--accent:#38bdf8;--err:#f43f5e;--ok:#22c55e;--focus:#fbbf24}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font:400 1rem/1.5 system-ui,sans-serif}
+    a{color:var(--accent)}
+    a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+    header,main,footer{max-width:40rem;margin:0 auto;padding:1rem}
+    header{border-bottom:1px solid var(--line)}
+    h1{margin:0;font-size:1.15rem}
+    header p{margin:.35rem 0 0;color:var(--muted);font-size:.85rem}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin:1rem 0}
+    label{display:block;font-weight:700;margin:.5rem 0 .35rem}
+    textarea,input{width:100%;min-height:48px;padding:.65rem .8rem;border-radius:10px;border:1px solid var(--line);
+      background:#0f172a;color:var(--text);font:inherit}
+    textarea{min-height:96px;resize:vertical}
+    .actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+    button{min-height:48px;padding:0 1rem;border-radius:10px;border:1px solid var(--line);font-weight:800;font:inherit;cursor:pointer}
+    button.primary{background:var(--accent);color:#0c4a6e}
+    button.danger{background:#3f1d2e;color:#fecdd3;border-color:var(--err)}
+    button.secondary{background:#1e293b;color:var(--text)}
+    #safe-out,#raw-note{margin-top:.75rem;padding:.75rem;border-radius:10px;border:1px solid var(--line);background:#0f172a;min-height:3rem;word-break:break-word}
+    #safe-out[data-ok="1"]{border-color:var(--ok)}
+    .warn{color:#fde68a;font-size:.9rem}
+    code{font-size:.85em}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>STANDARDS · Security basics</h1>
+    <p>Website kind · XSS hygiene — never trust <code>innerHTML</code> with user text · not a game loop</p>
+  </header>
+  <main>
+    <p class="warn">Try pasting <code>&lt;img src=x onerror=alert(1)&gt;</code> or a script tag. Safe path must show text only.</p>
+    <form class="panel" id="f">
+      <label for="note">Note (untrusted)</label>
+      <textarea id="note" name="note" maxlength="500" required placeholder="Type or paste untrusted HTML…"></textarea>
+      <div class="actions">
+        <button type="submit" class="primary">Render safely (textContent)</button>
+        <button type="button" class="danger" id="btn-bad">Demo unsafe path (blocked)</button>
+        <button type="button" class="secondary" id="btn-clear">Clear</button>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+      <h2 style="font-size:1rem">Safe output</h2>
+      <div id="safe-out" aria-live="polite"></div>
+      <h2 style="font-size:1rem">What we refuse</h2>
+      <div id="raw-note">Unsafe <code>innerHTML = userInput</code> is not offered as a working path — button explains only.</div>
+    </form>
+    <p><a href="../s-api-errors/?v=sa1">← API/error UX</a> · <a href="../../game/s-juice/?v=sj1">Game juice drill</a></p>
+  </main>
+  <script>
+    (function () {
+      var f = document.getElementById('f');
+      var note = document.getElementById('note');
+      var out = document.getElementById('safe-out');
+      var status = document.getElementById('status');
+      var bad = document.getElementById('btn-bad');
+      var clear = document.getElementById('btn-clear');
+
+      f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        // SAFE: textContent / createTextNode — never innerHTML with raw user string
+        out.textContent = note.value;
+        out.dataset.ok = '1';
+        status.textContent = 'Rendered with textContent — tags shown as text, not executed.';
+      });
+
+      bad.addEventListener('click', function () {
+        status.textContent = 'Blocked — unsafe innerHTML assignment is disabled in this drill (OWASP XSS). Use Safe render.';
+        // Intentionally do NOT assign note.value to innerHTML
+      });
+
+      clear.addEventListener('click', function () {
+        note.value = '';
+        out.textContent = '';
+        out.dataset.ok = '';
+        status.textContent = 'Cleared.';
+        note.focus();
+      });
+    })();
+  </script>
+</body>
+</html>
