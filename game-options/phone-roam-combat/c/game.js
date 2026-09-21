@@ -1,3 +1,12 @@
+
+  var heroImg = new Image();
+  var heroReady = false;
+  heroImg.onload = function () { heroReady = true; };
+  heroImg.onerror = function () {
+    heroImg.onerror = null;
+    heroImg.src = './art/hero_silhouette.png';
+  };
+  heroImg.src = './art/player.png';
 (function () {
   "use strict";
 
