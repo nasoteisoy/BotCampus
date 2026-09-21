@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T03:43:39Z",
+  "updatedAt": "2026-09-21T03:45:03Z",
   "items": [
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
-      "summary": "opt6b: A neon HUMAN verified on Pages (curl MD5). Not ship. \u00b7 B camera fix live ?v=opt6c.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt6b",
+      "summary": "opt7: A hi-contrast neon human (cyan outline). B camera ?v=opt6c. C ?v=opt6b.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt7",
       "owner": "Dev A (+ Dev B on B)",
       "kind": "game",
       "priority": 0,
@@ -14,8 +14,8 @@
       "createdAt": "2026-09-21T02:55:04Z",
       "dismissedAt": null,
       "links": [
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt6b",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt6b",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt7",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt7",
         "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6c",
         "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6b"
       ]
@@ -24,7 +24,7 @@
       "id": "rv-phone-roam-a",
       "title": "Phone combat option A \u2014 Twin-stick arena",
       "summary": "Dev C PACK PASS (match-vs-still). Twin-stick neon arena. Try + say likes/dislikes. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt6",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt7",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
