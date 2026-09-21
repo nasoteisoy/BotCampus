@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc4 slots+truth-badges+perm-run Dev B — zero stacks, pad.on -->
+<!-- CACHE_BUST v=npc5 inner/outer slots + stuck-idle + banner-clear Dev B -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -151,7 +151,8 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
   display:flex; flex-direction:column; align-items:center; gap:1px;
   background:transparent; border:0; padding:0; color:inherit;
 }
-.sprite.main{z-index:6}
+.sprite.main{z-index:8}
+.sprite.intern{z-index:5}
 .sprite .body{
   position:relative;
   display:grid; place-items:center;
@@ -573,7 +574,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
 
 
-/* === Layout npc4 — room zones + Jesus suite === */
+/* === Layout npc5 — room zones + Jesus suite === */
 .zone{
   position:absolute; z-index:0; pointer-events:none;
   border-radius:18px; border:2px dashed #64748b55;
@@ -619,7 +620,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .desk.jesus{z-index:2}
 .desk.owner-home{box-shadow:0 0 0 1px #94a3b844}
 
-/* === NPC-FSM (Dev B) npc4 — slots, truth badges, permission RUN === */
+/* === NPC-FSM (Dev B) npc5 — inner/outer slots, stuck-idle, perm RUN === */
 .station{
   position:absolute; transform:translate(-50%,-50%);
   z-index:2; pointer-events:none;
@@ -785,14 +786,14 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc4"></script>
+<script src="./campus-npc.js?v=npc5"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc4';
-  const WORLD = { w: 1920, h: 1480, pad: 80 };
+  const ASSET_V = 'npc5';
+  const WORLD = { w: 2100, h: 1600, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
   const ID_ALIAS = {
@@ -1500,7 +1501,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const out = [];
     for (const bot of data.bots || []) {
       for (const intern of bot.interns || []) {
-        // npc4: surface any needs_permission; arrival from live FSM (not stale atDeskId)
+        // npc5: surface any needs_permission; arrival from live FSM (not stale atDeskId)
         if (intern.status === 'needs_permission') {
           const key = 'intern:' + bot.id + ':' + intern.id;
           let atJesus = intern.atDeskId === jd;
@@ -1935,26 +1936,32 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
   function renderAlert(data) {
     const hits = permissionInterns(data);
-    if (hits.length) {
-      const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
-      const allThere = hits.every(h => h.atJesus);
-      const anyThere = hits.some(h => h.atJesus);
-      if (allThere) {
-        alertEl.textContent = '⚠ PERMISSION at Jesus pad — ' + labels;
-        alertEl.classList.remove('running');
-      } else if (anyThere) {
-        alertEl.textContent = '⚠ PERMISSION partial @ pad — ' + labels;
-        alertEl.classList.add('running');
-      } else {
-        alertEl.textContent = '⚠ PERMISSION needed — running to pad — ' + labels;
-        alertEl.classList.add('running');
-      }
-      alertEl.classList.add('show');
-      mapWrap.classList.add('high-alert');
-    } else {
+    // npc5: banner clears when NONE need permission OR ALL have arrived at pad
+    if (!hits.length) {
       alertEl.classList.remove('show', 'running');
+      alertEl.textContent = '';
       mapWrap.classList.remove('high-alert');
+      return;
     }
+    const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
+    const allThere = hits.every(h => h.atJesus);
+    const anyThere = hits.some(h => h.atJesus);
+    if (allThere) {
+      // Arrived — clear banner (do not leave stuck .show "at Jesus pad")
+      alertEl.classList.remove('show', 'running');
+      alertEl.textContent = '';
+      mapWrap.classList.remove('high-alert');
+      return;
+    }
+    if (anyThere) {
+      alertEl.textContent = '⚠ PERMISSION partial @ pad — ' + labels;
+      alertEl.classList.add('running');
+    } else {
+      alertEl.textContent = '⚠ PERMISSION needed — running to pad — ' + labels;
+      alertEl.classList.add('running');
+    }
+    alertEl.classList.add('show');
+    mapWrap.classList.add('high-alert');
   }
 
   function refreshPermissionAlert() {

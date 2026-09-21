@@ -1,7 +1,7 @@
-/*! Campus NPC FSM (Dev B) — npc4
+/*! Campus NPC FSM (Dev B) — npc5
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
- *  - no walk-in-place (anim follows velocity + debounce)
+ *  - no walk-in-place (anim follows velocity + debounce + stuck detect)
  *  - no idle while pathing; no busy pose at wrong place
  *  - station VFX match kind (code/art/research/permission)
  *  - per-bot personality kits
@@ -9,6 +9,8 @@
  *  - first spawn ALWAYS at desk (never station) so mute-10s shows pathing
  * npc3: larger intern radii, soft separation, Jesus/home loc badges
  * npc4: per-bot craft slots (no stacks), truthful loc badges, permission RUN+pad.on
+ * npc5: mains INNER / interns OUTER|owner-orbit slots; sep 130/100/80;
+ *       stuck walk→idle/retarget; banner clears on arrive (host side)
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -23,7 +25,14 @@
   var WALK_FRAME_MS = 170;
   var IDLE_DEBOUNCE_MS = 100;
   var FIDGET_MAX = 10;
-  var SLOT_MIN_DIST = 128; // world px between craft ARRIVE slots
+  var SLOT_MIN_DIST = 130; // world px between MAIN craft ARRIVE slots (inner ring)
+  var SLOT_INTERN_RING = 200; // outer ring start for interns around station
+  var OWNER_ORBIT_R = 125; // intern orbit around owner main (>= main body)
+  var SEP_MAIN = 130;
+  var SEP_MIX = 100;
+  var SEP_INTERN = 80;
+  var STUCK_MS = 500;
+  var STUCK_DISP_PX = 2;
   var HOME_ARRIVE_BADGE = 100;
   var STATION_NEAR_BADGE = 150;
 
@@ -112,33 +121,57 @@
       var s = String((entity && entity.id) || '');
       for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
       var a = (Math.abs(h) % 360) * Math.PI / 180;
-      ox = Math.cos(a) * 58;
-      oy = Math.sin(a) * 44 + 62;
+      // Clear of main body (~104px) — orbit past main desk slot
+      ox = Math.cos(a) * 110;
+      oy = Math.sin(a) * 88 + 96;
     } else {
-      oy = -64;
+      oy = -72;
     }
     return { x: home.x + ox, y: home.y + oy };
   }
 
-  /** Hex-ring offsets around a craft/permission station (world px). */
-  function slotOffsetForIndex(index, isIntern) {
-    // Hex rings: chord ≈ radius when 6/ring → radius must be ≥ SLOT_MIN_DIST
-    var perRing = 6;
+  /** Inner ring for MAINS — spaced so chord >= SLOT_MIN_DIST. */
+  function mainSlotOffset(index, mainCount) {
+    var n = Math.max(mainCount || 1, 1);
+    // Prefer even spread on a circle sized for min chord
+    var baseR = Math.max(SLOT_MIN_DIST * 1.1, (SLOT_MIN_DIST / (2 * Math.sin(Math.PI / Math.max(n, 2)))) * 1.05);
+    if (n === 1) baseR = SLOT_MIN_DIST * 0.85;
+    var ring = Math.floor(index / Math.max(n, 6));
+    var i = index % Math.max(n, 1);
+    var per = Math.max(n, 1);
+    baseR += ring * SLOT_MIN_DIST * 1.15;
+    var a = -Math.PI / 2 + (i / per) * Math.PI * 2 + ring * 0.2;
+    return { x: Math.cos(a) * baseR, y: Math.sin(a) * baseR * 0.92 };
+  }
+
+  /** Outer ring for interns — always past main ring so never bury a main. */
+  function internStationOffset(index, mainCount) {
+    var perRing = 8;
     var ring = Math.floor(index / perRing);
     var i = index % perRing;
-    var baseR = SLOT_MIN_DIST * (1.05 + ring * 1.2);
-    if (isIntern) baseR *= 0.95;
-    // Start above station, then around; stagger rings
-    var a = -Math.PI / 2 + (i / perRing) * Math.PI * 2 + ring * 0.35;
-    return {
-      x: Math.cos(a) * baseR,
-      y: Math.sin(a) * baseR * 0.92 + (isIntern ? 22 : 4)
-    };
+    var mainR = Math.max(SLOT_MIN_DIST * 1.1, (SLOT_MIN_DIST / (2 * Math.sin(Math.PI / Math.max(mainCount || 2, 2)))) * 1.05);
+    var baseR = Math.max(SLOT_INTERN_RING, mainR + 110) + ring * 100;
+    var a = -Math.PI / 2 + (i / perRing) * Math.PI * 2 + ring * 0.22 + 0.35;
+    return { x: Math.cos(a) * baseR, y: Math.sin(a) * baseR * 0.9 + 18 };
+  }
+
+  /** Orbit around owner main — home desks / single-main stations only. */
+  function ownerOrbitOffset(index, count) {
+    var n = Math.max(count || 1, 3);
+    var a = -Math.PI / 2 + (index / n) * Math.PI * 2 + 0.4;
+    var r = OWNER_ORBIT_R + Math.floor(index / n) * 70;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r * 0.88 + 12 };
+  }
+
+  function ownerMainKey(internAgent) {
+    var parts = String(internAgent.key || '').split(':');
+    if (parts.length >= 2 && parts[0] === 'intern') return 'main:' + parts[1];
+    return null;
   }
 
   /**
-   * After all agents have base targets, give each craft-bound bot a unique ARRIVE slot.
-   * Never park multiple mains (or main+intern piles) on the same station %.
+   * Craft/permission ARRIVE slots: mains INNER; interns OUTER (clear of mains).
+   * Owner-orbit only when a single main shares the station. Dev A may refine.
    */
   function applyCraftSlots() {
     if (!ctx || !ctx.state) return;
@@ -150,17 +183,99 @@
     });
     Object.keys(groups).forEach(function (tid) {
       var list = groups[tid];
-      list.sort(function (a, b) {
-        if (!!a.isIntern !== !!b.isIntern) return a.isIntern ? 1 : -1;
-        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
-      });
       var st = stationById(ctx.state, tid);
       if (!st) return;
-      list.forEach(function (a, i) {
-        var off = slotOffsetForIndex(i, a.isIntern);
+      var mains = [];
+      var interns = [];
+      list.forEach(function (a) {
+        if (a.isIntern) interns.push(a); else mains.push(a);
+      });
+      mains.sort(function (a, b) {
+        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+      });
+      interns.sort(function (a, b) {
+        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+      });
+
+      var mc = mains.length;
+      mains.forEach(function (a, i) {
+        var off = mainSlotOffset(i, mc);
         a.targetX = st.x + off.x;
         a.targetY = st.y + off.y;
         a.slotIndex = i;
+        a._slotKind = 'main-inner';
+      });
+
+      // Crowded multi-main stations: ALL interns on OUTER ring (never under a main).
+      // Single-main: owner-orbit is fine (>= OWNER_ORBIT_R).
+      if (mc <= 1 && mains.length === 1) {
+        var owner = mains[0];
+        interns.forEach(function (a, i) {
+          var off = ownerOrbitOffset(i, interns.length);
+          a.targetX = owner.targetX + off.x;
+          a.targetY = owner.targetY + off.y;
+          a.slotIndex = i;
+          a._slotKind = 'owner-orbit';
+        });
+      } else {
+        interns.forEach(function (a, i) {
+          var off = internStationOffset(i, Math.max(mc, 2));
+          a.targetX = st.x + off.x;
+          a.targetY = st.y + off.y;
+          a.slotIndex = i;
+          a._slotKind = 'intern-outer';
+        });
+      }
+    });
+  }
+
+  /** Home-desk slots: mains north of desk; interns clear orbit. */
+  function applyHomeSlots() {
+    if (!ctx || !ctx.state) return;
+    var groups = {};
+    agents.forEach(function (a) {
+      if (!a.targetId || String(a.targetId).indexOf('desk-') !== 0) return;
+      if (a.targetKind && a.targetKind !== 'home') return;
+      (groups[a.targetId] = groups[a.targetId] || []).push(a);
+    });
+    Object.keys(groups).forEach(function (tid) {
+      var desk = deskById(ctx.state, tid);
+      if (!desk) return;
+      var list = groups[tid];
+      var mains = [];
+      var interns = [];
+      list.forEach(function (a) {
+        if (a.isIntern) interns.push(a); else mains.push(a);
+      });
+      mains.sort(function (a, b) {
+        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+      });
+      interns.sort(function (a, b) {
+        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+      });
+      mains.forEach(function (a, i) {
+        a.targetX = desk.x + (i - (mains.length - 1) / 2) * 36;
+        a.targetY = desk.y - 72;
+        a._slotKind = 'home-main';
+      });
+      var mainByKey = {};
+      mains.forEach(function (a) { mainByKey[a.key] = a; });
+      var oi = 0;
+      interns.forEach(function (a) {
+        var ok = ownerMainKey(a);
+        var owner = ok && mainByKey[ok];
+        var off = ownerOrbitOffset(oi, Math.max(interns.length, 3));
+        if (owner) {
+          a.targetX = owner.targetX + off.x;
+          a.targetY = owner.targetY + off.y;
+          a._slotKind = 'home-orbit';
+        } else {
+          var a2 = -Math.PI / 2 + (oi / Math.max(interns.length, 1)) * Math.PI * 2;
+          a.targetX = desk.x + Math.cos(a2) * 110;
+          a.targetY = desk.y + Math.sin(a2) * 88 + 96;
+          a._slotKind = 'home-outer';
+        }
+        oi++;
       });
     });
   }
@@ -193,10 +308,10 @@
         var s = String((entity && entity.id) || '');
         for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
         var a = (Math.abs(h) % 360) * Math.PI / 180;
-        ox = Math.cos(a) * 58;
-        oy = Math.sin(a) * 44 + 62;
+        ox = Math.cos(a) * 110;
+        oy = Math.sin(a) * 88 + 96;
       } else {
-        oy = -64;
+        oy = -72;
       }
       return { id: home.id, x: home.x + ox, y: home.y + oy, kind: 'home', urgent: false };
     }
@@ -450,34 +565,43 @@
   function separateAgents() {
     var list = [];
     agents.forEach(function (a) { list.push(a); });
-    var minMain = 118;
-    var minMix = 86;
-    var minIntern = 64;
-    for (var iter = 0; iter < 5; iter++) {
+    for (var iter = 0; iter < 6; iter++) {
       for (var i = 0; i < list.length; i++) {
         for (var j = i + 1; j < list.length; j++) {
           var a = list[i], b = list[j];
           var aMoving = a.fsm === 'walk' || a.fsm === 'run' || a.speed > MOVE_EPS;
           var bMoving = b.fsm === 'walk' || b.fsm === 'run' || b.speed > MOVE_EPS;
-          var aBusy = a.fsm === 'busy_at_station';
-          var bBusy = b.fsm === 'busy_at_station';
-          // Stronger while busy_at_station; soft while moving; skip only pure distant pathing pairs far apart
+          var aBusy = a.fsm === 'busy_at_station' || a.fsm === 'idle';
+          var bBusy = b.fsm === 'busy_at_station' || b.fsm === 'idle';
           var dx = b.x - a.x, dy = b.y - a.y;
           var dist = Math.hypot(dx, dy) || 0.01;
           var need;
-          if (!a.isIntern && !b.isIntern) need = minMain;
-          else if (a.isIntern && b.isIntern) need = minIntern;
-          else need = minMix;
-          // Soften push when both actively pathing (slots already diverge targets)
+          if (!a.isIntern && !b.isIntern) need = SEP_MAIN;
+          else if (a.isIntern && b.isIntern) need = SEP_INTERN;
+          else need = SEP_MIX;
+          // Prefer pushing interns away from mains (never bury main)
           var strength = 1;
-          if (aMoving && bMoving && !aBusy && !bBusy) strength = 0.35;
-          else if (aMoving || bMoving) strength = 0.55;
-          else if (aBusy || bBusy) strength = 1.0;
+          if (aMoving && bMoving && !aBusy && !bBusy) strength = 0.45;
+          else if (aMoving || bMoving) strength = 0.7;
+          else strength = 1.0;
           if (dist < need) {
             var push = ((need - dist) / 2) * strength;
             dx /= dist; dy /= dist;
-            a.x -= dx * push; a.y -= dy * push;
-            b.x += dx * push; b.y += dy * push;
+            if (!a.isIntern && b.isIntern) {
+              // main holds; intern yields more
+              b.x += dx * push * 1.55;
+              b.y += dy * push * 1.55;
+              a.x -= dx * push * 0.35;
+              a.y -= dy * push * 0.35;
+            } else if (a.isIntern && !b.isIntern) {
+              a.x -= dx * push * 1.55;
+              a.y -= dy * push * 1.55;
+              b.x += dx * push * 0.35;
+              b.y += dy * push * 0.35;
+            } else {
+              a.x -= dx * push; a.y -= dy * push;
+              b.x += dx * push; b.y += dy * push;
+            }
           }
         }
       }
@@ -562,7 +686,8 @@
         stillMs: 0, facing: 1, _fx: 0, _fy: 0,
         fidgetAcc: Math.random() * 2,
         _emoPulseOn: false, _emoNextPulse: 0,
-        slotIndex: 0
+        slotIndex: 0, _slotKind: '',
+        _stuckX: pos.x, _stuckY: pos.y, _stuckAcc: 0, _stuckNudge: 0
       };
       // ready: flash at desk OK. permission: overlay only — must not freeze RUN.
       if (status === 'ready_for_review') {
@@ -617,6 +742,7 @@
     });
 
     applyCraftSlots();
+    applyHomeSlots();
 
     agents.forEach(function (a) {
       if (a.fsm === 'busy_at_station' && a.targetId && String(a.targetId).indexOf('station-') === 0) {
@@ -710,6 +836,45 @@
     var busyStatuses = status === 'working' || status === 'reviewing' || status === 'collaborating';
     var wantRun = !!agent.urgent || status === 'needs_permission' || pers.speed >= 1.2 || dist > 320;
 
+    // Stuck / walk-in-place: walk|run but world displacement < 2px over 0.5s
+    if (agent._stuckX == null) { agent._stuckX = agent.x; agent._stuckY = agent.y; agent._stuckAcc = 0; }
+    var disp = Math.hypot(agent.x - agent._stuckX, agent.y - agent._stuckY);
+    if (agent.fsm === 'walk' || agent.fsm === 'run') {
+      agent._stuckAcc = (agent._stuckAcc || 0) + dt * 1000;
+      if (agent._stuckAcc >= STUCK_MS) {
+        if (disp < STUCK_DISP_PX) {
+          // Blocked or fighting separation — drop walk OR nudge to free slot
+          agent._stuckNudge = (agent._stuckNudge || 0) + 1;
+          if (agent._stuckNudge % 2 === 1 && dist > ARRIVE_PX) {
+            // Retarget: small spiral offset from current target
+            var ang = (agent._stuckNudge * 1.7) % (Math.PI * 2);
+            var rad = 40 + (agent._stuckNudge % 4) * 28;
+            agent.targetX += Math.cos(ang) * rad;
+            agent.targetY += Math.sin(ang) * rad * 0.9;
+            agent._slotKind = 'stuck-nudge';
+          } else {
+            // Force idle — never npc-walk with near-zero motion (busy only if already at slot)
+            var near = dist <= ARRIVE_PX * 1.5;
+            if (near && (busyStatuses || status === 'needs_permission')) {
+              agent.fsm = 'busy_at_station';
+              agent.visualFrame = status === 'needs_permission' ? 'emotion_permission' : 'busy';
+            } else {
+              agent.fsm = 'idle';
+              agent.visualFrame = 'idle';
+            }
+            agent.vx = 0; agent.vy = 0; agent.speed = 0;
+            agent.stillMs = IDLE_DEBOUNCE_MS + 1;
+            placeAgent(agent);
+            agent._stuckX = agent.x; agent._stuckY = agent.y; agent._stuckAcc = 0;
+            return;
+          }
+        }
+        agent._stuckX = agent.x; agent._stuckY = agent.y; agent._stuckAcc = 0;
+      }
+    } else {
+      agent._stuckX = agent.x; agent._stuckY = agent.y; agent._stuckAcc = 0;
+    }
+
     if (dist > ARRIVE_PX) {
       // PATHING — never idle pose, never busy pose (HARD FAIL #2)
       var spd = BASE_SPEED * (pers.speed || 1) * (wantRun ? RUN_MULT : 1);
@@ -729,7 +894,7 @@
         if (dx !== 0) agent.facing = dx < 0 ? -1 : 1;
       }
 
-      // HARD FAIL #1: walk anim ONLY while velocity > eps
+      // HARD FAIL #1: walk anim ONLY while velocity > eps AND actually displacing
       if (agent.speed > MOVE_EPS) {
         agent.fsm = wantRun ? 'run' : 'walk';
         agent.frameAcc += dt * 1000;
@@ -820,8 +985,17 @@
     if (!ctx) return;
     occupied = new Set();
     applyCraftSlots(); // keep arrive slots stable every tick
+    applyHomeSlots();
     agents.forEach(function (agent) { tickAgent(agent, dt); });
     separateAgents();
+    // After separation: if walk/run but barely moved this frame, drop walk class
+    agents.forEach(function (agent) {
+      if ((agent.fsm === 'walk' || agent.fsm === 'run') && agent.speed <= MOVE_EPS) {
+        agent.fsm = 'idle';
+        agent.visualFrame = 'idle';
+        agent.vx = 0; agent.vy = 0; agent.speed = 0;
+      }
+    });
     // Re-place after separation so DOM matches pushed coords + badges
     agents.forEach(function (agent) { placeAgent(agent); });
     if (ctx.state) renderStations(ctx.state);
@@ -839,19 +1013,22 @@
   function sync(nextCtx) {
     ctx = nextCtx || ctx;
     if (!ctx || !ctx.state) return;
-    if (!ctx.world) ctx.world = { w: 1920, h: 1480 };
+    if (!ctx.world) ctx.world = { w: 2100, h: 1600 };
     syncFromState();
     start();
   }
 
   global.CampusNpc = {
-    version: 'npc4',
+    version: 'npc5',
     ownsPositions: true,
     sync: sync,
     agents: agents,
     permissionArrived: permissionArrived,
     pickBusyStationId: pickBusyStationId,
     normalizePersonality: normalizePersonality,
-    SLOT_MIN_DIST: SLOT_MIN_DIST
+    SLOT_MIN_DIST: SLOT_MIN_DIST,
+    SEP_MAIN: SEP_MAIN,
+    SEP_MIX: SEP_MIX,
+    SEP_INTERN: SEP_INTERN
   };
 })(typeof window !== 'undefined' ? window : globalThis);
