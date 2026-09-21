@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-21T00:23:00Z",
+  "updatedAt": "2026-09-21T00:58:14Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -115,26 +115,14 @@
       "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
       "deskId": "desk-leader",
       "status": "working",
-      "task": "Ship NPC npc4 zero-stack + truth badges",
+      "task": "Orchestrate Campus layout + crew",
       "color": "#22c55e",
       "castFolder": "campus-cast/leader",
-      "interns": [
-        {
-          "id": "ldr-1",
-          "label": "Permission",
-          "status": "needs_permission",
-          "task": "Ask Jesus: ship npc4?",
-          "atDeskId": "desk-leader",
-          "x": null,
-          "y": null,
-          "updatedAt": "2026-09-21T00:23:00Z",
-          "stationId": null
-        }
-      ],
-      "updatedAt": "2026-09-20T21:34:37Z",
+      "interns": [],
+      "updatedAt": "2026-09-21T00:58:14Z",
       "main": {
         "status": "working",
-        "task": "Ship NPC npc4 zero-stack + truth badges",
+        "task": "Orchestrate Campus layout + crew",
         "atDeskId": "desk-leader",
         "x": null,
         "y": null,
