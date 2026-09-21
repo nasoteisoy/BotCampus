@@ -5,8 +5,19 @@
   const heroImg = new Image();
   let heroReady = false;
   heroImg.onload = () => { heroReady = true; };
-  heroImg.onerror = () => { heroReady = false; };
+  heroImg.onerror = () => { heroImg.onerror = null; heroImg.src = './art/hero_silhouette.png'; };
   heroImg.src = './art/player.png';
+
+  var enemyTri = new Image(); var enemyTriOk = false;
+  enemyTri.onload = function () { enemyTriOk = true; };
+  enemyTri.src = './art/enemy_tri.png';
+  var enemyPod = new Image(); var enemyPodOk = false;
+  enemyPod.onload = function () { enemyPodOk = true; };
+  enemyPod.src = './art/enemy_pod.png';
+  var enemyRock = new Image(); var enemyRockOk = false;
+  enemyRock.onload = function () { enemyRockOk = true; };
+  enemyRock.src = './art/enemy_rock.png';
+
 
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
@@ -592,7 +603,14 @@
       ctx.scale(e.scale, e.scale);
       const flash = e.hitFlash > 0;
       const k = (e.kind != null ? e.kind : 0) % 3;
-      if (k === 0) {
+      const img = k === 0 ? enemyTri : k === 1 ? enemyPod : enemyRock;
+      const ok = k === 0 ? enemyTriOk : k === 1 ? enemyPodOk : enemyRockOk;
+      if (ok) {
+        const s = e.r * 2.4;
+        if (flash) ctx.globalAlpha = 0.85;
+        ctx.drawImage(img, -s / 2, -s / 2, s, s);
+        ctx.globalAlpha = 1;
+      } else if (k === 0) {
         ctx.strokeStyle = flash ? "#fff" : "#22d3ee";
         ctx.lineWidth = 3;
         ctx.shadowColor = "#22d3ee";
@@ -606,16 +624,9 @@
         ctx.shadowBlur = 0;
       } else if (k === 1) {
         ctx.fillStyle = flash ? "#fff" : "#d946ef";
-        ctx.shadowColor = "#e879f9";
-        ctx.shadowBlur = 14;
         ctx.beginPath();
         ctx.ellipse(0, 0, e.r * 0.65, e.r, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#f5d0fe";
-        ctx.beginPath();
-        ctx.arc(0, -e.r * 0.2, e.r * 0.25, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
       } else {
         ctx.fillStyle = flash ? "#fff" : "#4c1d95";
         ctx.strokeStyle = "#a78bfa";

@@ -7,6 +7,11 @@
     heroImg.src = './art/hero_silhouette.png';
   };
   heroImg.src = './art/player.png';
+
+  var guardImg = new Image(); var guardOk = false;
+  guardImg.onload = function () { guardOk = true; };
+  guardImg.src = './art/guard.png';
+
 (function () {
   "use strict";
 
@@ -672,15 +677,22 @@
         ctx.save();
         ctx.translate(s.x + ox, s.y + oy);
         ctx.scale(g.scale, g.scale);
-        // body diamond
-        ctx.fillStyle = g.hitFlash > 0 ? "#fff" : g.state === "hunt" ? "#f87171" : "#64748b";
-        ctx.beginPath();
-        ctx.moveTo(0, -18);
-        ctx.lineTo(10, -8);
-        ctx.lineTo(0, 2);
-        ctx.lineTo(-10, -8);
-        ctx.closePath();
-        ctx.fill();
+        // body — prefer dedicated guard sprite
+        if (typeof guardOk !== "undefined" && guardOk) {
+          const gs = 36;
+          if (g.hitFlash > 0) ctx.globalAlpha = 0.9;
+          ctx.drawImage(guardImg, -gs / 2, -gs * 0.85, gs, gs);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.fillStyle = g.hitFlash > 0 ? "#fff" : g.state === "hunt" ? "#f87171" : "#64748b";
+          ctx.beginPath();
+          ctx.moveTo(0, -18);
+          ctx.lineTo(10, -8);
+          ctx.lineTo(0, 2);
+          ctx.lineTo(-10, -8);
+          ctx.closePath();
+          ctx.fill();
+        }
         // facing tick
         ctx.strokeStyle = "#0f172a";
         ctx.lineWidth = 2;
