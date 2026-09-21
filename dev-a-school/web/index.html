@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#0c1118"/>
+  <title>Dev A · Website Dev W0–W1 · Semantic page</title>
+  <style>
+    :root{
+      --bg:#0c1118; --panel:#151c27; --line:#334155; --text:#f1f5f9; --muted:#94a3b8;
+      --accent:#38bdf8; --ok:#22c55e; --focus:#fbbf24;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0; min-height:100dvh;
+      background:var(--bg); color:var(--text);
+      font:400 1rem/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+    }
+    a{color:var(--accent)}
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+      outline:3px solid var(--focus); outline-offset:3px;
+    }
+    .skip{
+      position:absolute; left:-999px; top:auto; width:1px; height:1px; overflow:hidden;
+    }
+    .skip:focus{
+      left:1rem; top:1rem; width:auto; height:auto; padding:.65rem 1rem;
+      background:var(--focus); color:#111; z-index:20; border-radius:8px; font-weight:800;
+    }
+    header.site{
+      background:var(--panel); border-bottom:1px solid var(--line);
+      padding:.75rem 1rem;
+    }
+    header.site .wrap{
+      max-width:40rem; margin:0 auto;
+      display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between;
+    }
+    header.site h1{margin:0; font-size:1.15rem; letter-spacing:.01em}
+    header.site p{margin:.15rem 0 0; color:var(--muted); font-size:.85rem}
+    nav[aria-label="Primary"] ul{
+      list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.5rem;
+    }
+    nav[aria-label="Primary"] a{
+      display:inline-flex; align-items:center; justify-content:center;
+      min-height:48px; min-width:48px; padding:0 1rem;
+      border-radius:10px; border:1px solid var(--line);
+      background:#0f172a; text-decoration:none; font-weight:700; color:var(--text);
+    }
+    nav[aria-label="Primary"] a[aria-current="page"]{
+      border-color:var(--accent); background:#0c4a6e; color:#e0f2fe;
+    }
+    main{
+      max-width:40rem; margin:0 auto; padding:1.25rem 1rem 3rem;
+    }
+    main h2{font-size:1.25rem; margin:1.5rem 0 .6rem}
+    main p{color:#e2e8f0}
+    .panel{
+      background:var(--panel); border:1px solid var(--line); border-radius:14px;
+      padding:1rem 1.1rem; margin:1rem 0;
+    }
+    .status{
+      display:inline-flex; align-items:center; gap:.4rem;
+      font-weight:800; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .status .dot{
+      width:.65rem; height:.65rem; border-radius:50%; background:var(--ok);
+      box-shadow:0 0 0 2px #14532d;
+    }
+    /* status not color-only — text label required */
+    label{display:block; font-weight:700; margin:.75rem 0 .35rem}
+    input[type="text"], select{
+      width:100%; min-height:48px; padding:.65rem .8rem;
+      border-radius:10px; border:1px solid var(--line);
+      background:#0f172a; color:var(--text); font:inherit;
+    }
+    .actions{display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem}
+    button{
+      min-height:48px; min-width:48px; padding:0 1.1rem;
+      border-radius:10px; border:1px solid var(--line);
+      background:var(--accent); color:#0c4a6e; font-weight:800; font:inherit;
+      cursor:pointer;
+    }
+    button.secondary{background:#1e293b; color:var(--text)}
+    button:disabled{opacity:.5; cursor:not-allowed}
+    #form-status{
+      margin-top:.85rem; min-height:1.4em; color:var(--muted); font-size:.9rem;
+    }
+    #form-status[data-state="ok"]{color:#86efac}
+    #form-status[data-state="err"]{color:#fecdd3}
+    #form-status[data-state="loading"]{color:#fde68a}
+    footer{
+      max-width:40rem; margin:0 auto; padding:0 1rem 2rem;
+      color:var(--muted); font-size:.8rem;
+    }
+    @media (max-width:400px){
+      header.site .wrap{flex-direction:column; align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+
+  <header class="site">
+    <div class="wrap">
+      <div>
+        <h1>Website Dev · W0–W1 drill</h1>
+        <p>Semantic page · Dev A school · Android Chrome + Windows</p>
+      </div>
+      <nav aria-label="Primary">
+        <ul>
+          <li><a href="./index.html" aria-current="page">Home</a></li>
+          <li><a href="#task">Task</a></li>
+          <li><a href="../game/?v=g01">Game drill</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <h2>Where you are</h2>
+    <p>
+      This is a <strong>website/app</strong> drill (IA + semantic HTML + a11y),
+      not a game loop. Primary flows work with keyboard on Windows and fat-finger taps on Android.
+    </p>
+
+    <div class="panel" role="status" aria-label="School status">
+      <span class="status"><span class="dot" aria-hidden="true"></span> Ready for QC</span>
+      <p style="margin:.5rem 0 0; color:var(--muted); font-size:.9rem">
+        Status uses a label plus color (not color alone).
+      </p>
+    </div>
+
+    <h2 id="task">Task form</h2>
+    <form class="panel" id="drill-form" novalidate>
+      <label for="bot-name">Bot name</label>
+      <input id="bot-name" name="botName" type="text" autocomplete="nickname" required
+             placeholder="e.g. Dev A" aria-describedby="bot-name-hint"/>
+      <p id="bot-name-hint" style="margin:.35rem 0 0; color:var(--muted); font-size:.85rem">
+        Required. Visible label above; not placeholder-only.
+      </p>
+
+      <label for="module">School module</label>
+      <select id="module" name="module" required>
+        <option value="">Select a module</option>
+        <option value="W0">W0 — Information architecture</option>
+        <option value="W1">W1 — Semantic HTML &amp; a11y</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Save draft</button>
+        <button type="button" class="secondary" id="btn-clear">Clear</button>
+      </div>
+      <p id="form-status" data-state="idle" role="status" aria-live="polite">Idle — submit to see loading / ok / error.</p>
+    </form>
+
+    <h2>Empty &amp; loading notes</h2>
+    <p>
+      After submit you should see an explicit loading state, then ok or error —
+      never a silent blank main (Website FAILURES F14).
+    </p>
+  </main>
+
+  <footer>
+    <p>Dev A · Website Dev School W0–W1 · Preview for Jesus via Pages (sole pusher: Dev A).</p>
+  </footer>
+
+  <script>
+    (function () {
+      var form = document.getElementById('drill-form');
+      var status = document.getElementById('form-status');
+      var clearBtn = document.getElementById('btn-clear');
+      var nameInput = document.getElementById('bot-name');
+
+      function setStatus(state, text) {
+        status.dataset.state = state;
+        status.textContent = text;
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!form.checkValidity()) {
+          setStatus('err', 'Error — fill required fields (name + module).');
+          nameInput.focus();
+          return;
+        }
+        setStatus('loading', 'Loading — saving draft…');
+        // Fake latency so QC can see loading state
+        window.setTimeout(function () {
+          setStatus('ok', 'Saved — ' + nameInput.value.trim() + ' / ' + form.module.value);
+        }, 450);
+      });
+
+      clearBtn.addEventListener('click', function () {
+        form.reset();
+        setStatus('idle', 'Cleared — idle.');
+        nameInput.focus();
+      });
+    })();
+  </script>
+</body>
+</html>
