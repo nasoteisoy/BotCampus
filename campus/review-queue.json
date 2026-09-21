@@ -1,7 +1,43 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T01:43:55Z",
+  "updatedAt": "2026-09-21T02:18:04Z",
   "items": [
+    {
+      "id": "rv-phone-roam-a",
+      "title": "Phone combat option A — Twin-stick arena",
+      "summary": "Top-down twin-stick roam-and-clear waves. Try + say likes/dislikes. One of three DIFFERENT concepts.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt1",
+      "owner": "Dev A",
+      "kind": "game",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-21T02:18:04Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "rv-phone-roam-b",
+      "title": "Phone combat option B — Side slash/gun",
+      "summary": "Side-view corridor: run/jump, slash primary + gun alt. Distinct from twin-stick. Pick direction with likes/dislikes.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt1",
+      "owner": "Dev A",
+      "kind": "game",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-21T02:18:04Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "rv-phone-roam-c",
+      "title": "Phone combat option C — Iso stealth takedown",
+      "summary": "Fake-iso hit-and-run stealth: vision cones, dash, rear takedowns. Not A/B with a camera swap.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt1",
+      "owner": "Dev A",
+      "kind": "game",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-21T02:18:04Z",
+      "dismissedAt": null
+    },
     {
       "id": "rv-campus-circles2",
       "title": "Campus markers — name circles (circles2)",
