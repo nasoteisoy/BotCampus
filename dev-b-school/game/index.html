@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dev B Game Drill — Idle → Walk → Busy</title>
+  <style>
+    :root {
+      --bg: #1a1428;
+      --panel: #2a2140;
+      --ink: #f5e9ff;
+      --muted: #b9a8d4;
+      --accent: #ff8bd1;
+      --station: #7dffb3;
+      --desk: #ffd36e;
+      --bot: #8ec5ff;
+      --focus: #ffe566;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(ellipse at top, #2b1f45, var(--bg));
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      gap: 12px;
+    }
+    header {
+      width: min(100%, 520px);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+    .tagline {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .hud {
+      width: min(100%, 520px);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    button {
+      min-height: 48px;
+      min-width: 48px;
+      padding: 10px 16px;
+      border: 2px solid #5a4578;
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:hover { border-color: var(--accent); }
+    button:active { transform: scale(0.98); background: #3a2d55; }
+    button:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    button.primary {
+      background: linear-gradient(180deg, #ff9ad8, #e45fb0);
+      color: #2a1030;
+      border-color: #ffc1e8;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 40px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid #4a3a66;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .chip strong { color: var(--ink); text-transform: uppercase; letter-spacing: 0.06em; }
+    .chip[data-state="idle"] strong { color: var(--desk); }
+    .chip[data-state="walk"] strong { color: var(--bot); }
+    .chip[data-state="busy"] strong { color: var(--station); }
+    .world-wrap {
+      width: min(100%, 520px);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 3px solid #4a3a66;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      background: #120e1c;
+      touch-action: none;
+      overscroll-behavior: contain;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: top;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 32px 32px,
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 32px 32px,
+        #1e1630;
+    }
+    .legend {
+      width: min(100%, 520px);
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .legend code {
+      background: #2a2140;
+      padding: 1px 6px;
+      border-radius: 6px;
+      color: #ffd6f0;
+    }
+    footer {
+      width: min(100%, 520px);
+      font-size: 0.75rem;
+      color: #8a7aa8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Stubby Bot Campus — Tiny Loop</h1>
+    <p class="tagline">Fixed timestep · FSM idle → walk → busy · walk anim tied to velocity</p>
+  </header>
+
+  <div class="hud" role="group" aria-label="Drill controls">
+    <button type="button" class="primary" id="btn-assign">Assign silly task</button>
+    <button type="button" id="btn-home">Recall home</button>
+    <div class="chip" id="state-chip" data-state="idle" aria-live="polite">
+      FSM: <strong id="state-label">idle</strong>
+      <span id="speed-label">· speed 0</span>
+    </div>
+  </div>
+
+  <div class="world-wrap">
+    <canvas id="world" width="480" height="320" aria-label="Tiny campus world with one stubby bot and one station"></canvas>
+  </div>
+
+  <p class="legend">
+    Home desk (yellow) · Work station (green) · Bot walks <em>only</em> when
+    <code>speed &gt; ε</code> — no walk-in-place. Mute-safe sparkles on busy.
+    Auto-assign in ~2.5s if you chill.
+  </p>
+  <footer>Dev B Game School drill · G0 / G1 / G4 · Android Chrome + Windows</footer>
+
+  <script src="game.js"></script>
+</body>
+</html>

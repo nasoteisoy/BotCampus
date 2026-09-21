@@ -1,0 +1,46 @@
+{
+  "title": "Campus Stubby Roster",
+  "updated": "2026-09-20",
+  "bots": [
+    {
+      "id": "pip",
+      "name": "Pip",
+      "role": "Desk warmer",
+      "mood": "Chill with a juice box",
+      "station": "Home desk",
+      "quirk": "Walks only when velocity > epsilon. Philosophically opposed to walk-in-place."
+    },
+    {
+      "id": "nugget",
+      "name": "Nugget",
+      "role": "Snack courier",
+      "mood": "Optimistic crumb",
+      "station": "Snack alcove",
+      "quirk": "Routes via the longest hallway for 'cardio vibes'."
+    },
+    {
+      "id": "sprocket",
+      "name": "Sprocket",
+      "role": "Station wrangler",
+      "mood": "Busy-badge proud",
+      "station": "Work station",
+      "quirk": "Sparkles are mute-safe. Audio is for cowards (and autoplay blockers)."
+    },
+    {
+      "id": "bean",
+      "name": "Bean",
+      "role": "QA poke-bot",
+      "mood": "Politely suspicious",
+      "station": "Review board",
+      "quirk": "Fails closed on div-soup buttons and invisible focus rings."
+    },
+    {
+      "id": "wobble",
+      "name": "Wobble",
+      "role": "Pathfinding intern",
+      "mood": "Slightly lost, cheerfully",
+      "station": "Hallway node B",
+      "quirk": "Arrives eventually. Documentation says 'feature'."
+    }
+  ]
+}

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dev B Web Drill — Campus Roster</title>
+  <style>
+    :root {
+      --bg: #14101f;
+      --panel: #231b36;
+      --panel-2: #2e2448;
+      --ink: #f7eefc;
+      --muted: #b7a7d1;
+      --accent: #ff8bd1;
+      --ok: #7dffb3;
+      --warn: #ffd36e;
+      --err: #ff8a8a;
+      --focus: #ffe566;
+      --line: #4a3a66;
+      --tap: 48px;
+    }
+    * { box-sizing: border-box; }
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: radial-gradient(ellipse at top left, #2a1d45, var(--bg));
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.45;
+    }
+    a { color: var(--accent); }
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+    .skip {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--focus);
+      color: #1a1428;
+      padding: 8px 12px;
+      z-index: 10;
+    }
+    .skip:focus { left: 8px; top: 8px; }
+    .wrap {
+      width: min(100%, 640px);
+      margin: 0 auto;
+      padding: 12px 14px 40px;
+    }
+    .site-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .site-header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+    .site-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 0 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    .site-nav a,
+    .site-nav button,
+    .toolbar button {
+      min-height: var(--tap);
+      min-width: var(--tap);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 2px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .site-nav a[aria-current="page"] {
+      border-color: var(--accent);
+      background: var(--panel-2);
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .toolbar button.danger {
+      border-color: #8a3a4a;
+      color: #ffc9c9;
+    }
+    .toolbar button.ghost {
+      background: transparent;
+    }
+    .status {
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .status[data-kind="loading"] { border-color: #5a6aaa; color: #c8d4ff; }
+    .status[data-kind="error"] { border-color: #8a3a4a; color: #ffc9c9; background: #2a1520; }
+    .status[data-kind="empty"] { border-color: #6a5a30; color: var(--warn); }
+    .status[data-kind="ok"] { border-color: #2a6a4a; color: var(--ok); }
+    .status[hidden] { display: none; }
+
+    .bot-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bot-list a {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      min-height: var(--tap);
+    }
+    .bot-list a:hover { border-color: var(--accent); }
+    .bot-list a:active { transform: scale(0.99); }
+    .bot-list .name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .bot-list .meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .detail {
+      background: var(--panel);
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .detail h2 {
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+    }
+    .detail dl {
+      margin: 12px 0 0;
+      display: grid;
+      gap: 10px;
+    }
+    .detail dt {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0;
+    }
+    .detail dd {
+      margin: 2px 0 0;
+      font-size: 1.05rem;
+    }
+    .detail .back {
+      margin-bottom: 12px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #3a2d55;
+      border: 1px solid var(--line);
+      font-size: 0.85rem;
+      color: var(--ok);
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+    footer {
+      margin-top: 28px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: #8a7aa8;
+      font-size: 0.8rem;
+    }
+    @media (min-width: 560px) {
+      .site-header h1 { font-size: 1.6rem; }
+      .bot-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <div class="wrap">
+    <header class="site-header">
+      <h1>Campus Stubby Roster</h1>
+      <p>Website Dev drill — semantic list/detail + fetch loading / empty / error.</p>
+    </header>
+
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#/" id="nav-roster">Roster</a>
+      <a href="#/about" id="nav-about">About this drill</a>
+    </nav>
+
+    <div class="toolbar" role="group" aria-label="Fetch demos">
+      <button type="button" id="btn-reload">Reload roster</button>
+      <button type="button" class="danger" id="btn-fail">Simulate fetch error</button>
+      <button type="button" class="ghost" id="btn-empty">Show empty state</button>
+    </div>
+
+    <div class="status" id="status" data-kind="loading" role="status" aria-live="polite">
+      Loading stubby bots…
+    </div>
+
+    <main id="main">
+      <section id="view-list" aria-labelledby="list-heading" hidden>
+        <h2 id="list-heading" class="visually-hidden">Bot list</h2>
+        <ul class="bot-list" id="bot-list"></ul>
+      </section>
+
+      <section id="view-detail" aria-labelledby="detail-heading" hidden>
+        <div class="detail">
+          <p class="back">
+            <a href="#/" id="back-link">← Back to roster</a>
+          </p>
+          <h2 id="detail-heading">Bot</h2>
+          <p><span class="pill" id="detail-role">role</span></p>
+          <dl>
+            <div>
+              <dt>Mood</dt>
+              <dd id="detail-mood">—</dd>
+            </div>
+            <div>
+              <dt>Station</dt>
+              <dd id="detail-station">—</dd>
+            </div>
+            <div>
+              <dt>Quirk</dt>
+              <dd id="detail-quirk">—</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="view-about" aria-labelledby="about-heading" hidden>
+        <h2 id="about-heading">About this drill</h2>
+        <p>
+          Combines Website Dev curriculum drills 1–3: semantic page, responsive
+          list/detail, and fetch with loading / empty / error UI.
+        </p>
+        <p>
+          Force an error with <code>?fail=1</code> or the simulate button.
+          Serve over HTTP so <code>data.json</code> can load.
+        </p>
+      </section>
+
+      <section id="view-missing" hidden>
+        <h2>Bot not found</h2>
+        <p>That stubby wandered off the roster.</p>
+        <p><a href="#/">Back to roster</a></p>
+      </section>
+    </main>
+
+    <footer>
+      Dev B Website School · W0–W5 · phone-first · Android Chrome + Windows · Dev A pushes Pages
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  "use strict";
+
+  const statusEl = document.getElementById("status");
+  const listEl = document.getElementById("bot-list");
+  const viewList = document.getElementById("view-list");
+  const viewDetail = document.getElementById("view-detail");
+  const viewAbout = document.getElementById("view-about");
+  const viewMissing = document.getElementById("view-missing");
+  const navRoster = document.getElementById("nav-roster");
+  const navAbout = document.getElementById("nav-about");
+
+  /** @type {{ bots: Array<any> } | null} */
+  let data = null;
+  let forceEmpty = false;
+  let lastError = null;
+
+  function setStatus(kind, message) {
+    if (!kind) {
+      statusEl.hidden = true;
+      statusEl.textContent = "";
+      return;
+    }
+    statusEl.hidden = false;
+    statusEl.dataset.kind = kind;
+    statusEl.textContent = message;
+  }
+
+  function parseRoute() {
+    const hash = location.hash || "#/";
+    if (hash === "#/" || hash === "#" || hash === "") return { name: "list" };
+    if (hash === "#/about") return { name: "about" };
+    const m = hash.match(/^#\/bot\/([a-z0-9-]+)$/i);
+    if (m) return { name: "detail", id: m[1] };
+    return { name: "list" };
+  }
+
+  function hideViews() {
+    viewList.hidden = true;
+    viewDetail.hidden = true;
+    viewAbout.hidden = true;
+    viewMissing.hidden = true;
+    navRoster.removeAttribute("aria-current");
+    navAbout.removeAttribute("aria-current");
+  }
+
+  function renderList() {
+    listEl.innerHTML = "";
+    const bots = (data && data.bots) || [];
+    if (forceEmpty || bots.length === 0) {
+      setStatus("empty", "No stubby bots on the roster. Try Reload, or un-empty the JSON.");
+      return;
+    }
+    setStatus(null);
+    for (const bot of bots) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = "#/bot/" + encodeURIComponent(bot.id);
+      a.innerHTML =
+        '<p class="name"></p><p class="meta"></p>';
+      a.querySelector(".name").textContent = bot.name;
+      a.querySelector(".meta").textContent = bot.role + " · " + bot.station;
+      li.appendChild(a);
+      listEl.appendChild(li);
+    }
+  }
+
+  function renderDetail(id) {
+    const bots = (data && data.bots) || [];
+    const bot = bots.find(function (b) { return b.id === id; });
+    if (!bot) {
+      hideViews();
+      viewMissing.hidden = false;
+      navRoster.setAttribute("aria-current", "page");
+      setStatus(null);
+      return;
+    }
+    document.getElementById("detail-heading").textContent = bot.name;
+    document.getElementById("detail-role").textContent = bot.role;
+    document.getElementById("detail-mood").textContent = bot.mood;
+    document.getElementById("detail-station").textContent = bot.station;
+    document.getElementById("detail-quirk").textContent = bot.quirk;
+    setStatus(null);
+  }
+
+  function route() {
+    if (lastError) {
+      hideViews();
+      setStatus("error", lastError);
+      navRoster.setAttribute("aria-current", "page");
+      return;
+    }
+    if (!data && !forceEmpty) {
+      // still loading or never loaded
+      return;
+    }
+    const r = parseRoute();
+    hideViews();
+    if (r.name === "about") {
+      viewAbout.hidden = false;
+      navAbout.setAttribute("aria-current", "page");
+      setStatus(null);
+      return;
+    }
+    if (r.name === "detail") {
+      viewDetail.hidden = false;
+      navRoster.setAttribute("aria-current", "page");
+      renderDetail(r.id);
+      return;
+    }
+    viewList.hidden = false;
+    navRoster.setAttribute("aria-current", "page");
+    renderList();
+  }
+
+  async function loadRoster(opts) {
+    opts = opts || {};
+    forceEmpty = false;
+    lastError = null;
+    data = null;
+    hideViews();
+    setStatus("loading", "Loading stubby bots…");
+
+    const params = new URLSearchParams(location.search);
+    const failQuery = params.get("fail") === "1";
+    const url = opts.badUrl
+      ? "data-does-not-exist-" + Date.now() + ".json"
+      : failQuery
+        ? "data-forced-fail.json"
+        : "data.json";
+
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error("Fetch failed (" + res.status + ") for " + url);
+      }
+      const json = await res.json();
+      if (!json || !Array.isArray(json.bots)) {
+        throw new Error("Bad payload: expected { bots: [] }");
+      }
+      data = json;
+      lastError = null;
+      route();
+    } catch (err) {
+      lastError =
+        "Could not load roster. " +
+        (err && err.message ? err.message : "Unknown error") +
+        " — try Reload, or drop ?fail=1 from the URL.";
+      data = null;
+      route();
+    }
+  }
+
+  document.getElementById("btn-reload").addEventListener("click", function () {
+    // strip fail flag from UX path by loading good URL explicitly
+    const url = new URL(location.href);
+    url.searchParams.delete("fail");
+    history.replaceState(null, "", url.pathname + url.search + location.hash);
+    loadRoster({ badUrl: false });
+  });
+
+  document.getElementById("btn-fail").addEventListener("click", function () {
+    loadRoster({ badUrl: true });
+  });
+
+  document.getElementById("btn-empty").addEventListener("click", function () {
+    lastError = null;
+    forceEmpty = true;
+    data = data || { bots: [] };
+    // keep structure but show empty UI
+    const r = parseRoute();
+    if (r.name !== "list") location.hash = "#/";
+    hideViews();
+    viewList.hidden = false;
+    navRoster.setAttribute("aria-current", "page");
+    renderList();
+  });
+
+  window.addEventListener("hashchange", route);
+
+  // default hash
+  if (!location.hash) location.hash = "#/";
+
+  loadRoster();
+})();
+  </script>
+</body>
+</html>
