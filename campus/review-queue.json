@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T03:45:03Z",
+  "updatedAt": "2026-09-21T04:00:38Z",
   "items": [
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
-      "summary": "opt7: A hi-contrast neon human (cyan outline). B camera ?v=opt6c. C ?v=opt6b.",
+      "summary": "Dev C PACK PASS (opt7 A readable + opt6c B cam). Try A/?v=opt7 \u00b7 B/?v=opt6c \u00b7 C/?v=opt6b \u2014 likes/dislikes.",
       "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt7",
       "owner": "Dev A (+ Dev B on B)",
       "kind": "game",
@@ -23,7 +23,7 @@
     {
       "id": "rv-phone-roam-a",
       "title": "Phone combat option A \u2014 Twin-stick arena",
-      "summary": "Dev C PACK PASS (match-vs-still). Twin-stick neon arena. Try + say likes/dislikes. (see pack item for Review hub).",
+      "summary": "A twin-stick \u2014 hi-contrast neon human (?v=opt7). See pack hub.",
       "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt7",
       "owner": "Dev A",
       "kind": "game",
@@ -35,8 +35,8 @@
     {
       "id": "rv-phone-roam-b",
       "title": "Phone combat option B \u2014 Side slash/gun",
-      "summary": "Dev C PACK PASS (match-vs-still). Side corridor slash/gun. Distinct from A/C. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6",
+      "summary": "B corridor slash \u2014 camera restore fix (?v=opt6c). See pack hub.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6c",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
@@ -47,8 +47,8 @@
     {
       "id": "rv-phone-roam-c",
       "title": "Phone combat option C \u2014 Iso stealth takedown",
-      "summary": "Dev C PACK PASS (match-vs-still). Iso stealth takedowns. Distinct from A/B. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6",
+      "summary": "C iso stealth (?v=opt6b). See pack hub.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
