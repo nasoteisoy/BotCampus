@@ -1,5 +1,6 @@
-# A — Arena Clear · Neon cyber top-down
-- `style_world.png` — twin-stick arena mood (neon grid, readable enemy blobs, stick UI)
-- `hero_silhouette.png` — true top-down neon fighter blob (primary)
-- `hero_highangle_alt.png` — high-angle chrome fighter (secondary read)
-Style lock if picked: neon vector / low-poly cyber — NOT whimsy, NOT iso painterly.
+# A — Neon cyber CHARACTER twin-stick
+- `style_world.png` — human neon fighter arena (not ships)
+- `player.png` / `player_f2.png` / `player_sheet.png` — neon HUMAN with limbs+visor+dual guns
+- `enemy_tri/pod/rock.png` — creature characters (robot / spider / golem)
+- Archives: `*_ship_archive.png` — ignore
+FAIL bar: no triangle/circle/hex/ship silhouettes at phone size.

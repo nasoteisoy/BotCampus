@@ -7,10 +7,10 @@
     im.src = src;
     return im;
   }
-  var heroImg = loadImg('./art/player.png');
-  var heroImg2 = loadImg('./art/player_f2.png');
-  var blobImg = loadImg('./art/enemy_blob.png');
-  var blobAlt = loadImg('./art/enemy_blob_alt.png');
+  var heroImg = loadImg('./art/player.png?v=opt6');
+  var heroImg2 = loadImg('./art/player_f2.png?v=opt6');
+  var blobImg = loadImg('./art/enemy_blob.png?v=opt6');
+  var blobAlt = loadImg('./art/enemy_blob_alt.png?v=opt6');
 
 (function () {
   "use strict";
