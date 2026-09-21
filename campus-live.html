@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=circles1 named circle markers (no sprites) Dev A + Dev B FSM -->
+<!-- POLL=10s Pages429cool CACHE_BUST v=circles1 named circle markers (no sprites) Dev A + Dev B FSM -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -903,7 +903,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
-  const POLL_MS = 8000;
+  const POLL_MS = 10000; // Pages 429 cool-down — do not lower
   const ASSET_V = 'circles1';
   const WORLD = { w: 2100, h: 1600, pad: 80 };
 
@@ -2184,16 +2184,24 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   setInterval(tickAge, 250);
 
   let firstLoad = true;
+  let pollBackoffMs = 0;
   async function poll() {
-    const bust = '?t=' + Date.now();
+    // Soft bust only every few minutes — constant ?t= hammers Pages CDN (429)
+    const softBust = (Date.now() % 180000 < POLL_MS) ? ('?v=' + ASSET_V + '&t=' + Math.floor(Date.now() / 60000)) : ('?v=' + ASSET_V);
     let lastErr = null;
     for (const base of STATE_URLS) {
       try {
-        const res = await fetch(base + bust, { cache: 'no-store' });
+        const res = await fetch(base + softBust, { cache: 'default' });
+        if (res.status === 429) {
+          pollBackoffMs = Math.min(60000, (pollBackoffMs || POLL_MS) * 2);
+          lastErr = new Error('HTTP 429 — backing off ' + pollBackoffMs + 'ms');
+          break;
+        }
         if (!res.ok) { lastErr = new Error('HTTP ' + res.status + ' ' + base); continue; }
         const data = await res.json();
         applyState(data, firstLoad);
         firstLoad = false;
+        pollBackoffMs = 0;
         return;
       } catch (e) {
         lastErr = e;
@@ -2239,12 +2247,16 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       setTimeout(() => sp.remove(), 1000);
     }
   }
-  setInterval(spawnWorkingSparkles, 1100);
+  setInterval(spawnWorkingSparkles, 8000);
 
   // Initial camera before first paint of sprites
   requestAnimationFrame(fitOverview);
-  poll();
-  setInterval(poll, POLL_MS);
+  async function pollLoop() {
+    try { await poll(); } catch (e) {}
+    const wait = Math.max(POLL_MS, pollBackoffMs || 0);
+    setTimeout(pollLoop, wait);
+  }
+  pollLoop();
 })();
 </script>
 </body>

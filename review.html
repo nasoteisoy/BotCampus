@@ -175,7 +175,7 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
 <script>
 (function () {
   var LS_KEY = 'botcampus-review-dismissed';
-  var POLL_MS = 8000;
+  var POLL_MS = 10000; // Pages 429 cool-down — do not lower
   var LIVE_MS = 5000;
   var DATA_URL = 'campus/review-queue.json';
   var STATE_URL = 'campus/campus-state.json';
@@ -443,7 +443,7 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
   }
 
   function fetchQueue() {
-    var bust = '?t=' + Date.now();
+    var bust = '?v=poll10&m=' + Math.floor(Date.now() / 60000);
     var queueP = fetch(DATA_URL + bust, { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
