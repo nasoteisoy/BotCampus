@@ -1,10 +1,34 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T23:56:20Z",
+  "updatedAt": "2026-09-21T01:10:41Z",
   "items": [
     {
+      "id": "rv-campus-layout-npc6",
+      "title": "Campus layout — full names + no overlap + room badges",
+      "summary": "Dev C PASSed npc6 COLLISION-LAYOUT: intern side rails, hard AABB gaps, zero stacks. Soft nit: brief micro-jitter. Try on phone.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc6",
+      "owner": "Dev A",
+      "kind": "campus",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-21T01:10:41Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "rv-campus-circles1",
+      "title": "Campus markers — name circles (no sprites)",
+      "summary": "circles1: main = full name inside circle; intern = parent name + job. Waiting on Dev C QC before open.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles1",
+      "owner": "Dev A + Dev B",
+      "kind": "campus",
+      "priority": 1,
+      "status": "waiting",
+      "createdAt": "2026-09-21T01:10:41Z",
+      "dismissedAt": null
+    },
+    {
       "id": "rv-campus-live-fun-v11",
-      "title": "Campus Live \u2014 Fit / juice + pan / zoom",
+      "title": "Campus Live — Fit / juice + pan / zoom",
       "summary": "Fun pass v11 (Dev C PASSed): Fit all, tap juice, smoother pan/zoom. Still open for Jesus to try on phone.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
       "owner": "Dev A",
@@ -15,27 +39,27 @@
       "dismissedAt": null
     },
     {
-      "id": "rv-sprite-lab-flow",
-      "title": "Elementals \u2014 paused (rendering school)",
-      "summary": "Render crew in Game Rendering School \u2014 elementals paused until they pass school QC. Peek only.",
-      "url": "https://nasoteisoy.github.io/BotCampus/sprite-lab.html?v=flow1",
-      "owner": "Render A/B/C",
-      "kind": "sprites",
-      "priority": 2,
-      "status": "waiting",
-      "createdAt": "2026-09-20T22:30:00Z",
-      "dismissedAt": null
-    },
-    {
       "id": "rv-campus-npc-life",
-      "title": "Campus NPC life \u2014 walk / stations / emotions",
-      "summary": "Dev C PASSed npc2. Mute 10s: desk\u2192station walks, permission RUN, ready pulse. Soft nits OK for now.",
+      "title": "Campus NPC life — walk / stations / emotions",
+      "summary": "Dev C PASSed npc2. Mute 10s: desk→station walks, permission RUN, ready pulse. Soft nits OK for now.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc2",
       "owner": "Dev B",
       "kind": "campus",
       "priority": 0,
       "status": "open",
       "createdAt": "2026-09-20T23:24:29Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "rv-sprite-lab-flow",
+      "title": "Elementals — paused (rendering school)",
+      "summary": "Render crew in Game Rendering School — elementals paused until they pass school QC. Peek only.",
+      "url": "https://nasoteisoy.github.io/BotCampus/sprite-lab.html?v=flow1",
+      "owner": "Render A/B/C",
+      "kind": "sprites",
+      "priority": 2,
+      "status": "waiting",
+      "createdAt": "2026-09-20T22:30:00Z",
       "dismissedAt": null
     }
   ]
