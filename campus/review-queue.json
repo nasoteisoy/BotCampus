@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T01:43:41Z",
+  "updatedAt": "2026-09-21T01:43:55Z",
   "items": [
     {
-      "id": "rv-campus-layout-npc6",
-      "title": "Campus layout — full names + no overlap + room badges",
-      "summary": "Dev C PASSed npc6 COLLISION-LAYOUT: intern side rails, hard AABB gaps, zero stacks. Soft nit: brief micro-jitter. Try on phone.",
-      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc6",
-      "owner": "Dev A",
+      "id": "rv-campus-circles2",
+      "title": "Campus markers — name circles (circles2)",
+      "summary": "Dev C PASSed: name circles, full names inside, small interns with parent+job, zero overlap. Fit readable. Try on phone.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
+      "owner": "Dev A + Dev B",
       "kind": "campus",
       "priority": 0,
       "status": "open",
@@ -15,14 +15,14 @@
       "dismissedAt": null
     },
     {
-      "id": "rv-campus-circles2",
-      "title": "Campus markers — name circles (circles2)",
-      "summary": "Dev C PASSed circles2: zero overlap (Fire∩Earth FLOW ~211px), Fit mains ~92–96px, names in circles. Soft nit: mirrored name text when facing left (optional later).",
-      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
-      "owner": "Dev A + Dev B",
+      "id": "rv-campus-layout-npc6",
+      "title": "Campus layout — full names + no overlap + room badges",
+      "summary": "Superseded by circles2 name-circle markers (layout/AABB still underpinning). Demoted — use circles2 for Jesus review.",
+      "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc6",
+      "owner": "Dev A",
       "kind": "campus",
-      "priority": 0,
-      "status": "open",
+      "priority": 3,
+      "status": "waiting",
       "createdAt": "2026-09-21T01:10:41Z",
       "dismissedAt": null
     },
@@ -41,11 +41,11 @@
     {
       "id": "rv-campus-npc-life",
       "title": "Campus NPC life — walk / stations / emotions",
-      "summary": "Dev C PASSed npc2. Mute 10s: desk→station walks, permission RUN, ready pulse. Soft nits OK for now.",
+      "summary": "Dev C PASSed npc2. Mute 10s: desk→station walks, permission RUN, ready pulse. Soft nits OK for now. Note: markers are now name circles (circles2).",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc2",
       "owner": "Dev B",
       "kind": "campus",
-      "priority": 0,
+      "priority": 2,
       "status": "open",
       "createdAt": "2026-09-20T23:24:29Z",
       "dismissedAt": null
