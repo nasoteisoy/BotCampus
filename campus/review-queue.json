@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T01:30:46Z",
+  "updatedAt": "2026-09-21T01:43:41Z",
   "items": [
     {
       "id": "rv-campus-layout-npc6",
@@ -17,12 +17,12 @@
     {
       "id": "rv-campus-circles2",
       "title": "Campus markers — name circles (circles2)",
-      "summary": "circles2: larger AABB clearance + Fit floor after C FAIL on Fire∩Earth FLOW overlap. Waiting Dev C QC.",
+      "summary": "Dev C PASSed circles2: zero overlap (Fire∩Earth FLOW ~211px), Fit mains ~92–96px, names in circles. Soft nit: mirrored name text when facing left (optional later).",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
       "owner": "Dev A + Dev B",
       "kind": "campus",
-      "priority": 1,
-      "status": "waiting",
+      "priority": 0,
+      "status": "open",
       "createdAt": "2026-09-21T01:10:41Z",
       "dismissedAt": null
     },
