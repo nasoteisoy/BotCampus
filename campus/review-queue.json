@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T04:00:38Z",
+  "updatedAt": "2026-09-21T04:32:22Z",
   "items": [
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
-      "summary": "Dev C PACK PASS (opt7 A readable + opt6c B cam). Try A/?v=opt7 \u00b7 B/?v=opt6c \u00b7 C/?v=opt6b \u2014 likes/dislikes.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt7",
+      "summary": "opt8b juice: anim sheets + hitstop/death (sticker-test). A/B/C ?v=opt8b",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt8b",
       "owner": "Dev A (+ Dev B on B)",
       "kind": "game",
       "priority": 0,
@@ -14,17 +14,17 @@
       "createdAt": "2026-09-21T02:55:04Z",
       "dismissedAt": null,
       "links": [
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt7",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt7",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6c",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6b"
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt8b",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt8b",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt8b",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt8b"
       ]
     },
     {
       "id": "rv-phone-roam-a",
       "title": "Phone combat option A \u2014 Twin-stick arena",
       "summary": "A twin-stick \u2014 hi-contrast neon human (?v=opt7). See pack hub.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt7",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt8b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
@@ -36,7 +36,7 @@
       "id": "rv-phone-roam-b",
       "title": "Phone combat option B \u2014 Side slash/gun",
       "summary": "B corridor slash \u2014 camera restore fix (?v=opt6c). See pack hub.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt6c",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt8b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
@@ -48,7 +48,7 @@
       "id": "rv-phone-roam-c",
       "title": "Phone combat option C \u2014 Iso stealth takedown",
       "summary": "C iso stealth (?v=opt6b). See pack hub.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt6b",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt8b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
