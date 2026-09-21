@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T03:06:36Z",
+  "updatedAt": "2026-09-21T03:06:57Z",
   "items": [
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
-      "summary": "opt4b: painted character/enemy PNGs (Render A+B). Shapes\u2192sprites gate for C QC.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt4b",
+      "summary": "opt5: character creatures (clawed robot / spider / golem / candy faces) \u2014 not geometric neon frames. C QC shapes\u2192sprites.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt5",
       "owner": "Dev A (+ Dev B on B)",
       "kind": "game",
       "priority": 0,
@@ -14,17 +14,17 @@
       "createdAt": "2026-09-21T02:55:04Z",
       "dismissedAt": null,
       "links": [
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt4b",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt4b",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt4b",
-        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt4b"
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/styles.html?v=opt5",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt5",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt5",
+        "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt5"
       ]
     },
     {
       "id": "rv-phone-roam-a",
       "title": "Phone combat option A \u2014 Twin-stick arena",
       "summary": "Dev C PACK PASS (match-vs-still). Twin-stick neon arena. Try + say likes/dislikes. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt4b",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt5",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
@@ -36,7 +36,7 @@
       "id": "rv-phone-roam-b",
       "title": "Phone combat option B \u2014 Side slash/gun",
       "summary": "Dev C PACK PASS (match-vs-still). Side corridor slash/gun. Distinct from A/C. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt4b",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt5",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,
@@ -48,7 +48,7 @@
       "id": "rv-phone-roam-c",
       "title": "Phone combat option C \u2014 Iso stealth takedown",
       "summary": "Dev C PACK PASS (match-vs-still). Iso stealth takedowns. Distinct from A/B. (see pack item for Review hub).",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt4b",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt5",
       "owner": "Dev A",
       "kind": "game",
       "priority": 2,

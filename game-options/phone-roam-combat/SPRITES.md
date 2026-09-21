@@ -1,4 +1,4 @@
-# Runtime sprites — CHARACTER drop (opt4 ready)
+# Runtime sprites — CHARACTER drop (opt5 ready)
 
 **Do not use `_old_shape_*`** (1–3KB Pillow geometry from 19:33).
 
@@ -19,4 +19,7 @@ Live files (illustrated characters, 256² RGBA transparent):
 Sheets: `*_sheet.png` = 2×256 horizontal (same frame ×2 until more poses).
 `style_world.png` = board only.
 
-Bump `?v=opt4`. Prefer drawImage; never fall back to fillStyle circles when naturalWidth>0.
+Bump `?v=opt5`. Prefer drawImage; never fall back to fillStyle circles when naturalWidth>0.
+
+
+Proof strip: `art_runtime_proof_strip.png` (all runtime characters in one row).
