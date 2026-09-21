@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Semantics + a11y</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.45}
+    .skip{
+      position:absolute;left:-9999px;top:0;background:var(--focus);color:#1a1428;
+      padding:10px 14px;z-index:20;font-weight:700;text-decoration:none;border-radius:8px;
+    }
+    .skip:focus{left:8px;top:8px}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+    .wrap{width:min(100%,640px);margin:0 auto;padding:14px 14px 40px}
+    a.back{color:var(--accent);font-weight:600;display:inline-flex;min-height:44px;align-items:center}
+    header.site{margin:8px 0 16px}
+    h1{margin:0 0 6px;font-size:1.35rem}
+    .tag{margin:0;color:var(--muted)}
+    nav.crumbs{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+    nav.crumbs a,button{
+      min-height:var(--tap);min-width:var(--tap);padding:10px 14px;border-radius:12px;
+      border:2px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:600;
+      text-decoration:none;display:inline-flex;align-items:center;cursor:pointer;touch-action:manipulation;
+    }
+    main h2{font-size:1.1rem;margin:0 0 8px}
+    .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+    .swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .swatch{flex:1 1 120px;border-radius:12px;padding:12px;border:2px solid var(--line);text-align:center;font-size:.85rem}
+    aside{margin-top:16px;padding:12px;border-left:4px solid var(--ok);background:var(--panel);border-radius:0 12px 12px 0;color:var(--muted)}
+    footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <div class="wrap">
+    <a class="back" href="../index.html">← kinds hub</a>
+    <header class="site">
+      <h1>♿ Semantics + a11y</h1>
+      <p class="tag">Landmarks, skip link, real controls, visible focus, contrast-minded palette.</p>
+    </header>
+    <nav class="crumbs" aria-label="Section links">
+      <a href="#checklist">Checklist</a>
+      <a href="#contrast">Contrast</a>
+      <button type="button" id="announce">Announce politely</button>
+    </nav>
+    <main id="main">
+      <section class="card" id="checklist" aria-labelledby="h-check">
+        <h2 id="h-check">What “good” looks like here</h2>
+        <ul>
+          <li><code>&lt;header&gt;</code> / <code>&lt;nav&gt;</code> / <code>&lt;main&gt;</code> / <code>&lt;aside&gt;</code> / <code>&lt;footer&gt;</code></li>
+          <li>Skip link appears on keyboard focus</li>
+          <li>Buttons are real <code>&lt;button&gt;</code>s; links are real <code>&lt;a&gt;</code>s</li>
+          <li><code>:focus-visible</code> rings (try Tab)</li>
+          <li>Tap targets ≥ ~48px</li>
+        </ul>
+      </section>
+      <section class="card" id="contrast" aria-labelledby="h-contrast">
+        <h2 id="h-contrast">Contrast samples</h2>
+        <p style="margin:0;color:var(--muted)">Ink on panel and accent on dark — check on your phone outdoors too.</p>
+        <div class="swatches">
+          <div class="swatch" style="background:#231b36;color:#f7eefc">ink / panel</div>
+          <div class="swatch" style="background:#14101f;color:#ff8bd1">accent / bg</div>
+          <div class="swatch" style="background:#231b36;color:#7dffb3">ok / panel</div>
+          <div class="swatch" style="background:#ffe566;color:#1a1428">focus chip</div>
+        </div>
+      </section>
+      <aside aria-label="Tip">
+        Color is not the sole signal — the announce button also updates a live region below.
+      </aside>
+      <p id="live" role="status" aria-live="polite" style="min-height:1.5em;color:var(--ok)"></p>
+    </main>
+    <footer>Dev B web kind · Android Chrome + Windows · silly campus vibes</footer>
+  </div>
+<script>
+  document.getElementById('announce').addEventListener('click', () => {
+    document.getElementById('live').textContent = 'Polite status: landmarks are friends ✨ (' + new Date().toLocaleTimeString() + ')';
+  });
+</script>
+</body>
+</html>

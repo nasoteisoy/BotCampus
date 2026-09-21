@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Responsive — phone-first cards</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+    .wrap{width:min(100%,900px);margin:0 auto;padding:14px 14px 40px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,article:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0 0 6px;font-size:1.3rem}
+    .tag{margin:0 0 16px;color:var(--muted)}
+    .meta{font-size:.85rem;color:var(--ok);margin-bottom:12px}
+    .grid{
+      display:grid;gap:12px;
+      grid-template-columns:1fr; /* phone-first */
+    }
+    @media (min-width:560px){
+      .grid{grid-template-columns:1fr 1fr}
+    }
+    @media (min-width:820px){
+      .grid{grid-template-columns:1fr 1fr 1fr}
+    }
+    article{
+      background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px 16px;
+      min-height:120px;display:flex;flex-direction:column;gap:8px;
+    }
+    article h2{margin:0;font-size:1.05rem}
+    article p{margin:0;color:var(--muted);font-size:.95rem}
+    .emoji{font-size:1.6rem}
+    .hint{margin-top:16px;color:var(--muted);font-size:.9rem;line-height:1.45}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="../index.html">← kinds hub</a>
+    <h1>📱 Responsive — phone-first cards</h1>
+    <p class="tag">Resize / rotate: cards reflow. No horizontal pan for text. ≥48px friendly targets elsewhere.</p>
+    <p class="meta" id="meta" aria-live="polite">Columns: …</p>
+    <div class="grid" id="grid">
+      <article><div class="emoji">🧀</div><h2>Snack bot</h2><p>Stacks alone on phones. Gains neighbors on wider viewports.</p></article>
+      <article><div class="emoji">🛰️</div><h2>Orbit intern</h2><p>Same card component — layout does the work, not duplicate markup.</p></article>
+      <article><div class="emoji">🪄</div><h2>Bug whisperer</h2><p>Reflow beats “desktop screenshot shrunk.”</p></article>
+      <article><div class="emoji">📦</div><h2>Crate curator</h2><p>Touch-friendly padding stays put at every breakpoint.</p></article>
+      <article><div class="emoji">🐛</div><h2>Pixel beetle</h2><p>Try Android Chrome width vs Windows window drag.</p></article>
+      <article><div class="emoji">☕</div><h2>Idle barista</h2><p>Content wraps; nothing requires sideways scrolling.</p></article>
+    </div>
+    <p class="hint">STANDARDS: Responsive — reflow phone→desktop; no text-requires-pan. Eng: MDN responsive / media queries.</p>
+  </div>
+<script>
+  function update() {
+    const w = window.innerWidth;
+    let cols = 1;
+    if (w >= 820) cols = 3;
+    else if (w >= 560) cols = 2;
+    document.getElementById('meta').textContent = 'Viewport ~' + w + 'px → ' + cols + ' column' + (cols > 1 ? 's' : '');
+  }
+  update();
+  window.addEventListener('resize', update);
+</script>
+</body>
+</html>

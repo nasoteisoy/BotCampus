@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game kinds hub — Dev B School</title>
+  <style>
+    :root {
+      --bg: #1a1428; --panel: #2a2140; --ink: #f5e9ff; --muted: #b9a8d4;
+      --accent: #ff8bd1; --ok: #7dffb3; --focus: #ffe566; --line: #4a3a66;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; padding: 14px;
+      background: radial-gradient(ellipse at top, #2b1f45, var(--bg));
+      color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .wrap { width: min(100%, 560px); margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-size: 1.35rem; }
+    .tag { color: var(--muted); margin: 0 0 16px; }
+    a.back {
+      display: inline-flex; align-items: center; min-height: 44px;
+      color: var(--accent); font-weight: 600; margin-bottom: 12px;
+    }
+    a.back:focus-visible, .card:focus-visible {
+      outline: 3px solid var(--focus); outline-offset: 2px;
+    }
+    .grid { display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--panel); border: 2px solid var(--line);
+      border-radius: 16px; padding: 14px 16px; min-height: 48px;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card strong { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+    .card span { color: var(--muted); font-size: 0.9rem; }
+    .kind { color: var(--ok); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← Parent NPC drill</a>
+    <h1>🎮 Game kinds hub</h1>
+    <p class="tag">Tiny focused drills — one STANDARDS kind each. Not a mega page. Silly bots welcome.</p>
+    <nav class="grid" aria-label="Game kind drills">
+      <a class="card" href="loop-timing/">
+        <div class="kind">Loop / timing</div>
+        <strong>Fixed timestep demo</strong>
+        <span>Accumulator · tick count vs FPS · no spiral of death</span>
+      </a>
+      <a class="card" href="state-save/">
+        <div class="kind">State / save</div>
+        <strong>JSON blob + resume</strong>
+        <span>Export / import · localStorage checkpoint</span>
+      </a>
+      <a class="card" href="input/">
+        <div class="kind">Input</div>
+        <strong>Gesture vs HUD</strong>
+        <span>Tap HUD without moving camera · tap world to move</span>
+      </a>
+      <a class="card" href="camera/">
+        <div class="kind">Camera / UI feel</div>
+        <strong>Pan · zoom · clamps</strong>
+        <span>Dense map stub + zoom buttons</span>
+      </a>
+      <a class="card" href="juice/">
+        <div class="kind">Juice / feedback</div>
+        <strong>Mute-safe flash</strong>
+        <span>Scale + flash on press · no audio required</span>
+      </a>
+      <a class="card" href="npc-ai/">
+        <div class="kind">NPC / AI behavior</div>
+        <strong>Idle → path → busy</strong>
+        <span>Links to parent game drill (FSM + station)</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

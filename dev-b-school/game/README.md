@@ -54,4 +54,13 @@ From `research-notes/game-dev-school/SHIP-CHECKLIST.md` (drill-scoped):
 ## Files
 
 - `index.html` — shell, HUD, canvas  
-- `game.js` — loop, FSM, path, draw  
+- `game.js` — loop, FSM, path, draw
+
+## Kinds hub
+
+Parent `index.html` stays the **NPC idle→path→busy** drill.
+
+Per-STANDARDS mini drills (loop-timing, state-save, input, camera, juice, npc-ai link):
+
+→ **[`kinds/`](./kinds/)** · map in [`kinds/README.md`](./kinds/README.md)
+

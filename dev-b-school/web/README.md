@@ -54,4 +54,13 @@ From `research-notes/website-dev-school/SHIP-CHECKLIST.md`:
 - Invisible focus (F2) → `:focus-visible` rings  
 - Missing viewport (F8) → device-width meta  
 - Tiny taps (F9) → padded controls  
-- Landmark vacuum (F10) → `nav` + `main` + headings  
+- Landmark vacuum (F10) → `nav` + `main` + headings
+
+## Kinds hub
+
+Parent `index.html` stays the **list/detail + fetch** drill (`?fail=1` for errors).
+
+Per-STANDARDS mini drills (semantics-a11y, responsive, forms, api-errors, security-basics, perf-cwv):
+
+→ **[`kinds/`](./kinds/)** · map in [`kinds/README.md`](./kinds/README.md)
+

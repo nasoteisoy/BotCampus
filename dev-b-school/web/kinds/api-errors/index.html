@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: API / error UX</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --err:#ff8a8a; --warn:#ffd36e; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+    .wrap{width:min(100%,520px);margin:0 auto;padding:14px 14px 40px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0 0 6px;font-size:1.25rem}
+    .tag{margin:0 0 16px;color:var(--muted)}
+    .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+    .status{
+      min-height:48px;padding:12px;border-radius:12px;border:1px solid var(--line);
+      background:#2a1520;color:#ffc9c9;margin-bottom:12px;
+    }
+    .status[data-kind="ok"]{background:#152a20;color:var(--ok);border-color:#2a6a4a}
+    .status[data-kind="loading"]{background:#1a2030;color:#c8d4ff;border-color:#5a6aaa}
+    .row{display:flex;flex-wrap:wrap;gap:8px}
+    a.btn,button{
+      min-height:var(--tap);padding:10px 14px;border-radius:12px;border:2px solid var(--line);
+      background:var(--panel);color:var(--ink);font:inherit;font-weight:600;text-decoration:none;
+      display:inline-flex;align-items:center;cursor:pointer;touch-action:manipulation;
+    }
+    a.btn.primary,button.primary{background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;border-color:#ffc1e8}
+    code{color:var(--warn)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="../index.html">← kinds hub</a>
+    <h1>⚠️ API / error UX</h1>
+    <p class="tag">Don’t swallow failures. Show loading / empty / error. Parent roster already drills this — deep-link or mini-fetch here.</p>
+
+    <div class="card">
+      <h2 style="margin:0 0 8px;font-size:1.05rem">Parent drill (recommended)</h2>
+      <p style="margin:0 0 12px;color:var(--muted)">Campus Roster with <code>?fail=1</code> forces a failed fetch path.</p>
+      <div class="row">
+        <a class="btn primary" href="../../index.html?fail=1">Open parent with ?fail=1</a>
+        <a class="btn" href="../../index.html">Parent happy path</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 8px;font-size:1.05rem">Mini fetch error</h2>
+      <div class="status" id="status" data-kind="loading" role="status" aria-live="polite">Idle — tap to simulate.</div>
+      <div class="row">
+        <button type="button" class="primary" id="fail">Fetch missing URL</button>
+        <button type="button" id="ok">Fetch (expect fail offline)</button>
+      </div>
+    </div>
+  </div>
+<script>
+(function () {
+  const status = document.getElementById('status');
+  function set(kind, msg) {
+    status.dataset.kind = kind;
+    status.textContent = msg;
+  }
+  document.getElementById('fail').addEventListener('click', async () => {
+    set('loading', 'Loading…');
+    try {
+      const res = await fetch('./definitely-missing-' + Date.now() + '.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      set('ok', 'Unexpected success');
+    } catch (err) {
+      set('error', 'Error: could not load roster data. ' + err.message + ' — Retry when ready.');
+    }
+  });
+  document.getElementById('ok').addEventListener('click', async () => {
+    set('loading', 'Loading parent data.json…');
+    try {
+      const res = await fetch('../../data.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      set('ok', 'OK — loaded ' + (Array.isArray(data) ? data.length : '?') + ' bots (serve over HTTP).');
+    } catch (err) {
+      set('error', 'Error: ' + err.message + ' — Use a static server from web/, or use ?fail=1 on parent.');
+    }
+  });
+})();
+</script>
+</body>
+</html>

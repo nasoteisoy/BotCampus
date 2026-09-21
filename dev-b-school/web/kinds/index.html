@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web kinds hub — Dev B School</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --panel-2:#2e2448; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100dvh;padding:14px;
+      background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;
+    }
+    .wrap{width:min(100%,560px);margin:0 auto}
+    h1{margin:0 0 6px;font-size:1.35rem}
+    .tag{color:var(--muted);margin:0 0 16px}
+    a.back{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);font-weight:600;margin-bottom:12px}
+    a.back:focus-visible,.card:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    .grid{display:flex;flex-direction:column;gap:10px}
+    .card{
+      display:block;text-decoration:none;color:inherit;background:var(--panel);
+      border:2px solid var(--line);border-radius:16px;padding:14px 16px;min-height:var(--tap);
+    }
+    .card:hover{border-color:var(--accent);background:var(--panel-2)}
+    .card strong{display:block;font-size:1.05rem;margin-bottom:4px}
+    .card span{color:var(--muted);font-size:.9rem}
+    .kind{color:var(--ok);font-size:.75rem;letter-spacing:.04em;text-transform:uppercase}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← Parent list/detail drill</a>
+    <h1>🌐 Web kinds hub</h1>
+    <p class="tag">Tiny focused drills — one STANDARDS kind each. Separate craft from game loop.</p>
+    <nav class="grid" aria-label="Website kind drills">
+      <a class="card" href="semantics-a11y/">
+        <div class="kind">HTML semantics · WCAG / a11y</div>
+        <strong>Landmarks &amp; focus</strong>
+        <span>Skip link · focus rings · contrast</span>
+      </a>
+      <a class="card" href="responsive/">
+        <div class="kind">Responsive</div>
+        <strong>Phone-first cards</strong>
+        <span>Reflow 1 → 2 → 3 columns · no text-requires-pan</span>
+      </a>
+      <a class="card" href="forms/">
+        <div class="kind">Forms / validation</div>
+        <strong>Labeled form + errors</strong>
+        <span>Visible errors · progressive enhance</span>
+      </a>
+      <a class="card" href="api-errors/">
+        <div class="kind">API / error UX</div>
+        <strong>Fetch fail states</strong>
+        <span>Deep-link parent ?fail=1 · mini error page</span>
+      </a>
+      <a class="card" href="security-basics/">
+        <div class="kind">Security basics</div>
+        <strong>Safe text vs XSS pattern</strong>
+        <span>textContent demo · dangerous pattern in comments only</span>
+      </a>
+      <a class="card" href="perf-cwv/">
+        <div class="kind">Performance (CWV)</div>
+        <strong>Lazy-load + notes</strong>
+        <span>LCP/INP/CLS mindset · loading="lazy"</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

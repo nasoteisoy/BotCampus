@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Input — gesture vs HUD</title>
+  <style>
+    :root {
+      --bg:#1a1428; --panel:#2a2140; --ink:#f5e9ff; --muted:#b9a8d4;
+      --accent:#ff8bd1; --ok:#7dffb3; --warn:#ffd36e; --focus:#ffe566; --line:#4a3a66;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;padding:12px;background:radial-gradient(ellipse at top,#2b1f45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0;font-size:1.2rem}
+    .tag{margin:0;color:var(--muted);font-size:.9rem;text-align:center;max-width:520px}
+    .frame{position:relative;width:min(100%,520px);border:3px solid var(--line);border-radius:16px;overflow:hidden;background:#120e1c;touch-action:none}
+    canvas{display:block;width:100%;height:auto;vertical-align:top}
+    .hud{
+      position:absolute;left:8px;right:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:8px;
+      z-index:2;pointer-events:auto;
+    }
+    .hud button{
+      min-height:48px;min-width:48px;padding:10px 14px;border-radius:14px;border:2px solid #6a5088;
+      background:rgba(42,33,64,.92);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;
+    }
+    .hud button.primary{background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;border-color:#ffc1e8}
+    .log{width:min(100%,520px);min-height:48px;background:var(--panel);border:1px solid var(--line);
+      border-radius:12px;padding:10px 12px;color:var(--muted);font-size:.9rem}
+    .log strong{color:var(--ok)}
+  </style>
+</head>
+<body>
+  <a href="../index.html">← kinds hub</a>
+  <h1>👆 Input — HUD vs world</h1>
+  <p class="tag">Tap <em>world</em> to move the camera target. Tap <em>HUD buttons</em> — camera must not drag. Hit-test HUD first.</p>
+  <div class="frame" id="frame">
+    <canvas id="c" width="480" height="280" aria-label="World canvas"></canvas>
+    <div class="hud" id="hud" role="toolbar" aria-label="Overlay HUD">
+      <button type="button" class="primary" id="ping">Ping (HUD)</button>
+      <button type="button" id="recenter">Recenter</button>
+      <button type="button" id="sparkle">✨ Sparkle count</button>
+    </div>
+  </div>
+  <div class="log" id="log" aria-live="polite">Last: <strong>none</strong></div>
+<script>
+(function () {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('log');
+  const frame = document.getElementById('frame');
+  const hud = document.getElementById('hud');
+
+  let camX = 0, camY = 0;
+  let targetX = 240, targetY = 140;
+  let sparkles = 0;
+  let dragging = false;
+  let lastPtr = null;
+
+  function setLog(msg) {
+    log.innerHTML = 'Last: <strong>' + msg + '</strong>';
+  }
+
+  function worldFromEvent(e) {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width / r.width;
+    const sy = canvas.height / r.height;
+    return {
+      x: (e.clientX - r.left) * sx + camX,
+      y: (e.clientY - r.top) * sy + camY
+    };
+  }
+
+  function isHudTarget(el) {
+    return el && (el === hud || hud.contains(el));
+  }
+
+  frame.addEventListener('pointerdown', (e) => {
+    if (isHudTarget(e.target)) {
+      // HUD owns the gesture — do not start world drag / move
+      return;
+    }
+    e.preventDefault();
+    const w = worldFromEvent(e);
+    targetX = w.x; targetY = w.y;
+    dragging = true;
+    lastPtr = { x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+    setLog('WORLD tap → move target (' + Math.round(targetX) + ',' + Math.round(targetY) + ')');
+  });
+
+  frame.addEventListener('pointermove', (e) => {
+    if (!dragging || isHudTarget(e.target)) return;
+    // optional: pan camera by drag delta
+    const dx = e.clientX - lastPtr.x;
+    const dy = e.clientY - lastPtr.y;
+    lastPtr = { x: e.clientX, y: e.clientY };
+    camX -= dx * (canvas.width / canvas.getBoundingClientRect().width);
+    camY -= dy * (canvas.height / canvas.getBoundingClientRect().height);
+    setLog('WORLD drag → pan cam');
+  });
+
+  frame.addEventListener('pointerup', () => { dragging = false; });
+  frame.addEventListener('pointercancel', () => { dragging = false; });
+
+  document.getElementById('ping').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setLog('HUD Ping — camera untouched (cam ' + Math.round(camX) + ',' + Math.round(camY) + ')');
+  });
+  document.getElementById('recenter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    camX = 0; camY = 0; targetX = 240; targetY = 140;
+    setLog('HUD Recenter — cam reset, no world gesture');
+  });
+  document.getElementById('sparkle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    sparkles++;
+    setLog('HUD Sparkle count = ' + sparkles + ' (still no cam move)');
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    // dense silly tiles
+    for (let y = -64; y < canvas.height + 200; y += 40) {
+      for (let x = -64; x < canvas.width + 200; x += 40) {
+        ctx.fillStyle = ((x + y) / 40) % 2 === 0 ? '#24183a' : '#1c1430';
+        ctx.fillRect(x, y, 40, 40);
+        ctx.fillStyle = 'rgba(255,141,209,0.15)';
+        ctx.fillRect(x + 12, y + 12, 8, 8);
+      }
+    }
+    // target
+    ctx.fillStyle = '#7dffb3';
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#8ec5ff';
+    ctx.beginPath();
+    ctx.arc(targetX - 30, targetY + 20, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f5e9ff';
+    ctx.font = '12px system-ui';
+    ctx.fillText('tap world → here', targetX - 40, targetY - 22);
+    ctx.restore();
+
+    // HUD safe zone hint (screen space)
+    ctx.fillStyle = 'rgba(255,211,110,0.12)';
+    ctx.fillRect(0, canvas.height - 70, canvas.width, 70);
+    ctx.fillStyle = '#ffd36e';
+    ctx.font = '11px system-ui';
+    ctx.fillText('HUD zone (buttons eat hits)', 10, canvas.height - 54);
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

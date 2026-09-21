@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Juice — mute-safe feedback</title>
+  <style>
+    :root {
+      --bg:#1a1428; --panel:#2a2140; --ink:#f5e9ff; --muted:#b9a8d4;
+      --accent:#ff8bd1; --ok:#7dffb3; --focus:#ffe566; --line:#4a3a66;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;padding:12px;background:radial-gradient(ellipse at top,#2b1f45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:12px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0;font-size:1.2rem}
+    .tag{margin:0;color:var(--muted);font-size:.9rem;text-align:center;max-width:480px}
+    .stage{
+      position:relative;width:min(100%,420px);height:220px;border:3px solid var(--line);
+      border-radius:18px;background:#1e1630;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    }
+    .flash{
+      pointer-events:none;position:absolute;inset:0;background:radial-gradient(circle,rgba(255,141,209,.45),transparent 60%);
+      opacity:0;transition:opacity .15s ease-out;
+    }
+    .flash.on{opacity:1}
+    button.juicy{
+      position:relative;z-index:1;min-height:64px;min-width:160px;padding:14px 22px;border-radius:18px;
+      border:3px solid #ffc1e8;background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;
+      font:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;touch-action:manipulation;
+      transition:transform .12s ease-out, box-shadow .12s ease-out;
+      box-shadow:0 8px 0 #9a3a70;
+    }
+    button.juicy:active, button.juicy.pop{
+      transform:scale(1.12);
+      box-shadow:0 2px 0 #9a3a70, 0 0 24px rgba(255,141,209,.7);
+    }
+    .poppers{position:absolute;inset:0;pointer-events:none}
+    .popper{
+      position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;
+      background:var(--ok);transform:translate(-50%,-50%);
+      animation:fly .55s ease-out forwards;
+    }
+    @keyframes fly{
+      to{transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0);opacity:0}
+    }
+    .note{width:min(100%,420px);font-size:.85rem;color:var(--muted);line-height:1.45}
+    .count{font-size:1rem;color:var(--ok);font-weight:700}
+  </style>
+</head>
+<body>
+  <a href="../index.html">← kinds hub</a>
+  <h1>✨ Juice / feedback</h1>
+  <p class="tag">Mute-safe: flash + scale + particles. No AudioContext. Feels good with the sound off (Android Chrome / Windows).</p>
+  <div class="stage" id="stage">
+    <div class="flash" id="flash" aria-hidden="true"></div>
+    <div class="poppers" id="poppers" aria-hidden="true"></div>
+    <button type="button" class="juicy" id="btn">Boop the bean</button>
+  </div>
+  <div class="count" id="count" aria-live="polite">Boops: 0</div>
+  <p class="note">Proportional juice: short press → quick pop. Prefer visuals that still work when autoplay/mute blocks sound.</p>
+<script>
+(function () {
+  const btn = document.getElementById('btn');
+  const flash = document.getElementById('flash');
+  const poppers = document.getElementById('poppers');
+  const countEl = document.getElementById('count');
+  let n = 0;
+
+  function juice() {
+    n++;
+    countEl.textContent = 'Boops: ' + n;
+    btn.classList.remove('pop');
+    void btn.offsetWidth;
+    btn.classList.add('pop');
+    flash.classList.add('on');
+    setTimeout(() => flash.classList.remove('on'), 140);
+    setTimeout(() => btn.classList.remove('pop'), 160);
+
+    for (let i = 0; i < 8; i++) {
+      const p = document.createElement('span');
+      p.className = 'popper';
+      const ang = (Math.PI * 2 * i) / 8;
+      const dist = 40 + Math.random() * 50;
+      p.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      p.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+      p.style.background = ['#7dffb3','#ff8bd1','#ffd36e','#8ec5ff'][i % 4];
+      poppers.appendChild(p);
+      setTimeout(() => p.remove(), 560);
+    }
+  }
+
+  btn.addEventListener('click', juice);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Performance (CWV)</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --warn:#ffd36e; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+    .wrap{width:min(100%,560px);margin:0 auto;padding:14px 14px 40px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0 0 6px;font-size:1.25rem}
+    .tag{margin:0 0 16px;color:var(--muted)}
+    .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+    h2{margin:0 0 8px;font-size:1.05rem}
+    ul{margin:0;padding-left:1.2em;color:var(--muted)}
+    li{margin-bottom:6px}
+    .lazy-zone{min-height:280px;margin-top:8px}
+    .ph{
+      width:100%;aspect-ratio:16/10;border-radius:12px;border:2px dashed var(--line);
+      background:repeating-linear-gradient(-45deg,#1a1428,#1a1428 10px,#231b36 10px,#231b36 20px);
+      display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:10px;
+    }
+    img.demo{
+      display:block;width:100%;height:auto;border-radius:12px;border:2px solid var(--line);
+      background:#120e1c;
+    }
+    .note{font-size:.9rem;color:var(--warn)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="../index.html">← kinds hub</a>
+    <h1>⚡ Performance (CWV)</h1>
+    <p class="tag">Mindset drill — not a lab full of Lighthouse scores. Lazy-load below-the-fold images; keep LCP candidates eager.</p>
+
+    <div class="card">
+      <h2>Core Web Vitals (cheat sheet)</h2>
+      <ul>
+        <li><strong style="color:var(--ok)">LCP</strong> — largest contentful paint; prioritize hero / title; don’t lazy the LCP image.</li>
+        <li><strong style="color:var(--ok)">INP</strong> — interaction responsiveness; keep click handlers light; avoid long tasks on tap.</li>
+        <li><strong style="color:var(--ok)">CLS</strong> — layout shift; reserve space (width/height or aspect-ratio) for images.</li>
+      </ul>
+      <p class="note" style="margin:10px 0 0">Eng primary: web.dev Core Web Vitals. Game frame budgets are a different craft.</p>
+    </div>
+
+    <div class="card">
+      <h2>Above-the-fold (eager stub)</h2>
+      <p style="margin:0 0 8px;color:var(--muted)">Tiny inline SVG “hero” — counts as immediate paint, no network.</p>
+      <svg class="demo" viewBox="0 0 640 200" role="img" aria-label="Eager hero stub: Campus skyline">
+        <rect width="640" height="200" fill="#1a1428"/>
+        <text x="24" y="48" fill="#ff8bd1" font-family="Segoe UI,sans-serif" font-size="28" font-weight="700">Eager hero</text>
+        <text x="24" y="88" fill="#b7a7d1" font-family="Segoe UI,sans-serif" font-size="16">LCP-friendly stub (inline SVG)</text>
+        <circle cx="520" cy="100" r="40" fill="#8ec5ff"/>
+        <circle cx="500" cy="90" r="8" fill="#1a1428"/>
+        <circle cx="535" cy="90" r="8" fill="#1a1428"/>
+      </svg>
+    </div>
+
+    <div class="card lazy-zone">
+      <h2>Below-the-fold (lazy)</h2>
+      <p style="margin:0 0 8px;color:var(--muted)">Scroll down — image uses <code>loading="lazy"</code> + intrinsic size to limit CLS.</p>
+      <div class="ph" id="ph">Scroll… lazy image waits</div>
+      <!-- SVG data URI is still a useful lazy demo without an external asset -->
+      <img
+        class="demo"
+        id="lazy"
+        width="640"
+        height="400"
+        loading="lazy"
+        decoding="async"
+        alt="Lazy silly campus mural (placeholder SVG)"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400'%3E%3Crect fill='%23231b36' width='640' height='400'/%3E%3Ctext x='40' y='200' fill='%237dffb3' font-size='28' font-family='sans-serif'%3ELazy mural loaded%3C/text%3E%3Ctext x='40' y='240' fill='%23b7a7d1' font-size='16' font-family='sans-serif'%3Eloading%3D%22lazy%22%3C/text%3E%3C/svg%3E"
+      />
+      <p class="note" id="lazyNote">Status: waiting for near-viewport…</p>
+    </div>
+  </div>
+<script>
+(function () {
+  const img = document.getElementById('lazy');
+  const note = document.getElementById('lazyNote');
+  const ph = document.getElementById('ph');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          note.textContent = 'Status: in view — browser may fetch lazy image now.';
+          ph.textContent = 'In view';
+          io.disconnect();
+        }
+      });
+    }, { rootMargin: '100px' });
+    io.observe(img);
+  } else {
+    note.textContent = 'Status: no IntersectionObserver — rely on loading=lazy alone.';
+  }
+  img.addEventListener('load', () => {
+    note.textContent = 'Status: image load event fired (data URI is instant once requested).';
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Forms / validation</title>
+  <style>
+    :root {
+      --bg:#14101f; --panel:#231b36; --ink:#f7eefc; --muted:#b7a7d1;
+      --accent:#ff8bd1; --ok:#7dffb3; --err:#ff8a8a; --focus:#ffe566; --line:#4a3a66; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at top left,#2a1d45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+    .wrap{width:min(100%,480px);margin:0 auto;padding:14px 14px 40px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{
+      outline:3px solid var(--focus);outline-offset:2px;
+    }
+    h1{margin:0 0 6px;font-size:1.25rem}
+    .tag{margin:0 0 16px;color:var(--muted)}
+    form{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-weight:600}
+    .hint{font-size:.85rem;color:var(--muted)}
+    input,select,textarea{
+      min-height:var(--tap);padding:10px 12px;border-radius:12px;border:2px solid var(--line);
+      background:#1a1428;color:var(--ink);font:inherit;
+    }
+    textarea{min-height:96px;resize:vertical}
+    .error{color:var(--err);font-size:.9rem;min-height:1.2em}
+    .field[data-invalid="true"] input,
+    .field[data-invalid="true"] select,
+    .field[data-invalid="true"] textarea{border-color:var(--err)}
+    button{
+      min-height:var(--tap);border-radius:14px;border:2px solid #ffc1e8;font:inherit;font-weight:800;
+      background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;cursor:pointer;touch-action:manipulation;
+    }
+    .ok{color:var(--ok);font-weight:700;min-height:1.4em}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="../index.html">← kinds hub</a>
+    <h1>📝 Forms / validation</h1>
+    <p class="tag">Every control has a visible label. Errors are text (not color alone). Submit empty to see the drill.</p>
+    <form id="form" novalidate>
+      <div class="field" id="f-name">
+        <label for="name">Bot nickname</label>
+        <span class="hint" id="name-hint">2–24 characters, letters/numbers/spaces</span>
+        <input id="name" name="name" type="text" autocomplete="nickname" aria-describedby="name-hint name-err" required />
+        <div class="error" id="name-err" role="alert"></div>
+      </div>
+      <div class="field" id="f-role">
+        <label for="role">Campus role</label>
+        <select id="role" name="role" aria-describedby="role-err" required>
+          <option value="">Pick one…</option>
+          <option value="intern">Orbit intern</option>
+          <option value="barista">Idle barista</option>
+          <option value="curator">Crate curator</option>
+        </select>
+        <div class="error" id="role-err" role="alert"></div>
+      </div>
+      <div class="field" id="f-bio">
+        <label for="bio">Silly mission (optional)</label>
+        <textarea id="bio" name="bio" maxlength="120" aria-describedby="bio-hint"></textarea>
+        <span class="hint" id="bio-hint">Max 120 chars. Empty is fine.</span>
+      </div>
+      <button type="submit">Enroll stubby bot</button>
+      <div class="ok" id="ok" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+<script>
+(function () {
+  const form = document.getElementById('form');
+  function setErr(fieldId, errId, msg) {
+    const field = document.getElementById(fieldId);
+    const err = document.getElementById(errId);
+    field.dataset.invalid = msg ? 'true' : 'false';
+    err.textContent = msg || '';
+  }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    document.getElementById('ok').textContent = '';
+    let ok = true;
+    const name = document.getElementById('name').value.trim();
+    if (name.length < 2 || name.length > 24 || !/^[\w ]+$/u.test(name)) {
+      setErr('f-name', 'name-err', 'Need a nickname 2–24 chars (letters, numbers, spaces).');
+      ok = false;
+    } else setErr('f-name', 'name-err', '');
+    const role = document.getElementById('role').value;
+    if (!role) {
+      setErr('f-role', 'role-err', 'Please pick a campus role.');
+      ok = false;
+    } else setErr('f-role', 'role-err', '');
+    if (!ok) {
+      const first = form.querySelector('[data-invalid="true"] input, [data-invalid="true"] select');
+      if (first) first.focus();
+      return;
+    }
+    document.getElementById('ok').textContent = 'Enrolled “' + name + '” as ' + role + '. (Client-only demo — nothing sent.)';
+    form.reset();
+  });
+})();
+</script>
+</body>
+</html>

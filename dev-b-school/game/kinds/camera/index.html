@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: Camera — pan/zoom clamps</title>
+  <style>
+    :root {
+      --bg:#1a1428; --panel:#2a2140; --ink:#f5e9ff; --muted:#b9a8d4;
+      --accent:#ff8bd1; --ok:#7dffb3; --focus:#ffe566; --line:#4a3a66;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;padding:12px;background:radial-gradient(ellipse at top,#2b1f45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0;font-size:1.2rem}
+    .tag{margin:0;color:var(--muted);font-size:.9rem;text-align:center;max-width:520px}
+    .hud{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:min(100%,520px)}
+    button{min-height:48px;min-width:48px;padding:10px 14px;border-radius:14px;border:2px solid var(--line);
+      background:var(--panel);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
+    button.primary{background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;border-color:#ffc1e8}
+    .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--muted);font-size:.9rem}
+    .chip strong{color:var(--ok)}
+    .world{width:min(100%,520px);border:3px solid var(--line);border-radius:16px;overflow:hidden;touch-action:none;background:#120e1c}
+    canvas{display:block;width:100%;height:auto}
+  </style>
+</head>
+<body>
+  <a href="../index.html">← kinds hub</a>
+  <h1>📷 Camera — pan · zoom · clamps</h1>
+  <p class="tag">Dense silly map. Drag to pan. Zoom buttons clamp. Camera stays inside world bounds.</p>
+  <div class="hud">
+    <button type="button" id="zin" class="primary" aria-label="Zoom in">Zoom +</button>
+    <button type="button" id="zout" aria-label="Zoom out">Zoom −</button>
+    <button type="button" id="reset">Reset view</button>
+    <span class="chip">Zoom <strong id="zlabel">1.00</strong> · Cam <strong id="clabel">0,0</strong></span>
+  </div>
+  <div class="world"><canvas id="c" width="480" height="300" aria-label="Map stub"></canvas></div>
+<script>
+(function () {
+  const WORLD_W = 960, WORLD_H = 640;
+  const Z_MIN = 0.55, Z_MAX = 2.2;
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const zlabel = document.getElementById('zlabel');
+  const clabel = document.getElementById('clabel');
+
+  let camX = 100, camY = 80, zoom = 1;
+  let dragging = false, lx = 0, ly = 0;
+
+  function viewW() { return canvas.width / zoom; }
+  function viewH() { return canvas.height / zoom; }
+
+  function clampCam() {
+    const maxX = Math.max(0, WORLD_W - viewW());
+    const maxY = Math.max(0, WORLD_H - viewH());
+    camX = Math.min(maxX, Math.max(0, camX));
+    camY = Math.min(maxY, Math.max(0, camY));
+  }
+
+  function setZoom(z) {
+    const cx = camX + viewW() / 2;
+    const cy = camY + viewH() / 2;
+    zoom = Math.min(Z_MAX, Math.max(Z_MIN, z));
+    camX = cx - viewW() / 2;
+    camY = cy - viewH() / 2;
+    clampCam();
+    zlabel.textContent = zoom.toFixed(2);
+  }
+
+  document.getElementById('zin').addEventListener('click', () => setZoom(zoom * 1.2));
+  document.getElementById('zout').addEventListener('click', () => setZoom(zoom / 1.2));
+  document.getElementById('reset').addEventListener('click', () => {
+    zoom = 1; camX = 100; camY = 80; clampCam(); zlabel.textContent = '1.00';
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    dragging = true; lx = e.clientX; ly = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const r = canvas.getBoundingClientRect();
+    const sx = (canvas.width / r.width) / zoom;
+    const sy = (canvas.height / r.height) / zoom;
+    camX -= (e.clientX - lx) * sx;
+    camY -= (e.clientY - ly) * sy;
+    lx = e.clientX; ly = e.clientY;
+    clampCam();
+  });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  canvas.addEventListener('pointercancel', () => { dragging = false; });
+
+  // labels for dense map
+  const labels = [];
+  for (let i = 0; i < 40; i++) {
+    labels.push({
+      x: 40 + (i % 8) * 110,
+      y: 40 + Math.floor(i / 8) * 110,
+      t: ['☕','📦','🛰️','🐛','🧀','🪄'][i % 6] + ' pad-' + i
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.scale(zoom, zoom);
+    ctx.translate(-camX, -camY);
+    for (let y = 0; y < WORLD_H; y += 32) {
+      for (let x = 0; x < WORLD_W; x += 32) {
+        ctx.fillStyle = ((x + y) / 32) % 2 ? '#24183a' : '#1a1230';
+        ctx.fillRect(x, y, 32, 32);
+      }
+    }
+    ctx.strokeStyle = '#ff8bd1';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(2, 2, WORLD_W - 4, WORLD_H - 4);
+    ctx.fillStyle = '#f5e9ff';
+    ctx.font = '14px system-ui';
+    labels.forEach((L) => {
+      ctx.fillStyle = '#2a2140';
+      ctx.fillRect(L.x - 4, L.y - 16, 88, 28);
+      ctx.fillStyle = '#7dffb3';
+      ctx.fillText(L.t, L.x, L.y);
+    });
+    ctx.restore();
+    clabel.textContent = Math.round(camX) + ',' + Math.round(camY);
+    requestAnimationFrame(draw);
+  }
+  clampCam();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

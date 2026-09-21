@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kind: State / save — JSON blob</title>
+  <style>
+    :root {
+      --bg:#1a1428; --panel:#2a2140; --ink:#f5e9ff; --muted:#b9a8d4;
+      --accent:#ff8bd1; --ok:#7dffb3; --warn:#ffd36e; --focus:#ffe566; --line:#4a3a66;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;padding:12px;background:radial-gradient(ellipse at top,#2b1f45,var(--bg));
+      color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+    .wrap{width:min(100%,560px);margin:0 auto;display:flex;flex-direction:column;gap:10px}
+    a{color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    h1{margin:0;font-size:1.2rem}
+    .tag{margin:0;color:var(--muted);font-size:.9rem}
+    .row{display:flex;flex-wrap:wrap;gap:8px}
+    button{min-height:48px;padding:10px 14px;border-radius:14px;border:2px solid var(--line);
+      background:var(--panel);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
+    button.primary{background:linear-gradient(180deg,#ff9ad8,#e45fb0);color:#2a1030;border-color:#ffc1e8}
+    .stage{position:relative;height:180px;border:3px solid var(--line);border-radius:16px;background:#1e1630;overflow:hidden}
+    .bot{position:absolute;width:44px;height:44px;border-radius:50%;background:#8ec5ff;
+      display:flex;align-items:center;justify-content:center;font-size:1.2rem;transform:translate(-50%,-50%);
+      box-shadow:0 0 0 3px #5a9ad4}
+    .chip{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--muted);font-size:.9rem}
+    .chip strong{color:var(--ok)}
+    label{font-size:.85rem;color:var(--muted)}
+    textarea{width:100%;min-height:120px;border-radius:12px;border:2px solid var(--line);background:#120e1c;
+      color:var(--ink);font-family:ui-monospace,monospace;font-size:.8rem;padding:10px;resize:vertical}
+    .status{min-height:40px;color:var(--warn);font-size:.9rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="../index.html">← kinds hub</a>
+    <h1>💾 State / save</h1>
+    <p class="tag">Documented entity fields as a JSON blob. Export, import, or resume from localStorage. Tap stage to move the silly bot.</p>
+    <div class="chip">Mood <strong id="mood">curious</strong> · Pos <strong id="pos">—</strong></div>
+    <div class="row">
+      <button type="button" id="moodBtn" class="primary">Cycle mood</button>
+      <button type="button" id="saveLs">Save → localStorage</button>
+      <button type="button" id="loadLs">Resume localStorage</button>
+      <button type="button" id="exportBtn">Export JSON</button>
+      <button type="button" id="importBtn">Import JSON</button>
+    </div>
+    <div class="stage" id="stage" role="application" aria-label="Tap to move bot">
+      <div class="bot" id="bot" aria-hidden="true">🤖</div>
+    </div>
+    <label for="blob">State blob</label>
+    <textarea id="blob" spellcheck="false"></textarea>
+    <div class="status" id="status" aria-live="polite"></div>
+  </div>
+<script>
+(function () {
+  const KEY = 'devb-game-state-save-v1';
+  const moods = ['curious', 'snacky', 'heroic', 'sleepy', 'chaotic'];
+  const stage = document.getElementById('stage');
+  const bot = document.getElementById('bot');
+  const blob = document.getElementById('blob');
+  const status = document.getElementById('status');
+  const elMood = document.getElementById('mood');
+  const elPos = document.getElementById('pos');
+
+  let state = {
+    version: 1,
+    entity: { id: 'stub-bot', x: 120, y: 90, mood: 'curious' },
+    meta: { savedAt: null }
+  };
+
+  function paint() {
+    bot.style.left = state.entity.x + 'px';
+    bot.style.top = state.entity.y + 'px';
+    elMood.textContent = state.entity.mood;
+    elPos.textContent = Math.round(state.entity.x) + ',' + Math.round(state.entity.y);
+    blob.value = JSON.stringify(state, null, 2);
+  }
+
+  function setStatus(msg) { status.textContent = msg; }
+
+  stage.addEventListener('pointerdown', (e) => {
+    const r = stage.getBoundingClientRect();
+    state.entity.x = Math.max(22, Math.min(r.width - 22, e.clientX - r.left));
+    state.entity.y = Math.max(22, Math.min(r.height - 22, e.clientY - r.top));
+    paint();
+  });
+
+  document.getElementById('moodBtn').addEventListener('click', () => {
+    const i = moods.indexOf(state.entity.mood);
+    state.entity.mood = moods[(i + 1) % moods.length];
+    paint();
+  });
+
+  document.getElementById('saveLs').addEventListener('click', () => {
+    state.meta.savedAt = new Date().toISOString();
+    localStorage.setItem(KEY, JSON.stringify(state));
+    paint();
+    setStatus('Saved checkpoint to localStorage. Refresh & Resume to prove it.');
+  });
+
+  document.getElementById('loadLs').addEventListener('click', () => {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) { setStatus('No checkpoint yet — Save first.'); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed.entity || typeof parsed.entity.x !== 'number') throw new Error('bad shape');
+      state = parsed;
+      paint();
+      setStatus('Resumed from localStorage @ ' + (state.meta.savedAt || '?'));
+    } catch (err) {
+      setStatus('Corrupt save: ' + err.message);
+    }
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    state.meta.savedAt = new Date().toISOString();
+    paint();
+    blob.select();
+    setStatus('Blob refreshed — copy from the textarea.');
+  });
+
+  document.getElementById('importBtn').addEventListener('click', () => {
+    try {
+      const parsed = JSON.parse(blob.value);
+      if (!parsed.entity || typeof parsed.entity.x !== 'number') throw new Error('need entity.x/y/mood');
+      state = parsed;
+      paint();
+      setStatus('Imported JSON blob. Bot teleported!');
+    } catch (err) {
+      setStatus('Import failed: ' + err.message);
+    }
+  });
+
+  // auto-resume if present
+  const existing = localStorage.getItem(KEY);
+  if (existing) {
+    try { state = JSON.parse(existing); setStatus('Auto-resumed previous checkpoint.'); } catch (_) {}
+  }
+  paint();
+})();
+</script>
+</body>
+</html>
