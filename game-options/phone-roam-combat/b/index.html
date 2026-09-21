@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>B · Corridor Slash — Side Runner</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0a0e;color:#f4efe8;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{display:flex;flex-direction:column;height:100%;height:100dvh}
+  header{padding:8px 12px 4px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-shrink:0}
+  h1{margin:0;font-size:.95rem;font-weight:750}
+  .hint{color:#8b8090;font-size:.72rem}
+  #stage{position:relative;flex:1;min-height:0;touch-action:none}
+  canvas{display:block;width:100%;height:100%;touch-action:none;background:#120e16}
+  #hud{position:absolute;top:8px;left:8px;right:8px;pointer-events:none;display:flex;justify-content:space-between;gap:8px;font-size:.8rem;font-weight:700;text-shadow:0 1px 3px #000}
+  #hud span{background:rgba(0,0,0,.45);padding:4px 8px;border-radius:8px}
+  /* Phone pad: move cluster left, actions right */
+  #pad{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:10px 12px calc(12px + env(safe-area-inset-bottom));pointer-events:none;max-width:560px;margin:0 auto}
+  #pad .cluster{display:grid;gap:8px;pointer-events:none}
+  #pad .move{grid-template-columns:1fr 1fr 1fr;width:min(46vw,210px)}
+  #pad .act{grid-template-columns:1fr 1fr;width:min(42vw,190px)}
+  #pad button{pointer-events:auto;appearance:none;border:1px solid #4a3a52;background:rgba(28,20,34,.9);color:#fff;border-radius:14px;min-height:52px;font:inherit;font-weight:700;font-size:.85rem;touch-action:none}
+  #pad button:active,#pad button.held{background:#3a2848;transform:scale(.97)}
+  #slash{border-color:#c084fc;background:rgba(88,28,135,.85)}
+  #gun{border-color:#67e8f9;background:rgba(8,51,68,.85)}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,6,12,.75);pointer-events:none;opacity:0;transition:opacity .15s}
+  #overlay.show{opacity:1;pointer-events:auto}
+  #overlay .card{background:#1a1420;border:1px solid #4a3a52;border-radius:16px;padding:20px 24px;text-align:center;max-width:280px}
+  #overlay button{margin-top:12px;min-height:48px;min-width:120px;appearance:none;border:1px solid #c084fc;background:#581c87;color:#fff;border-radius:14px;font:inherit;font-weight:700;font-size:1rem;padding:12px 20px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>B · Corridor Slash</h1>
+    <div class="hint">← → Jump · Slash / Gun</div>
+  </header>
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="hud">
+      <span id="hudScore">Score 0</span>
+      <span id="hudCombo">Combo x1</span>
+      <span id="hudHp">HP 4</span>
+    </div>
+    <div id="pad">
+      <div class="cluster move">
+        <button type="button" id="left">◀</button>
+        <button type="button" id="jump">JUMP</button>
+        <button type="button" id="right">▶</button>
+      </div>
+      <div class="cluster act">
+        <button type="button" id="slash">SLASH</button>
+        <button type="button" id="gun">GUN</button>
+      </div>
+    </div>
+    <div id="overlay">
+      <div class="card">
+        <div id="ovTitle" style="font-size:1.2rem;font-weight:800">Corridor Slash</div>
+        <div id="ovBody" style="margin-top:8px;color:#a898b0;font-size:.9rem">Side-view run, jump, slash &amp; gun.</div>
+        <button type="button" id="ovBtn">Play</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="game.js?v=opt1b"></script>
+</body>
+</html>

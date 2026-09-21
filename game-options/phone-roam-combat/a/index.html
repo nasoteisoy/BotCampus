@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>A · Arena Clear — Twin-Stick</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0c12;color:#e8ecf4;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{display:flex;flex-direction:column;height:100%;height:100dvh}
+  header{padding:8px 12px 4px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-shrink:0}
+  h1{margin:0;font-size:.95rem;font-weight:750;letter-spacing:.02em}
+  .hint{color:#7a8499;font-size:.72rem}
+  #stage{position:relative;flex:1;min-height:0;touch-action:none}
+  canvas{display:block;width:100%;height:100%;touch-action:none;background:#10141e}
+  #hud{position:absolute;top:8px;left:8px;right:8px;pointer-events:none;display:flex;justify-content:space-between;gap:8px;font-size:.8rem;font-weight:700;text-shadow:0 1px 3px #000}
+  #hud span{background:rgba(0,0,0,.45);padding:4px 8px;border-radius:8px}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,14,.72);pointer-events:none;opacity:0;transition:opacity .15s}
+  #overlay.show{opacity:1;pointer-events:auto}
+  #overlay .card{background:#151b28;border:1px solid #3a455c;border-radius:16px;padding:20px 24px;text-align:center;max-width:280px}
+  #overlay button{margin-top:12px;min-height:48px;min-width:120px;appearance:none;border:1px solid #fb923c;background:#7c2d12;color:#fff;border-radius:14px;font:inherit;font-weight:700;font-size:1rem;padding:12px 20px}
+  #pads{position:absolute;left:0;right:0;bottom:0;height:42%;pointer-events:none;display:flex;justify-content:space-between;align-items:flex-end;padding:12px 16px calc(12px + env(safe-area-inset-bottom));gap:16px}
+  .stick-zone{pointer-events:auto;width:42%;max-width:160px;aspect-ratio:1;position:relative;touch-action:none}
+  .stick-base{position:absolute;inset:8%;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18)}
+  .stick-knob{position:absolute;width:44%;height:44%;left:28%;top:28%;border-radius:50%;background:rgba(255,255,255,.28);border:2px solid rgba(255,255,255,.45);transform:translate(0,0);will-change:transform}
+  #fireBtn{pointer-events:auto;min-width:72px;min-height:72px;width:72px;height:72px;border-radius:50%;appearance:none;border:2px solid #fb923c;background:rgba(124,45,18,.85);color:#fff;font:inherit;font-weight:800;font-size:.85rem;align-self:flex-end;margin-bottom:8px;touch-action:none}
+  #fireBtn:active,#fireBtn.held{background:#c2410c;transform:scale(.94)}
+  @media (min-width:700px){
+    #pads{height:36%}
+    .stick-zone{max-width:140px}
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>A · Arena Clear</h1>
+    <div class="hint">L stick move · R stick / Fire shoot</div>
+  </header>
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="hud">
+      <span id="hudScore">Score 0</span>
+      <span id="hudWave">Wave 1</span>
+      <span id="hudHp">HP 5</span>
+    </div>
+    <div id="pads">
+      <div class="stick-zone" id="moveStick" aria-label="Move">
+        <div class="stick-base"><div class="stick-knob" id="moveKnob"></div></div>
+      </div>
+      <button type="button" id="fireBtn">FIRE</button>
+      <div class="stick-zone" id="aimStick" aria-label="Aim">
+        <div class="stick-base"><div class="stick-knob" id="aimKnob"></div></div>
+      </div>
+    </div>
+    <div id="overlay">
+      <div class="card">
+        <div id="ovTitle" style="font-size:1.2rem;font-weight:800">Arena Clear</div>
+        <div id="ovBody" style="margin-top:8px;color:#9aa3b5;font-size:.9rem">Clear waves. Twin-stick roam &amp; shoot.</div>
+        <button type="button" id="ovBtn">Play</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="game.js?v=opt1"></script>
+</body>
+</html>
