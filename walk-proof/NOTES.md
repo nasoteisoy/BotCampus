@@ -1,3 +1,8 @@
+# FAILED — not proof
+
+Jesus FAIL (?v=1): same leg forward / not a good sprite.
+Do not present as capability. Await contralateral rebuild → ?v=2 only after Leader QC-ready.
+
 # Walk proof — capability test
 
 **Who:** Leader built this for the live call using GenerateImage (same tool Renders use) + assembly. Render A was also tasked in parallel; this delivery is Leader’s.

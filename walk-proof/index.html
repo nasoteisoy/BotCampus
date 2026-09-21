@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<!-- CACHE_BUST v=1 -->
+<!-- CACHE_BUST v=1fail — FAILED proof, not capability -->
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Walk proof — stop after steps</title>
+<title>FAILED — walk-proof (not capability)</title>
 <style>
   html,body{margin:0;height:100%;background:#0f1419;color:#e2e8f0;font-family:system-ui,sans-serif}
   main{max-width:720px;margin:0 auto;padding:12px}
   h1{font-size:1.1rem;margin:0 0 8px}
   p{font-size:.9rem;opacity:.85;margin:0 0 12px;line-height:1.35}
-  #wrap{position:relative;width:100%;aspect-ratio:16/9;background:#1a2332;border-radius:12px;overflow:hidden;border:1px solid #334155}
+  #wrap{position:relative;width:100%;aspect-ratio:16/9;background:#1a2332;border-radius:12px;overflow:hidden;border:1px solid #7f1d1d;opacity:.55}
   canvas{width:100%;height:100%;display:block;image-rendering:auto}
   .meta{font-size:.8rem;opacity:.7;margin-top:10px}
   button{margin-top:10px;padding:10px 16px;border-radius:10px;border:1px solid #475569;background:#1e293b;color:#fff;font-weight:600}
@@ -18,7 +18,11 @@
 </head>
 <body>
 <main>
-  <h1>Walk proof — a few steps, then stop</h1>
+  <div style="background:#7f1d1d;color:#fecaca;padding:14px 16px;border-radius:10px;margin-bottom:12px;border:2px solid #f87171">
+    <div style="font-size:1.05rem;font-weight:800;letter-spacing:.02em">FAILED — not proof</div>
+    <div style="margin-top:6px;font-weight:600;line-height:1.35">Jesus: same leg forward / not a good sprite (ipsilateral + stamped on phone). Do not treat as render capability. Contralateral rebuild coming — wait for ?v=2 after QC-ready.</div>
+  </div>
+  <h1 style="opacity:.55;text-decoration:line-through">Walk proof — a few steps, then stop</h1>
   <p>Depth: hill + tree behind the knight, rock in front. Frames: idle → walk cycle → idle. Replay to watch again.</p>
   <div id="wrap"><canvas id="c" width="960" height="540"></canvas></div>
   <button type="button" id="replay">Replay</button>
@@ -35,7 +39,7 @@
   names.forEach(n => {
     const im = new Image();
     im.onload = () => { if (++loaded === names.length) start(); };
-    im.src = 'frames/' + n + '.png?v=1';
+    im.src = 'frames/' + n + '.png?v=1fail';
     imgs[n] = im;
   });
 
