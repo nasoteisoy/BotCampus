@@ -628,10 +628,10 @@
     const floorY = floorScreenY(viewH);
 
     // sky / bg
-    ctx.fillStyle = "#120e16";
+    ctx.fillStyle = "#e9d5ff";
     ctx.fillRect(0, 0, viewW, viewH);
     // parallax silhouettes
-    ctx.fillStyle = "#1a1222";
+    ctx.fillStyle = "#ddd6fe";
     for (let i = 0; i < 10; i++) {
       const bw = 60 + (i % 3) * 20;
       const bh = 100 + (i % 4) * 40;
@@ -644,9 +644,9 @@
     ctx.translate(shx, shy);
 
     // ground fill (screen-space strip)
-    ctx.fillStyle = "#2a1f30";
+    ctx.fillStyle = "#c4b5a0";
     ctx.fillRect(0, floorY, viewW, viewH - floorY + 20);
-    ctx.fillStyle = "#3d2e44";
+    ctx.fillStyle = "#a8a29e";
     ctx.fillRect(0, floorY, viewW, 5);
 
     // world-space marks / platforms / entities
@@ -666,9 +666,9 @@
     // platforms
     for (const pl of PLATFORMS) {
       const top = floorY - pl.y;
-      ctx.fillStyle = "#4a3560";
+      ctx.fillStyle = "#fda4af";
       ctx.fillRect(pl.x, top, pl.w, pl.h);
-      ctx.fillStyle = "#7c5a9e";
+      ctx.fillStyle = "#f9a8d4";
       ctx.fillRect(pl.x, top, pl.w, 3);
     }
 
@@ -694,8 +694,8 @@
       ctx.save();
       ctx.translate(e.x, ey);
       ctx.scale(face * e.scale, e.scale);
-      ctx.fillStyle = e.hitFlash > 0 ? "#fff" : e.kind === "brute" ? "#9f1239" : "#be123c";
-      ctx.fillRect(-e.w / 2, -e.h, e.w, e.h);
+      ctx.fillStyle = e.hitFlash > 0 ? "#fff" : e.kind === "brute" ? "#78350f" : "#ec4899";
+      ctx.beginPath(); ctx.ellipse(0, -e.h/2, e.w/2, e.h/2, 0, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = "#450a0a";
       ctx.fillRect(-e.w * 0.15, -e.h * 0.75, e.w * 0.35, e.h * 0.2);
       ctx.fillStyle = e.kind === "brute" ? "#7f1d1d" : "#881337";
@@ -725,12 +725,12 @@
       ctx.translate(sx, sy);
       ctx.scale(state.slash.facing, 1);
       ctx.globalAlpha = Math.min(1, a * 1.4);
-      ctx.strokeStyle = "#e9d5ff";
+      ctx.strokeStyle = "#facc15";
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.arc(0, 0, 26 + (1 - a) * 18, -1.15, 1.15);
       ctx.stroke();
-      ctx.strokeStyle = "rgba(192,132,252,0.5)";
+      ctx.strokeStyle = "rgba(254,240,138,0.55)";
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.arc(0, 0, 20 + (1 - a) * 12, -0.9, 0.9);
@@ -739,7 +739,7 @@
       ctx.globalAlpha = 1;
     }
 
-    // player
+    // player — whimsy stubby hero stamp (STYLE_LOCK B)
     const p = state.player;
     if (p) {
       const py = floorY - p.y;
@@ -747,38 +747,25 @@
       ctx.translate(p.x, py);
       ctx.scale(p.facing * p.scale, p.scale);
       const blink = p.invuln > 0 && Math.floor(p.invuln * 18) % 2 === 0;
-      ctx.fillStyle = blink ? "rgba(196,181,253,0.45)" : p.hitFlash > 0 ? "#fff" : "#a78bfa";
-      ctx.fillRect(-p.w / 2, -p.h, p.w, p.h);
-      ctx.fillStyle = "#5b21b6";
-      ctx.fillRect(-p.w * 0.2, -p.h * 0.85, p.w * 0.45, p.h * 0.22);
-      ctx.fillStyle = "#ddd6fe";
-      ctx.fillRect(p.w * 0.32, -p.h * 0.62, 16, 5);
-      const leg = p.onGround && Math.abs(p.vx) > 20 ? Math.sin(p.anim) * 5 : 0;
-      ctx.fillStyle = "#6d28d9";
-      ctx.fillRect(-p.w * 0.35, -2, p.w * 0.25, 6 + leg);
-      ctx.fillRect(p.w * 0.05, -2, p.w * 0.25, 6 - leg);
+      if (blink) ctx.globalAlpha = 0.4;
+      if (typeof heroReady !== "undefined" && heroReady) {
+        const s = Math.max(p.w, p.h) * 2.2;
+        ctx.drawImage(heroImg, -s * 0.42, -s * 0.98, s, s);
+      } else {
+        ctx.fillStyle = p.hitFlash > 0 ? "#fff" : "#166534";
+        ctx.beginPath();
+        ctx.roundRect(-p.w / 2, -p.h, p.w, p.h, 8);
+        ctx.fill();
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        ctx.arc(0, -p.h * 0.72, p.w * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
       ctx.restore();
     }
 
-    // corridor end marker
-    ctx.fillStyle = "#c084fc";
-    ctx.fillRect(WORLD_W - 40, floorY - 90, 6, 90);
-    ctx.fillStyle = "#e9d5ff";
-    ctx.beginPath();
-    ctx.moveTo(WORLD_W - 34, floorY - 90);
-    ctx.lineTo(WORLD_W + 6, floorY - 76);
-    ctx.lineTo(WORLD_W - 34, floorY - 62);
-    ctx.fill();
 
-    ctx.restore(); // cam
-    ctx.restore(); // shake
-
-    if (state.flash > 0) {
-      ctx.fillStyle = `rgba(255,240,255,${Math.min(0.4, state.flash * 2.5)})`;
-      ctx.fillRect(0, 0, viewW, viewH);
-    }
-
-    // floating combo pop
     if (state.combo > 1 && state.player) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, state.comboTimer / 2);

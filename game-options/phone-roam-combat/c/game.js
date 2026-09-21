@@ -421,7 +421,7 @@
           state.scoreBoost = true;
           state.shake = 8;
           state.flash = 0.12;
-          burst(g.x, g.y, "#4ade80", 16);
+          burst(g.x, g.y, "#1e3a5f", 16);
           state.takedownFx = { x: g.x, y: g.y, life: 0.35 };
           scored = true;
           // calm a bit on clean kill
@@ -603,8 +603,8 @@
         const checker = (x + y) % 2 === 0;
         if (wall) {
           // raised block
-          drawDiamond(s.x + ox, s.y + oy - 8, "#1a3328", "#2f5d45");
-          ctx.fillStyle = "#243f32";
+          drawDiamond(s.x + ox, s.y + oy - 8, "#1e1b4b", "#312e81");
+          ctx.fillStyle = "#3b3f6b";
           ctx.beginPath();
           ctx.moveTo(s.x + ox - TILE_W / 2, s.y + oy);
           ctx.lineTo(s.x + ox, s.y + oy + TILE_H / 2);
@@ -612,7 +612,7 @@
           ctx.lineTo(s.x + ox - TILE_W / 2, s.y + oy + 10);
           ctx.closePath();
           ctx.fill();
-          ctx.fillStyle = "#152820";
+          ctx.fillStyle = "#0f172a";
           ctx.beginPath();
           ctx.moveTo(s.x + ox + TILE_W / 2, s.y + oy);
           ctx.lineTo(s.x + ox, s.y + oy + TILE_H / 2);
@@ -664,7 +664,7 @@
         ctx.translate(s.x + ox, s.y + oy);
         ctx.scale(g.scale, g.scale);
         // body diamond
-        ctx.fillStyle = g.hitFlash > 0 ? "#fff" : g.state === "hunt" ? "#f87171" : "#94a3b8";
+        ctx.fillStyle = g.hitFlash > 0 ? "#fff" : g.state === "hunt" ? "#f87171" : "#64748b";
         ctx.beginPath();
         ctx.moveTo(0, -18);
         ctx.lineTo(10, -8);
@@ -682,7 +682,7 @@
         // alert meter
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fillRect(-12, -28, 24, 4);
-        ctx.fillStyle = g.alert > 0.7 ? "#ef4444" : g.alert > 0.3 ? "#fbbf24" : "#4ade80";
+        ctx.fillStyle = g.alert > 0.7 ? "#ef4444" : g.alert > 0.3 ? "#fbbf24" : "#1e3a5f";
         ctx.fillRect(-12, -28, 24 * g.alert, 4);
         ctx.restore();
       } else {
@@ -691,24 +691,25 @@
         ctx.save();
         ctx.translate(s.x + ox, s.y + oy);
         ctx.scale(p.scale, p.scale);
-        ctx.fillStyle = p.hidden ? "#86efac" : "#4ade80";
-        ctx.beginPath();
-        ctx.moveTo(0, -16);
-        ctx.lineTo(9, -6);
-        ctx.lineTo(0, 4);
-        ctx.lineTo(-9, -6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#14532d";
-        ctx.beginPath();
-        ctx.arc(0, -10, 3, 0, Math.PI * 2);
-        ctx.fill();
-        // facing
-        ctx.strokeStyle = "#bbf7d0";
+        if (typeof heroReady !== "undefined" && heroReady) {
+          const s = 36 * p.scale;
+          ctx.rotate(p.facing * 0.15);
+          ctx.drawImage(heroImg, -s / 2, -s * 0.85, s, s);
+        } else {
+          ctx.fillStyle = p.hidden ? "#1e3a5f" : "#0f172a";
+          ctx.beginPath();
+          ctx.ellipse(0, -6, 8, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#fbbf24";
+          ctx.beginPath();
+          ctx.arc(3, -12, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = "#f87171";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(0, -6);
-        ctx.lineTo(Math.cos(p.facing) * 12, -6 + Math.sin(p.facing) * 6);
+        ctx.moveTo(0, -4);
+        ctx.lineTo(Math.cos(p.facing) * 12, -4 + Math.sin(p.facing) * 6);
         ctx.stroke();
         ctx.restore();
       }
@@ -719,7 +720,7 @@
       const s = worldToScreen(fx.x, fx.y);
       const a = fx.life / 0.35;
       ctx.globalAlpha = a;
-      ctx.strokeStyle = "#bbf7d0";
+      ctx.strokeStyle = "#fbbf24";
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(s.x + ox, s.y + oy - 10, 10 + (1 - a) * 24, 0, Math.PI * 2);
@@ -731,11 +732,11 @@
     ctx.fillStyle = "rgba(0,0,0,0.4)";
     ctx.fillRect(viewW * 0.2, 4, viewW * 0.6, 6);
     ctx.fillStyle =
-      state.globalAlert > 0.7 ? "#ef4444" : state.globalAlert > 0.35 ? "#fbbf24" : "#4ade80";
+      state.globalAlert > 0.7 ? "#ef4444" : state.globalAlert > 0.35 ? "#fbbf24" : "#1e3a5f";
     ctx.fillRect(viewW * 0.2, 4, viewW * 0.6 * state.globalAlert, 6);
 
     if (state.flash > 0) {
-      ctx.fillStyle = `rgba(190,255,210,${Math.min(0.35, state.flash * 2)})`;
+      ctx.fillStyle = `rgba(251,191,36,${Math.min(0.35, state.flash * 2)})`;
       ctx.fillRect(0, 0, viewW, viewH);
     }
   }
