@@ -34,7 +34,7 @@
 ## Silhouette rules (shape language)
 
 - **Camera:** true top-down (no side silhouette, no iso diamonds).
-- **Player:** compact disc / crescent ship; cyan core + forward spikes; aim direction must read at phone size.
+- **Player:** neon HUMAN / cyber fighter CHARACTER (head+torso+arms+legs); cyan/magenta glow; aim direction must read at phone size. NO ship/triangle geometry.
 - **Enemies (3 kinds):** hollow **triangle** (cyan), bumpy **pod** (magenta), faceted **rock** (dark + neon edge). Never same blob for all kinds.
 - **Projectiles:** short glowing pills / lines, not fat circles.
 

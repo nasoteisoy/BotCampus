@@ -7,9 +7,9 @@
     im.src = src;
     return im;
   }
-  var heroImg = loadImg('./art/player.png?v=opt6');
-  var heroImg2 = loadImg('./art/player_f2.png?v=opt6');
-  var guardImg = loadImg('./art/guard.png?v=opt6');
+  var heroImg = loadImg('./art/player.png?v=opt6b');
+  var heroImg2 = loadImg('./art/player_f2.png?v=opt6b');
+  var guardImg = loadImg('./art/guard.png?v=opt6b');
 
 (function () {
   "use strict";

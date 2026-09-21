@@ -11,11 +11,11 @@
     im.src = src;
     return im;
   }
-  const heroImg = loadImg('./art/player.png?v=opt6');
-  const heroImg2 = loadImg('./art/player_f2.png?v=opt6');
-  const enemyTri = loadImg('./art/enemy_tri.png?v=opt6');
-  const enemyPod = loadImg('./art/enemy_pod.png?v=opt6');
-  const enemyRock = loadImg('./art/enemy_rock.png?v=opt6');
+  const heroImg = loadImg('./art/player.png?v=opt6b');
+  const heroImg2 = loadImg('./art/player_f2.png?v=opt6b');
+  const enemyTri = loadImg('./art/enemy_tri.png?v=opt6b');
+  const enemyPod = loadImg('./art/enemy_pod.png?v=opt6b');
+  const enemyRock = loadImg('./art/enemy_rock.png?v=opt6b');
 
 
   const canvas = document.getElementById("c");
