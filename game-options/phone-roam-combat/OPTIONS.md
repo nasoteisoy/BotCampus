@@ -16,11 +16,11 @@ Dev A pack. Three distinct verbs + cameras. Pick one direction to flesh for prod
 
 ---
 
-## B — Corridor Slash (side-view)
+## B — Corridor Slash (side-view) · **Dev B**
 
 **One-liner:** Side-scroll run and jump; slash is primary, gun is alt; carve a corridor.
 
-**Feel:** Not twin-stick — ground-plane enemies approach, camera scrolls with the runner. Combo meter rewards aggressive clears. Reach the end flag to win a short run.
+**Feel:** Not twin-stick — ground-plane enemies approach, camera scrolls with the runner. Combo meter rewards aggressive clears. **Win: clear 6 waves** (Dev B owned).
 
 **Why pick it:** Classic mobile side-fighter verbs; distinct silhouette and camera from A/C.
 

@@ -8,7 +8,7 @@ Open any `index.html` locally (file:// or a static server). Script cache bust: `
 | Option | Path | Pitch |
 |--------|------|--------|
 | **A** | [a/index.html](a/index.html) | Top-down twin-stick arena clear — left stick move, right stick / Fire shoot, wave score |
-| **B** | [b/index.html](b/index.html) | Side-view corridor run — jump, slash primary + gun alt, camera scrolls with you |
+| **B** | [b/index.html](b/index.html) | Side-view corridor — jump, slash + gun; **win = 6 waves** (Dev B owned) |
 | **C** | [c/index.html](c/index.html) | Iso stealth assassin — vision cones, alert meters, dash + rear takedown |
 
 ## Per-option layout
@@ -24,7 +24,7 @@ c/  index.html  game.js  art/.gitkeep
 ## Controls (quick)
 
 - **A:** Virtual L/R sticks (or WASD + mouse/Space/J). Clear waves.
-- **B:** On-screen ◀ JUMP ▶ · SLASH · GUN (or WASD/arrows + J/K). Reach the flag.
+- **B:** On-screen ◀ JUMP ▶ · SLASH · GUN (or WASD/arrows + J/K). Clear **6 waves**.
 - **C:** Move stick · DASH · TAKE (or WASD + Shift/K dash, J/Z/Space takedown). Clear 6 marks unseen.
 
 ## Docs
