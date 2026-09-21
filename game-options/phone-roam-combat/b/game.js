@@ -420,6 +420,7 @@
 
     p.vy -= GRAV * DT;
     p.x += p.vx * DT;
+    p.x = Math.max(40, Math.min(WORLD_W - 40, p.x));
     p.y += p.vy * DT;
 
     if (p.x < 30) {
@@ -612,6 +613,9 @@
     const maxCam = Math.max(0, WORLD_W - viewW);
     if (state.camX < 0) state.camX = 0;
     if (state.camX > maxCam) state.camX = maxCam;
+    // soft nit: don't let hero walk off a clamped camera
+    const edge = 36;
+    p.x = Math.max(state.camX + edge, Math.min(state.camX + viewW - edge, p.x));
 
     // particles
     for (let i = state.particles.length - 1; i >= 0; i--) {

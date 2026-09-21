@@ -215,7 +215,6 @@
       vx: 0,
       vy: 0,
       r: kind === "rock" ? 16 + Math.random() * 4 : 11 + Math.random() * 4,
-      kind: (state.enemies.length + state.wave) % 3,
       hp: Math.min(5, 1 + Math.floor(state.wave / 3)),
       hitFlash: 0,
       scale: 1,
@@ -602,45 +601,18 @@
       ctx.translate(e.x, e.y);
       ctx.scale(e.scale, e.scale);
       const flash = e.hitFlash > 0;
-      const k = (e.kind != null ? e.kind : 0) % 3;
-      const img = k === 0 ? enemyTri : k === 1 ? enemyPod : enemyRock;
-      const ok = k === 0 ? enemyTriOk : k === 1 ? enemyPodOk : enemyRockOk;
+      const spriteFor = e.kind === "tri" ? [enemyTri, enemyTriOk]
+        : e.kind === "pod" || e.kind === "orb" ? [enemyPod, enemyPodOk]
+        : [enemyRock, enemyRockOk];
+      const img = spriteFor[0];
+      const ok = spriteFor[1];
       if (ok) {
         const s = e.r * 2.4;
         if (flash) ctx.globalAlpha = 0.85;
         ctx.drawImage(img, -s / 2, -s / 2, s, s);
         ctx.globalAlpha = 1;
-      } else if (k === 0) {
-        ctx.strokeStyle = flash ? "#fff" : "#22d3ee";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "#22d3ee";
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.moveTo(0, -e.r);
-        ctx.lineTo(e.r * 0.9, e.r * 0.75);
-        ctx.lineTo(-e.r * 0.9, e.r * 0.75);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      } else if (k === 1) {
-        ctx.fillStyle = flash ? "#fff" : "#d946ef";
-        ctx.beginPath();
-        ctx.ellipse(0, 0, e.r * 0.65, e.r, 0, 0, Math.PI * 2);
-        ctx.fill();
       } else {
-        ctx.fillStyle = flash ? "#fff" : "#4c1d95";
-        ctx.strokeStyle = "#a78bfa";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const ang = (i / 6) * Math.PI * 2 - Math.PI / 2;
-          const rr = e.r * (i % 2 ? 0.72 : 1);
-          const x = Math.cos(ang) * rr, y = Math.sin(ang) * rr;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        drawEnemyShape(e);
       }
       ctx.restore();
     }

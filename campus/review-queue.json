@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T02:18:04Z",
+  "updatedAt": "2026-09-21T02:54:26Z",
   "items": [
     {
       "id": "rv-phone-roam-a",
-      "title": "Phone combat option A — Twin-stick arena",
-      "summary": "Top-down twin-stick roam-and-clear waves. Try + say likes/dislikes. One of three DIFFERENT concepts.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt1",
+      "title": "Phone combat option A \u2014 Twin-stick arena",
+      "summary": "Dev C PACK PASS (match-vs-still). Twin-stick neon arena. Try + say likes/dislikes.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/a/?v=opt3b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 0,
@@ -16,9 +16,9 @@
     },
     {
       "id": "rv-phone-roam-b",
-      "title": "Phone combat option B — Side slash/gun",
-      "summary": "Side-view corridor: run/jump, slash primary + gun alt. Distinct from twin-stick. Pick direction with likes/dislikes.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt1",
+      "title": "Phone combat option B \u2014 Side slash/gun",
+      "summary": "Dev C PACK PASS (match-vs-still). Side corridor slash/gun. Distinct from A/C.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/b/?v=opt3b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 0,
@@ -28,9 +28,9 @@
     },
     {
       "id": "rv-phone-roam-c",
-      "title": "Phone combat option C — Iso stealth takedown",
-      "summary": "Fake-iso hit-and-run stealth: vision cones, dash, rear takedowns. Not A/B with a camera swap.",
-      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt1",
+      "title": "Phone combat option C \u2014 Iso stealth takedown",
+      "summary": "Dev C PACK PASS (match-vs-still). Iso stealth takedowns. Distinct from A/B.",
+      "url": "https://nasoteisoy.github.io/BotCampus/game-options/phone-roam-combat/c/?v=opt3b",
       "owner": "Dev A",
       "kind": "game",
       "priority": 0,
@@ -40,7 +40,7 @@
     },
     {
       "id": "rv-campus-circles2",
-      "title": "Campus markers — name circles (circles2)",
+      "title": "Campus markers \u2014 name circles (circles2)",
       "summary": "Dev C PASSed: name circles, full names inside, small interns with parent+job, zero overlap. Fit readable. Try on phone.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
       "owner": "Dev A + Dev B",
@@ -52,8 +52,8 @@
     },
     {
       "id": "rv-campus-layout-npc6",
-      "title": "Campus layout — full names + no overlap + room badges",
-      "summary": "Superseded by circles2 name-circle markers (layout/AABB still underpinning). Demoted — use circles2 for Jesus review.",
+      "title": "Campus layout \u2014 full names + no overlap + room badges",
+      "summary": "Superseded by circles2 name-circle markers (layout/AABB still underpinning). Demoted \u2014 use circles2 for Jesus review.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc6",
       "owner": "Dev A",
       "kind": "campus",
@@ -64,7 +64,7 @@
     },
     {
       "id": "rv-campus-live-fun-v11",
-      "title": "Campus Live — Fit / juice + pan / zoom",
+      "title": "Campus Live \u2014 Fit / juice + pan / zoom",
       "summary": "Fun pass v11 (Dev C PASSed): Fit all, tap juice, smoother pan/zoom. Still open for Jesus to try on phone.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
       "owner": "Dev A",
@@ -76,8 +76,8 @@
     },
     {
       "id": "rv-campus-npc-life",
-      "title": "Campus NPC life — walk / stations / emotions",
-      "summary": "Dev C PASSed npc2. Mute 10s: desk→station walks, permission RUN, ready pulse. Soft nits OK for now. Note: markers are now name circles (circles2).",
+      "title": "Campus NPC life \u2014 walk / stations / emotions",
+      "summary": "Dev C PASSed npc2. Mute 10s: desk\u2192station walks, permission RUN, ready pulse. Soft nits OK for now. Note: markers are now name circles (circles2).",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc2",
       "owner": "Dev B",
       "kind": "campus",
@@ -88,8 +88,8 @@
     },
     {
       "id": "rv-sprite-lab-flow",
-      "title": "Elementals — paused (rendering school)",
-      "summary": "Render crew in Game Rendering School — elementals paused until they pass school QC. Peek only.",
+      "title": "Elementals \u2014 paused (rendering school)",
+      "summary": "Render crew in Game Rendering School \u2014 elementals paused until they pass school QC. Peek only.",
       "url": "https://nasoteisoy.github.io/BotCampus/sprite-lab.html?v=flow1",
       "owner": "Render A/B/C",
       "kind": "sprites",

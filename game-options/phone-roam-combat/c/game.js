@@ -158,7 +158,7 @@
   const state = {
     phase: "title",
     marks: 0,
-    targetMarks: 6,
+    targetMarks: 3,
     globalAlert: 0, // 0..1 meter
     shake: 0,
     flash: 0,
@@ -423,7 +423,7 @@
       for (const g of state.guards) {
         if (!g.alive) continue;
         const dist = Math.hypot(g.x - p.x, g.y - p.y);
-        if (dist > 1.2) continue;
+        if (dist > 1.55) continue;
         const unseen = g.alert < 0.55 && !canSee(g, p.x, p.y);
         const rear = behindGuard(g, p.x, p.y);
         if ((rear || unseen) && g.state !== "hunt") {
