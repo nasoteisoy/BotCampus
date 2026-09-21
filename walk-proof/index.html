@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!-- CACHE_BUST v=1 -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Walk proof — stop after steps</title>
+<style>
+  html,body{margin:0;height:100%;background:#0f1419;color:#e2e8f0;font-family:system-ui,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:12px}
+  h1{font-size:1.1rem;margin:0 0 8px}
+  p{font-size:.9rem;opacity:.85;margin:0 0 12px;line-height:1.35}
+  #wrap{position:relative;width:100%;aspect-ratio:16/9;background:#1a2332;border-radius:12px;overflow:hidden;border:1px solid #334155}
+  canvas{width:100%;height:100%;display:block;image-rendering:auto}
+  .meta{font-size:.8rem;opacity:.7;margin-top:10px}
+  button{margin-top:10px;padding:10px 16px;border-radius:10px;border:1px solid #475569;background:#1e293b;color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <h1>Walk proof — a few steps, then stop</h1>
+  <p>Depth: hill + tree behind the knight, rock in front. Frames: idle → walk cycle → idle. Replay to watch again.</p>
+  <div id="wrap"><canvas id="c" width="960" height="540"></canvas></div>
+  <button type="button" id="replay">Replay</button>
+  <p class="meta">Produced for this call by Leader (GenerateImage + assembly). Render A also tasked in parallel. Known limits below in chat.</p>
+</main>
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const names = ['idle','w1','w2','w3','w4'];
+  const imgs = {};
+  let loaded = 0;
+  names.forEach(n => {
+    const im = new Image();
+    im.onload = () => { if (++loaded === names.length) start(); };
+    im.src = 'frames/' + n + '.png?v=1';
+    imgs[n] = im;
+  });
+
+  // Scene props (vector) for clear depth ordering
+  function drawSky() {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1e3a5f');
+    g.addColorStop(1,'#0f172a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+  function drawHills() {
+    ctx.fillStyle = '#14532d';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.62);
+    ctx.quadraticCurveTo(W*0.25, H*0.48, W*0.5, H*0.58);
+    ctx.quadraticCurveTo(W*0.75, H*0.68, W, H*0.55);
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#166534';
+    ctx.fillRect(0, H*0.72, W, H*0.28);
+  }
+  function drawTree(x, y, s) {
+    // trunk
+    ctx.fillStyle = '#5b3a29';
+    ctx.fillRect(x - 8*s, y - 40*s, 16*s, 50*s);
+    // foliage behind character when drawn before knight
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.arc(x, y - 70*s, 38*s, 0, Math.PI*2);
+    ctx.arc(x - 28*s, y - 50*s, 28*s, 0, Math.PI*2);
+    ctx.arc(x + 28*s, y - 50*s, 28*s, 0, Math.PI*2);
+    ctx.fill();
+  }
+  function drawRock(x, y, s) {
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.moveTo(x - 40*s, y);
+    ctx.quadraticCurveTo(x - 20*s, y - 45*s, x + 5*s, y - 35*s);
+    ctx.quadraticCurveTo(x + 35*s, y - 50*s, x + 45*s, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.ellipse(x - 5*s, y - 18*s, 12*s, 6*s, -0.3, 0, Math.PI*2);
+    ctx.fill();
+  }
+  function drawShadow(x, y, w) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, w*0.38, 12, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  const GROUND_Y = H * 0.78;
+  const CHAR_H = 210;
+  const walkCycle = ['w1','w2','w3','w4'];
+  // ~4 steps: 2 full cycles then ease to idle
+  const STEPS = 8; // frames of walk at frameRate
+  const FRAME_MS = 110; // smooth, not choppy
+
+  let mode = 'walk'; // walk | stop
+  let walkFrame = 0;
+  let walkCount = 0;
+  let x = 120;
+  let last = 0;
+  let accum = 0;
+  let running = true;
+
+  function frameName() {
+    if (mode === 'stop') return 'idle';
+    return walkCycle[walkFrame % walkCycle.length];
+  }
+
+  function tick(t) {
+    if (!last) last = t;
+    const dt = Math.min(0.05, (t - last) / 1000);
+    last = t;
+    if (running) {
+      if (mode === 'walk') {
+        accum += dt * 1000;
+        while (accum >= FRAME_MS) {
+          accum -= FRAME_MS;
+          walkFrame++;
+          walkCount++;
+          x += 14; // distance per frame — smooth slide matching stride
+          if (walkCount >= STEPS) {
+            mode = 'stop';
+            running = false;
+          }
+        }
+      }
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  function draw() {
+    drawSky();
+    drawHills();
+    // BACK layer — tree behind knight
+    drawTree(420, GROUND_Y - 10, 1.15);
+    drawTree(700, GROUND_Y - 5, 0.9);
+
+    const name = frameName();
+    const im = imgs[name];
+    const aspect = im.width / im.height;
+    const ch = CHAR_H;
+    const cw = ch * aspect;
+    const cx = x;
+    const cy = GROUND_Y;
+
+    // shadow under feet (behind sprite)
+    drawShadow(cx, cy - 4, cw);
+
+    // CHARACTER mid layer
+    ctx.drawImage(im, cx - cw/2, cy - ch, cw, ch);
+
+    // FRONT layer — rock in front of feet/path so depth is obvious
+    drawRock(560, GROUND_Y + 8, 1.2);
+    drawRock(820, GROUND_Y + 6, 0.85);
+
+    // path line
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(40, GROUND_Y);
+    ctx.lineTo(W-40, GROUND_Y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '16px system-ui';
+    ctx.fillText(mode === 'walk' ? 'walking…' : 'stopped', 24, 36);
+  }
+
+  function start() {
+    mode = 'walk'; walkFrame = 0; walkCount = 0; x = 120; last = 0; accum = 0; running = true;
+    requestAnimationFrame(tick);
+  }
+  document.getElementById('replay').onclick = () => start();
+})();
+</script>
+</body>
+</html>
