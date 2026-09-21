@@ -1,4 +1,4 @@
-/*! Campus NPC FSM (Dev B) — npc3
+/*! Campus NPC FSM (Dev B) — npc4
  * Living map characters driven by campus-state.json.
  * HARD FAILS baked:
  *  - no walk-in-place (anim follows velocity + debounce)
@@ -8,6 +8,7 @@
  *  - mute-safe emotion spikes (pulse while ready/permission holds)
  *  - first spawn ALWAYS at desk (never station) so mute-10s shows pathing
  * npc3: larger intern radii, soft separation, Jesus/home loc badges
+ * npc4: per-bot craft slots (no stacks), truthful loc badges, permission RUN+pad.on
  * Android Chrome + Windows. rAF tick; poll only retargets.
  */
 (function (global) {
@@ -22,6 +23,9 @@
   var WALK_FRAME_MS = 170;
   var IDLE_DEBOUNCE_MS = 100;
   var FIDGET_MAX = 10;
+  var SLOT_MIN_DIST = 128; // world px between craft ARRIVE slots
+  var HOME_ARRIVE_BADGE = 100;
+  var STATION_NEAR_BADGE = 150;
 
   var KIND_GLYPH = { code: '💻', art: '🎨', research: '📚', permission: '🙏' };
   var KIND_BUSY = { code: '⚡', art: '🖌️', research: '🔎', permission: '🚨' };
@@ -116,6 +120,51 @@
     return { x: home.x + ox, y: home.y + oy };
   }
 
+  /** Hex-ring offsets around a craft/permission station (world px). */
+  function slotOffsetForIndex(index, isIntern) {
+    // Hex rings: chord ≈ radius when 6/ring → radius must be ≥ SLOT_MIN_DIST
+    var perRing = 6;
+    var ring = Math.floor(index / perRing);
+    var i = index % perRing;
+    var baseR = SLOT_MIN_DIST * (1.05 + ring * 1.2);
+    if (isIntern) baseR *= 0.95;
+    // Start above station, then around; stagger rings
+    var a = -Math.PI / 2 + (i / perRing) * Math.PI * 2 + ring * 0.35;
+    return {
+      x: Math.cos(a) * baseR,
+      y: Math.sin(a) * baseR * 0.92 + (isIntern ? 22 : 4)
+    };
+  }
+
+  /**
+   * After all agents have base targets, give each craft-bound bot a unique ARRIVE slot.
+   * Never park multiple mains (or main+intern piles) on the same station %.
+   */
+  function applyCraftSlots() {
+    if (!ctx || !ctx.state) return;
+    var groups = {};
+    agents.forEach(function (a) {
+      var tid = a.targetId;
+      if (!tid || String(tid).indexOf('station-') !== 0) return;
+      (groups[tid] = groups[tid] || []).push(a);
+    });
+    Object.keys(groups).forEach(function (tid) {
+      var list = groups[tid];
+      list.sort(function (a, b) {
+        if (!!a.isIntern !== !!b.isIntern) return a.isIntern ? 1 : -1;
+        return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0);
+      });
+      var st = stationById(ctx.state, tid);
+      if (!st) return;
+      list.forEach(function (a, i) {
+        var off = slotOffsetForIndex(i, a.isIntern);
+        a.targetX = st.x + off.x;
+        a.targetY = st.y + off.y;
+        a.slotIndex = i;
+      });
+    });
+  }
+
   function resolveTarget(bot, entity, state, isIntern) {
     var status = (entity && entity.status) || bot.status || 'idle';
     var homeId = (entity && entity.atDeskId) || bot.deskId;
@@ -171,6 +220,8 @@
       el = document.createElement('div');
       el.className = 'station kind-' + (st.kind || 'code');
       el.dataset.stationId = st.id;
+      el.dataset.id = st.id;
+      el.id = st.id === 'station-permission' ? 'station-permission' : undefined;
       el.innerHTML =
         '<span class="station-glyph" aria-hidden="true"></span>' +
         '<span class="station-label"></span>' +
@@ -183,6 +234,9 @@
     el.style.left = pct.left + '%';
     el.style.top = pct.top + '%';
     el.className = 'station kind-' + (st.kind || 'code') + (occupied.has(st.id) ? ' on' : '');
+    if (st.id === 'station-permission') el.id = 'station-permission';
+    el.dataset.stationId = st.id;
+    el.dataset.id = st.id;
     // kind-specific VFX class (HARD FAIL #3)
     var vfx = el.querySelector('.station-vfx');
     vfx.className = 'station-vfx ' + (KIND_VFX_CLASS[st.kind] || '');
@@ -337,39 +391,90 @@
     return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
   }
 
+  /** Truthful loc badge from AGENT POSITION — never home while piled at a craft station. */
   function updateLocBadge(agent) {
     if (!ctx || !ctx.helpers || !ctx.helpers.setLocBadge) return;
     var el = ctx.spriteEls && ctx.spriteEls[agent.key];
     if (!el) return;
     var state = ctx.state || {};
     var z = jesusZoneRect(state);
-    var atJesus = false;
-    if (agent.targetKind === 'permission' && agent.fsm !== 'walk' && agent.fsm !== 'run') {
-      atJesus = true;
-    }
-    if (!atJesus && pointInZone(agent.x, agent.y, z)) atJesus = true;
+    var pad = stationById(state, 'station-permission');
     var homeDesk = deskById(state, agent.bot && agent.bot.deskId);
     var homeLabel = (homeDesk && homeDesk.label) || (agent.bot && agent.bot.name) || 'home';
-    if (atJesus) ctx.helpers.setLocBadge(el, 'jesus');
-    else ctx.helpers.setLocBadge(el, 'home', homeLabel);
+
+    // @ Jesus — only when physically in Jesus zone / on permission pad
+    var atPad = pad && Math.hypot(agent.x - pad.x, agent.y - pad.y) < 100;
+    var inJesus = pointInZone(agent.x, agent.y, z);
+    if (atPad || inJesus) {
+      ctx.helpers.setLocBadge(el, 'jesus');
+      return;
+    }
+
+    // at {station} — near a craft station (not permission)
+    var stations = state.stations || [];
+    var nearestSt = null;
+    var nearestD = Infinity;
+    for (var i = 0; i < stations.length; i++) {
+      var st = stations[i];
+      if (!st || st.kind === 'permission') continue;
+      var d = Math.hypot(agent.x - st.x, agent.y - st.y);
+      if (d < nearestD) { nearestD = d; nearestSt = st; }
+    }
+    var dHome = homeDesk ? Math.hypot(agent.x - homeDesk.x, agent.y - homeDesk.y) : Infinity;
+    if (nearestSt && nearestD < STATION_NEAR_BADGE && nearestD <= dHome + 20) {
+      ctx.helpers.setLocBadge(el, 'station', nearestSt.label || nearestSt.id);
+      return;
+    }
+    // Pathing toward craft: show station label once closer to target than home
+    if (agent.targetId && String(agent.targetId).indexOf('station-') === 0 && agent.targetKind !== 'permission') {
+      var tSt = stationById(state, agent.targetId);
+      if (tSt && tSt.kind !== 'permission') {
+        var dT = Math.hypot(agent.x - tSt.x, agent.y - tSt.y);
+        if (dT < dHome || agent.fsm === 'busy_at_station') {
+          ctx.helpers.setLocBadge(el, 'station', tSt.label || tSt.id);
+          return;
+        }
+      }
+    }
+
+    // home · {desk} ONLY when actually within ARRIVE of own desk
+    if (homeDesk && dHome < HOME_ARRIVE_BADGE) {
+      ctx.helpers.setLocBadge(el, 'home', homeLabel);
+      return;
+    }
+
+    // Elsewhere (pathing across courtyard etc.) — never fake home
+    ctx.helpers.setLocBadge(el, 'clear');
   }
 
   function separateAgents() {
     var list = [];
     agents.forEach(function (a) { list.push(a); });
-    var minMain = 112;
-    var minMix = 80;
-    for (var iter = 0; iter < 4; iter++) {
+    var minMain = 118;
+    var minMix = 86;
+    var minIntern = 64;
+    for (var iter = 0; iter < 5; iter++) {
       for (var i = 0; i < list.length; i++) {
         for (var j = i + 1; j < list.length; j++) {
           var a = list[i], b = list[j];
-          if (a.speed > MOVE_EPS || b.speed > MOVE_EPS) continue;
-          if (a.fsm === 'walk' || a.fsm === 'run' || b.fsm === 'walk' || b.fsm === 'run') continue;
+          var aMoving = a.fsm === 'walk' || a.fsm === 'run' || a.speed > MOVE_EPS;
+          var bMoving = b.fsm === 'walk' || b.fsm === 'run' || b.speed > MOVE_EPS;
+          var aBusy = a.fsm === 'busy_at_station';
+          var bBusy = b.fsm === 'busy_at_station';
+          // Stronger while busy_at_station; soft while moving; skip only pure distant pathing pairs far apart
           var dx = b.x - a.x, dy = b.y - a.y;
           var dist = Math.hypot(dx, dy) || 0.01;
-          var need = (!a.isIntern && !b.isIntern) ? minMain : minMix;
+          var need;
+          if (!a.isIntern && !b.isIntern) need = minMain;
+          else if (a.isIntern && b.isIntern) need = minIntern;
+          else need = minMix;
+          // Soften push when both actively pathing (slots already diverge targets)
+          var strength = 1;
+          if (aMoving && bMoving && !aBusy && !bBusy) strength = 0.35;
+          else if (aMoving || bMoving) strength = 0.55;
+          else if (aBusy || bBusy) strength = 1.0;
           if (dist < need) {
-            var push = (need - dist) / 2;
+            var push = ((need - dist) / 2) * strength;
             dx /= dist; dy /= dist;
             a.x -= dx * push; a.y -= dy * push;
             b.x += dx * push; b.y += dy * push;
@@ -412,6 +517,14 @@
     agent._emoNextPulse = now + EMOTION_PULSE_MS;
   }
 
+  /** Emotion overlay without freezing locomotion (permission must RUN). */
+  function armEmotionOverlay(agent, kind, now) {
+    agent.emotionKind = kind;
+    agent._emoPulseOn = true;
+    agent._emoNextPulse = now + EMOTION_PULSE_MS;
+    agent.emotionUntil = now + EMOTION_MS;
+  }
+
   function syncAgent(key, bot, entity, isIntern) {
     var state = ctx.state;
     var el = ctx.spriteEls[key];
@@ -448,13 +561,14 @@
         emotionUntil: 0, emotionKind: null, lastStatus: status,
         stillMs: 0, facing: 1, _fx: 0, _fy: 0,
         fidgetAcc: Math.random() * 2,
-        _emoPulseOn: false, _emoNextPulse: 0
+        _emoPulseOn: false, _emoNextPulse: 0,
+        slotIndex: 0
       };
-      // If already ready/permission at load, start mute-readable pulse immediately
+      // ready: flash at desk OK. permission: overlay only — must not freeze RUN.
       if (status === 'ready_for_review') {
         triggerEmotion(agent, 'ready', now);
       } else if (status === 'needs_permission') {
-        triggerEmotion(agent, 'permission', now);
+        armEmotionOverlay(agent, 'permission', now);
       }
       agents.set(key, agent);
     } else {
@@ -471,7 +585,7 @@
         if (status === 'ready_for_review' && agent.lastStatus !== 'ready_for_review') {
           triggerEmotion(agent, 'ready', now);
         } else if (status === 'needs_permission' && agent.lastStatus !== 'needs_permission') {
-          triggerEmotion(agent, 'permission', now);
+          armEmotionOverlay(agent, 'permission', now);
         } else if (status !== 'ready_for_review' && status !== 'needs_permission') {
           agent._emoPulseOn = false;
           agent.emotionKind = null;
@@ -501,6 +615,8 @@
     agents.forEach(function (_a, key) {
       if (!seen.has(key)) agents.delete(key);
     });
+
+    applyCraftSlots();
 
     agents.forEach(function (a) {
       if (a.fsm === 'busy_at_station' && a.targetId && String(a.targetId).indexOf('station-') === 0) {
@@ -535,9 +651,15 @@
       agent._emoPulseOn = true;
       agent.emotionUntil = now + EMOTION_MS;
       agent._emoNextPulse = now + EMOTION_PULSE_MS;
-      // Don't interrupt walk/run — overlay bubble only unless idle/arrived
-      if (agent.fsm === 'idle' || agent.fsm === 'emotion' || agent.speed < MOVE_EPS) {
-        if (agent.fsm !== 'walk' && agent.fsm !== 'run' && agent.fsm !== 'busy_at_station') {
+      // Don't interrupt walk/run/busy — overlay bubble only
+      var dxp = agent.targetX - agent.x;
+      var dyp = agent.targetY - agent.y;
+      var stillPathing = Math.hypot(dxp, dyp) > ARRIVE_PX;
+      if (!stillPathing && agent.fsm !== 'walk' && agent.fsm !== 'run' && agent.fsm !== 'busy_at_station') {
+        if (status === 'needs_permission') {
+          // stay busy_at_station / idle at pad — don't lock emotion FSM that blocks motion next retarget
+          agent._emoPulseOn = true;
+        } else if (agent.fsm === 'idle' || agent.fsm === 'emotion' || agent.speed < MOVE_EPS) {
           agent.fsm = 'emotion';
           agent.visualFrame = agent.emotionKind === 'permission' ? 'emotion_permission' : 'emotion_ready';
         }
@@ -557,13 +679,22 @@
     // Periodic mute-readable emotion while ready/permission holds
     tickEmotionPulse(agent, now);
 
-    // Emotion flash (mute-safe big glyph) — HARD FAIL #5
+    var dx0 = agent.targetX - agent.x;
+    var dy0 = agent.targetY - agent.y;
+    var dist0 = Math.hypot(dx0, dy0);
+
+    // Emotion flash — never freeze permission RUN (or any craft pathing)
     if (agent.fsm === 'emotion' && now < agent.emotionUntil) {
-      agent.visualFrame = agent.emotionKind === 'permission' ? 'emotion_permission' : 'emotion_ready';
-      agent.speed = 0;
-      agent._emoPulseOn = true;
-      placeAgent(agent);
-      return;
+      if (dist0 > ARRIVE_PX || status === 'needs_permission') {
+        // fall through to pathing; keep overlay
+        agent._emoPulseOn = true;
+      } else {
+        agent.visualFrame = agent.emotionKind === 'permission' ? 'emotion_permission' : 'emotion_ready';
+        agent.speed = 0;
+        agent._emoPulseOn = true;
+        placeAgent(agent);
+        return;
+      }
     }
     if (agent.fsm === 'emotion' && now >= agent.emotionUntil) {
       // keep emotionKind for pulse-hold; clear only the FSM lock
@@ -634,8 +765,16 @@
           occupied.add(agent.targetId);
         }
       } else if (status === 'needs_permission') {
-        agent.fsm = 'idle';
+        // Arrive at pad: light station, clear "running" via busy_at_station
+        agent.fsm = 'busy_at_station';
         agent.visualFrame = 'emotion_permission';
+        agent.targetKind = 'permission';
+        if (agent.targetId && String(agent.targetId).indexOf('station-') === 0) {
+          occupied.add(agent.targetId);
+        } else {
+          occupied.add('station-permission');
+          agent.targetId = 'station-permission';
+        }
       } else {
         // idle / ready — chill, NO fake busy (MUST-HAVE)
         agent.fsm = 'idle';
@@ -657,6 +796,22 @@
     placeAgent(agent);
   }
 
+  /** Live permission arrival for alert banner (state JSON atDeskId may lag). */
+  function permissionArrived(key) {
+    var a = agents.get(key);
+    if (!a || a.status !== 'needs_permission') return false;
+    if (a.fsm === 'walk' || a.fsm === 'run') return false;
+    if (a.speed > MOVE_EPS) return false;
+    var pad = ctx && ctx.state ? stationById(ctx.state, 'station-permission') : null;
+    if (pad && Math.hypot(a.x - pad.x, a.y - pad.y) < 110) return true;
+    if (a.fsm === 'busy_at_station' && a.targetKind === 'permission') return true;
+    var z = ctx && ctx.state ? jesusZoneRect(ctx.state) : null;
+    if (z && pointInZone(a.x, a.y, z) && Math.hypot(a.x - a.targetX, a.y - a.targetY) <= ARRIVE_PX + 8) {
+      return true;
+    }
+    return false;
+  }
+
   function frame(ts) {
     rafId = requestAnimationFrame(frame);
     if (!lastTs) lastTs = ts;
@@ -664,9 +819,15 @@
     lastTs = ts;
     if (!ctx) return;
     occupied = new Set();
+    applyCraftSlots(); // keep arrive slots stable every tick
     agents.forEach(function (agent) { tickAgent(agent, dt); });
     separateAgents();
+    // Re-place after separation so DOM matches pushed coords + badges
+    agents.forEach(function (agent) { placeAgent(agent); });
     if (ctx.state) renderStations(ctx.state);
+    if (ctx.helpers && typeof ctx.helpers.refreshPermissionAlert === 'function') {
+      ctx.helpers.refreshPermissionAlert();
+    }
   }
 
   function start() {
@@ -684,11 +845,13 @@
   }
 
   global.CampusNpc = {
-    version: 'npc3',
+    version: 'npc4',
     ownsPositions: true,
     sync: sync,
     agents: agents,
+    permissionArrived: permissionArrived,
     pickBusyStationId: pickBusyStationId,
-    normalizePersonality: normalizePersonality
+    normalizePersonality: normalizePersonality,
+    SLOT_MIN_DIST: SLOT_MIN_DIST
   };
 })(typeof window !== 'undefined' ? window : globalThis);

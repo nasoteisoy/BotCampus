@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Bot Campus Live</title>
-<!-- CACHE_BUST v=npc3 layout+names Dev B — full names, zones, no overlap -->
+<!-- CACHE_BUST v=npc4 slots+truth-badges+perm-run Dev B — zero stacks, pad.on -->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -200,6 +200,9 @@ main{padding:.7rem .75rem 1.4rem; max-width:560px; margin:0 auto}
 }
 .sprite .loc-badge.home{
   background:#334155dd; color:#cbd5e1; border:1px solid #64748b99;
+}
+.sprite .loc-badge.station{
+  background:#0f766eaa; color:#ccfbf1; border:1px solid #2dd4bf99;
 }
 .sprite.main .loc-badge{font-size:8px; padding:2px 7px}
 .sprite.at-jesus .ring{border-color:#fbbf24 !important; box-shadow:0 0 12px #fbbf2444}
@@ -570,7 +573,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 
 
 
-/* === Layout npc3 — room zones + Jesus suite === */
+/* === Layout npc4 — room zones + Jesus suite === */
 .zone{
   position:absolute; z-index:0; pointer-events:none;
   border-radius:18px; border:2px dashed #64748b55;
@@ -616,7 +619,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
 .desk.jesus{z-index:2}
 .desk.owner-home{box-shadow:0 0 0 1px #94a3b844}
 
-/* === NPC-FSM (Dev B) npc3 — stations, motion, mute-safe emotion === */
+/* === NPC-FSM (Dev B) npc4 — slots, truth badges, permission RUN === */
 .station{
   position:absolute; transform:translate(-50%,-50%);
   z-index:2; pointer-events:none;
@@ -782,13 +785,13 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   <div class="interns" id="s-interns"></div>
 </div>
 
-<script src="./campus-npc.js?v=npc3"></script>
+<script src="./campus-npc.js?v=npc4"></script>
 <script>
 (function () {
   // Prefer Leader-reconciled campus/ mirror; root + liveops as fallbacks.
   const STATE_URLS = ['./campus/campus-state.json', './campus-state.json', './liveops/campus-state.json'];
   const POLL_MS = 1000;
-  const ASSET_V = 'npc3';
+  const ASSET_V = 'npc4';
   const WORLD = { w: 1920, h: 1480, pad: 80 };
 
   // Alias map: Dev B spellings → Leader hyphen ids (castFiles keys).
@@ -1497,9 +1500,14 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const out = [];
     for (const bot of data.bots || []) {
       for (const intern of bot.interns || []) {
-        // npc2: surface any needs_permission (pathing toward pad), not only arrived at Jesus
+        // npc4: surface any needs_permission; arrival from live FSM (not stale atDeskId)
         if (intern.status === 'needs_permission') {
-          out.push({ bot, intern, atJesus: intern.atDeskId === jd });
+          const key = 'intern:' + bot.id + ':' + intern.id;
+          let atJesus = intern.atDeskId === jd;
+          if (window.CampusNpc && typeof CampusNpc.permissionArrived === 'function') {
+            if (CampusNpc.permissionArrived(key)) atJesus = true;
+          }
+          out.push({ bot, intern, atJesus, key });
         }
       }
     }
@@ -1727,6 +1735,9 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     } else if (kind === 'home') {
       badge.textContent = homeLabel ? ('home · ' + homeLabel) : 'home';
       badge.className = 'loc-badge show home';
+    } else if (kind === 'station') {
+      badge.textContent = homeLabel ? ('at ' + homeLabel) : 'at station';
+      badge.className = 'loc-badge show station';
     } else {
       badge.textContent = '';
       badge.className = 'loc-badge';
@@ -1734,13 +1745,10 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
   }
 
   function inJesusZone(entity, desksById, jesusId, data) {
+    // Truthful: position / explicit atDesk only — never status alone
     const jd = desksById[jesusId];
     const at = entity && entity.atDeskId;
     if (at && at === jesusId) return true;
-    if (entity && entity.status === 'needs_permission') {
-      // pathing / pad still counts as Jesus ownership for the badge
-      return true;
-    }
     if (entity && entity.x != null && entity.y != null && data && data.zones) {
       const z = (data.zones || []).find(z => z.id === 'jesus');
       if (z) {
@@ -1826,15 +1834,16 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
       const src = castSrc(castEntry, frame);
       setCastOrFallback(el, src, color, initials(bot.name));
       el.querySelector('.tag').textContent = fullBotName(bot);
-      {
+      // npc4: FSM owns loc badges after first paint — don't overwrite with stale status logic
+      if (!(window.CampusNpc && CampusNpc.ownsPositions && !first)) {
         const homeDesk = desksById[bot.deskId];
         const homeLabel = (homeDesk && homeDesk.label) || bot.name;
         if (inJesusZone(main, desksById, jesusId, data) || main.atDeskId === jesusId) {
           setLocBadge(el, 'jesus');
-        } else if (!main.atDeskId || main.atDeskId === bot.deskId || mainStatus === 'idle' || mainStatus === 'ready_for_review') {
+        } else if (mainStatus === 'idle' || mainStatus === 'ready_for_review') {
           setLocBadge(el, 'home', homeLabel);
         } else {
-          setLocBadge(el, 'home', homeLabel);
+          setLocBadge(el, 'clear');
         }
       }
       // === NPC-FSM (Dev B) === initial seed only; FSM owns after first paint
@@ -1867,15 +1876,16 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
         const isrc = castSrc(castEntry, internFrame) || castSrc(castEntry, 'intern_idle');
         setCastOrFallback(iel, isrc, color, 'i');
         iel.querySelector('.tag').textContent = shortInternLabel(intern);
-        {
+        // npc4: FSM owns loc badges after first paint
+        if (!(window.CampusNpc && CampusNpc.ownsPositions && !first)) {
           const homeDesk = desksById[bot.deskId];
           const homeLabel = (homeDesk && homeDesk.label) || bot.name;
-          if (ist === 'needs_permission' || at === jesusId || inJesusZone(intern, desksById, jesusId, data)) {
+          if (at === jesusId || inJesusZone(intern, desksById, jesusId, data)) {
             setLocBadge(iel, 'jesus');
-          } else if (!at || at === bot.deskId) {
+          } else if (ist === 'idle' || ist === 'ready_for_review') {
             setLocBadge(iel, 'home', homeLabel);
           } else {
-            setLocBadge(iel, 'home', homeLabel);
+            setLocBadge(iel, 'clear');
           }
         }
         if (!(window.CampusNpc && CampusNpc.ownsPositions && animTargets[key])) {
@@ -1888,7 +1898,7 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const pack = Object.keys(animTargets).filter(k => seen.has(k)).map(k => ({
       key: k, left: animTargets[k].left, top: animTargets[k].top
     }));
-    separateSprites(pack, 10.0);
+    separateSprites(pack, 11.5);
     // === NPC-FSM (Dev B) === separation seeds targets; live positions owned by FSM after first paint
     pack.forEach(p => {
       animTargets[p.key] = { left: p.left, top: p.top };
@@ -1927,14 +1937,28 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
     const hits = permissionInterns(data);
     if (hits.length) {
       const labels = hits.map(h => h.bot.name + ': ' + (h.intern.label || h.intern.task || 'permission')).join(' · ');
+      const allThere = hits.every(h => h.atJesus);
       const anyThere = hits.some(h => h.atJesus);
-      alertEl.textContent = (anyThere ? '⚠ PERMISSION at Jesus desk — ' : '⚠ PERMISSION needed — running to pad — ') + labels;
+      if (allThere) {
+        alertEl.textContent = '⚠ PERMISSION at Jesus pad — ' + labels;
+        alertEl.classList.remove('running');
+      } else if (anyThere) {
+        alertEl.textContent = '⚠ PERMISSION partial @ pad — ' + labels;
+        alertEl.classList.add('running');
+      } else {
+        alertEl.textContent = '⚠ PERMISSION needed — running to pad — ' + labels;
+        alertEl.classList.add('running');
+      }
       alertEl.classList.add('show');
       mapWrap.classList.add('high-alert');
     } else {
-      alertEl.classList.remove('show');
+      alertEl.classList.remove('show', 'running');
       mapWrap.classList.remove('high-alert');
     }
+  }
+
+  function refreshPermissionAlert() {
+    if (state) renderAlert(state);
   }
 
   function applyState(data, first) {
@@ -1960,7 +1984,8 @@ main{padding:.4rem .55rem 1rem; max-width:560px}
           mainFrameForStatus: mainFrameForStatus,
           initials: initials,
           placeSprite: placeSprite,
-          setLocBadge: setLocBadge
+          setLocBadge: setLocBadge,
+          refreshPermissionAlert: refreshPermissionAlert
         }
       });
     }

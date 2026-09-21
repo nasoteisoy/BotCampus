@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-21T00:08:41Z",
+  "updatedAt": "2026-09-21T00:23:00Z",
   "jesusDeskId": "desk-jesus",
   "desks": [
     {
@@ -115,7 +115,7 @@
       "agentId": "3fa426eb-35d6-42f0-8bae-ef0315ff1cdb",
       "deskId": "desk-leader",
       "status": "working",
-      "task": "Ship NPC npc2 pathing demo",
+      "task": "Ship NPC npc4 zero-stack + truth badges",
       "color": "#22c55e",
       "castFolder": "campus-cast/leader",
       "interns": [
@@ -123,18 +123,18 @@
           "id": "ldr-1",
           "label": "Permission",
           "status": "needs_permission",
-          "task": "Ask Jesus: ship npc2?",
+          "task": "Ask Jesus: ship npc4?",
           "atDeskId": "desk-leader",
           "x": null,
           "y": null,
-          "updatedAt": "2026-09-20T23:37:49Z",
+          "updatedAt": "2026-09-21T00:23:00Z",
           "stationId": null
         }
       ],
       "updatedAt": "2026-09-20T21:34:37Z",
       "main": {
         "status": "working",
-        "task": "Ship NPC npc2 pathing demo",
+        "task": "Ship NPC npc4 zero-stack + truth badges",
         "atDeskId": "desk-leader",
         "x": null,
         "y": null,
@@ -749,32 +749,32 @@
       "id": "station-code",
       "label": "Code desk",
       "kind": "code",
-      "x": 1600,
-      "y": 360,
+      "x": 1680,
+      "y": 380,
       "zone": "ops"
     },
     {
       "id": "station-art",
       "label": "Art desk",
       "kind": "art",
-      "x": 1100,
-      "y": 660,
+      "x": 680,
+      "y": 760,
       "zone": "workshop"
     },
     {
       "id": "station-research",
       "label": "Research shelf",
       "kind": "research",
-      "x": 1510,
-      "y": 640,
+      "x": 1560,
+      "y": 720,
       "zone": "library"
     },
     {
       "id": "station-permission",
       "label": "Jesus permission pad",
       "kind": "permission",
-      "x": 1120,
-      "y": 210,
+      "x": 1140,
+      "y": 200,
       "zone": "jesus"
     }
   ],
@@ -782,34 +782,34 @@
     {
       "id": "jesus",
       "label": "Jesus's room",
-      "x": 700,
-      "y": 40,
-      "w": 560,
-      "h": 260
+      "x": 680,
+      "y": 20,
+      "w": 620,
+      "h": 280
     },
     {
       "id": "ops",
       "label": "Ops bay",
-      "x": 80,
-      "y": 300,
-      "w": 1640,
-      "h": 280
+      "x": 40,
+      "y": 280,
+      "w": 1840,
+      "h": 300
     },
     {
       "id": "workshop",
       "label": "Workshop",
-      "x": 80,
-      "y": 620,
-      "w": 1100,
-      "h": 280
+      "x": 40,
+      "y": 560,
+      "w": 1200,
+      "h": 380
     },
     {
       "id": "library",
       "label": "Library",
-      "x": 1180,
-      "y": 620,
-      "w": 680,
-      "h": 280
+      "x": 1240,
+      "y": 560,
+      "w": 640,
+      "h": 380
     },
     {
       "id": "courtyard",
