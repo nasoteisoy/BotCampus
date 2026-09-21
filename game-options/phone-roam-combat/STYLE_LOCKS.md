@@ -25,3 +25,10 @@ Three playables, three locked worlds. Stills are mood authority; these locks + `
 ## Note on sprite gen
 
 `GenerateImage` was unavailable in this executor session (empty MCP catalog). Runtime sprites were produced with a **style-locked Pillow cel renderer**, punched to transparent RGBA (~160–192px). Re-roll with GenerateImage later if AI polish is required; filenames and palette keys stay stable.
+
+## Runtime sprite upgrade (Render B assist, 2026-09-20)
+Geometry Pillow stubs replaced with **painted character PNGs** (transparent RGBA, ~160–192px) keyed to each STYLE_LOCK:
+- A: neon ship player + tri/pod/rock enemies
+- B: stubby green-tunic hero + pink/choco candy blobs
+- C: hooded assassin + maroon spear guard
+Old geometry archived under `art_geometry_archive/`. Filenames unchanged for Dev A `drawImage`. Render C soft-check later. **Dev A sole-push Pages.**

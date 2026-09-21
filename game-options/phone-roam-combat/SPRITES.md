@@ -1,26 +1,22 @@
-# In-game sprites (illustrated) — Render A → Dev A
+# Runtime sprites — CHARACTER drop (opt4 ready)
 
-Jesus: playables must show **these PNGs**, not canvas shapes / Pillow cels.
+**Do not use `_old_shape_*`** (1–3KB Pillow geometry from 19:33).
 
-## Wire (filenames Dev A already loads)
-| Opt | player | enemies |
-|-----|--------|---------|
-| A | `player.png` (+ optional `player_sheet.png` 2×256) | `enemy_tri.png` `enemy_pod.png` `enemy_rock.png` |
-| B | `player.png` (+ `player_sheet.png`) | `enemy_blob.png` `enemy_blob_alt.png` |
-| C | `player.png` (+ `player_sheet.png`) | `guard.png` |
+Live files (illustrated characters, 256² RGBA transparent):
 
-All single frames: **256×256 RGBA**, transparent corners.
-Sheets: **512×256**, 2 frames left→right, cell 256. `player_f2.png` = frame 2 alone.
+| Opt | Files | Character reads as |
+|-----|-------|--------------------|
+| A | `player.png` | neon ship fighter |
+| A | `enemy_tri.png` | clawed neon robot |
+| A | `enemy_pod.png` | spider neon pod creature |
+| A | `enemy_rock.png` | neon rock golem |
+| B | `player.png` | candy stubby warrior |
+| B | `enemy_blob.png` | pink candy blob face |
+| B | `enemy_blob_alt.png` | chocolate+frosting blob |
+| C | `player.png` | hooded assassin |
+| C | `guard.png` | maroon plate guard |
 
-## Playback hint
-- A: alternate `player` / `player_f2` while moving (thrust pulse)
-- B: bob between frames while running; keep slash FX procedural yellow arc
-- C: use `player_f2` on dash
+Sheets: `*_sheet.png` = 2×256 horizontal (same frame ×2 until more poses).
+`style_world.png` = board only.
 
-## Do not
-- Stamp `style_world.png` as player
-- Fall back to `_old_shape_*` Pillow cels
-- Use geometric fillStyle circles when `img.complete && img.naturalWidth`
-
-## Cache
-Bump `?v=opt4` (or next) after pull so phones don’t keep old shapes.
+Bump `?v=opt4`. Prefer drawImage; never fall back to fillStyle circles when naturalWidth>0.
