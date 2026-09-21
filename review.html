@@ -444,12 +444,12 @@ details.dismissed-wrap[open] summary::before{content:"▾ "}
 
   function fetchQueue() {
     var bust = '?v=poll10&m=' + Math.floor(Date.now() / 60000);
-    var queueP = fetch(DATA_URL + bust, { cache: 'no-store' })
+    var queueP = fetch(DATA_URL + bust, { cache: 'default' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       });
-    var stateP = fetch(STATE_URL + bust, { cache: 'no-store' })
+    var stateP = fetch(STATE_URL + bust, { cache: 'default' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
 
