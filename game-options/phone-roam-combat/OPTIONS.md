@@ -12,7 +12,8 @@ Dev A pack. Three distinct verbs + cameras. Pick one direction to flesh for prod
 
 **Why pick it:** Clearest “phone twin-stick” prototype; wave loop readable in under two minutes.
 
-**Play:** `a/index.html`
+**Play:** `a/index.html`  
+**Style stills:** `a/art/style_world.png`, `a/art/hero_silhouette.png` (neon cyber)
 
 ---
 
@@ -24,7 +25,8 @@ Dev A pack. Three distinct verbs + cameras. Pick one direction to flesh for prod
 
 **Why pick it:** Classic mobile side-fighter verbs; distinct silhouette and camera from A/C.
 
-**Play:** `b/index.html`
+**Play:** `b/index.html`  
+**Style stills:** `b/art/style_world.png`, `b/art/hero_silhouette.png` (whimsy stubby)
 
 ---
 
@@ -36,7 +38,8 @@ Dev A pack. Three distinct verbs + cameras. Pick one direction to flesh for prod
 
 **Why pick it:** Different fantasy and pacing; stealth juice without copying A’s twin-stick or B’s platformer.
 
-**Play:** `c/index.html`
+**Play:** `c/index.html`  
+**Style stills:** `c/art/style_world.png`, `c/art/hero_silhouette.png` (painterly iso noir)
 
 ---
 

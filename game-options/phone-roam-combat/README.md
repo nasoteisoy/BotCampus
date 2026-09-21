@@ -30,3 +30,9 @@ c/  index.html  game.js  art/.gitkeep
 ## Docs
 
 - [OPTIONS.md](OPTIONS.md) — pitches for Jesus / Profile
+
+## Style stills (Render A)
+Distinct worlds — not three skins:
+- A neon cyber: [a/art/](a/art/)
+- B whimsy stubby: [b/art/](b/art/)
+- C painterly iso noir: [c/art/](c/art/)
