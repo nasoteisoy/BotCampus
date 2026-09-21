@@ -6,7 +6,7 @@
   let heroReady = false;
   heroImg.onload = () => { heroReady = true; };
   heroImg.onerror = () => { heroReady = false; };
-  heroImg.src = "art/hero_silhouette.png";
+  heroImg.src = './art/player.png';
 
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
