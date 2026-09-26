@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>Bot Crossing — BotCampus</title>
+<meta name="description" content="Bot Crossing on BotCampus Pages: brochure + sanitized agent shell. Full colony needs local Node + harness scan."/>
+<style>
+  :root{
+    --bg:#07070a; --fg:#eeecf4; --dim:#9d99ac; --faint:#615d70; --accent:#a78bfa;
+    --line:rgba(255,255,255,.11); --panel:#121218; --ok:#4ade80; --wait:#fbbf24;
+    --err:#f87171; --idle:#94a3b8; --arch:#64748b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);
+    font:400 16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom))}
+  .wrap{max-width:720px;margin:0 auto}
+  a{color:var(--accent)}
+  .nav{font-size:.8rem;margin-bottom:1rem}
+  .nav a{color:var(--dim);text-decoration:none}
+  .hero{
+    display:grid;gap:1rem;grid-template-columns:1fr;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:1.25rem;
+  }
+  @media(min-width:640px){.hero{grid-template-columns:1.1fr 1fr}}
+  .hero img{width:100%;height:100%;object-fit:cover;min-height:160px;display:block}
+  .hero .copy{padding:1.1rem 1.15rem}
+  h1{margin:0 0 .4rem;font-size:clamp(1.6rem,5vw,2.2rem);letter-spacing:-.03em;line-height:1.1}
+  .lede{margin:0 0 .6rem;color:var(--dim);font-size:.95rem}
+  .note{margin:0;font-size:.8rem;color:var(--faint);line-height:1.4}
+  .badge{display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    padding:.18rem .5rem;border-radius:999px;background:#2e1065;color:#e9d5ff;border:1px solid #6b21a8;margin-bottom:.55rem}
+  h2{margin:0 0 .55rem;font-size:1.05rem}
+  .shell{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:1.25rem;
+  }
+  .meta{font-size:.75rem;color:var(--faint);margin-bottom:.7rem}
+  .agents{display:flex;flex-direction:column;gap:.45rem}
+  .agent{
+    display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;
+    background:#0c0c12;border:1px solid var(--line);border-radius:10px;padding:.65rem .75rem;
+  }
+  .agent .name{font-weight:700;font-size:.92rem}
+  .agent .zone{font-size:.72rem;color:var(--faint)}
+  .st{font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    padding:.15rem .45rem;border-radius:999px;border:1px solid}
+  .st.running{color:var(--ok);border-color:#166534;background:#052e16}
+  .st.waiting{color:var(--wait);border-color:#92400e;background:#422006}
+  .st.errored{color:var(--err);border-color:#7f1d1d;background:#450a0a}
+  .st.idle{color:var(--idle);border-color:#334155;background:#0f172a}
+  .st.archived{color:var(--arch);border-color:#334155;background:#0f172a}
+  .need{font-size:.68rem;font-weight:800;color:#fbbf24}
+  .empty{color:var(--dim);font-size:.9rem;padding:.5rem 0}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:1rem;
+  }
+  .card p{margin:.35rem 0 0;color:var(--dim);font-size:.88rem}
+  ul{margin:.4rem 0 0;padding-left:1.1rem;color:var(--dim);font-size:.88rem}
+  code{font-size:.82em;background:#1a1a24;padding:.1rem .35rem;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><a href="../">← BotCampus hub</a></div>
+
+  <div class="hero">
+    <img src="poster.jpg" alt="Bot Crossing colony preview"/>
+    <div class="copy">
+      <span class="badge">Pages live shell</span>
+      <h1>Bot Crossing</h1>
+      <p class="lede">Agents as astronauts on a colony map. This Pages page is a <b>brochure + sanitized status shell</b> — not the full local Three.js colony.</p>
+      <p class="note">Upstream open-source: <a href="https://github.com/jarrenrocks/bot-crossing" rel="noopener">jarrenrocks/bot-crossing</a> · <a href="https://botcrossing.com" rel="noopener">botcrossing.com</a></p>
+    </div>
+  </div>
+
+  <div class="shell">
+    <h2>Sanitized agent feed</h2>
+    <div class="meta" id="meta">Loading agents.json…</div>
+    <div class="agents" id="agents"></div>
+  </div>
+
+  <div class="card">
+    <h2>What runs here vs local</h2>
+    <p><b>On Pages:</b> this brochure + polling <code>agents.json</code> (schema: id, label, status, needsYou, zoneId?). Demo rows only for now.</p>
+    <p><b>Local only:</b> Node/Vite API, harness file scanners (Claude Code, Codex, Cursor, …), Three.js colony, deep links. Nothing uploads transcripts to Pages.</p>
+    <p>Exporter/adapter that writes sanitized JSON for this shell comes later — not in this push.</p>
+  </div>
+
+  <div class="card">
+    <h2>Status values</h2>
+    <ul>
+      <li><code>running</code> · <code>waiting</code> · <code>errored</code> · <code>idle</code> · <code>archived</code></li>
+    </ul>
+  </div>
+</div>
+<script>
+(function () {
+  const POLL_MS = 15000;
+  const el = document.getElementById('agents');
+  const meta = document.getElementById('meta');
+
+  function badge(status) {
+    const s = String(status || 'idle').toLowerCase();
+    const ok = ['running','waiting','errored','idle','archived'].includes(s) ? s : 'idle';
+    return '<span class="st ' + ok + '">' + ok + '</span>';
+  }
+
+  function render(data) {
+    const agents = Array.isArray(data.agents) ? data.agents : [];
+    const when = data.updatedAt ? new Date(data.updatedAt).toLocaleString() : '—';
+    meta.textContent = agents.length + ' agent(s) · updated ' + when + ' · poll ' + (POLL_MS/1000) + 's';
+    if (!agents.length) {
+      el.innerHTML = '<div class="empty">No agents in feed yet (empty demo JSON is fine).</div>';
+      return;
+    }
+    el.innerHTML = agents.map(function (a) {
+      return '<div class="agent">' +
+        '<div><div class="name">' + escapeHtml(a.label || a.id || '?') + '</div>' +
+        '<div class="zone">' + escapeHtml(a.zoneId || '—') + ' · ' + escapeHtml(a.id || '') + '</div></div>' +
+        '<div style="display:flex;gap:.45rem;align-items:center">' +
+          (a.needsYou ? '<span class="need">needs you</span>' : '') +
+          badge(a.status) +
+        '</div></div>';
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  async function tick() {
+    try {
+      const r = await fetch('agents.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      render(await r.json());
+    } catch (e) {
+      meta.textContent = 'Feed error: ' + e.message;
+    }
+  }
+
+  tick();
+  setInterval(tick, POLL_MS);
+})();
+</script>
+</body>
+</html>

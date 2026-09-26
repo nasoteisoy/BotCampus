@@ -1,7 +1,118 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"/><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="refresh" content="0;url=office.html?v=god6"/>
-<title>Bot Office</title>
-<script>location.replace("office.html?v=god6&t="+Date.now());</script>
-</head><body><a href="office.html?v=god6">Open</a></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>BotCampus</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#141c2e; --line:#243044; --text:#e8eef6; --muted:#8b9bb0;
+    --accent:#7dd3fc; --warn:#fbbf24; --retire:#f43f5e; --ok:#22c55e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom))}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{margin:0 0 .35rem;font-size:1.55rem;font-weight:800;letter-spacing:-.02em}
+  .lede{margin:0 0 1.1rem;color:var(--muted);font-size:.95rem;line-height:1.45}
+  .banner{
+    background:linear-gradient(135deg,#3f1d2e,#1c1410);
+    border:1px solid #f43f5e66;border-radius:14px;padding:.9rem 1rem;margin-bottom:1.25rem;
+  }
+  .banner strong{color:var(--retire);display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.35rem}
+  .banner p{margin:0;font-size:.92rem;line-height:1.45;color:#ffedd5}
+  .dir{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:.9rem 1rem;margin-bottom:1.25rem;
+  }
+  .dir h2{margin:0 0 .35rem;font-size:1.05rem}
+  .dir p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.45}
+  section{margin-bottom:1.35rem}
+  .section-title{margin:0 0 .55rem;font-size:.7rem;font-weight:800;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted)}
+  .card{
+    display:block;text-decoration:none;color:inherit;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:.85rem 1rem;margin-bottom:.55rem;transition:border-color .15s,transform .15s;
+  }
+  .card:hover{border-color:#3b82f6;transform:translateY(-1px)}
+  .card h3{margin:0 0 .25rem;font-size:1rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .card p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.4}
+  .tag{font-size:.65rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    padding:.15rem .45rem;border-radius:999px;background:#1e293b;color:var(--accent);border:1px solid #334155}
+  .tag.live{background:#052e16;color:#86efac;border-color:#166534}
+  .tag.adapter{background:#422006;color:#fcd34d;border-color:#92400e}
+  .tag.demo{background:#1e1b4b;color:#c4b5fd;border-color:#4c1d95}
+  .tag.retired{background:#450a0a;color:#fecaca;border-color:#7f1d1d}
+  footer{margin-top:2rem;color:var(--muted);font-size:.75rem}
+  footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BotCampus</h1>
+  <p class="lede">Public hub for Bot Crossing, Agent World, and secondary demos.</p>
+
+  <div class="banner">
+    <strong>Retired on GitHub Pages</strong>
+    <p>Phone Campus Live and Bot Office (the cozy loft / NPC campus) are <b>retired</b> on this site.
+    Those URLs now serve stubs. The new campus direction is <b>Bot Crossing</b> + <b>Agent World</b>.</p>
+  </div>
+
+  <div class="dir">
+    <h2>New campus direction</h2>
+    <p>Spatial live targets: Bot Crossing (sanitized agent shell on Pages) and Agent World (brochure + adapter needed for live sprites). See <a href="LIVE_HOSTING.md" style="color:var(--accent)">LIVE_HOSTING.md</a>.</p>
+  </div>
+
+  <section>
+    <div class="section-title">Spatial targets</div>
+    <a class="card" href="crossing/">
+      <h3>Bot Crossing <span class="tag live">Live shell</span></h3>
+      <p>Brochure + Pages shell that polls sanitized agent JSON. Full colony sim stays local (Node + harness scan).</p>
+    </a>
+    <a class="card" href="agent-world/">
+      <h3>Agent World <span class="tag adapter">Adapter needed</span></h3>
+      <p>Brochure + demo GIFs. Live village needs a Mac/local exporter — Pages cannot run ps/lsof or Claude CLI discovery.</p>
+    </a>
+  </section>
+
+  <section>
+    <div class="section-title">Secondary demos (not campus)</div>
+    <a class="card" href="game-options/phone-roam-combat/styles.html?v=opt8b">
+      <h3>Phone roam combat <span class="tag demo">Demo</span></h3>
+      <p>A/B/C style pack hub (opt8b).</p>
+    </a>
+    <a class="card" href="walk-proof/?v=1fail">
+      <h3>Walk proof <span class="tag demo">Demo</span></h3>
+      <p>Capability walk test (marked failed — not campus).</p>
+    </a>
+    <a class="card" href="dev-a-school/web/">
+      <h3>Dev A school <span class="tag demo">Demo</span></h3>
+      <p>Rendering / training school materials.</p>
+    </a>
+    <a class="card" href="dev-b-school/web/">
+      <h3>Dev B school <span class="tag demo">Demo</span></h3>
+      <p>Rendering / training school materials.</p>
+    </a>
+  </section>
+
+  <section>
+    <div class="section-title">Retired paths</div>
+    <a class="card" href="campus-live.html">
+      <h3>campus-live.html <span class="tag retired">Retired stub</span></h3>
+      <p>Old NPC campus — no longer interactive.</p>
+    </a>
+    <a class="card" href="office.html">
+      <h3>office.html <span class="tag retired">Retired stub</span></h3>
+      <p>Old Bot Office loft — no longer playable.</p>
+    </a>
+  </section>
+
+  <footer>
+    Repo: <a href="https://github.com/nasoteisoy/BotCampus">nasoteisoy/BotCampus</a>
+  </footer>
+</div>
+</body>
+</html>

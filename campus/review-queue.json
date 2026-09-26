@@ -1,7 +1,24 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T04:51:19Z",
+  "updatedAt": "2026-09-26T03:30:00Z",
   "items": [
+    {
+      "id": "rv-live-crossing-agent-world",
+      "title": "Live Crossing + Agent World hosting",
+      "summary": "Pages hub live. Crossing: sanitized agents.json shell. Agent World: brochure + adapter needed (Mac ps/lsof). Exporter/adapter TBD.",
+      "url": "https://nasoteisoy.github.io/BotCampus/",
+      "owner": "Dev A + Campus Scientist",
+      "kind": "campus",
+      "priority": 0,
+      "status": "open",
+      "createdAt": "2026-09-26T03:30:00Z",
+      "dismissedAt": null,
+      "links": [
+        "https://nasoteisoy.github.io/BotCampus/crossing/",
+        "https://nasoteisoy.github.io/BotCampus/agent-world/",
+        "https://nasoteisoy.github.io/BotCampus/LIVE_HOSTING.md"
+      ]
+    },
     {
       "id": "rv-phone-roam-pack",
       "title": "Phone combat A/B/C options",
@@ -59,50 +76,50 @@
     {
       "id": "rv-campus-circles2",
       "title": "Campus markers \u2014 name circles (circles2)",
-      "summary": "Dev C PASSed: name circles, full names inside, small interns with parent+job, zero overlap. Fit readable. Try on phone.",
+      "summary": "Dev C PASSed: name circles, full names inside, small interns with parent+job, zero overlap. Fit readable. Try on phone. | RETIRED: Pages Campus Live retired 2026-09-25 \u2014 stubs only; Crossing + Agent World are new targets.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=circles2",
       "owner": "Dev A + Dev B",
       "kind": "campus",
-      "priority": 0,
-      "status": "open",
+      "priority": 9,
+      "status": "closed",
       "createdAt": "2026-09-21T01:10:41Z",
-      "dismissedAt": null
+      "dismissedAt": "2026-09-26T03:30:00Z"
     },
     {
       "id": "rv-campus-layout-npc6",
       "title": "Campus layout \u2014 full names + no overlap + room badges",
-      "summary": "Superseded by circles2 name-circle markers (layout/AABB still underpinning). Demoted \u2014 use circles2 for Jesus review.",
+      "summary": "Superseded by circles2 name-circle markers (layout/AABB still underpinning). Demoted \u2014 use circles2 for Jesus review. | RETIRED: Pages Campus Live retired 2026-09-25 \u2014 stubs only; Crossing + Agent World are new targets.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc6",
       "owner": "Dev A",
       "kind": "campus",
-      "priority": 3,
-      "status": "waiting",
+      "priority": 9,
+      "status": "closed",
       "createdAt": "2026-09-21T01:10:41Z",
-      "dismissedAt": null
+      "dismissedAt": "2026-09-26T03:30:00Z"
     },
     {
       "id": "rv-campus-live-fun-v11",
       "title": "Campus Live \u2014 Fit / juice + pan / zoom",
-      "summary": "Fun pass v11 (Dev C PASSed): Fit all, tap juice, smoother pan/zoom. Still open for Jesus to try on phone.",
+      "summary": "Fun pass v11 (Dev C PASSed): Fit all, tap juice, smoother pan/zoom. Still open for Jesus to try on phone. | RETIRED: Pages Campus Live retired 2026-09-25 \u2014 stubs only; Crossing + Agent World are new targets.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=11",
       "owner": "Dev A",
       "kind": "campus",
-      "priority": 0,
-      "status": "open",
+      "priority": 9,
+      "status": "closed",
       "createdAt": "2026-09-20T22:39:00Z",
-      "dismissedAt": null
+      "dismissedAt": "2026-09-26T03:30:00Z"
     },
     {
       "id": "rv-campus-npc-life",
       "title": "Campus NPC life \u2014 walk / stations / emotions",
-      "summary": "Dev C PASSed npc2. Mute 10s: desk\u2192station walks, permission RUN, ready pulse. Soft nits OK for now. Note: markers are now name circles (circles2).",
+      "summary": "Dev C PASSed npc2. Mute 10s: desk\u2192station walks, permission RUN, ready pulse. Soft nits OK for now. Note: markers are now name circles (circles2). | RETIRED: Pages Campus Live retired 2026-09-25 \u2014 stubs only; Crossing + Agent World are new targets.",
       "url": "https://nasoteisoy.github.io/BotCampus/campus-live.html?v=npc2",
       "owner": "Dev B",
       "kind": "campus",
-      "priority": 2,
-      "status": "open",
+      "priority": 9,
+      "status": "closed",
       "createdAt": "2026-09-20T23:24:29Z",
-      "dismissedAt": null
+      "dismissedAt": "2026-09-26T03:30:00Z"
     },
     {
       "id": "rv-sprite-lab-flow",

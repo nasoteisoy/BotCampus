@@ -1,0 +1,19 @@
+{
+  "updatedAt": "2026-09-26T03:28:00Z",
+  "agents": [
+    {
+      "id": "demo-dev-a",
+      "label": "Dev A (demo)",
+      "status": "running",
+      "needsYou": false,
+      "zoneId": "botcampus"
+    },
+    {
+      "id": "demo-scientist",
+      "label": "Campus Scientist (demo)",
+      "status": "waiting",
+      "needsYou": true,
+      "zoneId": "botcampus"
+    }
+  ]
+}

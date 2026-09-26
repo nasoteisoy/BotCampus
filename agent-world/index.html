@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>Agent World — BotCampus</title>
+<meta name="description" content="Agent World brochure on BotCampus Pages. Live village needs a local Mac/Claude adapter — not faked here."/>
+<style>
+  :root{
+    --bg:#0b1220; --fg:#e8eef6; --dim:#8b9bb0; --accent:#7dd3fc; --warn:#fbbf24;
+    --line:#243044; --panel:#141c2e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);
+    font:400 16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom))}
+  .wrap{max-width:720px;margin:0 auto}
+  a{color:var(--accent)}
+  .nav{font-size:.8rem;margin-bottom:1rem}
+  .nav a{color:var(--dim);text-decoration:none}
+  h1{margin:0 0 .4rem;font-size:clamp(1.5rem,5vw,2.1rem);letter-spacing:-.02em}
+  .lede{margin:0 0 1rem;color:var(--dim)}
+  .banner{
+    background:#422006;border:1px solid #92400e;border-radius:14px;padding:.9rem 1rem;margin-bottom:1.2rem;
+  }
+  .banner strong{display:block;color:var(--warn);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem}
+  .banner p{margin:0;font-size:.9rem;line-height:1.45;color:#fde68a}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:1rem;
+  }
+  .card h2{margin:0 0 .45rem;font-size:1.05rem}
+  .card p{margin:.35rem 0 0;color:var(--dim);font-size:.88rem}
+  ul{margin:.4rem 0 0;padding-left:1.1rem;color:var(--dim);font-size:.88rem}
+  figure{margin:0 0 .85rem}
+  figure img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#000}
+  figcaption{margin-top:.35rem;font-size:.75rem;color:var(--dim)}
+  code{font-size:.82em;background:#0f172a;padding:.1rem .35rem;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><a href="../">← BotCampus hub</a></div>
+
+  <h1>Agent World</h1>
+  <p class="lede">Spatial RPG-style village for live Claude Code CLI sessions. This Pages page is <b>brochure-first</b> — demos and status only. No fake live world.</p>
+
+  <div class="banner">
+    <strong>Adapter needed</strong>
+    <p>Live sprites require a local exporter: Mac <code>ps</code>/<code>lsof</code> + Claude CLI session discovery (or equivalent). A Windows local harness at <code>:3102</code> cannot populate sprites for this Pages surface by itself. Pages hosts static assets only.</p>
+  </div>
+
+  <div class="card">
+    <h2>Demo — village</h2>
+    <figure>
+      <img src="demo-world.gif" alt="Agent World village demo gif"/>
+      <figcaption>Recorded local demo — not a live feed from this host.</figcaption>
+    </figure>
+  </div>
+
+  <div class="card">
+    <h2>Demo — permission queue</h2>
+    <figure>
+      <img src="demo-permission.gif" alt="Agent World permission queue demo gif"/>
+      <figcaption>Waiting sessions queue at the info desk (local capture).</figcaption>
+    </figure>
+  </div>
+
+  <div class="card">
+    <h2>Help overlay (local UX)</h2>
+    <figure>
+      <img src="help-overlay.png" alt="Agent World help overlay"/>
+      <figcaption>Reference UI from the local build.</figcaption>
+    </figure>
+  </div>
+
+  <div class="card">
+    <h2>What Pages can vs cannot do</h2>
+    <ul>
+      <li><b>Can:</b> host this brochure, GIFs, and (later) a sanitized JSON poll like Crossing — if an adapter writes it.</li>
+      <li><b>Cannot:</b> run Mac process discovery, Claude CLI hooks, file watchers, or a Node world server.</li>
+    </ul>
+    <p>See <a href="../LIVE_HOSTING.md">LIVE_HOSTING.md</a> for the adapter sketch.</p>
+  </div>
+</div>
+</body>
+</html>
