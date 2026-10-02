@@ -64,9 +64,17 @@
   function show(t) {
     panel.hidden = false;
     panel.className = "panel open";
+    var body = "";
+    if (t.what || t.summary || t.leftOff) {
+      if (t.what) body += "<p><strong>What</strong><br>" + esc(t.what) + "</p>";
+      if (t.summary) body += "<p><strong>Summary</strong><br>" + esc(t.summary) + "</p>";
+      if (t.leftOff) body += "<p><strong>Left off</strong><br>" + esc(t.leftOff) + "</p>";
+    } else {
+      body = "<p>" + esc(t.note || "No note.") + "</p>";
+    }
     panel.innerHTML =
       "<h2>" + esc(t.title) + "</h2>" +
-      "<p>" + esc(t.note || "No note.") + "</p>" +
+      body +
       "<div class=\"actions\">" +
       "<a class=\"btn primary\" href=\"" + FM + "\">Open Field Marshal</a>" +
       "<button type=\"button\" class=\"btn\" id=\"copySay\">Copy “say” line</button>" +
