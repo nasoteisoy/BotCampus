@@ -4,7 +4,9 @@ Minimal outside UI for multi-topic Field Marshal work. **No new bots.**
 
 - Live (after Dev A push): https://nasoteisoy.github.io/BotCampus/fm-topics/
 - Data: `topics.json`
-- UI: `index.html` (plain list → What / Summary / Left off → Open Field Marshal)
+- UI: `index.html` (plain list → What / Summary / Left off → Open & copy context)
+
+App deep link is only `grokbot://app/v1/agent?id=<uuid>` — no prefilled message. Button copies opener text then opens FM; user pastes once.
 
 ## Topic fields
 
