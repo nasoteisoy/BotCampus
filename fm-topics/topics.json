@@ -1,0 +1,25 @@
+{
+  "updatedAt": "2026-10-02T14:03:00-07:00",
+  "updatedBy": "Dev B",
+  "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
+  "topics": [
+    {
+      "id": "dutch-bros-offer",
+      "title": "Dutch Bros offer",
+      "note": "Salary / offer thread. Open Field Marshal and say this title.",
+      "updatedAt": "2026-10-02T14:03:00-07:00"
+    },
+    {
+      "id": "metlife",
+      "title": "MetLife",
+      "note": "Insurance / MetLife. Open Field Marshal and say this title.",
+      "updatedAt": "2026-10-02T14:03:00-07:00"
+    },
+    {
+      "id": "venmo",
+      "title": "Venmo",
+      "note": "Venmo / payments. Open Field Marshal and say this title.",
+      "updatedAt": "2026-10-02T14:03:00-07:00"
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>Field Marshal Topics</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#111;color:#eee;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom))}
+  .wrap{max-width:480px;margin:0 auto}
+  h1{margin:0 0 .25rem;font-size:1.25rem;font-weight:700}
+  .sub{margin:0 0 1rem;color:#999;font-size:.85rem;line-height:1.4}
+  ul{list-style:none;margin:0;padding:0}
+  li{border:1px solid #333;border-radius:8px;margin:0 0 .5rem;overflow:hidden}
+  button.topic{
+    display:block;width:100%;text-align:left;background:#1a1a1a;color:#eee;
+    border:0;padding:.85rem 1rem;font:inherit;cursor:pointer
+  }
+  button.topic:active{background:#222}
+  .title{font-weight:600;font-size:1rem}
+  .meta{margin-top:.25rem;color:#888;font-size:.75rem}
+  .panel{
+    display:none;margin-top:1rem;padding:1rem;border:1px solid #333;border-radius:8px;background:#1a1a1a
+  }
+  .panel.open{display:block}
+  .panel h2{margin:0 0 .5rem;font-size:1.05rem}
+  .panel p{margin:0 0 .75rem;color:#bbb;font-size:.9rem;line-height:1.45;white-space:pre-wrap}
+  .actions{display:flex;flex-wrap:wrap;gap:.5rem}
+  a.btn,button.btn{
+    display:inline-block;padding:.55rem .9rem;border-radius:6px;border:1px solid #555;
+    background:#222;color:#eee;text-decoration:none;font:inherit;font-size:.9rem;cursor:pointer
+  }
+  a.btn.primary{background:#2a4a6a;border-color:#3a6a9a}
+  .how{margin-top:1.25rem;padding-top:1rem;border-top:1px solid #333;color:#888;font-size:.8rem;line-height:1.45}
+  .err{color:#f88;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Field Marshal Topics</h1>
+  <p class="sub">Pick a topic, then open Field Marshal and say that title. One FM chat — this list keeps titles straight.</p>
+  <ul id="list"><li class="err">Loading…</li></ul>
+  <div id="panel" class="panel" hidden></div>
+  <div class="how">
+    <strong>Create / rename:</strong> tell Field Marshal the new title (or rename). He asks Dev B to patch <code>topics.json</code>; Dev A pushes Pages.
+  </div>
+</div>
+<script>
+(function () {
+  var FM = "grokbot://app/v1/agent?id=e2f304a3-666f-4fa3-8b60-6556806b74ea";
+  var list = document.getElementById("list");
+  var panel = document.getElementById("panel");
+  var topics = [];
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function show(t) {
+    panel.hidden = false;
+    panel.className = "panel open";
+    panel.innerHTML =
+      "<h2>" + esc(t.title) + "</h2>" +
+      "<p>" + esc(t.note || "No note.") + "</p>" +
+      "<div class=\"actions\">" +
+      "<a class=\"btn primary\" href=\"" + FM + "\">Open Field Marshal</a>" +
+      "<button type=\"button\" class=\"btn\" id=\"copySay\">Copy “say” line</button>" +
+      "</div>";
+    var btn = document.getElementById("copySay");
+    if (btn) {
+      btn.onclick = function () {
+        var line = "Topic: " + t.title;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(line).then(function () {
+            btn.textContent = "Copied";
+            setTimeout(function () { btn.textContent = "Copy “say” line"; }, 1200);
+          });
+        } else {
+          prompt("Copy this into Field Marshal:", line);
+        }
+      };
+    }
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function render() {
+    list.innerHTML = "";
+    if (!topics.length) {
+      list.innerHTML = "<li class=\"err\">No topics yet.</li>";
+      return;
+    }
+    topics.forEach(function (t) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "topic";
+      b.innerHTML = "<div class=\"title\">" + esc(t.title) + "</div>" +
+        (t.updatedAt ? "<div class=\"meta\">" + esc(t.updatedAt) + "</div>" : "");
+      b.onclick = function () { show(t); };
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+  }
+
+  fetch("topics.json?v=" + Date.now(), { cache: "no-store" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      topics = (data && data.topics) || [];
+      if (data && data.fieldMarshalAgentId) {
+        FM = "grokbot://app/v1/agent?id=" + data.fieldMarshalAgentId;
+      }
+      render();
+      var q = new URLSearchParams(location.search).get("t");
+      if (q) {
+        var hit = topics.find(function (x) { return x.id === q || x.title === q; });
+        if (hit) show(hit);
+      }
+    })
+    .catch(function (e) {
+      list.innerHTML = "<li class=\"err\">Could not load topics.json (" + esc(e.message) + ")</li>";
+    });
+})();
+</script>
+</body>
+</html>
