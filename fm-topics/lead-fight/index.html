@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Two leads</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#111"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#111;color:#eee;font:16px/1.4 system-ui,sans-serif}
+  .wrap{max-width:720px;margin:0 auto;padding:1rem}
+  h1{font-size:1.2rem;margin:0 0 .25rem}
+  .sub{color:#999;font-size:.85rem;margin:0 0 1rem}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  .card{border:1px solid #333;border-radius:8px;padding:.75rem;background:#1a1a1a}
+  .card h2{margin:0 0 .35rem;font-size:1rem}
+  .trait{color:#9ab;font-size:.8rem;margin:0 0 .5rem}
+  .unit{margin:.35rem 0;font-size:.85rem}
+  .bar{height:6px;background:#333;border-radius:3px;margin-top:.15rem}
+  .bar > i{display:block;height:100%;background:#6c6;border-radius:3px}
+  .bar.foe > i{background:#c66}
+  .log{margin-top:1rem;border:1px solid #333;border-radius:8px;padding:.75rem;min-height:8rem;background:#0c0c0c;font-size:.9rem}
+  .log p{margin:.2rem 0}
+  button{margin-top:.75rem;padding:.55rem 1rem;border-radius:6px;border:1px solid #456;background:#2a4a6a;color:#fff;font:inherit;cursor:pointer}
+  .dead{opacity:.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Two leads</h1>
+  <p class="sub">Shared rules. Each lead has a squad and a decision trait. Watch them fight.</p>
+  <div class="row">
+    <div class="card" id="left"></div>
+    <div class="card" id="right"></div>
+  </div>
+  <button id="go" type="button">Fight</button>
+  <div class="log" id="log"></div>
+</div>
+<script>
+const TYPES = ["edge","bulk","spark"];
+const CHART = { edge:{bulk:2,spark:0.5}, bulk:{spark:2,edge:0.5}, spark:{edge:2,bulk:0.5} };
+function mult(a,d){ return (CHART[a]&&CHART[a][d]) || 1; }
+
+function unit(name, type, hp, atk, def, spd, moves){
+  return { name, type, max:hp, hp, atk, def, spd, moves, fainted:false };
+}
+function move(name, power, kind, acc){
+  return { name, power, kind, acc: acc==null?100:acc };
+}
+
+// kind: strike | mend | venom
+const LEADS = [
+  {
+    name: "Voss",
+    trait: "press",
+    note: "Always uses the hardest strike that can hit.",
+    squad: [
+      unit("Pike","edge",40,14,8,12,[move("Cut",40,"strike"), move("Mend",20,"mend")]),
+      unit("Wall","bulk",55,8,16,6,[move("Shove",25,"strike"), move("Seal",0,"venom",90)]),
+      unit("Wisp","spark",32,12,7,16,[move("Jolt",35,"strike"), move("Mend",15,"mend")])
+    ]
+  },
+  {
+    name: "Keel",
+    trait: "save",
+    note: "Mends when hurt, otherwise strikes. Switches if the active unit is losing the type match.",
+    squad: [
+      unit("Anchor","bulk",60,9,18,5,[move("Ram",30,"strike"), move("Mend",25,"mend")]),
+      unit("Needle","edge",36,15,7,14,[move("Cut",40,"strike"), move("Nick",15,"venom",85)]),
+      unit("Arc","spark",34,13,8,15,[move("Jolt",35,"strike"), move("Mend",15,"mend")])
+    ]
+  }
+];
+
+let state;
+function cloneLead(L){
+  return {
+    name:L.name, trait:L.trait, note:L.note,
+    active:0,
+    squad: L.squad.map(u => Object.assign({}, u, {moves:u.moves.map(m=>Object.assign({},m))}))
+  };
+}
+function cur(L){ return L.squad[L.active]; }
+function alive(L){ return L.squad.some(u => u.hp>0); }
+
+function pickMove(lead, foe){
+  const u = cur(lead), e = cur(foe);
+  const strikes = u.moves.filter(m => m.kind==="strike");
+  const mends = u.moves.filter(m => m.kind==="mend");
+  const venom = u.moves.filter(m => m.kind==="venom");
+  if (lead.trait==="save" && u.hp < u.max*0.45 && mends.length) return mends[0];
+  if (lead.trait==="press"){
+    if (venom.length && !e.venom && Math.random()<0.25) return venom[0];
+    return strikes.slice().sort((a,b)=>b.power-a.power)[0];
+  }
+  if (venom.length && !e.venom && e.hp > e.max*0.5) return venom[0];
+  return strikes[0];
+}
+
+function maybeSwitch(lead, foe){
+  if (lead.trait!=="save") return null;
+  const u = cur(lead), e = cur(foe);
+  if (mult(u.type, e.type) >= 1) return null;
+  const better = lead.squad.findIndex((x,i) => i!==lead.active && x.hp>0 && mult(x.type, e.type) > mult(u.type, e.type));
+  if (better<0) return null;
+  lead.active = better;
+  return cur(lead);
+}
+
+function dmg(att, defUnit, mv){
+  const m = mult(att.type, defUnit.type);
+  const raw = ((att.atk * mv.power) / Math.max(4, defUnit.def)) * m * (0.85+Math.random()*0.3);
+  return Math.max(1, Math.round(raw));
+}
+
+function render(){
+  ["left","right"].forEach((id,i) => {
+    const L = state[i];
+    const el = document.getElementById(id);
+    el.innerHTML = "<h2>"+L.name+"</h2><p class='trait'>"+L.note+"</p>" +
+      L.squad.map((u,idx) => {
+        const on = idx===L.active && u.hp>0;
+        const pct = Math.max(0, Math.round(100*u.hp/u.max));
+        return "<div class='unit"+(u.hp<=0?" dead":"")+"'>"+
+          (on?"▸ ":"") + u.name+" · "+u.type+" · "+u.hp+"/"+u.max+
+          (u.venom?" · venom":"")+
+          "<div class='bar"+(i?" foe":"")+"'><i style='width:"+pct+"%'></i></div></div>";
+      }).join("");
+  });
+}
+function say(t){
+  const p=document.createElement("p");
+  p.textContent=t;
+  document.getElementById("log").appendChild(p);
+}
+
+function act(lead, foe, mv){
+  const u=cur(lead), e=cur(foe);
+  if (Math.random()*100 > mv.acc){ say(lead.name+"'s "+u.name+" misses "+mv.name+"."); return; }
+  if (mv.kind==="mend"){
+    const h=Math.round(u.max*0.28);
+    u.hp=Math.min(u.max, u.hp+h);
+    say(u.name+" uses "+mv.name+" (+"+h+").");
+    return;
+  }
+  if (mv.kind==="venom"){
+    e.venom=true;
+    say(u.name+" uses "+mv.name+". "+e.name+" is venomed.");
+    return;
+  }
+  const n=dmg(u,e,mv);
+  e.hp=Math.max(0, e.hp-n);
+  const adv = mult(u.type,e.type);
+  const tag = adv>1?" (strong)": adv<1?" (weak)":"";
+  say(u.name+" "+mv.name+" → "+e.name+" for "+n+tag+".");
+  if (e.hp<=0){ e.fainted=true; say(e.name+" is out."); }
+}
+
+function tickVenom(L){
+  const u=cur(L);
+  if (u && u.hp>0 && u.venom){
+    const n=Math.max(1, Math.round(u.max*0.08));
+    u.hp=Math.max(0,u.hp-n);
+    say(u.name+" takes "+n+" from venom.");
+    if (u.hp<=0) say(u.name+" is out.");
+  }
+}
+function bringNext(L){
+  if (cur(L).hp>0) return;
+  const i=L.squad.findIndex(u=>u.hp>0);
+  if (i>=0){ L.active=i; say(L.name+" sends in "+cur(L).name+"."); }
+}
+
+function fight(){
+  state=[cloneLead(LEADS[0]), cloneLead(LEADS[1])];
+  document.getElementById("log").innerHTML="";
+  say(state[0].name+" vs "+state[1].name+".");
+  render();
+  let guard=0;
+  function step(){
+    if (!alive(state[0]) || !alive(state[1]) || guard++>80){
+      const w = alive(state[0]) && !alive(state[1]) ? state[0].name
+        : alive(state[1]) && !alive(state[0]) ? state[1].name : "Neither";
+      say(w==="Neither" ? "Draw." : w+" wins.");
+      render();
+      return;
+    }
+    bringNext(state[0]); bringNext(state[1]);
+    const sw0=maybeSwitch(state[0], state[1]);
+    const sw1=maybeSwitch(state[1], state[0]);
+    if (sw0) say(state[0].name+" switches to "+sw0.name+".");
+    if (sw1) say(state[1].name+" switches to "+sw1.name+".");
+    const order = cur(state[0]).spd >= cur(state[1]).spd ? [0,1] : [1,0];
+    for (const i of order){
+      const me=state[i], them=state[1-i];
+      if (cur(me).hp<=0 || cur(them).hp<=0) continue;
+      act(me, them, pickMove(me, them));
+    }
+    tickVenom(state[0]); tickVenom(state[1]);
+    render();
+    setTimeout(step, 700);
+  }
+  setTimeout(step, 400);
+}
+document.getElementById("go").onclick=fight;
+state=[cloneLead(LEADS[0]), cloneLead(LEADS[1])];
+render();
+</script>
+</body>
+</html>
