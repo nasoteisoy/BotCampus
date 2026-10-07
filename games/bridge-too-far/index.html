@@ -21,11 +21,14 @@ button{font:inherit;color:#f2efe4;background:rgba(48,54,34,.92);border:1px solid
 button:active{transform:scale(.96)}
 button:disabled{opacity:.35}
 .bar{position:fixed;display:flex;gap:6px;align-items:center;z-index:5}
-#top{top:0;left:0;right:0;padding:4px 6px;padding-top:max(4px,env(safe-area-inset-top));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(22,26,15,.9),rgba(22,26,15,.6))}
-#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:18px;min-width:52px;text-align:center}
-#flags{display:flex;gap:5px;margin:0 4px}
+#top{top:0;left:0;right:0;gap:4px;padding:4px 6px;padding-top:max(4px,env(safe-area-inset-top));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(22,26,15,.9),rgba(22,26,15,.6))}
+#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;min-width:44px;text-align:center}
+#top button{padding:0;width:44px}
+#flags{display:flex;gap:4px;margin:0 2px}
 .fl{width:22px;height:22px;border-radius:50%;border:2px solid #ddd;background:#666;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff}
 .fl.o0{background:#b8443f}.fl.o1{background:#56646d}.fl.on{background:transparent}
+.fl.hot{border-color:#ffe066;animation:hot .6s infinite alternate}
+@keyframes hot{to{box-shadow:0 0 0 3px rgba(255,224,102,.6)}}
 .sp{flex:1}
 #roster{position:fixed;z-index:4;display:flex;gap:3px;overflow:auto;scrollbar-width:none;padding:3px 6px}
 #roster::-webkit-scrollbar{display:none}
@@ -39,16 +42,35 @@ button:disabled{opacity:.35}
 #orders button{flex:1;max-width:96px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:20px;padding:0}
 #orders button small{font-size:10px;opacity:.8;margin-top:3px}
 #orders button.on{background:#c9a43a;color:#1d1d10;border-color:#fff}
-#info{position:fixed;z-index:5;right:8px;padding:4px 8px;border-radius:8px;background:rgba(22,26,15,.85);font-size:12px;display:none;white-space:nowrap;pointer-events:none}
+#card{position:fixed;z-index:5;right:8px;display:none;gap:6px;align-items:center;padding:5px 8px 5px 5px;border-radius:12px;background:rgba(22,26,15,.88);border:1px solid rgba(255,255,255,.15);pointer-events:none;width:214px}
+#cardIcon{width:40px;height:40px;flex:none}
+#card .cb{flex:1;min-width:0;font-size:11px}
+#card .cn{display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;font-weight:600;margin-bottom:2px}
+#cStars{color:#ffd34d;font-size:10px}#cBadges{margin-left:auto;font-size:11px}
+#card .cr{display:flex;align-items:center;gap:4px;height:11px;margin-top:1px}
+#card .cr>span:first-child{width:12px;text-align:center;font-size:10px;font-weight:800}
+#card .cbar{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+#card .cbar b{display:block;height:100%;width:50%;transition:width .2s}
+#cAux{font-size:9px;color:#ffb366;white-space:nowrap}
+#deployBar{left:0;right:0;bottom:0;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom));background:linear-gradient(rgba(22,26,15,.55),rgba(22,26,15,.92));justify-content:center;gap:10px;display:none}
+#deployBar button{height:52px;font-size:18px;padding:0 18px;display:flex;align-items:center;gap:8px}
+#deployBar .go{background:#7a8a3a;border-color:#dfe8b0;font-weight:700;min-width:120px;justify-content:center}
+#deployBar .hint{font-size:20px;opacity:.75}
+.diffs{display:flex;gap:8px;justify-content:center;margin:6px 0 0}
+.diff{width:76px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;line-height:1}
+.diff small{font-size:10px;margin-top:4px;opacity:.8}
+.diff.on{background:#c9a43a;color:#1d1d10;border-color:#fff}
+#ver{opacity:.45;font-size:11px;margin-top:10px}
 #toast{position:fixed;z-index:6;left:50%;transform:translateX(-50%);top:108px;background:rgba(0,0,0,.65);padding:6px 12px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 #pausedTag{position:fixed;z-index:3;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:13px;font-weight:700;letter-spacing:3px;background:rgba(201,164,58,.9);color:#1d1d10;padding:5px 14px;border-radius:14px;display:none;pointer-events:none}
 /* portrait */
 #roster{top:calc(56px + env(safe-area-inset-top));left:0;right:0;flex-direction:row}
-#info{bottom:calc(66px + env(safe-area-inset-bottom))}
+#card{bottom:calc(68px + env(safe-area-inset-bottom))}
 /* short landscape: roster on the left */
 @media (orientation:landscape) and (max-height:560px){
  #roster{top:calc(54px + env(safe-area-inset-top));bottom:calc(64px + env(safe-area-inset-bottom));left:env(safe-area-inset-left);right:auto;flex-direction:column;width:58px}
  #orders{left:60px}
+ #deployBar{left:60px}
  #toast{top:60px}
 }
 .ov{position:fixed;inset:0;z-index:10;background:rgba(18,22,12,.86);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
@@ -76,13 +98,24 @@ button:disabled{opacity:.35}
   <div id="clock">9:00</div>
   <div id="flags"><span class="fl o0" id="fl0">W</span><span class="fl on" id="fl1">B</span><span class="fl o1" id="fl2">E</span></div>
   <div class="sp"></div>
+  <button id="bMute" title="Sound">🔊</button>
   <button id="bAll" title="Select all">👥</button>
   <button id="bHelp" title="Help">?</button>
 </div>
 <div id="roster"></div>
-<div id="info"></div>
+<div id="card"><canvas id="cardIcon" width="80" height="80"></canvas><div class="cb">
+  <div class="cn"><span id="cStars"></span><span id="cName"></span><span id="cBadges"></span></div>
+  <div class="cr"><span style="color:#8bd35a">✚</span><i class="cbar"><b id="cHp"></b></i></div>
+  <div class="cr"><span style="color:#e0b24a">⁍</span><i class="cbar"><b id="cAmmo"></b></i><span id="cAux"></span></div>
+  <div class="cr"><span id="cMIcon">●</span><i class="cbar"><b id="cMor"></b></i></div>
+</div></div>
 <div id="toast"></div>
 <div id="pausedTag">PAUSED</div>
+<div id="deployBar" class="bar">
+  <span class="hint">🪂👆</span>
+  <button id="bAuto" title="Auto deploy">🎲<small style="font-size:12px">Auto</small></button>
+  <button id="bGo" class="go" title="Start battle">▶ Start</button>
+</div>
 <div id="orders" class="bar">
   <button data-o="move" title="Move">➜<small>Move</small></button>
   <button data-o="fast" title="Move fast">⏩<small>Fast</small></button>
@@ -96,13 +129,19 @@ button:disabled{opacity:.35}
   <h1>BRIDGE TOO FAR</h1>
   <div class="sub">River town · autumn 1944 · British airborne vs German garrison</div>
   <div class="rows">
-    <span>🚩</span><span>Hold 2 of 3 flags when the clock runs out</span>
+    <span>🪂</span><span>Place your paras in the drop zone, then ▶</span>
+    <span>🚩</span><span>You hold West + Bridge. Keep 2 of 3 when the clock ends</span>
     <span>👆</span><span>Tap a unit, then tap the ground to move</span>
     <span>🎯</span><span>Tap an enemy to fire · Fire + ground = area fire</span>
     <span>✌️</span><span>Drag to pan · pinch to zoom</span>
     <span>💥</span><span>Rifles barely scratch armor. Use the PIAT up close</span>
   </div>
   <div class="legend" id="legend1"></div>
+  <div class="diffs">
+    <button class="diff" data-d="easy">🙂<small>Easy</small></button>
+    <button class="diff" data-d="normal">😐<small>Normal</small></button>
+    <button class="diff" data-d="hard">💀<small>Hard</small></button>
+  </div>
   <button class="big" id="bStart">▶ Play</button>
   <div class="sub" style="margin-top:12px">Install: Share ▸ Add to Home Screen</div>
 </div></div>
@@ -118,9 +157,15 @@ button:disabled{opacity:.35}
     <span>🛡️</span><span>Hold. Ambush, opens fire up close</span>
     <span>💨</span><span>Smoke blocks sight (rifles, officer, mortar)</span>
     <span>⭐</span><span>Stay near the officer to recover morale faster</span>
-    <span>🏠</span><span>Houses: best cover, block sight · hedges/walls: some cover</span>
+    <span>🏠</span><span>Houses: best cover, block sight, steadier aim</span>
+    <span>🌿</span><span>Hedges/walls: some cover, harder to see through</span>
+    <span>⭐</span><span>Panicked or broken units rally near the officer</span>
+    <span>⁍+</span><span>Ammo refills slowly in the drop zone or near the officer</span>
+    <span>⚠</span><span>Enemy reinforcements arrive midgame</span>
+    <span>👆⏱</span><span>Press and hold, then drag: box-select · double-tap a card: find unit</span>
   </div>
   <button class="big" id="bHelpClose">OK</button>
+  <div id="ver"></div>
 </div></div>
 
 <div id="ovEnd" class="ov hidden"><div class="card">
