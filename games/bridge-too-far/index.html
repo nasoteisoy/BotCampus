@@ -72,8 +72,11 @@ button:disabled{opacity:.35}
  #orders{left:60px}
  #deployBar{left:60px}
  #toast{top:60px}
+ #ovTut .card{max-width:620px;display:grid;grid-template-columns:300px 1fr;gap:4px 14px;align-items:center}
+ #ovTut #tutCv{grid-row:span 3}
 }
-.ov{position:fixed;inset:0;z-index:10;background:rgba(18,22,12,.86);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.ov{position:fixed;inset:0;z-index:10;background:rgba(18,22,12,.86);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto}
+.ov>.card{margin:auto}
 .hidden{display:none!important}
 .card{max-width:420px;width:100%;text-align:center}
 .card h1{margin:0 0 2px;font-size:30px;letter-spacing:2px}
@@ -88,6 +91,36 @@ button:disabled{opacity:.35}
 #endFlags{display:flex;gap:8px;justify-content:center;margin:8px 0}
 #endFlags .fl{width:30px;height:30px;font-size:14px}
 #endStats{font-size:14px;opacity:.9;line-height:1.7}
+#endStars{font-size:30px;color:#ffd34d;letter-spacing:4px;line-height:1}
+#endTl{width:300px;height:45px;max-width:100%;display:block;margin:8px auto 2px}
+.aar{max-width:720px}
+#endUnits{display:grid;grid-template-columns:1fr;gap:3px;margin:8px auto 0;max-width:420px;text-align:left}
+@media (min-width:640px){#endUnits{grid-template-columns:1fr 1fr;max-width:700px}}
+.ur{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border-radius:8px;padding:2px 6px;font-size:12px;min-height:32px}
+.ur canvas{width:28px;height:28px;flex:none}
+.ur.mvp{background:rgba(255,211,77,.18);box-shadow:inset 0 0 0 1px rgba(255,211,77,.6)}
+.ur .un{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur .us{color:#ffd34d;font-size:10px;white-space:nowrap}
+.ur .uk{font-weight:700;min-width:26px;text-align:right}
+.ur .uh{width:36px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;flex:none}
+.ur .uh b{display:block;height:100%}
+.ur .ust{width:22px;text-align:center}
+.endBtns{display:flex;gap:8px;justify-content:center;align-items:flex-end}
+.endBtns button{height:54px}
+#bRings{position:fixed;z-index:5;left:max(8px,env(safe-area-inset-left));bottom:calc(66px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;font-size:22px;padding:0;border:2px dashed rgba(255,255,255,.45)}
+#bRings.on{background:#c9a43a;border:2px solid #fff}
+@media (orientation:landscape) and (max-height:560px){#endIcon{font-size:28px!important}#endTitle{font-size:26px;margin:0}#endStars{font-size:20px}#endFlags{margin:4px 0}#endFlags .fl{width:24px;height:24px}#endStats{line-height:1.4;font-size:13px}#bRings{left:calc(66px + env(safe-area-inset-left));bottom:calc(66px + env(safe-area-inset-bottom))}}
+.hbtns{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.hbtns button{height:48px;min-width:64px;font-size:18px}
+#ovTut .card{max-width:340px}
+#tutCv{width:300px;height:170px;max-width:100%;border-radius:12px;display:block;margin:0 auto;box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+#tutText{font-size:15px;margin:10px 4px 4px;min-height:40px}
+#tutText b{font-size:22px;margin-right:4px}
+#tutDots{display:flex;gap:6px;justify-content:center;margin:4px 0}
+#tutDots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+#tutDots i.on{background:#ffd34d}
+.tutBtns{display:flex;gap:10px;justify-content:center;align-items:flex-end}
+.tutBtns button{height:54px;min-width:80px}
 </style>
 </head>
 <body>
@@ -109,6 +142,7 @@ button:disabled{opacity:.35}
   <div class="cr"><span style="color:#e0b24a">⁍</span><i class="cbar"><b id="cAmmo"></b></i><span id="cAux"></span></div>
   <div class="cr"><span id="cMIcon">●</span><i class="cbar"><b id="cMor"></b></i></div>
 </div></div>
+<button id="bRings" title="Fire range for all units">🎯</button>
 <div id="toast"></div>
 <div id="pausedTag">PAUSED</div>
 <div id="deployBar" class="bar">
@@ -133,6 +167,7 @@ button:disabled{opacity:.35}
     <span>🚩</span><span>You hold West + Bridge. Keep 2 of 3 when the clock ends</span>
     <span>👆</span><span>Tap a unit, then tap the ground to move</span>
     <span>🎯</span><span>Tap an enemy to fire · Fire + ground = area fire</span>
+    <span>◎</span><span>Rings show fire range. Tap an enemy to see where it can hit</span>
     <span>✌️</span><span>Drag to pan · pinch to zoom</span>
     <span>💥</span><span>Rifles barely scratch armor. Use the PIAT up close</span>
   </div>
@@ -163,17 +198,47 @@ button:disabled{opacity:.35}
     <span>⁍+</span><span>Ammo refills slowly in the drop zone or near the officer</span>
     <span>⚠</span><span>Enemy reinforcements arrive midgame</span>
     <span>👆⏱</span><span>Press and hold, then drag: box-select · double-tap a card: find unit</span>
+    <span style="color:#96e66e">◯</span><span>Solid ring: good hit chance · dashed ring: max range, poor hits</span>
+    <span style="color:#555">⬤</span><span>Dark area inside a ring: no line of sight (houses, woods, smoke)</span>
+    <span style="color:#ff8c32">◆</span><span>Orange dotted ring: PIAT, anti-tank only</span>
+    <span style="color:#cd96ff">◎</span><span>Mortar: fires over houses, not inside the red inner ring</span>
+    <span style="color:#f04637">◌</span><span>Tap a spotted enemy: its threat range in red</span>
+    <span>🎯</span><span>Round 🎯 button: rings for all your units</span>
+    <span>👆🎯</span><span>Fire: drag to aim. Hold on an enemy: aim line with distance and hit %</span>
+    <span>⚠🌉</span><span>Last minutes: the Germans push hard for the Bridge</span>
+    <span>🎖</span><span>Survivors gain stars that carry over to the next battle</span>
+  </div>
+  <div class="hbtns">
+    <button id="bHaptic" title="Vibration">📳</button>
+    <button id="bTut" title="Tutorial">🎓</button>
+    <button id="bVet2" title="Reset veterans">♻️🎖</button>
   </div>
   <button class="big" id="bHelpClose">OK</button>
   <div id="ver"></div>
 </div></div>
 
-<div id="ovEnd" class="ov hidden"><div class="card">
-  <div id="endIcon" style="font-size:54px">🏆</div>
+<div id="ovEnd" class="ov hidden"><div class="card aar">
+  <div id="endIcon" style="font-size:48px">🏆</div>
   <div id="endTitle">Victory</div>
+  <div id="endStars"></div>
   <div id="endFlags"></div>
+  <canvas id="endTl" width="600" height="90"></canvas>
   <div id="endStats"></div>
-  <button class="big" id="bRematch">↻ Rematch</button>
+  <div id="endUnits"></div>
+  <div class="endBtns">
+    <button id="bVetReset" title="Reset veterans">♻️🎖</button>
+    <button class="big" id="bRematch">↻ Rematch</button>
+  </div>
+</div></div>
+
+<div id="ovTut" class="ov hidden"><div class="card">
+  <canvas id="tutCv" width="600" height="340"></canvas>
+  <div id="tutText"></div>
+  <div id="tutDots"></div>
+  <div class="tutBtns">
+    <button id="bTutSkip" title="Skip">✖<small style="font-size:11px;margin-left:4px">Skip</small></button>
+    <button id="bTutNext" class="big" title="Next">▶</button>
+  </div>
 </div></div>
 
 <script src="game.js"></script>

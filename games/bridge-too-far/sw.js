@@ -1,5 +1,5 @@
 // Bridge Too Far: simple offline cache (stale-while-revalidate).
-const CACHE = 'btf-v2';
+const CACHE = 'btf-v3';
 const ASSETS = ['./', './index.html', './game.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
