@@ -8,13 +8,13 @@
 // ---------------------------------------------------------------- constants
 const W = 1800, H = 1100, CELL = 10, GW = W / CELL, GH = H / CELL;
 const PC = 20, PW = W / PC, PH = H / PC;
-const GAME_TIME = 600;          // 10 minutes
+const GAME_TIME = 780;          // 13 minutes (v5: slower, formed marches)
 const DT = 1 / 30;
 const CAP_R = 70, CAP_T = 8;
 const TAU = Math.PI * 2;
 const T_GRASS = 0, T_ROAD = 1, T_STREAM = 2, T_BRIDGE = 3, T_HOUSE = 4, T_HEDGE = 5, T_WALL = 6, T_TREE = 7, T_WATER = 8;
-const FOG0 = 150, FOG1 = 270;   // morning fog starts lifting / is gone (battle seconds)
-const GUARD_UNLOCK = 180, GUARD_AUTO = 360;
+const FOG0 = 190, FOG1 = 345;   // morning fog starts lifting / is gone (battle seconds)
+const GUARD_UNLOCK = 240, GUARD_AUTO = 480;
 const HMAX = 30;
 
 const SIDE_COL = ['#3359b5', '#4f7d3f'];  // French blue / Allied green
@@ -26,7 +26,7 @@ const NAT = {
 };
 const MCOL = ['#58c050', '#e6c83a', '#f08a28', '#e8402f', '#9a9a9a'];
 const MNAME = ['Steady', 'Shaken', 'Wavering', 'Panic', 'Broken'];
-const VERSION = 'v2.2';
+const VERSION = 'v2.3';
 const FNAME = ['Santon', 'Pratzen', 'Sokolnitz'];
 const FABBR = ['Sa', 'Pr', 'So'];
 
@@ -361,9 +361,10 @@ const DIFFS = {
   // cavT: how good a target must be before Allied cavalry charges; exp: Allied veterancy (+1 star on Hard)
   // v2: tuned with division commanders on both sides (AI vs AI ~78 / 59 / 27 %, scripted zone-order player ~76 / 54 / 30 %)
   // v2.1: planned formations; Normal acc 1.0->1.05, mor 1.03->1.1 (AI vs AI ~70 / 46 / 23 %, zone-order player ~85 / 60 / 33 %)
-  easy:   { acc: 0.82, think: 0.85, stay: 0.6, reinf: ['line', 'line', 'art'], reinfT: 250, exp: 0, pushT: 120, cavT: 1.65, mor: 0.9 },
-  normal: { acc: 1.05, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 220, exp: 0, pushT: 160, cavT: 1.5, mor: 1.1 },
-  hard:   { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'line', 'lcav'], reinfT: 210, exp: 1, pushT: 180, cavT: 1.5, mor: 1.0 },
+  // v2.3: slower marches in formation; Easy acc 0.82->0.92, mor 0.9->1.0, stay 0.6->0.7 (AI vs AI ~71 / 58 / 25 %, zone-order player Normal ~75 %)
+  easy:   { acc: 0.92, think: 0.85, stay: 0.7, reinf: ['line', 'line', 'art'], reinfT: 320, exp: 0, pushT: 150, cavT: 1.65, mor: 1.0 },
+  normal: { acc: 1.05, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 285, exp: 0, pushT: 200, cavT: 1.5, mor: 1.1 },
+  hard:   { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'line', 'lcav'], reinfT: 270, exp: 1, pushT: 225, cavT: 1.5, mor: 1.0 },
 };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
@@ -1041,17 +1042,22 @@ function updateForm(u) {
     if (u.formT <= 0) { u.form = u.formTo; u.formTo = null; u.formT = 0; u._vis = null; if (u.form === 'deployed') u.depT = G.time; }
   }
 }
+// v5 marching pace (map px per second): about 60% of v4 (v4: foot column 22/34 quick, line x0.55,
+// square x0.28, lights 25/38, horse 34/68, guns 24/34, staff 42/70, charge 100 horse / 44 foot,
+// rout 44 foot / 75 horse / 70 staff). Charges keep most of their burst.
+const SPD = { inf: 13.5, infQ: 20.5, light: 15, lightQ: 23, cav: 21, cavQ: 41, art: 14, artQ: 20.5, cmdr: 26, cmdrQ: 44, chargeCav: 90, chargeInf: 30, rout: 28, routCav: 46, routCmdr: 44 };
+const FORM_SPD = { line: 0.55, column: 1, square: 0.28 };
 function speedOf(u) {
   let sp;
   const quick = u.mode === 'quick';
-  if (u.state >= 3) sp = isCav(u) ? 75 : u.kind === 'cmdr' ? 70 : 44;
-  else if (u.order.type === 'charge') sp = isCav(u) ? 100 : 44;
+  if (u.state >= 3) sp = isCav(u) ? SPD.routCav : u.kind === 'cmdr' ? SPD.routCmdr : SPD.rout;
+  else if (u.order.type === 'charge') sp = isCav(u) ? SPD.chargeCav : SPD.chargeInf;
   else switch (u.kind) {
-    case 'inf': sp = (quick ? 34 : 22) * ({ line: 0.55, column: 1, square: 0.28 }[u.form] || 1); break;
-    case 'light': sp = quick ? 38 : 25; break;
-    case 'cav': sp = quick ? 68 : 34; break;
-    case 'art': sp = quick ? 34 : 24; break;
-    default: sp = quick ? 70 : 42;
+    case 'inf': sp = (quick ? SPD.infQ : SPD.inf) * (FORM_SPD[u.form] || 1); break;
+    case 'light': sp = quick ? SPD.lightQ : SPD.light; break;
+    case 'cav': sp = quick ? SPD.cavQ : SPD.cav; break;
+    case 'art': sp = quick ? SPD.artQ : SPD.art; break;
+    default: sp = quick ? SPD.cmdrQ : SPD.cmdr;
   }
   sp *= u.t.spd;
   const t = terrAt(u.x, u.y);
@@ -1065,7 +1071,7 @@ function speedOf(u) {
   if (u.order.back) sp *= 0.7;
   return sp;
 }
-const TURN = { line: 0.9, column: 2.2, square: 0.8, open: 3, mounted: 3, limbered: 2, deployed: 0.8, staff: 4 };
+const TURN = { line: 0.55, column: 1.3, square: 0.5, open: 1.8, mounted: 1.8, limbered: 1.2, deployed: 0.5, staff: 2.4 }; // rad/s (v4: 0.9 / 2.2 / 0.8 / 3 / 3 / 2 / 0.8 / 4)
 function turnTo(u, want) {
   const da = angDiff(want, u.ang), tr = (TURN[u.form] || 2) * DT;
   if (Math.abs(da) <= tr) { u.ang = want; return 0; }
@@ -1337,6 +1343,7 @@ function aiForm(u, seen) {
   if (!isInf(u) || u.state >= 2 || u.formT > 0 || u.order.type === 'charge') return;
   if (cavThreat(u, seen)) { if (u.form !== 'square' && u.formTo !== 'square') { setForm(u, 'square'); G.stats.sqForm[u.side]++; } u.sqT = G.time; return; }
   if (u.form === 'square' && G.time - (u.sqT || 0) < 4) return;
+  if (u.march) { if (u.form !== 'column' && G.time - u.formAt > 1.5) setForm(u, 'column'); return; } // marching: in column
   let nearE = 1e9;
   for (const o of seen) if (!isCav(o)) nearE = Math.min(nearE, dist(o, u));
   const pl = u.path.length ? pathLen(u) : 0;
@@ -1398,8 +1405,8 @@ function aiThink(side) {
   A.obj = obj; A.mode = mode;
   A.stay = side === 1 ? D.stay : 0.65;
   if (mode === 'push') A.stay = 0.15;
-  if (mode === 'attack' && own < theirs && remaining < 120) A.stay *= 0.5;
-  if (side === 0 && !G.guardIn && G.time >= GUARD_UNLOCK && (capping.length || own <= theirs || remaining < 200)) commitGuard(true);
+  if (mode === 'attack' && own < theirs && remaining < 150) A.stay *= 0.5;
+  if (side === 0 && !G.guardIn && G.time >= GUARD_UNLOCK && (capping.length || own <= theirs || remaining < 260)) commitGuard(true);
   planZones(side, obj, mode);
 }
 const flagZone = (f) => { const i = G.flags.indexOf(f), z = ZONES.find(q => q.flag === i); return z ? Object.assign({ flag: i }, z) : null; };
@@ -1497,7 +1504,7 @@ function stageReady(d, Z) {
   if (S.go) return true;
   const grp = G.units.filter(u => live(u) && u.side === d.side && !u.direct && u.dv && u.dv.post === 'attack' && sameZone(u.dv.zone, Z) && (isInf(u) || u.kind === 'light') && u.state < 2 && hpf(u) >= 0.3);
   const near = grp.filter(u => dxy(u.x, u.y, Z.x, Z.y) < 400).length;
-  if (grp.length < 2 || near / grp.length >= 0.7 || G.time - S.t0 > (D.stageMax ?? 40)) S.go = true;
+  if (grp.length < 2 || near / grp.length >= 0.7 || G.time - S.t0 > (D.stageMax ?? 55)) S.go = true;
   return S.go;
 }
 const fitness = (u) => hpf(u) * [1, 0.8, 0.45, 0, 0][u.state];
@@ -1907,6 +1914,7 @@ function commandUnits(side, seenAll) {
     d.ctl = d.units.filter(u => live(u) && u.state < 3 && !u.direct);
   }
   for (const d of G.divs) if (d.side === side && G.time >= d.layT) { layoutDiv(d, d.ctl, seenAll); d.layT = G.time + rnd(2.4, 3.2); }
+  for (const d of G.divs) if (d.side === side) marchStart(d, seen);
   // assault pacing: foot going in on one zone keeps level with the slower battalions
   const pace = {};
   for (const d of G.divs) {
@@ -1926,7 +1934,129 @@ function commandUnits(side, seenAll) {
     if (u.kind === 'cmdr') { aiCmdr(u, null, home, seen, side); continue; }
     if (u.state === 2) { if (!u.path.length && !isArt(u) && G.time - u.lastHit < 5) aiMove(u, pointAlong(u, home, 120), 'move'); continue; }
     if ((u.order.type === 'fire' || u.order.type === 'area') && G.time - u.order.t < 6) continue;
+    if (u.march) continue; // the march keeps it in its place
     if (u.spot) cmdUnit(u, u.dv, u.spot, seen, side, home, A);
+  }
+}
+// ---------------------------------------------------------------- march in formation
+// A division going any distance marches as one body: its battalions in column side by side (lights
+// ahead, guns limbered behind, horse at the rear), each keeping its place relative to one anchor
+// that moves along a single path at the pace of the slowest unit. The anchor waits for stragglers,
+// the body files across bridges and fords and re-forms beyond them, and on arrival it deploys from
+// the block into the planned line. Both armies use it; direct orders still move units on their own.
+const MARCH_MIN = 170, MARCH_ENEMY = 300;
+function marchTan(path, sv, L) { const a = linePt(path, clamp(sv - 40, 0, L)), b = linePt(path, clamp(sv + 40, 0, L)), d = dxy(a.x, a.y, b.x, b.y) || 1; return { x: (b.x - a.x) / d, y: (b.y - a.y) / d }; }
+const marchBase = (u) => (isCav(u) ? SPD.cav : isArt(u) ? SPD.art : u.kind === 'light' ? SPD.light : SPD.inf) * (u.t.spd || 1);
+function nearestSeen(us, seen) { let m = 1e9; for (const o of seen) { if (o.kind === 'cmdr' || o.state >= 4) continue; for (const u of us) { const d = dxy(o.x, o.y, u.x, u.y); if (d < m) m = d; } } return m; }
+function marchStart(d, seen) {
+  const P = d.plan;
+  if (!P || d.march || d.marchDone === P.id || G.phase !== 'battle') return;
+  const us = d.ctl.filter(u => u.state < 2 && u.spot && u.spot.pid === P.id && u.order.type !== 'charge');
+  if (us.length < 2) { d._mw = 'few'; return; }
+  const cen = centroid(us), D0 = P.C;
+  if (dxy(cen.x, cen.y, D0.x, D0.y) < MARCH_MIN) { d._mw = 'near'; return; }
+  if (nearestSeen(us, seen) < MARCH_ENEMY) { d._mw = 'enemy'; return; }
+  const raw = findPath(cen.x, cen.y, D0.x, D0.y, us.some(isArt));
+  if (!raw || !raw.length) { d._mw = 'nopath'; return; }
+  const path = simplifyLine([{ x: cen.x, y: cen.y }].concat(raw.map(q => ({ x: q.x, y: q.y }))), 6), L = lineLen(path);
+  if (L < MARCH_MIN * 0.8) { d._mw = 'short'; return; }
+  d._mw = 'ok';
+  const Lend = Math.max(0, L - 30), h = marchTan(path, Lend, L), nx = -h.y, ny = h.x;
+  // places in the march block follow the planned slots left to right, so the deploy fans out without crossing
+  const lat = (u) => (u.spot.x - D0.x) * nx + (u.spot.y - D0.y) * ny, byLat = (a, b) => lat(a) - lat(b);
+  const lights = us.filter(u => u.kind === 'light').sort(byLat), guns = us.filter(isArt).sort(byLat), cav = us.filter(isCav).sort(byLat);
+  const foot = us.filter(isInf), fr = foot.filter(u => u.spot.k === 'front').sort(byLat), bk = foot.filter(u => u.spot.k !== 'front').sort(byLat);
+  const offs = new Map(), file = [];
+  let f = 0;
+  const row = (list, k, sp, step) => { for (let i = 0; i < list.length; i += k) { const r = list.slice(i, i + k); r.forEach((u, j) => offs.set(u.id, { f, l: (j - (r.length - 1) / 2) * sp })); f -= step; } };
+  lights.forEach((u, i) => offs.set(u.id, { f: 46, l: (i - (lights.length - 1) / 2) * 44 }));
+  row(fr, 3, 42, 46); row(bk, 3, 42, 46);
+  if (foot.length) { row(guns, 3, 36, 38); row(cav, 3, 38, 40); } else { row(cav, 3, 38, 40); row(guns, 3, 36, 38); }
+  // single file for bridges and fords, row by row with the unit nearest the path first: a zipper merge,
+  // so each battalion steps in sideways when its place comes up and nobody cuts back across another
+  const half = (u) => (u.kind === 'light' || isCav(u) ? 7 : isArt(u) ? 12 : 13); // half the depth of its march order
+  for (const u of us) file.push([u, 0]);
+  const oo = (u) => offs.get(u.id);
+  file.sort((a, b) => oo(b[0]).f - oo(a[0]).f || Math.abs(oo(a[0]).l) - Math.abs(oo(b[0]).l) || oo(a[0]).l - oo(b[0]).l);
+  let ff = lights.length ? 46 : 0;
+  file.forEach(([u], i) => { const o = offs.get(u.id); o.ff = ff; o.ord = i; o.half = half(u); o.rr = u.kind === 'light' ? 19 : isCav(u) ? 15 : isArt(u) ? 12 : 13; /* footprint, for giving way */ if (file[i + 1]) ff -= half(u) + half(file[i + 1][0]) + 16; });
+  const M = { pid: P.id, path, L, Lend, s: 0, offs, funnel: false, okT: 0, chk: 0, echk: 0.5, stuck: 0, best: 1e9, t0: G.time, dest: { x: D0.x, y: D0.y } };
+  d.march = M;
+  for (const u of us) { u.march = M; u._mt = null; }
+}
+function endMarch(d, arrived) {
+  const M = d.march; if (!M) return;
+  for (const u of d.units) if (u.march === M) { u.march = null; u._mt = null; u.path = []; if (u.order.type === 'move') u.order = { type: 'idle' }; u.aiCool = arrived ? rnd(0, 0.5) : 0; }
+  d.march = null; d.marchDone = M.pid; d.marchEnd = { t: G.time, arrived: !!arrived };
+}
+function marchTarget(M, u) {
+  const o = M.offs.get(u.id);
+  if (M.funnel) { const q = linePt(M.path, M.s + o.ff), t = marchTan(M.path, M.s + o.ff, M.L); return { x: q.x, y: q.y, h: Math.atan2(t.y, t.x) }; }
+  const sv = M.s + o.f, q = linePt(M.path, sv), t = marchTan(M.path, sv, M.L);
+  return { x: q.x - t.y * o.l, y: q.y + t.x * o.l, h: Math.atan2(t.y, t.x) };
+}
+const crossingAt = (x, y) => { const t = terrAt(x, y); return t === T_STREAM || t === T_BRIDGE || t === T_WATER; };
+function marchDivs() {
+  for (let di = 0; di < G.divs.length; di++) {
+    const d = G.divs[di], M = d.march; if (!M) continue;
+    if (!d.plan || dxy(d.plan.C.x, d.plan.C.y, M.dest.x, M.dest.y) > 60) { endMarch(d); continue; } // a new order: rethink
+    M.pid = d.plan.id;
+    const us = d.units.filter(u => u.march === M && live(u) && !u.direct && u.state < 2 && u.order.type !== 'charge');
+    for (const u of d.units) if (u.march === M && !us.includes(u)) { u.march = null; u._mt = null; u.aiCool = 0; }
+    if (!us.length) { endMarch(d); continue; }
+    // file across bridges and fords (and where a block place would be in water or blocked), re-form after
+    if ((M.chk -= DT) <= 0) {
+      M.chk = 0.2;
+      const bad = us.some(u => {
+        const o = M.offs.get(u.id);
+        for (const sv of [M.s + o.f, M.s + o.f + 40, M.s + o.f + 80, M.s + o.ff, M.s + o.ff + 50]) { const q = linePt(M.path, sv); if (crossingAt(q.x, q.y)) return true; }
+        const sv = M.s + o.f, q = linePt(M.path, sv), t = marchTan(M.path, sv, M.L);
+        for (const k of [0.5, 1]) { const x = q.x - t.y * o.l * k, y = q.y + t.x * o.l * k; if (crossingAt(x, y) || !passAt(x, y, isArt(u))) return true; }
+        return false;
+      });
+      if (bad) { if (!M.funnel) M.fT = G.time; M.funnel = true; M.okT = 0; } else if (M.funnel && (M.okT += 0.2) >= 1.6) { M.funnel = false; M.fT = G.time; }
+    }
+    let maxLag = 0, gLag = 0, vmin = 1e9, worst = null;
+    const atEnd = M.s >= M.Lend - 0.5;
+    for (const u of us) {
+      const T = marchTarget(M, u); u._mt = T;
+      const dx = T.x - u.x, dy = T.y - u.y, lg = Math.hypot(dx, dy);
+      T.ahead = dx * Math.cos(T.h) + dy * Math.sin(T.h); T.side = Math.abs(-dx * Math.sin(T.h) + dy * Math.cos(T.h)); T.dd = lg;
+      if (lg > maxLag) maxLag = lg;
+      T.wait = !atEnd && T.ahead < -Math.max(3, T.side * 0.3) && T.side < 50; // ahead of its place: wait for it (a unit knocked well aside goes straight back)
+      const gl = T.wait ? 0 : lg; // a unit waiting for its place to come up holds nobody back
+      if (gl > gLag) { gLag = gl; worst = u; }
+      vmin = Math.min(vmin, speedOf(u) / (u.kind === 'inf' ? FORM_SPD[u.form] || 1 : 1)); // pace on the ground each unit is crossing
+    }
+    // the anchor keeps the pace of the slowest unit and waits for anyone who falls behind
+    const k = gLag > 30 ? 0 : gLag > 8 ? (30 - gLag) / 22 : 1;
+    if (M.s < M.Lend) M.s = Math.min(M.Lend, M.s + vmin * 0.85 * k * DT);
+    if (k > 0) { M.best = 1e9; M.stuck = 0; } // a straggler that makes no progress for 25 s is left to find its own way
+    else if (maxLag < M.best - 2) { M.best = maxLag; M.stuck = 0; }
+    else if ((M.stuck += DT) > 25 && worst) { worst.march = null; worst._mt = null; worst.aiCool = 0; M.stuck = 0; M.best = 1e9; }
+    for (const u of us) {
+      if (u.march !== M || !u._mt) continue;
+      const T = u._mt, dd = T.dd;
+      u.faceAng = T.h;
+      if (dd < 2.5 || T.wait) { u._mb = 'w'; if (u.path.length) u.path = []; continue; } // in place, or ahead of it: wait for it
+      // give way to a mate earlier in the order of march standing just ahead (a total order, so no two wait on each other)
+      const o = M.offs.get(u.id), mx = (T.x - u.x) / dd, my = (T.y - u.y) / dd;
+      const inWay = (v, h) => { const q = dxy(u.x, u.y, v.x, v.y); return q < o.rr + h + 4 && ((v.x - u.x) * mx + (v.y - u.y) * my) > 0.3 * q; };
+      const mate = us.find(v => v !== u && v.march === M && inWay(v, M.offs.get(v.id).rr));
+      const still = mate && (!mate.path.length || !mate._mt || mate._mt.dd < 6);
+      if (mate && !still && M.offs.get(mate.id).ord > o.ord) { /* a later mate moving: it gives way to this one */ }
+      else if (mate) {
+        if (!still || dd < 8) { u._mb = 'g'; if (u.path.length) u.path = []; continue; } // an earlier mate on the move (or nearly in place): wait
+        // it is already in its place: step round it, on the side away from it
+        const sg = ((mate.x - u.x) * -my + (mate.y - u.y) * mx) > 0 ? -1 : 1;
+        u._mb = 's'; u.path = [{ x: u.x - my * sg * 14 + mx * 3, y: u.y + mx * sg * 14 + my * 3 }]; u.mode = 'move'; if (u.order.type !== 'move') u.order = { type: 'move' }; continue;
+      }
+      // and to another division's march crossing its road (the earlier division in the order of battle goes first)
+      if (G.units.some(v => v.march && v.march !== M && v.side === u.side && v.dv && G.divs.indexOf(v.dv) < di && live(v) && inWay(v, 12))) { u._mb = 'G'; if (u.path.length) u.path = []; continue; }
+      u._mb = 'm'; u.path = [{ x: T.x, y: T.y }]; u.mode = 'move'; if (u.order.type !== 'move') u.order = { type: 'move' };
+    }
+    if (atEnd) { M.endT = (M.endT || 0) + DT; if ((maxLag < 22 && M.endT > 0.6) || M.endT > 12) { endMarch(d, true); continue; } }
+    if ((M.echk -= DT) <= 0) { M.echk = 0.5; const seen = G.units.filter(o => live(o) && o.side !== d.side && isSeen(o, d.side)); if (nearestSeen(us, seen) < MARCH_ENEMY) endMarch(d); }
   }
 }
 const pathEnd = (u) => (u.path.length ? u.path[u.path.length - 1] : null);
@@ -2075,6 +2205,7 @@ function zoneAt(x, y, r) {
   return { name: nz ? '≈' + nz.name : '', x, y, r, flag: fi };
 }
 function orderDiv(d, z, post, quiet) {
+  if (d.march) endMarch(d);
   d.zone = z; d.post = post; d.layT = 0; d.theta = null; d.player = true; d.plan = null;
   for (const u of d.units) { if (u.spot && u.spot.k === 'gun') u.spot = null; if (G.phase === 'battle') u.aiCool = Math.min(u.aiCool, rnd(0.2, 1.2)); }
   if (quiet) return;
@@ -2295,6 +2426,7 @@ function step() {
     const seenAll = [0, 1].map(s => G.units.filter(o => live(o) && o.side !== s && isSeen(o, s)));
     commandUnits(1, seenAll); commandUnits(0, seenAll);
   }
+  marchDivs();
   updateHQ(false);
   for (const u of G.units) {
     if (!live(u)) continue;
@@ -2987,18 +3119,38 @@ function drawZone(c, d, Z, post, s, now, a, sel, k) {
   tagText(c, `${post === 'attack' ? '⚔' : '🛡'} ${d.name}${Z.name ? ' · ' + Z.name : ''}`, Z.x, Z.y - Z.r - (9 + k * 15) * s, d.col, s, sel ? 1 : 0.8);
 }
 // the commander's plan: one faint block per unit at its slot, with a dashed line from where it is now
+function drawMarch(c, d, s) {
+  const M = d.march;
+  c.setLineDash([6 * s, 6 * s]); c.strokeStyle = hexA(d.col, 0.55); c.lineWidth = 2 * s; c.beginPath();
+  const q0 = linePt(M.path, M.s); c.moveTo(q0.x, q0.y);
+  let acc = 0; for (let i = 1; i < M.path.length; i++) { acc += dxy(M.path[i - 1].x, M.path[i - 1].y, M.path[i].x, M.path[i].y); if (acc > M.s) c.lineTo(M.path[i].x, M.path[i].y); }
+  c.stroke(); c.setLineDash([]);
+  for (const u of d.units) {
+    if (u.march !== M || !u._mt || !live(u)) continue;
+    const T = u._mt, f = isInf(u) ? 'column' : u.kind === 'light' ? 'open' : isCav(u) ? 'mounted' : isArt(u) ? 'limbered' : null;
+    if (!f) continue;
+    const [dd, w] = dims(Object.assign({}, u, { form: f }));
+    c.save(); c.translate(T.x, T.y); c.rotate(T.h);
+    c.fillStyle = hexA(d.col, 0.22); c.fillRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4);
+    c.strokeStyle = hexA(d.col, 0.9); c.lineWidth = 1.4 * s; c.setLineDash([4 * s, 3 * s]); c.strokeRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4); c.setLineDash([]);
+    c.restore();
+  }
+  tagText(c, M.funnel ? '⇶ ' + d.name : '▮▮ ' + d.name, q0.x, q0.y - 26 * s, d.col, s, 0.9);
+}
 function drawSlots(c, d, s) {
+  if (d.march) { drawMarch(c, d, s); c.globalAlpha = 0.45; }
   for (const u of d.units) {
     if (!live(u) || !u.spot || u.direct || u.state >= 3 || u.kind === 'cmdr') continue;
     const f = isInf(u) ? 'line' : u.kind === 'light' ? 'open' : isCav(u) ? 'mounted' : isArt(u) ? 'deployed' : null;
     if (!f) continue;
     const [dd, w] = dims(Object.assign({}, u, { form: f })), far = dist(u, u.spot) >= 14;
-    if (far) { c.strokeStyle = hexA(d.col, 0.5); c.lineWidth = 1.3 * s; c.setLineDash([3 * s, 4 * s]); c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(u.spot.x, u.spot.y); c.stroke(); c.setLineDash([]); }
+    if (far && !u.march) { c.strokeStyle = hexA(d.col, 0.5); c.lineWidth = 1.3 * s; c.setLineDash([3 * s, 4 * s]); c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(u.spot.x, u.spot.y); c.stroke(); c.setLineDash([]); }
     c.save(); c.translate(u.spot.x, u.spot.y); c.rotate(u.spot.face ?? d.theta ?? 0);
     c.fillStyle = hexA(d.col, far ? 0.2 : 0.1); c.fillRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4);
     c.strokeStyle = hexA(d.col, far ? 0.8 : 0.45); c.lineWidth = 1.2 * s; c.setLineDash([4 * s, 3 * s]); c.strokeRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4); c.setLineDash([]);
     c.restore();
   }
+  c.globalAlpha = 1;
 }
 function drawLineZone(c, d, Z, s, now, a, sel) {
   const { pts, L, sgn } = Z.line;
@@ -3731,14 +3883,14 @@ $('bVet2').addEventListener('click', resetVets);
 // ---------------------------------------------------------------- tutorial (first launch, replay from help)
 const TUT = [
   { d: 'setup', icon: '🇫🇷', txt: 'Setup: drag a division commander inside the blue area and his whole division re-forms around him. ⟲ ⟳ turn it; drag single units to fine-tune' },
-  { d: 'cmd', icon: '⚑', txt: 'Tap a division commander (or his button in the bottom strip), then tap a place. He takes that zone and deploys his battalions himself' },
+  { d: 'cmd', icon: '⚑', txt: 'Tap a division commander (or his button in the bottom strip), then tap a place. He marches his division there as one formed body and deploys the battalions himself' },
   { d: 'line', icon: '✏️', txt: 'Or draw his line: tap ✏️ Line, then draw with one finger. The battalions form up along it, facing across it. Tap the ⇅ arrow to face the other way' },
   { d: 'post', icon: '⚔🛡', txt: '⚔ Take attacks the zone, 🛡 Hold defends it. Drag from a commander to point him; press, hold and drag the map to size a zone' },
   { d: 'move', icon: '👆', txt: 'Override: tap a battalion and order it directly. It rejoins its commander when done, or tap ↩️ Div' },
   { d: 'form', icon: '▦', txt: 'Commanders pick formations: ▬ Line fires best · ▮ Column marches and charges · ◻ Square stops cavalry (guns shred it)' },
   { d: 'cav', icon: '⚔', txt: 'Cavalry rides in squadron pairs, guns in 2-gun sections. Two pairs charging together hit like the whole regiment' },
   { d: 'rings', icon: '◎', txt: 'Solid ring: good shots · dashed: long shots · red: canister · dark: no sight (hills, villages, smoke, fog)' },
-  { d: 'flags', icon: '🚩', txt: 'Hold 2 of 3 flags when ⏱ runs out, or break their army · 🦅 the Guard after 3:00' },
+  { d: 'flags', icon: '🚩', txt: 'Hold 2 of 3 flags when ⏱ runs out, or break their army · 🦅 the Guard from 9:00 on the clock' },
 ];
 let tutStep = -1;
 function openTut() {
@@ -4031,6 +4183,7 @@ window.AUS = {
   flipLine(key) { return flipLine(divByKey(0, key)); },
   lineGhost(key, pts) { return lineGhost(divByKey(0, key), pts); },
   lineArrow, lineProj, linePt, makeLineZone,
+  GAME_TIME, GUARD_UNLOCK, GUARD_AUTO, SPD, TURN, marchTarget,
   placeDiv(key, x, y, th) { const d = divByKey(0, key); return !!d && applyDivSetup(d, x, y, th ?? divFacing(d)); },
   // zone order by commander key ('van', 'sth', 'leg', 'lan', 'mur', 'gar'), zone name or {x,y,r}, 'attack' | 'hold'
   orderDiv(key, zone, post, side = 0) {

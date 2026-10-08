@@ -53,6 +53,19 @@ The Allies use the same system: **Miloradovich**, **Kolowrat** (Austrians), **La
 - 🛡️ **Hold:** the division marches in column, deploys onto the line and holds it. Line battalions stay on their slots and turn in place to fire. They only charge enemies within ~70 m, and dress back onto the line with a short side-step instead of wheeling away. ⚔️ **Take:** the same, but once the line has formed and nobody is within ~160 m, it steps forward 45 m at a time (up to 300 m), stopping when it makes contact or would step into the stream.
 - **In setup:** a line drawn inside the blue area places the division on it instantly (points outside the area are pulled back to its edge), and it keeps that line as its order when the battle starts. Dragging the commander or one of his units afterwards replaces the line.
 
+**Marching in formation ▮▮** (new in v5)
+- Any zone or line order (Take or Hold) that sends a division more than ~170 m, with no enemy within ~300 m, is marched **as one body**. The division gets one route (the slowest unit's route: guns keep to the bridges) and one anchor moving along it. Every unit has a fixed place relative to that anchor:
+  - light infantry ~45 m ahead, screening;
+  - the foot battalions in column, up to three abreast (~42 m apart), rows ~46 m apart, front-line battalions first;
+  - the guns limbered behind the foot;
+  - the cavalry at the rear (a cavalry division leads with its horse and its horse guns follow).
+- The places follow the road: they are laid out along the route's direction, so the whole block pivots round bends.
+- The anchor moves at the pace of the slowest unit on the ground it is crossing (×0.85), so nobody runs to keep up. If anyone falls more than ~8 m behind its place the anchor slows, and above ~30 m it stops and waits. A unit that gets ahead of its place halts until its place comes up. Units also give way to a mate who is just ahead of them in the order of march, and to another friendly division's march crossing their road. A unit that can't get back into its place for 25 s is left to find its own way.
+- **Bridges and fords:** when the route reaches the Goldbach or a pond (or a place in the block would be in the water, in houses or blocked), the division files across in single file. Units merge row by row, the battalion on the road first and the others stepping in behind it as their place comes up, so nobody cuts back across another. ~1.6 s after the last unit is clear, it opens out into the block again.
+- **Arrival:** the places in the block are ordered left to right like the planned slots, so when the anchor reaches the end (~30 m short of the plan centre) the division deploys straight ahead into its planned line (v3 zones, v4 lines) without units crossing through each other. The march also ends early when an enemy comes within ~300 m, and the division then deploys and fights as before.
+- Short moves (under ~170 m) skip the march. Units under a direct order move on their own as before (just at the new slower speeds), and a new order for the division cancels the march and re-plans. The Allied commanders march exactly the same way.
+- With a commander selected you see the march: a dashed route ahead of the column, a ghost box for each unit's current place (column, open order, limbered or mounted footprint, turned to the road) and a tag over the head of the column (▮▮ marching, ⇶ filing across a crossing). The final slots are still drawn, fainter.
+
 **Giving a zone order**
 - Tap a commander on the map (or his button in the strip). The command bar appears: ⚔️ **Take** · 🛡️ **Hold** · 👥 **Units** (select his units for direct orders) · ↩️ **Rejoin** · ✖ **Done**.
 - Tap a place: within reach of a named place (Santon, Pratzen, Sokolnitz, Telnitz, Puntowitz, Girzikowitz, Pratze, the Pheasantry, Blasowitz) it snaps to it; anywhere else it makes a zone about 95 m across. You can also **drag from the commander** to the spot, or, with a commander selected, **press, hold and drag** on the map to draw a zone of any size (55–240 m). Tapping an enemy unit gives an attack zone around it.
@@ -67,7 +80,7 @@ The Allies use the same system: **Miloradovich**, **Kolowrat** (Austrians), **La
   - **Guns:** on the flanks of the line, on the best nearby ground for height and line of sight.
   - **Cavalry:** squadron pairs on the wings, outside the guns.
   - Divisions sent to the same zone stand side by side instead of on top of each other.
-  - Battalions move in column and deploy into line when they reach their slot. Idle friends keep at least 30 m apart.
+  - Battalions move in column and deploy into line when they reach their slot. Over any distance the whole division marches as one formed body (see *Marching in formation*). Idle friends keep at least 30 m apart.
 - 🛡️ **Hold:** faces the nearest enemy threat, front line slightly forward in the zone. Badly hurt battalions rotate to the reserve line and fresh ones fill the gaps.
 - ⚔️ **Take:** the foot of every division sent to the same zone gathers ~340 m short and goes in together. Battalions keep level with the slower ones rather than arriving one by one. Enemy troops standing between the division and the zone are dealt with first: the division forms a battle line at musket range facing them, the guns unlimber behind it, and it closes in to charge once they waver. Guns support the assault from 200–430 m on your side of the zone. Cavalry waits behind the attack for a target. When the zone is taken the division digs in as if holding it.
 - Always: infantry forms **square** when enemy cavalry threatens, and moves in column and fights in line. Guns unlimber when they reach their spot. Spots avoid the Goldbach and ponds (so troops only cross it to get somewhere), and guns stay out of houses and woods. Squadron pairs of the same regiment charge together.
@@ -80,6 +93,22 @@ The Allies use the same system: **Miloradovich**, **Kolowrat** (Austrians), **La
 | ▬ **Line** | full volley across a wide front | slow, must wheel before marching | weak, terrible on the flank | thin target |
 | ▮ **Column** | about a third | fast, best for bayonet charges | middling | roundshot ploughs through the depth |
 | ◻ **Square** | weak, all-round | crawls | cavalry bounce off | a juicy target |
+
+**Speeds (v5, ~60% of v4).** Movement is deliberately weighty: a battalion in column needs about a minute and a half to march from the Goldbach to the Pratzen. Values are map units per second (v4 → v5); terrain, fatigue and unit quality still multiply them.
+
+| | Walk | Quick |
+|---|---|---|
+| Infantry in column | 22 → 13.5 | 34 → 20.5 |
+| Infantry in line (×0.55) | 12 → 7.4 | 19 → 11 |
+| Infantry in square (×0.28) | 6 → 3.8 | 9.5 → 5.7 |
+| Light infantry (open order) | 25 → 15 | 38 → 23 |
+| Cavalry | 34 → 21 | 68 → 41 |
+| Guns, limbered | 24 → 14 | 34 → 20.5 |
+| Commanders and the Marshal | 42 → 26 | 70 → 44 |
+| Charge: cavalry / infantry | 100 → 90 | 44 → 30 |
+| Routing: foot / horse | 44 → 28 | 75 → 46 |
+
+Charges stay a fast short burst. Turning is slower too (radians per second, v4 → v5): line 0.9 → 0.55, column 2.2 → 1.3, square 0.8 → 0.5, open order 3 → 1.8, cavalry 3 → 1.8, limbered guns 2 → 1.2, unlimbered guns 0.8 → 0.5, commanders 4 → 2.4. To give the slower armies time to fight it out, the battle clock is now **13:00** (was 10:00), and the timings scale with it: fog lifts between ~9:50 and ~7:15 (was 7:30 and 5:30), the Guard is ready at 9:00 and marches in by itself at 5:00 (was 7:00 and 4:00), Allied reinforcements arrive ~45–70 s later than before, and the late push starts 2½–3¾ minutes before the end (was 2–3).
 
 Changing formation takes a few seconds (veterans are quicker, shaken troops slower). A unit caught mid-change is vulnerable, though a half-formed square already helps. Light infantry (Léger, Jägers, Grenzers) always fights in open order: a small target, good in villages and woods, easy prey for cavalry in the open.
 
@@ -103,14 +132,14 @@ Changing formation takes a few seconds (veterans are quicker, shaken troops slow
 - Drag while Fire or Charge is selected, or long-press an enemy, to draw an **aim line** with distance and hit-% (or charge odds). ✖ means out of range or no sight.
 - Round 🎯 button (bottom-left): rings for **all** your units at once. Off by default, remembered.
 - Tap a spotted enemy with nothing selected to see its **threat range** in red.
-- **Fog 🌫:** the morning is foggy and spotting ranges are short (less so on high ground). The fog lifts between about 7:30 and 5:30 on the clock. ≋ next to the clock means fog is still about.
+- **Fog 🌫:** the morning is foggy and spotting ranges are short (less so on high ground). The fog lifts between about 9:50 and 7:15 on the clock. ≋ next to the clock means fog is still about.
 - **Hills ⛰:** the Pratzen crest blocks sight. Units on high ground see farther and shoot slightly better downhill. Villages and woods block sight; gunsmoke clouds thin it.
 
 ## The Imperial Guard 🦅
-One battalion of Guard Grenadiers waits off-map. The 🦅 button next to 🎯 counts down until the Guard is ready (7:00 on the clock). After that, one tap commits it, and that decision can't be undone. It marches in from the west edge and lifts the whole corps' morale. If you never call it, it arrives on its own at 4:00.
+One battalion of Guard Grenadiers waits off-map. The 🦅 button next to 🎯 counts down until the Guard is ready (9:00 on the clock). After that, one tap commits it, and that decision can't be undone. It marches in from the west edge and lifts the whole corps' morale. If you never call it, it arrives on its own at 5:00.
 
 ## Win
-Hold more of the 3 flags (**Sa**nton, **Pr**atzen, **So**kolnitz) when the 10:00 clock runs out, or break the enemy army. You start holding Santon and Sokolnitz; the Allies hold the Pratzen. A ring around each flag shows capture progress (8 s). Only steady or shaken foot that isn't under fire can capture. Cavalry and guns can only contest. An army breaks when 70% of its strength is destroyed or broken (a squadron pair counts as half a unit, a gun section as a third).
+Hold more of the 3 flags (**Sa**nton, **Pr**atzen, **So**kolnitz) when the 13:00 clock runs out, or break the enemy army. You start holding Santon and Sokolnitz; the Allies hold the Pratzen. A ring around each flag shows capture progress (8 s). Only steady or shaken foot that isn't under fire can capture. Cavalry and guns can only contest. An army breaks when 70% of its strength is destroyed or broken (a squadron pair counts as half a unit, a gun section as a third).
 
 ## Units
 | French (you) | Allied (AI) |
@@ -131,13 +160,24 @@ Russians wear green, Austrians white, the French blue. Each unit has HP (losses 
 - **Rally ⭐:** a panicked or broken unit near its Marshal, and out of fire for a few seconds, recovers to Shaken. Morale also recovers about twice as fast near him.
 - **Ammo and stragglers:** ammo runs down. Units west of the Goldbach (or near Sokolnitz), or next to the Marshal, refill when they haven't fired for a few seconds (⁍+). Out of action there, stragglers slowly return to the ranks (up to 70% strength).
 - **Villages 🏠:** best cover against musketry and guns, and a strong defensive bonus against charges, especially cavalry. Streams slow troops and weaken them in a fight.
-- **Reinforcements ⚠:** Allied columns (Dokhturov's division) arrive from the east edge (Easy: 2 battalions + a battery of three sections after ~4 min; Normal: the same after ~3½ min; Hard: 3 battalions + two pairs of light cavalry after 3½ min). A red arrow marks where they come in.
-- **Late push ⚠:** in the last 2–3 minutes the Allies throw everything at your most weakly held flag. A toast warns you.
+- **Reinforcements ⚠:** Allied columns (Dokhturov's division) arrive from the east edge (Easy: 2 battalions + a battery of three sections after ~5⅓ min; Normal: the same after ~4¾ min; Hard: 3 battalions + two pairs of light cavalry after 4½ min). A red arrow marks where they come in.
+- **Late push ⚠:** in the last 2½–3¾ minutes the Allies throw everything at your most weakly held flag. A toast warns you.
 - **Difficulty** changes Allied accuracy and morale, how quickly the AI reacts, how long its lines trade volleys before pressing on, how readily its cavalry charges, the reinforcements, and on Hard their experience (+1 star).
 - **AI:** the Allied army has the same two layers as you. A strategist picks the objective (wait on the heights, attack the villages, counterattack a flag being captured, defend, late push) and hands zones to its division commanders: Kamensky always garrisons the Pratzen, and a wing (Kolowrat, plus Miloradovich in the northern plan) goes for Santon. The commanders then deploy their battalions with exactly the logic described under *Division commanders*. Cavalry waits for a flank, a gun, a formation change or a routing unit, and countercharges enemy horse. The general rides to rally panicked units and wavering units fall back. With 🎲/`?auto=1` the French run on the same system.
 
 ## After action
 The end screen shows the result and how the army broke or time ran out. It lists each of your units with kills, remaining HP, stars and status, highlights the MVP, shows a flag timeline (Sa / Pr / So) with the Guard, reinforcements and push marked, counts charges, squares that held and rallies, and rates the fight ★–★★★. Rematch carries veteran experience over.
+
+## Balance (v2.3 / v5: slower movement, marching in formation)
+The harness was moved to the 13:00 clock (the Guard committed at 9:00, games run to the end). French wins:
+
+| | AI vs AI | Sensible zone plan | Rush, Guard held back |
+|---|---|---|---|
+| Easy | 37/48 (77%) | 22/24 (92%) | – |
+| Normal | 21/36 (58%) | 18/24 (75%) | 2/12 (17%) |
+| Hard | 4/16 (25%) | – | – |
+
+Normal and Hard are unchanged. Easy came out at 30/36 (83%) on the old settings, so Easy Allied accuracy / morale / volley time went from 0.82 / 0.9 / 0.6 to 0.92 / 1.0 / 0.7 (two batches of 24: 17/24 and 20/24). Most battles still end with one army breaking, on average ~8–9 minutes in (Normal AI vs AI ~8:00). The zone plan more often runs to the clock (~11 min).
 
 ## Balance (v2.2 / v4 check)
 v4 lets a battalion in line dress its ranks with a short side-step instead of wheeling away (both armies), which helps whoever is holding a position. Normal, 80 games each on the v3 settings: AI vs AI 34/80 (42%), sensible zone plan 55/80 (69%), rush with the Guard held back 7/40 (18%). Single batches of 40 swung from 58% to 80%. Allied morale 1.14 was tried and dropped AI vs AI to 33% without moving the zone plan, so the v3 settings were kept.
@@ -186,7 +226,7 @@ The AI-vs-AI numbers pool several batches run on the final settings. Single batc
 Most games end with one army breaking about 6–8 minutes in. Roughly one in five goes to the clock.
 
 ## Files
-`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v4`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
+`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v5`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
 
 ## Dev
 No build step. Serve the repo (`python3 -m http.server`) and open `/games/austerlitz/`.

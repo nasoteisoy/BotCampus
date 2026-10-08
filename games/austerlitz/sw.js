@@ -1,5 +1,5 @@
 // Austerlitz 1805: simple offline cache (stale-while-revalidate).
-const CACHE = 'aus-v4';
+const CACHE = 'aus-v5';
 const ASSETS = ['./', './index.html', './game.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
