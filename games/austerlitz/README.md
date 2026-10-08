@@ -6,8 +6,8 @@ A small real-time Napoleonic corps tactics game for phones, and a sibling of [Br
 **Install:** open the link, then Share ▸ *Add to Home Screen* (iOS) or menu ▸ *Install app* (Android/Chrome). It works offline after the first load.
 
 ## How to play
-- **Start screen:** pick 🙂 Easy / 😐 Normal / 💀 Hard, then ▶. The choice is remembered. A short 8-step tutorial opens the first time; replay it from ❓ (🎓).
-- **Deploy 🇫🇷:** before the clock starts, place your corps in the shaded zone: the French bank west of the Goldbach plus the Sokolnitz bridgehead. **Drag a division commander ⚑** (new in v3) and his whole division re-forms around him, or drag single units to fine-tune. See *Setting up with commanders* below. 🎲 Auto cycles three ready-made setups (Goldbach line, forward at Sokolnitz, Santon anchor), and ▶ starts the battle. The Allies pick one of four plans: massed on the heights, already descending, a northern thrust, or a southern thrust. Each plan sends a smaller wing at Santon.
+- **Start screen:** pick 🙂 Easy / 😐 Normal / 💀 Hard, then ▶. The choice is remembered. A short 9-step tutorial opens the first time; replay it from ❓ (🎓).
+- **Deploy 🇫🇷:** before the clock starts, place your corps in the shaded zone: the French bank west of the Goldbach plus the Sokolnitz bridgehead. **Drag a division commander ⚑** (new in v3) and his whole division re-forms around him, or drag single units to fine-tune, or **draw his line** ✏️ (new in v4). See *Setting up with commanders* and *Line orders* below. 🎲 Auto cycles three ready-made setups (Goldbach line, forward at Sokolnitz, Santon anchor), and ▶ starts the battle. The Allies pick one of four plans: massed on the heights, already descending, a northern thrust, or a southern thrust. Each plan sends a smaller wing at Santon.
 - **Division commanders ⚑** (new in v2): the bottom strip lists your divisions (name, zone, ⚔/🛡 posture, strength bar). Tap a commander's marker on the map or his strip button, then tap a place. See *Division commanders* below.
 - Tap a unit (or its chip in the roster) to select it, then tap the ground to march. That is a **direct order**: the unit leaves its commander until the order is done (see below).
 - Order bar: ➜ Move · ⏩ Quick · ⚔️ Charge · 🎯 Fire · 🛡️ Hold · ▦ Form · ↩️ Div (back under the commander).
@@ -39,9 +39,19 @@ The Allies use the same system: **Miloradovich**, **Kolowrat** (Austrians), **La
 - In the deploy phase, drag a commander's marker anywhere in the shaded French area. The area pulses with a white dashed border while you drag, and a ghost of the division (translucent unit blocks, dashed lines and a facing arrow) shows where every unit will stand before you let go. Drops outside the area are clamped to its edge.
 - Or tap a commander (map or strip) and then tap a spot inside the area.
 - On release the division re-forms instantly, using the same planner the commanders use in battle: front line, supports, guns on good ground with a field of fire, cavalry on the flanks, nothing in the stream and no overlaps. It costs no game time.
+- ✏️ Line: draw a line instead (see *Line orders*).
 - ⟲ / ⟳ on the command bar turn the selected division 30° (it re-forms facing the new way). ⚔️ Take / 🛡️ Hold set its opening posture.
 - With a commander selected, tapping *outside* the area gives him his opening zone instead (as in v2), which he marches to when the battle starts.
 - Single units can still be dragged afterwards. Murat's cavalry can be placed like any division; the 🦅 Garde stays in reserve until committed.
+
+**Line orders ✏️** (new in v4)
+- Select a commander, tap ✏️ **Line** on the command bar (it lights up), then draw on the map with one finger: a quick straight stroke or a freehand curve. Two fingers still pinch-zoom, and a stroke shorter than ~40 m counts as an ordinary tap. Line mode switches itself off after one line.
+- While you draw, a ghost of the division shows where each unit will stand. On release the line stays on the map, dashed in the division colour, with ticks on the side it faces, a ⇅ arrow in the middle and the planned slot boxes.
+- **Facing:** by default the line faces the enemy (spotted troops nearby, else their nearest flag). If the enemy is straight down the line, it faces away from where the division stands. Tap the ⇅ arrow on the map (or ⇅ **Flip** on the bar) to turn the whole line round.
+- **The formation:** the front-line battalions are spread evenly along the line, centre to centre at least 58 m and at most 170 m apart. If the line is too short for all of them, the extras become supports. Every battalion faces straight across the line where it stands, so a curved line is followed slot by slot. Supports stand 70 m behind the gaps, battered battalions 140 m back, light infantry 55 m ahead as skirmishers (in cover if there is any), guns at the two ends (extra guns in gaps of 100 m or more) on the best nearby ground for a field of fire, and cavalry pairs behind the wings. A cavalry-only division puts its squadrons on the line. A division with only light infantry (Legrand) puts it on the line.
+- **The Goldbach:** slots never go in the stream or a pond. If the line crosses the stream, the division keeps to its own (near) bank plus any bridge on the line. Battalions that no longer fit become supports. If the near-bank part is too short for even one battalion, the whole dry line is used.
+- 🛡️ **Hold:** the division marches in column, deploys onto the line and holds it. Line battalions stay on their slots and turn in place to fire. They only charge enemies within ~70 m, and dress back onto the line with a short side-step instead of wheeling away. ⚔️ **Take:** the same, but once the line has formed and nobody is within ~160 m, it steps forward 45 m at a time (up to 300 m), stopping when it makes contact or would step into the stream.
+- **In setup:** a line drawn inside the blue area places the division on it instantly (points outside the area are pulled back to its edge), and it keeps that line as its order when the battle starts. Dragging the commander or one of his units afterwards replaces the line.
 
 **Giving a zone order**
 - Tap a commander on the map (or his button in the strip). The command bar appears: ⚔️ **Take** · 🛡️ **Hold** · 👥 **Units** (select his units for direct orders) · ↩️ **Rejoin** · ✖ **Done**.
@@ -129,6 +139,9 @@ Russians wear green, Austrians white, the French blue. Each unit has HP (losses 
 ## After action
 The end screen shows the result and how the army broke or time ran out. It lists each of your units with kills, remaining HP, stars and status, highlights the MVP, shows a flag timeline (Sa / Pr / So) with the Guard, reinforcements and push marked, counts charges, squares that held and rallies, and rates the fight ★–★★★. Rematch carries veteran experience over.
 
+## Balance (v2.2 / v4 check)
+v4 lets a battalion in line dress its ranks with a short side-step instead of wheeling away (both armies), which helps whoever is holding a position. Normal, 80 games each on the v3 settings: AI vs AI 34/80 (42%), sensible zone plan 55/80 (69%), rush with the Guard held back 7/40 (18%). Single batches of 40 swung from 58% to 80%. Allied morale 1.14 was tried and dropped AI vs AI to 33% without moving the zone plan, so the v3 settings were kept.
+
 ## Balance (v2.1 / v3 update)
 The planned formations made division commanders much better, for both armies, and a scripted player using only zone orders jumped from 54% to 79% on Normal. Normal Allied accuracy and morale were raised to 1.05 / 1.1 (from 1.0 / 1.03). Easy and Hard are unchanged. French wins from the same harness (same scenarios as below):
 
@@ -173,8 +186,8 @@ The AI-vs-AI numbers pool several batches run on the final settings. Single batc
 Most games end with one army breaking about 6–8 minutes in. Roughly one in five goes to the clock.
 
 ## Files
-`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v3`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
+`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v4`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
 
 ## Dev
 No build step. Serve the repo (`python3 -m http.server`) and open `/games/austerlitz/`.
-Debug hooks: `?auto=1` lets the AI play both sides. `window.AUS.fast(seconds)` fast-forwards the simulation silently. `AUS.start()`, `AUS.autoDeploy()` and `AUS.begin()` drive the deploy phase. `AUS.setDiff('easy'|'normal'|'hard')`, `AUS.commitGuard()` and `AUS.DIFFS` are there for tuning, and `AUS.G` is the live game state. `AUS.orderDiv('van', 'Pratzen', 'attack')` gives a zone order (division key `van`/`sth`/`leg`/`lan`/`mur`/`gar`, a place name or `{x, y, r}`, `'attack'` or `'hold'`), and `AUS.ZONES` lists the named places. `AUS.placeDiv('van', x, y, angle)` does a setup drop (deploy phase only), and `AUS.divSetupLayout`, `AUS.rotateDiv` and `AUS.inZoneRect` expose the same logic. The version tag (`v2.1`) is shown at the bottom of the ❓ help screen.
+Debug hooks: `?auto=1` lets the AI play both sides. `window.AUS.fast(seconds)` fast-forwards the simulation silently. `AUS.start()`, `AUS.autoDeploy()` and `AUS.begin()` drive the deploy phase. `AUS.setDiff('easy'|'normal'|'hard')`, `AUS.commitGuard()` and `AUS.DIFFS` are there for tuning, and `AUS.G` is the live game state. `AUS.orderDiv('van', 'Pratzen', 'attack')` gives a zone order (division key `van`/`sth`/`leg`/`lan`/`mur`/`gar`, a place name or `{x, y, r}`, `'attack'` or `'hold'`), and `AUS.ZONES` lists the named places. `AUS.orderLine('van', [{x, y}, ...], 'hold'|'attack')` gives a line order (in setup it places the division), `AUS.flipLine('van')` flips it, `AUS.lineGhost` previews it. `AUS.placeDiv('van', x, y, angle)` does a setup drop (deploy phase only), and `AUS.divSetupLayout`, `AUS.rotateDiv` and `AUS.inZoneRect` expose the same logic. The version tag (`v2.2`) is shown at the bottom of the ❓ help screen.

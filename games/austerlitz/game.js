@@ -26,7 +26,7 @@ const NAT = {
 };
 const MCOL = ['#58c050', '#e6c83a', '#f08a28', '#e8402f', '#9a9a9a'];
 const MNAME = ['Steady', 'Shaken', 'Wavering', 'Panic', 'Broken'];
-const VERSION = 'v2.1';
+const VERSION = 'v2.2';
 const FNAME = ['Santon', 'Pratzen', 'Sokolnitz'];
 const FABBR = ['Sa', 'Pr', 'So'];
 
@@ -1081,11 +1081,14 @@ function updateMove(u) {
   if (isArt(u) && u.form === 'deployed') { setForm(u, 'limbered'); return; }
   const p = u.path[0];
   const d = dxy(u.x, u.y, p.x, p.y);
-  if (!u.order.back && d > 0.5) {
+  // a battalion in line dresses its ranks with a short side- or back-step, still facing the enemy;
+  // longer moves wheel first
+  const dress = u.form === 'line' && u.path.length === 1 && d < 45 && u.state < 3;
+  if (!u.order.back && d > 0.5 && !dress) {
     const rem = turnTo(u, Math.atan2(p.y - u.y, p.x - u.x));
     if (u.form === 'line' && rem > 1.0 && u.state < 3) return; // wheel before advancing in line
   }
-  const stp = speedOf(u) * DT;
+  const stp = speedOf(u) * DT * (dress ? 0.6 : 1);
   if (u.state < 3 && d > 0.01) {
     const k = Math.min(stp, d) / d, nx = u.x + (p.x - u.x) * k, ny = u.y + (p.y - u.y) * k;
     for (const o of G.units) {
@@ -1533,6 +1536,222 @@ function gunSpot(u, d, Z, C, mode, fx, fy, fo, taken, seen) {
   }
   return best;
 }
+// ---------------------------------------------------------------- line orders
+// the player draws a line; the commander puts his front on it, every battalion facing across it
+// toward the enemy side (⇅ flips it). Supports stand behind the gaps, lights ahead, guns at the
+// ends (or in wide gaps), cavalry behind the wings. Curved lines are followed slot by slot.
+function simplifyLine(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  const a = pts[0], b = pts[pts.length - 1], L = dxy(a.x, a.y, b.x, b.y);
+  let im = 0, dm = -1;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const q = pts[i], d = L > 1 ? Math.abs((b.x - a.x) * (a.y - q.y) - (a.x - q.x) * (b.y - a.y)) / L : dxy(q.x, q.y, a.x, a.y);
+    if (d > dm) { dm = d; im = i; }
+  }
+  if (dm <= eps) return [a, b];
+  return simplifyLine(pts.slice(0, im + 1), eps).slice(0, -1).concat(simplifyLine(pts.slice(im), eps));
+}
+const lineLen = (pts) => { let L = 0; for (let i = 1; i < pts.length; i++) L += dxy(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y); return L; };
+function linePt(pts, s) { // beyond either end it carries on along the end segment
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], l = dxy(a.x, a.y, b.x, b.y);
+    if (s <= acc + l || i === pts.length - 1) { const k = l > 0 ? (s - acc) / l : 0; return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }; }
+    acc += l;
+  }
+  return { x: pts[0].x, y: pts[0].y };
+}
+function lineTan(pts, s, L) {
+  const a = linePt(pts, clamp(s - 22, 0, L)), b = linePt(pts, clamp(s + 22, 0, L)), d = dxy(a.x, a.y, b.x, b.y) || 1;
+  return { x: (b.x - a.x) / d, y: (b.y - a.y) / d };
+}
+function lineProj(pts, x, y) {
+  let best = 1e9, bs = 0, acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], l = dxy(a.x, a.y, b.x, b.y) || 1e-6;
+    const k = clamp(((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y)) / (l * l), 0, 1), d = dxy(x, y, a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k);
+    if (d < best) { best = d; bs = acc + k * l; }
+    acc += l;
+  }
+  return { s: bs, d: best };
+}
+const clampLinePts = (pts) => pts.map(q => { let { x, y } = q; if (!inZoneRect(x, y)) { y = clamp(y, 30, 1065); x = clamp(x, 30, y >= 770 ? 725 : 575); } return { x, y }; });
+function makeLineZone(d, raw) {
+  const pts = simplifyLine(raw.map(q => ({ x: clamp(q.x, 30, W - 30), y: clamp(q.y, 30, H - 30) })), 9);
+  const L = lineLen(pts), m = linePt(pts, L / 2), t = lineTan(pts, L / 2, L), nx = -t.y, ny = t.x;
+  // default facing: the side the enemy is on (spotted troops nearby, else their nearest flag)
+  let ex = 0, ey = 0, n = 0;
+  if (G.phase === 'battle') for (const o of G.units) {
+    if (!live(o) || o.side === d.side || o.kind === 'cmdr' || o.state >= 4 || !isSeen(o, d.side)) continue;
+    const dd = dxy(o.x, o.y, m.x, m.y); if (dd < 900) { const w = 1 / (80 + dd); ex += (o.x - m.x) * w; ey += (o.y - m.y) * w; n += w; }
+  }
+  if (!n) { const ef = G.flags.filter(f => f.owner !== d.side).sort((a, b) => dxy(a.x, a.y, m.x, m.y) - dxy(b.x, b.y, m.x, m.y))[0] || G.flags[d.side ? 0 : 1]; ex = ef.x - m.x; ey = ef.y - m.y; }
+  let dot = (ex * nx + ey * ny) / (Math.hypot(ex, ey) || 1);
+  if (Math.abs(dot) < 0.2) { // enemy straight down the line: face away from where the division stands
+    const us = d.units.filter(u => live(u) && u.state < 4);
+    if (us.length) { const c = centroid(us); const v = -((c.x - m.x) * nx + (c.y - m.y) * ny); if (Math.abs(v) > 5) dot = v; }
+  }
+  return { x: Math.round(m.x), y: Math.round(m.y), r: Math.max(60, Math.round(L / 2)), flag: -1, name: '〰', line: { pts, L, sgn: dot < 0 ? -1 : 1 } };
+}
+function lineArrow(Z) {
+  const { pts, L, sgn } = Z.line, m = linePt(pts, L / 2), t = lineTan(pts, L / 2, L), nx = -t.y * sgn, ny = t.x * sgn;
+  return { bx: m.x + nx * 10, by: m.y + ny * 10, hx: m.x + nx * 58, hy: m.y + ny * 58, px: m.x + nx * 42, py: m.y + ny * 42, mx: m.x, my: m.y, nx, ny };
+}
+// usable stretches of the line: dry passable ground (a bridge counts on its own). Where the line
+// crosses the Goldbach it keeps to the near bank unless that would leave too little room.
+function lineMask(pts, L, dep, bank) {
+  const N = Math.max(2, Math.ceil(L / 4)), st = L / N, ok = [], br = [];
+  let crosses = false;
+  for (let i = 0; i <= N; i++) {
+    const q = linePt(pts, i * st), t = terrAt(q.x, q.y);
+    if (t === T_STREAM) crosses = true;
+    let g = t !== T_STREAM && t !== T_WATER && passAt(q.x, q.y, false) && q.x > 26 && q.y > 26 && q.x < W - 26 && q.y < H - 26 && (!dep || inZone(q.x, q.y));
+    if (g && bank && t !== T_BRIDGE && Math.sign(q.x - streamX(q.y)) !== bank) g = false;
+    ok.push(g); br.push(t === T_BRIDGE);
+  }
+  const iv = [];
+  let a = -1;
+  for (let i = 0; i <= N + 1; i++) {
+    const fit = i <= N && ok[i] && (br[i] || [-4, -2, 2, 4].every(k => i + k < 0 || i + k > N || ok[i + k]));
+    if (fit && a < 0) a = i;
+    if (!fit && a >= 0) { iv.push([Math.max(0, (a - 0.5) * st), Math.min(L, (i - 0.5) * st)]); a = -1; }
+  }
+  return { iv, U: iv.reduce((t, v) => t + v[1] - v[0], 0), crosses };
+}
+function lineFront(L, M, n, minSp, maxSp) {
+  let iv = M.iv, U = M.U;
+  if (U < 1) { iv = [[0, L]]; U = L; }
+  const nf = n ? (U / n >= minSp ? n : Math.max(1, Math.floor(U / minSp))) : 0;
+  const sp = nf ? Math.min(U / nf, maxSp) : 0, off = (U - nf * sp) / 2;
+  const toS = (u) => { for (const [a, b] of iv) { if (u <= b - a) return a + u; u -= b - a; } return iv[iv.length - 1][1]; };
+  return { nf, sp, ss: Array.from({ length: nf }, (_, i) => toS(off + (i + 0.5) * sp)) };
+}
+function layoutLine(d, ctl, seen, cen) {
+  const side = d.side, Z = d.zone, LN = Z.line, pts = LN.pts, L = LN.L, sg = LN.sgn, dep = !!G.deployLayout;
+  d.mode = 'line';
+  const inf = ctl.filter(isInf), lights = ctl.filter(u => u.kind === 'light'), cav = ctl.filter(isCav), guns = ctl.filter(isArt);
+  const cavOnly = !inf.length && !lights.length, lightLine = !inf.length && lights.length > 0; // only light infantry: it holds the line itself
+  const byFit = (lightLine ? lights : inf).slice().sort((a, b) => fitness(b) - fitness(a));
+  let rest = byFit.filter(u => hpf(u) < 0.35 || u.state === 2), act = byFit.filter(u => !rest.includes(u));
+  if (!act.length) { act = rest; rest = []; }
+  // ⚔ Take: once the line has formed and nobody is within musket range, it steps forward together
+  if (!dep && d.post === 'attack' && d.plan && d.plan.Z === Z) {
+    const fu = ctl.filter(u => u.spot && u.spot.k === 'front' && u.spot.pid === d.plan.id);
+    const ready = fu.length > 0 && fu.filter(u => dist(u, u.spot) < 24 && !u.path.length).length >= Math.ceil(fu.length * 0.75);
+    let nearE = 1e9;
+    for (const o of seen) if (o.kind !== 'cmdr' && o.state < 3) for (const u of fu) nearE = Math.min(nearE, dist(o, u));
+    const nxt = (d.lineAdv || 0) + 45;
+    const dry = fu.every(u => { const q = { x: u.spot.x + Math.cos(u.spot.face) * 45, y: u.spot.y + Math.sin(u.spot.face) * 45 }, t = terrAt(q.x, q.y); return t !== T_STREAM && t !== T_WATER && passAt(q.x, q.y, false); });
+    if (ready && dry && nearE > 160 && nxt <= 300) d.lineAdv = nxt;
+  }
+  const adv = dep ? 0 : (d.lineAdv || 0);
+  const sig = 'line|' + sg + '|' + adv + '|' + ctl.map(u => u.id + (rest.includes(u) ? 'r' : '')).sort().join(',');
+  const P = d.plan;
+  if (!dep && P && P.sig === sig && P.Z === Z && ctl.every(u => u.spot && u.spot.pid === P.id)) return;
+  const pid = G.planSeq = (G.planSeq || 0) + 1;
+  const taken = [];
+  if (dep) { for (const u of G.units) if (u.side === side && live(u) && u.dv !== d) taken.push({ x: u.x, y: u.y }); }
+  else for (const o of G.divs) if (o !== d && o.side === side) for (const u of (o.ctl || [])) if (u.spot && live(u)) taken.push(u.spot);
+  const fr0 = cavOnly ? cav.slice() : act.slice(), minSp = cavOnly ? 44 : 58;
+  const bank = cen ? (Math.sign(cen.x - streamX(cen.y)) || -1) : -1;
+  const Mall = lineMask(pts, L, dep, 0), Mnear = Mall.crosses ? lineMask(pts, L, dep, bank) : Mall;
+  const M = Mall.crosses && Mnear.U >= minSp ? Mnear : Mall; // near bank (+ bridges) whenever one battalion fits there
+  const F = lineFront(L, M, fr0.length, minSp, 170);
+  const NT = (sv) => { const t = lineTan(pts, sv, L); return { tx: t.x, ty: t.y, nx: -t.y * sg, ny: t.x * sg }; };
+  const at = (sv, off, lat = 0) => { const q = linePt(pts, sv), n = NT(sv); return { x: q.x + n.nx * (off + adv) + n.tx * lat, y: q.y + n.ny * (off + adv) + n.ty * lat, face: Math.atan2(n.ny, n.nx), nx: n.nx, ny: n.ny }; };
+  const put = (q, veh, k, minD) => { const sp = snapSpot(q.x, q.y, veh, taken, minD); sp.k = k; sp.face = q.face; sp.pid = pid; sp.ln = 1; taken.push(sp); return sp; };
+  const proj = (u) => lineProj(pts, u.x, u.y).s;
+  const front = fr0.slice(0, F.nf), over = fr0.slice(F.nf);
+  front.sort((a, b) => proj(a) - proj(b)).forEach((u, i) => { u.spot = put(at(F.ss[i], 0), false, 'front', 40); });
+  const sA = F.ss.length ? F.ss[0] : L / 2, sB = F.ss.length ? F.ss[F.ss.length - 1] : L / 2, mid = (sA + sB) / 2;
+  const gaps = F.ss.slice(1).map((v, i) => (v + F.ss[i]) / 2);
+  const centreFirst = (arr) => arr.slice().sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
+  // supports: second line 70 m back, behind the gaps first; battered battalions 140 m back
+  const sups = cavOnly ? over : over.concat(act.filter(u => !fr0.includes(u)));
+  const supS = centreFirst(gaps).concat(centreFirst(F.ss.length ? F.ss : [mid]));
+  while (supS.length < sups.length) supS.push(mid + (supS.length % 2 ? 1 : -1) * 60 * Math.ceil(supS.length / 2));
+  const supPick = supS.slice(0, sups.length).sort((a, b) => a - b);
+  sups.slice().sort((a, b) => proj(a) - proj(b)).forEach((u, i) => { u.spot = put(at(supPick[i], -70), false, 'sup', 40); });
+  const resS = centreFirst(F.ss.length ? F.ss : [mid]);
+  while (resS.length < rest.length) resS.push(mid + (resS.length % 2 ? 1 : -1) * 60 * Math.ceil(resS.length / 2));
+  const resPick = resS.slice(0, rest.length).sort((a, b) => a - b);
+  rest.slice().sort((a, b) => proj(a) - proj(b)).forEach((u, i) => { u.spot = put(at(resPick[i], -140), false, 'res', 40); });
+  // light infantry: a skirmish screen 55 m ahead, in cover where there is some
+  const lA = clamp(sA - F.sp / 2, 0, L), lB = clamp(sB + F.sp / 2, 0, L);
+  (lightLine ? [] : lights).slice().sort((a, b) => proj(a) - proj(b)).forEach((u, i) => {
+    const q = at(lA + (lB - lA) * (i + 0.5) / lights.length, 55), c = coverSpot(q, 35, q.nx, q.ny, taken, side);
+    u.spot = put(c ? Object.assign(c, { face: q.face }) : q, false, 'skirm', 40);
+  });
+  // guns: at the ends of the line (wide gaps take any extras), on the best ground for a field of fire
+  const gEnd = clamp(F.sp * 0.55, 48, 70), perEnd = [0, 0];
+  const gapUse = F.sp >= 100 ? centreFirst(gaps) : [];
+  guns.forEach((u, i) => {
+    let base;
+    if (i >= 2 && gapUse.length) base = at(gapUse.shift(), -8);
+    else { const e = i % 2, tier = perEnd[e]++; base = e ? at(sB, -8, gEnd + tier * 40) : at(sA, -8, -(gEnd + tier * 40)); }
+    const T = { x: base.x + base.nx * 230, y: base.y + base.ny * 230 };
+    let g = null, bs = -1e9;
+    for (const r of [0, 14, 28, 42]) for (let k = 0; k < (r ? 12 : 1); k++) {
+      const a = k / 12 * TAU, x = base.x + Math.cos(a) * r, y = base.y + Math.sin(a) * r;
+      if (x < 30 || y < 30 || x > W - 30 || y > H - 30 || !passAt(x, y, true)) continue;
+      const t = terrAt(x, y); if (t === T_TREE || t === T_HOUSE || t === T_STREAM || t === T_WATER) continue;
+      if (dep && !inZone(x, y)) continue;
+      if (taken.some(q => dxy(q.x, q.y, x, y) < 34)) continue;
+      const sc = heightAt(x, y) * 1.5 + (LOS(x, y, T.x, T.y) ? 60 : 0) - r * 0.8;
+      if (sc > bs) { bs = sc; g = { x, y }; }
+    }
+    u.spot = put(Object.assign(g || { x: base.x, y: base.y }, { face: base.face }), true, 'gun', 32); u.spot.zk = 'line' + pid; u.spot.t = G.time;
+  });
+  // cavalry: squadron pairs behind the wings
+  if (!cavOnly) {
+    const groups = [];
+    for (const u of cav) { let g = groups.find(q => q.type === u.type); if (!g) groups.push(g = { type: u.type, us: [] }); g.us.push(u); }
+    groups.forEach((g, gi) => {
+      const e = gi % 2, tier = Math.floor(gi / 2), sv = e ? sB : sA, out = e ? 1 : -1;
+      g.us.forEach((u, k) => { u.spot = put(at(sv, -75, out * (F.sp * 0.2 + 10 + k * 42 + tier * 95)), false, 'flank', 32); });
+    });
+  }
+  const C = at(L / 2, 0);
+  d.theta = Math.atan2(C.ny, C.nx);
+  d.plan = { id: pid, sig, Z, C: { x: C.x, y: C.y }, th: d.theta };
+}
+function orderLine(d, raw, post) {
+  if (!d) return null;
+  const pts = G.phase === 'deploy' ? clampLinePts(raw) : raw;
+  if (lineLen(pts) < 30) return null;
+  const z = makeLineZone(d, pts);
+  if (G.phase === 'deploy') return applyDivLine(d, z) ? z : null;
+  orderDiv(d, z, post, true); d.lineAdv = 0;
+  G.markers.push({ x: z.x, y: z.y, t: 0, kind: 'move' });
+  toast(`${post === 'attack' ? '⚔' : '🛡'} ${d.name} → 〰`);
+  SFX.drum(post === 'attack' ? 'quick' : 'hold'); buzz(15);
+  return z;
+}
+function flipLine(d) {
+  const z = d && d.zone && d.zone.line ? d.zone : null;
+  if (!z) return false;
+  z.line.sgn *= -1; d.plan = null; d.layT = 0; d.lineAdv = 0; d.theta = null;
+  for (const u of d.units) if (G.phase === 'battle' && live(u)) u.aiCool = Math.min(u.aiCool, rnd(0.2, 1));
+  if (G.phase === 'deploy' && setupUnits(d).length) applyDivLine(d, z);
+  return true;
+}
+// where the division would stand on a line (setup drop, or the ghost while drawing in battle)
+function lineGhost(d, raw) {
+  if (!d) return null;
+  const pts = G.phase === 'deploy' ? clampLinePts(raw) : raw;
+  if (lineLen(pts) < 30) return null;
+  const z = makeLineZone(d, pts);
+  if (G.phase === 'deploy') return divLineLayout(d, z);
+  const us = d.units.filter(u => live(u) && u.state < 3 && !u.direct);
+  if (!us.length) return null;
+  const keep = { zone: d.zone, mode: d.mode, plan: d.plan, adv: d.lineAdv, th: d.theta, spots: us.map(u => u.spot) };
+  d.zone = z; d.plan = null; d.lineAdv = 0;
+  let out;
+  try { layoutLine(d, us, [], centroid(us)); out = us.map(u => ({ u, x: u.spot.x, y: u.spot.y, face: u.spot.face })); }
+  finally { us.forEach((u, i) => { u.spot = keep.spots[i]; }); const th = d.theta; Object.assign(d, { zone: keep.zone, mode: keep.mode, plan: keep.plan, lineAdv: keep.adv, theta: keep.th }); z.th = th; }
+  const m = linePt(z.line.pts, z.line.L / 2);
+  return { d, x: m.x - Math.cos(z.th) * 40, y: m.y - Math.sin(z.th) * 40, th: z.th, spots: out, line: z };
+}
 function layoutDiv(d, ctl, seenAll) {
   const side = d.side, Z = d.zone;
   if (!ctl.length) return;
@@ -1543,6 +1762,7 @@ function layoutDiv(d, ctl, seenAll) {
   }
   const seen = seenAll[side];
   const cen = centroid(ctl), home = G.flags[side ? 1 : 0];
+  if (Z.line) return layoutLine(d, ctl, seen, cen);
   const hostile = (Z.flag >= 0 && G.flags[Z.flag].owner !== side) || seen.some(o => o.state < 3 && o.kind !== 'cmdr' && dxy(o.x, o.y, Z.x, Z.y) < Z.r + 30);
   let mode = 'hold', C = { x: Z.x, y: Z.y }, blk = null;
   if (d.post === 'attack' && hostile) {
@@ -1722,9 +1942,9 @@ function cmdUnit(u, d, s, seen, side, home, A) {
   if (u.kind === 'light') {
     if (engaged && coverAt(u.x, u.y) >= 1 && dd < 140) return;
   } else {
-    if (aiChargeCheck(u, seen, assault && push ? 150 : assault ? 130 : 120, assault && push ? 0.5 : 0)) return;
+    if (aiChargeCheck(u, seen, s.ln && d.post !== 'attack' ? 70 : assault && push ? 150 : assault ? 130 : 120, assault && push ? 0.5 : 0)) return;
     const crowd = G.units.some(o => o !== u && o.side === u.side && live(o) && o.kind !== 'cmdr' && dist(o, u) < 38);
-    if (engaged && nearE < 220 && !crowd && Math.random() < A.stay) return; // trade volleys a while
+    if (engaged && nearE < 220 && !crowd && (!s.ln || dd < 16) && Math.random() < A.stay) return; // trade volleys a while (a line battalion back on its slot first)
     if (assault && nearE < 170 && u.form === 'line' && !crowd && Math.random() < 0.55) { if (u.path.length) aiStop(u); return; } // halt and fire
   }
   if (assault && Z && !push && zd > Z.r * 0.6) { // don't run ahead of the attack
@@ -1793,7 +2013,8 @@ function cmdCav(u, d, s, seen, side, home) {
   let spot = s;
   if (u.fat >= 40 || hpf(u) < 0.35) spot = pointAlongFrom(s.x, s.y, home, 120, false); // rest the horses behind
   const end = pathEnd(u);
-  if (dist(u, spot) > 40) { if (!end || dxy(end.x, end.y, spot.x, spot.y) > 30) aiMove(u, spot, 'move'); }
+  const tol = s.ln && spot === s ? 12 : 40; // squadrons on a drawn line dress on it
+  if (dist(u, spot) > tol) { if (!end || dxy(end.x, end.y, spot.x, spot.y) > Math.min(30, tol)) aiMove(u, spot, 'move'); }
   else aiStop(u);
 }
 function cmdArt(u, s, seen) {
@@ -1865,7 +2086,7 @@ const zoneLabel = (d) => (d.zone ? (d.zone.name || '📍') : d.units.some(u => u
 const DIV_AB = { van: 'V', sth: 'SH', leg: 'Lg', lan: 'Ln', mur: 'M', gar: 'G', mil: 'Mi', kol: 'Ko', lng: 'Lr', kam: 'Ka', lie: 'Li', dok: 'Do' };
 function selectDiv(d) {
   if (!d) return;
-  G.selDiv = G.selDiv === d ? null : d; G.sel = []; G.pend = 'move'; G.inspect = null;
+  G.selDiv = G.selDiv === d ? null : d; G.sel = []; G.pend = 'move'; G.inspect = null; G.lineMode = false;
   if (G.selDiv) toast(G.phase === 'deploy' ? (setupUnits(d).length ? `⚑ ${d.name}: drag or 👆 to place` : `🦅 ${d.name}: reserve`) : `⚑ ${d.name}: 👆 map = zone`);
   SFX.click(); buzz(10); refreshUI(true);
 }
@@ -2003,11 +2224,38 @@ function divSetupLayout(d, x, y, th) {
 function applyDivSetup(d, x, y, th) {
   const L = divSetupLayout(d, x, y, th);
   if (!L) return false;
+  if (d.zone && d.zone.line) d.zone = null;
   for (const s of L.spots) {
     const u = s.u; u.x = s.x; u.y = s.y; u.path = []; u.order = { type: 'idle' }; u.spot = null; u._vis = null;
     if (u.kind !== 'cmdr') { u.ang = th; u.faceAng = th; }
   }
   d.theta = th;
+  updateHQ(true);
+  return true;
+}
+function divLineLayout(d, z) {
+  const us = setupUnits(d);
+  if (!us.length || G.phase !== 'deploy') return null;
+  const keep = { zone: d.zone, post: d.post, mode: d.mode, th: d.theta, spots: us.map(u => u.spot) };
+  d.zone = z; d.plan = null; G.deployLayout = true;
+  let out, th;
+  try { layoutLine(d, us, [], centroid(us)); th = d.theta; out = us.map(u => {
+    const s = u.spot || { x: u.x, y: u.y };
+    const q = inZone(s.x, s.y) && passAt(s.x, s.y, isArt(u)) ? s : (nearestOk(s.x, s.y, isArt(u)) || { x: u.x, y: u.y });
+    return { u, x: q.x, y: q.y, face: s.face ?? th, k: s.k };
+  }); } finally { G.deployLayout = false; us.forEach((u, i) => { u.spot = keep.spots[i]; }); Object.assign(d, { zone: keep.zone, post: keep.post, mode: keep.mode, plan: null, theta: keep.th }); }
+  const m = linePt(z.line.pts, z.line.L / 2);
+  return { d, x: m.x - Math.cos(th) * 40, y: m.y - Math.sin(th) * 40, th, spots: out, line: z };
+}
+// setup: the division takes post on the drawn line at once, and keeps it as his order for the battle
+function applyDivLine(d, z) {
+  const L = divLineLayout(d, z);
+  if (!L) return false;
+  for (const s of L.spots) {
+    const u = s.u; u.x = s.x; u.y = s.y; u.path = []; u.order = { type: 'idle' }; u.spot = null; u._vis = null; u.slotK = s.k;
+    if (u.kind !== 'cmdr') { u.ang = s.face; u.faceAng = s.face; }
+  }
+  d.zone = z; d.theta = L.th; d.plan = null; d.lineAdv = 0; d.player = true;
   updateHQ(true);
   return true;
 }
@@ -2752,15 +3000,48 @@ function drawSlots(c, d, s) {
     c.restore();
   }
 }
+function drawLineZone(c, d, Z, s, now, a, sel) {
+  const { pts, L, sgn } = Z.line;
+  const path = () => { c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y); };
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  path(); c.strokeStyle = `rgba(0,0,0,${0.35 * a})`; c.lineWidth = (sel ? 7 : 5) * s; c.stroke();
+  c.setLineDash([12 * s, 7 * s]); c.lineDashOffset = sel ? -now * 14 : 0;
+  path(); c.strokeStyle = hexA(d.col, 0.95 * a); c.lineWidth = (sel ? 3.5 : 2.5) * s; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  for (let t = 16; t < L - 8; t += 34) { // ticks on the side the line faces
+    const q = linePt(pts, t), g = lineTan(pts, t, L), nx = -g.y * sgn, ny = g.x * sgn;
+    c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x + nx * 9 * s, q.y + ny * 9 * s); c.strokeStyle = hexA(d.col, 0.8 * a); c.lineWidth = 2 * s; c.stroke();
+  }
+  c.lineCap = 'butt'; c.lineJoin = 'miter';
+  const A = lineArrow(Z);
+  arrowTo(c, A.bx, A.by, A.hx, A.hy, d.col, s, a);
+  if (sel) { c.beginPath(); c.arc(A.px, A.py, 16 * s, 0, TAU); c.strokeStyle = `rgba(255,255,255,${0.6 + 0.3 * Math.sin(now * 5)})`; c.lineWidth = 1.8 * s; c.stroke(); tagText(c, '⇅', A.px + A.ny * 24 * s, A.py - A.nx * 24 * s, '#fff', s, 0.95); }
+  const g0 = lineTan(pts, 0, L), e0 = { x: pts[0].x - g0.x * 30 * s, y: pts[0].y - g0.y * 30 * s };
+  tagText(c, `${d.post === 'attack' ? '⚔' : '🛡'} ${d.name} 〰`, e0.x, e0.y, d.col, s, sel ? 1 : 0.8);
+}
 function drawZones(c, s, now) {
   const cnt = {};
   for (const d of G.divs) {
     if (d.side !== 0 || !d.zone || !d.units.some(u => (live(u) && u.state < 4) || u.reserve)) continue;
+    if (d.zone.line) {
+      const Z = d.zone, sel = G.selDiv === d, a = sel ? 1 : 0.55;
+      if (G.linePrev && G.linePrev.d === d) continue;
+      drawLineZone(c, d, Z, s, now, a, sel);
+      if (d.hq) { const pr = lineProj(Z.line.pts, d.hq.x, d.hq.y); if (pr.d > 70) { const q = linePt(Z.line.pts, pr.s), dd = pr.d; arrowTo(c, d.hq.x, d.hq.y, q.x - (q.x - d.hq.x) / dd * 18, q.y - (q.y - d.hq.y) / dd * 18, d.col, s, a); } }
+      if (sel) drawSlots(c, d, s);
+      continue;
+    }
     const Z = d.zone, key = Z.x + ',' + Z.y, k = cnt[key] = (cnt[key] ?? -1) + 1;
     const sel = G.selDiv === d, a = sel ? 1 : 0.5;
     drawZone(c, d, Z, d.post, s, now, a, sel, k);
     if (d.hq) { const dd = dxy(d.hq.x, d.hq.y, Z.x, Z.y); if (dd > Z.r + 26) arrowTo(c, d.hq.x, d.hq.y, Z.x - (Z.x - d.hq.x) / dd * Z.r, Z.y - (Z.y - d.hq.y) / dd * Z.r, d.col, s, a); }
     if (sel) drawSlots(c, d, s);
+  }
+  const LP = G.linePrev;
+  if (LP && LP.pts.length > 1) { // the line being drawn
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(LP.pts[0].x, LP.pts[0].y); for (const q of LP.pts) c.lineTo(q.x, q.y);
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 8 * s; c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 5 * s; c.stroke(); c.strokeStyle = LP.d.col; c.lineWidth = 3 * s; c.stroke();
+    c.lineCap = 'butt'; c.lineJoin = 'miter';
   }
   const P = G.zonePrev;
   if (P && P.div) {
@@ -2789,7 +3070,7 @@ function drawDivGhost(c, P, s, now) {
     const u = g.u;
     c.strokeStyle = hexA(d.col, 0.6); c.lineWidth = 1.4 * s; c.setLineDash([3 * s, 4 * s]);
     c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(g.x, g.y); c.stroke(); c.setLineDash([]);
-    drawUnitBody(c, Object.assign({}, u, { ang: u.kind === 'cmdr' ? 0 : P.th, _vis: null }), g.x, g.y, sv, 0.55);
+    drawUnitBody(c, Object.assign({}, u, { ang: u.kind === 'cmdr' ? 0 : (g.face ?? P.th), form: isInf(u) ? 'line' : u.form, _vis: null }), g.x, g.y, sv, 0.55);
     c.beginPath(); c.arc(g.x, g.y, 15 * s, 0, TAU); c.strokeStyle = hexA(d.col, 0.85); c.lineWidth = 1.6 * s; c.stroke();
   }
   const hx = P.x, hy = P.y;
@@ -2839,7 +3120,7 @@ function render() {
   const battle = G.phase === 'battle';
   drawFog(ctx, now);
   if (G.phase === 'deploy') {
-    const pulse = 0.5 + 0.5 * Math.sin(now * 3), drag = !!G.divPrev;
+    const pulse = 0.5 + 0.5 * Math.sin(now * 3), drag = !!G.divPrev || !!G.linePrev;
     ctx.fillStyle = `rgba(51,89,181,${(drag ? 0.2 : 0.1) + pulse * 0.06})`;
     ctx.beginPath(); ctx.moveTo(20, 20); ctx.lineTo(585, 20); ctx.lineTo(585, 760); ctx.lineTo(735, 760); ctx.lineTo(735, 1075); ctx.lineTo(585, 1075); ctx.lineTo(585, 1080); ctx.lineTo(20, 1080); ctx.closePath();
     ctx.fill(); ctx.setLineDash([12, 8]); ctx.lineDashOffset = drag ? -now * 30 : 0; ctx.strokeStyle = drag ? '#fff' : 'rgba(220,230,255,.85)'; ctx.lineWidth = (drag ? 5 : 3) * s; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
@@ -2996,6 +3277,10 @@ cv.addEventListener('pointerdown', (e) => {
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 1) {
     const w = toWorld(e.clientX, e.clientY);
+    if (G.lineMode && G.selDiv && G.running && !G.over) { // ✏️ Line mode: one finger draws the division's line
+      gest = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, mode: 'lineDraw', w, pts: [w], pt: 0 };
+      G.linePrev = { d: G.selDiv, pts: [w] }; return;
+    }
     const hit = unitAt(w.x, w.y);
     const hq = G.running && !G.over ? hqAt(w.x, w.y) : null;
     gest = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, mode: 'pending', w, hit };
@@ -3015,7 +3300,7 @@ cv.addEventListener('pointerdown', (e) => {
       if (G.phase === 'battle' && !G.over && G.sel.length && !hit && MOVE_MODES.includes(G.pend)) makePreview(w.x, w.y);
     }
   } else if (ptrs.size === 2 && gest) {
-    clearTimeout(gest.timer); G.preview = null; G.aim = null;
+    clearTimeout(gest.timer); G.preview = null; G.aim = null; G.linePrev = null; G.divPrev = null;
     const [a, b] = [...ptrs.values()];
     gest.mode = 'pinch';
     gest.d0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; gest.z0 = cam.z;
@@ -3036,7 +3321,7 @@ cv.addEventListener('pointermove', (e) => {
       break;
     }
     case 'unitPending':
-      if (moved > 6) { gest.mode = 'drag'; G.sel = [gest.hit]; G.selDiv = null; refreshUI(true); }
+      if (moved > 6) { gest.mode = 'drag'; if (gest.hit.dv && gest.hit.dv.zone && gest.hit.dv.zone.line) gest.hit.dv.zone = null; G.sel = [gest.hit]; G.selDiv = null; G.lineMode = false; refreshUI(true); }
       break;
     case 'hqPending':
       if (moved > 8) {
@@ -3054,6 +3339,13 @@ cv.addEventListener('pointermove', (e) => {
     case 'hqDrag': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(w.x, w.y), { div: gest.div }); break; }
     case 'zoneDraw': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(gest.w.x, gest.w.y, Math.max(55, dxy(gest.w.x, gest.w.y, w.x, w.y))), { div: G.selDiv }); break; }
     case 'drag': { const w = toWorld(e.clientX, e.clientY); placeUnit(gest.hit, w.x, w.y); break; }
+    case 'lineDraw': {
+      const w = toWorld(e.clientX, e.clientY), q = gest.pts[gest.pts.length - 1], now = performance.now();
+      if (dxy(q.x, q.y, w.x, w.y) >= 5) gest.pts.push(w);
+      G.linePrev = { d: G.selDiv, pts: G.phase === 'deploy' ? clampLinePts(gest.pts) : gest.pts.slice() };
+      if (now - gest.pt > 60 && gest.pts.length > 1) { gest.pt = now; G.divPrev = lineGhost(G.selDiv, gest.pts); }
+      break;
+    }
     case 'pending':
       if (moved > 10) { gest.mode = 'pan'; clearTimeout(gest.timer); G.preview = null; }
       break;
@@ -3078,6 +3370,14 @@ const endPtr = (e) => {
     }
     else if ((gest.mode === 'hqDrag' || gest.mode === 'zoneDraw') && G.zonePrev) { const P = G.zonePrev, d = P.div; delete P.div; orderDiv(d, P, d.post); refreshUI(true); }
     else if (gest.mode === 'drag') SFX.click();
+    else if (gest.mode === 'lineDraw') {
+      const d = G.selDiv;
+      if (d && lineLen(gest.pts) >= 40) {
+        if (G.phase === 'deploy' && !setupUnits(d).length) { toast('🦅 ⏳'); SFX.click(true); }
+        else if (orderLine(d, gest.pts, d.post)) { G.lineMode = false; if (G.phase === 'deploy') { SFX.drum('move'); buzz(15); toast(`⚑ ${d.name} 〰 ✔`); } }
+      } else tap(e.clientX, e.clientY);
+      refreshUI(true);
+    }
     else if (gest.mode === 'aim') tap(e.clientX, e.clientY);
     else if (gest.mode === 'aimHold') { if (G.aim && G.aim.tgt) tap(e.clientX, e.clientY); }
     else if (gest.mode === 'box') {
@@ -3085,7 +3385,7 @@ const endPtr = (e) => {
       else tap(e.clientX, e.clientY);
     }
   }
-  G.preview = null; G.aim = null; G.zonePrev = null; G.divPrev = null; gest = null;
+  G.preview = null; G.aim = null; G.zonePrev = null; G.divPrev = null; G.linePrev = null; gest = null;
 };
 function setAim(w) {
   const h = unitAt(w.x, w.y);
@@ -3121,6 +3421,8 @@ function boxSelect(x1, y1, x2, y2) {
 function tap(sx, sy) {
   if (!G.running || G.over) return;
   const p = toWorld(sx, sy);
+  const LZ = G.selDiv && G.selDiv.zone && G.selDiv.zone.line ? G.selDiv.zone : null;
+  if (LZ) { const A = lineArrow(LZ); if (dxy(A.px, A.py, p.x, p.y) < Math.max(22, 30 / cam.z)) { flipLine(G.selDiv); toast(`⇅ ${G.selDiv.name}`); SFX.click(); buzz(10); refreshUI(true); return; } }
   const u = unitAt(p.x, p.y);
   if (u && u.side === 0) {
     if (G.sel.length === 1 && G.sel[0] === u) G.sel = [];
@@ -3235,7 +3537,11 @@ function refreshDivUI() {
   const d = G.selDiv;
   if (d) {
     const dep = G.phase === 'deploy', canRot = dep && setupUnits(d).length > 0;
-    $('bRotL').style.display = $('bRotR').style.display = dep ? '' : 'none';
+    const hasLine = !!(d.zone && d.zone.line);
+    $('bRotL').style.display = $('bRotR').style.display = dep && !hasLine ? '' : 'none';
+    $('bFlip').style.display = hasLine ? '' : 'none';
+    $('bLine').classList.toggle('on', !!G.lineMode);
+    $('bLine').disabled = !(dep ? setupUnits(d).length : d.units.some(u => live(u) && u.state < 3));
     $('bRotL').disabled = $('bRotR').disabled = !canRot;
     $('bDivRejoin').style.display = dep ? 'none' : '';
     $('bTake').classList.toggle('on', d.post === 'attack');
@@ -3387,7 +3693,13 @@ $('bDivUnits').addEventListener('click', () => {
   G.sel = d.units.filter(u => live(u) && u.state < 4); G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true);
 });
 $('bDivRejoin').addEventListener('click', () => { const d = G.selDiv; if (!d) return; const n = rejoin(d.units); toast('↩️ ⚑ ' + n); SFX.drum('move'); buzz(12); refreshUI(true); });
-$('bDivClose').addEventListener('click', () => { G.selDiv = null; SFX.click(); refreshUI(true); });
+$('bDivClose').addEventListener('click', () => { G.selDiv = null; G.lineMode = false; SFX.click(); refreshUI(true); });
+$('bLine').addEventListener('click', () => {
+  const d = G.selDiv; if (!d) return;
+  G.lineMode = !G.lineMode;
+  toast(G.lineMode ? `✏️ ${d.name}: draw his line with one finger` : '✏️ ✖'); SFX.click(); buzz(10); refreshUI(true);
+});
+$('bFlip').addEventListener('click', () => { const d = G.selDiv; if (d && flipLine(d)) { toast(`⇅ ${d.name}`); SFX.click(); buzz(10); } else SFX.click(true); refreshUI(true); });
 $('bHelp').addEventListener('click', () => { $('ovHelp').classList.remove('hidden'); if (G.running && !G.over && G.phase === 'battle') G.paused = true; refreshUI(true); });
 $('bHelpClose').addEventListener('click', () => { $('ovHelp').classList.add('hidden'); });
 $('bStart').addEventListener('click', () => startGame(false));
@@ -3420,6 +3732,7 @@ $('bVet2').addEventListener('click', resetVets);
 const TUT = [
   { d: 'setup', icon: '🇫🇷', txt: 'Setup: drag a division commander inside the blue area and his whole division re-forms around him. ⟲ ⟳ turn it; drag single units to fine-tune' },
   { d: 'cmd', icon: '⚑', txt: 'Tap a division commander (or his button in the bottom strip), then tap a place. He takes that zone and deploys his battalions himself' },
+  { d: 'line', icon: '✏️', txt: 'Or draw his line: tap ✏️ Line, then draw with one finger. The battalions form up along it, facing across it. Tap the ⇅ arrow to face the other way' },
   { d: 'post', icon: '⚔🛡', txt: '⚔ Take attacks the zone, 🛡 Hold defends it. Drag from a commander to point him; press, hold and drag the map to size a zone' },
   { d: 'move', icon: '👆', txt: 'Override: tap a battalion and order it directly. It rejoins its commander when done, or tap ↩️ Div' },
   { d: 'form', icon: '▦', txt: 'Commanders pick formations: ▬ Line fires best · ▮ Column marches and charges · ◻ Square stops cavalry (guns shred it)' },
@@ -3489,6 +3802,21 @@ function drawTut(t) {
     go(60, 100, 168, 78, 'art', 'limbered', 'deployed', 0);
     hq(46, 140, '#ffd34d', 'Vandamme', 'van', p < 0.25);
     finger(c, p < 0.22 ? 46 : 222, p < 0.22 ? 140 : 80, t);
+  } else if (D === 'line') {
+    c.fillStyle = '#5d86b8'; c.fillRect(262, 0, 10, 170);
+    U('line', 1, 'line', 150, 18, Math.PI / 2, 1); U('line', 1, 'line', 214, 30, Math.PI / 2, 1);
+    const p = (t % 5.5) / 5.5, k = clamp((p - 0.12) / 0.38, 0, 1), done = p > 0.55;
+    const cvp = (u) => ({ x: 52 + u * 180, y: 112 - Math.sin(u * Math.PI) * 42 });
+    const nrm = (u) => { const tx = 180, ty = -42 * Math.PI * Math.cos(u * Math.PI), l = Math.hypot(tx, ty); return Math.atan2(-tx / l, ty / l); };
+    c.lineCap = 'round'; c.beginPath(); for (let i = 0; i <= 40 * k; i++) { const q = cvp(i / 40); if (i) c.lineTo(q.x, q.y); else c.moveTo(q.x, q.y); }
+    c.strokeStyle = done ? '#ffd34d' : '#fff'; c.lineWidth = done ? 2.5 : 4; if (done) { c.setLineDash([10, 6]); c.lineDashOffset = -t * 14; } c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; c.lineCap = 'butt';
+    if (done) {
+      [0.18, 0.5, 0.82].forEach(u => { const q = cvp(u); U('line', 0, 'line', q.x, q.y, nrm(u), 1); });
+      const g = cvp(-0.1); U('art', 0, 'deployed', g.x, g.y + 4, nrm(0), 1);
+      const m = cvp(0.5), an = nrm(0.5); arrowTo(c, m.x, m.y - 10, m.x + Math.cos(an) * 44, m.y + Math.sin(an) * 44, '#ffd34d', 1, 1); lbl('⇅', m.x + 24, m.y - 40, '#fff');
+    }
+    lbl('✏️ Line', 44, 156, '#ffd34d'); hq(30, 134, '#ffd34d', 'Vandamme', 'van', !done);
+    if (!done) { const q = cvp(k); finger(c, q.x, q.y, 0.6); }
   } else if (D === 'post') {
     zone(78, 82, 52, '#ff9a3c'); zone(226, 82, 52, '#4fd6c2');
     lbl('⚔ Take', 78, 18, '#ff9a3c'); lbl('🛡 Hold', 226, 18, '#4fd6c2');
@@ -3699,6 +4027,10 @@ window.AUS = {
   orderCharge, meleePowers, issueForm, issueCharge, heightAt, terrAt, passAt, dims,
   haptic: () => ({ ok: HAPTIC_OK, on: hapticOn }),
   ZONES, divByKey, rejoin, layoutDiv, snapSpot, divSetupLayout, rotateDiv, inZoneRect, hqAt,
+  orderLine(key, pts, post) { const d = divByKey(0, key); return orderLine(d, pts, post || (d && d.post) || 'hold'); },
+  flipLine(key) { return flipLine(divByKey(0, key)); },
+  lineGhost(key, pts) { return lineGhost(divByKey(0, key), pts); },
+  lineArrow, lineProj, linePt, makeLineZone,
   placeDiv(key, x, y, th) { const d = divByKey(0, key); return !!d && applyDivSetup(d, x, y, th ?? divFacing(d)); },
   // zone order by commander key ('van', 'sth', 'leg', 'lan', 'mur', 'gar'), zone name or {x,y,r}, 'attack' | 'hold'
   orderDiv(key, zone, post, side = 0) {

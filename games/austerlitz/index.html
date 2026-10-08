@@ -194,6 +194,8 @@ button:disabled{opacity:.35}
   <span id="divName"></span>
   <button id="bTake" title="Take the zone (attack)">⚔️<small>Take</small></button>
   <button id="bHoldZ" title="Hold the zone (defend)">🛡️<small>Hold</small></button>
+  <button id="bLine" title="Draw a line for this division (one finger)">✏️<small>Line</small></button>
+  <button id="bFlip" title="Face the line the other way" style="display:none">⇅<small>Flip</small></button>
   <button id="bRotL" title="Turn the division left (setup)" style="display:none">⟲<small>Turn</small></button>
   <button id="bRotR" title="Turn the division right (setup)" style="display:none">⟳<small>Turn</small></button>
   <button id="bDivUnits" title="Select this division's units for direct orders">👥<small>Units</small></button>
@@ -228,9 +230,10 @@ button:disabled{opacity:.35}
 <div id="ovHelp" class="ov hidden"><div class="card">
   <h1 style="font-size:22px">Field guide</h1>
   <div class="legend" id="legend2"></div>
-  <div class="rows">
+    <div class="rows">
     <span>🇫🇷</span><span>Setup: drag a commander inside the blue area (or select him and tap a spot there). His division re-forms around him: line in front, supports, guns on good ground, horse on the flanks. ⟲ ⟳ turn it. Drag single units to fine-tune. Tapping outside the area gives his opening zone</span>
     <span>⚑</span><span>Commanders: tap one (or his button in the bottom strip), then tap a place. His division takes that zone; he picks each unit's formation, spot and facing</span>
+    <span>✏️</span><span>Line: select a commander, tap ✏️ Line, draw with one finger (straight or curved). His battalions spread along it facing across it, supports behind the gaps, guns at the ends, horse behind the wings. Tap the ⇅ arrow (or ⇅ Flip) to face the other way. In setup it places him at once</span>
     <span>⚔️</span><span>Take: march up, form line against anything in the way, go in together, then dig in. 🛡️ Hold: line in front, supports behind the gaps, skirmishers ahead, guns on the flanks, horse on the wings. Each unit has its own slot (faint ghost boxes when he's selected)</span>
     <span>📍</span><span>Tap near a village or flag to snap to it. Drag from a commander to point him. Press, hold and drag the map to draw a zone of any size. Tap an enemy: attack there</span>
     <span>↩️</span><span>Direct orders still work: tap a battalion. It rejoins its commander when the order is done, or tap ↩️ Div (🛡️ Hold stays until you do)</span>
