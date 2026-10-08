@@ -2,7 +2,7 @@
    Original code and art. Plain canvas + vanilla JS, no dependencies. Units are metres. */
 (() => {
 'use strict';
-const VERSION = 'v1.0';
+const VERSION = 'v1.1';
 const WW = 640, WH = 560;            // world size (m)
 const TAU = Math.PI * 2;
 const DT = 1 / 30;
@@ -267,7 +267,7 @@ const S = {
   layers: Object.assign({ arcs: false, heat: false, mg: false, blast: false, voice: false, slots: true, road: true }, JSON.parse(store.get('fm-layers', '{}') || '{}')),
   saves: (() => { try { const v = JSON.parse(store.get('fm-saves', '[]')); return Array.isArray(v) ? v.concat([null, null, null]).slice(0, 3) : [null, null, null]; } catch (e) { return [null, null, null]; } })(),
   frame: { x: 300, y: 450, h: -Math.PI / 2, th: -Math.PI / 2, path: [] },
-  wps: [], men: [], slots: [], form: null, custom: null, onRoad: false, follow: true, heat: null, heatT: 0,
+  wps: [], men: [], slots: [], form: null, custom: null, onRoad: false, follow: true, heat: null, heatT: 0, fPath: null, stats: { plans: 0, planMs: 0, fail: 0, stuck: 0, alt: 0 },
 };
 function formKey() { return 'fm-form-' + S.unit; }
 function buildMen() {
@@ -275,6 +275,7 @@ function buildMen() {
   S.men = U.men.map(([role, wpn, name], i) => ({
     i, role, wpn, name, sec: S.unit === 'platoon' ? (i < 5 ? -1 : Math.floor((i - 5) / 10)) : 0,
     lead: role === 'lead' || role === 'plead', x: F.x, y: F.y, a: F.h, spd: 0.9 + rng() * 0.2, ph: rng() * TAU, vx: 0, vy: 0,
+    path: null, pgx: 0, pgy: 0, replan: false, chkT: 0, chkX: F.x, chkY: F.y, stuck: 0, altT: 0, altX: 0, altY: 0,
   }));
   S.form = store.get(formKey(), U.def);
   if (S.form !== 'custom' && !U.forms.includes(S.form)) S.form = U.def;
@@ -293,6 +294,7 @@ function computeSlots() {
   S.slots = slotsFor(S.unit, activeForm(), S.D, S.custom);
   if (S.layers.road && S.onRoad) for (const sl of S.slots) sl.s = clamp(sl.s, -ROAD_W / 2 + 1, ROAD_W / 2 - 1); // squeeze onto the road
   S.heatT = 0;
+  for (const m of S.men) { m.path = null; m.replan = true; m.stuck = 0; m.altT = 0; }
 }
 function roadPoint(x, y) {
   let best = null;
@@ -309,6 +311,165 @@ function slotWorld(i, h = S.frame.h) {
 }
 function formRadius() { return Math.max(4, ...S.slots.map(s => hyp(s.f, s.s))); }
 
+// ---------------------------------------------------------------- navigation (buildings are the only hard obstacles)
+// Coarse 1 m grid with buildings inflated by a man's radius, A* with a node budget, string-pull smoothing,
+// per-man path cache, slot validation (slots inside buildings move out on the leader's side) and stuck recovery.
+const MAN_R = 0.6;            // body radius used for line-of-sight / smoothing clearance
+const GRID_INF = MAN_R + 0.35; // grid inflation (a bit more than MAN_R so cell centres keep clear of walls)
+const SLOT_M = MAN_R + 0.55;  // slots are kept this far off the walls
+const GW = WW, GH = WH, NC = GW * GH;
+const blockedG = new Uint8Array(NC);
+(function buildGrid() {
+  for (let x = 0; x < GW; x++) { blockedG[x] = 1; blockedG[(GH - 1) * GW + x] = 1; }
+  for (let y = 0; y < GH; y++) { blockedG[y * GW] = 1; blockedG[y * GW + GW - 1] = 1; }
+  for (const [hx, hy, w, h] of HOUSES) {
+    for (let gy = Math.floor(hy - GRID_INF - 1); gy <= Math.ceil(hy + h + GRID_INF + 1); gy++) for (let gx = Math.floor(hx - GRID_INF - 1); gx <= Math.ceil(hx + w + GRID_INF + 1); gx++) {
+      const cx = gx + 0.5, cy = gy + 0.5;
+      if (gx >= 0 && gy >= 0 && gx < GW && gy < GH && cx > hx - GRID_INF && cx < hx + w + GRID_INF && cy > hy - GRID_INF && cy < hy + h + GRID_INF) blockedG[gy * GW + gx] = 1;
+    }
+  }
+})();
+const cellFree = (gx, gy) => gx >= 0 && gy >= 0 && gx < GW && gy < GH && !blockedG[gy * GW + gx];
+// segment vs inflated rectangles (slab test)
+function segClear(ax, ay, bx, by, inf = MAN_R) {
+  const dx = bx - ax, dy = by - ay;
+  for (const [hx, hy, w, h] of HOUSES) {
+    const x0 = hx - inf, x1 = hx + w + inf, y0 = hy - inf, y1 = hy + h + inf;
+    let t0 = 0, t1 = 1, ok = true;
+    for (const [p, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+      if (p === 0) { if (q < 0) { ok = false; break; } } else {
+        const r = q / p;
+        if (p < 0) { if (r > t1) { ok = false; break; } if (r > t0) t0 = r; } else { if (r < t0) { ok = false; break; } if (r < t1) t1 = r; }
+      }
+    }
+    if (ok && t0 <= t1) return false;
+  }
+  return true;
+}
+function nearestFreeCell(x, y, maxR = 25) {
+  const gx = Math.floor(x), gy = Math.floor(y);
+  if (cellFree(gx, gy)) return [gx, gy];
+  for (let r = 1; r <= maxR; r++) {
+    let best = null, bd = 1e9;
+    for (let oy = -r; oy <= r; oy++) for (let ox = -r; ox <= r; ox++) {
+      if (Math.max(Math.abs(ox), Math.abs(oy)) !== r || !cellFree(gx + ox, gy + oy)) continue;
+      const d = hyp(gx + ox + 0.5 - x, gy + oy + 0.5 - y); if (d < bd) { bd = d; best = [gx + ox, gy + oy]; }
+    }
+    if (best) return best;
+  }
+  return [clamp(gx, 1, GW - 2), clamp(gy, 1, GH - 2)];
+}
+const gS = new Float32Array(NC), seen = new Uint32Array(NC), shut = new Uint32Array(NC), from = new Int32Array(NC);
+const HEAP = 1 << 17, hI = new Int32Array(HEAP), hF = new Float32Array(HEAP);
+let gen = 0, hn = 0;
+function hPush(i, f) {
+  if (hn >= HEAP) return;
+  let k = hn++;
+  while (k > 0) { const p = (k - 1) >> 1; if (hF[p] <= f) break; hI[k] = hI[p]; hF[k] = hF[p]; k = p; }
+  hI[k] = i; hF[k] = f;
+}
+function hPop() {
+  const top = hI[0], li = hI[--hn], lf = hF[hn];
+  let k = 0;
+  for (;;) { let c = 2 * k + 1; if (c >= hn) break; if (c + 1 < hn && hF[c + 1] < hF[c]) c++; if (hF[c] >= lf) break; hI[k] = hI[c]; hF[k] = hF[c]; k = c; }
+  hI[k] = li; hF[k] = lf;
+  return top;
+}
+const NB = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
+function astar(sx, sy, tx, ty) {
+  const [s0, s1] = nearestFreeCell(sx, sy, 4), [g0, g1] = nearestFreeCell(tx, ty);
+  const start = s1 * GW + s0, goal = g1 * GW + g0;
+  if (start === goal) return [[g0, g1]];
+  const bx0 = Math.max(1, Math.min(s0, g0) - 40), bx1 = Math.min(GW - 2, Math.max(s0, g0) + 40);
+  const by0 = Math.max(1, Math.min(s1, g1) - 40), by1 = Math.min(GH - 2, Math.max(s1, g1) + 40);
+  gen++; hn = 0;
+  const hfn = (x, y) => { const dx = Math.abs(x - g0), dy = Math.abs(y - g1); return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy); };
+  gS[start] = 0; seen[start] = gen; from[start] = -1; hPush(start, hfn(s0, s1));
+  let budget = Math.min(60000, 12000 + 200 * hfn(s0, s1)); // longer trips may need to flood a pocket in front of a wall
+  while (hn > 0 && budget-- > 0) {
+    const cur = hPop();
+    if (shut[cur] === gen) continue;
+    shut[cur] = gen;
+    if (cur === goal) {
+      const out = []; for (let c = cur; c !== -1; c = from[c]) out.push([c % GW, (c / GW) | 0]);
+      return out.reverse();
+    }
+    const cx = cur % GW, cy = (cur / GW) | 0, g = gS[cur];
+    for (const [ox, oy, cost] of NB) {
+      const nx = cx + ox, ny = cy + oy;
+      if (nx < bx0 || nx > bx1 || ny < by0 || ny > by1) continue;
+      const ni = ny * GW + nx;
+      if (blockedG[ni] || shut[ni] === gen) continue;
+      if (ox && oy && (blockedG[cy * GW + nx] || blockedG[ny * GW + cx])) continue; // no corner cutting
+      const ng = g + cost;
+      if (seen[ni] === gen && ng >= gS[ni]) continue;
+      seen[ni] = gen; gS[ni] = ng; from[ni] = cur; hPush(ni, ng + hfn(nx, ny));
+    }
+  }
+  return null;
+}
+// path from (sx,sy) to (tx,ty): list of points after the start, last = goal. Direct when the line is clear.
+function findPath(sx, sy, tx, ty) {
+  if (segClear(sx, sy, tx, ty)) return [{ x: tx, y: ty }];
+  const t0 = performance.now();
+  const cells = astar(sx, sy, tx, ty);
+  S.stats.plans++; S.stats.planMs += performance.now() - t0;
+  if (!cells) { S.stats.fail++; if (S.failLog && S.failLog.length < 20) S.failLog.push([+sx.toFixed(1), +sy.toFixed(1), +tx.toFixed(1), +ty.toFixed(1)]); return null; }
+  const pts = cells.map(([x, y]) => ({ x: x + 0.5, y: y + 0.5 }));
+  pts.push({ x: tx, y: ty });
+  // string-pull: keep only the corners we can't see past
+  const out = []; let ax = sx, ay = sy, i = 0;
+  while (i < pts.length - 1) {
+    let j = i + 1;
+    while (j + 1 < pts.length && segClear(ax, ay, pts[j + 1].x, pts[j + 1].y)) j++;
+    if (j === pts.length - 1) break;
+    out.push(pts[j]); ax = pts[j].x; ay = pts[j].y; i = j;
+  }
+  out.push({ x: tx, y: ty });
+  return out;
+}
+const houseAt = (x, y, m) => HOUSES.find(([hx, hy, w, h]) => x > hx - m && x < hx + w + m && y > hy - m && y < hy + h + m);
+// a slot inside (or hugging) a building moves out to a face, preferring the face the leader is on
+function validSlot(x, y, lx, ly, anySide) {
+  x = clamp(x, 2, WW - 2); y = clamp(y, 2, WH - 2);
+  for (let it = 0; it < 4; it++) {
+    const H = houseAt(x, y, SLOT_M);
+    if (!H) return { x, y, moved: it > 0 };
+    const [hx, hy, w, h] = H, e = SLOT_M + 0.05, x0 = hx - e, x1 = hx + w + e, y0 = hy - e, y1 = hy + h + e;
+    let best = null, bs = 1e9;
+    for (const [ox, oy, side] of [[x0, y, lx < x0], [x1, y, lx > x1], [x, y0, ly < y0], [x, y1, ly > y1]]) {
+      const sc = hyp(ox - x, oy - y) + (side || anySide ? 0 : 6);
+      if (sc < bs) { bs = sc; best = [ox, oy]; }
+    }
+    x = clamp(best[0], 2, WW - 2); y = clamp(best[1], 2, WH - 2);
+  }
+  const [cx, cy] = nearestFreeCell(x, y);
+  return { x: cx + 0.5, y: cy + 0.5, moved: true };
+}
+// a free spot near (x,y) that no mate is using: for men who stay stuck
+function freeNear(x, y, me) {
+  let best = null, bd = 1e9;
+  for (let r = 1.5; r <= 6; r += 1.5) for (let k = 0; k < 12; k++) {
+    const a = k / 12 * TAU + r, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+    if (px < 2 || py < 2 || px > WW - 2 || py > WH - 2 || houseAt(px, py, SLOT_M)) continue;
+    if (S.men.some(o => o !== me && hyp(o.x - px, o.y - py) < 1.2)) continue;
+    const d = hyp(px - me.x, py - me.y) * 0.3 + r;
+    if (d < bd) { bd = d; best = { x: px, y: py }; }
+  }
+  return best || { x, y };
+}
+// where man i should stand right now: his formation slot, moved out of buildings, plus any temporary stuck offset
+function slotTarget(i, h = S.frame.h) {
+  const p = slotWorld(i, h), F = S.frame;
+  if (i === 0) return p;
+  const m = S.men[i];
+  let v = validSlot(p.x, p.y, F.x, F.y);
+  if (m && m.altT > 0) v = validSlot(v.x + m.altX, v.y + m.altY, F.x, F.y);
+  p.x = v.x; p.y = v.y;
+  return p;
+}
+const MAX_PLANS = 6; // A* runs per sim step (others keep their cached path / wait a tick)
+
 // ---------------------------------------------------------------- simulation
 const WALK = 3.2, RUSH = 7.5; // m/s (time runs a bit fast so moves stay snappy)
 function step() {
@@ -317,67 +478,115 @@ function step() {
   // road column on/off
   const rd = roadHeading(F.x, F.y);
   const moving = F.path.length > 0;
-  const onRoad = moving && rd.d < ROAD_W / 2 + 4 && Math.abs(Math.cos(angDiff(F.th, rd.a))) > 0.7;
+  // auto column only when marching along the road (heading within ~25° and the goal near the road), not when crossing it
+  const goal = F.path[F.path.length - 1];
+  const onRoad = moving && rd.d < ROAD_W / 2 + 4 && Math.abs(Math.cos(angDiff(F.th, rd.a))) > 0.9 && roadDist(goal.x, goal.y) < 15;
   if (onRoad !== S.onRoad) { S.onRoad = onRoad; computeSlots(); }
   // how far the men lag behind their slots
   let lag = 0;
-  for (const m of S.men) { const p = slotWorld(m.i); lag += hyp(p.x - m.x, p.y - m.y); }
+  for (const m of S.men) { const p = slotTarget(m.i); lag += hyp(p.x - m.x, p.y - m.y); }
   lag /= S.men.length;
   const tgt = F.path[0];
   if (tgt) {
-    const dx = tgt.x - F.x, dy = tgt.y - F.y, d = hyp(dx, dy);
-    if (d < 0.4) { F.path.shift(); if (!F.path.length) updateWpUI(); }
+    // final goal may be on a roof — land next to it on the approach side
+    if (!S.fGoal || hyp(S.fGoal.x - tgt.x, S.fGoal.y - tgt.y) > 0.1) {
+      const g = validSlot(tgt.x, tgt.y, F.x, F.y, true);
+      S.fGoal = { x: g.x, y: g.y }; S.fPath = null;
+    }
+    const gx = S.fGoal.x, gy = S.fGoal.y;
+    if (!S.fPath || S.fRep) { S.fPath = findPath(F.x, F.y, gx, gy) || [{ x: gx, y: gy }]; S.fRep = false; }
+    if (S.fPath.length) {
+      S.fPath[S.fPath.length - 1] = { x: gx, y: gy };
+      while (S.fPath.length > 1 && segClear(F.x, F.y, S.fPath[1].x, S.fPath[1].y)) S.fPath.shift();
+      if (S.fPath.length > 1 && hyp(S.fPath[0].x - F.x, S.fPath[0].y - F.y) < 0.4) S.fPath.shift();
+    }
+    const wp = S.fPath[0] || { x: gx, y: gy };
+    const dx = wp.x - F.x, dy = wp.y - F.y, d = hyp(dx, dy);
+    const toGoal = hyp(gx - F.x, gy - F.y);
+    if (toGoal < 0.5) { F.path.shift(); S.fPath = null; S.fGoal = null; if (!F.path.length) updateWpUI(); }
     else {
-      if (d > 1.5) F.th = Math.atan2(dy, dx);
+      if (d > 0.4) F.th = Math.atan2(dy, dx);
       const turn = clamp(1 - Math.abs(angDiff(F.th, F.h)) / 1.6, 0.4, 1);
       const v = sp * clamp(1.35 - lag / 5, 0.2, 1) * turn * terrMul(F.x, F.y);
       const stp = Math.min(d, v * DT);
-      F.x += dx / d * stp; F.y += dy / d * stp;
+      if (d > 1e-4) { F.x += dx / d * stp; F.y += dy / d * stp; }
       if (S.onRoad && S.layers.road) {
-        // hug the road centre while marching along it
-        const rp = roadPoint(F.x, F.y), tp = roadPoint(tgt.x, tgt.y);
+        const rp = roadPoint(F.x, F.y), tp = roadPoint(gx, gy);
         if (rp.d > 0.05 && tp.d < ROAD_W) { const k = Math.min(rp.d, 2.5 * DT) / rp.d; F.x += (rp.x - F.x) * k; F.y += (rp.y - F.y) * k; }
       }
     }
-  }
+  } else { S.fPath = null; S.fGoal = null; }
   // wheel: the outer man can only move so fast, so wide formations turn slower
   const rate = clamp(sp * 2.4 / Math.max(6, formRadius()), 0.45, 2.5);
   F.h += clamp(angDiff(F.th, F.h), -rate * DT, rate * DT);
-  // men walk to their slots with a little human jitter
+  // men walk to their slots with a little human jitter, around buildings when they have to
   const jit = Math.min(1, S.D / 4) * 0.35;
+  let plans = 0;
   for (const m of S.men) {
-    const p = slotWorld(m.i);
+    const p = slotTarget(m.i);
     let tx = p.x, ty = p.y;
-    if (!m.lead || S.unit === 'platoon' && m.role === 'lead') { tx += Math.sin(S.t * 0.6 + m.ph) * jit; ty += Math.cos(S.t * 0.45 + m.ph * 1.7) * jit; }
+    if (!m.lead || S.unit === 'platoon' && m.role === 'lead') {
+      const jx = tx + Math.sin(S.t * 0.6 + m.ph) * jit, jy = ty + Math.cos(S.t * 0.45 + m.ph * 1.7) * jit;
+      if (!houseAt(jx, jy, MAN_R + 0.2)) { tx = jx; ty = jy; }
+    }
     if (m.i === 0) { tx = F.x; ty = F.y; }
-    const dx = tx - m.x, dy = ty - m.y, d = hyp(dx, dy);
+    const dT = hyp(tx - m.x, ty - m.y);
+    let ax = tx, ay = ty;
+    if (dT > 0.3 && !segClear(m.x, m.y, tx, ty)) {
+      if (!m.path || m.replan || hyp(m.pgx - tx, m.pgy - ty) > 2.5) {
+        if (plans < MAX_PLANS) { plans++; m.path = findPath(m.x, m.y, tx, ty); m.pgx = tx; m.pgy = ty; m.replan = false; }
+      }
+      if (m.path && m.path.length) {
+        m.path[m.path.length - 1] = { x: tx, y: ty };
+        while (m.path.length > 1 && segClear(m.x, m.y, m.path[1].x, m.path[1].y)) m.path.shift();
+        if (m.path.length > 1 && hyp(m.path[0].x - m.x, m.path[0].y - m.y) < 0.35) m.path.shift();
+        ax = m.path[0].x; ay = m.path[0].y;
+      }
+    } else m.path = null;
+    const dx = ax - m.x, dy = ay - m.y, d = hyp(dx, dy);
     const maxSp = (moving ? sp * 1.5 : sp * 1.6) * m.spd * terrMul(m.x, m.y);
-    const v = d > 0.05 ? Math.min(maxSp, d * 2.4 + 0.15) : 0;
+    const v = dT > 0.05 ? Math.min(maxSp, dT * 2.4 + 0.15) : 0;
     const k = d > 0 ? Math.min(d, v * DT) / d : 0;
     m.vx = dx * k / DT; m.vy = dy * k / DT;
     m.x += dx * k; m.y += dy * k;
     const sp2 = hyp(m.vx, m.vy);
-    const want = sp2 > 0.8 && d > 1.2 ? Math.atan2(m.vy, m.vx) : p.a;
+    const want = sp2 > 0.8 && dT > 1.2 ? Math.atan2(m.vy, m.vx) : p.a;
     m.a += clamp(angDiff(want, m.a), -5 * DT, 5 * DT);
+    // stuck check: barely moved in 1.5 s while still away from the slot -> repath; 3rd time -> a free spot nearby for a while
+    if (m.altT > 0) m.altT -= DT;
+    m.chkT = (m.chkT || 0) + DT;
+    if (m.chkT >= 1.5) {
+      const moved = hyp(m.x - m.chkX, m.y - m.chkY);
+      if (m.i !== 0 && moved < 0.3 && dT > 1.5) {
+        m.stuck = (m.stuck || 0) + 1; S.stats.stuck++; m.replan = true; m.path = null;
+        if (m.stuck > 2) { const a = freeNear(tx, ty, m); m.altX = a.x - tx; m.altY = a.y - ty; m.altT = 5; m.stuck = 0; S.stats.alt++; }
+      } else if (dT <= 1.5) m.stuck = 0;
+      m.chkT = 0; m.chkX = m.x; m.chkY = m.y;
+    }
   }
-  // keep a little elbow room, and walk around houses
+  // elbow room: hard minimum 0.8 m plus a soft push inside 1.3 m so men don't jam in a gap
   const M = S.men;
   for (let i = 0; i < M.length; i++) for (let j = i + 1; j < M.length; j++) {
-    const a = M[i], b = M[j], dx = b.x - a.x, dy = b.y - a.y, d = hyp(dx, dy), min = 0.8;
-    if (d < min && d > 1e-4) { const p = (min - d) / 2, nx = dx / d * p, ny = dy / d * p; if (i) { a.x -= nx; a.y -= ny; } b.x += nx; b.y += ny; }
+    const a = M[i], b = M[j], dx = b.x - a.x, dy = b.y - a.y, d = hyp(dx, dy);
+    if (d < 1.3 && d > 1e-4) {
+      const p = (d < 0.8 ? (0.8 - d) / 2 : 0) + (1.3 - d) * 0.04, nx = dx / d * p, ny = dy / d * p;
+      if (i) { a.x -= nx; a.y -= ny; }
+      b.x += nx; b.y += ny;
+    }
   }
+  // nobody stands inside a wall
   for (const m of M) for (const [hx, hy, w, h] of HOUSES) {
-    const mg = 0.6;
+    const mg = MAN_R - 0.1;
     if (m.x > hx - mg && m.x < hx + w + mg && m.y > hy - mg && m.y < hy + h + mg) {
-      const opts = [[m.x - (hx - mg), -1, 0], [hx + w + mg - m.x, 1, 0], [m.y - (hy - mg), 0, -1], [hy + h + mg - m.y, 0, 1]].sort((a, b) => a[0] - b[0])[0];
-      m.x += opts[1] * opts[0]; m.y += opts[2] * opts[0];
+      const o = [[m.x - (hx - mg), -1, 0], [hx + w + mg - m.x, 1, 0], [m.y - (hy - mg), 0, -1], [hy + h + mg - m.y, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+      m.x += o[1] * o[0]; m.y += o[2] * o[0];
     }
   }
   for (const m of M) { m.x = clamp(m.x, 1, WW - 1); m.y = clamp(m.y, 1, WH - 1); }
 }
 function settled() {
   if (S.frame.path.length || Math.abs(angDiff(S.frame.th, S.frame.h)) > 0.02) return false;
-  return S.men.every(m => { const p = slotWorld(m.i); return hyp(p.x - m.x, p.y - m.y) < 0.9; });
+  return S.men.every(m => { const p = slotTarget(m.i); return hyp(p.x - m.x, p.y - m.y) < 0.9; });
 }
 
 // ---------------------------------------------------------------- analysis overlays
@@ -611,7 +820,7 @@ function render() {
     dbg.voice = 1;
   }
   // path + waypoints
-  const pts = [[F.x, F.y], ...F.path.map(p => [p.x, p.y])];
+  const pts = [[F.x, F.y], ...(S.fPath && F.path.length ? S.fPath.slice(0, -1).map(p => [p.x, p.y]) : []), ...F.path.map((p, i) => (i === 0 && S.fGoal ? [S.fGoal.x, S.fGoal.y] : [p.x, p.y]))];
   if (pts.length > 1) {
     ctx.setLineDash([7 * px, 6 * px]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2 * px;
     ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); ctx.setLineDash([]);
@@ -627,7 +836,7 @@ function render() {
   });
   // slot ghosts (where each man is heading)
   if (S.layers.slots) for (const m of S.men) {
-    const p = slotWorld(m.i), d = hyp(p.x - m.x, p.y - m.y);
+    const p = slotTarget(m.i), d = hyp(p.x - m.x, p.y - m.y);
     if (d < 0.9) continue;
     ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1.2 * px;
     ctx.beginPath(); ctx.arc(p.x, p.y, 0.45 * k, 0, TAU); ctx.stroke();
@@ -768,11 +977,12 @@ cv.addEventListener('pointermove', (e) => {
     }
     case 'dragMan': {
       const w = toWorld(e.clientX, e.clientY), F = S.frame, c = Math.cos(F.h), s = Math.sin(F.h);
-      const lx = w.x - F.x, ly = w.y - F.y;
+      const snap = validSlot(w.x, w.y, F.x, F.y, true);
+      const lx = snap.x - F.x, ly = snap.y - F.y;
       if (S.form !== 'custom') { S.custom = S.slots.map(sl => [sl.f / S.D, sl.s / S.D, sl.face]); setForm('custom', true); }
       const f = lx * c + ly * s, sd = -lx * s + ly * c, m = S.dragMan;
       S.custom[m.i] = [f / S.D, sd / S.D, S.custom[m.i][2]];
-      computeSlots(); m.x = w.x; m.y = w.y;
+      computeSlots(); m.x = snap.x; m.y = snap.y;
       break;
     }
   }
@@ -800,7 +1010,9 @@ cv.addEventListener('wheel', (e) => {
 function clampCam() { cam.x = clamp(cam.x, -50, WW + 50); cam.y = clamp(cam.y, -50, WH + 50); }
 function march(w) {
   const p = { x: clamp(w.x, 3, WW - 3), y: clamp(w.y, 3, WH - 3) };
-  S.frame.path = [...S.wps, p]; S.wps = []; updateWpUI(); vib(10);
+  S.frame.path = [...S.wps, p]; S.wps = []; S.fPath = null; S.fGoal = null; S.fRep = true;
+  for (const m of S.men) { m.path = null; m.replan = true; m.stuck = 0; }
+  updateWpUI(); vib(10);
 }
 
 // ---------------------------------------------------------------- UI
@@ -992,9 +1204,10 @@ requestAnimationFrame(frame);
 
 // test / debug hooks (harmless in normal play)
 window.FM = {
-  S, cam, view, UNITS, toScreen, toWorld, settled, setForm, setUnit, setD, march, fit, slotWorld,
+  S, cam, view, UNITS, HOUSES, toScreen, toWorld, settled, setForm, setUnit, setD, march, fit, slotWorld, slotTarget,
+  findPath, validSlot, segClear, houseAt, nearestFreeCell,
   fast(sec) { const n = Math.round(sec / DT); for (let i = 0; i < n; i++) step(); return S.t; },
   until(sec) { const n = Math.round(sec / DT); for (let i = 0; i < n; i++) { step(); if (settled()) return S.t; } return -1; },
-  mgBurst, blast, layout,
+  mgBurst, blast, layout, render, step,
 };
 })();

@@ -1,4 +1,4 @@
-# Formations · WW2 section drill (v1.0)
+# Formations · WW2 section drill (v1.1)
 
 A phone-first sandbox for playing with WW2 small-unit formations. There are no enemies, no timer and no score.
 Pick your unit, tap a formation and watch the men walk into their new places, then march them around a small
@@ -46,6 +46,19 @@ with a little personal jitter and speed difference, wider formations wheel more 
 Open fields, a road, a hedgerow with a gate, a small wood and a few farm buildings. Men slow down in the wood and
 through the hedge, speed up a little on the road and walk round buildings. Marching along the road automatically
 switches to a column squeezed onto the road (toggle 🛣) and switches back afterwards.
+
+## Getting around buildings (v1.1)
+- Every man (and the leader's own route) uses real pathfinding: a 1 m grid with the buildings inflated by a man's
+  radius, A* with a node budget, then a line-of-sight string-pull so routes hug corners instead of zig-zagging.
+  Paths are cached and only re-planned when the target slot moves more than 2.5 m or the man gets stuck, and the
+  straight line is used whenever it is clear (open field costs nothing). At most 6 A* runs per tick.
+- Slots that fall inside a building slide out to the nearest wall face on the leader's side, so a formation
+  deforms round a building instead of sending men into the wall. A march order tapped on a roof stops next to it.
+- Stuck check: a man who moves less than 0.3 m in 1.5 s while away from his slot re-plans; after the third time he
+  gets a free spot nearby for 5 s. A soft separation keeps men from jamming in a gap.
+- In ✏️ edit mode a man dragged onto a roof snaps to the nearest free spot.
+- Auto road column only kicks in when marching along the road (heading within ~25° and the goal near the road),
+  not when crossing it.
 
 ## Notes
 - Arc lengths are shortened so they fit a section-sized view (rifle 60 m, Bren 120 m, BAR 100 m, MG 42 140 m).
