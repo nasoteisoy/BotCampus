@@ -1,5 +1,7 @@
-/* Austerlitz 1805 v1: a small real-time Napoleonic corps tactics game for phones.
-   Sibling of Bridge Too Far. Original code and art. Plain canvas + vanilla JS, no dependencies. */
+/* Austerlitz 1805 v2: a small real-time Napoleonic corps tactics game for phones.
+   Sibling of Bridge Too Far. Original code and art. Plain canvas + vanilla JS, no dependencies.
+   v2 adds division commanders: give a commander a zone (take / hold) and he picks formations,
+   positions and facings for his battalions. Cavalry fights in squadron pairs, guns in 2-gun sections. */
 (() => {
 'use strict';
 
@@ -24,7 +26,7 @@ const NAT = {
 };
 const MCOL = ['#58c050', '#e6c83a', '#f08a28', '#e8402f', '#9a9a9a'];
 const MNAME = ['Steady', 'Shaken', 'Wavering', 'Panic', 'Broken'];
-const VERSION = 'v1.0';
+const VERSION = 'v2.0';
 const FNAME = ['Santon', 'Pratzen', 'Sokolnitz'];
 const FABBR = ['Sa', 'Pr', 'So'];
 
@@ -281,41 +283,86 @@ const VULN = { line: 1, column: 1.25, square: 1.2, open: 0.55, mounted: 1.1, lim
 const RAD = { line: 12, column: 13, square: 13, open: 12, mounted: 11, limbered: 10, deployed: 11, staff: 7 };
 const CHARGE_R = { cav: 400, inf: 170 };
 const RALLY_R = 190;
-// [type, name, exp, nation, role]
+// [type, name, exp, nation, role, division, size]. size < 1 = a detachment: cavalry regiments are
+// split into pairs of squadrons (½) and 6-gun batteries into 2-gun sections (⅓). Strength and
+// firepower scale with size, so a whole regiment or battery hits about as hard as before.
 const F_ROSTER = [
-  ['cmdr', 'Marshal Soult', 2, 'fr'], ['line', '4e de Ligne', 2, 'fr'], ['line', '28e de Ligne', 1, 'fr'], ['line', '46e de Ligne', 1, 'fr'],
-  ['line', '57e de Ligne', 1, 'fr', 'guard'], ['light', '10e Léger', 2, 'fr'], ['light', '26e Léger', 1, 'fr'],
-  ['hcav', 'Cuirassiers', 1, 'fr'], ['lcav', 'Hussars', 1, 'fr'], ['art', 'Foot Battery', 1, 'fr'], ['hart', 'Horse Battery', 1, 'fr'],
-  ['guard', 'Guard Grenadiers', 2, 'fr'],
+  ['cmdr', 'Marshal Soult', 2, 'fr'],
+  ['line', '4e de Ligne', 2, 'fr', null, 'van'], ['line', '28e de Ligne', 1, 'fr', null, 'sth'],
+  ['line', '46e de Ligne', 1, 'fr', null, 'van'], ['line', '57e de Ligne', 1, 'fr', 'guard', 'lan'],
+  ['light', '10e Léger', 2, 'fr', null, 'sth'], ['light', '26e Léger', 1, 'fr', null, 'leg'],
+  ['hcav', 'Cuirassiers sq.1-2', 1, 'fr', null, 'mur', 0.5], ['hcav', 'Cuirassiers sq.3-4', 1, 'fr', null, 'mur', 0.5],
+  ['lcav', 'Hussars sq.1-2', 1, 'fr', null, 'mur', 0.5], ['lcav', 'Hussars sq.3-4', 1, 'fr', null, 'mur', 0.5],
+  ['art', 'Foot Bty sec.1', 1, 'fr', null, 'van', 1 / 3], ['art', 'Foot Bty sec.2', 1, 'fr', null, 'sth', 1 / 3], ['art', 'Foot Bty sec.3', 1, 'fr', null, 'leg', 1 / 3],
+  ['hart', 'Horse Bty sec.1', 1, 'fr', null, 'leg', 1 / 3], ['hart', 'Horse Bty sec.2', 1, 'fr', null, 'lan', 1 / 3], ['hart', 'Horse Bty sec.3', 1, 'fr', null, 'mur', 1 / 3],
+  ['guard', 'Guard Grenadiers', 2, 'fr', null, 'gar'],
 ];
-const GUARD_SLOT = 11;
+const F_PARENT = [0, 1, 2, 3, 4, 5, 6, 7, 7, 8, 8, 9, 9, 9, 10, 10, 10, 11]; // v1 unit each piece came from (deploy presets)
+const GUARD_SLOT = 17;
 const A_ROSTER = [
-  ['cmdr', 'Gen. Kutuzov', 1, 'ru'], ['line', 'Novgorod Musk.', 1, 'ru'], ['line', 'Apsheron Musk.', 1, 'ru'], ['line', 'Salzburg Inf.', 0, 'au'],
-  ['line', 'Kursk Musk.', 0, 'ru'], ['line', 'Podolia Musk.', 1, 'ru', 'guard'], ['light', 'Russian Jägers', 1, 'ru'], ['light', 'Grenz Bn', 0, 'au'],
-  ['lcav', 'Uhlans', 1, 'ru'], ['hcav', 'Austrian Cuir.', 1, 'au'], ['art', 'Russian Battery', 1, 'ru'], ['art', 'Austrian Battery', 0, 'au'],
+  ['cmdr', 'Gen. Kutuzov', 1, 'ru'],
+  ['line', 'Novgorod Musk.', 1, 'ru', null, 'mil'], ['line', 'Apsheron Musk.', 1, 'ru', null, 'mil'], ['line', 'Salzburg Inf.', 0, 'au', null, 'kol'],
+  ['line', 'Kursk Musk.', 0, 'ru', null, 'lng'], ['line', 'Podolia Musk.', 1, 'ru', 'guard', 'kam'],
+  ['light', 'Russian Jägers', 1, 'ru', null, 'lng'], ['light', 'Grenz Bn', 0, 'au', null, 'kol'],
+  ['lcav', 'Uhlans sq.1-2', 1, 'ru', null, 'lie', 0.5], ['lcav', 'Uhlans sq.3-4', 1, 'ru', null, 'lie', 0.5],
+  ['hcav', 'Austrian Cuir. sq.1-2', 1, 'au', null, 'lie', 0.5], ['hcav', 'Austrian Cuir. sq.3-4', 1, 'au', null, 'lie', 0.5],
+  ['art', 'Russian Bty sec.1', 1, 'ru', null, 'mil', 1 / 3], ['art', 'Russian Bty sec.2', 1, 'ru', null, 'mil', 1 / 3], ['art', 'Russian Bty sec.3', 1, 'ru', null, 'lng', 1 / 3],
+  ['art', 'Austrian Bty sec.1', 0, 'au', null, 'kol', 1 / 3], ['art', 'Austrian Bty sec.2', 0, 'au', null, 'kol', 1 / 3], ['art', 'Austrian Bty sec.3', 0, 'au', null, 'kam', 1 / 3],
 ];
+const A_PARENT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 9, 10, 10, 10, 11, 11, 11];
 const REINF_NAMES = { line: [['Pskov Musk.', 'ru'], ['Erzherzog Inf.', 'au'], ['Vladimir Musk.', 'ru']], art: [['Horse Bty (ru)', 'ru']], lcav: [['Hussars (au)', 'au']] };
-// French deploy presets (roster order, Guard excluded)
+// division commanders. The French ones take your zone orders; the Allied ones get theirs from the AI.
+const F_DIVS = [
+  { key: 'van', name: 'Vandamme', sub: 'IV Corps, 1st Division', col: '#ffd34d' },
+  { key: 'sth', name: 'St-Hilaire', sub: 'IV Corps, 2nd Division', col: '#ff9a3c' },
+  { key: 'leg', name: 'Legrand', sub: 'IV Corps, 3rd Division (Goldbach)', col: '#4fd6c2' },
+  { key: 'lan', name: 'Lannes', sub: 'V Corps (Santon)', col: '#ff7096' },
+  { key: 'mur', name: 'Murat', sub: 'Cavalry Reserve', col: '#c4a0ff' },
+  { key: 'gar', name: 'Garde', sub: 'Imperial Guard (Bessières)', col: '#f4efe2' },
+];
+const A_DIVS = [
+  { key: 'mil', name: 'Miloradovich', sub: '4th Column', col: '#e3cf8f' },
+  { key: 'kol', name: 'Kolowrat', sub: '4th Column (Austrian)', col: '#f1ede0' },
+  { key: 'lng', name: 'Langeron', sub: '2nd Column', col: '#a6dc8c' },
+  { key: 'kam', name: 'Kamensky', sub: 'Pratzen brigade', col: '#e7a868' },
+  { key: 'lie', name: 'Liechtenstein', sub: '5th Column (cavalry)', col: '#b8c8ff' },
+  { key: 'dok', name: 'Dokhturov', sub: '1st Column (arriving)', col: '#ff8f80' },
+];
+// named zones: tap near one to send a commander there (or tap anywhere for a free zone)
+const ZONES = [
+  { name: 'Santon', x: 330, y: 188, r: 105, flag: 0 },
+  { name: 'Pratzen', x: 1220, y: 560, r: 150, flag: 1 },
+  { name: 'Sokolnitz', x: 646, y: 836, r: 105, flag: 2 },
+  { name: 'Telnitz', x: 662, y: 1002, r: 95 },
+  { name: 'Puntowitz', x: 615, y: 436, r: 95 },
+  { name: 'Girzikowitz', x: 758, y: 226, r: 85 },
+  { name: 'Pratze', x: 975, y: 456, r: 90 },
+  { name: 'Pheasantry', x: 788, y: 924, r: 70 },
+  { name: 'Blasowitz', x: 1378, y: 206, r: 90 },
+];
+// French deploy presets (v1 unit order, Guard excluded; split pieces start next to each other)
 const F_SETUPS = [
   [[470, 600], [545, 720], [690, 845], [530, 470], [350, 225], [680, 1000], [598, 832], [380, 700], [400, 360], [520, 600], [480, 300]],   // Goldbach line
   [[500, 760], [700, 800], [700, 930], [540, 560], [345, 230], [700, 1000], [600, 856], [430, 820], [420, 560], [540, 760], [500, 900]],   // forward at Sokolnitz
   [[420, 400], [520, 300], [690, 850], [540, 540], [345, 225], [690, 990], [600, 840], [360, 470], [330, 330], [470, 200], [520, 680]],    // Santon anchor
 ];
-// Allied setups (roster order) + seconds before the columns step off
+// Allied setups (v1 unit order) + seconds before the columns step off; wing = divisions sent at Santon
 const A_SETUPS = [
-  { name: 'heights', delay: 0, north: [3, 7], pos: [[1280, 560], [1120, 640], [1160, 700], [1100, 520], [1300, 660], [1225, 590], [1040, 680], [1080, 780], [1360, 440], [1420, 700], [1160, 580], [1190, 480]] },
-  { name: 'descending', delay: 10, north: [3], pos: [[1180, 650], [980, 700], [1020, 760], [960, 600], [1120, 760], [1220, 560], [900, 760], [940, 860], [1250, 760], [1300, 820], [1100, 640], [1180, 520]] },
-  { name: 'north', delay: 20, north: [1, 3, 6], pos: [[1240, 470], [1080, 420], [1040, 500], [1150, 380], [1260, 440], [1225, 580], [960, 380], [1100, 620], [1300, 300], [1380, 560], [1150, 480], [1200, 640]] },
-  { name: 'south', delay: 25, north: [7], pos: [[1200, 740], [1080, 820], [1140, 880], [1040, 740], [1220, 800], [1225, 570], [960, 900], [1000, 960], [1330, 860], [1400, 780], [1140, 700], [1240, 640]] },
+  { name: 'heights', delay: 0, wing: ['kol'], pos: [[1280, 560], [1120, 640], [1160, 700], [1100, 520], [1300, 660], [1225, 590], [1040, 680], [1080, 780], [1360, 440], [1420, 700], [1160, 580], [1190, 480]] },
+  { name: 'descending', delay: 10, wing: ['kol'], pos: [[1180, 650], [980, 700], [1020, 760], [960, 600], [1120, 760], [1220, 560], [900, 760], [940, 860], [1250, 760], [1300, 820], [1100, 640], [1180, 520]] },
+  { name: 'north', delay: 20, wing: ['kol', 'mil'], pos: [[1240, 470], [1080, 420], [1040, 500], [1150, 380], [1260, 440], [1225, 580], [960, 380], [1100, 620], [1300, 300], [1380, 560], [1150, 480], [1200, 640]] },
+  { name: 'south', delay: 25, wing: ['kol'], pos: [[1200, 740], [1080, 820], [1140, 880], [1040, 740], [1220, 800], [1225, 570], [960, 900], [1000, 960], [1330, 860], [1400, 780], [1140, 700], [1240, 640]] },
 ];
+// offsets for the pieces of a split regiment / battery (across the facing)
+const PIECE_OFF = (k, n) => (k - (n - 1) / 2) * (n === 2 ? 34 : 32);
 const DIFFS = {
   // acc: Allied fire; think: AI reaction; stay: how long Allied lines trade fire before pressing on;
   // reinf/reinfT: Allied columns from the east; pushT: seconds left when the late push starts;
   // cavT: how good a target must be before Allied cavalry charges; exp: Allied veterancy (+1 star on Hard)
-  // tuned by AI-vs-AI runs (French AI vs Allied AI) to French wins of roughly 70 / 50 / 25 %
-  easy:   { acc: 1.08, think: 0.85, stay: 0.6, reinf: ['line', 'line', 'art'], reinfT: 250, exp: 0, pushT: 150, cavT: 1.65, mor: 1.06 },
-  normal: { acc: 1.2, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 220, exp: 0, pushT: 160, cavT: 1.5, mor: 1.16 },
-  hard:   { acc: 1.12, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'line', 'lcav'], reinfT: 210, exp: 1, pushT: 180, cavT: 1.5, mor: 1.08 },
+  // v2: tuned with division commanders on both sides (AI vs AI ~78 / 59 / 27 %, scripted zone-order player ~76 / 54 / 30 %)
+  easy:   { acc: 0.82, think: 0.85, stay: 0.6, reinf: ['line', 'line', 'art'], reinfT: 250, exp: 0, pushT: 120, cavT: 1.65, mor: 0.9 },
+  normal: { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 220, exp: 0, pushT: 160, cavT: 1.5, mor: 1.03 },
+  hard:   { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'line', 'lcav'], reinfT: 210, exp: 1, pushT: 180, cavT: 1.5, mor: 1.0 },
 };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
@@ -334,7 +381,7 @@ function buzz(pat) {
   try { navigator.vibrate(pat); } catch (e) { /* ignore */ }
 }
 // veterans: experience carried between battles (per roster slot)
-const VETS_KEY = 'aus-vets';
+const VETS_KEY = 'aus-vets2'; // v2 roster (v1 saves had 12 slots)
 function loadVets() {
   try { const v = JSON.parse(store.get(VETS_KEY, '') || 'null'); if (v && Array.isArray(v.exp)) return v; } catch (e) { /* bad data */ }
   return null;
@@ -344,20 +391,21 @@ const saveVets = (v) => store.set(VETS_KEY, v ? JSON.stringify(v) : '');
 // ---------------------------------------------------------------- game state
 const G = { diff: store.get('aus-diff', 'normal'), ringsAll: store.get('aus-rings', '0') === '1' };
 if (!DIFFS[G.diff]) G.diff = 'normal';
-function mkUnit(side, type, name, x, y, exp, nat, role) {
+function mkUnit(side, type, name, x, y, exp, nat, role, sz) {
   const t = UT[type];
   let form = t.form0;
   if (side === 1 && t.kind === 'inf') form = 'column';
+  sz = sz || 1;
   return {
-    id: G.units.length, side, nat, type, name, x, y, exp, t, kind: t.kind,
-    hp: t.hp, maxHp: t.hp, morale: 82 + exp * 6, state: 0,
+    id: G.units.length, side, nat, type, name, x, y, exp, t, kind: t.kind, sz,
+    hp: t.hp * sz, maxHp: t.hp * sz, morale: 82 + exp * 6, state: 0,
     ammo: t.ammo || 0, ammoMax: t.ammo || 0, ammoF: 0, fat: 0,
     form, formTo: null, formT: 0, formT0: 1, formAt: -99, ang: side ? Math.PI : 0,
     path: [], mode: 'move', order: { type: 'idle' },
     cool: rnd(0, 2), lastFired: -99, lastHit: -99, threat: null,
     alive: true, fled: false, reserve: false, moving: false, seenUntil: [-1, -1], wasSeen: false,
     role: role || t.role, aiCool: rnd(0, 2), kills: 0, flash: 0, deadSeen: false, fleeT: 0, rallyT: 0, fT: {},
-    chargeD: 0, cpT: 0, meleeT: -99,
+    chargeD: 0, cpT: 0, meleeT: -99, dv: null, spot: null, direct: false, directUntil: 0, home: { x, y }, faceAng: null,
   };
 }
 const isInf = (u) => u.kind === 'inf';
@@ -372,45 +420,79 @@ function newGame(auto) {
     reinfDone: false, preview: null, fSetup: Math.floor(Math.random() * F_SETUPS.length),
     aim: null, inspect: null, flagLog: [], logT: 0, pushAt: null, reinfAt: null, guardAt: null, guardIn: false,
     fog: 1, fogToast: false, wind: { x: rnd(3, 7), y: rnd(-2.5, 2.5) },
-    ai: [{ holdUntil: 0 }, { holdUntil: 0 }],
-    stats: { dead: [0, 0], fled: [0, 0], rallied: [0, 0], charges: [0, 0], squares: [0, 0], dmg: {} },
+    ai: [{ holdUntil: 0, stay: 0.65, mode: 'defend', stage: {} }, { holdUntil: 0, stay: 0.5, mode: 'wait', stage: {} }],
+    divs: [], selDiv: null, zonePrev: null,
+    stats: { dead: [0, 0], fled: [0, 0], rallied: [0, 0], charges: [0, 0], squares: [0, 0], dmg: {}, sqForm: [0, 0] },
   });
   const D = DIFFS[G.diff];
   // the French hold Santon and Sokolnitz; the Allies stand on the Pratzen
   G.flags = FLAG_POS.map(([x, y], i) => ({ x, y, owner: i === 1 ? 1 : 0, prog: 0, capSide: -1, contested: false, name: FNAME[i] }));
+  F_DIVS.forEach(d => mkDiv(0, d)); A_DIVS.forEach(d => mkDiv(1, d));
   const vets = auto ? null : loadVets();
-  const fs = F_SETUPS[G.fSetup];
   F_ROSTER.forEach((r, i) => {
     const e = vets ? clamp(vets.exp[i] ?? r[2], 0, 2) : r[2];
-    const p = i === GUARD_SLOT ? [-60, 480] : fs[i];
-    const u = mkUnit(0, r[0], r[1], p[0], p[1], e, r[3], r[4]);
+    const u = mkUnit(0, r[0], r[1], i === GUARD_SLOT ? -60 : 0, 480, e, r[3], r[4], r[6]);
     u.slot = i; u.exp0 = e; u.med = (vets && vets.med && vets.med[i]) || 0;
     if (i === GUARD_SLOT) { u.reserve = true; G.guard = u; }
+    joinDiv(u, r[5]);
     G.units.push(u);
   });
   const as = A_SETUPS[Math.floor(Math.random() * A_SETUPS.length)];
-  G.aSetup = as.name; G.ai[1].holdUntil = as.delay + (D.waitT ?? 30);
+  G.aSetup = as.name; G.ai[1].holdUntil = as.delay + (D.waitT ?? 30); G.ai[1].wing = as.wing;
   A_ROSTER.forEach((r, i) => {
-    const [x, y] = as.pos[i];
-    const u = mkUnit(1, r[0], r[1], x, y, clamp(r[2] + D.exp, 0, 2), r[3], r[4]);
-    u.x += rnd(-12, 12); u.y += rnd(-12, 12);
+    const par = A_PARENT[i], n = A_PARENT.filter(p => p === par).length, k = A_PARENT.slice(0, i).filter(p => p === par).length;
+    const [x0, y0] = as.pos[par], x = x0, y = y0 + PIECE_OFF(k, n);
+    const u = mkUnit(1, r[0], r[1], x, y, clamp(r[2] + D.exp, 0, 2), r[3], r[4], r[6]);
+    u.x += rnd(-10, 10); u.y += rnd(-10, 10);
     if (!passAt(u.x, u.y, isArt(u)) || terrAt(u.x, u.y) === T_STREAM) { u.x = x; u.y = y; }
-    if (as.north.includes(i)) u.wing = 'n';
+    joinDiv(u, r[5]);
     G.units.push(u);
   });
+  placeSections(1);
   jitterFrench();
+  for (const u of G.units) u.home = { x: u.x, y: u.y };
   updateVis();
 }
+function mkDiv(side, def) {
+  const d = Object.assign({ id: G.divs.length, side, units: [], zone: null, post: 'hold', hq: null, theta: null, layT: 0, mode: 'hold', ctl: [], player: false }, def);
+  G.divs.push(d);
+  return d;
+}
+const divByKey = (side, key) => G.divs.find(d => d.side === side && d.key === key);
+function joinDiv(u, key) {
+  const d = key ? divByKey(u.side, key) : null;
+  if (!d) return;
+  u.dv = d; d.units.push(u);
+}
+// gun sections deploy behind the battalions of their own division
+function placeSections(side) {
+  for (const d of G.divs) {
+    if (d.side !== side) continue;
+    const secs = d.units.filter(u => isArt(u) && !u.reserve), rest = d.units.filter(u => !isArt(u) && !u.reserve);
+    if (!secs.length || !rest.length) continue;
+    const c = centroid(rest), back = side ? 55 : -55;
+    secs.forEach((u, k) => {
+      const tx = c.x + back, ty = c.y + PIECE_OFF(k, secs.length) * 1.2;
+      const p = side ? snapSpot(tx, ty, true, []) : nearestOk(tx, ty, true);
+      if (p) { u.x = p.x; u.y = p.y; }
+    });
+  }
+}
+const centroid = (us) => { let x = 0, y = 0; for (const u of us) { x += u.x; y += u.y; } return { x: x / us.length, y: y / us.length }; };
 function jitterFrench() {
   const fs = F_SETUPS[G.fSetup];
-  G.units.filter(u => u.side === 0 && u.slot !== GUARD_SLOT).forEach((u, i) => {
-    u.x = fs[i][0]; u.y = fs[i][1];
+  G.units.filter(u => u.side === 0 && u.slot !== GUARD_SLOT).forEach((u) => {
+    const i = u.slot, par = F_PARENT[i], n = F_PARENT.filter(p => p === par).length, k = F_PARENT.slice(0, i).filter(p => p === par).length;
+    u.x = fs[par][0]; u.y = fs[par][1] + PIECE_OFF(k, n);
+    const q = nearestOk(u.x, u.y, isArt(u)); if (q) { u.x = q.x; u.y = q.y; }
     if (u.kind === 'light' || isInf(u)) {
       const c = coverNear(u.x, u.y, 25, 0, null, u);
       if (c && inZone(c.x, c.y) && terrAt(c.x, c.y) !== T_STREAM) { u.x = c.x; u.y = c.y; }
     }
     u.ang = 0;
   });
+  placeSections(0);
+  for (const u of G.units) if (u.side === 0) u.home = { x: u.x, y: u.y };
 }
 const live = (u) => u.alive && !u.fled && !u.reserve;
 const isSeen = (o, side) => o.side === side || o.seenUntil[side] > G.time;
@@ -425,13 +507,13 @@ function dims(u) {
     case 'column': return [26 * (0.7 + 0.3 * k), 18];
     case 'square': return [22, 22];
     case 'open': return [14, 38];
-    case 'mounted': return [14, 30 * k];
-    case 'limbered': return [24, 10];
-    case 'deployed': return [12, 34];
+    case 'mounted': return [14, 30 * k * (0.45 + 0.55 * (u.sz || 1))];
+    case 'limbered': return [(u.sz || 1) < 0.5 ? 20 : 24, 10];
+    case 'deployed': return [12, (u.sz || 1) < 0.5 ? 24 : 34];
     default: return [10, 10];
   }
 }
-const rad = (u) => RAD[u.form] || 10;
+const rad = (u) => (RAD[u.form] || 10) * (0.75 + 0.25 * (u.sz || 1));
 // length of segment a-b inside the unit's rectangle (roundshot penetration)
 function clipLen(u, ax, ay, bx, by) {
   const [d, w] = dims(u), c = Math.cos(-u.ang), s = Math.sin(-u.ang);
@@ -482,7 +564,7 @@ function sight(ax, ay, bx, by) {
   return f;
 }
 const LOS = (ax, ay, bx, by) => sight(ax, ay, bx, by) > 0;
-const losKey = (a, b) => (a.side === 0 ? a.id * 64 + b.id : b.id * 64 + a.id);
+const losKey = (a, b) => (a.side === 0 ? a.id * 512 + b.id : b.id * 512 + a.id);
 function losU(a, b) { return a.side === b.side ? 1 : (G.los.get(losKey(a, b)) || 0); }
 
 function fogMul(a, b) {
@@ -588,7 +670,7 @@ function kill(o, src) {
   o.deadSeen = o.side === 0 || isSeen(o, 0) || G.time - o.lastFired < 3;
   G.stats.dead[o.side]++;
   if (src) src.kills++;
-  for (const f of G.units) if (live(f) && f.side === o.side && dist(f, o) < (o.kind === 'cmdr' ? 400 : 170)) f.morale -= o.kind === 'cmdr' ? 22 : 10;
+  for (const f of G.units) if (live(f) && f.side === o.side && dist(f, o) < (o.kind === 'cmdr' ? 400 : 170)) f.morale -= o.kind === 'cmdr' ? 22 : 10 * (o.sz || 1);
   if (o.side === 0) { toast('✖ ' + o.name); buzz([50, 40, 50]); }
   else if (o.deadSeen) toast('✔ ' + o.name);
   G.sel = G.sel.filter(u => u !== o);
@@ -613,8 +695,9 @@ function frontPt(u, k = 0, ahead = 0) {
 }
 function tracer(u, x, y) { if (!G.silent) G.tracers.push({ x1: u.x, y1: u.y, x2: x, y2: y, t: 0, side: u.side, sid: u.id }); }
 
+const TSF = (o) => 0.6 + 0.4 * (o.sz || 1); // a 2-gun section or a squadron pair is a narrower target for musketry
 function fireVolley(u, w, tgt, area) {
-  const fp = (0.45 + 0.55 * hpf(u)) * (FORM_FIRE[u.form] ?? 1);
+  const fp = (0.45 + 0.55 * hpf(u)) * (FORM_FIRE[u.form] ?? 1) * (u.sz || 1);
   if (u.side === 0 || isSeen(u, 0) || dist(u, tgt || area) < 400) SFX.shot(u.t.w, u);
   const tx = tgt ? tgt.x : area.x, ty = tgt ? tgt.y : area.y;
   if (!G.silent) for (const k of (u.form === 'line' ? [-0.35, 0, 0.35] : [0])) {
@@ -627,20 +710,20 @@ function fireVolley(u, w, tgt, area) {
   if (tgt) {
     const d = dist(u, tgt), p = hitChance(u, w, d, tgt);
     suppress(tgt, w.supp * fp, u);
-    damage(tgt, w.dmg * fp * p * rnd(0.75, 1.25) * (VULN[tgt.form] || 1), u);
+    damage(tgt, w.dmg * fp * p * rnd(0.75, 1.25) * (VULN[tgt.form] || 1) * TSF(tgt), u);
   } else {
     for (const o of G.units) {
       if (!live(o) || o.side === u.side) continue;
       const dd = dxy(o.x, o.y, area.x, area.y);
       if (dd < 55) {
         suppress(o, w.supp * fp * 0.8, u);
-        damage(o, w.dmg * fp * hitChance(u, w, dist(u, o), o) * 0.45 * rnd(0.7, 1.2) * (VULN[o.form] || 1), u);
+        damage(o, w.dmg * fp * hitChance(u, w, dist(u, o), o) * 0.45 * rnd(0.7, 1.2) * (VULN[o.form] || 1) * TSF(o), u);
       }
     }
   }
 }
 function fireGun(u, w, x, y, tgt) {
-  const d = dxy(u.x, u.y, x, y), fp = 0.5 + 0.5 * hpf(u);
+  const d = dxy(u.x, u.y, x, y), fp = (0.5 + 0.5 * hpf(u)) * (u.sz || 1);
   if (u.side === 0 || isSeen(u, 0) || d < 500) SFX.shot(d <= w.can ? 'canister' : 'cannon', u);
   const fpnt = frontPt(u, 0, 16);
   addGunsmoke(fpnt.x, fpnt.y, 30, 13, 0.4);
@@ -664,7 +747,7 @@ function roundshot(s) {
   for (const [, o, L] of hits) {
     let dm = w.dmg * s.fp * energy * clamp(L / 18, 0.35, 2.4) * [1, 0.7, 0.5][coverAt(o.x, o.y)] * rnd(0.8, 1.2);
     if (o.kind === 'light') dm *= 0.4; else if (o.kind === 'cmdr') dm *= 0.5;
-    suppress(o, w.supp * energy, src);
+    suppress(o, w.supp * energy * (src.sz || 1), src);
     damage(o, dm, src);
     energy *= 0.6;
   }
@@ -684,8 +767,8 @@ function canister(u, w, x, y, fp) {
     const d = dist(u, o);
     if (d > w.can + rad(o)) continue;
     if (Math.abs(angDiff(Math.atan2(o.y - u.y, o.x - u.x), a0)) > 0.32 + rad(o) / Math.max(d, 1)) continue;
-    const dm = w.canDmg * fp * (1 - 0.5 * Math.min(d, w.can) / w.can) * (VULN[o.form] || 1) * [1, 0.65, 0.45][coverAt(o.x, o.y)] * [0.85, 1, 1.15][u.exp] * accMul(u) * rnd(0.8, 1.2);
-    suppress(o, w.supp * 1.6, u);
+    const dm = w.canDmg * fp * (1 - 0.5 * Math.min(d, w.can) / w.can) * (VULN[o.form] || 1) * [1, 0.65, 0.45][coverAt(o.x, o.y)] * [0.85, 1, 1.15][u.exp] * accMul(u) * rnd(0.8, 1.2) * TSF(o);
+    suppress(o, w.supp * 1.6 * (u.sz || 1), u);
     damage(o, dm, u);
   }
   shakeAt(u.x, u.y, 4);
@@ -703,6 +786,14 @@ function pushBack(u, from, len) {
   }
 }
 // melee: a charge hits home. Cavalry momentum vs formation, flank, terrain, state and fatigue
+// mass of a charge: the sizes of friendly units charging the same target close together (a lone
+// squadron pair hits with half the weight of the full regiment; two pairs side by side hit like one)
+function chargeMass(a, d) {
+  let m = a.sz || 1;
+  if (m >= 1) return m;
+  for (const o of G.units) if (o !== a && live(o) && o.side === a.side && o.order.type === 'charge' && o.order.target === d && dist(o, a) < 90) m += o.sz || 1;
+  return m;
+}
 function meleePowers(a, d) {
   const D = DIFFS[G.diff];
   const mom = isCav(a) ? clamp(a.chargeD / 160, 0.35, 1) : clamp(a.chargeD / 90, 0.5, 1);
@@ -713,6 +804,8 @@ function meleePowers(a, d) {
   let ap = a.t.melee * Math.sqrt(hpf(a)) * SM[a.state] * [0.85, 1, 1.15][a.exp] * (1 - a.fat / 220);
   if (vsCav) ap *= a.t.charge * (0.5 + 0.5 * mom);
   else ap *= ({ column: 1.3, line: 0.8, open: 0.55 }[a.form] || 0.6) * (0.8 + 0.2 * mom);
+  const mass = chargeMass(a, d);
+  ap *= Math.sqrt(clamp(mass, 0.25, 1));
   let dp = d.t.melee * Math.sqrt(hpf(d)) * [0.85, 1, 1.15][d.exp] * (1 - d.fat / 250);
   let fd;
   if (d.formT > 0) fd = vsCav && d.formTo === 'square' ? 0.75 + 3.0 * clamp(1 - d.formT / (d.formT0 || 1), 0, 1) ** 1.5 : 0.5;
@@ -726,7 +819,7 @@ function meleePowers(a, d) {
     case 'limbered': fd = 0.2; break;
     default: fd = 0.3;
   }
-  dp *= fd;
+  dp *= fd * Math.sqrt(d.sz || 1);
   if (d.form !== 'square' && d.formT <= 0) dp *= flank === 'rear' ? (d.form === 'line' ? 0.3 : 0.55) : flank === 'flank' ? (d.form === 'line' ? 0.42 : 0.75) : 1;
   dp *= SM[d.state];
   if (inHouse(d)) dp *= vsCav ? 2.5 : 1.6; else if (coverAt(d.x, d.y) === 1) dp *= 1.25;
@@ -734,14 +827,15 @@ function meleePowers(a, d) {
   if (terrAt(a.x, a.y) === T_STREAM) ap *= 0.7;
   if (d.order.type === 'hold' && d.state === 0) dp *= 1.1;
   if (a.side === 1) ap *= D.mor; else dp *= D.mor;
-  return { ap, dp, vsCav };
+  return { ap, dp, vsCav, mass };
 }
 function resolveMelee(a, d) {
-  const { ap, dp, vsCav } = meleePowers(a, d);
+  const { ap, dp, vsCav, mass } = meleePowers(a, d);
   const r = clamp(ap / (ap + dp) + rnd(-0.1, 0.1), 0.03, 0.97);
   const sq = d.form === 'square' && vsCav && d.formT <= 0;
-  const toD = (vsCav ? 32 : 24) * r * (sq ? 0.4 : 1);
-  const toA = 22 * (1 - r) + (sq ? 10 : 0);
+  const as = a.sz || 1, ds = d.sz || 1;
+  const toD = (vsCav ? 32 : 24) * r * (sq ? 0.4 : 1) * as;            // each piece of a combined charge deals its share
+  const toA = (22 * (1 - r) + (sq ? 10 : 0)) * (as / Math.max(mass, as)) * ds; // ...and shares the losses
   a.meleeT = d.meleeT = G.time;
   G.stats.charges[a.side]++;
   if (sq) G.stats.squares[d.side]++;
@@ -750,7 +844,7 @@ function resolveMelee(a, d) {
   if (d.side === 0 || a.side === 0) buzz(vsCav ? [40, 30, 40] : 30);
   damage(d, toD, a); damage(a, toA, d);
   if (r >= 0.55) {
-    if (d.alive) { d.morale -= 30 + 60 * (r - 0.5); if (d.state < 3) pushBack(d, a, 60); }
+    if (d.alive) { d.morale -= (30 + 60 * (r - 0.5)) * as; if (d.state < 3) pushBack(d, a, 60); }
     a.morale = Math.min(100, a.morale + 8);
   } else if (r <= 0.45) {
     a.morale -= 22 + 50 * (0.5 - r);
@@ -1049,6 +1143,7 @@ function updateFace(u) {
     for (const o of G.units) if (live(o) && o.side !== u.side && isSeen(o, u.side)) { const d = dist(u, o); if (d < bd) { bd = d; best = o; } }
     if (best) want = Math.atan2(best.y - u.y, best.x - u.x);
     else if (u.threat && G.time - u.lastHit < 4) want = Math.atan2(u.threat.y - u.y, u.threat.x - u.x);
+    else if (u.faceAng != null && !u.direct && !u.path.length) want = u.faceAng;
   }
   if (want != null) turnTo(u, want);
 }
@@ -1097,13 +1192,19 @@ function checkReinforce() {
   G.reinfDone = true;
   const y0 = [480, 860, 300][Math.floor(Math.random() * 3)];
   const used = {};
-  D.reinf.forEach((type, i) => {
+  let i = 0;
+  D.reinf.forEach((type) => {
     used[type] = (used[type] || 0);
     const nm = REINF_NAMES[type][used[type]++ % REINF_NAMES[type].length];
-    const u = mkUnit(1, type, nm[0], W - 16 - i * 10, clamp(y0 + (i - 1) * 36, 30, H - 30), 1, nm[1]);
-    if (isArt(u)) u.form = 'limbered';
-    u.aiCool = 0.5 + i * 0.5;
-    G.units.push(u);
+    const n = isArt({ kind: UT[type].kind }) ? 3 : UT[type].kind === 'cav' ? 2 : 1;
+    for (let k = 0; k < n; k++, i++) {
+      const name = n === 3 ? nm[0] + ' sec.' + (k + 1) : n === 2 ? nm[0] + ' sq.' + (k * 2 + 1) + '-' + (k * 2 + 2) : nm[0];
+      const u = mkUnit(1, type, name, W - 16 - (i % 3) * 12, clamp(y0 + (i - 1.5) * 26, 30, H - 30), 1, nm[1], null, 1 / n);
+      if (isArt(u)) u.form = 'limbered';
+      u.aiCool = 0.5 + i * 0.3;
+      joinDiv(u, 'dok');
+      G.units.push(u);
+    }
   });
   G.reinfAt = { y: y0, t: G.time };
   if (!G.auto) { toast('⚠ ➕ ' + D.reinf.length); SFX.bugle('alert'); }
@@ -1113,7 +1214,7 @@ function commitGuard(auto) {
   if (G.guardIn || G.phase !== 'battle' || !G.guard || G.over) return false;
   if (!auto && G.time < GUARD_UNLOCK) { toast('🦅 ⏳ ' + fmt(GUARD_UNLOCK - G.time)); SFX.click(true); return false; }
   const u = G.guard;
-  u.reserve = false; u.x = 16; u.y = 480; u.ang = 0; u.form = 'column';
+  u.reserve = false; u.x = 16; u.y = 480; u.ang = 0; u.form = 'column'; u.home = { x: 270, y: 480 }; u.aiCool = 6;
   G.guardIn = true; G.guardAt = G.time;
   const p = findPath(u.x, u.y, 270, 480, false);
   if (p) { u.path = p; u.mode = 'move'; u.order = { type: 'move' }; }
@@ -1140,11 +1241,12 @@ function updateFx() {
 }
 function armyState(s) {
   const arrived = G.units.filter(u => u.side === s && !u.reserve && u.kind !== 'cmdr');
-  return { able: arrived.filter(u => live(u) && u.state < 4).length, n: arrived.length };
+  const w = (us) => us.reduce((t, u) => t + (u.sz || 1), 0);
+  return { able: w(arrived.filter(u => live(u) && u.state < 4)), n: w(arrived) };
 }
 function checkEnd() {
   const a = [armyState(0), armyState(1)];
-  const broken = a.map(x => x.able <= Math.floor(x.n * 0.3));
+  const broken = a.map(x => x.able <= Math.floor(x.n * 0.3 + 1e-6) + 1e-6);
   let res = null;
   if (broken[0] || broken[1]) res = broken[1] && !broken[0] ? 'win' : broken[0] && !broken[1] ? 'lose' : 'draw';
   else if (G.time >= GAME_TIME) {
@@ -1226,7 +1328,7 @@ const cavThreat = (u, seen) => seen.some(o => isCav(o) && o.state < 2 && o.fat <
 // AI formations: square when cavalry threatens, line when engaged and stationary, column to march
 function aiForm(u, seen) {
   if (!isInf(u) || u.state >= 2 || u.formT > 0 || u.order.type === 'charge') return;
-  if (cavThreat(u, seen)) { if (u.form !== 'square') setForm(u, 'square'); u.sqT = G.time; return; }
+  if (cavThreat(u, seen)) { if (u.form !== 'square' && u.formTo !== 'square') { setForm(u, 'square'); G.stats.sqForm[u.side]++; } u.sqT = G.time; return; }
   if (u.form === 'square' && G.time - (u.sqT || 0) < 4) return;
   let nearE = 1e9;
   for (const o of seen) if (!isCav(o)) nearE = Math.min(nearE, dist(o, u));
@@ -1235,6 +1337,7 @@ function aiForm(u, seen) {
   if (pl > 60) want = nearE < 200 ? (u.form === 'square' ? 'line' : u.form === 'column' && nearE < 200 && u.order.type !== 'charge' ? 'line' : u.form) : 'column';
   else if (nearE < 260 || G.time - u.lastHit < 3) want = 'line';
   else if (u.form === 'square') want = 'line';
+  else if (u.spot && u.spot.k === 'front' && u.dv && (u.dv.mode === 'hold' || u.dv.mode === 'engage') && nearE < 560 && dist(u, u.spot) < 30) want = 'line';
   if (u.form === 'square' && want === 'square' && pl > 0) want = 'column';
   if (want !== u.form && (G.time - u.formAt > 5 || u.form === 'square')) setForm(u, want);
 }
@@ -1250,6 +1353,8 @@ function holdAssist() {
   }
 }
 
+// The side AI is now a strategist: it picks an objective and a mode exactly as before, then hands
+// zones to its division commanders. The French player does that job by hand.
 function aiThink(side) {
   const D = DIFFS[G.diff];
   const A = G.ai[side];
@@ -1272,7 +1377,7 @@ function aiThink(side) {
   if (side === 1 && remaining <= D.pushT && mode !== 'counter' && home.owner === 1) {
     const fr = G.flags.filter(f => f.owner === 0);
     if (fr.length) {
-      const str = (f) => G.units.filter(u => live(u) && u.side === 0 && u.state < 3 && dist(u, f) < 240).reduce((s, u) => s + hpf(u) * (u.kind === 'cmdr' ? 0.3 : 1), 0) + dist(f, home) / 900;
+      const str = (f) => G.units.filter(u => live(u) && u.side === 0 && u.state < 3 && dist(u, f) < 240).reduce((s, u) => s + hpf(u) * (u.sz || 1) * (u.kind === 'cmdr' ? 0.3 : 1), 0) + dist(f, home) / 900;
       if (!A.pushObj || A.pushObj.owner !== 0) A.pushObj = fr.sort((a, b) => str(a) - str(b))[0];
       mode = 'push'; obj = A.pushObj;
       if (!A.push) {
@@ -1287,125 +1392,313 @@ function aiThink(side) {
   A.stay = side === 1 ? D.stay : 0.65;
   if (mode === 'push') A.stay = 0.15;
   if (mode === 'attack' && own < theirs && remaining < 120) A.stay *= 0.5;
-  const seen = G.units.filter(o => live(o) && o.side !== side && isSeen(o, side));
   if (side === 0 && !G.guardIn && G.time >= GUARD_UNLOCK && (capping.length || own <= theirs || remaining < 200)) commitGuard(true);
-  for (const u of mine) aiForm(u, seen);
-  // staging: the foot of an attack gathers short of the objective and goes in together
-  A.ready = {};
-  for (const f of G.flags) {
-    const grp = mine.filter(u => (isInf(u) || u.kind === 'light') && u.role !== 'guard' && u.state < 2 && hpf(u) >= 0.3 && (u._obj === f));
-    if (!grp.length) continue;
-    const near = grp.filter(u => dist(u, f) < 400).length;
-    if (!A.stageT || A.stageObj !== f) { A.stageObj = f; A.stageT = G.time; }
-    A.ready[f.name] = near / grp.length >= 0.7 || G.time - A.stageT > (D.stageMax ?? 40) || grp.length < 2;
+  planZones(side, obj, mode);
+}
+const flagZone = (f) => { const i = G.flags.indexOf(f), z = ZONES.find(q => q.flag === i); return z ? Object.assign({ flag: i }, z) : null; };
+const sameZone = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.r === b.r;
+const divStr = (d) => { let h = 0, m = 0; for (const u of d.units) { if (u.reserve) continue; m += u.maxHp; if (live(u) && u.state < 4) h += u.hp; } return m ? h / m : 0; };
+function planZones(side, obj, mode) {
+  const A = G.ai[side], home = G.flags[side ? 1 : 0];
+  for (const d of G.divs) {
+    if (d.side !== side || !d.units.some(live)) continue;
+    let z = flagZone(obj), post = mode === 'defend' ? 'hold' : 'attack';
+    if (mode === 'wait') { z = null; post = 'hold'; }
+    if (d.key === 'lan' || d.key === 'kam') { z = flagZone(home); post = 'hold'; } // flag garrisons stay put
+    if (side === 1 && (A.wing || []).includes(d.key) && (mode === 'attack' || mode === 'wait') && G.flags[0].owner === 0 && divStr(d) > 0.4) { z = flagZone(G.flags[0]); post = 'attack'; }
+    if (side === 0 && mode === 'strike' && d.key === 'leg') { z = flagZone(G.flags[2]); post = 'hold'; }
+    setZone(d, z, post);
   }
+}
+function setZone(d, z, post) {
+  if (sameZone(d.zone, z) && d.post === post) return;
+  if (!z && !d.zone && d.post === post) return;
+  d.zone = z; d.post = post; d.layT = 0; d.theta = null;
+  for (const u of d.units) if (u.spot && u.spot.k === 'gun') u.spot = null;
+}
+
+// ---------------------------------------------------------------- division commanders
+// each commander lays his units out inside the zone: a front line with supports behind, light
+// infantry in cover or screening ahead, guns on high ground with a clear field of fire, cavalry on the
+// flanks. Battered battalions rotate to the rear and fresh ones fill the gaps.
+function snapSpot(x, y, veh, taken, minD = 34) {
+  const ok = (px, py) => {
+    if (px < 26 || py < 26 || px > W - 26 || py > H - 26 || !passAt(px, py, veh)) return false;
+    const t = terrAt(px, py);
+    if (t === T_STREAM || t === T_WATER || (veh && (t === T_HOUSE || t === T_TREE))) return false;
+    for (const s of taken) if (dxy(s.x, s.y, px, py) < minD) return false;
+    return true;
+  };
+  x = clamp(x, 26, W - 26); y = clamp(y, 26, H - 26);
+  if (ok(x, y)) return { x, y };
+  for (let r = 8; r <= 130; r += 8) for (let k = 0; k < 14; k++) {
+    const a = k / 14 * TAU + r * 0.07, nx = x + Math.cos(a) * r, ny = y + Math.sin(a) * r;
+    if (ok(nx, ny)) return { x: nx, y: ny };
+  }
+  return minD > 0 ? snapSpot(x, y, veh, [], 0) : { x, y };
+}
+function frontAngle(d, Z, seen, cen) {
+  let sx = 0, sy = 0, n = 0;
+  for (const o of seen) {
+    if (o.state >= 4) continue;
+    const dd = dxy(o.x, o.y, Z.x, Z.y);
+    if (dd < Z.r + 520) { const w = 1 / (60 + dd); sx += (o.x - Z.x) * w; sy += (o.y - Z.y) * w; n += w; }
+  }
+  let a;
+  if (n > 0 && Math.hypot(sx, sy) / n > Z.r * 0.4) a = Math.atan2(sy, sx);
+  else if (cen && dxy(cen.x, cen.y, Z.x, Z.y) > Z.r + 60) a = Math.atan2(Z.y - cen.y, Z.x - cen.x);
+  else {
+    const ef = G.flags.filter(f => f.owner === 1 - d.side && dxy(f.x, f.y, Z.x, Z.y) > 80).sort((p, q) => dxy(p.x, p.y, Z.x, Z.y) - dxy(q.x, q.y, Z.x, Z.y))[0];
+    a = ef ? Math.atan2(ef.y - Z.y, ef.x - Z.x) : (d.side ? Math.PI : 0);
+  }
+  a = Math.round(a / (Math.PI / 12)) * (Math.PI / 12);
+  if (d.theta == null || Math.abs(angDiff(a, d.theta)) > 0.42) d.theta = a;
+  return d.theta;
+}
+// enemy standing between an attacking division and its objective: form a battle line facing them at
+// musket range, let the guns work, press in once they waver, and carry on to the zone when the way is clear
+function blockers(d, Z, cen, seen) {
+  const dc = dxy(cen.x, cen.y, Z.x, Z.y);
+  if (dc < Z.r + 60) return null;
+  const ax = (Z.x - cen.x) / dc, ay = (Z.y - cen.y) / dc;
+  let b0 = 1e9, sw = 0, sl = 0, sx = 0, sy = 0, weak = 0, n = 0;
+  for (const o of seen) {
+    if (o.state >= 3 || o.kind === 'cmdr' || isCav(o)) continue;
+    const t = (o.x - cen.x) * ax + (o.y - cen.y) * ay, l = (o.x - cen.x) * -ay + (o.y - cen.y) * ax;
+    if (t < -60 || t > dc - Z.r * 0.8 || Math.abs(l) > 230 || t > 520) continue;
+    if (dxy(o.x, o.y, Z.x, Z.y) < Z.r + 20) continue;           // defenders of the zone itself: that is the assault
+    b0 = Math.min(b0, t); const w = (o.sz || 1); sw += w; sl += l * w; sx += o.x * w; sy += o.y * w; n++;
+    weak += (o.state >= 1 || hpf(o) < 0.45) ? w : 0;
+  }
+  if (!n) return null;
+  const bx = sx / sw, by = sy / sw;
+  let th = Math.atan2(by - cen.y, bx - cen.x); th = Math.round(th / (Math.PI / 12)) * (Math.PI / 12);
+  if (d.theta != null && d.mode === 'engage' && Math.abs(angDiff(th, d.theta)) < 0.42) th = d.theta;
+  const press = weak / sw > 0.5 || DIFFS[G.diff] && d.units.filter(u => live(u) && isInf(u) && u.state < 2).length >= 2 * n + 1;
+  const back = press ? 70 : 150, lc = clamp(sl / sw, -150, 150);
+  const C = { x: cen.x + ax * (b0 - back) + -ay * lc, y: cen.y + ay * (b0 - back) + ax * lc };
+  return { C, th, press };
+}
+// assault staging: the foot heading for one zone gathers ~340 m short and goes in together
+function stageReady(d, Z) {
+  const D = DIFFS[G.diff], A = G.ai[d.side];
+  const key = Math.round(Z.x) + ',' + Math.round(Z.y);
+  let S = A.stage[key];
+  if (!S || G.time - S.seen > 4) S = A.stage[key] = { t0: G.time, seen: G.time, go: false };
+  S.seen = G.time;
+  if (S.go) return true;
+  const grp = G.units.filter(u => live(u) && u.side === d.side && !u.direct && u.dv && u.dv.post === 'attack' && sameZone(u.dv.zone, Z) && (isInf(u) || u.kind === 'light') && u.state < 2 && hpf(u) >= 0.3);
+  const near = grp.filter(u => dxy(u.x, u.y, Z.x, Z.y) < 400).length;
+  if (grp.length < 2 || near / grp.length >= 0.7 || G.time - S.t0 > (D.stageMax ?? 40)) S.go = true;
+  return S.go;
+}
+const fitness = (u) => hpf(u) * [1, 0.8, 0.45, 0, 0][u.state];
+function coverSpot(C, R, fx, fy, taken, side) {
+  let best = null, bs = -1e9;
+  for (let y = C.y - R; y <= C.y + R; y += 10) for (let x = C.x - R; x <= C.x + R; x += 10) {
+    const d = dxy(x, y, C.x, C.y);
+    if (d > R || x < 26 || y < 26 || x > W - 26 || y > H - 26 || !passAt(x, y, false) || terrAt(x, y) === T_STREAM) continue;
+    const cv = coverAt(x, y); if (!cv) continue;
+    if (taken.some(s => dxy(s.x, s.y, x, y) < 36)) continue;
+    const s = cv * 30 + ((x - C.x) * fx + (y - C.y) * fy) * 0.12 - d * 0.04;
+    if (s > bs) { bs = s; best = { x, y }; }
+  }
+  return best;
+}
+function gunSpot(u, d, Z, C, mode, fx, fy, fo, taken, seen) {
+  const w = WPN[u.t.w];
+  const T = mode === 'hold' ? { x: C.x + fx * 230, y: C.y + fy * 230 } : { x: Z.x, y: Z.y };
+  const O = mode === 'hold' ? C : Z;
+  const radii = mode === 'hold' ? [30, 70, 110, Z.r + 30, Z.r + 80] : [210, 280, 350, Math.min(430, w.range * 0.7)];
+  let best = null, bs = -1e9;
+  for (const r of radii) for (let k = 0; k < 20; k++) {
+    const a = k / 20 * TAU, x = O.x + Math.cos(a) * r, y = O.y + Math.sin(a) * r;
+    if (x < 30 || y < 30 || x > W - 30 || y > H - 30 || !passAt(x, y, true)) continue;
+    const t = terrAt(x, y); if (t === T_TREE || t === T_HOUSE || t === T_STREAM || t === T_WATER) continue;
+    const ahead = (x - C.x) * fx + (y - C.y) * fy;
+    if (mode !== 'hold' && ahead > -40) continue;              // on our side of the objective
+    let s = heightAt(x, y) * 1.5 + (LOS(x, y, T.x, T.y) ? 60 : 0) - dxy(x, y, u.x, u.y) * 0.04;
+    if (mode === 'hold' && ahead > fo + 12) s -= 80;            // keep the guns level with or behind the line
+    for (const e of seen) if (dxy(x, y, e.x, e.y) < 180) s -= 40;
+    for (const q of taken) { const dd = dxy(q.x, q.y, x, y); if (dd < 34) s -= 60; else if (q.k === 'gun' && dd < 90) s += 6; }
+    if (s > bs) { bs = s; best = { x, y }; }
+  }
+  return best;
+}
+function layoutDiv(d, ctl, seenAll) {
+  const side = d.side, Z = d.zone;
+  if (!ctl.length) return;
+  if (!Z) { // no zone yet: hold where they stand
+    d.mode = 'hold';
+    for (const u of ctl) u.spot = { x: u.home.x, y: u.home.y, k: 'home', face: d.theta ?? (side ? Math.PI : 0) };
+    return;
+  }
+  const seen = seenAll[side];
+  const cen = centroid(ctl), home = G.flags[side ? 1 : 0];
+  const hostile = (Z.flag >= 0 && G.flags[Z.flag].owner !== side) || seen.some(o => o.state < 3 && o.kind !== 'cmdr' && dxy(o.x, o.y, Z.x, Z.y) < Z.r + 30);
+  let mode = 'hold', C = { x: Z.x, y: Z.y }, blk = null;
+  if (d.post === 'attack' && hostile) {
+    mode = 'assault';
+    blk = blockers(d, Z, cen, seen);
+    if (blk) { mode = 'engage'; C = blk.C; }
+    else if (!stageReady(d, Z)) { mode = 'stage'; const dc = dxy(cen.x, cen.y, Z.x, Z.y); C = dc < 380 ? cen : pointAlongFrom(Z.x, Z.y, cen, 340, false); }
+  }
+  d.mode = mode;
+  let th;
+  if (mode === 'hold') { if (d.atk) { d.atk = false; d.theta = null; } th = frontAngle(d, Z, seen, cen); }
+  else if (mode === 'engage') { d.atk = true; th = blk.th; d.theta = th; }
+  else { // attacking: face the objective along the line of approach
+    d.atk = true;
+    const dc = dxy(cen.x, cen.y, Z.x, Z.y);
+    if (d.theta == null || dc > 130) {
+      let a = Math.atan2(Z.y - cen.y, Z.x - cen.x); a = Math.round(a / (Math.PI / 12)) * (Math.PI / 12);
+      if (d.theta == null || Math.abs(angDiff(a, d.theta)) > 0.42) d.theta = a;
+    }
+    th = d.theta;
+  }
+  const fx = Math.cos(th), fy = Math.sin(th), px = -fy, py = fx;
+  // divisions sharing a zone split it side by side
+  const share = G.divs.filter(o => o.side === side && sameZone(o.zone, Z) && o.ctl.length).sort((a, b) => a.id - b.id);
+  if (share.length > 1) { const k = share.indexOf(d), sh = (k - (share.length - 1) / 2) * (mode === 'assault' ? 80 : 150); C = { x: C.x + px * sh, y: C.y + py * sh }; }
+  const taken = [];
+  for (const o of G.divs) if (o !== d && o.side === side) for (const u of o.ctl) if (u.spot && live(u)) taken.push(u.spot);
+  const put = (x, y, veh, k, minD) => { const s = snapSpot(x, y, veh, taken, minD); s.k = k; s.face = th; taken.push(s); return s; };
+  const lat = (u) => (u.x - C.x) * px + (u.y - C.y) * py;
+  const inf = ctl.filter(isInf), lights = ctl.filter(u => u.kind === 'light'), cav = ctl.filter(isCav), guns = ctl.filter(isArt);
+  const R = Z.r, fo = mode === 'hold' ? Math.min(R * 0.2, 28) : 0, SP = 60, holdish = mode === 'hold' || mode === 'engage';
+  // infantry: fittest in front, others in support, battered ones rotated to the rear
+  const byFit = inf.slice().sort((a, b) => fitness(b) - fitness(a));
+  let rest = byFit.filter(u => hpf(u) < 0.35 || u.state === 2), act = byFit.filter(u => !rest.includes(u));
+  if (!act.length) { act = rest; rest = []; }
+  const nf = act.length <= 2 ? act.length : Math.ceil(act.length * 0.6);
+  const rank = (list, off, k) => {
+    const sorted = list.slice().sort((a, b) => lat(a) - lat(b));
+    sorted.forEach((u, i) => { const l = (i - (list.length - 1) / 2) * SP; u.spot = put(C.x + fx * off + px * l, C.y + fy * off + py * l, false, k, 30); });
+  };
+  rank(act.slice(0, nf), fo, 'front');
+  rank(act.slice(nf), fo - 65, 'sup');
+  rank(rest, fo - 130, 'res');
+  const half = Math.max(1, nf) * SP / 2;
+  // light infantry: cover inside the zone when holding, otherwise a skirmish screen ahead
+  lights.slice().sort((a, b) => lat(a) - lat(b)).forEach((u, i) => {
+    let c = null;
+    if (mode === 'hold') c = coverSpot(C, R, fx, fy, taken, side);
+    else if (mode === 'engage') c = coverSpot(C, 80, fx, fy, taken, side);
+    else if (mode === 'assault' && dxy(cen.x, cen.y, Z.x, Z.y) < R + 120) c = coverSpot({ x: Z.x - fx * 30, y: Z.y - fy * 30 }, 90, fx, fy, taken, side);
+    if (c) u.spot = put(c.x, c.y, false, 'skirm', 30);
+    else { const l = (i - (lights.length - 1) / 2) * 80, f2 = mode === 'assault' ? -20 : fo + 60; u.spot = put(C.x + fx * f2 + px * l, C.y + fy * f2 + py * l, false, 'skirm', 30); }
+  });
+  // cavalry: on the flanks of the line (or held back behind an assault), squadron pairs side by side
+  const groups = [];
+  for (const u of cav) { let g = groups.find(q => q.type === u.type); if (!g) groups.push(g = { type: u.type, us: [] }); g.us.push(u); }
+  const cavOnly = !inf.length && !lights.length;
+  let CC = C;
+  if (!holdish) { const p = pointAlongFrom(Z.x, Z.y, home, cavOnly ? 230 : 170, false); CC = { x: p.x, y: p.y }; }
+  groups.forEach((g, gi) => {
+    const sgn = gi % 2 ? 1 : -1, tier = Math.floor(gi / 2);
+    const latBase = cavOnly ? (holdish ? R * 0.55 : 55) + tier * 70 : half + 60 + tier * 70;
+    const back = cavOnly ? (holdish ? -R * 0.25 : 0) : -35;
+    g.us.forEach((u, k) => { const l = sgn * (latBase + k * 34); u.spot = put(CC.x + fx * back + px * l, CC.y + fy * back + py * l, false, 'flank', 30); });
+  });
+  // guns: keep a good spot for a while; otherwise find high ground with a field of fire
+  const zk = Math.round(Z.x) + ',' + Math.round(Z.y) + mode;
+  for (const u of guns) {
+    const s = u.spot;
+    if (s && s.k === 'gun' && s.zk === zk && G.time - s.t < 25 && !taken.some(q => dxy(q.x, q.y, s.x, s.y) < 28)) { taken.push(s); continue; }
+    const g = gunSpot(u, d, Z, C, holdish ? 'hold' : mode, fx, fy, fo, taken, seen);
+    if (g) { u.spot = put(g.x, g.y, true, 'gun', 30); u.spot.zk = zk; u.spot.t = G.time; }
+  }
+}
+function updateHQ(snap) {
+  for (const d of G.divs) {
+    const us = d.units.filter(u => live(u) && u.state < 4);
+    if (!us.length) { d.hq = null; continue; }
+    const c = centroid(us), th = d.theta ?? (d.side ? Math.PI : 0);
+    const tx = c.x - Math.cos(th) * 40, ty = c.y - Math.sin(th) * 40;
+    if (!d.hq || snap) { d.hq = { x: tx, y: ty }; continue; }
+    const dd = dxy(d.hq.x, d.hq.y, tx, ty), st = Math.max(40, dd * 1.2) * DT;
+    if (dd <= st) { d.hq.x = tx; d.hq.y = ty; } else { d.hq.x += (tx - d.hq.x) / dd * st; d.hq.y += (ty - d.hq.y) / dd * st; }
+  }
+}
+// a unit given a direct order drops back under its commander once the order is done
+function releaseDirect() {
+  for (const u of G.units) {
+    if (!u.direct) continue;
+    if (!live(u) || u.state >= 4) { u.direct = false; continue; }
+    if (u.order.type === 'idle' && !u.path.length && u.formT <= 0 && G.time > u.directUntil) { u.direct = false; u.aiCool = 0; }
+  }
+}
+function markDirect(us, hold) { for (const u of us) { u.direct = true; u.directUntil = G.time + (hold || 3); u.spot = null; } }
+function rejoin(us) {
+  let n = 0;
+  for (const u of us) if (u.direct) { u.direct = false; u.aiCool = 0; if (u.order.type === 'hold') u.order = { type: 'idle' }; n++; }
+  for (const d of new Set(us.map(u => u.dv).filter(Boolean))) d.layT = 0;
+  return n;
+}
+function commandUnits(side, seenAll) {
+  const D = DIFFS[G.diff], A = G.ai[side];
+  const think = side === 1 ? D.think : 1;
+  const seen = seenAll[side];
+  const home = G.flags[side === 0 ? 0 : 1];
+  for (const d of G.divs) {
+    if (d.side !== side) continue;
+    d.ctl = d.units.filter(u => live(u) && u.state < 3 && !u.direct);
+  }
+  for (const d of G.divs) if (d.side === side && G.time >= d.layT) { layoutDiv(d, d.ctl, seenAll); d.layT = G.time + rnd(2.4, 3.2); }
+  // assault pacing: foot going in on one zone keeps level with the slower battalions
+  const pace = {};
+  for (const d of G.divs) {
+    if (d.side !== side || d.mode !== 'assault' || !d.zone) continue;
+    const k = Math.round(d.zone.x) + ',' + Math.round(d.zone.y), P = pace[k] || (pace[k] = []);
+    for (const u of d.ctl) if ((isInf(u) || u.kind === 'light') && u.state < 2 && u.spot && u.spot.k !== 'res') P.push(dxy(u.x, u.y, d.zone.x, d.zone.y));
+  }
+  for (const k in pace) { const P = pace[k].sort((a, b) => a - b); pace[k] = P.length ? P[Math.floor((P.length - 1) * 0.7)] : 0; }
+  A.pace = pace;
+  const mine = G.units.filter(u => live(u) && u.side === side && u.state < 3 && !u.direct && (u.dv || u.kind === 'cmdr'));
+  for (const u of mine) aiForm(u, seen);
   for (const u of mine) {
     u.aiCool -= 0.5;
     if (u.aiCool > 0) continue;
-    u.aiCool = rnd(2, 3.5) * (side === 1 ? D.think : 1);
+    u.aiCool = rnd(2, 3.5) * think;
     if (u.order.type === 'charge') continue;
-    if (u.state === 2) { if (!u.path.length && !isArt(u) && u.kind !== 'cmdr' && G.time - u.lastHit < 5) aiMove(u, pointAlong(u, home, 120), 'move'); continue; }
+    if (u.kind === 'cmdr') { aiCmdr(u, null, home, seen, side); continue; }
+    if (u.state === 2) { if (!u.path.length && !isArt(u) && G.time - u.lastHit < 5) aiMove(u, pointAlong(u, home, 120), 'move'); continue; }
     if ((u.order.type === 'fire' || u.order.type === 'area') && G.time - u.order.t < 6) continue;
-    let o = mode === 'strike' && u.role === 'skirm' ? G.flags[2] : obj;
-    // the Allied northern wing goes for Santon while the main body strikes the Goldbach villages
-    if (side === 1 && u.wing === 'n' && (mode === 'attack' || mode === 'wait') && G.flags[0].owner === 0 && hpf(u) > 0.4) o = G.flags[0];
-    u._obj = o;
-    aiUnit(u, o, home, seen, side, mode, A.stay);
+    if (u.spot) cmdUnit(u, u.dv, u.spot, seen, side, home, A);
   }
 }
-function aiUnit(u, obj, home, seen, side, mode, stay) {
+const pathEnd = (u) => (u.path.length ? u.path[u.path.length - 1] : null);
+function cmdUnit(u, d, s, seen, side, home, A) {
+  if (isCav(u)) return cmdCav(u, d, s, seen, side, home);
+  if (isArt(u)) return cmdArt(u, s, seen);
+  u.faceAng = s.face;
   const engaged = G.time - u.lastFired < 3 || G.time - u.lastHit < 3;
-  const cov = coverAt(u.x, u.y), hf = hpf(u), d = dist(u, obj);
-  if (isCav(u)) return aiCav(u, obj, home, seen, side, mode);
-  if (isArt(u)) return aiArt(u, obj, home, seen, side, mode);
-  if (u.kind === 'cmdr') return aiCmdr(u, obj, home, seen, side);
-  const allIn = mode === 'push' || mode === 'strike' || (side === 0 && mode === 'defend' && G.ai[1].push);
-  if (hf < 0.3 && mode !== 'counter' && !allIn && u.role !== 'guard') {
-    // wounded: stop assaulting, hold the nearest friendly flag instead
-    const keep = G.flags.filter(f => f.owner === side).sort((a, b) => dist(a, u) - dist(b, u))[0] || home;
-    if (u._dw && u._dwObj === keep && dist(u, u._dw) < 20) { aiStop(u); return; }
-    if (engaged && cov >= 1 && dist(u, keep) < 260) return;
-    const p = overwatch(u, keep, home, side, 50, 200);
-    if (p) { u._dw = p; u._dwObj = keep; aiMove(u, p, 'move'); }
-    return;
-  }
-  if (u.role === 'guard') {
-    if (dist(u, home) > CAP_R * 0.6) aiMove(u, coverNear(home.x, home.y, CAP_R * 0.6, side, null, u), 'move');
-    else if (!aiChargeCheck(u, seen, 100, 0)) aiStop(u);
-    return;
-  }
-  if (u.kind === 'light') return aiSkirm(u, obj, home, seen, side, mode, engaged, cov);
-  aiLine(u, obj, home, seen, side, mode, stay, engaged, cov, d);
-}
-function aiChargeCheck(u, seen, range, aggr) {
-  if (!canCharge(u) || u.state > 0 || hpf(u) < 0.45 || G.time - u.meleeT < 5) return false;
-  let best = null, bs = 0;
-  for (const o of seen) {
-    const d = dist(u, o);
-    if (d > range || d < 25 || o.state >= 4) continue;
-    if (!lineOK(u, o, false)) continue;
-    let v = 0;
-    if (o.state >= 2) v += 1.5; else if (o.state === 1) v += 0.6;
-    if (isArt(o)) v += 1.2;
-    if (o.kind === 'light' && coverAt(o.x, o.y) === 0) v += 0.8;
-    if (o.formT > 0) v += 0.8;
-    if (attackAngle(o, u.x, u.y) > 1.0 && o.form !== 'square') v += 0.8;
-    if (inHouse(o)) v -= 1;
-    if (hpf(o) < 0.5) v += 0.5;
-    v += aggr || 0;
-    v -= d / range * 0.4;
-    if (v > bs) { bs = v; best = o; }
-  }
-  if (best && bs >= 1.2) { orderCharge(u, best); return true; }
-  return false;
-}
-function aiLine(u, obj, home, seen, side, mode, stay, engaged, cov, d) {
   const nearE = seen.reduce((m, o) => Math.min(m, dist(o, u)), 1e9);
-  if (aiChargeCheck(u, seen, mode === 'push' || mode === 'strike' ? 150 : 120, mode === 'push' ? 0.5 : 0)) return;
-  if (mode === 'wait') {
-    if (cov < 1 && !engaged) aiMove(u, coverNear(u.x, u.y, 50, side, null, u), 'move'); else aiStop(u);
-    return;
+  const assault = d.mode === 'assault', push = A.mode === 'push';
+  const dd = dist(u, s);
+  const Z = d.zone, zd = Z ? dxy(u.x, u.y, Z.x, Z.y) : 0;
+  if (u.kind === 'light') {
+    if (engaged && coverAt(u.x, u.y) >= 1 && dd < 140) return;
+  } else {
+    if (aiChargeCheck(u, seen, assault && push ? 150 : assault ? 130 : 120, assault && push ? 0.5 : 0)) return;
+    if (engaged && nearE < 220 && Math.random() < A.stay) return; // trade volleys a while
+    if (assault && nearE < 170 && u.form === 'line' && Math.random() < 0.55) { if (u.path.length) aiStop(u); return; } // halt and fire
   }
-  if (mode === 'defend') {
-    if (engaged && nearE < 260) return;
-    if (u._dw && u._dwObj === obj && dist(u, u._dw) < 20) { aiStop(u); return; }
-    const p = overwatch(u, obj, home, side, 30, 170);
-    if (p) { u._dw = p; u._dwObj = obj; aiMove(u, p, nearE < 320 ? 'move' : 'quick'); }
-    return;
+  if (assault && Z && !push && zd > Z.r * 0.6) { // don't run ahead of the attack
+    const P = A.pace && A.pace[Math.round(Z.x) + ',' + Math.round(Z.y)];
+    if (P && zd < P - 90) { if (u.path.length) aiStop(u); return; }
   }
-  if (engaged && nearE < 220 && Math.random() < stay) return; // trade volleys
-  if (d < CAP_R * 0.6) { aiStop(u); return; }
-  if (mode === 'attack' && side === 1 && G.ai[side].ready && G.ai[side].ready[obj.name] === false && d < 520) {
-    if (d > 380) aiMove(u, pointAlong(u, obj, d - 340), nearE < 350 ? 'move' : 'quick'); else aiStop(u);
-    return;
-  }
-  const goal = d < 220 ? { x: obj.x + rnd(-25, 25), y: obj.y + rnd(-25, 25) } : pointAlong(u, obj, 180);
-  aiMove(u, goal, nearE < 350 ? 'move' : (d > 400 ? 'quick' : 'move'));
+  if (dd < 14) { if (u.path.length) aiStop(u); return; }
+  const end = pathEnd(u);
+  if (!assault && end && dxy(end.x, end.y, s.x, s.y) < 14) return; // already on the way
+  const goal = assault && dd > 200 ? pointAlong(u, s, 180) : s;
+  aiMove(u, goal, nearE < 350 ? 'move' : (dd > 400 ? 'quick' : 'move'));
 }
-function aiSkirm(u, obj, home, seen, side, mode, engaged, cov) {
-  if (engaged && cov >= 1) return;
-  if (mode === 'wait') { if (cov < 1) aiMove(u, coverNear(u.x, u.y, 80, side, null, u), 'move'); return; }
-  if (u._ow && u._owObj === obj && dist(u, u._ow) < 20) { aiStop(u); return; }
-  const def = mode === 'defend';
-  const p = overwatch(u, obj, home, side, def ? 20 : 60, def ? 150 : 210);
-  if (p) { u._ow = p; u._owObj = obj; aiMove(u, p, seen.some(o => dist(o, u) < 300) ? 'move' : 'quick'); }
-}
-function aiCmdr(u, obj, home, seen, side) {
-  const nearE = seen.reduce((m, o) => Math.min(m, dist(o, u)), 1e9);
-  if (nearE < 150) { aiMove(u, pointAlong(u, home, 130), 'quick'); return; }
-  const needy = G.units.filter(o => live(o) && o.side === side && o.kind !== 'cmdr' && o.state >= 3 && dist(o, u) < 380).sort((a, b) => dist(a, u) - dist(b, u))[0];
-  if (needy && G.time - u.lastHit > 3) { aiMove(u, { x: needy.x + (home.x - needy.x) * 0.08, y: needy.y + (home.y - needy.y) * 0.08 }, 'quick'); return; }
-  const grp = G.units.filter(o => live(o) && o.side === side && (isInf(o) || o.kind === 'light') && o.state < 3);
-  if (!grp.length) return;
-  const cx = grp.reduce((s, o) => s + o.x, 0) / grp.length, cy = grp.reduce((s, o) => s + o.y, 0) / grp.length;
-  const v = { x: cx + (home.x - cx) * 0.15, y: cy + (home.y - cy) * 0.15 };
-  if (dxy(u.x, u.y, v.x, v.y) > 60) aiMove(u, v, 'move');
-}
-function aiCav(u, obj, home, seen, side, mode) {
+function cavCharge(u, seen, side) {
   const D = DIFFS[G.diff], hf = hpf(u);
   if (u.fat < 50 && u.state === 0 && G.time - u.meleeT > 4) {
     const cc = seen.find(o => isCav(o) && o.order.type === 'charge' && dist(o, u) < 260);
-    if (cc) { orderCharge(u, cc); return; }
+    if (cc) { orderCharge(u, cc); return true; }
   }
   const thr = side === 1 ? D.cavT : (D.cavTF || 1.7);
   if (u.fat < 40 && u.state === 0 && hf > 0.35 && G.time - u.meleeT > 5) {
@@ -1435,40 +1728,113 @@ function aiCav(u, obj, home, seen, side, mode) {
       if (!lineOK(u, o, false)) v -= 0.5;
       if (v > bs) { bs = v; best = o; }
     }
-    if (best && bs >= thr) { orderCharge(u, best); return; }
+    if (best && bs >= thr) { orderCharge(u, best); return true; }
   }
-  // otherwise wait in reserve behind the infantry and get the horses' wind back
-  let spot = u._rp && u._rpObj === obj && G.time - u._rpT < 25 ? u._rp : null;
-  if (!spot) {
-    const p = pointAlongFrom(obj.x, obj.y, home, mode === 'defend' || mode === 'wait' ? 170 : 230, false);
-    spot = { x: clamp(p.x + rnd(-60, 60), 30, W - 30), y: clamp(p.y + rnd(-60, 60), 30, H - 30) };
-    if (!passAt(spot.x, spot.y, false) || terrAt(spot.x, spot.y) === T_STREAM) spot = p;
-    u._rp = spot; u._rpObj = obj; u._rpT = G.time;
-  }
-  if (u.fat >= 40 || hf < 0.35) spot = pointAlongFrom(spot.x, spot.y, home, 120, false);
-  if (dist(u, spot) > 40) aiMove(u, spot, 'move'); else aiStop(u);
+  return false;
 }
-function aiArt(u, obj, home, seen, side, mode) {
+// the other squadron pair of the regiment goes in alongside (two pairs hit like the whole regiment)
+function cavPartner(u) {
+  const o = u.order.target;
+  if (!o || (u.sz || 1) >= 1) return;
+  let best = null, bd = 130;
+  for (const p of G.units) {
+    if (p === u || !live(p) || p.side !== u.side || !isCav(p) || p.dv !== u.dv || p.direct || p.state > 0 || p.fat >= 40 || p.order.type === 'charge' || hpf(p) < 0.35) continue;
+    const d = dist(p, u);
+    if (d < bd && dist(p, o) < 440 && lineOK(p, o, false)) { bd = d; best = p; }
+  }
+  if (best) orderCharge(best, o);
+}
+function cmdCav(u, d, s, seen, side, home) {
+  u.faceAng = s.face;
+  if (cavCharge(u, seen, side)) { cavPartner(u); return; }
+  let spot = s;
+  if (u.fat >= 40 || hpf(u) < 0.35) spot = pointAlongFrom(s.x, s.y, home, 120, false); // rest the horses behind
+  const end = pathEnd(u);
+  if (dist(u, spot) > 40) { if (!end || dxy(end.x, end.y, spot.x, spot.y) > 30) aiMove(u, spot, 'move'); }
+  else aiStop(u);
+}
+function cmdArt(u, s, seen) {
   const w = WPN[u.t.w];
   if (u.formT > 0) return;
-  if (u.form === 'deployed' && seen.some(o => validTarget(u, o, w))) { aiStop(u); return; }
-  if (u.form === 'deployed' && G.time - Math.max(u.lastFired, u.depT || 0) < 12) return;
-  const d = dist(u, obj);
-  if (u.form === 'deployed' && d < w.range * 0.85 && d > 150 && LOS(u.x, u.y, obj.x, obj.y)) return;
-  if (u.path.length && u._gpObj === obj) return;
-  let best = null, bs = -1e9;
-  for (let i = 0; i < 36; i++) {
-    const a = rnd(0, TAU), r = rnd(200, w.range * 0.75);
-    const x = obj.x + Math.cos(a) * r, y = obj.y + Math.sin(a) * r;
-    if (x < 30 || y < 30 || x > W - 30 || y > H - 30 || !passAt(x, y, true)) continue;
-    if (dxy(x, y, home.x, home.y) > dist(obj, home) + 150) continue;
-    const t = terrAt(x, y); if (t === T_TREE || t === T_HOUSE) continue;
-    let s = heightAt(x, y) * 1.5 + (LOS(x, y, obj.x, obj.y) ? 60 : 0) - dxy(x, y, u.x, u.y) * 0.06;
-    for (const e of seen) if (dxy(x, y, e.x, e.y) < 180) s -= 40;
-    for (const o of G.units) if (o !== u && live(o) && o.side === side && dxy(o.x, o.y, x, y) < 30) s -= 30;
-    if (s > bs) { bs = s; best = { x, y }; }
+  u.faceAng = s.face;
+  const dd = dist(u, s);
+  if (u.form === 'deployed') {
+    if (seen.some(o => validTarget(u, o, w))) { aiStop(u); return; } // keep firing while there are targets
+    if (G.time - Math.max(u.lastFired, u.depT || 0) < 12) return;
+    if (dd < 70) return;
   }
-  if (best && (u.form !== 'deployed' || bs > 30)) { u._gp = best; u._gpObj = obj; aiMove(u, best, 'move'); }
+  if (dd < 16) { if (!u.path.length && u.form === 'limbered') setForm(u, 'deployed'); return; }
+  const end = pathEnd(u);
+  if (end && dxy(end.x, end.y, s.x, s.y) < 16) return;
+  aiMove(u, s, 'move');
+}
+function aiChargeCheck(u, seen, range, aggr) {
+  if (!canCharge(u) || u.state > 0 || hpf(u) < 0.45 || G.time - u.meleeT < 5) return false;
+  let best = null, bs = 0;
+  for (const o of seen) {
+    const d = dist(u, o);
+    if (d > range || d < 25 || o.state >= 4) continue;
+    if (!lineOK(u, o, false)) continue;
+    let v = 0;
+    if (o.state >= 2) v += 1.5; else if (o.state === 1) v += 0.6;
+    if (isArt(o)) v += 1.2;
+    if (o.kind === 'light' && coverAt(o.x, o.y) === 0) v += 0.8;
+    if (o.formT > 0) v += 0.8;
+    if (attackAngle(o, u.x, u.y) > 1.0 && o.form !== 'square') v += 0.8;
+    if (inHouse(o)) v -= 1;
+    if (hpf(o) < 0.5) v += 0.5;
+    v += aggr || 0;
+    v -= d / range * 0.4;
+    if (v > bs) { bs = v; best = o; }
+  }
+  if (best && bs >= 1.2) { orderCharge(u, best); return true; }
+  return false;
+}
+function aiCmdr(u, obj, home, seen, side) {
+  const nearE = seen.reduce((m, o) => Math.min(m, dist(o, u)), 1e9);
+  if (nearE < 150) { aiMove(u, pointAlong(u, home, 130), 'quick'); return; }
+  const needy = G.units.filter(o => live(o) && o.side === side && o.kind !== 'cmdr' && o.state >= 3 && dist(o, u) < 380).sort((a, b) => dist(a, u) - dist(b, u))[0];
+  if (needy && G.time - u.lastHit > 3) { aiMove(u, { x: needy.x + (home.x - needy.x) * 0.08, y: needy.y + (home.y - needy.y) * 0.08 }, 'quick'); return; }
+  const grp = G.units.filter(o => live(o) && o.side === side && (isInf(o) || o.kind === 'light') && o.state < 3);
+  if (!grp.length) return;
+  const cx = grp.reduce((s, o) => s + o.x, 0) / grp.length, cy = grp.reduce((s, o) => s + o.y, 0) / grp.length;
+  const v = { x: cx + (home.x - cx) * 0.15, y: cy + (home.y - cy) * 0.15 };
+  if (dxy(u.x, u.y, v.x, v.y) > 60) aiMove(u, v, 'move');
+}
+// ---------------------------------------------------------------- orders (commanders)
+// a tap near a named place snaps to it; anywhere else makes a free zone (radius 95, or dragged)
+function zoneAt(x, y, r) {
+  const nz = ZONES.filter(z => dxy(z.x, z.y, x, y) < z.r * 0.85).sort((a, b) => dxy(a.x, a.y, x, y) - dxy(b.x, b.y, x, y))[0];
+  if (nz && !r) return { name: nz.name, x: nz.x, y: nz.y, r: nz.r, flag: nz.flag ?? -1 };
+  r = clamp(r || 95, 55, 240); x = clamp(x, 40, W - 40); y = clamp(y, 40, H - 40);
+  const fi = G.flags.findIndex(f => dxy(f.x, f.y, x, y) < Math.max(45, r * 0.8));
+  return { name: nz ? '≈' + nz.name : '', x, y, r, flag: fi };
+}
+function orderDiv(d, z, post, quiet) {
+  d.zone = z; d.post = post; d.layT = 0; d.theta = null; d.player = true;
+  for (const u of d.units) { if (u.spot && u.spot.k === 'gun') u.spot = null; if (G.phase === 'battle') u.aiCool = Math.min(u.aiCool, rnd(0.2, 1.2)); }
+  if (quiet) return;
+  G.markers.push({ x: z.x, y: z.y, t: 0, kind: 'zone', r: z.r, col: d.col });
+  toast(`${post === 'attack' ? '⚔' : '🛡'} ${d.name} → ${z.name || '📍'}`);
+  SFX.drum(post === 'attack' ? 'quick' : 'hold'); buzz(15);
+}
+const zoneLabel = (d) => (d.zone ? (d.zone.name || '📍') : d.units.some(u => u.reserve) ? '🦅' : 'in place');
+const DIV_AB = { van: 'V', sth: 'SH', leg: 'Lg', lan: 'Ln', mur: 'M', gar: 'G', mil: 'Mi', kol: 'Ko', lng: 'Lr', kam: 'Ka', lie: 'Li', dok: 'Do' };
+function selectDiv(d) {
+  if (!d) return;
+  G.selDiv = G.selDiv === d ? null : d; G.sel = []; G.pend = 'move'; G.inspect = null;
+  if (G.selDiv) toast(`⚑ ${d.name}: 👆 map = zone`);
+  SFX.click(); buzz(10); refreshUI(true);
+}
+function hqAt(wx, wy) {
+  const r = Math.max(20, 26 / cam.z);
+  let best = null, bd = r;
+  for (const d of G.divs) {
+    if (d.side !== 0 || !d.hq) continue;
+    const dd = dxy(d.hq.x, d.hq.y, wx, wy);
+    if (dd < bd) { bd = dd; best = d; }
+  }
+  return best ? { d: best, dist: bd } : null;
 }
 
 // ---------------------------------------------------------------- orders (player)
@@ -1480,6 +1846,7 @@ function groupSpots(us, x, y) {
   });
 }
 function issueMove(us, x, y, mode) {
+  markDirect(us);
   const spots = groupSpots(us, x, y);
   let ok = false;
   us.forEach((u, i) => {
@@ -1494,7 +1861,7 @@ function issueCharge(us, o) {
   for (const u of us) {
     if (!canCharge(u) || u.state >= 2) { if (isCav(u) && u.fat >= 50) blown = true; continue; }
     if (dist(u, o) > CHARGE_R[isCav(u) ? 'cav' : 'inf'] * 1.15) continue;
-    orderCharge(u, o); ok++;
+    markDirect([u]); orderCharge(u, o); ok++;
   }
   G.markers.push({ x: o.x, y: o.y, t: 0, kind: ok ? 'charge' : 'no' });
   if (ok) { SFX.bugle('charge'); buzz([20, 30, 20]); }
@@ -1503,6 +1870,7 @@ function issueCharge(us, o) {
 }
 function issueFire(us, o) {
   const firers = us.filter(u => u.t.w), riders = us.filter(u => !u.t.w && isCav(u));
+  markDirect(firers);
   for (const u of firers) { u.path = []; u.order = { type: 'fire', target: o, t: G.time }; }
   if (riders.length) issueCharge(riders, o);
   if (firers.length) { G.markers.push({ x: o.x, y: o.y, t: 0, kind: 'fire' }); SFX.drum('fire'); buzz(15); }
@@ -1513,12 +1881,12 @@ function issueArea(us, x, y) {
     if (!u.t.w) continue;
     const w = WPN[u.t.w], d = dxy(u.x, u.y, x, y);
     if (u.ammo <= 0 || d > w.range || !LOS(u.x, u.y, x, y)) continue;
-    u.path = []; u.order = { type: 'area', x, y, t: G.time, until: G.time + 20 }; ok = true;
+    markDirect([u]); u.path = []; u.order = { type: 'area', x, y, t: G.time, until: G.time + 20 }; ok = true;
   }
   G.markers.push({ x, y, t: 0, kind: ok ? 'area' : 'no' });
   if (!ok) { toast('✖ 👁'); SFX.click(true); buzz([10, 40, 10]); } else { SFX.drum('fire'); buzz(15); }
 }
-function issueHold(us) { for (const u of us) { u.path = []; u.order = { type: 'hold' }; } SFX.drum('hold'); buzz(12); }
+function issueHold(us) { markDirect(us); for (const u of us) { u.path = []; u.order = { type: 'hold' }; } SFX.drum('hold'); buzz(12); }
 const NEXT_FORM = { line: 'column', column: 'square', square: 'line' };
 function nextForm(sel) {
   const inf = sel.find(u => isInf(u) && u.state < 3);
@@ -1530,6 +1898,7 @@ function nextForm(sel) {
 function issueForm(us) {
   const nf = nextForm(us);
   if (!nf) { SFX.click(true); return; }
+  if (G.phase === 'battle') markDirect(us.filter(u => u.state < 3 && (isInf(u) || isArt(u))), 15);
   for (const u of us) {
     if (u.state >= 3) continue;
     if (isInf(u) && (nf === 'line' || nf === 'column' || nf === 'square')) { setForm(u, nf); u.sqAuto = false; if (u.order.type === 'hold' && nf !== 'square') u.order = { type: 'idle' }; }
@@ -1571,7 +1940,8 @@ function autoDeploy() {
 function beginBattle() {
   if (G.phase !== 'deploy') return;
   G.phase = 'battle'; G.paused = false; G.sel = G.sel.filter(live);
-  for (const u of G.units) { u.path = []; u.order = { type: 'idle' }; }
+  for (const u of G.units) { u.path = []; u.order = { type: 'idle' }; u.home = { x: u.x, y: u.y }; }
+  updateHQ(true);
   updateVis();
   SFX.bugle('start');
   toast('▶ 🌫');
@@ -1583,7 +1953,15 @@ function step() {
   G.time += DT;
   updateFog();
   G.visT -= DT; if (G.visT <= 0) { G.visT = 0.25; updateVis(); }
-  G.aiT -= DT; if (G.aiT <= 0) { G.aiT = 0.5; aiThink(1); if (G.auto) aiThink(0); else holdAssist(); }
+  G.aiT -= DT;
+  if (G.aiT <= 0) {
+    G.aiT = 0.5;
+    aiThink(1);
+    if (G.auto) aiThink(0); else { holdAssist(); releaseDirect(); }
+    const seenAll = [0, 1].map(s => G.units.filter(o => live(o) && o.side !== s && isSeen(o, s)));
+    commandUnits(1, seenAll); commandUnits(0, seenAll);
+  }
+  updateHQ(false);
   for (const u of G.units) {
     if (!live(u)) continue;
     updateMorale(u);
@@ -1900,7 +2278,7 @@ function drawUnitBody(c, u, x, y, s, alpha) {
     case 'deployed': {
       c.strokeStyle = mc; c.lineWidth = 2 * s; c.strokeRect(-d / 2 - 2 * s, -w / 2 - 2 * s, d + 4 * s, w + 4 * s);
       c.fillStyle = 'rgba(30,26,18,.35)'; c.fillRect(-d / 2, -w / 2, d, w);
-      for (const k of [-1, 0, 1]) {
+      for (const k of ((u.sz || 1) < 0.5 ? [-0.9, 0.9] : [-1, 0, 1])) {
         const yy = k * w / 3;
         c.fillStyle = '#5a4630'; c.fillRect(-4 * s, yy - 4 * s, 3 * s, 8 * s);
         c.strokeStyle = '#1e1e1e'; c.lineWidth = 3 * s; c.beginPath(); c.moveTo(-3 * s, yy); c.lineTo(7 * s, yy); c.stroke();
@@ -1946,7 +2324,7 @@ function drawUnit(c, u, s, now) {
   const x = u.x, y = u.y, sv = Math.min(s, 1.5);
   if (u.flash > 0 && u.t.w) {
     c.fillStyle = 'rgba(255,230,140,.95)';
-    for (const k of (u.form === 'line' ? [-0.4, -0.13, 0.13, 0.4] : u.form === 'deployed' ? [-0.33, 0, 0.33] : [0])) { const p = frontPt(u, k, 3); c.beginPath(); c.arc(p.x, p.y, (u.form === 'deployed' ? 5 : 3) * sv, 0, TAU); c.fill(); }
+    for (const k of (u.form === 'line' ? [-0.4, -0.13, 0.13, 0.4] : u.form === 'deployed' ? ((u.sz || 1) < 0.5 ? [-0.3, 0.3] : [-0.33, 0, 0.33]) : [0])) { const p = frontPt(u, k, 3); c.beginPath(); c.arc(p.x, p.y, (u.form === 'deployed' ? 5 : 3) * sv, 0, TAU); c.fill(); }
   }
   drawUnitBody(c, u, x, y, sv, 1);
   const bw = 24 * s, by = y - (u.kind === 'cmdr' ? 22 : 24) * s, f = hpf(u);
@@ -1981,6 +2359,11 @@ function drawUnit(c, u, s, now) {
     c.strokeStyle = '#ffd34d'; c.lineWidth = 2.5 * s;
     c.beginPath(); c.arc(x, y, 20 * s, -Math.PI / 2, -Math.PI / 2 + TAU * k); c.stroke();
     c.fillStyle = '#ffd34d'; star(c, x - 17 * s, by, 5 * s, true);
+  }
+  if (u.side === 0 && u.dv) { // division pip (hollow white = under your direct orders)
+    c.beginPath(); c.arc(x - bw / 2 + 3 * s, by - 4.5 * s, 2.8 * s, 0, TAU);
+    if (u.direct) { c.fillStyle = 'rgba(0,0,0,.5)'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.5 * s; c.stroke(); }
+    else { c.fillStyle = u.dv.col; c.fill(); c.strokeStyle = 'rgba(0,0,0,.65)'; c.lineWidth = 1 * s; c.stroke(); }
   }
   if (u.side === 0) {
     if (u.ammoMax && u.ammo / u.ammoMax < 0.25) { c.fillStyle = u.ammo <= 0 ? '#e8402f' : '#e6c83a'; c.fillRect(x + 13 * s, y + 9 * s, 5 * s, 5 * s); }
@@ -2246,6 +2629,74 @@ function drawInRange(c, o, s, now) {
   }
   c.stroke();
 }
+// commanders and their zones
+const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+function arrowTo(c, x0, y0, x1, y1, col, s, a) {
+  const an = Math.atan2(y1 - y0, x1 - x0);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1);
+  c.strokeStyle = `rgba(0,0,0,${0.4 * a})`; c.lineWidth = 5 * s; c.stroke();
+  c.strokeStyle = hexA(col, 0.95 * a); c.lineWidth = 2.4 * s; c.setLineDash([9 * s, 6 * s]); c.stroke(); c.setLineDash([]);
+  c.fillStyle = hexA(col, 0.95 * a); c.beginPath(); c.moveTo(x1, y1);
+  c.lineTo(x1 - Math.cos(an - 0.45) * 14 * s, y1 - Math.sin(an - 0.45) * 14 * s); c.lineTo(x1 - Math.cos(an + 0.45) * 14 * s, y1 - Math.sin(an + 0.45) * 14 * s); c.closePath(); c.fill();
+}
+function tagText(c, txt, x, y, col, s, a = 1) {
+  c.font = `bold ${11 * s}px system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.globalAlpha = a; c.lineWidth = 3.2 * s; c.strokeStyle = 'rgba(0,0,0,.8)'; c.strokeText(txt, x, y);
+  c.fillStyle = col; c.fillText(txt, x, y); c.globalAlpha = 1;
+}
+function drawZone(c, d, Z, post, s, now, a, sel, k) {
+  c.beginPath(); c.arc(Z.x, Z.y, Z.r, 0, TAU);
+  c.fillStyle = hexA(d.col, (sel ? 0.13 : 0.05) * a); c.fill();
+  c.strokeStyle = `rgba(0,0,0,${0.32 * a})`; c.lineWidth = (sel ? 6 : 4) * s; c.stroke();
+  c.setLineDash([11 * s, 7 * s]); c.lineDashOffset = sel ? -now * 14 : 0;
+  c.strokeStyle = hexA(d.col, 0.95 * a); c.lineWidth = (sel ? 3 : 2) * s; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
+  tagText(c, `${post === 'attack' ? '⚔' : '🛡'} ${d.name}${Z.name ? ' · ' + Z.name : ''}`, Z.x, Z.y - Z.r - (9 + k * 15) * s, d.col, s, sel ? 1 : 0.8);
+}
+function drawZones(c, s, now) {
+  const cnt = {};
+  for (const d of G.divs) {
+    if (d.side !== 0 || !d.zone || !d.units.some(u => (live(u) && u.state < 4) || u.reserve)) continue;
+    const Z = d.zone, key = Z.x + ',' + Z.y, k = cnt[key] = (cnt[key] ?? -1) + 1;
+    const sel = G.selDiv === d, a = sel ? 1 : 0.5;
+    drawZone(c, d, Z, d.post, s, now, a, sel, k);
+    if (d.hq) { const dd = dxy(d.hq.x, d.hq.y, Z.x, Z.y); if (dd > Z.r + 26) arrowTo(c, d.hq.x, d.hq.y, Z.x - (Z.x - d.hq.x) / dd * Z.r, Z.y - (Z.y - d.hq.y) / dd * Z.r, d.col, s, a); }
+    if (sel) for (const u of d.units) {
+      if (!live(u) || !u.spot || u.direct || u.state >= 3 || dist(u, u.spot) < 14) continue;
+      c.strokeStyle = hexA(d.col, 0.55); c.lineWidth = 1.4 * s; c.setLineDash([3 * s, 4 * s]);
+      c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(u.spot.x, u.spot.y); c.stroke(); c.setLineDash([]);
+      c.beginPath(); c.arc(u.spot.x, u.spot.y, 5 * s, 0, TAU); c.strokeStyle = hexA(d.col, 0.9); c.lineWidth = 1.8 * s; c.stroke();
+    }
+  }
+  const P = G.zonePrev;
+  if (P && P.div) {
+    drawZone(c, P.div, P, P.div.post, s, now, 1, true, 0);
+    if (P.div.hq) { const dd = dxy(P.div.hq.x, P.div.hq.y, P.x, P.y); if (dd > P.r + 10) arrowTo(c, P.div.hq.x, P.div.hq.y, P.x - (P.x - P.div.hq.x) / dd * P.r, P.y - (P.y - P.div.hq.y) / dd * P.r, P.div.col, s, 1); }
+  }
+}
+function drawHQ(c, d, x, y, s, now) {
+  const sel = G.selDiv === d, r = 9 * s;
+  if (sel) { c.beginPath(); c.arc(x, y, r + (6 + 2 * Math.sin(now * 6)) * s, 0, TAU); c.strokeStyle = '#fff'; c.lineWidth = 2 * s; c.stroke(); }
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(x + 1.5 * s, y + 1.5 * s, r, 0, TAU); c.fill();
+  c.fillStyle = d.side ? '#2a4521' : '#1b2d66'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+  c.strokeStyle = d.col; c.lineWidth = 2.6 * s; c.stroke();
+  const sx = x + r * 0.7, top = y - r - 12 * s, fw = 13 * s, fh = 7.5 * s;
+  c.strokeStyle = '#eee'; c.lineWidth = 1.3 * s; c.beginPath(); c.moveTo(sx, y - r * 0.6); c.lineTo(sx, top); c.stroke();
+  c.beginPath(); c.moveTo(sx, top); c.lineTo(sx + fw, top); c.lineTo(sx + fw * 0.7, top + fh / 2); c.lineTo(sx + fw, top + fh); c.lineTo(sx, top + fh); c.closePath();
+  c.fillStyle = d.col; c.fill(); c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 0.8 * s; c.stroke();
+  c.fillStyle = d.col; c.font = `bold ${(DIV_AB[d.key] || '').length > 1 ? 7.5 * s : 10 * s}px system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(DIV_AB[d.key] || d.name[0], x, y + 0.5 * s);
+  tagText(c, d.name, x, y + r + 8 * s, sel ? '#fff' : d.col, s * 0.92);
+}
+function drawHQs(c, s, now) {
+  for (const d of G.divs) {
+    if (d.side === 0) { if (d.hq) drawHQ(c, d, d.hq.x, d.hq.y, s, now); continue; }
+    if (G.phase !== 'battle') continue;
+    const vis = d.units.filter(u => live(u) && u.state < 4 && (isSeen(u, 0) || G.over));
+    if (!vis.length) continue;
+    const ce = centroid(vis), th = d.theta ?? Math.PI;
+    drawHQ(c, d, ce.x - Math.cos(th) * 40, ce.y - Math.sin(th) * 40, s, now);
+  }
+}
 // fog banks: big soft blobs drifting with the wind
 const FOG_BLOBS = Array.from({ length: 16 }, (_, i) => ({ x: (i * 397) % W, y: (i * 271 + 90) % H, r: 160 + (i * 53) % 120 }));
 function drawFog(c, now) {
@@ -2301,6 +2752,8 @@ function render() {
     }
     drawFlag(ctx, f, s, now);
   }
+  if (G.phase === 'deploy') updateHQ(true);
+  drawZones(ctx, s, now);
   if (G.reinfAt && G.time - G.reinfAt.t < 7 && !G.auto) {
     const a = 0.5 + 0.5 * Math.sin(now * 6), y = G.reinfAt.y;
     ctx.fillStyle = `rgba(232,64,47,${a})`;
@@ -2364,6 +2817,7 @@ function render() {
     }
     drawUnit(ctx, u, s, now);
   }
+  drawHQs(ctx, s, now);
   for (const sh of G.shells) {
     const t = clamp(sh.t / sh.dur, 0, 1);
     if (sh.src.side === 1 && !isSeen(sh.src, 0) && t < 0.6) continue;
@@ -2399,6 +2853,7 @@ function render() {
     ctx.strokeStyle = m.kind === 'no' ? `rgba(255,60,60,${a})` : m.kind === 'fire' || m.kind === 'area' || m.kind === 'charge' ? `rgba(255,90,60,${a})` : `rgba(255,255,255,${a})`;
     ctx.lineWidth = 2.5 * s;
     if (m.kind === 'no') { ctx.beginPath(); ctx.moveTo(m.x - 10, m.y - 10); ctx.lineTo(m.x + 10, m.y + 10); ctx.moveTo(m.x + 10, m.y - 10); ctx.lineTo(m.x - 10, m.y + 10); ctx.stroke(); }
+    else if (m.kind === 'zone') { ctx.strokeStyle = hexA(m.col, a); ctx.lineWidth = 4 * s; ctx.beginPath(); ctx.arc(m.x, m.y, m.r * (1.5 - 0.5 * Math.min(1, m.t / 0.5)), 0, TAU); ctx.stroke(); }
     else { ctx.beginPath(); ctx.arc(m.x, m.y, (8 + m.t * 20) * s, 0, TAU); ctx.stroke(); }
   }
   for (const f of G.floaters) drawFloater(ctx, f, s);
@@ -2432,14 +2887,17 @@ cv.addEventListener('pointerdown', (e) => {
   if (ptrs.size === 1) {
     const w = toWorld(e.clientX, e.clientY);
     const hit = unitAt(w.x, w.y);
+    const hq = G.running && !G.over ? hqAt(w.x, w.y) : null;
     gest = { sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, mode: 'pending', w, hit };
     const battleSel = G.phase === 'battle' && !G.over && G.sel.length > 0;
-    if (G.phase === 'deploy' && hit && hit.side === 0) gest.mode = 'unitPending';
+    if (hq && !(G.sel.length && (G.pend === 'fire' || G.pend === 'charge')) && (!hit || hq.dist <= dxy(hit.x, hit.y, w.x, w.y) + 6)) { gest.mode = 'hqPending'; gest.div = hq.d; gest.hit = null; }
+    else if (G.phase === 'deploy' && hit && hit.side === 0) gest.mode = 'unitPending';
     else if (battleSel && (G.pend === 'fire' || G.pend === 'charge') && !(hit && hit.side === 0)) { gest.mode = 'aim'; setAim(w); }
     else {
       gest.timer = setTimeout(() => {
         if (gest && gest.mode === 'pending') {
           if (battleSel && gest.hit && gest.hit.side === 1) { gest.mode = 'aimHold'; setAim(gest.w); buzz(12); return; }
+          if (G.selDiv && !G.over && !(gest.hit && gest.hit.side === 0)) { gest.mode = 'zoneDraw'; G.zonePrev = Object.assign(zoneAt(gest.w.x, gest.w.y, 55), { div: G.selDiv }); buzz(12); return; }
           gest.mode = 'box'; gest.bx = gest.ex = gest.sx; gest.by = gest.ey = gest.sy; G.preview = null;
           buzz(12);
         }
@@ -2468,8 +2926,13 @@ cv.addEventListener('pointermove', (e) => {
       break;
     }
     case 'unitPending':
-      if (moved > 6) { gest.mode = 'drag'; G.sel = [gest.hit]; refreshUI(true); }
+      if (moved > 6) { gest.mode = 'drag'; G.sel = [gest.hit]; G.selDiv = null; refreshUI(true); }
       break;
+    case 'hqPending':
+      if (moved > 8) { gest.mode = 'hqDrag'; if (G.selDiv !== gest.div) { G.selDiv = gest.div; G.sel = []; refreshUI(true); } }
+      break;
+    case 'hqDrag': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(w.x, w.y), { div: gest.div }); break; }
+    case 'zoneDraw': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(gest.w.x, gest.w.y, Math.max(55, dxy(gest.w.x, gest.w.y, w.x, w.y))), { div: G.selDiv }); break; }
     case 'drag': { const w = toWorld(e.clientX, e.clientY); placeUnit(gest.hit, w.x, w.y); break; }
     case 'pending':
       if (moved > 10) { gest.mode = 'pan'; clearTimeout(gest.timer); G.preview = null; }
@@ -2487,6 +2950,8 @@ const endPtr = (e) => {
   const up = e.type === 'pointerup';
   if (up) {
     if (gest.mode === 'pending' || gest.mode === 'unitPending') tap(e.clientX, e.clientY);
+    else if (gest.mode === 'hqPending') selectDiv(gest.div);
+    else if ((gest.mode === 'hqDrag' || gest.mode === 'zoneDraw') && G.zonePrev) { const P = G.zonePrev, d = P.div; delete P.div; orderDiv(d, P, d.post); refreshUI(true); }
     else if (gest.mode === 'drag') SFX.click();
     else if (gest.mode === 'aim') tap(e.clientX, e.clientY);
     else if (gest.mode === 'aimHold') { if (G.aim && G.aim.tgt) tap(e.clientX, e.clientY); }
@@ -2495,7 +2960,7 @@ const endPtr = (e) => {
       else tap(e.clientX, e.clientY);
     }
   }
-  G.preview = null; G.aim = null; gest = null;
+  G.preview = null; G.aim = null; G.zonePrev = null; gest = null;
 };
 function setAim(w) {
   const h = unitAt(w.x, w.y);
@@ -2525,7 +2990,7 @@ function unitAt(wx, wy) {
 function boxSelect(x1, y1, x2, y2) {
   const a = toWorld(Math.min(x1, x2), Math.min(y1, y2)), b = toWorld(Math.max(x1, x2), Math.max(y1, y2));
   const pick = G.units.filter(u => u.side === 0 && live(u) && u.state < 4 && u.x >= a.x && u.x <= b.x && u.y >= a.y && u.y <= b.y);
-  if (pick.length) { G.sel = pick; G.pend = 'move'; SFX.click(); }
+  if (pick.length) { G.sel = pick; G.selDiv = null; G.pend = 'move'; SFX.click(); }
   refreshUI(true);
 }
 function tap(sx, sy) {
@@ -2535,7 +3000,13 @@ function tap(sx, sy) {
   if (u && u.side === 0) {
     if (G.sel.length === 1 && G.sel[0] === u) G.sel = [];
     else if (u.state < 4) G.sel = [u];
-    G.pend = 'move'; SFX.click(); refreshUI(true); return;
+    G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true); return;
+  }
+  if (G.selDiv) { // commander selected: the tap is his zone (an enemy tapped = attack there)
+    const d = G.selDiv;
+    if (u && u.side === 1 && G.phase === 'battle') orderDiv(d, zoneAt(u.x, u.y), 'attack');
+    else orderDiv(d, zoneAt(p.x, p.y), d.post);
+    refreshUI(true); return;
   }
   const sel = G.sel.filter(s => live(s) && s.state < 4);
   if (u && u.side === 1 && G.phase === 'battle') G.inspect = { u, until: performance.now() + (sel.length ? 2500 : 6000) };
@@ -2582,6 +3053,7 @@ function buildRoster() {
     const c = document.createElement('canvas'); c.width = 76; c.height = 76;
     const bar = document.createElement('i'); bar.innerHTML = '<b></b>';
     b.append(c, bar);
+    if (u.dv) { const pip = document.createElement('u'); pip.style.background = u.dv.col; b.append(pip); }
     let lastTap = 0;
     b.addEventListener('click', () => {
       if (u.reserve) { if (G.phase === 'battle') toast(G.time < GUARD_UNLOCK ? '🦅 ⏳ ' + fmt(GUARD_UNLOCK - G.time) : '🦅 → ' + fmt(Math.max(0, GUARD_AUTO - G.time))); else toast('🦅 ⏳'); SFX.click(true); return; }
@@ -2589,11 +3061,55 @@ function buildRoster() {
       const now = performance.now();
       if (now - lastTap < 380) centerOn(u.x, u.y);
       lastTap = now;
-      G.sel = [u]; G.pend = 'move'; SFX.click(); refreshUI(true);
+      G.sel = [u]; G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true);
     });
     rosterEl.append(b);
     return { u, b, c, bar: bar.firstChild, key: '' };
   });
+  buildDivStrip();
+}
+// the division strip: one thumb-sized button per French commander (name, zone, posture, strength)
+let divBtns = [];
+function buildDivStrip() {
+  const el = $('divStrip'); el.innerHTML = '';
+  divBtns = G.divs.filter(d => d.side === 0).map(d => {
+    const b = document.createElement('button');
+    b.className = 'dv'; b.title = d.name + ' · ' + d.sub; b.style.borderColor = d.col;
+    b.innerHTML = `<span class="dn"><em style="background:${d.col}"></em>${d.name}</span><span class="dz"></span><i><b style="background:${d.col}"></b></i>`;
+    let lastTap = 0;
+    b.addEventListener('click', () => {
+      const now = performance.now();
+      if (now - lastTap < 380 && d.hq) { centerOn(d.hq.x, d.hq.y); lastTap = 0; if (G.selDiv !== d) selectDiv(d); return; }
+      lastTap = now;
+      if (!d.units.some(u => (live(u) && u.state < 4) || u.reserve)) { SFX.click(true); return; }
+      selectDiv(d);
+    });
+    el.append(b);
+    return { d, b, z: b.querySelector('.dz'), bar: b.querySelector('i b'), key: '' };
+  });
+}
+function refreshDivUI() {
+  for (const it of divBtns) {
+    const d = it.d, str = divStr(d), res = d.units.some(u => u.reserve), dead = !res && !d.units.some(u => live(u) && u.state < 4);
+    const dir = d.units.filter(u => u.direct && live(u)).length;
+    const key = [G.selDiv === d, zoneLabel(d), d.post, Math.round(str * 40), dead, dir, d.mode].join();
+    if (key === it.key) continue;
+    it.key = key;
+    it.z.textContent = `${res ? '' : d.post === 'attack' ? '⚔' : '🛡'}${zoneLabel(d)}${dir ? ' 👆' + dir : ''}`;
+    it.bar.style.width = (res ? 100 : str * 100) + '%';
+    it.b.classList.toggle('sel', G.selDiv === d);
+    it.b.classList.toggle('dead', dead);
+    it.b.classList.toggle('res', res);
+  }
+  const d = G.selDiv;
+  if (d) {
+    $('bTake').classList.toggle('on', d.post === 'attack');
+    $('bHoldZ').classList.toggle('on', d.post === 'hold');
+    $('bDivRejoin').disabled = !d.units.some(u => u.direct && live(u));
+    $('bDivUnits').disabled = !d.units.some(u => live(u) && u.state < 4);
+    $('divName').textContent = d.name;
+    $('divName').style.color = d.col;
+  }
 }
 const STATE_ICON = ['●', '◐', '▼', '!', '✕'];
 function setBar(id, frac, col) { const el = $(id); el.style.width = (clamp(frac, 0, 1) * 100) + '%'; if (col) el.style.background = col; }
@@ -2619,6 +3135,7 @@ function refreshCard() {
     if (u.t.w) { const w = WPN[u.t.w]; aux += `<span style="color:rgb(${RING[u.t.w].col})">◎${w.range}</span>${w.gun ? `<span style="color:rgb(${RING.canister.col})"> ✸${w.can}</span>` : ''}`; }
     else if (cav) aux += `<span style="color:rgb(${RING.charge.col})">⚔${CHARGE_R.cav}</span>`;
     else if (u.kind === 'cmdr') aux += `<span style="color:rgb(${RING.aura.col})">⭐${RALLY_R}</span>`;
+    if (u.dv) aux += ` <span style="color:${u.dv.col}">⚑${u.dv.name}${u.direct ? ' 👆' : ''}</span>`;
   }
   $('cAux').innerHTML = aux;
   const badges = [];
@@ -2654,8 +3171,13 @@ function refreshUI(force) {
   }
   G.sel = G.sel.filter(u => live(u) && u.state < 4);
   const deploy = G.phase === 'deploy';
-  $('orders').style.display = deploy ? 'none' : 'flex';
-  $('deployBar').style.display = deploy && G.running ? 'flex' : 'none';
+  if (G.selDiv && (G.over || !G.selDiv.units.some(u => (live(u) && u.state < 4) || u.reserve))) G.selDiv = null;
+  const selD = G.running && !G.over ? G.selDiv : null;
+  $('orders').style.display = deploy || selD ? 'none' : 'flex';
+  $('deployBar').style.display = deploy && G.running && !selD ? 'flex' : 'none';
+  $('divBar').style.display = selD ? 'flex' : 'none';
+  $('divStrip').style.display = G.running && !G.over ? 'flex' : 'none';
+  refreshDivUI();
   const sel = G.sel, any = sel.length > 0;
   const nf = nextForm(sel);
   for (const b of orderBtns) {
@@ -2665,6 +3187,7 @@ function refreshUI(force) {
     if (o === 'charge') dis = !sel.some(u => canCharge(u) && u.state < 2);
     else if (o === 'fire') dis = !sel.some(u => u.t.w);
     else if (o === 'form') dis = !nf;
+    else if (o === 'rejoin') dis = !sel.some(u => u.direct && u.dv);
     b.disabled = dis;
   }
   const fb = $('bForm');
@@ -2701,6 +3224,7 @@ orderBtns.forEach(b => b.addEventListener('click', () => {
   const o = b.dataset.o;
   if (!G.sel.length) return;
   if (o === 'hold') { issueHold(G.sel); G.pend = 'move'; toast('🛡️'); }
+  else if (o === 'rejoin') { const n = rejoin(G.sel); toast(n ? '↩️ ⚑ ' + n : '⚑'); SFX.drum('move'); buzz(12); G.pend = 'move'; }
   else if (o === 'form') { issueForm(G.sel); G.pend = 'move'; }
   else { G.pend = G.pend === o ? 'move' : o; SFX.click(); }
   refreshUI(true);
@@ -2710,8 +3234,22 @@ $('bSpeed').addEventListener('click', () => { G.speed = G.speed === 1 ? 2 : 1; S
 $('bMute').addEventListener('click', () => { SFX.unlock(); SFX.setMuted(!SFX.isMuted()); SFX.click(); refreshUI(true); });
 $('bAll').addEventListener('click', () => {
   const all = G.units.filter(u => u.side === 0 && live(u) && u.state < 3);
-  G.sel = G.sel.length === all.length ? [] : all; G.pend = 'move'; SFX.click(); refreshUI(true);
+  G.sel = G.sel.length === all.length ? [] : all; G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true);
 });
+const setPost = (p) => {
+  const d = G.selDiv; if (!d) return;
+  if (d.post !== p) { d.post = p; d.layT = 0; d.player = true; }
+  toast(d.zone ? `${p === 'attack' ? '⚔' : '🛡'} ${d.name} → ${d.zone.name || '📍'}` : `${p === 'attack' ? '⚔' : '🛡'} 👆 map`);
+  SFX.drum(p === 'attack' ? 'quick' : 'hold'); buzz(12); refreshUI(true);
+};
+$('bTake').addEventListener('click', () => setPost('attack'));
+$('bHoldZ').addEventListener('click', () => setPost('hold'));
+$('bDivUnits').addEventListener('click', () => {
+  const d = G.selDiv; if (!d) return;
+  G.sel = d.units.filter(u => live(u) && u.state < 4); G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true);
+});
+$('bDivRejoin').addEventListener('click', () => { const d = G.selDiv; if (!d) return; const n = rejoin(d.units); toast('↩️ ⚑ ' + n); SFX.drum('move'); buzz(12); refreshUI(true); });
+$('bDivClose').addEventListener('click', () => { G.selDiv = null; SFX.click(); refreshUI(true); });
 $('bHelp').addEventListener('click', () => { $('ovHelp').classList.remove('hidden'); if (G.running && !G.over && G.phase === 'battle') G.paused = true; refreshUI(true); });
 $('bHelpClose').addEventListener('click', () => { $('ovHelp').classList.add('hidden'); });
 $('bStart').addEventListener('click', () => startGame(false));
@@ -2742,11 +3280,13 @@ $('bVet2').addEventListener('click', resetVets);
 
 // ---------------------------------------------------------------- tutorial (first launch, replay from help)
 const TUT = [
-  { icon: '👆', txt: 'Tap a battalion, then tap the ground to march · ⏩ quick march' },
-  { icon: '▦', txt: 'Form: ▬ Line fires best · ▮ Column marches and charges · ◻ Square stops cavalry (but guns shred it)' },
-  { icon: '⚔', txt: 'Charge, then tap an enemy. Cavalry smash flanks, guns and broken troops, then must rest 💨' },
-  { icon: '◎', txt: 'Solid ring: good shots · dashed: long shots · red: canister · dark: no sight (hills, villages, smoke, fog)' },
-  { icon: '🚩', txt: 'Hold 2 of 3 flags when ⏱ runs out, or break their army · 🦅 the Guard after 3:00' },
+  { d: 'cmd', icon: '⚑', txt: 'Tap a division commander (or his button in the bottom strip), then tap a place. He takes that zone and deploys his battalions himself' },
+  { d: 'post', icon: '⚔🛡', txt: '⚔ Take attacks the zone, 🛡 Hold defends it. Drag from a commander to point him; press, hold and drag the map to size a zone' },
+  { d: 'move', icon: '👆', txt: 'Override: tap a battalion and order it directly. It rejoins its commander when done, or tap ↩️ Div' },
+  { d: 'form', icon: '▦', txt: 'Commanders pick formations: ▬ Line fires best · ▮ Column marches and charges · ◻ Square stops cavalry (guns shred it)' },
+  { d: 'cav', icon: '⚔', txt: 'Cavalry rides in squadron pairs, guns in 2-gun sections. Two pairs charging together hit like the whole regiment' },
+  { d: 'rings', icon: '◎', txt: 'Solid ring: good shots · dashed: long shots · red: canister · dark: no sight (hills, villages, smoke, fog)' },
+  { d: 'flags', icon: '🚩', txt: 'Hold 2 of 3 flags when ⏱ runs out, or break their army · 🦅 the Guard after 3:00' },
 ];
 let tutStep = -1;
 function openTut() {
@@ -2781,7 +3321,30 @@ function drawTut(t) {
   const U = (type, side, form, x, y, ang = -Math.PI / 2, s = 1.1, extra) => drawUnitBody(c, Object.assign({ id: 3, type, side, nat: side ? 'ru' : 'fr', state: 0, kind: UT[type].kind, form, ang, hp: 100, maxHp: 100, t: UT[type], fat: 0 }, extra || {}), x, y, s, 1);
   const sel = (x, y) => { c.strokeStyle = '#fff'; c.lineWidth = 2; c.setLineDash([5, 4]); c.lineDashOffset = -t * 12; c.beginPath(); c.arc(x, y, 22, 0, TAU); c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; };
   const lbl = (txt, x, y, col = '#fff') => { c.font = 'bold 11px system-ui,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.6)'; c.strokeText(txt, x, y); c.fillStyle = col; c.fillText(txt, x, y); };
-  if (tutStep === 0) {
+  const D = TUT[tutStep].d;
+  const zone = (x, y, r, col, a = 1) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = hexA(col, 0.13 * a); c.fill(); c.setLineDash([9, 6]); c.lineDashOffset = -t * 14; c.strokeStyle = hexA(col, a); c.lineWidth = 2.5; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; };
+  const hq = (x, y, col, nm, ab, hi) => drawHQ(c, { side: 0, col, name: nm, key: ab }, x, y, 1.15, t) || (hi && (c.strokeStyle = '#fff', c.lineWidth = 2, c.beginPath(), c.arc(x, y, 17 + 2 * Math.sin(t * 6), 0, TAU), c.stroke()));
+  const lerp = (a, b, k) => a + (b - a) * k;
+  if (D === 'cmd') {
+    tutHouse(c, 200, 52, 26, 18); tutHouse(c, 232, 84, 22, 18);
+    const p = (t % 5) / 5, onZ = p > 0.22, k = clamp((p - 0.34) / 0.45, 0, 1), done = k >= 1;
+    if (onZ) { zone(222, 78, 54, '#ffd34d'); arrowTo(c, 52, 138, 222 - 54 * 0.94, 78 + 54 * 0.34, '#ffd34d', 1, 1); lbl('🛡 Vandamme · Sokolnitz', 222, 14, '#ffd34d'); }
+    const go = (sx, sy, ex, ey, type, f0, f1, ang) => U(type, 0, k > 0 && !done ? (type === 'art' ? 'limbered' : f0) : f1, lerp(sx, ex, k), lerp(sy, ey, k), k > 0 && !done ? Math.atan2(ey - sy, ex - sx) : ang, 1);
+    go(80, 120, 238, 62, 'line', 'column', 'line', 0);
+    go(100, 150, 238, 100, 'line', 'column', 'line', 0);
+    go(60, 100, 168, 78, 'art', 'limbered', 'deployed', 0);
+    hq(46, 140, '#ffd34d', 'Vandamme', 'van', p < 0.25);
+    finger(c, p < 0.22 ? 46 : 222, p < 0.22 ? 140 : 80, t);
+  } else if (D === 'post') {
+    zone(78, 82, 52, '#ff9a3c'); zone(226, 82, 52, '#4fd6c2');
+    lbl('⚔ Take', 78, 18, '#ff9a3c'); lbl('🛡 Hold', 226, 18, '#4fd6c2');
+    const p = (t % 3) / 3;
+    U('line', 1, 'line', 92, 82, Math.PI, 0.9);
+    U('line', 0, 'column', 30 + p * 34, 64, 0, 0.95); U('line', 0, 'column', 30 + p * 34, 102, 0, 0.95);
+    U('line', 0, 'line', 240, 66, 0, 0.95); U('line', 0, 'square', 240, 104, 0, 0.95);
+    U('lcav', 1, 'mounted', 290 - Math.abs(Math.sin(t * 2)) * 10, 112, Math.PI, 0.9);
+    lbl('◻ 🐎', 214, 140, '#fff');
+  } else if (D === 'move') {
     tutHouse(c, 220, 20, 50, 34);
     const p = (t % 3.6) / 3.6, go = p > 0.4, k = go ? Math.min(1, (p - 0.4) * 2.2) : 0;
     const ux = 70 + (210 - 70) * k, uy = 110 + (80 - 110) * k;
@@ -2791,7 +3354,7 @@ function drawTut(t) {
     U('cmdr', 0, 'staff', 40, 150, 0, 1.1);
     if (p > 0.15) sel(ux, uy);
     finger(c, go ? 210 : 70, go ? 82 : 112, t);
-  } else if (tutStep === 1) {
+  } else if (D === 'form') {
     const cyc = Math.floor(t / 1.4) % 3;
     [['line', 55, '▬ Line'], ['column', 150, '▮ Column'], ['square', 245, '◻ Square']].forEach(([f, x, n], i) => {
       if (i === cyc) { c.fillStyle = 'rgba(255,211,77,.22)'; rrect(c, x - 44, 22, 88, 120, 10); c.fill(); }
@@ -2799,18 +3362,19 @@ function drawTut(t) {
       lbl(n, x, 124, i === cyc ? '#ffd34d' : '#fff');
     });
     lbl('🔥🔥🔥', 55, 36); lbl('🏃 ⚔', 150, 36); lbl('🐎✖', 245, 36);
-  } else if (tutStep === 2) {
+  } else if (D === 'cav') {
     const p = (t % 3) / 3;
     U('line', 1, 'line', 175, 70, Math.PI / 2, 1.3);
     const cx = 40 + Math.min(1, p * 1.5) * 108, cy = 70;
     if (p < 0.67) for (let i = 0; i < 4; i++) { c.fillStyle = `rgba(150,128,90,${0.4 - i * 0.08})`; c.beginPath(); c.arc(cx - 16 - i * 10, cy + Math.sin(i + t * 9) * 4, 5 + i * 2, 0, TAU); c.fill(); }
-    U('hcav', 0, 'mounted', cx, cy, 0, 1.3);
+    U('hcav', 0, 'mounted', cx, cy - 13, 0, 1.3, { sz: 0.5 }); U('hcav', 0, 'mounted', cx, cy + 13, 0, 1.3, { sz: 0.5 });
+    U('art', 0, 'deployed', 34, 140, 0, 1, { sz: 1 / 3 }); U('art', 0, 'deployed', 66, 146, 0, 1, { sz: 1 / 3 });
     if (p >= 0.67) { c.font = '22px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('⚔️', 162, 50); }
     lbl('flank!', 175, 104, '#ffd34d');
     U('line', 1, 'square', 255, 120, Math.PI, 1.2);
     U('lcav', 0, 'mounted', 222 - Math.abs(Math.sin(t * 2)) * 12, 128, 0, 1.0, { fat: 70 });
     lbl('◻ = 🐎✖', 255, 150, '#ff9a8a');
-  } else if (tutStep === 3) {
+  } else if (D === 'rings') {
     const ux = 70, uy = 110, R = 125, E = 56, C = 34, col = RING.cannon.col;
     c.beginPath(); c.arc(ux, uy, R, 0, TAU); c.fillStyle = `rgba(${col},.1)`; c.fill();
     c.beginPath(); c.arc(ux, uy, E, 0, TAU); c.fillStyle = `rgba(${col},.14)`; c.fill();
@@ -2829,7 +3393,7 @@ function drawTut(t) {
     c.font = 'bold 10px system-ui,sans-serif'; const tx = '300m 46%', tw = c.measureText(tx).width + 10;
     c.fillStyle = 'rgba(12,14,9,.85)'; rrect(c, 124 - tw / 2, 96, tw, 18, 9); c.fill(); c.strokeStyle = `rgb(${GOOD})`; c.lineWidth = 1.5; c.stroke();
     c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(tx, 124, 105.5);
-  } else if (tutStep === 4) {
+  } else if (D === 'flags') {
     const prog = (t % 4) / 4;
     [[55, 'Sa', 0], [150, 'Pr', 1], [245, 'So', 0]].forEach(([x, n, o], i) => {
       const y = 70;
@@ -2889,7 +3453,7 @@ function drawTimeline() {
 }
 function buildAAR(res, rout, vet) {
   const mine = G.units.filter(u => u.side === 0 && u.slot != null);
-  const lost = (s) => G.units.filter(u => u.side === s && !u.reserve && (!u.alive || u.fled || u.state === 4)).length;
+  const lost = (s) => G.units.filter(u => u.side === s && !u.reserve && (!u.alive || u.fled || u.state === 4)).reduce((t, u) => t + (u.sz || 1), 0);
   const own = G.flags.filter(f => f.owner === 0).length;
   const stars = res === 'lose' ? 0 : res === 'draw' ? 1 : 1 + (lost(0) <= 3 ? 1 : 0) + (own === 3 || rout ? 1 : 0);
   $('endStars').innerHTML = '★'.repeat(stars) + '<span style="opacity:.25">' + '★'.repeat(3 - stars) + '</span>';
@@ -2980,6 +3544,13 @@ window.AUS = {
   aimInfo, visPoly, inRangeOf, openTut, loadVets, hitChance, gunHitP, DIFFS, commitGuard, setForm,
   orderCharge, meleePowers, issueForm, issueCharge, heightAt, terrAt, passAt, dims,
   haptic: () => ({ ok: HAPTIC_OK, on: hapticOn }),
+  ZONES, divByKey, rejoin, layoutDiv, snapSpot,
+  // zone order by commander key ('van', 'sth', 'leg', 'lan', 'mur', 'gar'), zone name or {x,y,r}, 'attack' | 'hold'
+  orderDiv(key, zone, post, side = 0) {
+    const d = divByKey(side, key); if (!d) return false;
+    const z = typeof zone === 'string' ? zoneAt(ZONES.find(q => q.name === zone).x, ZONES.find(q => q.name === zone).y) : zoneAt(zone.x, zone.y, zone.r);
+    orderDiv(d, z, post || d.post, true); return true;
+  },
 };
 const qs = new URLSearchParams(location.search);
 if (qs.get('auto') === '1') startGame(true);

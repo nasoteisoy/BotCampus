@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Austerlitz 1805</title>
 <meta name="theme-color" content="#2c3b63">
-<meta name="description" content="Phone-friendly real-time Napoleonic corps tactics: line, column, square and cavalry charges at Austerlitz, 1805.">
+<meta name="description" content="Phone-friendly real-time Napoleonic corps tactics at Austerlitz, 1805: send division commanders to take or hold zones; line, column, square and cavalry charges.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -40,6 +40,23 @@ button:disabled{opacity:.35}
 .chip.sel{box-shadow:0 0 0 2px #fff}
 .chip.dead{opacity:.3}
 .chip.res{border-style:dashed}
+.chip u{position:absolute;left:3px;top:3px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#divStrip{left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));padding:0 6px;gap:4px;padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));display:none}
+.dv{flex:1;min-width:0;max-width:120px;height:48px;padding:2px 3px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.05;position:relative;border-width:2px;background:rgba(28,34,24,.9)}
+.dv .dn{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;align-items:center;gap:2px}
+.dv .dn em{display:inline-block;width:6px;height:6px;border-radius:50%;flex:none}
+@media (max-width:480px){.dv{padding:2px 1px 7px}.dv .dn{letter-spacing:-.2px}.dv .dn em{display:none}}
+.dv .dz{font-size:10px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dv i{position:absolute;left:5px;right:5px;bottom:3px;height:3px;background:#333;border-radius:2px;overflow:hidden}
+.dv i b{display:block;height:100%}
+.dv.sel{background:#3556a8;color:#fff;box-shadow:0 0 0 2px #fff}
+.dv.dead{opacity:.3}
+.dv.res{border-style:dashed}
+#divBar{left:0;right:0;bottom:0;padding:5px 6px;padding-bottom:max(5px,env(safe-area-inset-bottom));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(20,26,18,.55),rgba(20,26,18,.95));justify-content:space-between;gap:4px;display:none}
+#divBar button{flex:1;max-width:96px;min-width:0;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:20px;padding:0}
+#divBar button small{font-size:10px;opacity:.85;margin-top:3px;white-space:nowrap}
+#divBar button.on{background:#3556a8;color:#fff;border-color:#efe8d2}
+#divName{position:absolute;left:50%;top:-17px;transform:translateX(-50%);font-size:12px;font-weight:800;text-shadow:0 1px 2px #000;white-space:nowrap;pointer-events:none;display:none}
 #orders{left:0;right:0;bottom:0;padding:5px 6px;padding-bottom:max(5px,env(safe-area-inset-bottom));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(20,26,18,.55),rgba(20,26,18,.92));justify-content:space-between;gap:4px}
 #orders button{flex:1;max-width:96px;min-width:0;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:20px;padding:0}
 #orders button small{font-size:10px;opacity:.85;margin-top:3px;white-space:nowrap}
@@ -53,7 +70,7 @@ button:disabled{opacity:.35}
 #card .cr>span:first-child{width:12px;text-align:center;font-size:10px;font-weight:800}
 #card .cbar{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
 #card .cbar b{display:block;height:100%;width:50%;transition:width .2s}
-#cAux{font-size:9px;white-space:nowrap}
+#cAux{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #deployBar{left:0;right:0;bottom:0;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom));background:linear-gradient(rgba(20,26,18,.55),rgba(20,26,18,.92));justify-content:center;gap:10px;display:none}
 #deployBar button{height:52px;font-size:18px;padding:0 18px;display:flex;align-items:center;gap:8px}
 #deployBar .go{background:#3556a8;border-color:#dfe6ff;font-weight:700;min-width:120px;justify-content:center}
@@ -67,12 +84,14 @@ button:disabled{opacity:.35}
 #pausedTag{position:fixed;z-index:3;left:50%;top:calc(106px + env(safe-area-inset-top));transform:translateX(-50%);font-size:13px;font-weight:700;letter-spacing:3px;background:rgba(232,191,74,.92);color:#1d1d10;padding:5px 14px;border-radius:14px;display:none;pointer-events:none}
 /* portrait */
 #roster{top:calc(56px + env(safe-area-inset-top));left:0;right:0;flex-direction:row}
-#card{bottom:calc(68px + env(safe-area-inset-bottom))}
+#card{bottom:calc(118px + env(safe-area-inset-bottom))}
 /* short landscape: roster on the left */
 @media (orientation:landscape) and (max-height:560px){
  #roster{top:calc(54px + env(safe-area-inset-top));bottom:calc(64px + env(safe-area-inset-bottom));left:env(safe-area-inset-left);right:auto;flex-direction:column;width:58px}
  #orders{left:60px}
  #deployBar{left:60px}
+ #divBar{left:60px}
+ #divStrip{left:60px}
  #toast{top:96px}
  #pausedTag{top:60px}
  #ovTut .card{max-width:620px;display:grid;grid-template-columns:300px 1fr;gap:4px 14px;align-items:center}
@@ -112,7 +131,7 @@ button:disabled{opacity:.35}
 .ur .ust{width:22px;text-align:center}
 .endBtns{display:flex;gap:8px;justify-content:center;align-items:flex-end}
 .endBtns button{height:54px}
-.fab{position:fixed;z-index:5;bottom:calc(66px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;padding:0}
+.fab{position:fixed;z-index:5;bottom:calc(118px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;padding:0}
 #bRings{left:max(8px,env(safe-area-inset-left));font-size:22px;border:2px dashed rgba(242,236,216,.45)}
 #bRings.on{background:#3556a8;border:2px solid #fff}
 #bGuard{left:calc(64px + env(safe-area-inset-left));font-size:18px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed rgba(232,191,74,.6);opacity:.75}
@@ -154,6 +173,7 @@ button:disabled{opacity:.35}
 </div></div>
 <button id="bRings" class="fab" title="Fire range for all units">🎯</button>
 <button id="bGuard" class="fab" title="Commit the Imperial Guard">🦅<small>Guard</small></button>
+<div id="divStrip" class="bar"></div>
 <div id="toast"></div>
 <div id="pausedTag">PAUSED</div>
 <div id="deployBar" class="bar">
@@ -168,6 +188,15 @@ button:disabled{opacity:.35}
   <button data-o="fire" title="Fire">🎯<small>Fire</small></button>
   <button data-o="hold" title="Hold / stand fast">🛡️<small>Hold</small></button>
   <button data-o="form" id="bForm" title="Change formation">▦<small>Form</small></button>
+  <button data-o="rejoin" title="Back under the division commander">↩️<small>Div</small></button>
+</div>
+<div id="divBar" class="bar">
+  <span id="divName"></span>
+  <button id="bTake" title="Take the zone (attack)">⚔️<small>Take</small></button>
+  <button id="bHoldZ" title="Hold the zone (defend)">🛡️<small>Hold</small></button>
+  <button id="bDivUnits" title="Select this division's units for direct orders">👥<small>Units</small></button>
+  <button id="bDivRejoin" title="Bring directly ordered units back under the commander">↩️<small>Rejoin</small></button>
+  <button id="bDivClose" title="Done">✖<small>Done</small></button>
 </div>
 
 <div id="ovStart" class="ov"><div class="card">
@@ -177,7 +206,8 @@ button:disabled{opacity:.35}
   <div class="rows">
     <span>🇫🇷</span><span>Place your corps west of the Goldbach, then ▶</span>
     <span>🚩</span><span>You hold Santon + Sokolnitz. Keep 2 of 3 flags when the clock ends, or break the Allied army</span>
-    <span>👆</span><span>Tap a unit, then tap the ground to march</span>
+    <span>⚑</span><span>Tap a division commander, then a place on the map: ⚔ take it or 🛡 hold it. He picks formations and positions</span>
+    <span>👆</span><span>Or tap a single battalion to order it directly</span>
     <span>▦</span><span>Form: ▬ Line fires · ▮ Column marches &amp; charges · ◻ Square stops cavalry</span>
     <span>⚔️</span><span>Charge, then tap an enemy: cavalry wreck flanks, guns and routing troops</span>
     <span>🌫</span><span>Morning fog hides the heights until the sun burns it off (about 5:30)</span>
@@ -197,6 +227,11 @@ button:disabled{opacity:.35}
   <h1 style="font-size:22px">Field guide</h1>
   <div class="legend" id="legend2"></div>
   <div class="rows">
+    <span>⚑</span><span>Commanders: tap one (or his button in the bottom strip), then tap a place. His division takes that zone; he picks each unit's formation, spot and facing</span>
+    <span>⚔️</span><span>Take: march up, form line against anything in the way, go in together, then dig in. 🛡️ Hold: line in front, supports behind, guns on high ground, horse on the flanks</span>
+    <span>📍</span><span>Tap near a village or flag to snap to it. Drag from a commander to point him. Press, hold and drag the map to draw a zone of any size. Tap an enemy: attack there</span>
+    <span>↩️</span><span>Direct orders still work: tap a battalion. It rejoins its commander when the order is done, or tap ↩️ Div (🛡️ Hold stays until you do)</span>
+    <span>♞</span><span>Cavalry rides in squadron pairs, guns in 2-gun sections. Pairs charging together hit like the full regiment</span>
     <span>➜</span><span>Move. ⏩ Quick: faster, no firing, tires horses</span>
     <span>⚔️</span><span>Charge: tap an enemy. Needs a run-up. Cavalry are blown 💨 afterwards and must rest</span>
     <span>🎯</span><span>Fire at an enemy or an area. Units fire on their own too</span>
