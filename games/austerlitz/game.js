@@ -26,7 +26,7 @@ const NAT = {
 };
 const MCOL = ['#58c050', '#e6c83a', '#f08a28', '#e8402f', '#9a9a9a'];
 const MNAME = ['Steady', 'Shaken', 'Wavering', 'Panic', 'Broken'];
-const VERSION = 'v2.0';
+const VERSION = 'v2.1';
 const FNAME = ['Santon', 'Pratzen', 'Sokolnitz'];
 const FABBR = ['Sa', 'Pr', 'So'];
 
@@ -360,8 +360,9 @@ const DIFFS = {
   // reinf/reinfT: Allied columns from the east; pushT: seconds left when the late push starts;
   // cavT: how good a target must be before Allied cavalry charges; exp: Allied veterancy (+1 star on Hard)
   // v2: tuned with division commanders on both sides (AI vs AI ~78 / 59 / 27 %, scripted zone-order player ~76 / 54 / 30 %)
+  // v2.1: planned formations; Normal acc 1.0->1.05, mor 1.03->1.1 (AI vs AI ~70 / 46 / 23 %, zone-order player ~85 / 60 / 33 %)
   easy:   { acc: 0.82, think: 0.85, stay: 0.6, reinf: ['line', 'line', 'art'], reinfT: 250, exp: 0, pushT: 120, cavT: 1.65, mor: 0.9 },
-  normal: { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 220, exp: 0, pushT: 160, cavT: 1.5, mor: 1.03 },
+  normal: { acc: 1.05, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'art'], reinfT: 220, exp: 0, pushT: 160, cavT: 1.5, mor: 1.1 },
   hard:   { acc: 1.0, think: 0.7, stay: 0.5, reinf: ['line', 'line', 'line', 'lcav'], reinfT: 210, exp: 1, pushT: 180, cavT: 1.5, mor: 1.0 },
 };
 const store = {
@@ -1151,12 +1152,15 @@ function separate() {
   const A = G.units.filter(live);
   for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++) {
     const a = A[i], b = A[j];
-    const min = a.side === b.side ? (rad(a) + rad(b)) * 0.75 : rad(a) + rad(b);
+    let min = a.side === b.side ? (rad(a) + rad(b)) * 0.75 : rad(a) + rad(b);
+    const idle = a.side === b.side && !a.moving && !b.moving && a.kind !== 'cmdr' && b.kind !== 'cmdr' && a.order.type !== 'charge' && b.order.type !== 'charge';
+    if (idle) min = Math.max(min, 30);
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
     if (d >= min || d < 0.01) continue;
     const push = (min - d) / 2 * 0.5, nx = dx / d * push, ny = dy / d * push;
-    if (passAt(a.x - nx, a.y - ny, isArt(a))) { a.x -= nx; a.y -= ny; }
-    if (passAt(b.x + nx, b.y + ny, isArt(b))) { b.x += nx; b.y += ny; }
+    const ok = (u, x, y) => passAt(x, y, isArt(u)) && (!idle || terrAt(x, y) !== T_STREAM);
+    if (ok(a, a.x - nx, a.y - ny)) { a.x -= nx; a.y -= ny; }
+    if (ok(b, b.x + nx, b.y + ny)) { b.x += nx; b.y += ny; }
   }
 }
 
@@ -1337,7 +1341,7 @@ function aiForm(u, seen) {
   if (pl > 60) want = nearE < 200 ? (u.form === 'square' ? 'line' : u.form === 'column' && nearE < 200 && u.order.type !== 'charge' ? 'line' : u.form) : 'column';
   else if (nearE < 260 || G.time - u.lastHit < 3) want = 'line';
   else if (u.form === 'square') want = 'line';
-  else if (u.spot && u.spot.k === 'front' && u.dv && (u.dv.mode === 'hold' || u.dv.mode === 'engage') && nearE < 560 && dist(u, u.spot) < 30) want = 'line';
+  else if (u.spot && (u.spot.k === 'front' || u.spot.k === 'sup' || u.spot.k === 'res') && !u.path.length && dist(u, u.spot) < 30) want = 'line'; // arrived: deploy into line
   if (u.form === 'square' && want === 'square' && pl > 0) want = 'column';
   if (want !== u.form && (G.time - u.formAt > 5 || u.form === 'square')) setForm(u, want);
 }
@@ -1413,7 +1417,7 @@ function planZones(side, obj, mode) {
 function setZone(d, z, post) {
   if (sameZone(d.zone, z) && d.post === post) return;
   if (!z && !d.zone && d.post === post) return;
-  d.zone = z; d.post = post; d.layT = 0; d.theta = null;
+  d.zone = z; d.post = post; d.layT = 0; d.theta = null; d.plan = null;
   for (const u of d.units) if (u.spot && u.spot.k === 'gun') u.spot = null;
 }
 
@@ -1426,6 +1430,7 @@ function snapSpot(x, y, veh, taken, minD = 34) {
     if (px < 26 || py < 26 || px > W - 26 || py > H - 26 || !passAt(px, py, veh)) return false;
     const t = terrAt(px, py);
     if (t === T_STREAM || t === T_WATER || (veh && (t === T_HOUSE || t === T_TREE))) return false;
+    if (G.deployLayout && !inZone(px, py)) return false;
     for (const s of taken) if (dxy(s.x, s.y, px, py) < minD) return false;
     return true;
   };
@@ -1498,6 +1503,7 @@ function coverSpot(C, R, fx, fy, taken, side) {
   for (let y = C.y - R; y <= C.y + R; y += 10) for (let x = C.x - R; x <= C.x + R; x += 10) {
     const d = dxy(x, y, C.x, C.y);
     if (d > R || x < 26 || y < 26 || x > W - 26 || y > H - 26 || !passAt(x, y, false) || terrAt(x, y) === T_STREAM) continue;
+    if (G.deployLayout && !inZone(x, y)) continue;
     const cv = coverAt(x, y); if (!cv) continue;
     if (taken.some(s => dxy(s.x, s.y, x, y) < 36)) continue;
     const s = cv * 30 + ((x - C.x) * fx + (y - C.y) * fy) * 0.12 - d * 0.04;
@@ -1509,15 +1515,17 @@ function gunSpot(u, d, Z, C, mode, fx, fy, fo, taken, seen) {
   const w = WPN[u.t.w];
   const T = mode === 'hold' ? { x: C.x + fx * 230, y: C.y + fy * 230 } : { x: Z.x, y: Z.y };
   const O = mode === 'hold' ? C : Z;
-  const radii = mode === 'hold' ? [30, 70, 110, Z.r + 30, Z.r + 80] : [210, 280, 350, Math.min(430, w.range * 0.7)];
+  const radii = G.deployLayout ? [30, 60, 90, 120] : mode === 'hold' ? [30, 70, 110, Z.r + 30, Z.r + 80] : [210, 280, 350, Math.min(430, w.range * 0.7)];
+  const ref = G.deployLayout ? C : u, dw = G.deployLayout ? 0.15 : 0.04;      // setup: keep the guns with their division
   let best = null, bs = -1e9;
   for (const r of radii) for (let k = 0; k < 20; k++) {
     const a = k / 20 * TAU, x = O.x + Math.cos(a) * r, y = O.y + Math.sin(a) * r;
     if (x < 30 || y < 30 || x > W - 30 || y > H - 30 || !passAt(x, y, true)) continue;
+    if (G.deployLayout && !inZone(x, y)) continue;
     const t = terrAt(x, y); if (t === T_TREE || t === T_HOUSE || t === T_STREAM || t === T_WATER) continue;
     const ahead = (x - C.x) * fx + (y - C.y) * fy;
     if (mode !== 'hold' && ahead > -40) continue;              // on our side of the objective
-    let s = heightAt(x, y) * 1.5 + (LOS(x, y, T.x, T.y) ? 60 : 0) - dxy(x, y, u.x, u.y) * 0.04;
+    let s = heightAt(x, y) * 1.5 + (LOS(x, y, T.x, T.y) ? 60 : 0) - dxy(x, y, ref.x, ref.y) * dw;
     if (mode === 'hold' && ahead > fo + 12) s -= 80;            // keep the guns level with or behind the line
     for (const e of seen) if (dxy(x, y, e.x, e.y) < 180) s -= 40;
     for (const q of taken) { const dd = dxy(q.x, q.y, x, y); if (dd < 34) s -= 60; else if (q.k === 'gun' && dd < 90) s += 6; }
@@ -1545,7 +1553,7 @@ function layoutDiv(d, ctl, seenAll) {
   }
   d.mode = mode;
   let th;
-  if (mode === 'hold') { if (d.atk) { d.atk = false; d.theta = null; } th = frontAngle(d, Z, seen, cen); }
+  if (mode === 'hold') { if (d.atk) { d.atk = false; d.theta = null; } th = d.fixTh != null ? d.fixTh : frontAngle(d, Z, seen, cen); }
   else if (mode === 'engage') { d.atk = true; th = blk.th; d.theta = th; }
   else { // attacking: face the objective along the line of approach
     d.atk = true;
@@ -1557,57 +1565,83 @@ function layoutDiv(d, ctl, seenAll) {
     th = d.theta;
   }
   const fx = Math.cos(th), fy = Math.sin(th), px = -fy, py = fx;
-  // divisions sharing a zone split it side by side
-  const share = G.divs.filter(o => o.side === side && sameZone(o.zone, Z) && o.ctl.length).sort((a, b) => a.id - b.id);
-  if (share.length > 1) { const k = share.indexOf(d), sh = (k - (share.length - 1) / 2) * (mode === 'assault' ? 80 : 150); C = { x: C.x + px * sh, y: C.y + py * sh }; }
-  const taken = [];
-  for (const o of G.divs) if (o !== d && o.side === side) for (const u of o.ctl) if (u.spot && live(u)) taken.push(u.spot);
-  const put = (x, y, veh, k, minD) => { const s = snapSpot(x, y, veh, taken, minD); s.k = k; s.face = th; taken.push(s); return s; };
-  const lat = (u) => (u.x - C.x) * px + (u.y - C.y) * py;
+  const R = Z.r, fo = mode === 'hold' ? Math.min(R * 0.2, 28) : 0, holdish = mode === 'hold' || mode === 'engage';
   const inf = ctl.filter(isInf), lights = ctl.filter(u => u.kind === 'light'), cav = ctl.filter(isCav), guns = ctl.filter(isArt);
-  const R = Z.r, fo = mode === 'hold' ? Math.min(R * 0.2, 28) : 0, SP = 60, holdish = mode === 'hold' || mode === 'engage';
   // infantry: fittest in front, others in support, battered ones rotated to the rear
   const byFit = inf.slice().sort((a, b) => fitness(b) - fitness(a));
   let rest = byFit.filter(u => hpf(u) < 0.35 || u.state === 2), act = byFit.filter(u => !rest.includes(u));
   if (!act.length) { act = rest; rest = []; }
   const nf = act.length <= 2 ? act.length : Math.ceil(act.length * 0.6);
-  const rank = (list, off, k) => {
-    const sorted = list.slice().sort((a, b) => lat(a) - lat(b));
-    sorted.forEach((u, i) => { const l = (i - (list.length - 1) / 2) * SP; u.spot = put(C.x + fx * off + px * l, C.y + fy * off + py * l, false, k, 30); });
+  // frontage: battalions side by side, spread to fill this division's share of the zone
+  const share = G.divs.filter(o => o.side === side && sameZone(o.zone, Z) && o.ctl.length).sort((a, b) => a.id - b.id);
+  const nS = Math.max(1, share.length), width = 2 * R * 0.8 / nS;
+  const SP = clamp(width / Math.max(nf, 1), 64, 100);
+  if (share.length > 1) { const k = share.indexOf(d), sh = (k - (share.length - 1) / 2) * Math.max(150, width); C = { x: C.x + px * sh, y: C.y + py * sh }; }
+  // the plan is made once per order and kept; it is only redrawn when something real changes
+  const sig = mode + '|' + ctl.map(u => u.id + (rest.includes(u) ? 'r' : '')).sort((a, b) => (a > b ? 1 : -1)).join(',');
+  const P = d.plan;
+  if (!G.deployLayout && P && P.sig === sig && sameZone(P.Z, Z) && dxy(P.C.x, P.C.y, C.x, C.y) < 50 && Math.abs(angDiff(P.th, th)) < 0.4 && ctl.every(u => u.spot && u.spot.pid === P.id)) return;
+  const pid = G.planSeq = (G.planSeq || 0) + 1;
+  d.plan = { id: pid, sig, Z, C: { x: C.x, y: C.y }, th };
+  const taken = [];
+  if (G.deployLayout) { for (const u of G.units) if (u.side === side && live(u) && u.dv !== d) taken.push({ x: u.x, y: u.y }); }
+  else for (const o of G.divs) if (o !== d && o.side === side) for (const u of o.ctl) if (u.spot && live(u)) taken.push(u.spot);
+  const put = (x, y, veh, k, minD) => { const s = snapSpot(x, y, veh, taken, minD); s.k = k; s.face = th; s.pid = pid; taken.push(s); return s; };
+  const lat = (u) => (u.x - C.x) * px + (u.y - C.y) * py;
+  const rowL = (n, shift) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * SP + shift);
+  const rank = (list, off, k, lats) => {
+    list.slice().sort((a, b) => lat(a) - lat(b)).forEach((u, i) => { const l = lats[i]; u.spot = put(C.x + fx * off + px * l, C.y + fy * off + py * l, false, k, 50); });
   };
-  rank(act.slice(0, nf), fo, 'front');
-  rank(act.slice(nf), fo - 65, 'sup');
-  rank(rest, fo - 130, 'res');
-  const half = Math.max(1, nf) * SP / 2;
-  // light infantry: cover inside the zone when holding, otherwise a skirmish screen ahead
+  const front = act.slice(0, nf), sup = act.slice(nf);
+  rank(front, fo, 'front', rowL(front.length, 0));
+  rank(sup, fo - 70, 'sup', rowL(sup.length, sup.length % 2 === front.length % 2 ? SP / 2 : 0)); // second line behind the gaps
+  rank(rest, fo - 140, 'res', rowL(rest.length, 0));
+  const half = Math.max(1, front.length) * SP / 2;
+  // light infantry: a skirmish screen ahead of the line, in cover where there is some
   lights.slice().sort((a, b) => lat(a) - lat(b)).forEach((u, i) => {
-    let c = null;
-    if (mode === 'hold') c = coverSpot(C, R, fx, fy, taken, side);
-    else if (mode === 'engage') c = coverSpot(C, 80, fx, fy, taken, side);
-    else if (mode === 'assault' && dxy(cen.x, cen.y, Z.x, Z.y) < R + 120) c = coverSpot({ x: Z.x - fx * 30, y: Z.y - fy * 30 }, 90, fx, fy, taken, side);
-    if (c) u.spot = put(c.x, c.y, false, 'skirm', 30);
-    else { const l = (i - (lights.length - 1) / 2) * 80, f2 = mode === 'assault' ? -20 : fo + 60; u.spot = put(C.x + fx * f2 + px * l, C.y + fy * f2 + py * l, false, 'skirm', 30); }
+    const l = (i - (lights.length - 1) / 2) * 90;
+    let ax = C.x + fx * (fo + 55) + px * l, ay = C.y + fy * (fo + 55) + py * l, c = null;
+    if (mode === 'assault') {
+      if (dxy(cen.x, cen.y, Z.x, Z.y) < R + 120) c = coverSpot({ x: Z.x - fx * 30, y: Z.y - fy * 30 }, 90, fx, fy, taken, side);
+      else { ax = C.x - fx * 20 + px * l; ay = C.y - fy * 20 + py * l; }
+    } else c = coverSpot({ x: ax, y: ay }, 45, fx, fy, taken, side);
+    u.spot = put(c ? c.x : ax, c ? c.y : ay, false, 'skirm', 40);
   });
-  // cavalry: on the flanks of the line (or held back behind an assault), squadron pairs side by side
+  // guns: on the flanks of the line, on the best ground nearby with a field of fire
+  const zk = Math.round(Z.x) + ',' + Math.round(Z.y) + mode;
+  const T = { x: C.x + fx * 230, y: C.y + fy * 230 };
+  guns.forEach((u, i) => {
+    let g = null;
+    if (holdish) {
+      const sgn = i % 2 ? 1 : -1, tier = Math.floor(i / 2), bl = sgn * (half + 30 + tier * 36), ba = fo - 10;
+      const bx = C.x + fx * ba + px * bl, by = C.y + fy * ba + py * bl;
+      let bs = -1e9;
+      for (const r of [0, 16, 32, 48]) for (let k = 0; k < (r ? 12 : 1); k++) {
+        const a = k / 12 * TAU, x = bx + Math.cos(a) * r, y = by + Math.sin(a) * r;
+        if (x < 30 || y < 30 || x > W - 30 || y > H - 30 || !passAt(x, y, true)) continue;
+        const t = terrAt(x, y); if (t === T_TREE || t === T_HOUSE || t === T_STREAM || t === T_WATER) continue;
+        if (G.deployLayout && !inZone(x, y)) continue;
+        if (taken.some(q => dxy(q.x, q.y, x, y) < 34)) continue;
+        const s = heightAt(x, y) * 1.5 + (LOS(x, y, T.x, T.y) ? 60 : 0) - r * 0.6;
+        if (s > bs) { bs = s; g = { x, y }; }
+      }
+      if (!g) g = { x: bx, y: by };
+    } else g = gunSpot(u, d, Z, C, mode, fx, fy, fo, taken, seen);
+    if (g) { u.spot = put(g.x, g.y, true, 'gun', 32); u.spot.zk = zk; u.spot.t = G.time; }
+  });
+  // cavalry: squadron pairs on the wings, outside the guns (or held back behind an assault)
   const groups = [];
   for (const u of cav) { let g = groups.find(q => q.type === u.type); if (!g) groups.push(g = { type: u.type, us: [] }); g.us.push(u); }
   const cavOnly = !inf.length && !lights.length;
   let CC = C;
   if (!holdish) { const p = pointAlongFrom(Z.x, Z.y, home, cavOnly ? 230 : 170, false); CC = { x: p.x, y: p.y }; }
+  const gunW = holdish && guns.length ? 30 + Math.ceil(guns.length / 2) * 36 + 24 : 50;
   groups.forEach((g, gi) => {
     const sgn = gi % 2 ? 1 : -1, tier = Math.floor(gi / 2);
-    const latBase = cavOnly ? (holdish ? R * 0.55 : 55) + tier * 70 : half + 60 + tier * 70;
-    const back = cavOnly ? (holdish ? -R * 0.25 : 0) : -35;
-    g.us.forEach((u, k) => { const l = sgn * (latBase + k * 34); u.spot = put(CC.x + fx * back + px * l, CC.y + fy * back + py * l, false, 'flank', 30); });
+    const latBase = cavOnly ? (holdish ? R * 0.55 : 55) + tier * 70 : half + gunW + tier * 70;
+    const back = cavOnly ? (holdish ? -R * 0.25 : 0) : -25;
+    g.us.forEach((u, k) => { const l = sgn * (latBase + k * 42); u.spot = put(CC.x + fx * back + px * l, CC.y + fy * back + py * l, false, 'flank', 32); });
   });
-  // guns: keep a good spot for a while; otherwise find high ground with a field of fire
-  const zk = Math.round(Z.x) + ',' + Math.round(Z.y) + mode;
-  for (const u of guns) {
-    const s = u.spot;
-    if (s && s.k === 'gun' && s.zk === zk && G.time - s.t < 25 && !taken.some(q => dxy(q.x, q.y, s.x, s.y) < 28)) { taken.push(s); continue; }
-    const g = gunSpot(u, d, Z, C, holdish ? 'hold' : mode, fx, fy, fo, taken, seen);
-    if (g) { u.spot = put(g.x, g.y, true, 'gun', 30); u.spot.zk = zk; u.spot.t = G.time; }
-  }
 }
 function updateHQ(snap) {
   for (const d of G.divs) {
@@ -1618,6 +1652,14 @@ function updateHQ(snap) {
     if (!d.hq || snap) { d.hq = { x: tx, y: ty }; continue; }
     const dd = dxy(d.hq.x, d.hq.y, tx, ty), st = Math.max(40, dd * 1.2) * DT;
     if (dd <= st) { d.hq.x = tx; d.hq.y = ty; } else { d.hq.x += (tx - d.hq.x) / dd * st; d.hq.y += (ty - d.hq.y) / dd * st; }
+  }
+  // keep two commanders' markers from sitting on top of each other
+  const hs = G.divs.filter(d => d.hq && d.side === 0);
+  for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) {
+    const a = hs[i].hq, b = hs[j].hq, dd = dxy(a.x, a.y, b.x, b.y);
+    if (dd >= 36) continue;
+    const ux = dd > 0.5 ? (b.x - a.x) / dd : 0, uy = dd > 0.5 ? (b.y - a.y) / dd : 1, k = (36 - dd) / 2;
+    a.x -= ux * k; a.y -= uy * k; b.x += ux * k; b.y += uy * k;
   }
 }
 // a unit given a direct order drops back under its commander once the order is done
@@ -1681,8 +1723,9 @@ function cmdUnit(u, d, s, seen, side, home, A) {
     if (engaged && coverAt(u.x, u.y) >= 1 && dd < 140) return;
   } else {
     if (aiChargeCheck(u, seen, assault && push ? 150 : assault ? 130 : 120, assault && push ? 0.5 : 0)) return;
-    if (engaged && nearE < 220 && Math.random() < A.stay) return; // trade volleys a while
-    if (assault && nearE < 170 && u.form === 'line' && Math.random() < 0.55) { if (u.path.length) aiStop(u); return; } // halt and fire
+    const crowd = G.units.some(o => o !== u && o.side === u.side && live(o) && o.kind !== 'cmdr' && dist(o, u) < 38);
+    if (engaged && nearE < 220 && !crowd && Math.random() < A.stay) return; // trade volleys a while
+    if (assault && nearE < 170 && u.form === 'line' && !crowd && Math.random() < 0.55) { if (u.path.length) aiStop(u); return; } // halt and fire
   }
   if (assault && Z && !push && zd > Z.r * 0.6) { // don't run ahead of the attack
     const P = A.pace && A.pace[Math.round(Z.x) + ',' + Math.round(Z.y)];
@@ -1811,7 +1854,7 @@ function zoneAt(x, y, r) {
   return { name: nz ? '≈' + nz.name : '', x, y, r, flag: fi };
 }
 function orderDiv(d, z, post, quiet) {
-  d.zone = z; d.post = post; d.layT = 0; d.theta = null; d.player = true;
+  d.zone = z; d.post = post; d.layT = 0; d.theta = null; d.player = true; d.plan = null;
   for (const u of d.units) { if (u.spot && u.spot.k === 'gun') u.spot = null; if (G.phase === 'battle') u.aiCool = Math.min(u.aiCool, rnd(0.2, 1.2)); }
   if (quiet) return;
   G.markers.push({ x: z.x, y: z.y, t: 0, kind: 'zone', r: z.r, col: d.col });
@@ -1823,7 +1866,7 @@ const DIV_AB = { van: 'V', sth: 'SH', leg: 'Lg', lan: 'Ln', mur: 'M', gar: 'G', 
 function selectDiv(d) {
   if (!d) return;
   G.selDiv = G.selDiv === d ? null : d; G.sel = []; G.pend = 'move'; G.inspect = null;
-  if (G.selDiv) toast(`⚑ ${d.name}: 👆 map = zone`);
+  if (G.selDiv) toast(G.phase === 'deploy' ? (setupUnits(d).length ? `⚑ ${d.name}: drag or 👆 to place` : `🦅 ${d.name}: reserve`) : `⚑ ${d.name}: 👆 map = zone`);
   SFX.click(); buzz(10); refreshUI(true);
 }
 function hqAt(wx, wy) {
@@ -1932,9 +1975,52 @@ function placeUnit(u, x, y) {
   u.x = x; u.y = y; u.path = [];
   return true;
 }
+// setup: drop a commander and his division re-forms around him with the commander layout
+// (front line, supports, guns on good ground, horse on the flanks), clamped to the deploy area
+function clampDeploy(x, y, veh) {
+  if (!inZoneRect(x, y)) { y = clamp(y, 30, 1065); x = clamp(x, 30, y >= 770 ? 725 : 575); }
+  return nearestOk(x, y, veh) || { x, y };
+}
+const setupUnits = (d) => d.units.filter(u => live(u) && u.state < 4);
+function divSetupLayout(d, x, y, th) {
+  const us = setupUnits(d);
+  if (!us.length || G.phase !== 'deploy') return null;
+  const fx = Math.cos(th), fy = Math.sin(th);
+  const drop = clampDeploy(x, y, false), C = clampDeploy(drop.x + fx * 45, drop.y + fy * 45, false);
+  const keep = { zone: d.zone, post: d.post, mode: d.mode, spots: us.map(u => u.spot) };
+  d.zone = { x: C.x, y: C.y, r: 95, flag: -1, name: '' }; d.post = 'hold'; d.fixTh = th; d.theta = th;
+  G.deployLayout = true;
+  try { layoutDiv(d, us, [[], []]); } finally { G.deployLayout = false; }
+  const out = us.map(u => {
+    const s = u.spot || { x: u.x, y: u.y };
+    const p = inZone(s.x, s.y) && passAt(s.x, s.y, isArt(u)) ? s : (nearestOk(s.x, s.y, isArt(u)) || { x: u.x, y: u.y });
+    return { u, x: p.x, y: p.y };
+  });
+  us.forEach((u, i) => { u.spot = keep.spots[i]; });
+  d.fixTh = null; d.zone = keep.zone; d.post = keep.post; d.mode = keep.mode; d.plan = null;
+  return { d, x: drop.x, y: drop.y, th, spots: out };
+}
+function applyDivSetup(d, x, y, th) {
+  const L = divSetupLayout(d, x, y, th);
+  if (!L) return false;
+  for (const s of L.spots) {
+    const u = s.u; u.x = s.x; u.y = s.y; u.path = []; u.order = { type: 'idle' }; u.spot = null; u._vis = null;
+    if (u.kind !== 'cmdr') { u.ang = th; u.faceAng = th; }
+  }
+  d.theta = th;
+  updateHQ(true);
+  return true;
+}
+const divFacing = (d) => d.theta ?? 0;
+function rotateDiv(d, da) {
+  if (!d || !d.hq || G.phase !== 'deploy') return false;
+  const th = Math.round((divFacing(d) + da) / (Math.PI / 12)) * (Math.PI / 12);
+  return applyDivSetup(d, d.hq.x, d.hq.y, th);
+}
 function autoDeploy() {
   G.fSetup = (G.fSetup + 1) % F_SETUPS.length;
   jitterFrench();
+  for (const d of G.divs) if (d.side === 0) d.theta = null;
   SFX.drum('move');
 }
 function beginBattle() {
@@ -2652,6 +2738,20 @@ function drawZone(c, d, Z, post, s, now, a, sel, k) {
   c.strokeStyle = hexA(d.col, 0.95 * a); c.lineWidth = (sel ? 3 : 2) * s; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
   tagText(c, `${post === 'attack' ? '⚔' : '🛡'} ${d.name}${Z.name ? ' · ' + Z.name : ''}`, Z.x, Z.y - Z.r - (9 + k * 15) * s, d.col, s, sel ? 1 : 0.8);
 }
+// the commander's plan: one faint block per unit at its slot, with a dashed line from where it is now
+function drawSlots(c, d, s) {
+  for (const u of d.units) {
+    if (!live(u) || !u.spot || u.direct || u.state >= 3 || u.kind === 'cmdr') continue;
+    const f = isInf(u) ? 'line' : u.kind === 'light' ? 'open' : isCav(u) ? 'mounted' : isArt(u) ? 'deployed' : null;
+    if (!f) continue;
+    const [dd, w] = dims(Object.assign({}, u, { form: f })), far = dist(u, u.spot) >= 14;
+    if (far) { c.strokeStyle = hexA(d.col, 0.5); c.lineWidth = 1.3 * s; c.setLineDash([3 * s, 4 * s]); c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(u.spot.x, u.spot.y); c.stroke(); c.setLineDash([]); }
+    c.save(); c.translate(u.spot.x, u.spot.y); c.rotate(u.spot.face ?? d.theta ?? 0);
+    c.fillStyle = hexA(d.col, far ? 0.2 : 0.1); c.fillRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4);
+    c.strokeStyle = hexA(d.col, far ? 0.8 : 0.45); c.lineWidth = 1.2 * s; c.setLineDash([4 * s, 3 * s]); c.strokeRect(-dd / 2 - 2, -w / 2 - 2, dd + 4, w + 4); c.setLineDash([]);
+    c.restore();
+  }
+}
 function drawZones(c, s, now) {
   const cnt = {};
   for (const d of G.divs) {
@@ -2660,12 +2760,7 @@ function drawZones(c, s, now) {
     const sel = G.selDiv === d, a = sel ? 1 : 0.5;
     drawZone(c, d, Z, d.post, s, now, a, sel, k);
     if (d.hq) { const dd = dxy(d.hq.x, d.hq.y, Z.x, Z.y); if (dd > Z.r + 26) arrowTo(c, d.hq.x, d.hq.y, Z.x - (Z.x - d.hq.x) / dd * Z.r, Z.y - (Z.y - d.hq.y) / dd * Z.r, d.col, s, a); }
-    if (sel) for (const u of d.units) {
-      if (!live(u) || !u.spot || u.direct || u.state >= 3 || dist(u, u.spot) < 14) continue;
-      c.strokeStyle = hexA(d.col, 0.55); c.lineWidth = 1.4 * s; c.setLineDash([3 * s, 4 * s]);
-      c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(u.spot.x, u.spot.y); c.stroke(); c.setLineDash([]);
-      c.beginPath(); c.arc(u.spot.x, u.spot.y, 5 * s, 0, TAU); c.strokeStyle = hexA(d.col, 0.9); c.lineWidth = 1.8 * s; c.stroke();
-    }
+    if (sel) drawSlots(c, d, s);
   }
   const P = G.zonePrev;
   if (P && P.div) {
@@ -2687,9 +2782,23 @@ function drawHQ(c, d, x, y, s, now) {
   c.fillText(DIV_AB[d.key] || d.name[0], x, y + 0.5 * s);
   tagText(c, d.name, x, y + r + 8 * s, sel ? '#fff' : d.col, s * 0.92);
 }
+// setup drag: where the division will stand when you let go
+function drawDivGhost(c, P, s, now) {
+  const d = P.d, sv = Math.min(s, 1.5);
+  for (const g of P.spots) {
+    const u = g.u;
+    c.strokeStyle = hexA(d.col, 0.6); c.lineWidth = 1.4 * s; c.setLineDash([3 * s, 4 * s]);
+    c.beginPath(); c.moveTo(u.x, u.y); c.lineTo(g.x, g.y); c.stroke(); c.setLineDash([]);
+    drawUnitBody(c, Object.assign({}, u, { ang: u.kind === 'cmdr' ? 0 : P.th, _vis: null }), g.x, g.y, sv, 0.55);
+    c.beginPath(); c.arc(g.x, g.y, 15 * s, 0, TAU); c.strokeStyle = hexA(d.col, 0.85); c.lineWidth = 1.6 * s; c.stroke();
+  }
+  const hx = P.x, hy = P.y;
+  arrowTo(c, hx, hy, hx + Math.cos(P.th) * 70, hy + Math.sin(P.th) * 70, d.col, s, 0.9);
+  c.globalAlpha = 0.85; drawHQ(c, d, hx, hy, s, now); c.globalAlpha = 1;
+}
 function drawHQs(c, s, now) {
   for (const d of G.divs) {
-    if (d.side === 0) { if (d.hq) drawHQ(c, d, d.hq.x, d.hq.y, s, now); continue; }
+    if (d.side === 0) { if (d.hq && !(G.divPrev && G.divPrev.d === d)) drawHQ(c, d, d.hq.x, d.hq.y, s, now); continue; }
     if (G.phase !== 'battle') continue;
     const vis = d.units.filter(u => live(u) && u.state < 4 && (isSeen(u, 0) || G.over));
     if (!vis.length) continue;
@@ -2730,10 +2839,10 @@ function render() {
   const battle = G.phase === 'battle';
   drawFog(ctx, now);
   if (G.phase === 'deploy') {
-    const pulse = 0.5 + 0.5 * Math.sin(now * 3);
-    ctx.fillStyle = `rgba(51,89,181,${0.1 + pulse * 0.06})`;
+    const pulse = 0.5 + 0.5 * Math.sin(now * 3), drag = !!G.divPrev;
+    ctx.fillStyle = `rgba(51,89,181,${(drag ? 0.2 : 0.1) + pulse * 0.06})`;
     ctx.beginPath(); ctx.moveTo(20, 20); ctx.lineTo(585, 20); ctx.lineTo(585, 760); ctx.lineTo(735, 760); ctx.lineTo(735, 1075); ctx.lineTo(585, 1075); ctx.lineTo(585, 1080); ctx.lineTo(20, 1080); ctx.closePath();
-    ctx.fill(); ctx.setLineDash([12, 8]); ctx.strokeStyle = 'rgba(220,230,255,.85)'; ctx.lineWidth = 3 * s; ctx.stroke(); ctx.setLineDash([]);
+    ctx.fill(); ctx.setLineDash([12, 8]); ctx.lineDashOffset = drag ? -now * 30 : 0; ctx.strokeStyle = drag ? '#fff' : 'rgba(220,230,255,.85)'; ctx.lineWidth = (drag ? 5 : 3) * s; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
     for (const py of [180, 520, 900]) { const px = 585 - 26 * s; ['#2f4fb0', '#f4efe2', '#c23a32'].forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(px + i * 5 * s, py - 6 * s, 5 * s, 12 * s); }); }
   }
   for (const f of G.flags) {
@@ -2754,6 +2863,7 @@ function render() {
   }
   if (G.phase === 'deploy') updateHQ(true);
   drawZones(ctx, s, now);
+  if (G.divPrev) drawDivGhost(ctx, G.divPrev, s, now);
   if (G.reinfAt && G.time - G.reinfAt.t < 7 && !G.auto) {
     const a = 0.5 + 0.5 * Math.sin(now * 6), y = G.reinfAt.y;
     ctx.fillStyle = `rgba(232,64,47,${a})`;
@@ -2929,8 +3039,18 @@ cv.addEventListener('pointermove', (e) => {
       if (moved > 6) { gest.mode = 'drag'; G.sel = [gest.hit]; G.selDiv = null; refreshUI(true); }
       break;
     case 'hqPending':
-      if (moved > 8) { gest.mode = 'hqDrag'; if (G.selDiv !== gest.div) { G.selDiv = gest.div; G.sel = []; refreshUI(true); } }
+      if (moved > 8) {
+        gest.mode = G.phase === 'deploy' && setupUnits(gest.div).length ? 'hqMove' : 'hqDrag';
+        if (G.selDiv !== gest.div) { G.selDiv = gest.div; G.sel = []; refreshUI(true); }
+        if (gest.mode === 'hqMove') { gest.offx = gest.div.hq.x - gest.w.x; gest.offy = gest.div.hq.y - gest.w.y; gest.pt = 0; }
+      }
       break;
+    case 'hqMove': {
+      const w = toWorld(e.clientX, e.clientY), now = performance.now();
+      gest.lx = w.x + gest.offx; gest.ly = w.y + gest.offy;
+      if (now - gest.pt > 45) { gest.pt = now; G.divPrev = divSetupLayout(gest.div, gest.lx, gest.ly, divFacing(gest.div)); }
+      break;
+    }
     case 'hqDrag': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(w.x, w.y), { div: gest.div }); break; }
     case 'zoneDraw': { const w = toWorld(e.clientX, e.clientY); G.zonePrev = Object.assign(zoneAt(gest.w.x, gest.w.y, Math.max(55, dxy(gest.w.x, gest.w.y, w.x, w.y))), { div: G.selDiv }); break; }
     case 'drag': { const w = toWorld(e.clientX, e.clientY); placeUnit(gest.hit, w.x, w.y); break; }
@@ -2951,6 +3071,11 @@ const endPtr = (e) => {
   if (up) {
     if (gest.mode === 'pending' || gest.mode === 'unitPending') tap(e.clientX, e.clientY);
     else if (gest.mode === 'hqPending') selectDiv(gest.div);
+    else if (gest.mode === 'hqMove') {
+      const d = gest.div;
+      if (gest.lx != null && applyDivSetup(d, gest.lx, gest.ly, divFacing(d))) { SFX.drum('move'); buzz(15); toast(`⚑ ${d.name} ✔`); }
+      G.selDiv = d; refreshUI(true);
+    }
     else if ((gest.mode === 'hqDrag' || gest.mode === 'zoneDraw') && G.zonePrev) { const P = G.zonePrev, d = P.div; delete P.div; orderDiv(d, P, d.post); refreshUI(true); }
     else if (gest.mode === 'drag') SFX.click();
     else if (gest.mode === 'aim') tap(e.clientX, e.clientY);
@@ -2960,7 +3085,7 @@ const endPtr = (e) => {
       else tap(e.clientX, e.clientY);
     }
   }
-  G.preview = null; G.aim = null; G.zonePrev = null; gest = null;
+  G.preview = null; G.aim = null; G.zonePrev = null; G.divPrev = null; gest = null;
 };
 function setAim(w) {
   const h = unitAt(w.x, w.y);
@@ -3001,6 +3126,12 @@ function tap(sx, sy) {
     if (G.sel.length === 1 && G.sel[0] === u) G.sel = [];
     else if (u.state < 4) G.sel = [u];
     G.selDiv = null; G.pend = 'move'; SFX.click(); refreshUI(true); return;
+  }
+  if (G.selDiv && G.phase === 'deploy' && inZoneRect(p.x, p.y)) { // setup: re-form the division here
+    const d = G.selDiv;
+    if (!setupUnits(d).length) { toast('🦅 ⏳'); SFX.click(true); return; }
+    if (applyDivSetup(d, p.x, p.y, divFacing(d))) { G.markers.push({ x: p.x, y: p.y, t: 0, kind: 'move' }); SFX.drum('move'); buzz(15); toast(`⚑ ${d.name} ✔`); }
+    refreshUI(true); return;
   }
   if (G.selDiv) { // commander selected: the tap is his zone (an enemy tapped = attack there)
     const d = G.selDiv;
@@ -3103,6 +3234,10 @@ function refreshDivUI() {
   }
   const d = G.selDiv;
   if (d) {
+    const dep = G.phase === 'deploy', canRot = dep && setupUnits(d).length > 0;
+    $('bRotL').style.display = $('bRotR').style.display = dep ? '' : 'none';
+    $('bRotL').disabled = $('bRotR').disabled = !canRot;
+    $('bDivRejoin').style.display = dep ? 'none' : '';
     $('bTake').classList.toggle('on', d.post === 'attack');
     $('bHoldZ').classList.toggle('on', d.post === 'hold');
     $('bDivRejoin').disabled = !d.units.some(u => u.direct && live(u));
@@ -3243,6 +3378,9 @@ const setPost = (p) => {
   SFX.drum(p === 'attack' ? 'quick' : 'hold'); buzz(12); refreshUI(true);
 };
 $('bTake').addEventListener('click', () => setPost('attack'));
+const rotBtn = (da) => () => { const d = G.selDiv; if (d && rotateDiv(d, da)) { SFX.click(); buzz(10); toast(`⚑ ${d.name} ${da > 0 ? '⟳' : '⟲'}`); } else SFX.click(true); refreshUI(true); };
+$('bRotL').addEventListener('click', rotBtn(-Math.PI / 6));
+$('bRotR').addEventListener('click', rotBtn(Math.PI / 6));
 $('bHoldZ').addEventListener('click', () => setPost('hold'));
 $('bDivUnits').addEventListener('click', () => {
   const d = G.selDiv; if (!d) return;
@@ -3280,6 +3418,7 @@ $('bVet2').addEventListener('click', resetVets);
 
 // ---------------------------------------------------------------- tutorial (first launch, replay from help)
 const TUT = [
+  { d: 'setup', icon: '🇫🇷', txt: 'Setup: drag a division commander inside the blue area and his whole division re-forms around him. ⟲ ⟳ turn it; drag single units to fine-tune' },
   { d: 'cmd', icon: '⚑', txt: 'Tap a division commander (or his button in the bottom strip), then tap a place. He takes that zone and deploys his battalions himself' },
   { d: 'post', icon: '⚔🛡', txt: '⚔ Take attacks the zone, 🛡 Hold defends it. Drag from a commander to point him; press, hold and drag the map to size a zone' },
   { d: 'move', icon: '👆', txt: 'Override: tap a battalion and order it directly. It rejoins its commander when done, or tap ↩️ Div' },
@@ -3325,7 +3464,22 @@ function drawTut(t) {
   const zone = (x, y, r, col, a = 1) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = hexA(col, 0.13 * a); c.fill(); c.setLineDash([9, 6]); c.lineDashOffset = -t * 14; c.strokeStyle = hexA(col, a); c.lineWidth = 2.5; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0; };
   const hq = (x, y, col, nm, ab, hi) => drawHQ(c, { side: 0, col, name: nm, key: ab }, x, y, 1.15, t) || (hi && (c.strokeStyle = '#fff', c.lineWidth = 2, c.beginPath(), c.arc(x, y, 17 + 2 * Math.sin(t * 6), 0, TAU), c.stroke()));
   const lerp = (a, b, k) => a + (b - a) * k;
-  if (D === 'cmd') {
+  if (D === 'setup') {
+    c.fillStyle = 'rgba(51,89,181,.22)'; c.fillRect(8, 8, 196, 154); c.setLineDash([9, 6]); c.strokeStyle = 'rgba(230,236,255,.9)'; c.lineWidth = 2; c.strokeRect(8, 8, 196, 154); c.setLineDash([]);
+    c.fillStyle = '#5d86b8'; c.fillRect(226, 0, 10, 170);
+    const p = (t % 4.5) / 4.5, k = clamp((p - 0.15) / 0.45, 0, 1), done = p > 0.68;
+    const hx = lerp(60, 140, k), hy = lerp(132, 70, k);
+    const sp = [[42, -20, 'line', 0], [42, 20, 'line', 0], [-18, 0, 'line', 0], [6, 44, 'art', 0]];
+    const from = [[40, 120], [60, 150], [26, 100], [90, 146]];
+    sp.forEach(([ox, oy, ty], i) => {
+      const gx = hx + ox, gy = hy + oy;
+      if (!done) { U(ty, 0, ty === 'art' ? 'deployed' : 'line', from[i][0], from[i][1], 0, 1); if (k > 0) { c.globalAlpha = 0.5; U(ty, 0, ty === 'art' ? 'deployed' : 'line', gx, gy, 0, 1); c.globalAlpha = 1; } }
+      else U(ty, 0, ty === 'art' ? 'deployed' : 'line', 140 + ox, 70 + oy, 0, 1);
+    });
+    hq(done ? 140 : hx, done ? 70 : hy, '#ffd34d', 'Vandamme', 'van', true);
+    lbl('⟲ ⟳', 262, 140, '#fff');
+    if (!done) finger(c, hx, hy, 0.6);
+  } else if (D === 'cmd') {
     tutHouse(c, 200, 52, 26, 18); tutHouse(c, 232, 84, 22, 18);
     const p = (t % 5) / 5, onZ = p > 0.22, k = clamp((p - 0.34) / 0.45, 0, 1), done = k >= 1;
     if (onZ) { zone(222, 78, 54, '#ffd34d'); arrowTo(c, 52, 138, 222 - 54 * 0.94, 78 + 54 * 0.34, '#ffd34d', 1, 1); lbl('🛡 Vandamme · Sokolnitz', 222, 14, '#ffd34d'); }
@@ -3544,7 +3698,8 @@ window.AUS = {
   aimInfo, visPoly, inRangeOf, openTut, loadVets, hitChance, gunHitP, DIFFS, commitGuard, setForm,
   orderCharge, meleePowers, issueForm, issueCharge, heightAt, terrAt, passAt, dims,
   haptic: () => ({ ok: HAPTIC_OK, on: hapticOn }),
-  ZONES, divByKey, rejoin, layoutDiv, snapSpot,
+  ZONES, divByKey, rejoin, layoutDiv, snapSpot, divSetupLayout, rotateDiv, inZoneRect, hqAt,
+  placeDiv(key, x, y, th) { const d = divByKey(0, key); return !!d && applyDivSetup(d, x, y, th ?? divFacing(d)); },
   // zone order by commander key ('van', 'sth', 'leg', 'lan', 'mur', 'gar'), zone name or {x,y,r}, 'attack' | 'hold'
   orderDiv(key, zone, post, side = 0) {
     const d = divByKey(side, key); if (!d) return false;

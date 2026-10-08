@@ -6,8 +6,8 @@ A small real-time Napoleonic corps tactics game for phones, and a sibling of [Br
 **Install:** open the link, then Share ▸ *Add to Home Screen* (iOS) or menu ▸ *Install app* (Android/Chrome). It works offline after the first load.
 
 ## How to play
-- **Start screen:** pick 🙂 Easy / 😐 Normal / 💀 Hard, then ▶. The choice is remembered. A short 7-step tutorial opens the first time; replay it from ❓ (🎓).
-- **Deploy 🇫🇷:** before the clock starts, place your corps in the shaded zone: the French bank west of the Goldbach plus the Sokolnitz bridgehead. Tap a unit and then a spot, or drag it there. 🎲 Auto cycles three ready-made setups (Goldbach line, forward at Sokolnitz, Santon anchor), and ▶ starts the battle. The Allies pick one of four plans: massed on the heights, already descending, a northern thrust, or a southern thrust. Each plan sends a smaller wing at Santon.
+- **Start screen:** pick 🙂 Easy / 😐 Normal / 💀 Hard, then ▶. The choice is remembered. A short 8-step tutorial opens the first time; replay it from ❓ (🎓).
+- **Deploy 🇫🇷:** before the clock starts, place your corps in the shaded zone: the French bank west of the Goldbach plus the Sokolnitz bridgehead. **Drag a division commander ⚑** (new in v3) and his whole division re-forms around him, or drag single units to fine-tune. See *Setting up with commanders* below. 🎲 Auto cycles three ready-made setups (Goldbach line, forward at Sokolnitz, Santon anchor), and ▶ starts the battle. The Allies pick one of four plans: massed on the heights, already descending, a northern thrust, or a southern thrust. Each plan sends a smaller wing at Santon.
 - **Division commanders ⚑** (new in v2): the bottom strip lists your divisions (name, zone, ⚔/🛡 posture, strength bar). Tap a commander's marker on the map or his strip button, then tap a place. See *Division commanders* below.
 - Tap a unit (or its chip in the roster) to select it, then tap the ground to march. That is a **direct order**: the unit leaves its commander until the order is done (see below).
 - Order bar: ➜ Move · ⏩ Quick · ⚔️ Charge · 🎯 Fire · 🛡️ Hold · ▦ Form · ↩️ Div (back under the commander).
@@ -35,14 +35,30 @@ Your corps is split into six divisions. Each has a commander marker (a coloured 
 
 The Allies use the same system: **Miloradovich**, **Kolowrat** (Austrians), **Langeron**, **Kamensky** (Pratzen garrison), **Liechtenstein** (cavalry) and **Dokhturov** (the reinforcement columns from the east). Their commanders appear on the map once you have spotted some of their troops.
 
+**Setting up with commanders** (new in v3)
+- In the deploy phase, drag a commander's marker anywhere in the shaded French area. The area pulses with a white dashed border while you drag, and a ghost of the division (translucent unit blocks, dashed lines and a facing arrow) shows where every unit will stand before you let go. Drops outside the area are clamped to its edge.
+- Or tap a commander (map or strip) and then tap a spot inside the area.
+- On release the division re-forms instantly, using the same planner the commanders use in battle: front line, supports, guns on good ground with a field of fire, cavalry on the flanks, nothing in the stream and no overlaps. It costs no game time.
+- ⟲ / ⟳ on the command bar turn the selected division 30° (it re-forms facing the new way). ⚔️ Take / 🛡️ Hold set its opening posture.
+- With a commander selected, tapping *outside* the area gives him his opening zone instead (as in v2), which he marches to when the battle starts.
+- Single units can still be dragged afterwards. Murat's cavalry can be placed like any division; the 🦅 Garde stays in reserve until committed.
+
 **Giving a zone order**
 - Tap a commander on the map (or his button in the strip). The command bar appears: ⚔️ **Take** · 🛡️ **Hold** · 👥 **Units** (select his units for direct orders) · ↩️ **Rejoin** · ✖ **Done**.
 - Tap a place: within reach of a named place (Santon, Pratzen, Sokolnitz, Telnitz, Puntowitz, Girzikowitz, Pratze, the Pheasantry, Blasowitz) it snaps to it; anywhere else it makes a zone about 95 m across. You can also **drag from the commander** to the spot, or, with a commander selected, **press, hold and drag** on the map to draw a zone of any size (55–240 m). Tapping an enemy unit gives an attack zone around it.
 - Pick the posture first or afterwards; changing it re-issues the order. New divisions start on 🛡️ Hold *in place*: they keep the spots you deployed them on until you give a zone.
-- Your zones are drawn on the map as dashed circles in the division colour, with an arrow from the commander. A selected commander also shows thin lines from each unit to its assigned spot.
+- Your zones are drawn on the map as dashed circles in the division colour, with an arrow from the commander. A selected commander also shows his plan: a faint dashed rectangle for each unit's slot (the unit's own footprint, turned to its facing), with a dashed line from any unit still on its way.
 
 **What the commander does**
-- 🛡️ **Hold:** faces the nearest enemy threat. The fittest battalions form the front line, with the rest in support 65 m behind. Badly hurt or wavering battalions rotate to a reserve line and fresh ones fill the gaps. Light infantry takes the best cover in the zone. Guns go to high ground with a clear field of fire, level with or behind the line. Cavalry goes on the flanks. Front-line battalions stand in line once the enemy is within ~560 m.
+- **Planned formation (v3):** every order is turned into a fixed plan once: each unit gets its own slot, and the plan is only redrawn when the zone, the facing (by more than ~25°), the posture or the division's make-up changes. So units march to their own slot, never to the zone centre, and they don't reshuffle.
+  - **Front line:** the fittest battalions stand side by side, facing the threat (Hold) or the direction of advance. Spacing is 64–100 m centre to centre (a battalion frontage plus a gap), spread to fit the zone.
+  - **Supports:** a second line 70 m behind, offset to sit behind the gaps. Battered or wavering battalions go to a reserve line 140 m back.
+  - **Skirmishers:** light infantry 55 m in front of the line, in the best cover nearby.
+  - **Guns:** on the flanks of the line, on the best nearby ground for height and line of sight.
+  - **Cavalry:** squadron pairs on the wings, outside the guns.
+  - Divisions sent to the same zone stand side by side instead of on top of each other.
+  - Battalions move in column and deploy into line when they reach their slot. Idle friends keep at least 30 m apart.
+- 🛡️ **Hold:** faces the nearest enemy threat, front line slightly forward in the zone. Badly hurt battalions rotate to the reserve line and fresh ones fill the gaps.
 - ⚔️ **Take:** the foot of every division sent to the same zone gathers ~340 m short and goes in together. Battalions keep level with the slower ones rather than arriving one by one. Enemy troops standing between the division and the zone are dealt with first: the division forms a battle line at musket range facing them, the guns unlimber behind it, and it closes in to charge once they waver. Guns support the assault from 200–430 m on your side of the zone. Cavalry waits behind the attack for a target. When the zone is taken the division digs in as if holding it.
 - Always: infantry forms **square** when enemy cavalry threatens, and moves in column and fights in line. Guns unlimber when they reach their spot. Spots avoid the Goldbach and ponds (so troops only cross it to get somewhere), and guns stay out of houses and woods. Squadron pairs of the same regiment charge together.
 
@@ -113,6 +129,17 @@ Russians wear green, Austrians white, the French blue. Each unit has HP (losses 
 ## After action
 The end screen shows the result and how the army broke or time ran out. It lists each of your units with kills, remaining HP, stars and status, highlights the MVP, shows a flag timeline (Sa / Pr / So) with the Guard, reinforcements and push marked, counts charges, squares that held and rallies, and rates the fight ★–★★★. Rematch carries veteran experience over.
 
+## Balance (v2.1 / v3 update)
+The planned formations made division commanders much better, for both armies, and a scripted player using only zone orders jumped from 54% to 79% on Normal. Normal Allied accuracy and morale were raised to 1.05 / 1.1 (from 1.0 / 1.03). Easy and Hard are unchanged. French wins from the same harness (same scenarios as below):
+
+| | AI vs AI | Sensible zone plan | Rush, Guard held back |
+|---|---|---|---|
+| Easy | 28/40 (70%) | 34/40 (85%) | – |
+| Normal | 37/80 (46%) | 48/80 (60%) | 11/40 (28%) |
+| Hard | 9/40 (23%) | 13/40 (33%) | – |
+
+Formation checks (headless, 390×844, a player selects a commander and taps a zone: Take and Hold, named places and free zones, small zones by the Goldbach and at the map edge). In every Hold case there were no overlapping blocks. The median nearest-neighbour distance was at least one unit frontage (battalions 71–128 m apart, against 32 m piled up in v2), and the front line lay within 0–9 m of a straight line (82 m in v2).
+
 ## Balance (v2.0)
 French wins on the final settings, from a headless harness (`AUS.fast`). Each cell pools two batches of 24–40 games, so treat it as roughly ±6 points.
 - **AI vs AI:** both sides are run by the strategist + division commanders.
@@ -146,8 +173,8 @@ The AI-vs-AI numbers pool several batches run on the final settings. Single batc
 Most games end with one army breaking about 6–8 minutes in. Roughly one in five goes to the clock.
 
 ## Files
-`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v2`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
+`index.html` (UI + PWA tags) · `game.js` (all game code, vanilla JS + canvas) · `manifest.webmanifest` · `sw.js` (offline cache, currently `aus-v3`; bump `CACHE` when files change. It only clears its own `aus-*` caches, so Bridge Too Far's cache on the same origin is left alone) · `icon-192.png`, `icon-512.png` (generated with Python/PIL).
 
 ## Dev
 No build step. Serve the repo (`python3 -m http.server`) and open `/games/austerlitz/`.
-Debug hooks: `?auto=1` lets the AI play both sides. `window.AUS.fast(seconds)` fast-forwards the simulation silently. `AUS.start()`, `AUS.autoDeploy()` and `AUS.begin()` drive the deploy phase. `AUS.setDiff('easy'|'normal'|'hard')`, `AUS.commitGuard()` and `AUS.DIFFS` are there for tuning, and `AUS.G` is the live game state. `AUS.orderDiv('van', 'Pratzen', 'attack')` gives a zone order (division key `van`/`sth`/`leg`/`lan`/`mur`/`gar`, a place name or `{x, y, r}`, `'attack'` or `'hold'`), and `AUS.ZONES` lists the named places. The version tag (`v2.0`) is shown at the bottom of the ❓ help screen.
+Debug hooks: `?auto=1` lets the AI play both sides. `window.AUS.fast(seconds)` fast-forwards the simulation silently. `AUS.start()`, `AUS.autoDeploy()` and `AUS.begin()` drive the deploy phase. `AUS.setDiff('easy'|'normal'|'hard')`, `AUS.commitGuard()` and `AUS.DIFFS` are there for tuning, and `AUS.G` is the live game state. `AUS.orderDiv('van', 'Pratzen', 'attack')` gives a zone order (division key `van`/`sth`/`leg`/`lan`/`mur`/`gar`, a place name or `{x, y, r}`, `'attack'` or `'hold'`), and `AUS.ZONES` lists the named places. `AUS.placeDiv('van', x, y, angle)` does a setup drop (deploy phase only), and `AUS.divSetupLayout`, `AUS.rotateDiv` and `AUS.inZoneRect` expose the same logic. The version tag (`v2.1`) is shown at the bottom of the ❓ help screen.
