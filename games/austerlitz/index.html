@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Austerlitz 1805</title>
+<meta name="theme-color" content="#2c3b63">
+<meta name="description" content="Phone-friendly real-time Napoleonic corps tactics: line, column, square and cavalry charges at Austerlitz, 1805.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Austerlitz">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#1d2318;color:#f2ecd8;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#cv{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;touch-action:none;display:block}
+button{font:inherit;color:#f2ecd8;background:rgba(40,48,36,.92);border:1px solid rgba(242,236,216,.2);border-radius:10px;min-width:44px;min-height:44px;padding:0 8px;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.35}
+.bar{position:fixed;display:flex;gap:6px;align-items:center;z-index:5}
+#top{top:0;left:0;right:0;gap:4px;padding:4px 6px;padding-top:max(4px,env(safe-area-inset-top));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(20,26,18,.92),rgba(20,26,18,.6))}
+#clock{position:relative;font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;min-width:44px;text-align:center}
+#fogTag{position:absolute;right:-8px;top:-8px;font-size:13px;font-weight:900;color:#dfe6ea;text-shadow:0 0 3px rgba(0,0,0,.6);pointer-events:none}
+#top button{padding:0;width:44px}
+#flags{display:flex;gap:4px;margin:0 2px}
+.fl{width:22px;height:22px;border-radius:50%;border:2px solid #e8e2cc;background:#666;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.fl.o0{background:#3359b5}.fl.o1{background:#4f7d3f}.fl.on{background:transparent}
+.fl.hot{border-color:#ffe066;animation:hot .6s infinite alternate}
+@keyframes hot{to{box-shadow:0 0 0 3px rgba(255,224,102,.6)}}
+.sp{flex:1}
+#roster{position:fixed;z-index:4;display:flex;gap:3px;overflow:auto;scrollbar-width:none;padding:3px 6px}
+#roster::-webkit-scrollbar{display:none}
+.chip{position:relative;width:44px;height:44px;min-width:44px;padding:0;border-radius:9px;border:2px solid #4caf50;background:rgba(28,34,24,.85)}
+.chip canvas{width:38px;height:38px;display:block;margin:auto}
+.chip i{position:absolute;left:4px;right:4px;bottom:2px;height:3px;background:#333;border-radius:2px;overflow:hidden}
+.chip i b{display:block;height:100%;background:#8bd35a}
+.chip.sel{box-shadow:0 0 0 2px #fff}
+.chip.dead{opacity:.3}
+.chip.res{border-style:dashed}
+#orders{left:0;right:0;bottom:0;padding:5px 6px;padding-bottom:max(5px,env(safe-area-inset-bottom));padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right));background:linear-gradient(rgba(20,26,18,.55),rgba(20,26,18,.92));justify-content:space-between;gap:4px}
+#orders button{flex:1;max-width:96px;min-width:0;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:20px;padding:0}
+#orders button small{font-size:10px;opacity:.85;margin-top:3px;white-space:nowrap}
+#orders button.on{background:#3556a8;color:#fff;border-color:#efe8d2}
+#card{position:fixed;z-index:5;right:8px;display:none;gap:6px;align-items:center;padding:5px 8px 5px 5px;border-radius:12px;background:rgba(20,26,18,.88);border:1px solid rgba(242,236,216,.15);pointer-events:none;width:214px}
+#cardIcon{width:40px;height:40px;flex:none}
+#card .cb{flex:1;min-width:0;font-size:11px}
+#card .cn{display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;font-weight:600;margin-bottom:2px}
+#cStars{color:#ffd34d;font-size:10px}#cBadges{margin-left:auto;font-size:11px}
+#card .cr{display:flex;align-items:center;gap:4px;height:11px;margin-top:1px}
+#card .cr>span:first-child{width:12px;text-align:center;font-size:10px;font-weight:800}
+#card .cbar{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+#card .cbar b{display:block;height:100%;width:50%;transition:width .2s}
+#cAux{font-size:9px;white-space:nowrap}
+#deployBar{left:0;right:0;bottom:0;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom));background:linear-gradient(rgba(20,26,18,.55),rgba(20,26,18,.92));justify-content:center;gap:10px;display:none}
+#deployBar button{height:52px;font-size:18px;padding:0 18px;display:flex;align-items:center;gap:8px}
+#deployBar .go{background:#3556a8;border-color:#dfe6ff;font-weight:700;min-width:120px;justify-content:center}
+#deployBar .hint{font-size:20px;opacity:.75}
+.diffs{display:flex;gap:8px;justify-content:center;margin:6px 0 0}
+.diff{width:76px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;line-height:1}
+.diff small{font-size:10px;margin-top:4px;opacity:.8}
+.diff.on{background:#3556a8;color:#fff;border-color:#efe8d2}
+#ver{opacity:.45;font-size:11px;margin-top:10px}
+#toast{position:fixed;z-index:6;left:50%;transform:translateX(-50%);top:calc(140px + env(safe-area-inset-top));background:rgba(0,0,0,.65);padding:6px 12px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#pausedTag{position:fixed;z-index:3;left:50%;top:calc(106px + env(safe-area-inset-top));transform:translateX(-50%);font-size:13px;font-weight:700;letter-spacing:3px;background:rgba(232,191,74,.92);color:#1d1d10;padding:5px 14px;border-radius:14px;display:none;pointer-events:none}
+/* portrait */
+#roster{top:calc(56px + env(safe-area-inset-top));left:0;right:0;flex-direction:row}
+#card{bottom:calc(68px + env(safe-area-inset-bottom))}
+/* short landscape: roster on the left */
+@media (orientation:landscape) and (max-height:560px){
+ #roster{top:calc(54px + env(safe-area-inset-top));bottom:calc(64px + env(safe-area-inset-bottom));left:env(safe-area-inset-left);right:auto;flex-direction:column;width:58px}
+ #orders{left:60px}
+ #deployBar{left:60px}
+ #toast{top:96px}
+ #pausedTag{top:60px}
+ #ovTut .card{max-width:620px;display:grid;grid-template-columns:300px 1fr;gap:4px 14px;align-items:center}
+ #ovTut #tutCv{grid-row:span 3}
+}
+.ov{position:fixed;inset:0;z-index:10;background:rgba(18,22,14,.88);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto}
+.ov>.card{margin:auto}
+.hidden{display:none!important}
+.card{max-width:420px;width:100%;text-align:center}
+.card h1{margin:0 0 2px;font-size:30px;letter-spacing:3px;font-family:Georgia,"Times New Roman",serif}
+.card h1 span{color:#e8bf4a}
+.card .sub{opacity:.72;font-size:13px;margin-bottom:12px}
+.big{font-size:20px;padding:0 26px;height:54px;background:#3556a8;border-color:#dfe6ff;margin:10px 4px 0}
+.legend{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:10px 0;font-size:11px}
+.legend div{display:flex;flex-direction:column;align-items:center;gap:3px}
+.ring{width:22px;height:22px;border-radius:50%;border:4px solid}
+.rows{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;text-align:left;font-size:14px;margin:10px auto;max-width:340px;align-items:center}
+.rows span:nth-child(odd){font-size:20px;text-align:center;min-width:28px}
+.tric{display:inline-block;width:30px;height:4px;background:linear-gradient(90deg,#2f4fb0 33%,#f4efe2 33% 66%,#c23a32 66%);border-radius:2px;margin:2px 0 8px}
+#endTitle{font-size:40px;font-weight:800;margin:4px 0;font-family:Georgia,serif}
+#endFlags{display:flex;gap:8px;justify-content:center;margin:8px 0}
+#endFlags .fl{width:30px;height:30px;font-size:12px}
+#endStats{font-size:14px;opacity:.9;line-height:1.7}
+#endStars{font-size:30px;color:#ffd34d;letter-spacing:4px;line-height:1}
+#endTl{width:300px;height:45px;max-width:100%;display:block;margin:8px auto 2px}
+.aar{max-width:720px}
+#endUnits{display:grid;grid-template-columns:1fr;gap:3px;margin:8px auto 0;max-width:420px;text-align:left}
+@media (min-width:640px){#endUnits{grid-template-columns:1fr 1fr;max-width:700px}}
+.ur{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border-radius:8px;padding:2px 6px;font-size:12px;min-height:32px}
+.ur canvas{width:28px;height:28px;flex:none}
+.ur.mvp{background:rgba(255,211,77,.18);box-shadow:inset 0 0 0 1px rgba(255,211,77,.6)}
+.ur .un{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur .us{color:#ffd34d;font-size:10px;white-space:nowrap}
+.ur .uk{font-weight:700;min-width:26px;text-align:right}
+.ur .uh{width:36px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;flex:none}
+.ur .uh b{display:block;height:100%}
+.ur .ust{width:22px;text-align:center}
+.endBtns{display:flex;gap:8px;justify-content:center;align-items:flex-end}
+.endBtns button{height:54px}
+.fab{position:fixed;z-index:5;bottom:calc(66px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;padding:0}
+#bRings{left:max(8px,env(safe-area-inset-left));font-size:22px;border:2px dashed rgba(242,236,216,.45)}
+#bRings.on{background:#3556a8;border:2px solid #fff}
+#bGuard{left:calc(64px + env(safe-area-inset-left));font-size:18px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed rgba(232,191,74,.6);opacity:.75}
+#bGuard small{font-size:9px;margin-top:1px;font-variant-numeric:tabular-nums}
+#bGuard.ready{opacity:1;background:#6b5420;border:2px solid #e8bf4a;animation:hot .8s infinite alternate}
+@media (orientation:landscape) and (max-height:560px){#endIcon{font-size:28px!important}#endTitle{font-size:26px;margin:0}#endStars{font-size:20px}#endFlags{margin:4px 0}#endFlags .fl{width:24px;height:24px}#endStats{line-height:1.4;font-size:13px}#bRings{left:calc(66px + env(safe-area-inset-left))}#bGuard{left:calc(122px + env(safe-area-inset-left))}}
+.hbtns{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.hbtns button{height:48px;min-width:64px;font-size:18px}
+#ovTut .card{max-width:340px}
+#tutCv{width:300px;height:170px;max-width:100%;border-radius:12px;display:block;margin:0 auto;box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+#tutText{font-size:15px;margin:10px 4px 4px;min-height:40px}
+#tutText b{font-size:22px;margin-right:4px}
+#tutDots{display:flex;gap:6px;justify-content:center;margin:4px 0}
+#tutDots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+#tutDots i.on{background:#ffd34d}
+.tutBtns{display:flex;gap:10px;justify-content:center;align-items:flex-end}
+.tutBtns button{height:54px;min-width:80px}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="top" class="bar">
+  <button id="bPause" title="Pause">⏸</button>
+  <button id="bSpeed" title="Speed">1x</button>
+  <div id="clock"><span id="clockT">10:00</span><span id="fogTag" title="Morning fog">≋</span></div>
+  <div id="flags"><span class="fl o0" id="fl0">Sa</span><span class="fl o1" id="fl1">Pr</span><span class="fl o0" id="fl2">So</span></div>
+  <div class="sp"></div>
+  <button id="bMute" title="Sound">🔊</button>
+  <button id="bAll" title="Select all">👥</button>
+  <button id="bHelp" title="Help">?</button>
+</div>
+<div id="roster"></div>
+<div id="card"><canvas id="cardIcon" width="80" height="80"></canvas><div class="cb">
+  <div class="cn"><span id="cStars"></span><span id="cName"></span><span id="cBadges"></span></div>
+  <div class="cr"><span style="color:#8bd35a">✚</span><i class="cbar"><b id="cHp"></b></i></div>
+  <div class="cr"><span id="cAIcon" style="color:#e0b24a">⁍</span><i class="cbar"><b id="cAmmo"></b></i></div>
+  <div class="cr"><span id="cMIcon">●</span><i class="cbar"><b id="cMor"></b></i></div>
+  <div id="cAux"></div>
+</div></div>
+<button id="bRings" class="fab" title="Fire range for all units">🎯</button>
+<button id="bGuard" class="fab" title="Commit the Imperial Guard">🦅<small>Guard</small></button>
+<div id="toast"></div>
+<div id="pausedTag">PAUSED</div>
+<div id="deployBar" class="bar">
+  <span class="hint">🇫🇷👆</span>
+  <button id="bAuto" title="Auto deploy">🎲<small style="font-size:12px">Auto</small></button>
+  <button id="bGo" class="go" title="Start battle">▶ Start</button>
+</div>
+<div id="orders" class="bar">
+  <button data-o="move" title="Move">➜<small>Move</small></button>
+  <button data-o="quick" title="Quick march / gallop">⏩<small>Quick</small></button>
+  <button data-o="charge" title="Charge">⚔️<small>Charge</small></button>
+  <button data-o="fire" title="Fire">🎯<small>Fire</small></button>
+  <button data-o="hold" title="Hold / stand fast">🛡️<small>Hold</small></button>
+  <button data-o="form" id="bForm" title="Change formation">▦<small>Form</small></button>
+</div>
+
+<div id="ovStart" class="ov"><div class="card">
+  <h1>AUSTERLITZ <span>1805</span></h1>
+  <div class="tric"></div>
+  <div class="sub">2 December 1805 · Pratzen Heights · your French corps vs the Russo-Austrian army</div>
+  <div class="rows">
+    <span>🇫🇷</span><span>Place your corps west of the Goldbach, then ▶</span>
+    <span>🚩</span><span>You hold Santon + Sokolnitz. Keep 2 of 3 flags when the clock ends, or break the Allied army</span>
+    <span>👆</span><span>Tap a unit, then tap the ground to march</span>
+    <span>▦</span><span>Form: ▬ Line fires · ▮ Column marches &amp; charges · ◻ Square stops cavalry</span>
+    <span>⚔️</span><span>Charge, then tap an enemy: cavalry wreck flanks, guns and routing troops</span>
+    <span>🌫</span><span>Morning fog hides the heights until the sun burns it off (about 5:30)</span>
+    <span>🦅</span><span>Commit the Imperial Guard from 7:00 on the clock. It marches in at 4:00 anyway</span>
+  </div>
+  <div class="legend" id="legend1"></div>
+  <div class="diffs">
+    <button class="diff" data-d="easy">🙂<small>Easy</small></button>
+    <button class="diff" data-d="normal">😐<small>Normal</small></button>
+    <button class="diff" data-d="hard">💀<small>Hard</small></button>
+  </div>
+  <button class="big" id="bStart">▶ Play</button>
+  <div class="sub" style="margin-top:12px">Install: Share ▸ Add to Home Screen</div>
+</div></div>
+
+<div id="ovHelp" class="ov hidden"><div class="card">
+  <h1 style="font-size:22px">Field guide</h1>
+  <div class="legend" id="legend2"></div>
+  <div class="rows">
+    <span>➜</span><span>Move. ⏩ Quick: faster, no firing, tires horses</span>
+    <span>⚔️</span><span>Charge: tap an enemy. Needs a run-up. Cavalry are blown 💨 afterwards and must rest</span>
+    <span>🎯</span><span>Fire at an enemy or an area. Units fire on their own too</span>
+    <span>🛡️</span><span>Hold: stand fast, fire up close, and form square against cavalry by itself</span>
+    <span>▬</span><span>Line: full volleys, slow, weak on the flanks</span>
+    <span>▮</span><span>Column: fast, best for charges, roundshot tears through it</span>
+    <span>◻</span><span>Square: cavalry bounce off it, very slow, guns shred it</span>
+    <span>💥</span><span>Guns must unlimber to fire (5 s) and limber to move. Roundshot bounces through deep ranks</span>
+    <span style="color:#ff543c">✸</span><span>Red ring: canister, huge damage up close</span>
+    <span>⛰</span><span>Hill crests block sight. High ground sees farther and aims better</span>
+    <span>🌫</span><span>Fog early on. Gunsmoke clouds drift with the wind and block sight</span>
+    <span>🏠</span><span>Villages: best cover, block sight, hard to charge</span>
+    <span>⭐</span><span>Near the Marshal, morale recovers faster and broken units rally</span>
+    <span>⁍+</span><span>Ammo refills west of the Goldbach or near the Marshal</span>
+    <span>⚠</span><span>Allied columns arrive from the east. Late on they push your weakest flag</span>
+    <span>🦅</span><span>The Imperial Guard: one elite battalion, ready from 7:00</span>
+    <span>👆⏱</span><span>Press and hold, then drag: box-select · double-tap a card: find unit</span>
+    <span style="color:#96e66e">◯</span><span>Solid ring: good hit chance · dashed ring: max range</span>
+    <span style="color:#555">⬤</span><span>Dark area inside a ring: no line of sight</span>
+    <span style="color:#f04637">◌</span><span>Tap a spotted enemy to see its threat range in red</span>
+    <span>👆🎯</span><span>Fire or Charge: drag to aim. Hold on an enemy: aim line with distance and odds</span>
+    <span>🎖</span><span>Survivors gain stars that carry over to the next battle</span>
+  </div>
+  <div class="hbtns">
+    <button id="bHaptic" title="Vibration">📳</button>
+    <button id="bTut" title="Tutorial">🎓</button>
+    <button id="bVet2" title="Reset veterans">♻️🎖</button>
+  </div>
+  <button class="big" id="bHelpClose">OK</button>
+  <div id="ver"></div>
+</div></div>
+
+<div id="ovEnd" class="ov hidden"><div class="card aar">
+  <div id="endIcon" style="font-size:48px">🦅</div>
+  <div id="endTitle">Victory</div>
+  <div id="endStars"></div>
+  <div id="endFlags"></div>
+  <canvas id="endTl" width="600" height="90"></canvas>
+  <div id="endStats"></div>
+  <div id="endUnits"></div>
+  <div class="endBtns">
+    <button id="bVetReset" title="Reset veterans">♻️🎖</button>
+    <button class="big" id="bRematch">↻ Rematch</button>
+  </div>
+</div></div>
+
+<div id="ovTut" class="ov hidden"><div class="card">
+  <canvas id="tutCv" width="600" height="340"></canvas>
+  <div id="tutText"></div>
+  <div id="tutDots"></div>
+  <div class="tutBtns">
+    <button id="bTutSkip" title="Skip">✖<small style="font-size:11px;margin-left:4px">Skip</small></button>
+    <button id="bTutNext" class="big" title="Next">▶</button>
+  </div>
+</div></div>
+
+<script src="game.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
