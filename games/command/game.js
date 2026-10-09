@@ -1,8 +1,11 @@
 /* Command Layers: a WW2 multi-layer objectives sandbox (company > platoon > section).
    Original code and art. Plain canvas + DOM, no dependencies. Units: metres and seconds. */
-(() => {
+(function boot() {
 'use strict';
-const VERSION = 'v1.0';
+// the doctrine (all objective maps, drills and scoring weights) lives in doctrine.js; load it first if a stale page missed it
+if (!window.CLDoctrine) { const sc = document.createElement('script'); sc.src = 'doctrine.js'; sc.onload = boot; document.head.appendChild(sc); return; }
+const DOCL = window.CLDoctrine.load(), DOC = DOCL.doc;
+const VERSION = 'v1.1';
 const WW = 1200, WH = 900, TAU = Math.PI * 2, TICK = 0.5;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
@@ -278,16 +281,9 @@ function tName(p) {
 }
 
 // ---------------------------------------------------------------- task types
-const T = {
-  seize: ['⚔', 'Seize'], hold: ['🛡', 'Hold'], clear: ['🧹', 'Clear'], screen: ['👁', 'Screen'], recon: ['🔭', 'Recon'], sbf: ['🔥', 'Support by fire'],
-  reserve: ['⏸', 'Reserve'], withdraw: ['↩', 'Withdraw to'], assault: ['⚔', 'Assault'], cutoff: ['✂', 'Cut-off'], move: ['➜', 'Move to'],
-  suppress: ['🔥', 'Suppress'], overwatch: ['👁', 'Overwatch'],
-};
-const TYPES = {
-  coy: ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw'],
-  pl: ['assault', 'sbf', 'cutoff', 'reserve', 'hold', 'clear', 'screen', 'recon', 'withdraw'],
-  sec: ['move', 'suppress', 'assault', 'hold', 'overwatch'],
-};
+// icons + labels, and which task types each level can be given: from the doctrine (Objective Editor)
+const T = Object.fromEntries(Object.entries(DOC.types).map(([k, v]) => [k, [v.icon, v.label]]));
+const TYPES = DOC.levels;
 const FIRE_T = new Set(['sbf', 'suppress', 'overwatch']);
 
 // ---------------------------------------------------------------- plan scoring (0-100) + reasons
@@ -298,89 +294,90 @@ const angBetween = (a, b) => Math.acos(clamp((a.x * b.x + a.y * b.y) / ((hyp(a.x
 const coverScore = (p) => (1 - coverAt(p.x, p.y)) / 0.68; // 0 open .. 1 church
 // section task quality
 function rateSec(sp, ad) {
-  const notes = []; let q = 0;
+  const notes = []; let q = 0; const W = DOC.score.sec;
   const pos = sp.pos || sp.target, tg = sp.target;
   if (!passable(pos.x, pos.y)) { notes.push("can't stand there"); return { q: 5, notes }; }
   if (sp.type === 'suppress' || sp.type === 'overwatch') {
-    if (losT(pos.x, pos.y, tg.x, tg.y)) q += 45; else notes.push('no line of sight to the target');
-    const cs = coverScore(pos); q += 30 * cs; if (cs < 0.2) notes.push('no cover there');
+    if (losT(pos.x, pos.y, tg.x, tg.y)) q += W.fireLos; else notes.push('no line of sight to the target');
+    const cs = coverScore(pos); q += W.fireCover * cs; if (cs < 0.2) notes.push('no cover there');
     const d = hyp(tg.x - pos.x, tg.y - pos.y);
-    if (d > 70 && d < 360) q += 25; else { q += Math.max(0, 25 - Math.abs(d < 70 ? 70 - d : d - 360) / 6); notes.push(d < 70 ? 'too close' : 'too far to shoot'); }
+    if (d > W.rangeMin && d < W.rangeMax) q += W.fireRange; else { q += Math.max(0, W.fireRange - Math.abs(d < W.rangeMin ? W.rangeMin - d : d - W.rangeMax) / 6); notes.push(d < W.rangeMin ? 'too close' : 'too far to shoot'); }
   } else if (sp.type === 'assault') {
-    q += 25;
+    q += W.assaultBase;
     const fup = sp.pos || pos;
-    const cs = coverScore(fup); q += 20 * cs; if (sp.pos && cs < 0.2) notes.push('start point in the open');
-    const ac = approachCover(fup, tg); q += 30 * ac; if (ac < 0.3) notes.push('across open ground');
-    const d = hyp(tg.x - fup.x, tg.y - fup.y); q += d < 220 ? 25 : Math.max(0, 25 - (d - 220) / 10);
-    if (d >= 220) notes.push('long run in');
+    const cs = coverScore(fup); q += W.fupCover * cs; if (sp.pos && cs < 0.2) notes.push('start point in the open');
+    const ac = approachCover(fup, tg); q += W.approach * ac; if (ac < 0.3) notes.push('across open ground');
+    const d = hyp(tg.x - fup.x, tg.y - fup.y); q += d < W.runInMax ? W.runIn : Math.max(0, W.runIn - (d - W.runInMax) / 10);
+    if (d >= W.runInMax) notes.push('long run in');
   } else if (sp.type === 'hold') {
-    const cs = coverScore(pos); q += 50 * cs; if (cs < 0.2) notes.push('no cover there');
+    const cs = coverScore(pos); q += W.holdCover * cs; if (cs < 0.2) notes.push('no cover there');
     const fx = pos.x + ad.x * 150, fy = pos.y + ad.y * 150;
-    if (losT(pos.x, pos.y, fx, fy)) q += 30; else notes.push('no field of fire');
-    q += 20;
+    if (losT(pos.x, pos.y, fx, fy)) q += W.holdField; else notes.push('no field of fire');
+    q += W.holdBase;
   } else { // move
-    q += 50 + 30 * approachCover(sp.pos || pos, tg) + 20 * coverScore(pos);
+    q += W.moveBase + W.moveApproach * approachCover(sp.pos || pos, tg) + W.moveCover * coverScore(pos);
   }
   return { q: clamp(Math.round(q), 0, 100), notes };
 }
 // company / platoon plan quality: geometry of the roles together
 function ratePlan(kind, X, roles, from) {
-  const notes = []; let q = 0;
+  const notes = []; let q = 0; const SC = DOC.score;
   const ad = unitV(X.x - from.x, X.y - from.y);
   const has = (t) => roles.filter(r => r && r.type === t);
   const fire = roles.filter(r => r && FIRE_T.has(r.type));
   const asl = roles.filter(r => r && (r.type === 'assault' || r.type === 'clear'));
   if (kind === 'seize' || kind === 'clear' || kind === 'assault') {
-    const sup = fire[0];
+    const W = SC.attack, sup = fire[0];
     if (sup && sup.pos) {
-      if (losT(sup.pos.x, sup.pos.y, X.x, X.y)) q += 25; else notes.push("support can't see the objective");
-      q += 10 * coverScore(sup.pos);
-      const d = hyp(sup.pos.x - X.x, sup.pos.y - X.y); if (d > 120 && d < 380) q += 10; else notes.push(d <= 120 ? 'support too close' : 'support too far back');
+      if (losT(sup.pos.x, sup.pos.y, X.x, X.y)) q += W.supLos; else notes.push("support can't see the objective");
+      q += W.supCover * coverScore(sup.pos);
+      const d = hyp(sup.pos.x - X.x, sup.pos.y - X.y); if (d > W.supMin && d < W.supMax) q += W.supRange; else notes.push(d <= W.supMin ? 'support too close' : 'support too far back');
     } else if (kind !== 'clear') notes.push('no fire support');
-    else q += 15;
+    else q += W.clearNoSup;
     const a = asl[0];
     if (a) {
       const fup = a.pos || from;
       const ref = sup && sup.pos ? { x: sup.pos.x - X.x, y: sup.pos.y - X.y } : { x: from.x - X.x, y: from.y - X.y };
       const ang = angBetween({ x: fup.x - X.x, y: fup.y - X.y }, ref);
-      if (ang > 0.75) q += 20; else notes.push(sup ? 'frontal, in line with our own fire' : 'frontal assault');
-      const ac = approachCover(fup, a.target); q += 15 * ac; if (ac < 0.3) notes.push('across open ground');
-      if (hyp(a.target.x - X.x, a.target.y - X.y) < 70) q += 15; else notes.push('wrong target');
+      if (ang > W.flankAngle) q += W.flank; else notes.push(sup ? 'frontal, in line with our own fire' : 'frontal assault');
+      const ac = approachCover(fup, a.target); q += W.approach * ac; if (ac < 0.3) notes.push('across open ground');
+      if (hyp(a.target.x - X.x, a.target.y - X.y) < W.onTargetDist) q += W.onTarget; else notes.push('wrong target');
     } else notes.push('nobody assaults');
-    if (has('reserve').length || has('cutoff').length || has('hold').length || roles.some(r => r && r.type === 'overwatch')) q += 15; else notes.push('no reserve');
-    q += 5;
+    if (has('reserve').length || has('cutoff').length || has('hold').length || roles.some(r => r && r.type === 'overwatch')) q += W.reserve; else notes.push('no reserve');
+    q += W.base;
   } else if (kind === 'hold' || kind === 'reserve' || kind === 'cutoff') {
-    const ps = roles.filter(Boolean).map(r => r.pos || r.target);
-    q += 40 * ps.reduce((s, p) => s + coverScore(p), 0) / Math.max(1, ps.length);
-    const depth = ps.some(p => (X.x - p.x) * ad.x + (X.y - p.y) * ad.y > 50);
-    if (depth || kind !== 'hold') q += 20; else notes.push('no depth');
+    const W = SC.defend, ps = roles.filter(Boolean).map(r => r.pos || r.target);
+    q += W.cover * ps.reduce((s, p) => s + coverScore(p), 0) / Math.max(1, ps.length);
+    const depth = ps.some(p => (X.x - p.x) * ad.x + (X.y - p.y) * ad.y > W.depthDist);
+    if (depth || kind !== 'hold') q += W.depth; else notes.push('no depth');
     let minD = 1e9, maxD = 0; for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { const d = hyp(ps[i].x - ps[j].x, ps[i].y - ps[j].y); minD = Math.min(minD, d); maxD = Math.max(maxD, d); }
-    if (minD > 25 && maxD < 320) q += 20; else notes.push(minD <= 25 ? 'bunched up' : 'too spread out');
-    const fof = ps.filter(p => losT(p.x, p.y, p.x + ad.x * 150, p.y + ad.y * 150)).length / Math.max(1, ps.length);
-    q += 20 * fof; if (fof < 0.5) notes.push('poor fields of fire');
+    if (minD > W.minGap && maxD < W.maxGap) q += W.spacing; else notes.push(minD <= W.minGap ? 'bunched up' : 'too spread out');
+    const fof = ps.filter(p => losT(p.x, p.y, p.x + ad.x * W.fieldRange, p.y + ad.y * W.fieldRange)).length / Math.max(1, ps.length);
+    q += W.fields * fof; if (fof < 0.5) notes.push('poor fields of fire');
   } else if (kind === 'screen') {
-    const ps = roles.filter(Boolean).map(r => r.pos || r.target);
+    const W = SC.screen, ps = roles.filter(Boolean).map(r => r.pos || r.target);
     let maxD = 0; for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) maxD = Math.max(maxD, hyp(ps[i].x - ps[j].x, ps[i].y - ps[j].y));
-    if (maxD > 120) q += 40; else notes.push('bunched up');
-    const fof = ps.filter(p => losT(p.x, p.y, p.x + ad.x * 200, p.y + ad.y * 200)).length / Math.max(1, ps.length);
-    q += 40 * fof; if (fof < 0.5) notes.push("can't see the approaches");
-    q += 20 * ps.reduce((s, p) => s + coverScore(p), 0) / Math.max(1, ps.length);
+    if (maxD > W.minSpread) q += W.spread; else notes.push('bunched up');
+    const fof = ps.filter(p => losT(p.x, p.y, p.x + ad.x * W.viewRange, p.y + ad.y * W.viewRange)).length / Math.max(1, ps.length);
+    q += W.view * fof; if (fof < 0.5) notes.push("can't see the approaches");
+    q += W.cover * ps.reduce((s, p) => s + coverScore(p), 0) / Math.max(1, ps.length);
   } else if (kind === 'recon') {
-    const r = roles.find(x => x && (x.type === 'recon' || x.type === 'overwatch'));
-    if (r && r.pos && losT(r.pos.x, r.pos.y, X.x, X.y)) q += 50; else notes.push("observers can't see the target");
-    if (fire.length) q += 25; else notes.push('no covering fire');
-    if (roles.filter(x => x && (x.type === 'reserve' || x.type === 'hold')).length) q += 25; else notes.push('everyone forward');
+    const W = SC.recon, r = roles.find(x => x && (x.type === 'recon' || x.type === 'overwatch'));
+    if (r && r.pos && losT(r.pos.x, r.pos.y, X.x, X.y)) q += W.observer; else notes.push("observers can't see the target");
+    if (fire.length) q += W.coveringFire; else notes.push('no covering fire');
+    if (roles.filter(x => x && (x.type === 'reserve' || x.type === 'hold')).length) q += W.reserve; else notes.push('everyone forward');
   } else if (kind === 'sbf') {
-    const f = fire.length ? fire : roles.filter(Boolean);
+    const W = SC.sbf, f = fire.length ? fire : roles.filter(Boolean);
     const seeing = f.filter(r => r.pos && losT(r.pos.x, r.pos.y, X.x, X.y)).length;
-    q += 60 * seeing / Math.max(1, f.length); if (seeing < f.length) notes.push("some can't see the target");
-    q += 20 * f.reduce((s, r) => s + coverScore(r.pos || r.target), 0) / Math.max(1, f.length);
-    if (roles.some(r => r && (r.type === 'reserve' || r.type === 'hold'))) q += 20; else notes.push('no reserve');
+    q += W.seeing * seeing / Math.max(1, f.length); if (seeing < f.length) notes.push("some can't see the target");
+    q += W.cover * f.reduce((s, r) => s + coverScore(r.pos || r.target), 0) / Math.max(1, f.length);
+    if (roles.some(r => r && (r.type === 'reserve' || r.type === 'hold'))) q += W.reserve; else notes.push('no reserve');
   } else if (kind === 'withdraw') {
-    if (roles.some(r => r && r.gate)) q += 40; else notes.push('no rearguard');
-    const near = roles.filter(r => r && hyp((r.pos || r.target).x - X.x, (r.pos || r.target).y - X.y) < 160).length;
-    q += 60 * near / Math.max(1, roles.filter(Boolean).length);
-  } else { q = 60; }
+    const W = SC.withdraw;
+    if (roles.some(r => r && r.gate)) q += W.rearguard; else notes.push('no rearguard');
+    const near = roles.filter(r => r && hyp((r.pos || r.target).x - X.x, (r.pos || r.target).y - X.y) < W.nearDist).length;
+    q += W.near * near / Math.max(1, roles.filter(Boolean).length);
+  } else { q = SC.other.base; }
   return { q: clamp(Math.round(q), 0, 100), notes };
 }
 // a leader picks a spot: smart ones find cover + line of sight, dumb ones pick almost anywhere
@@ -413,108 +410,96 @@ function fupAt(X, from, ang, dist = 130) {
   const back = Math.atan2(from.y - X.y, from.x - X.x) + ang;
   return nearestOpen(X.x + Math.cos(back) * dist, X.y + Math.sin(back) * dist);
 }
-// candidate role-sets for a company objective
+// ---- objective maps (doctrine.coy / doctrine.pl, editable in the Objective Editor)
+const tagObj = (tags) => { const o = {}; for (const t of tags) o[t] = 1; return o; };
+const coyKind = (t) => (DOC.coy[t] ? DOC.coy[t].scoreAs : t);
+const plKind = (t) => (DOC.pl[t] || DOC.pl.hold).scoreAs;
+// candidate role-sets for a company objective: every variant, tried at every swept fire site x approach angle
 function coyCandidates(type, X, from, cmdr) {
+  const B = DOC.coy[type]; if (!B) return [];
   const ad = unitV(X.x - from.x, X.y - from.y), perp = { x: -ad.y, y: ad.x };
-  const out = [];
-  const reserveAt = (k = 1) => nearestOpen(X.x - ad.x * 280 * k + perp.x * 40, X.y - ad.y * 280 * k + perp.y * 40);
-  if (type === 'seize' || type === 'clear') {
-    const sc = supportCands(X, from);
-    const sups = [sc[0], sc[1], sc[2], sc.find(s => !s.l), sc[(R() * sc.length) | 0]].filter(Boolean);
-    const wrong = FEATS.filter(f => f.id !== 'start' && hyp(f.x - X.x, f.y - X.y) > 120).sort((a, b) => hyp(a.x - X.x, a.y - X.y) - hyp(b.x - X.x, b.y - X.y))[0];
-    for (const s of sups) for (const ang of [-1.2, -0.8, 0, 0.8, 1.2]) for (const third of ['reserve', 'cutoff', 'assault']) {
-      const fup = fupAt(X, from, ang), side = Math.sign(ang) || 1;
-      const t1 = (R() < 0.08 && wrong) ? { x: wrong.x, y: wrong.y } : X;
-      const roles = [
-        { type: type === 'clear' ? 'clear' : 'assault', target: t1, pos: fup, imp: 3 },
-        { type: 'sbf', target: X, pos: s.p, imp: 2 },
-        third === 'reserve' ? { type: 'reserve', target: reserveAt(), pos: null, imp: 1 }
-          : third === 'cutoff' ? { type: 'cutoff', target: X, pos: nearestOpen(X.x + ad.x * 130 + perp.x * side * 110, X.y + ad.y * 130 + perp.y * side * 110), imp: 1 }
-            : { type: type === 'clear' ? 'clear' : 'assault', target: X, pos: fupAt(X, from, ang + side * 0.45), imp: 1 },
-      ];
-      roles[0].gate = 'sbf';
-      out.push({ roles, tags: { frontal: Math.abs(ang) < 0.1, third, noLos: !s.l, wrong: t1 !== X } });
+  const out = [], srch = B.search;
+  let sc = null; const SCs = () => sc || (sc = supportCands(X, from));
+  // one site choice; ref = the main fire site (the swept one, else role 1's)
+  const site1 = (sel, s, got) => {
+    const [k, a] = sel.split(':'), n = +a, ref = s || got[0];
+    switch (k) {
+      case 'sweep': return s || undefined;
+      case 'rank': return SCs()[n];
+      case 'blind': return SCs().find(z => !z.l);
+      case 'last': { const L = SCs(); return L[L.length - 1]; }
+      case 'random': { const L = SCs(); return L[(R() * L.length) | 0]; }
+      case 'apart': return ref ? SCs().find(z => z !== ref && hyp(z.p.x - ref.p.x, z.p.y - ref.p.y) > n) : undefined;
+      case 'seeApart': return ref ? SCs().find(z => z.l && hyp(z.p.x - ref.p.x, z.p.y - ref.p.y) > n) : undefined;
+      case 'role': return got[n];
     }
-  } else if (type === 'hold' || type === 'reserve') {
-    const mk = (offs, t) => offs.map(([f, s]) => ({ type: t || (type === 'hold' ? 'hold' : 'reserve'), target: nearestOpen(X.x + ad.x * f + perp.x * s, X.y + ad.y * f + perp.y * s), pos: null, imp: 1 }));
-    out.push({ roles: type === 'hold' ? [...mk([[10, -70], [10, 70]]), ...mk([[-110, 0]], 'reserve')] : mk([[0, -60], [0, 60], [-60, 0]]), tags: { book: 1 } });
-    out.push({ roles: mk([[15, -110], [15, 0], [15, 110]]), tags: {} });
-    out.push({ roles: mk([[0, -12], [0, 0], [0, 12]]), tags: { bunched: 1 } });
-    out.push({ roles: mk([[20, -60], [-40, 60], [-120, -20]]), tags: {} });
-  } else if (type === 'screen') {
-    out.push({ roles: [-160, 0, 160].map(s => ({ type: 'screen', target: nearestOpen(X.x + perp.x * s, X.y + perp.y * s), pos: null, imp: 1 })), tags: { book: 1 } });
-    out.push({ roles: [-40, 0, 40].map(s => ({ type: 'screen', target: nearestOpen(X.x + perp.x * s, X.y + perp.y * s), pos: null, imp: 1 })), tags: { bunched: 1 } });
-    out.push({ roles: [-110, 0, 110].map((s, i) => ({ type: i === 1 ? 'reserve' : 'screen', target: nearestOpen(X.x + perp.x * s - ad.x * (i === 1 ? 80 : 0), X.y + perp.y * s - ad.y * (i === 1 ? 80 : 0)), pos: null, imp: 1 })), tags: {} });
-  } else if (type === 'recon') {
-    const sc = supportCands(X, from);
-    for (const s of [sc[0], sc[2], sc.find(z => !z.l)].filter(Boolean)) {
-      const op = sc.find(z => z.l && hyp(z.p.x - s.p.x, z.p.y - s.p.y) > 80) || sc[1] || s;
-      out.push({ roles: [{ type: 'recon', target: X, pos: op.p, imp: 3 }, { type: 'sbf', target: X, pos: s.p, imp: 2 }, { type: 'reserve', target: reserveAt(), pos: null, imp: 1 }], tags: { book: 1 } });
-      out.push({ roles: [{ type: 'recon', target: X, pos: op.p, imp: 3 }, { type: 'recon', target: X, pos: s.p, imp: 2 }, { type: 'recon', target: X, pos: fupAt(X, from, 0, 100), imp: 1 }], tags: { allIn: 1 } });
+    return undefined;
+  };
+  const siteChain = (chain, s, got) => { for (const c of chain) { const z = site1(c, s, got); if (z) return z; } return undefined; };
+  const sweep = srch.sites.length ? srch.sites.map(c => site1(c, null, [])).filter(Boolean) : [null];
+  const wrong = srch.wrongChance > 0 ? FEATS.filter(f => f.id !== 'start' && hyp(f.x - X.x, f.y - X.y) > 120).sort((a, b) => hyp(a.x - X.x, a.y - X.y) - hyp(b.x - X.x, b.y - X.y))[0] : null;
+  const angles = srch.angles.length ? srch.angles : [null];
+  for (const s of sweep) for (const ang of angles) for (const v of B.variants) {
+    const a0 = ang === null ? 0 : ang, side = Math.sign(a0) || 1;
+    const wr = srch.wrongChance > 0 && R() < srch.wrongChance && wrong ? { x: wrong.x, y: wrong.y } : null;
+    const roles = [], got = []; let ok = true;
+    for (let i = 0; i < v.roles.length && ok; i++) {
+      const rs = v.roles[i], pl = rs.place, X1 = rs.mistake && wr ? wr : X;
+      let target = X1, pos = null;
+      if (pl.kind === 'fup') pos = fupAt(X, from, (pl.sweep ? a0 : 0) + side * pl.off, pl.dist);
+      else if (pl.kind === 'fire') { const z = siteChain(pl.site, s, got); if (!z) { ok = false; break; } got[i] = z; pos = z.p; }
+      else if (pl.kind === 'offset' || pl.kind === 'behind') {
+        const sd = pl.mirror ? side : 1;
+        const p = pl.kind === 'offset' ? nearestOpen(X.x + ad.x * pl.fwd + perp.x * sd * pl.side, X.y + ad.y * pl.fwd + perp.y * sd * pl.side)
+          : nearestOpen(X.x - ad.x * 280 * (pl.dist / 280) + perp.x * sd * pl.side, X.y - ad.y * 280 * (pl.dist / 280) + perp.y * sd * pl.side);
+        if (pl.kind === 'offset' && pl.aim === 'obj') pos = p; else target = p;
+      }
+      const r = { type: rs.type, target, pos, imp: rs.imp }; if (rs.gate) r.gate = rs.gate;
+      roles.push(r);
     }
-  } else if (type === 'sbf') {
-    const sc = supportCands(X, from);
-    const a = sc[0], b = sc.find(z => z !== a && hyp(z.p.x - a.p.x, z.p.y - a.p.y) > 70) || sc[1];
-    if (a && b) out.push({ roles: [{ type: 'sbf', target: X, pos: a.p, imp: 2 }, { type: 'sbf', target: X, pos: b.p, imp: 2 }, { type: 'reserve', target: reserveAt(0.6), pos: null, imp: 1 }], tags: { book: 1 } });
-    const r1 = sc[(R() * sc.length) | 0], r2 = sc.find(z => !z.l) || sc[sc.length - 1];
-    if (r1 && r2) out.push({ roles: [{ type: 'sbf', target: X, pos: r1.p, imp: 2 }, { type: 'sbf', target: X, pos: r2.p, imp: 2 }, { type: 'sbf', target: X, pos: (sc[3] || r1).p, imp: 1 }], tags: { allIn: 1 } });
-  } else if (type === 'withdraw') {
-    const mk = (s) => nearestOpen(X.x + perp.x * s, X.y + perp.y * s);
-    out.push({ roles: [{ type: 'withdraw', target: mk(-60), imp: 2 }, { type: 'withdraw', target: mk(60), imp: 2 }, { type: 'withdraw', target: mk(0), imp: 1, gate: 'rear' }], tags: { book: 1 } });
-    out.push({ roles: [{ type: 'withdraw', target: mk(-60), imp: 2 }, { type: 'withdraw', target: mk(60), imp: 2 }, { type: 'withdraw', target: mk(0), imp: 1 }], tags: {} });
+    if (!ok) continue;
+    const tags = tagObj(v.tags);
+    if (srch.styleTags) { tags.frontal = ang !== null && Math.abs(ang) < 0.1; tags.noLos = s ? !s.l : false; tags.wrong = !!wr; }
+    out.push({ roles, tags, vid: v.id });
   }
   return out;
 }
 // a commander chooses among candidates: perceived quality = real quality + noise (judgment, experience) + quirks
 function choose(cands, kind, X, from, cmdr) {
-  const noise = 45 * (1 - cmdr.judg) * (1 - 0.45 * cmdr.exp);
+  const W = DOC.score.prefs;
+  const noise = W.noise * (1 - cmdr.judg) * (1 - 0.45 * cmdr.exp);
   let best = null, bp = -1e9;
   for (const c of cands) {
     const r = ratePlan(kind, X, c.roles, from);
     let perc = r.q + gauss() * noise;
     const tg = c.tags || {};
-    if (cmdr.judg < 0.45) { // dumb leaders like the obvious: straight at them, everyone in, no fuss about sight lines
-      const k = (0.45 - cmdr.judg) * 90 * (1 - 0.5 * cmdr.exp);
-      if (tg.frontal) perc += k; if (tg.noLos) perc += k * 0.7; if (tg.allIn || tg.third === 'assault') perc += k * 0.6; if (tg.bunched) perc += k * 0.8; if (tg.wrong) perc += k * 0.5;
+    if (cmdr.judg < W.dumbBelow) { // dumb leaders like the obvious: straight at them, everyone in, no fuss about sight lines
+      const k = (W.dumbBelow - cmdr.judg) * W.dumbScale * (1 - 0.5 * cmdr.exp);
+      if (tg.frontal) perc += k * W.frontal; if (tg.noLos) perc += k * W.noLos; if (tg.allIn) perc += k * W.allIn; if (tg.bunched) perc += k * W.bunched; if (tg.wrong) perc += k * W.wrong;
     }
-    if (cmdr.quirk === 'aggressive' && (tg.third === 'assault' || tg.third === 'cutoff' || tg.allIn)) perc += 14;
-    if (cmdr.quirk === 'cautious' && (tg.third === 'reserve' || tg.book)) perc += 12;
-    if (cmdr.quirk === 'glory' && (tg.third === 'assault' || tg.allIn)) perc += 10;
-    if (cmdr.quirk === 'book' && (tg.book || (tg.third === 'reserve' && !tg.frontal))) perc += 12;
+    if (cmdr.quirk === 'aggressive' && (tg.cutoff || tg.allIn)) perc += W.aggressive;
+    if (cmdr.quirk === 'cautious' && (tg.reserve || tg.book)) perc += W.cautious;
+    if (cmdr.quirk === 'glory' && tg.allIn) perc += W.glory;
+    if (cmdr.quirk === 'book' && (tg.book || (tg.reserve && !tg.frontal))) perc += W.book;
     if (perc > bp) { bp = perc; best = { c, q: r.q, notes: r.notes }; }
   }
   return best;
 }
-// section roles for a platoon task
+// section roles for a platoon task: each point is the platoon's target ('obj') or position ('pos') + side/forward offset,
+// optionally the leader's pick of the best spot within a radius
 function plCandidates(pt, from, cmdr) {
   const X = pt.target, F = pt.pos || X;
   const ad = unitV(X.x - from.x, X.y - from.y), perp = { x: -ad.y, y: ad.x };
   const at = (b, s, f = 0) => P(b.x + perp.x * s + ad.x * f, b.y + perp.y * s + ad.y * f);
-  const out = [];
-  const pk = (c, r, t) => pickPos(c, r, t, cmdr);
-  switch (pt.type) {
-    case 'assault': case 'clear':
-      out.push({ roles: [{ type: 'assault', pos: at(F, -18), target: at(X, -14) }, { type: 'assault', pos: at(F, 18), target: at(X, 14) }, { type: 'overwatch', pos: pk(at(F, 0, -15), 35, X), target: X }], tags: { book: 1 } });
-      out.push({ roles: [{ type: 'assault', pos: at(F, -25), target: at(X, -20) }, { type: 'assault', pos: at(F, 0), target: X }, { type: 'assault', pos: at(F, 25), target: at(X, 20) }], tags: { allIn: 1 } });
-      out.push({ roles: [{ type: 'assault', pos: at(F, 0), target: X }, { type: 'overwatch', pos: pk(at(F, -30), 35, X), target: X }, { type: 'overwatch', pos: pk(at(F, 30), 35, X), target: X }], tags: {} });
-      break;
-    case 'sbf':
-      for (let k = 0; k < 2; k++) out.push({ roles: [-30, 0, 30].map(s => ({ type: 'suppress', pos: pk(at(F, s), 30, X), target: X })), tags: k ? {} : { book: 1 } });
-      break;
-    case 'recon':
-      out.push({ roles: [{ type: 'overwatch', pos: pk(F, 40, X), target: X }, { type: 'overwatch', pos: pk(at(F, 40), 40, X), target: X }, { type: 'hold', pos: null, target: pk(at(F, 0, -60), 30, null) }], tags: { book: 1 } });
-      out.push({ roles: [{ type: 'move', pos: null, target: at(X, -20) }, { type: 'move', pos: null, target: at(X, 20) }, { type: 'overwatch', pos: pk(F, 40, X), target: X }], tags: { allIn: 1 } });
-      break;
-    case 'cutoff':
-      out.push({ roles: [{ type: 'hold', pos: null, target: pk(at(F, -25), 30, null) }, { type: 'hold', pos: null, target: pk(at(F, 25), 30, null) }, { type: 'overwatch', pos: pk(at(F, 0, -20), 30, X), target: X }], tags: { book: 1 } });
-      break;
-    case 'withdraw': case 'reserve': case 'hold': case 'screen': default: {
-      const base = pt.pos || X, sp = pt.type === 'screen' ? 45 : 32;
-      for (let k = 0; k < 2; k++) out.push({ roles: [[-sp, 0], [sp, 0], [0, -30]].map(([s, f], i) => ({ type: pt.type === 'screen' && i < 2 ? 'overwatch' : 'hold', pos: pt.type === 'screen' && i < 2 ? pk(at(base, s, f), 30, at(base, s, 200)) : null, target: pt.type === 'screen' && i < 2 ? at(base, s, 200) : pk(at(base, s, f), 28, null) })), tags: k ? {} : { book: 1 } });
-      if (pt.type === 'withdraw') out.forEach(c => c.roles.forEach(r => { if (r.type === 'hold') r.type = 'move'; }));
-    }
-  }
-  return out;
+  const B = DOC.pl[pt.type] || DOC.pl.hold;
+  const point = (sp) => {
+    if (!sp) return null;
+    const b = sp.base === 'obj' ? X : F, c = sp.side || sp.fwd ? at(b, sp.side, sp.fwd) : b;
+    if (!sp.pick) return c;
+    const look = sp.look === 'obj' ? X : sp.look === 'ahead' ? at(b, sp.side, sp.lookFwd) : null;
+    return pickPos(c, sp.pick, look, cmdr);
+  };
+  return B.variants.map(v => ({ roles: v.roles.map(r => { const pos = point(r.pos); return { type: r.type, pos, target: point(r.target) || X }; }), tags: tagObj(v.tags), vid: v.id }));
 }
 
 // ---------------------------------------------------------------- objective tree
@@ -575,10 +560,9 @@ function bestAssign(free, roles, posOf) {
   const slots = idx.map(i => i); perm(slots, 0);
   return best || idx;
 }
-const plKind = (t) => (t === 'assault' || t === 'clear' ? 'assault' : t === 'sbf' ? 'sbf' : t === 'recon' ? 'recon' : t === 'cutoff' ? 'cutoff' : 'hold');
 function decomposeCoy(n, who, dry) {
   const cm = cmdrOf(n), from = nodeFrom(n);
-  const pick = choose(coyCandidates(n.type, n.target, from, cm), n.type, n.target, from, cm);
+  const pick = choose(coyCandidates(n.type, n.target, from, cm), coyKind(n.type), n.target, from, cm);
   if (dry) return pick ? pick.q : 30;
   const res = { pls: 0, secs: 0 };
   if (!pick) return res;
@@ -586,6 +570,8 @@ function decomposeCoy(n, who, dry) {
   const pls = n.kids.map(id => S.nodes[id]);
   const free = pls.filter(p => !p.locked && alive(S.U[p.id]));
   const roles = pick.c.roles.slice().sort((a, b) => b.imp - a.imp).slice(0, free.length);
+  // an edited map with fewer roles than platoons: the spare platoons go into reserve behind the objective
+  for (let i = roles.length, ad = unitV(n.target.x - from.x, n.target.y - from.y); i < free.length; i++) roles.push({ type: 'reserve', target: nearestOpen(n.target.x - ad.x * 280 - ad.y * 50 * (i - 1), n.target.y - ad.y * 280 + ad.x * 50 * (i - 1)), pos: null, imp: 0 });
   const asg = bestAssign(free, roles, p => nodeFrom(p));
   const roleNode = {};
   asg.forEach((ri, ui) => { if (ri < roles.length) roleNode[ri] = free[ui]; });
@@ -593,8 +579,8 @@ function decomposeCoy(n, who, dry) {
     if (ri >= roles.length) return;
     const r = roles[ri], pl = free[ui];
     let gate = null;
-    if (r.gate === 'sbf') { const sb = Object.entries(roleNode).find(([k]) => roles[k].type === 'sbf'); if (sb) gate = { wait: sb[1].id, minT: 420 }; }
-    if (r.gate === 'rear') gate = { rear: true, minT: 90 };
+    if (r.gate === 'sbf') { const sb = Object.entries(roleNode).find(([k]) => roles[k].type === 'sbf'); if (sb) gate = { wait: sb[1].id, minT: DOC.sm.gates.sbfWait }; }
+    if (r.gate === 'rear') gate = { rear: true, minT: DOC.sm.gates.rearHold };
     const ch = setSpec(pl, { type: r.type, target: r.target, pos: r.pos, gate }, who);
     pl.aggr = n.aggr; pl.prio = n.prio;
     if (ch || !pl.kids.some(k => S.nodes[k].type)) { res.pls += ch ? 1 : 0; res.secs += decomposePl(pl, who); }
@@ -610,6 +596,8 @@ function decomposePl(pl, who) {
   const secs = pl.kids.map(id => S.nodes[id]);
   const free = secs.filter(s => !s.locked && alive(S.U[s.id]));
   const roles = pick.c.roles.slice(0, free.length);
+  // fewer section roles than sections (edited map): the spare sections hold at the platoon's position
+  for (let i = roles.length, F = pt.pos || pt.target; i < free.length; i++) roles.push({ type: 'hold', target: nearestOpen(F.x + 20 * (i - 1), F.y + 15), pos: null });
   const asg = bestAssign(free, roles, s => S.U[s.id]);
   let n = 0;
   const ad = unitV(pt.target.x - from.x, pt.target.y - from.y);
@@ -632,7 +620,7 @@ function qualityOf(n, sp) {
   if (n.level === 'coy') { const save = specOf(n); Object.assign(n, { type: sp.type, target: sp.target }); const q = decomposeCoy(n, null, true); Object.assign(n, { type: save.type, target: save.target }); return q; }
   const par = S.nodes[n.parent], from = nodeFrom(par);
   const roles = par.kids.map(k => (k === n.id ? sp : specOf(S.nodes[k]))).filter(r => r.type);
-  const kind = n.level === 'pl' ? par.type : plKind(par.type);
+  const kind = n.level === 'pl' ? coyKind(par.type) : plKind(par.type);
   const plan = ratePlan(kind, par.target, roles, from);
   if (n.level === 'pl') return plan.q;
   const own = rateSec(sp, unitV(par.target.x - from.x, par.target.y - from.y));
@@ -641,8 +629,8 @@ function qualityOf(n, sp) {
 function notesOf(n, sp) {
   if (n.level === 'sec') { const par = S.nodes[n.parent], from = nodeFrom(par); return rateSec(sp, unitV(par.target.x - from.x, par.target.y - from.y)).notes; }
   const par = n.level === 'pl' ? S.nodes[n.parent] : null;
-  if (par) { const roles = par.kids.map(k => (k === n.id ? sp : specOf(S.nodes[k]))).filter(r => r.type); return ratePlan(par.type, par.target, roles, nodeFrom(par)).notes; }
-  const from = nodeFrom(n); const pick = choose(coyCandidates(sp.type, sp.target, from, { judg: 1, exp: 1, quirk: null }), sp.type, sp.target, from, { judg: 1, exp: 1 });
+  if (par) { const roles = par.kids.map(k => (k === n.id ? sp : specOf(S.nodes[k]))).filter(r => r.type); return ratePlan(coyKind(par.type), par.target, roles, nodeFrom(par)).notes; }
+  const from = nodeFrom(n); const pick = choose(coyCandidates(sp.type, sp.target, from, { judg: 1, exp: 1, quirk: null }), coyKind(sp.type), sp.target, from, { judg: 1, exp: 1 });
   const known = enemyNear(sp.target, 120, true);
   return [...(known.mg ? ['held by an MG'] : []), ...(known.n > 2 ? ['strongly held'] : []), ...(pick ? pick.notes : [])];
 }
@@ -774,7 +762,8 @@ function log(lvl, kind, unit, text, who) {
 }
 
 // ---------------------------------------------------------------- simulation
-const AGG = [0.75, 1, 1.25];
+const AGG = DOC.sm.common.aggr; // section drills: doctrine.sm (Objective Editor)
+const SM = DOC.sm;
 const OFFENSIVE = new Set(['seize', 'clear']);
 const intelKnown = (u) => u.role !== 'reserve';
 function enemyNear(p, r, known) {
@@ -811,8 +800,8 @@ function updVis() {
     g.vis = de.some(d => { const dd = hyp(g.x - d.x, g.y - d.y); return d.state !== 'broken' && (dd < 35 || (dd < R0 && los(g.x, g.y, d.x, d.y))); });
   }
 }
-function moveTo(u, gx, gy, sp, dt) {
-  if (hyp(gx - u.x, gy - u.y) < 3) { u.moving = false; return true; }
+function moveTo(u, gx, gy, sp, dt, arrive = 3) {
+  if (hyp(gx - u.x, gy - u.y) < arrive) { u.moving = false; return true; }
   if (!u.path || hyp(u.gx - gx, u.gy - gy) > 4) { u.path = findPath(u.x, u.y, gx, gy); u.gx = gx; u.gy = gy; }
   let rem = sp * terrMul(u.x, u.y) * dt;
   while (rem > 0 && u.path.length) {
@@ -832,71 +821,75 @@ function progTo(n, u, g) {
 function gateOK(pl, sec) {
   if (!pl || !pl.gate) return true;
   const g = pl.gate, waited = S.time - pl.t0;
-  if (waited > g.minT * (pl.aggr === 2 ? 0.5 : pl.aggr === 0 ? 1.4 : 1)) return true;
+  if (waited > g.minT * SM.gates.aggrScale[pl.aggr]) return true;
   if (g.rear) return false;
   const sb = S.nodes[g.wait];
   if (!sb || sb.type !== 'sbf') return true;
   if (!secsOf(sb.id).some(alive)) return true;
-  if (sb.engT && S.time - sb.engT > 25) return true;
+  if (sb.engT && S.time - sb.engT > SM.gates.sbfEngaged) return true;
   return sb.status === 'achieved';
 }
 function secAct(u, n, dt) {
   const home = COYS.find(c => c.id === u.coy).home;
-  if (u.state === 'broken') { moveTo(u, home[0], home[1] - 40, 1.8, dt); setSt(n, n.status); return; }
+  if (u.state === 'broken') { moveTo(u, home[0], home[1] - 40, SM.broken.speed, dt); setSt(n, n.status); return; }
   if (u.state === 'pinned') { u.moving = false; return; }
   if (!n.type) return;
   const pl = S.nodes[n.parent];
-  const sp = 1.3 * AGG[n.aggr];
+  const sp = SM.common.speed * AGG[n.aggr];
   n.wait = false;
   switch (n.type) {
     case 'move': case 'hold': {
-      const g = n.pos && n.type === 'hold' ? n.pos : n.target;
+      const M = SM[n.type], g = n.pos && n.type === 'hold' ? n.pos : n.target;
       n.prog = progTo(n, u, g);
-      if (moveTo(u, g.x, g.y, sp, dt)) { u.ph = 1; if (n.status !== 'achieved' && n.status !== 'failed') achieve(n, 'in position'); } else setSt(n, 'moving');
+      if (moveTo(u, g.x, g.y, sp * M.speed, dt, M.arrive)) { u.ph = 1; if (n.status !== 'achieved' && n.status !== 'failed') achieve(n, 'in position'); } else setSt(n, 'moving');
       break;
     }
     case 'suppress': case 'overwatch': {
-      const g = n.pos || n.target;
+      const M = SM[n.type], g = n.pos || n.target;
       if (u.ph === 0) {
         n.prog = progTo(n, u, g) * (n.type === 'overwatch' ? 1 : 0.6);
-        if (moveTo(u, g.x, g.y, sp, dt)) { u.ph = 1; if (n.type === 'overwatch') achieve(n, 'in position'); }
+        if (moveTo(u, g.x, g.y, sp * M.speed, dt, M.arrive)) { u.ph = 1; if (n.type === 'overwatch') achieve(n, 'in position'); }
         else setSt(n, 'moving');
       } else {
         u.moving = false;
-        if (n.type === 'suppress') { n.prog = Math.max(n.prog, 0.6); setSt(n, S.time - u.firedT < 6 ? 'engaging' : 'moving'); if (S.time - u.firedT < 6 && pl && pl.type === 'sbf') pl.engT = pl.engT || S.time; }
+        if (n.type === 'suppress') { n.prog = Math.max(n.prog, 0.6); setSt(n, S.time - u.firedT < M.engaged ? 'engaging' : 'moving'); if (S.time - u.firedT < M.engaged && pl && pl.type === 'sbf') pl.engT = pl.engT || S.time; }
       }
       break;
     }
     case 'assault': {
-      if (u.ph === 0) {
-        if (!n.pos) { u.ph = 1; break; }
+      const A = SM.assault;
+      if (u.ph === 0) { // 0: move to the jump-off point
+        if (!n.pos || !A.jumpoff.on) { u.ph = 1; break; }
         n.prog = progTo(n, u, n.pos) * 0.3;
-        if (moveTo(u, n.pos.x, n.pos.y, sp, dt)) { u.ph = 1; u.waitT = 0; }
+        if (moveTo(u, n.pos.x, n.pos.y, sp * A.jumpoff.speed, dt, A.jumpoff.arrive)) { u.ph = 1; u.waitT = 0; }
         setSt(n, 'moving');
-      } else if (u.ph === 1) {
-        u.waitT += dt; n.wait = true; n.prog = 0.35; u.moving = false;
-        const sibs = pl ? pl.kids.map(k => S.nodes[k]).filter(k => k.type === 'assault' && alive(S.U[k.id]) && S.U[k.id].state !== 'broken') : [];
-        const ready = sibs.every(k => S.U[k.id].ph >= 1) || u.waitT > 90;
-        if ((gateOK(pl, n) && ready) || u.waitT > 600) { u.ph = 2; n.wait = false; if (pl && !pl.goT) { pl.goT = S.time; log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); } }
-      } else if (u.ph === 2) {
-        const d = hyp(n.target.x - u.x, n.target.y - u.y);
+      } else if (u.ph === 1) { // 1: wait for the other assault sections and the fire-support gate
+        const Wt = A.wait;
+        u.waitT += dt; n.wait = Wt.on; n.prog = 0.35; u.moving = false;
+        const sibs = pl && Wt.sync ? pl.kids.map(k => S.nodes[k]).filter(k => k.type === 'assault' && alive(S.U[k.id]) && S.U[k.id].state !== 'broken') : [];
+        const ready = sibs.every(k => S.U[k.id].ph >= 1) || u.waitT > Wt.syncMax;
+        if (!Wt.on || ((!Wt.gate || gateOK(pl, n)) && ready) || u.waitT > Wt.maxWait) { u.ph = 2; n.wait = false; if (pl && !pl.goT) { pl.goT = S.time; log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); } }
+      } else if (u.ph === 2) { // 2: charge
+        const C = A.charge, d = hyp(n.target.x - u.x, n.target.y - u.y);
         n.prog = 0.4 + 0.5 * progTo(n, u, n.target);
         setSt(n, 'engaging');
         // close assault: suppressed defenders near the bayonets crack
-        for (const e of S.units) if (e.side === 'DE' && alive(e) && e.state !== 'broken' && e.supp > 45 && hyp(e.x - u.x, e.y - u.y) < 35) e.morale -= dt * (2.5 + 1.5 * n.aggr) * (u.men / 10);
-        if (moveTo(u, n.target.x, n.target.y, sp * (d < 120 ? 1.8 : 1.1), dt)) {
-          if (targetClear(n.target, 35)) { u.ph = 3; achieve(n, 'objective taken'); }
+        for (const e of S.units) if (e.side === 'DE' && alive(e) && e.state !== 'broken' && e.supp > C.shockSupp && hyp(e.x - u.x, e.y - u.y) < C.shock) e.morale -= dt * (C.shockBase + C.shockAggr * n.aggr) * (u.men / 10);
+        if (moveTo(u, n.target.x, n.target.y, sp * (d < C.closeDist ? C.close : C.far), dt)) {
+          if (targetClear(n.target, C.take)) { u.ph = 3; achieve(n, 'objective taken'); }
         }
-      } else { // consolidate; mop up anything left near the objective
-        const co = S.nodes[u.coy], X = co.type && OFFENSIVE.has(co.type) ? co.target : n.target, rr = co.type === 'clear' ? 100 : 65;
+      } else { // 3: consolidate; mop up anything left near the objective
+        const K = A.consolidate;
+        if (!K.on) { u.moving = false; break; }
+        const co = S.nodes[u.coy], X = co.type && OFFENSIVE.has(co.type) ? co.target : n.target, rr = co.type === 'clear' ? K.clearRadius : K.radius;
         let h = null, hd = 1e9;
-        for (const e of S.units) if (e.side === 'DE' && alive(e) && e.state !== 'broken' && (e.vis || S.time - e.seenT < 60) && hyp(e.x - X.x, e.y - X.y) < rr) { const d = hyp(e.x - u.x, e.y - u.y); if (d < hd && d < 160) { hd = d; h = e; } }
-        if (h && hd > 14) moveTo(u, h.x, h.y, sp * 1.4, dt);
+        for (const e of S.units) if (e.side === 'DE' && alive(e) && e.state !== 'broken' && (e.vis || S.time - e.seenT < K.memory) && hyp(e.x - X.x, e.y - X.y) < rr) { const d = hyp(e.x - u.x, e.y - u.y); if (d < hd && d < K.hunt) { hd = d; h = e; } }
+        if (h && hd > K.closeIn) moveTo(u, h.x, h.y, sp * K.huntSpeed, dt);
         else if (!h && OFFENSIVE.has(co.type) && !targetClear(X, rr)) { // sweep the objective for hidden enemy
           n.sw = n.sw || 0;
-          const a = (n.sw + u.sn * 2) * TAU / 6, sp2 = nearestOpen(X.x + Math.cos(a) * rr * 0.6, X.y + Math.sin(a) * rr * 0.6);
-          if (moveTo(u, sp2.x, sp2.y, sp * 0.8, dt)) n.sw++;
-        } else if (!h && hyp(u.x - n.target.x, u.y - n.target.y) > 30) moveTo(u, n.target.x, n.target.y, sp, dt); else u.moving = false;
+          const a = (n.sw + u.sn * 2) * TAU / 6, sp2 = nearestOpen(X.x + Math.cos(a) * rr * K.ring, X.y + Math.sin(a) * rr * K.ring);
+          if (moveTo(u, sp2.x, sp2.y, sp * K.sweepSpeed, dt)) n.sw++;
+        } else if (!h && hyp(u.x - n.target.x, u.y - n.target.y) > K.back) moveTo(u, n.target.x, n.target.y, sp, dt); else u.moving = false;
       }
       break;
     }
@@ -994,17 +987,18 @@ function moraleUpd(u, dt) {
   u.supp = Math.max(0, u.supp - dt * (2.2 + 3.5 * ex));
   if (u.state === 'broken') {
     u.morale = Math.min(top, u.morale + dt * 0.25);
-    if (u.side === 'GB' && u.supp < 15 && u.morale > 40 && u.men > Math.ceil(u.men0 * 0.3) && S.time - (u.brokeT || 0) > 20) { u.state = 'ok'; u.ph = 0; u.path = null; const n = S.nodes[u.id]; log(n ? n.level : 'sec', 'info', u.id, `${u.name} rallied.`, 'auto'); }
+    if (u.side === 'GB' && u.supp < SM.broken.rallySupp && u.morale > SM.broken.rallyMorale && u.men > Math.ceil(u.men0 * SM.broken.strength) && S.time - (u.brokeT || 0) > SM.broken.rallyDelay) { u.state = 'ok'; u.ph = 0; u.path = null; const n = S.nodes[u.id]; log(n ? n.level : 'sec', 'info', u.id, `${u.name} rallied.`, 'auto'); }
     return;
   }
-  if (u.morale < 25 || u.men <= Math.ceil(u.men0 * 0.3)) {
+  const gb = u.side === 'GB', brk = gb ? SM.broken : null, pin = gb ? SM.pinned : null;
+  if (u.morale < (gb ? brk.morale : 25) || u.men <= Math.ceil(u.men0 * (gb ? brk.strength : 0.3))) {
     u.state = 'broken'; u.path = null; u.brokeT = S.time;
     if (u.side === 'GB') { const n = S.nodes[u.id]; log(n ? n.level : 'sec', 'cas', u.id, `${u.name} has broken and is falling back!`, 'auto'); }
     else if (u.vis) log('coy', 'info', u.id, `Enemy ${u.name} at ${tName(u)} is breaking!`, 'auto');
     return;
   }
-  if (u.state === 'pinned') { if (u.supp < 35) { u.state = 'ok'; u.okT = S.time; } else u.pinT += dt; }
-  else if (u.supp > (u.side === 'GB' ? 66 + 18 * ex : 70)) { u.state = 'pinned'; u.pinT = 0; }
+  if (u.state === 'pinned') { if (u.supp < (gb ? pin.recover : 35)) { u.state = 'ok'; u.okT = S.time; } else u.pinT += dt; }
+  else if (u.supp > (gb ? pin.at + pin.expBonus * ex : 70)) { u.state = 'pinned'; u.pinT = 0; }
   if (u.supp < 20) u.morale = Math.min(top, u.morale + dt * 0.15);
 }
 function pickTarget(u, pref, maxD = 560) {
@@ -1023,16 +1017,17 @@ function fireStep(u) {
   const n = S.nodes[u.id];
   if (u.side === 'GB' && n && n.type && (n.type === 'suppress' || n.type === 'overwatch') && u.ph >= 1) {
     // spread fire over everything at the target, least-suppressed first
+    const FS = SM[n.type];
     let t = null, bs = 1e9;
     for (const f of S.units) {
       if (f.side === u.side || !alive(f) || !f.vis || f.state === 'broken') continue;
-      if (hyp(f.x - n.target.x, f.y - n.target.y) > 90 || hyp(f.x - u.x, f.y - u.y) > 560) continue;
+      if (hyp(f.x - n.target.x, f.y - n.target.y) > FS.focus || hyp(f.x - u.x, f.y - u.y) > FS.range) continue;
       const s = f.supp + R() * 25 - (f.kind === 'mg' ? 10 : 0);
       if (s < bs && los(u.x, u.y, f.x, f.y)) { bs = s; t = f; }
     }
     if (t) return shoot(u, t);
-    t = pickTarget(u, n.target, 560);
-    if (n.type === 'suppress' && hyp(n.target.x - u.x, n.target.y - u.y) < 520 && losT(u.x, u.y, n.target.x, n.target.y) && enemyNear(n.target, 60, true).n) return shoot(u, null, n.target);
+    t = pickTarget(u, n.target, FS.range);
+    if (n.type === 'suppress' && hyp(n.target.x - u.x, n.target.y - u.y) < FS.areaRange && losT(u.x, u.y, n.target.x, n.target.y) && enemyNear(n.target, 60, true).n) return shoot(u, null, n.target);
     if (t) return shoot(u, t);
     return false;
   }
@@ -1133,7 +1128,7 @@ function adapt() {
   for (const u of S.units) {
     if (u.side !== 'GB' || u.kind !== 'sec' || !alive(u)) continue;
     const n = S.nodes[u.id]; if (!n.type) continue;
-    const ex = u.cmdr.exp, lim = 28 - 16 * ex;
+    const ex = u.cmdr.exp, lim = SM.pinned.returnFire - SM.pinned.expFaster * ex;
     const close = n.type === 'assault' && u.ph === 2 && n.target && hyp(u.x - n.target.x, u.y - n.target.y) < 80;
     if (u.state === 'pinned' && u.pinT > lim && !n.orig && !close && (n.type === 'assault' || n.type === 'move' || n.type === 'hold') && n.status !== 'achieved') {
       const t = pickTarget(u, null, 600);
@@ -1142,7 +1137,7 @@ function adapt() {
         n.type = 'suppress'; n.target = { x: t.x, y: t.y }; n.pos = { x: u.x, y: u.y }; u.ph = 1; n.auto = true; n.flash = performance.now(); n.adaptT = S.time;
         log('sec', 'chg', u.id, `${u.name}: Pinned by ${t.name} at ${tName(t)} — returning fire.`, 'auto');
       }
-    } else if (n.orig && u.state === 'ok' && S.time - (u.okT || 0) > 15 && S.time - n.adaptT > 20) {
+    } else if (n.orig && u.state === 'ok' && S.time - (u.okT || 0) > SM.pinned.resume && S.time - n.adaptT > 20) {
       const o = n.orig; n.orig = null;
       n.type = o.type; n.target = o.target; n.pos = o.pos; u.ph = o.ph; n.prog = o.prog; n.auto = false; n.flash = performance.now(); u.path = null;
       log('sec', 'chg', u.id, `${u.name}: Fire's slackened, pressing on.`, 'auto');
@@ -1564,7 +1559,7 @@ function drawUnit(u, now) {
   const w = hq ? 14 : 18, h = hq ? 10 : 12, by = z >= 1.6 ? sy - 6 * z - 10 : sy;
   const col = gb ? COYCOL[u.coy] : '#c9443a';
   const n = S.nodes[u.id], sel = S.sel === u.id;
-  if (n && n.flash && now - n.flash < 1600) { const t = (now - n.flash) / 1600; cx.strokeStyle = `rgba(255,225,74,${1 - t})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(sx, by, 14 + 16 * t, 0, TAU); cx.stroke(); }
+  if (n && n.flash && now - n.flash < 1600) { const t = Math.max(0, (now - n.flash) / 1600); cx.strokeStyle = `rgba(255,225,74,${1 - t})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(sx, by, 14 + 16 * t, 0, TAU); cx.stroke(); }
   if (sel) { cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(sx, by, 15, 0, TAU); cx.stroke(); }
   if (gb) { cx.fillStyle = col; rr(sx - w / 2, by - h / 2, w, h, 2); cx.fill(); cx.strokeStyle = 'rgba(0,0,0,0.7)'; cx.lineWidth = 1; cx.stroke(); }
   else { // hostile: diamond
@@ -1807,6 +1802,8 @@ function menuHTML() {
     <div class="lbl">Save / load plan</div>${slots}
     <div class="lbl">Your HQ staff (how well you judge plans)</div><div class="seg">${hq}</div>
     <label class="apt"><input type="checkbox" id="apChk2" ${S.autoPause ? 'checked' : ''}> Auto-pause on requests</label>
+    <div class="lbl">Doctrine (objective maps, drills, scoring)</div>
+    <div class="slot"><span>${DOCL.custom ? '✎ Custom doctrine' : 'Default doctrine'}<small>${DOCL.custom ? 'edited in the Objective Editor' : 'as Dev B wrote it'}</small></span><button data-m="editor" id="bEditor">🛠 Editor</button></div>
     <div class="acts"><button data-m="tut">🎓 Tutorial</button><button data-m="help">❓ Help</button></div></div>`;
 }
 const TUT = [
@@ -1822,7 +1819,8 @@ function helpHTML() {
   <p><b>Commanders.</b> Every leader has obedience, judgment, experience, maybe a quirk, and trust in you. Smart ones make good plans (cover, line of sight, flanking, reserves) and push back on bad edits; dumb ones charge across open ground. Insisting works but costs trust and morale. Plans you suggested that work raise trust.</p>
   <p><b>Quality badge.</b> How good a plan is (0–100). How precisely you see it depends on your HQ staff (menu).</p>
   <p><b>Status.</b> · planned, ➜ moving, 💥 engaging, ✅ achieved, ❌ failed, 🔄 changed. Marks: 🔒 order/locked, ✎ your edit, ⚙ automatic change, ⏳ waiting, ⬇ pinned, ✖ broken.</p>
-  <p><b>Fog.</b> Enemy only shows when someone can see it; dashed “?” is a last-known position.</p></div>`;
+  <p><b>Fog.</b> Enemy only shows when someone can see it; dashed “?” is a last-known position.</p>
+  <p><b>Objective Editor.</b> Menu → 🛠 Editor: change which tasks each level can get, how every objective is broken down (the plan variants commanders choose from), the section drills and the plan-scoring weights.</p></div>`;
 }
 function endHTML() {
   const st = S.stats;
@@ -1907,6 +1905,7 @@ function bindUI() {
     if (d.m === 'new') { restart((S.seed * 31 + 7 + ((Math.random() * 1000) | 0)) % 100000 || 1); return; }
     if (d.m === 'tut') { openOv(tutHTML(0), 'tutov'); return; }
     if (d.m === 'help') { openOv(helpHTML(), 'helpov'); return; }
+    if (d.m === 'editor') { location.href = 'editor.html'; return; }
     if (d.sv) { savePlan(+d.sv); openOv(menuHTML(), 'menuov'); return; }
     if (d.ld) { if (loadPlan(+d.ld)) { fitCam(); closeOv(); } return; }
     if (d.hq !== undefined) { S.hqExp = +d.hq; store.set('cl-hq', String(S.hqExp)); openOv(menuHTML(), 'menuov'); renderAll(); return; }
@@ -2026,13 +2025,16 @@ prerender(); bindUI(); bindCanvas();
 newScenario(1);
 setSpeedV(speedToV(4));
 layout(); fitCam(); renderAll();
+if (DOCL.custom) log('coy', 'info', null, '🛠 Custom doctrine in use (Objective Editor).', 'auto');
 if (store.get('cl-tut', '0') !== '1') openOv(tutHTML(0), 'tutov');
+// coming back from the editor via the browser's back button: reload if the doctrine changed meanwhile
+window.addEventListener('pageshow', (e) => { if (e.persisted && window.CLDoctrine.load().raw !== DOCL.raw) location.reload(); });
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 requestAnimationFrame(frame);
 window.CL = {
   S, cam, VERSION, FEAT, COYS, T, TYPES, specOf, label, dispSpec, proposeEdit, decide, decomposeCoy, decomposePl, answerReq, answerCounter, makeReq, tick, startBattle, newScenario,
   qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
-  savePlan, loadPlan, restart, fitCam, centerOn, STATS,
+  savePlan, loadPlan, restart, fitCam, centerOn, STATS, DOC, DOCL,
   fast(sec) { for (let i = 0; i < sec / TICK && !S.endMsg; i++) tick(); renderAll(); },
 };
 })();
