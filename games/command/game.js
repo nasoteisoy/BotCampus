@@ -1,11 +1,11 @@
-/* Command Layers: a WW2 multi-layer objectives sandbox (company > platoon > section).
+/* Command Layers: a WW2 multi-layer objectives sandbox (battalion > company > platoon > section).
    Original code and art. Plain canvas + DOM, no dependencies. Units: metres and seconds. */
 (function boot() {
 'use strict';
 // the doctrine (all objective maps, drills and scoring weights) lives in doctrine.js; load it first if a stale page missed it
 if (!window.CLDoctrine) { const sc = document.createElement('script'); sc.src = 'doctrine.js'; sc.onload = boot; document.head.appendChild(sc); return; }
 const DOCL = window.CLDoctrine.load(), DOC = DOCL.doc;
-const VERSION = 'v1.1';
+const VERSION = 'v1.2';
 const WW = 1200, WH = 900, TAU = Math.PI * 2, TICK = 0.5;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
@@ -215,17 +215,28 @@ function findPath(sx, sy, tx, ty) {
 // ---------------------------------------------------------------- order of battle, commanders
 const COYS = [{ id: 'A', col: '#e4573f', home: [300, 840] }, { id: 'B', col: '#3f8fe4', home: [620, 845] }, { id: 'C', col: '#e8c440', home: [950, 840] }];
 const COYCOL = Object.fromEntries(COYS.map(c => [c.id, c.col]));
+const BN = { id: 'BN', name: '1st Bn', col: '#efe6c8', home: [623, 872] }; // battalion HQ (a marker: it doesn't fight)
+COYCOL.BN = BN.col;
+const BN_FROM = { x: avgOf(COYS.map(c => c.home[0])), y: avgOf(COYS.map(c => c.home[1])) };
+function avgOf(a) { return a.reduce((s, v) => s + v, 0) / a.length; }
 const QUIRKS = { aggressive: ['🔥', 'Aggressive'], cautious: ['🐢', 'Cautious'], glory: ['🏅', 'Glory-seeker'], book: ['📘', 'By-the-book'] };
 const FIRST = ['Alfie', 'Bert', 'Cyril', 'Dennis', 'Eddie', 'Frank', 'George', 'Harry', 'Ivor', 'Jack', 'Ken', 'Len', 'Monty', 'Norman', 'Ollie', 'Percy', 'Reg', 'Stan', 'Ted', 'Vic', 'Wilf', 'Arthur', 'Basil', 'Clive', 'Donald', 'Ernie', 'Fred', 'Gordon', 'Hugh', 'Jim', 'Laurie', 'Maurice', 'Neville', 'Ron', 'Sid', 'Tom', 'Wally', 'Les', 'Alec', 'Bob'];
 const LAST = ['Ashby', 'Barlow', 'Carver', 'Dunmore', 'Ellery', 'Fenwick', 'Garside', 'Hollis', 'Ingram', 'Jessop', 'Kettle', 'Lofthouse', 'Marlow', 'Naylor', 'Oakes', 'Pruett', 'Quayle', 'Rudd', 'Selby', 'Thwaite', 'Upton', 'Varley', 'Whitlock', 'Yeats', 'Brindle', 'Cobbold', 'Dimmock', 'Frayne', 'Gadsby', 'Hext', 'Kember', 'Lusk', 'Mabey', 'Pell', 'Rook', 'Starling', 'Tebbit', 'Wragg', 'Cottam', 'Penhale', 'Druce', 'Halsey'];
 const S = {
   seed: 1, rng: mulberry(1), time: 0, phase: 'plan', speed: 4, paused: true, autoPause: store.get('cl-ap', '1') === '1',
   hqExp: +store.get('cl-hq', '1'), units: [], U: {}, nodes: {}, feed: [], reqs: [], toasts: [], tracers: [], pending: [],
-  sel: null, nextReq: 1, casualty: {}, stats: STATS, endMsg: null, dbg: {},
+  sel: null, nextReq: 1, casualty: {}, stats: STATS, endMsg: null, dbg: {}, dragOn: false,
 };
 const R = () => S.rng();
+// the battalion CO plans with his own random stream, so adding the battalion layer leaves the companies' dice untouched
+function withB(fn) { const m = S.rng; S.rng = S.brng; try { return fn(); } finally { S.rng = m; } }
 const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += R(); return (u - 2) / 0.577; };
 function mkPersona(level) {
+  if (level === 'bn') { // a battalion CO: more experienced, usually sharper
+    const b = () => clamp(0.15 + 0.7 * R() + (R() - 0.5) * 0.3, 0.02, 0.98), q = R();
+    return { first: FIRST[(R() * FIRST.length) | 0], last: LAST[(R() * LAST.length) | 0], rank: 'Lt Col', obed: b(), judg: clamp(b() + 0.12, 0, 0.98), exp: clamp(b() + 0.25, 0, 0.98),
+      quirk: q < 0.16 ? 'aggressive' : q < 0.32 ? 'cautious' : q < 0.44 ? 'glory' : q < 0.58 ? 'book' : null, trust: 0.5 };
+  }
   const rank = level === 'coy' ? (R() < 0.6 ? 'Maj' : 'Capt') : level === 'pl' ? (R() < 0.6 ? 'Lt' : '2Lt') : (R() < 0.75 ? 'Cpl' : 'Sgt');
   const b = () => clamp(0.15 + 0.7 * R() + (R() - 0.5) * 0.3, 0.02, 0.98);
   const q = R();
@@ -255,6 +266,8 @@ function buildOOB() {
       for (let s = 0; s < 3; s++) add({ id: `${pid}S${s + 1}`, side: 'GB', kind: 'sec', coy: C.id, pl: pid, pn, sn: s + 1, name: `${pn} Pl/${s + 1} Sec`, men: 10, lmg: 1, x: px + (s - 1) * 24, y: py - 12, cmdr: mkPersona('sec') });
     }
   });
+  // battalion HQ: kept out of S.units (no firing, no casualties, no dice in the battle loop)
+  S.U.BN = withB(() => mkUnit({ id: 'BN', side: 'GB', kind: 'bnhq', coy: 'BN', name: '1st Bn HQ', men: 8, lmg: 0, x: BN.home[0], y: BN.home[1], cmdr: mkPersona('bn') }));
   // German force: positions vary by scenario
   const v = S.seed % 3;
   const G = [
@@ -380,6 +393,45 @@ function ratePlan(kind, X, roles, from) {
   } else { q = SC.other.base; }
   return { q: clamp(Math.round(q), 0, 100), notes };
 }
+// battalion plan quality: main effort on the objective, flanking enemy positions dealt with, fire base, reserve, frontage
+const OFF_T = new Set(['seize', 'clear', 'assault']);
+// known enemy-held features flanking the approach to X (not the objective itself, not beyond it)
+function threatFeats(X, from) {
+  const W = DOC.score.bn, ad = unitV(X.x - from.x, X.y - from.y), perp = { x: -ad.y, y: ad.x };
+  return FEATS.filter(f => f.id !== 'start').map(f => {
+    const dx = f.x - X.x, dy = f.y - X.y;
+    return { f, d: hyp(dx, dy), fwd: dx * ad.x + dy * ad.y, lat: dx * perp.x + dy * perp.y };
+  }).filter(o => o.d > W.threatMin && o.d <= W.threatMax && o.fwd <= W.threatFwd && enemyNear(o.f, o.f.r, true).n > 0);
+}
+function rateBn(kind, X, roles, from) {
+  const notes = []; let q = 0; const W = DOC.score.bn;
+  const rs = roles.filter(Boolean), dX = (r) => hyp(r.target.x - X.x, r.target.y - X.y);
+  const ad = unitV(X.x - from.x, X.y - from.y);
+  if (kind === 'attack' || kind === 'recon') {
+    const mainT = kind === 'attack' ? OFF_T : new Set(['recon', 'seize', 'clear']);
+    if (rs.some(r => mainT.has(r.type) && dX(r) < W.onObjDist)) q += W.main; else notes.push(kind === 'attack' ? 'nobody takes the objective' : 'nobody looks at the objective');
+    const th = threatFeats(X, from), cov = th.filter(o => rs.some(r => r.type !== 'reserve' && r.type !== 'withdraw' && hyp(r.target.x - o.f.x, r.target.y - o.f.y) < 90));
+    q += W.flanks * (th.length ? cov.length / th.length : 1);
+    for (const o of th) if (!cov.includes(o)) notes.push(`${o.f.name} on the flank left alone`);
+    if (rs.some(r => r.type === 'sbf' && dX(r) < W.onObjDist)) q += W.fire; else if (kind === 'attack') notes.push('no fire base');
+    if (rs.some(r => r.type === 'reserve' || r.type === 'hold')) q += W.reserve; else notes.push('no reserve');
+    q += W.base;
+  } else if (kind === 'defend' || kind === 'screen') {
+    const ps = rs.map(r => r.target);
+    if (rs.some(r => dX(r) < W.onObjDist * 2)) q += W.main; else notes.push('nobody on the objective');
+    let minD = 1e9, maxD = 0; for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { const d = hyp(ps[i].x - ps[j].x, ps[i].y - ps[j].y); minD = Math.min(minD, d); maxD = Math.max(maxD, d); }
+    if (minD > W.minGap && maxD < W.maxSpread) q += W.spread; else notes.push(minD <= W.minGap ? 'companies bunched up' : 'frontage too wide');
+    if (kind === 'defend') { if (ps.some(p => (X.x - p.x) * ad.x + (X.y - p.y) * ad.y > W.depthDist)) q += W.depth; else notes.push('no depth'); }
+    else { const v = ps.filter(p => losT(p.x, p.y, p.x + ad.x * W.viewRange, p.y + ad.y * W.viewRange)).length / Math.max(1, ps.length); q += W.view * v; if (v < 0.5) notes.push("can't see the approaches"); }
+    q += W.cover * ps.reduce((s, p) => s + coverScore(p), 0) / Math.max(1, ps.length);
+    q += W.base;
+  } else if (kind === 'withdraw') {
+    if (rs.some(r => r.gate === 'rear')) q += W.rearguard; else notes.push('no rearguard');
+    q += W.near * rs.filter(r => dX(r) < W.nearDist).length / Math.max(1, rs.length);
+    q += W.base;
+  } else q = DOC.score.other.base;
+  return { q: clamp(Math.round(q), 0, 100), notes };
+}
 // a leader picks a spot: smart ones find cover + line of sight, dumb ones pick almost anywhere
 function pickPos(c, rad, tgt, cmdr) {
   const noise = 50 * (1 - cmdr.judg) * (1 - 0.4 * cmdr.exp);
@@ -410,8 +462,32 @@ function fupAt(X, from, ang, dist = 130) {
   const back = Math.atan2(from.y - X.y, from.x - X.x) + ang;
   return nearestOpen(X.x + Math.cos(back) * dist, X.y + Math.sin(back) * dist);
 }
-// ---- objective maps (doctrine.coy / doctrine.pl, editable in the Objective Editor)
+// ---- objective maps (doctrine.bn / doctrine.coy / doctrine.pl, editable in the Objective Editor)
 const tagObj = (tags) => { const o = {}; for (const t of tags) o[t] = 1; return o; };
+const bnKind = (t) => (DOC.bn[t] ? DOC.bn[t].scoreAs : 'other');
+// candidate company role-sets for a battalion objective: one per variant
+function bnCandidates(type, X, from) {
+  const B = DOC.bn[type]; if (!B) return [];
+  const ad = unitV(X.x - from.x, X.y - from.y), perp = { x: -ad.y, y: ad.x };
+  const th = threatFeats(X, from);
+  const spot = (fwd, side) => nearestOpen(clamp(X.x + ad.x * fwd + perp.x * side, 15, WW - 15), clamp(X.y + ad.y * fwd + perp.y * side, 15, WH - 15));
+  return B.variants.map(v => {
+    const used = new Set(), roles = [];
+    for (const rs of v.roles) {
+      const pl = rs.place; let type = rs.type, target = { x: X.x, y: X.y };
+      if (pl.kind === 'flank') {
+        const c = th.filter(o => !used.has(o.f.id) && o.lat * pl.dir >= pl.minSide)
+          .sort((a, b) => (pl.pick === 'close' ? a.d - b.d : pl.pick === 'deep' ? b.fwd - a.fwd : a.fwd - b.fwd))[0];
+        if (c) { used.add(c.f.id); target = { x: c.f.x, y: c.f.y }; } else { type = pl.fallback; target = spot(pl.fbFwd, pl.dir * pl.fbSide); }
+      } else if (pl.kind === 'offset') target = spot(pl.fwd, pl.side);
+      else if (pl.kind === 'behind') target = spot(-pl.dist, pl.side);
+      if (rs.woods && type === 'seize' && inWood(target.x, target.y)) type = 'clear';
+      const r = { type, target, pos: null, imp: rs.imp }; if (rs.gate) r.gate = rs.gate;
+      roles.push(r);
+    }
+    return { roles, tags: tagObj(v.tags), vid: v.id, vname: v.name };
+  });
+}
 const coyKind = (t) => (DOC.coy[t] ? DOC.coy[t].scoreAs : t);
 const plKind = (t) => (DOC.pl[t] || DOC.pl.hold).scoreAs;
 // candidate role-sets for a company objective: every variant, tried at every swept fire site x approach angle
@@ -465,12 +541,12 @@ function coyCandidates(type, X, from, cmdr) {
   return out;
 }
 // a commander chooses among candidates: perceived quality = real quality + noise (judgment, experience) + quirks
-function choose(cands, kind, X, from, cmdr) {
+function choose(cands, kind, X, from, cmdr, rate = ratePlan) {
   const W = DOC.score.prefs;
   const noise = W.noise * (1 - cmdr.judg) * (1 - 0.45 * cmdr.exp);
   let best = null, bp = -1e9;
   for (const c of cands) {
-    const r = ratePlan(kind, X, c.roles, from);
+    const r = rate(kind, X, c.roles, from);
     let perc = r.q + gauss() * noise;
     const tg = c.tags || {};
     if (cmdr.judg < W.dumbBelow) { // dumb leaders like the obvious: straight at them, everyone in, no fuss about sight lines
@@ -512,8 +588,9 @@ function mkNode(id, level, coy, parent) {
 }
 function buildTree() {
   S.nodes = {};
+  const bn = S.nodes.BN = mkNode('BN', 'bn', 'BN', null);
   for (const C of COYS) {
-    const cn = S.nodes[C.id] = mkNode(C.id, 'coy', C.id, null);
+    const cn = S.nodes[C.id] = mkNode(C.id, 'coy', C.id, 'BN'); bn.kids.push(C.id);
     for (const pu of plsOf(C.id)) {
       const pn = S.nodes[pu.id] = mkNode(pu.id, 'pl', C.id, C.id); cn.kids.push(pu.id);
       for (const su of secsOf(pu.id)) { S.nodes[su.id] = mkNode(su.id, 'sec', C.id, pu.id); pn.kids.push(su.id); }
@@ -522,9 +599,11 @@ function buildTree() {
 }
 const cmdrOf = (n) => S.U[n.id].cmdr;
 const unitOf = (n) => S.U[n.id];
-const nodeName = (n) => (n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${S.U[n.id].pn} Pl` : S.U[n.id].name);
+const nodeName = (n) => (n.level === 'bn' ? BN.name : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${S.U[n.id].pn} Pl` : S.U[n.id].name);
 const label = (sp) => `${T[sp.type][0]} ${T[sp.type][1]} ${tName(sp.target)}`;
+const gbSecs = () => S.units.filter(u => u.side === 'GB' && u.kind === 'sec');
 function nodeFrom(n) {
+  if (n.level === 'bn') return S.phase === 'plan' ? BN_FROM : centroid(gbSecs());
   if (n.level === 'coy') return S.phase === 'plan' ? { x: COYS.find(c => c.id === n.id).home[0], y: COYS.find(c => c.id === n.id).home[1] } : centroid(coyUnits(n.id).filter(u => u.kind === 'sec'));
   if (n.level === 'pl') return centroid(secsOf(n.id));
   return S.U[n.id];
@@ -589,6 +668,43 @@ function decomposeCoy(n, who, dry) {
   return res;
 }
 const avg = (a) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0);
+// battalion -> companies: the CO picks a variant (own dice), then each free company gets its task and plans it
+function decomposeBn(n, who, dry) {
+  const cm = cmdrOf(n), from = nodeFrom(n);
+  if (!n.type) return dry ? 30 : { coys: 0, pls: 0, secs: 0 };
+  const pick = withB(() => choose(bnCandidates(n.type, n.target, from), bnKind(n.type), n.target, from, cm, rateBn));
+  if (dry) return pick ? pick.q : 30;
+  const res = { coys: 0, pls: 0, secs: 0 };
+  if (!pick) { n.notes = ['no battalion map for this objective']; return res; }
+  n.vname = pick.c.vname;
+  const coys = n.kids.map(id => S.nodes[id]);
+  const free = coys.filter(c => !c.locked && coyUnits(c.id).some(u => u.kind === 'sec' && alive(u)));
+  const roles = pick.c.roles.slice().sort((a, b) => b.imp - a.imp).slice(0, free.length);
+  // fewer roles than companies (edited map): the spare companies go into reserve behind the objective
+  for (let i = roles.length, ad = unitV(n.target.x - from.x, n.target.y - from.y); i < free.length; i++) roles.push({ type: 'reserve', target: nearestOpen(n.target.x - ad.x * 300 - ad.y * 120 * (i - 1), n.target.y - ad.y * 300 + ad.x * 120 * (i - 1)), pos: null, imp: 0 });
+  const asg = bestAssign(free, roles, c => nodeFrom(c));
+  const roleNode = {};
+  asg.forEach((ri, ui) => { if (ri < roles.length) roleNode[ri] = free[ui]; });
+  asg.forEach((ri, ui) => {
+    if (ri >= roles.length) return;
+    const r = roles[ri], co = free[ui];
+    let gate = null;
+    if (r.gate === 'sbf') { const sb = Object.entries(roleNode).find(([k]) => roles[k].type === 'sbf'); if (sb) gate = { wait: sb[1].id, minT: SM.gates.coyWait }; }
+    if (r.gate === 'rear') gate = { rear: true, minT: SM.gates.rearHold };
+    const ch = setSpec(co, { type: r.type, target: r.target, pos: null, gate }, who);
+    co.aggr = n.aggr; co.prio = n.prio;
+    if (ch || !co.kids.some(k => S.nodes[k].type)) { res.coys += ch ? 1 : 0; const k = decomposeCoy(co, who); res.pls += k.pls || 0; res.secs += k.secs || 0; }
+  });
+  n.q = Math.round(0.6 * pick.q + 0.4 * avg(coys.filter(c => c.type).map(c => c.q)));
+  n.notes = pick.notes;
+  return res;
+}
+// battalion quality after a company changed under it
+function bnRequal() {
+  const n = S.nodes.BN; if (!n || !n.type) return;
+  const coys = n.kids.map(k => S.nodes[k]), r = rateBn(bnKind(n.type), n.target, coys.map(c => (c.type ? specOf(c) : null)), nodeFrom(n));
+  n.q = Math.round(0.6 * r.q + 0.4 * avg(coys.filter(c => c.type).map(c => c.q))); n.notes = r.notes;
+}
 function decomposePl(pl, who) {
   const cm = cmdrOf(pl), from = nodeFrom(pl), pt = specOf(pl);
   const pick = choose(plCandidates(pt, from, cm), plKind(pt.type), pt.target, from, cm);
@@ -613,11 +729,13 @@ function decomposePl(pl, who) {
   return n;
 }
 function planAll() { for (const C of COYS) decomposeCoy(S.nodes[C.id], 'plan'); }
+// a node's own plan quality, for any level
+function selfQ(n) { return n.level === 'bn' ? decomposeBn(n, null, true) : decomposeCoy(n, null, true); }
 
 // ---------------------------------------------------------------- your edits are suggestions
 // how good would your version be, in the context of the plan around it?
 function qualityOf(n, sp) {
-  if (n.level === 'coy') { const save = specOf(n); Object.assign(n, { type: sp.type, target: sp.target }); const q = decomposeCoy(n, null, true); Object.assign(n, { type: save.type, target: save.target }); return q; }
+  if (n.level === 'coy' || n.level === 'bn') { const save = specOf(n); Object.assign(n, { type: sp.type, target: sp.target }); const q = selfQ(n); Object.assign(n, { type: save.type, target: save.target }); return q; }
   const par = S.nodes[n.parent], from = nodeFrom(par);
   const roles = par.kids.map(k => (k === n.id ? sp : specOf(S.nodes[k]))).filter(r => r.type);
   const kind = n.level === 'pl' ? coyKind(par.type) : plKind(par.type);
@@ -627,6 +745,11 @@ function qualityOf(n, sp) {
   return Math.round(0.5 * plan.q + 0.5 * own.q);
 }
 function notesOf(n, sp) {
+  if (n.level === 'bn') {
+    const from = nodeFrom(n), pick = withB(() => choose(bnCandidates(sp.type, sp.target, from), bnKind(sp.type), sp.target, from, { judg: 1, exp: 1 }, rateBn));
+    const known = enemyNear(sp.target, 150, true);
+    return [...(known.n > 2 ? ['strongly held'] : []), ...(pick ? pick.notes : [])];
+  }
   if (n.level === 'sec') { const par = S.nodes[n.parent], from = nodeFrom(par); return rateSec(sp, unitV(par.target.x - from.x, par.target.y - from.y)).notes; }
   const par = n.level === 'pl' ? S.nodes[n.parent] : null;
   if (par) { const roles = par.kids.map(k => (k === n.id ? sp : specOf(S.nodes[k]))).filter(r => r.type); return ratePlan(coyKind(par.type), par.target, roles, nodeFrom(par)).notes; }
@@ -640,7 +763,7 @@ function decide(c, qY, qT, mode, level) {
   let perc = qY - qT + gauss() * noise;
   if (c.quirk === 'glory' && mode === 'suggest') perc -= 4;
   if (c.quirk === 'book') perc += 3;
-  const lvl = level === 'coy' ? 0.3 : 0;
+  const lvl = level === 'coy' ? 0.3 : level === 'bn' ? 0.35 : 0;
   const comply = clamp(c.obed * 0.8 + c.trust * 0.35 + lvl + (mode === 'insist' ? 0.45 : mode === 'order' ? 0.6 : 0) - 0.3, 0, 1.3);
   if (c.obed > 0.88 || (c.obed > 0.75 && mode !== 'suggest')) return { out: 'accept', perc, blind: true };
   if (perc >= 6) return { out: c.obed < 0.2 && R() < 0.3 ? 'grumble' : 'accept', perc, better: true };
@@ -687,13 +810,13 @@ function reasonText(c, notes, theirs) {
 function proposeEdit(n, patch, opts = {}) {
   const cur = specOf(n), u = S.U[n.id];
   const prop = { type: patch.type || cur.type, target: cp(patch.target || cur.target), pos: cp(patch.pos !== undefined ? patch.pos : cur.pos), gate: cur.gate };
-  if (patch.type && patch.type !== cur.type && n.level !== 'coy' && patch.pos === undefined) {
+  if (patch.type && patch.type !== cur.type && n.level !== 'coy' && n.level !== 'bn' && patch.pos === undefined) {
     if (FIRE_T.has(prop.type) || prop.type === 'recon' || prop.type === 'sbf') prop.pos = pickPos(P(lerp(u.x, prop.target.x, 0.35), lerp(u.y, prop.target.y, 0.35)), 60, prop.target, { judg: 0.75, exp: 0.7 });
     else if (prop.type === 'assault' || prop.type === 'clear') prop.pos = fupAt(prop.target, u, 0.8);
     else prop.pos = null;
     if (n.level === 'pl' && prop.type !== 'assault' && prop.type !== 'clear') prop.gate = null;
   }
-  if (n.level === 'coy' && patch.type) prop.pos = null;
+  if ((n.level === 'coy' || n.level === 'bn') && patch.type) prop.pos = null;
   const c = cmdrOf(n);
   const mode = opts.mode || (n.locked || opts.lock ? 'order' : 'suggest');
   const qY = qualityOf(n, prop), qT = n.type ? qualityOf(n, cur) : 0;
@@ -728,7 +851,8 @@ function applyProp(n, prop, who) {
   setSpec(n, prop, who);
   n.byYou = who === 'you'; n.manual = who === 'you';
   n.flash = performance.now();
-  if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); if (r.pls + r.secs) log('coy', 'chg', n.id, `${n.id} Coy re-plans: ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); }
+  if (n.level === 'bn') { const r = decomposeBn(n, 'cmdr'); log('bn', 'chg', n.id, `${BN.name} re-plans (${n.vname || 'own plan'}): ${r.coys} company, ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); }
+  else if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); if (r.pls + r.secs) log('coy', 'chg', n.id, `${n.id} Coy re-plans: ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); bnRequal(); }
   else if (n.level === 'pl') { const k = decomposePl(n, 'cmdr'); if (k) log('pl', 'chg', n.id, `${nodeName(n)}: ${k} section tasks updated.`, 'auto'); }
   else { const par = S.nodes[n.parent], from = nodeFrom(par), r = rateSec(specOf(n), unitV(par.target.x - from.x, par.target.y - from.y)); n.q = r.q; n.notes = r.notes; }
   if (n.level === 'pl') { const par = S.nodes[n.parent]; par.q = Math.round(0.6 * qualityOf(n, specOf(n)) + 0.4 * avg(par.kids.map(k => S.nodes[k].q))); }
@@ -829,6 +953,17 @@ function gateOK(pl, sec) {
   if (sb.engT && S.time - sb.engT > SM.gates.sbfEngaged) return true;
   return sb.status === 'achieved';
 }
+// a company-level gate from the battalion map: e.g. this company's assault waits for the fire-base company
+function coyGateOK(co) {
+  if (!co || !co.gate) return true;
+  const g = co.gate;
+  if (S.time - co.t0 > g.minT * SM.gates.aggrScale[co.aggr]) return true;
+  if (g.rear) return false;
+  const sb = S.nodes[g.wait];
+  if (!sb || sb.type !== 'sbf' || !coyUnits(sb.id).some(u => u.kind === 'sec' && alive(u))) return true;
+  if (sb.status === 'achieved') return true;
+  return sb.kids.some(k => { const p = S.nodes[k]; return p.engT && S.time - p.engT > SM.gates.sbfEngaged; }) || coyUnits(sb.id).some(u => u.kind === 'sec' && S.time - u.firedT < 10 && S.time - co.t0 > 60);
+}
 function secAct(u, n, dt) {
   const home = COYS.find(c => c.id === u.coy).home;
   if (u.state === 'broken') { moveTo(u, home[0], home[1] - 40, SM.broken.speed, dt); setSt(n, n.status); return; }
@@ -868,7 +1003,7 @@ function secAct(u, n, dt) {
         u.waitT += dt; n.wait = Wt.on; n.prog = 0.35; u.moving = false;
         const sibs = pl && Wt.sync ? pl.kids.map(k => S.nodes[k]).filter(k => k.type === 'assault' && alive(S.U[k.id]) && S.U[k.id].state !== 'broken') : [];
         const ready = sibs.every(k => S.U[k.id].ph >= 1) || u.waitT > Wt.syncMax;
-        if (!Wt.on || ((!Wt.gate || gateOK(pl, n)) && ready) || u.waitT > Wt.maxWait) { u.ph = 2; n.wait = false; if (pl && !pl.goT) { pl.goT = S.time; log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); } }
+        if (!Wt.on || ((!Wt.gate || (gateOK(pl, n) && coyGateOK(S.nodes[u.coy]))) && ready) || u.waitT > Wt.maxWait) { u.ph = 2; n.wait = false; if (pl && !pl.goT) { pl.goT = S.time; log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); } }
       } else if (u.ph === 2) { // 2: charge
         const C = A.charge, d = hyp(n.target.x - u.x, n.target.y - u.y);
         n.prog = 0.4 + 0.5 * progTo(n, u, n.target);
@@ -894,6 +1029,12 @@ function secAct(u, n, dt) {
       break;
     }
   }
+}
+function bnHqAct(dt) { // the battalion HQ follows behind the battalion
+  const u = S.U.BN; u.px = u.x; u.py = u.y; u.pa = u.a;
+  const c = centroid(gbSecs()); if (!c.x) { u.moving = false; return; }
+  const back = unitV(BN.home[0] - c.x, BN.home[1] - c.y), g = nearestOpen(c.x + back.x * 110, c.y + back.y * 110);
+  if (hyp(g.x - u.x, g.y - u.y) > 15) moveTo(u, g.x, g.y, 1.5, dt); else u.moving = false;
 }
 function hqAct(u, dt) {
   const kids = u.kind === 'coyhq' ? coyUnits(u.coy).filter(k => k.kind === 'sec') : secsOf(u.id);
@@ -1085,6 +1226,25 @@ function updNodes() {
     }
     coyStatus(cn);
   }
+  withB(() => bnStatus(S.nodes.BN));
+}
+function bnStatus(n) {
+  if (!n || !n.type) return;
+  const cs = n.kids.map(k => S.nodes[k]);
+  n.prog = avg(cs.map(c => (c.type ? c.prog : 0)));
+  if (n.status === 'achieved' || n.status === 'failed') {
+    if (n.status === 'achieved' && (n.type === 'hold' || OFFENSIVE.has(n.type)) && !targetClear(n.target, 40) && !gbNear(n.target, 70) && !n.lostLogged) {
+      n.lostLogged = true; n.status = 'failed'; S.stats.fail.bn++; log('bn', 'fail', n.id, `${BN.name}: We've lost the ${tName(n.target)}!`, 'auto');
+    }
+    return;
+  }
+  if (strength(gbSecs()) < 0.35) return fail(n, 'battalion shattered');
+  if (OFFENSIVE.has(n.type)) {
+    if (targetClear(n.target, n.type === 'clear' ? 90 : 60) && gbNear(n.target, n.type === 'clear' ? 90 : 55)) return achieve(n, 'objective taken');
+    if (S.time - n.t0 > [2000, 2600, 3400][n.prio]) return fail(n, 'attack ran out of steam');
+  } else if (n.type === 'recon') { if (cs.some(c => c.type === 'recon' && c.status === 'achieved')) return achieve(n, 'objective scouted'); }
+  else if (cs.every(c => !c.type || c.status === 'achieved' || c.status === 'failed')) return achieve(n, 'in position');
+  setSt(n, cs.some(c => c.status === 'engaging') ? 'engaging' : 'moving');
 }
 function coyStatus(n) {
   if (!n.type) return;
@@ -1159,6 +1319,7 @@ function adapt() {
     decomposePl(res, 'auto');
     log('coy', 'chg', C.id, `${C.id} Coy: ${cname(c)} commits ${nodeName(res)} to the ${cn.type === 'clear' ? 'clearance' : 'assault'}.`, 'auto');
   }
+  withB(bnCommit);
   for (const C of COYS) for (const pid of S.nodes[C.id].kids) {
     const pl = S.nodes[pid], c = cmdrOf(pl);
     if (pl.status === 'achieved' || pl.status === 'failed' || !(pl.type === 'assault' || pl.type === 'clear')) continue;
@@ -1174,6 +1335,21 @@ function adapt() {
       log('pl', 'chg', pl.id, `${nodeName(pl)}: ${S.U[good.id].sn} Sec takes over the assault from ${S.U[bad.id].sn} Sec (casualties).`, 'auto');
     }
   }
+}
+// battalion CO commits a reserve company when the companies on the objective are spent
+function bnCommit() {
+  const bn = S.nodes.BN, c = cmdrOf(bn);
+  if (!bn.type || !OFFENSIVE.has(bn.type) || bn.status === 'achieved' || bn.status === 'failed' || S.time < (bn.commitCd || 0)) return;
+  const cs = bn.kids.map(k => S.nodes[k]);
+  const main = cs.filter(co => OFFENSIVE.has(co.type) && hyp(co.target.x - bn.target.x, co.target.y - bn.target.y) < 100);
+  const spent = (co) => co.status === 'failed' || strength(coyUnits(co.id).filter(u => u.kind === 'sec')) < 0.45 || (co.status === 'achieved' && !targetClear(bn.target, 60));
+  if (main.length && !main.every(spent)) return;
+  const res = cs.filter(co => !main.includes(co) && !co.locked && (co.type === 'reserve' || co.type === 'hold') && strength(coyUnits(co.id).filter(u => u.kind === 'sec')) > 0.55)[0];
+  bn.commitCd = S.time + 90;
+  if (!res || R() > 0.3 + 0.7 * c.judg) return;
+  setSpec(res, { type: bn.type, target: bn.target, pos: null, gate: null }, 'auto');
+  decomposeCoy(res, 'auto');
+  log('bn', 'chg', 'BN', `${BN.name}: ${cname(c)} commits ${res.id} Coy to the ${bn.type === 'clear' ? 'clearance' : 'attack'} on the ${tName(bn.target)}.`, 'auto');
 }
 // ---- bottom-up requests
 const REQ_WHY = { cas: 'Casualties over 40%', stall: 'Attack stalled', early: 'Objective achieved early', weak: 'Enemy weakening', flank: 'Flank open' };
@@ -1230,6 +1406,56 @@ function makeReq(n, kind) {
   S.stats.reqs[kind] = (S.stats.reqs[kind] || 0) + 1;
   log('coy', 'req', n.id, `${n.id} Coy request — ${REQ_WHY[kind]}: ${txt}`, 'them');
 }
+// the battalion CO asks you too
+function bnSugQ(n, s) {
+  const save = specOf(n); n.type = s.type; n.target = s.target;
+  let q = decomposeBn(n, null, true); n.type = save.type; n.target = save.target;
+  const e = enemyNear(s.target, 120, true), str = strength(gbSecs());
+  if (OFFENSIVE.has(s.type)) q -= 8 * e.mg + 4 * e.n + (str < 0.6 ? 25 : 0);
+  if ((s.type === 'hold' || s.type === 'withdraw') && str < 0.6) q += 20;
+  return clamp(Math.round(q), 0, 100);
+}
+function makeBnReq(n, kind) {
+  const c = cmdrOf(n), here = centroid(gbSecs()), hereP = nearestOpen(here.x, here.y);
+  const ok = (t) => !!DOC.bn[t];
+  let sugs = [];
+  const S_ = (type, target, why) => target && ok(type) && sugs.push({ type, target: { x: target.x, y: target.y }, why });
+  const next = heldFeats().filter(f => hyp(f.x - n.target.x, f.y - n.target.y) > 80).sort((a, b) => hyp(a.x - n.target.x, a.y - n.target.y) - hyp(b.x - n.target.x, b.y - n.target.y))[0];
+  if (kind === 'cas') {
+    S_('hold', hereP, "The battalion's hurt. Let us dig in where we are");
+    S_('withdraw', FEAT.start, 'Pull the battalion back to the start line');
+    S_('recon', n.target, 'Stop attacking, just watch them');
+  } else if (kind === 'stall') {
+    if (next) S_('seize', next, `Switch the main effort to the ${next.name}`);
+    S_('recon', n.target, 'Find out what we are really up against');
+    S_(n.type, n.target, 'Give us another go, new plan');
+  } else if (kind === 'early') {
+    if (next) S_('seize', next, `Push on to the ${next.name} while they're off balance`);
+    S_('hold', n.target, `Consolidate the battalion on the ${tName(n.target)}`);
+  }
+  sugs = sugs.slice(0, 3);
+  if (!sugs.length) return;
+  for (const s of sugs) { s.q = bnSugQ(n, s); s.perc = s.q + gauss() * 30 * (1 - c.judg) * (1 - 0.5 * c.exp); }
+  sugs.sort((a, b) => b.perc - a.perc);
+  const lines = { cas: ['The battalion has taken a beating, sir.', 'We are losing too many men, sir.'], stall: ['The battalion attack is stuck, sir.', "We can't get onto the objective."], early: ['Battalion objective taken, sir. What next?', 'We hold the objective. Orders?'] };
+  let txt = pickL(lines[kind]);
+  if (c.quirk === 'aggressive' && kind !== 'cas') txt += ' Let us at them!';
+  if (c.quirk === 'cautious') txt += ' Suggest we play it safe.';
+  addReq({ kind: 'req', why: kind, coy: 'BN', node: 'BN', text: `${cname(c)} (${BN.name}): ${txt}`, sugs, cmdr: c });
+  S.stats.reqs['bn-' + kind] = (S.stats.reqs['bn-' + kind] || 0) + 1;
+  log('bn', 'req', 'BN', `${BN.name} request — ${REQ_WHY[kind]}: ${txt}`, 'them');
+}
+function checkBnReqs() {
+  const n = S.nodes.BN; if (!n || !n.type) return; n.flags = n.flags || {};
+  if (S.reqs.some(r => r.status === 'open' && r.coy === 'BN' && r.kind === 'req')) return;
+  if (S.time < (n.reqCd || 90)) return;
+  const str = strength(gbSecs());
+  let kind = null;
+  if (str < 0.6 && !n.flags.cas && n.status !== 'achieved' && n.status !== 'failed' && n.type !== 'withdraw') kind = 'cas';
+  else if (OFFENSIVE.has(n.type) && n.status !== 'achieved' && !n.flags.stall && S.time - n.t0 > 1100 && n.prog < 0.55) kind = 'stall';
+  else if (n.status === 'achieved' && !n.flags.early && n.doneT && S.time - n.doneT > 20 && (OFFENSIVE.has(n.type) || n.type === 'recon')) kind = 'early';
+  if (kind) { n.flags[kind] = 1; n.reqCd = S.time + 200; makeBnReq(n, kind); }
+}
 function addReq(r) {
   r.id = S.nextReq++; r.t = S.time; r.status = 'open'; r.coy = r.coy || S.nodes[r.node].coy;
   S.reqs.push(r);
@@ -1273,10 +1499,10 @@ function answerReq(r, how, sIdx = 0) {
     applyProp(n, { type: s.type, target: s.target, pos: null }, 'cmdr');
     n.manual = false; n.byYou = false; n.flags = n.flags || {};
     c.trust = clamp(c.trust + 0.03, 0, 1);
-    log('coy', 'chg', n.id, `You approved ${n.id} Coy's request: ${label(s)}. ${cname(c)}: ${pickL(['Thank you, sir.', 'On our way.', 'Right you are.'])}`, 'you');
+    log(n.level, 'chg', n.id, `You approved ${nodeName(n)}'s request: ${label(s)}. ${cname(c)}: ${pickL(['Thank you, sir.', 'On our way.', 'Right you are.'])}`, 'you');
   } else if (how === 'deny') {
     n.reqCd = S.time + 240; c.trust = clamp(c.trust - 0.02, 0, 1);
-    log('coy', 'req', n.id, `Request denied. ${cname(c)}: ${c.obed < 0.3 ? 'Rather hoped you\'d say yes.' : 'Understood, carrying on.'}`, 'you');
+    log(n.level, 'req', n.id, `Request denied. ${cname(c)}: ${c.obed < 0.3 ? 'Rather hoped you\'d say yes.' : 'Understood, carrying on.'}`, 'you');
   }
   refreshUI();
 }
@@ -1300,6 +1526,7 @@ function tick() {
     else if (u.kind === 'sec') secAct(u, S.nodes[u.id], dt);
     else hqAct(u, dt);
   }
+  bnHqAct(dt);
   for (const u of S.units) {
     if (!alive(u)) continue;
     u.fireCd -= dt;
@@ -1308,7 +1535,7 @@ function tick() {
   if (S.tickN % 2 === 0) { updNodes(); adapt(); }
   if (S.tickN % 10 === 0) deBrain();
   if (S.de.catk && !S.de.catkLogged && S.units.some(u => u.side === 'DE' && u.role === 'catk' && u.vis)) { S.de.catkLogged = true; log('coy', 'info', null, `⚠ Enemy counter-attack toward the ${FEAT[S.de.catk].name}!`, 'auto'); }
-  if (S.tickN % 30 === 0) checkReqs();
+  if (S.tickN % 30 === 0) { checkReqs(); withB(checkBnReqs); }
   if (S.tickN % 120 === 0) feedCas();
   for (let i = S.pending.length - 1; i >= 0; i--) {
     const p = S.pending[i];
@@ -1343,18 +1570,25 @@ function checkEnd() {
   }
 }
 // ---------------------------------------------------------------- scenario
-const DEFAULT_PLAN = { A: ['seize', 'farm'], B: ['seize', 'church'], C: ['clear', 'wood'] };
+// the battalion is ordered to seize the Church; its textbook plan puts A Coy on the Farm, B Coy on the Church and C Coy into the Wood
+const DEFAULT_PLAN = { BN: ['seize', 'church'] };
 function newScenario(seed, plan) {
-  S.seed = seed; S.rng = mulberry(seed * 7919 + 13);
+  S.seed = seed; S.rng = mulberry(seed * 7919 + 13); S.brng = mulberry(seed * 104729 + 31);
   S.time = 0; S.tickN = 0; S.phase = 'plan'; S.paused = true; S.feed = []; S.reqs = []; S.toasts = []; S.tracers = []; S.pending = [];
   S.casualty = {}; S.endMsg = null; S.sel = null; S.nextReq = 1; S.weakDone = {}; S.flankDone = {};
-  S.stats = { ach: { coy: 0, pl: 0, sec: 0 }, fail: { coy: 0, pl: 0, sec: 0 }, reqs: {}, gbCas: 0, deCas: 0, found: 0, nav: STATS };
+  S.stats = { ach: { bn: 0, coy: 0, pl: 0, sec: 0 }, fail: { bn: 0, coy: 0, pl: 0, sec: 0 }, reqs: {}, gbCas: 0, deCas: 0, found: 0, nav: STATS };
   S.de = { catk: null, catkT: 480 + R() * 300, obj: 'Hold the village line' };
   buildOOB(); buildTree();
   plan = plan || DEFAULT_PLAN;
-  for (const C of COYS) { const n = S.nodes[C.id], [t, f] = plan[C.id]; n.type = t; n.target = { x: FEAT[f].x, y: FEAT[f].y }; n.flags = {}; }
-  planAll();
+  const bn = S.nodes.BN;
+  if (plan.BN) bn.type = plan.BN[0], bn.target = { x: FEAT[plan.BN[1]].x, y: FEAT[plan.BN[1]].y };
+  bn.flags = {};
+  if (plan.A) { // company-level plan (tests / old callers): the battalion keeps its objective but doesn't re-plan the companies
+    for (const C of COYS) { const n = S.nodes[C.id], [t, f] = plan[C.id]; n.type = t; n.target = { x: FEAT[f].x, y: FEAT[f].y }; n.flags = {}; }
+    planAll(); if (bn.type) bnRequal();
+  } else decomposeBn(bn, 'plan');
   for (const id in S.nodes) { S.nodes[id].flash = 0; S.nodes[id].ghost = null; S.nodes[id].status = 'planned'; }
+  if (bn.type) log('bn', 'info', 'BN', `${BN.name} orders: ${label(bn)}. ${cname(cmdrOf(bn))} plans: ${bn.vname || 'own plan'} (quality ${bn.q}).`, 'auto');
   log('coy', 'info', null, `Orders: ${COYS.map(C => `${C.id} Coy ${label(S.nodes[C.id])}`).join(' · ')}. Review, edit, then ▶ Play.`, 'auto');
 }
 function startBattle() {
@@ -1459,13 +1693,23 @@ function txt(s, x, y, size, col, align = 'center', bg) {
   cx.fillStyle = col; cx.fillText(s, x, y);
 }
 function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
-function nodePos(n) { if (n.level === 'sec') return ipos(S.U[n.id]); if (n.level === 'pl') return centroid(secsOf(n.id).map(u => ({ ...ipos(u), state: u.state, men: u.men }))); return centroid(coyUnits(n.id).filter(u => u.kind === 'sec').map(u => ({ ...ipos(u), state: u.state }))); }
+function nodePos(n) { if (n.level === 'bn') return centroid(gbSecs().map(u => ({ ...ipos(u), state: u.state }))); if (n.level === 'sec') return ipos(S.U[n.id]); if (n.level === 'pl') return centroid(secsOf(n.id).map(u => ({ ...ipos(u), state: u.state, men: u.men }))); return centroid(coyUnits(n.id).filter(u => u.kind === 'sec').map(u => ({ ...ipos(u), state: u.state }))); }
 function selChain() { const out = new Set(); let n = S.sel && S.nodes[S.sel]; while (n) { out.add(n.id); n = n.parent && S.nodes[n.parent]; } return out; }
 function drawOrders(now) {
   const chain = selChain(), selN = S.sel && S.nodes[S.sel];
+  // battalion objective: big khaki ring; when the battalion is selected, lines to each company's objective
+  const bnN = S.nodes.BN;
+  if (bnN && bnN.type) {
+    const ds = dispSpec(bnN), br = Math.max(24, 78 * cam.z), [bx, by] = w2s(ds.target.x, ds.target.y);
+    cx.globalAlpha = selN && selN.level !== 'bn' ? 0.45 : 0.9;
+    if (selN && selN.level === 'bn') for (const k of bnN.kids) { const cs = dispSpec(S.nodes[k]); if (cs.type && far(cs.target, ds.target, 30)) arrow(ds.target.x, ds.target.y, cs.target.x, cs.target.y, COYCOL[k], 2, [2, 6], false); }
+    ring(ds.target.x, ds.target.y, br, 'rgba(0,0,0,0.4)', 5, [14, 8]); ring(ds.target.x, ds.target.y, br, BN.col, 2.5, [14, 8]);
+    txt(`${BN.name} ${T[ds.type][0]} ${T[ds.type][1]}`, bx, by - br - 10, 11, '#111', 'center', BN.col);
+    cx.globalAlpha = 1;
+  }
   for (const C of COYS) {
     const cn = S.nodes[C.id]; if (!cn.type) continue;
-    const ds = dispSpec(cn), col = C.col, dim = selN && !chain.has(C.id) && selN.coy !== C.id;
+    const ds = dispSpec(cn), col = C.col, dim = selN && selN.level !== 'bn' && !chain.has(C.id) && selN.coy !== C.id;
     cx.globalAlpha = dim ? 0.35 : 1;
     // company: phase line through the FUPs, target circle, main arrow
     const fups = cn.kids.map(k => dispSpec(S.nodes[k])).filter(s => (s.type === 'assault' || s.type === 'clear') && s.pos).map(s => s.pos);
@@ -1508,7 +1752,7 @@ function drawOrders(now) {
     const n = S.nodes[id]; if (!n.ghost) continue;
     const a = 1 - (now - n.ghost.t) / 4500; if (a <= 0) { n.ghost = null; continue; }
     cx.globalAlpha = a; const ds = dispSpec(n);
-    ring(n.ghost.ox, n.ghost.oy, n.level === 'coy' ? Math.max(14, 40 * cam.z) : 10, '#ffe14a', 2, [4, 4]);
+    ring(n.ghost.ox, n.ghost.oy, n.level === 'bn' ? Math.max(24, 78 * cam.z) : n.level === 'coy' ? Math.max(14, 40 * cam.z) : 10, '#ffe14a', 2, [4, 4]);
     arrow(n.ghost.ox, n.ghost.oy, ds.target.x, ds.target.y, '#ffe14a', 2.5, [6, 4]);
     cx.globalAlpha = 1;
   }
@@ -1521,16 +1765,18 @@ function drawOrders(now) {
       const [a, b] = w2s(g.x, g.y); txt(lab, a, b - 18, 11, '#111', 'center', col);
     }
   }
-  // selected node handles
+  // selected node handles: plain markers; yellow, pulsing and draggable only while ✋ Drag is on
   if (selN && selN.type) {
-    const ds = dispSpec(selN);
+    const ds = dispSpec(selN), hot = S.dragOn, hc = hot ? '#ffe14a' : '#fff', pulse = 4 * Math.sin(now / 180);
     const [a, b] = w2s(ds.target.x, ds.target.y);
-    cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.beginPath(); cx.arc(a, b, 22, 0, TAU); cx.fill();
-    ring(ds.target.x, ds.target.y, 22, '#fff', 2.5); txt('◎', a, b, 18, '#fff');
-    if (ds.pos && selN.level !== 'coy') {
+    cx.fillStyle = hot ? 'rgba(255,225,74,0.32)' : 'rgba(255,255,255,0.18)'; cx.beginPath(); cx.arc(a, b, 22, 0, TAU); cx.fill();
+    ring(ds.target.x, ds.target.y, 22, hc, hot ? 3.5 : 2.5); txt('◎', a, b, 18, hc);
+    if (hot) { ring(ds.target.x, ds.target.y, 29 + pulse, 'rgba(255,225,74,0.8)', 2); txt('drag', a, b + 34, 10, '#111', 'center', '#ffe14a'); }
+    if (ds.pos && selN.level !== 'coy' && selN.level !== 'bn') {
       const [c, d] = w2s(ds.pos.x, ds.pos.y);
-      cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.beginPath(); cx.arc(c, d, 20, 0, TAU); cx.fill();
-      txt('◇', c, d, 20, '#fff'); txt(ds.type === 'assault' || ds.type === 'clear' ? 'start' : 'pos', c, d + 22, 10, '#fff', 'center', 'rgba(0,0,0,0.5)');
+      cx.fillStyle = hot ? 'rgba(255,225,74,0.32)' : 'rgba(255,255,255,0.18)'; cx.beginPath(); cx.arc(c, d, 20, 0, TAU); cx.fill();
+      if (hot) ring(ds.pos.x, ds.pos.y, 27 + pulse, 'rgba(255,225,74,0.8)', 2);
+      txt('◇', c, d, 20, hc); txt(ds.type === 'assault' || ds.type === 'clear' ? 'start' : 'pos', c, d + 22, 10, hot ? '#111' : '#fff', 'center', hot ? '#ffe14a' : 'rgba(0,0,0,0.5)');
     }
   }  if (S.dragMark) { const [a, b] = w2s(S.dragMark.x, S.dragMark.y); cx.fillStyle = 'rgba(255,225,74,0.35)'; cx.beginPath(); cx.arc(a, b, 24, 0, TAU); cx.fill(); txt(S.dragMark.m === 'pos' ? '◇' : '◎', a, b, 20, '#ffe14a'); }
 }
@@ -1555,8 +1801,8 @@ function drawUnit(u, now) {
     }
   }
   // symbol
-  const hq = u.kind === 'coyhq' || u.kind === 'plhq';
-  const w = hq ? 14 : 18, h = hq ? 10 : 12, by = z >= 1.6 ? sy - 6 * z - 10 : sy;
+  const bnhq = u.kind === 'bnhq', hq = u.kind === 'coyhq' || u.kind === 'plhq' || bnhq;
+  const w = bnhq ? 22 : hq ? 14 : 18, h = bnhq ? 13 : hq ? 10 : 12, by = z >= 1.6 ? sy - 6 * z - 10 : sy;
   const col = gb ? COYCOL[u.coy] : '#c9443a';
   const n = S.nodes[u.id], sel = S.sel === u.id;
   if (n && n.flash && now - n.flash < 1600) { const t = Math.max(0, (now - n.flash) / 1600); cx.strokeStyle = `rgba(255,225,74,${1 - t})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(sx, by, 14 + 16 * t, 0, TAU); cx.stroke(); }
@@ -1582,7 +1828,7 @@ function drawUnit(u, now) {
   if (u.state === 'pinned') txt('⬇', sx + w / 2 + 6, by - 2, 11, '#ffd34a');
   if (u.state === 'broken') txt('✖', sx + w / 2 + 6, by - 2, 11, '#ff6a5a');
   if (z > 1.1 && gb && u.kind === 'sec') txt(`${u.pn}/${u.sn}`, sx, by - h / 2 - 7, 9, '#fff', 'center', 'rgba(0,0,0,0.45)');
-  if (gb && hq && z > 0.8) txt(u.kind === 'coyhq' ? u.coy : `${u.pn}`, sx + 4, by, 8, '#000');
+  if (gb && hq && (z > 0.8 || bnhq)) txt(bnhq ? 'Bn' : u.kind === 'coyhq' ? u.coy : `${u.pn}`, sx + 4, by, 8, '#000');
 }
 function drawToasts(now) {
   let k = 0;
@@ -1632,11 +1878,13 @@ function draw(now) {
     }
   }
   for (const u of S.units) if (u.side === 'GB') drawUnit(u, now);
+  if (S.U.BN) drawUnit(S.U.BN, now);
   drawToasts(now);
   // clock
   const t = S.time, cl = S.phase === 'plan' ? 'PLANNING' : `H+${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
   txt(cl + (S.phase === 'battle' && S.paused ? '  ⏸' : ''), cam.ox + 10, cam.oy + 16, 13, '#fff', 'left', 'rgba(0,0,0,0.55)');
-  if (S.pickMode) txt('Tap the map to set the target', cam.ox + cam.vw / 2, cam.oy + 44, 13, '#111', 'center', '#ffe14a');
+  if (S.pickMode) txt('Tap the map to set the target', cam.ox + cam.vw / 2, cam.oy + 72, 13, '#111', 'center', '#ffe14a');
+  if (S.dragOn) txt(S.sel ? '✋ Drag on: move the yellow handles' : '✋ Drag on: select a unit first', cam.ox + 10, cam.oy + 40, 12, '#111', 'left', '#ffe14a');
 }
 
 // ---------------------------------------------------------------- UI (DOM)
@@ -1674,7 +1922,7 @@ function rowHTML(n, depth) {
   const u = S.U[n.id], st = dispStatus(n), dead = !alive(u) && n.level === 'sec';
   const hasKids = n.kids.length > 0, col = collapsed.has(n.id);
   const marks = (n.locked ? '🔒' : '') + (n.manual ? '✎' : '') + (n.auto ? '⚙' : '') + (n.wait ? '⏳' : '') + (u.state === 'pinned' ? '⬇' : '') + (u.state === 'broken' ? '✖' : '');
-  const title = n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${u.pn} Pl` : `${u.sn} Sec`;
+  const title = n.level === 'bn' ? BN.name : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${u.pn} Pl` : `${u.sn} Sec`;
   return `<div class="row lv-${n.level}${S.sel === n.id ? ' sel' : ''}${st === 'changed' ? ' fl' : ''}${dead ? ' dead' : ''}" data-id="${n.id}" style="--d:${depth};--cc:${COYCOL[n.coy]}">
     ${hasKids ? `<button class="tg" data-tg="${n.id}" aria-label="Expand">${col ? '▸' : '▾'}</button>` : '<span class="tg0"></span>'}
     <span class="ti">${T[ds.type][0]}</span>
@@ -1685,7 +1933,7 @@ function rowHTML(n, depth) {
 function treeHTML() {
   let h = '';
   const walk = (id, d) => { const n = S.nodes[id]; h += rowHTML(n, d); if (!collapsed.has(id)) for (const k of n.kids) walk(k, d + 1); };
-  for (const C of COYS) walk(C.id, 0);
+  walk('BN', 0);
   return h;
 }
 function editorHTML() {
@@ -1701,7 +1949,7 @@ function editorHTML() {
     <div class="cur">${esc(label(ds))} · <b>${dispStatus(n)}</b>${u.state !== 'ok' ? ` · ${u.state}` : ''}${n.locked ? ' · 🔒 order' : ''}${notes.length ? `<div class="notes">⚠ ${notes.map(esc).join(' · ')}</div>` : ''}</div>
     <div class="lbl">Objective</div><div class="chips">${types}</div>
     <div class="lbl">Target</div><div class="chips">${feats}<button class="ch${S.pickMode ? ' on' : ''}" id="pickMap">📍 Tap map</button></div>
-    <div class="hint">Drag ◎ target${ds.pos && n.level !== 'coy' ? ' / ◇ position' : ''} on the map. Edits go to ${esc(c.rank)} ${esc(c.last)} as suggestions${n.locked ? ' — 🔒 now as orders' : ''}.</div>
+    <div class="hint">${S.dragOn ? '✋ Drag is on: drag' : 'Turn on ✋ Drag (top right of the map) to drag'} ◎ target${ds.pos && n.level !== 'coy' && n.level !== 'bn' ? ' / ◇ position' : ''} on the map. Edits go to ${esc(c.rank)} ${esc(c.last)} as suggestions${n.locked ? ' — 🔒 now as orders' : ''}.</div>
     <div class="two"><div><div class="lbl">Priority</div>${seg('pr', n.prio, ['Low', 'Norm', 'High'])}</div><div><div class="lbl">Aggression</div>${seg('ag', n.aggr, ['Careful', 'Norm', 'Bold'])}</div></div>
     <div class="acts"><button id="edLock" class="${n.locked ? 'on' : ''}">🔒 ${n.locked ? 'Ordered' : 'Order / lock'}</button>${n.kids.length ? '<button id="edReplan">↻ New plan below</button>' : ''}${n.parent ? '<button id="edUp">↑ Up</button>' : ''}</div>
   </div>`;
@@ -1712,7 +1960,7 @@ function renderOrders() {
 const KIND_IC = { ach: '✅', chg: '🔄', fail: '❌', req: '❗', cas: '✚', info: 'ℹ', say: '💬' };
 const tfmt = (t) => `H+${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 function renderFeed() {
-  const lv = ['all', 'coy', 'pl', 'sec'].map(l => `<button class="ch${fl.lvl === l ? ' on' : ''}" data-fl="${l}">${l === 'all' ? 'All' : l === 'coy' ? 'Coy' : l === 'pl' ? 'Pl' : 'Sec'}</button>`).join('');
+  const lv = ['all', 'bn', 'coy', 'pl', 'sec'].map(l => `<button class="ch${fl.lvl === l ? ' on' : ''}" data-fl="${l}">${l === 'all' ? 'All' : l === 'bn' ? 'Bn' : l === 'coy' ? 'Coy' : l === 'pl' ? 'Pl' : 'Sec'}</button>`).join('');
   const kd = ['ach', 'chg', 'fail', 'req', 'cas', 'info'].map(k => `<button class="ch${fl.kinds.has(k) ? ' on' : ''}" data-fk="${k}" aria-label="${k}">${KIND_IC[k]}</button>`).join('');
   const items = [];
   for (let i = S.feed.length - 1; i >= 0 && items.length < 250; i--) {
@@ -1748,8 +1996,15 @@ function renderTop() {
   $('bPlay').textContent = S.phase === 'plan' ? '▶ Play' : S.paused ? '▶' : '⏸';
   $('bPlay').classList.toggle('wide', S.phase === 'plan');
   $('bStep').disabled = !(S.phase === 'battle' && S.paused);
+  renderDrag();
   $('spdL').textContent = (S.speed < 1 ? S.speed.toFixed(1) : S.speed < 10 ? S.speed.toFixed(1).replace('.0', '') : Math.round(S.speed)) + '×';
 }
+function renderDrag() {
+  const b = $('bDrag'); if (!b) return;
+  b.classList.toggle('on', S.dragOn); b.setAttribute('aria-pressed', String(S.dragOn));
+  b.textContent = S.dragOn ? '✋ Drag: ON' : '✋ Drag: off';
+}
+function toggleDrag(v) { S.dragOn = v === undefined ? !S.dragOn : !!v; S.dragMark = null; renderAll(); }
 function renderAll() {
   renderTop();
   for (const t of ['orders', 'feed', 'reqs']) { $('tab-' + t).classList.toggle('on', S.tab === t); }
@@ -1807,15 +2062,17 @@ function menuHTML() {
     <div class="acts"><button data-m="tut">🎓 Tutorial</button><button data-m="help">❓ Help</button></div></div>`;
 }
 const TUT = [
-  ['📋 Orders', 'Each company (A, B, C) has an objective. Tap a row in Orders, or a unit on the map, to open it. Platoon and section tasks sit underneath.'],
-  ['✎ Edit', 'Change the objective type or target, or drag ◎ on the map. Lower layers re-plan at once (yellow flash, ghost line from old to new). Your edits are suggestions: a commander may agree, grumble, push back or quietly ignore you. 🔒 turns it into an order.'],
+  ['📋 Orders', 'You command the battalion (1st Bn). Give it an objective and its CO splits it into company tasks for A, B and C; each company splits its task for its platoons, and so on down to sections. Tap a row in Orders, or a unit on the map, to open it.'],
+  ['✎ Edit', 'Change the objective type or target at any level (battalion, company, platoon, section). Lower layers re-plan at once (yellow flash, ghost line from old to new). Your edits are suggestions: a commander may agree, grumble, push back or quietly ignore you. 🔒 turns it into an order, and locked tasks survive re-plans from above.'],
+  ['✋ Drag', 'Moving things on the map is off by default, so a stray finger only pans. Tap ✋ Drag (top right of the map) to switch it on: the selected task\'s ◎ target and ◇ position light up yellow and can be dragged. It stays on until you tap it again.'],
   ['▶ Play', 'Press Play. Use the slider for 0.1× to 16× speed, ⏸ to pause, ⏭ to step while paused. You can edit at any time.'],
   ['❗ Requests', 'Company commanders ask for changes with 1–3 suggestions. Accept, Edit or Deny. The 📻 Feed logs every change; tap a message to jump to that unit.'],
 ];
 function tutHTML(i) { const [h, b] = TUT[i]; return `<div class="tut"><div class="tn">${i + 1} / ${TUT.length}</div><h3>${h}</h3><p>${b}</p><div class="acts"><button data-tskip="1">Skip</button><button data-tnext="${i + 1}">${i + 1 < TUT.length ? 'Next ›' : 'Got it'}</button></div></div>`; }
 function helpHTML() {
   return `<div class="help"><div class="ch1"><b>How it works</b><button class="x" data-close="1" aria-label="Close">✕</button></div>
-  <p><b>Layers.</b> Company → platoon → section. Companies break their objective into platoon tasks (assault, support by fire, cut-off, reserve…); platoons into section tasks (move, suppress, assault, hold, overwatch).</p>
+  <p><b>Layers.</b> Battalion → company → platoon → section. The battalion CO breaks your battalion objective into company tasks (e.g. Seize: main effort on the objective plus the flanking enemy positions, or a fire base + assault + reserve); companies break theirs into platoon tasks (assault, support by fire, cut-off, reserve…); platoons into section tasks (move, suppress, assault, hold, overwatch). You can still edit or 🔒 lock any company, platoon or section task directly; locked tasks are left alone when the level above re-plans.</p>
+  <p><b>✋ Drag.</b> Off by default: one finger pans the map and taps select. Turn it on (button at the top right of the map) to drag the selected task's ◎ target or ◇ position; they glow yellow while it's on. It stays on until you tap it again. 📍 Tap map in the order panel also sets a target.</p>
   <p><b>Commanders.</b> Every leader has obedience, judgment, experience, maybe a quirk, and trust in you. Smart ones make good plans (cover, line of sight, flanking, reserves) and push back on bad edits; dumb ones charge across open ground. Insisting works but costs trust and morale. Plans you suggested that work raise trust.</p>
   <p><b>Quality badge.</b> How good a plan is (0–100). How precisely you see it depends on your HQ staff (menu).</p>
   <p><b>Status.</b> · planned, ➜ moving, 💥 engaging, ✅ achieved, ❌ failed, 🔄 changed. Marks: 🔒 order/locked, ✎ your edit, ⚙ automatic change, ⏳ waiting, ⬇ pinned, ✖ broken.</p>
@@ -1825,6 +2082,7 @@ function helpHTML() {
 function endHTML() {
   const st = S.stats;
   return `<div class="endb"><h3>🏁 ${esc(S.endMsg)}</h3><p>Time ${tfmt(S.time)} · British casualties ${st.gbCas} · enemy ${st.deCas}</p>
+  <p>${BN.name}: ${S.nodes.BN && S.nodes.BN.type ? `${esc(label(S.nodes.BN))} · ${esc(S.nodes.BN.status)}` : '—'}</p>
   <p>Objectives achieved: ${st.ach.coy} coy, ${st.ach.pl} pl, ${st.ach.sec} sec · failed: ${st.fail.coy}/${st.fail.pl}/${st.fail.sec}</p>
   <div class="acts"><button data-close="1">👀 Keep watching</button><button data-m="restart">↺ Restart</button><button data-m="new">🎲 New scenario</button></div></div>`;
 }
@@ -1836,7 +2094,7 @@ function onReq(r) {
 }
 // save / load (plan + commanders)
 function snapshot() {
-  return { v: 1, seed: S.seed, saved: Date.now(), nodes: Object.values(S.nodes).map(n => ({ id: n.id, type: n.type, target: n.target, pos: n.pos, gate: n.gate, prio: n.prio, aggr: n.aggr, locked: n.locked, manual: n.manual, q: n.q, notes: n.notes })), cmdrs: S.units.filter(u => u.cmdr).map(u => ({ id: u.id, ...u.cmdr })) };
+  return { v: 2, seed: S.seed, saved: Date.now(), nodes: Object.values(S.nodes).map(n => ({ id: n.id, type: n.type, target: n.target, pos: n.pos, gate: n.gate, prio: n.prio, aggr: n.aggr, locked: n.locked, manual: n.manual, q: n.q, notes: n.notes, vname: n.vname })), cmdrs: S.units.concat(S.U.BN ? [S.U.BN] : []).filter(u => u.cmdr).map(u => ({ id: u.id, ...u.cmdr })) };
 }
 function savePlan(i) { store.set('cl-slot' + i, JSON.stringify(snapshot())); log('coy', 'info', null, `Plan saved to slot ${i}.`, 'you'); }
 function loadPlan(i) {
@@ -1845,6 +2103,7 @@ function loadPlan(i) {
   newScenario(d.seed);
   for (const c of d.cmdrs) if (S.U[c.id]) { const { id, ...rest } = c; Object.assign(S.U[c.id].cmdr, rest); }
   for (const s of d.nodes) if (S.nodes[s.id]) Object.assign(S.nodes[s.id], s, { status: 'planned', flash: 0, ghost: null });
+  if (d.v < 2) bnRequal(); // a v1.x save has no battalion: it keeps the default battalion objective, rated against the loaded companies
   log('coy', 'info', null, `Plan loaded from slot ${i}.`, 'you');
   S.sel = null; renderAll(); return true;
 }
@@ -1854,6 +2113,7 @@ function bindUI() {
   $('bStep').onclick = () => { stepOnce(); renderAll(); };
   $('spd').oninput = (e) => setSpeedV(+e.target.value);
   $('bMenu').onclick = () => openOv(menuHTML(), 'menuov');
+  $('bDrag').onclick = () => toggleDrag();
   for (const t of ['orders', 'feed', 'reqs']) $('tab-' + t).onclick = () => setTab(t);
   // sheet grab: tap cycles, drag sets
   let gy = null, gs = null;
@@ -1880,7 +2140,7 @@ function bindUI() {
     if (b.id === 'edClose') { S.sel = null; S.pickMode = false; renderAll(); return; }
     if (b.id === 'pickMap') { S.pickMode = !S.pickMode; renderAll(); return; }
     if (b.id === 'edLock' && n) { n.locked = !n.locked; log(n.level, 'chg', n.id, n.locked ? `🔒 Order: ${nodeName(n)} will hold to ${label(dispSpec(n))}.` : `🔓 ${nodeName(n)} unlocked.`, 'you'); renderAll(); return; }
-    if (b.id === 'edReplan' && n) { if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); log('coy', 'chg', n.id, `${cname(cmdrOf(n))} re-plans: ${r.pls} platoon, ${r.secs} section tasks changed (quality ${n.q}).`, 'you'); } else { const k = decomposePl(n, 'cmdr'); log('pl', 'chg', n.id, `${cname(cmdrOf(n))} re-plans: ${k} section tasks changed.`, 'you'); } renderAll(); return; }
+    if (b.id === 'edReplan' && n) { if (n.level === 'bn') { const r = decomposeBn(n, 'cmdr'); log('bn', 'chg', n.id, `${cname(cmdrOf(n))} re-plans (${n.vname || 'own plan'}): ${r.coys} company, ${r.pls} platoon, ${r.secs} section tasks changed (quality ${n.q}).`, 'you'); } else if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); log('coy', 'chg', n.id, `${cname(cmdrOf(n))} re-plans: ${r.pls} platoon, ${r.secs} section tasks changed (quality ${n.q}).`, 'you'); } else { const k = decomposePl(n, 'cmdr'); log('pl', 'chg', n.id, `${cname(cmdrOf(n))} re-plans: ${k} section tasks changed.`, 'you'); } renderAll(); return; }
     if (b.id === 'edUp' && n) { select(n.parent, true); return; }
     if (d.fl) { fl.lvl = d.fl; renderAll(); return; }
     if (d.fk) { fl.kinds.has(d.fk) ? fl.kinds.delete(d.fk) : fl.kinds.add(d.fk); renderAll(); return; }
@@ -1929,10 +2189,12 @@ function layout() {
   if (key !== lastView) { lastView = key; if (cam.fit) fitCam(); else clampCam(); }
 }
 function unitScreen(u) { const p = ipos(u), [sx, sy] = w2s(p.x, p.y); return [sx, cam.z >= 1.6 ? sy - 6 * cam.z - 10 : sy]; }
-function markerHit(x, y) {
+// which drag handle of the selected task is under (x, y)? Only while ✋ Drag is on, unless any = true
+function markerHit(x, y, any) {
+  if (!S.dragOn && !any) return null;
   const n = S.sel && S.nodes[S.sel]; if (!n || !n.type) return null;
   const ds = dispSpec(n);
-  if (ds.pos && n.level !== 'coy') { const [a, b] = w2s(ds.pos.x, ds.pos.y); if (hyp(a - x, b - y) < 26) return 'pos'; }
+  if (ds.pos && n.level !== 'coy' && n.level !== 'bn') { const [a, b] = w2s(ds.pos.x, ds.pos.y); if (hyp(a - x, b - y) < 26) return 'pos'; }
   const [a, b] = w2s(ds.target.x, ds.target.y); if (hyp(a - x, b - y) < 28) return 'target';
   return null;
 }
@@ -1940,13 +2202,18 @@ function tapAt(x, y) {
   const [wx, wy] = s2w(x, y);
   if (S.pickMode && S.sel) { S.pickMode = false; const p = nearestOpen(clamp(wx, 10, WW - 10), clamp(wy, 10, WH - 10)); proposeEdit(S.nodes[S.sel], { target: p }); renderAll(); return; }
   let best = null, bd = 28;
-  for (const u of S.units) {
+  for (const u of S.U.BN ? S.units.concat([S.U.BN]) : S.units) {
     if (!alive(u)) continue;
     if (u.side === 'DE' && !u.vis && !S.reveal) continue;
     const [a, b] = unitScreen(u), d = hyp(a - x, b - y) + (u.kind === 'sec' ? 0 : 4);
     if (d < bd) { bd = d; best = u; }
   }
   if (best && best.side === 'GB') { select(best.id, false); return; }
+  if (!best && S.sel && markerHit(x, y, true)) { // a tap on a handle while dragging is off: say how to move it, keep the selection
+    S.toasts.push({ x: wx, y: wy, text: '✋ Turn on Drag (top right) to move this', kind: 'info', t: performance.now() });
+    const b = $('bDrag'); if (b) { b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge'); }
+    return;
+  }
   if (best) { S.toasts.push({ x: best.x, y: best.y, text: `Enemy ${best.name}, ~${Math.max(1, best.men - 1 + ((R() * 3) | 0))} men${best.state !== 'ok' ? ', ' + best.state : ''}`, kind: 'info', t: performance.now() }); return; }
   if (S.sel) { S.sel = null; renderAll(); }
 }
@@ -2002,6 +2269,7 @@ function bindCanvas() {
     if (e.target && e.target.tagName === 'INPUT') return;
     if (e.key === ' ') { e.preventDefault(); playPause(); }
     else if (e.key === '.') { stepOnce(); renderAll(); }
+    else if (e.key === 'd' || e.key === 'D') toggleDrag();
   });
 }
 let paneBusy = 0, lastT = 0, acc = 0;
@@ -2033,7 +2301,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) naviga
 requestAnimationFrame(frame);
 window.CL = {
   S, cam, VERSION, FEAT, COYS, T, TYPES, specOf, label, dispSpec, proposeEdit, decide, decomposeCoy, decomposePl, answerReq, answerCounter, makeReq, tick, startBattle, newScenario,
-  qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
+  qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, decomposeBn, bnCandidates, rateBn, threatFeats, makeBnReq, checkBnReqs, bnStatus, coyGateOK, markerHit, toggleDrag, BN, withB, tapAt, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
   savePlan, loadPlan, restart, fitCam, centerOn, STATS, DOC, DOCL,
   fast(sec) { for (let i = 0; i < sec / TICK && !S.endMsg; i++) tick(); renderAll(); },
 };

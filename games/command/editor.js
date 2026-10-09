@@ -10,7 +10,7 @@ const RC = ['#e4573f', '#3f8fe4', '#e8c440', '#9fd36a', '#c77dff', '#ff9b6a'];
 const FIRE = new Set(['sbf', 'suppress', 'overwatch', 'recon']);
 const ASL = new Set(['assault', 'clear']);
 let doc, savedJSON, tab = 'types', msg = null;
-const open = new Set(['lv:coy', 'coy:seize', 'pl:assault', 'sm:assault', 'sc:attack']);
+const open = new Set(['lv:bn', 'bn:seize', 'lv:coy', 'coy:seize', 'pl:assault', 'sm:assault', 'sc:attack']);
 const pv = {}; // preview approach angle index per company type
 function boot() {
   const L = D.load(); doc = L.doc; savedJSON = JSON.stringify(doc);
@@ -48,6 +48,9 @@ const GATE_L = [['', '— nothing'], ['sbf', '⏳ Fire support first'], ['rear',
 const SCORE_KIND_L = [['seize', 'Attack (needs fire support)'], ['clear', 'Clearance (fire support optional)'], ['assault', 'Platoon assault'], ['hold', 'Defence (needs depth)'], ['reserve', 'Reserve position'], ['cutoff', 'Cut-off / blocking'], ['screen', 'Screen'], ['recon', 'Recon'], ['sbf', 'Support by fire'], ['withdraw', 'Withdrawal'], ['other', 'Flat score']];
 const LOOK_L = [['obj', 'the objective'], ['ahead', 'straight ahead'], ['none', 'nothing (cover only)']];
 const PL_SPOT = { assault: ['start', 0, 85], clear: ['start', 0, 85], sbf: ['fire pos', 0, 120], recon: ['obs. pos', 0, 120], cutoff: ['cut-off pos', -80, -70] }; // schematic, shortened
+const BN_PLACE_L = { objective: '◎ The battalion objective itself', flank: '⚑ Enemy-held position on a flank of the approach', offset: '📍 Spot relative to the objective', behind: '⬇ Behind the objective, back toward the start' };
+const BN_PICK_L = [['near', 'the one nearest our start line'], ['close', 'the one closest to the objective'], ['deep', 'the one furthest forward']];
+const BN_SCORE_L = [['attack', 'Battalion attack (main effort, flanks, fire base, reserve)'], ['defend', 'Battalion defence (frontage, depth, cover)'], ['screen', 'Battalion screen (frontage, view, cover)'], ['recon', 'Battalion recon / advance to contact'], ['withdraw', 'Battalion withdrawal (rearguard)'], ['other', 'Flat score']];
 const DRILL_L = { move: '➜ Move to', hold: '🛡 Hold', suppress: '🔥 Suppress', overwatch: '👁 Overwatch', assault: '⚔ Assault' };
 
 // ---------------------------------------------------------------- diagrams (schematic: objective at the top, approach from the bottom; + side = right)
@@ -142,22 +145,58 @@ function plSVG(t, vi) {
   G.forEach((g, i) => { s += marker(S, g.pos || g.tgt, i, ty(g.r.type).icon); });
   return s + '</svg>';
 }
+// battalion variant -> schematic: objective at the top, companies come up from the start line at the bottom
+function bnGeom(v) {
+  const atObj = {}, out = [];
+  v.roles.forEach((r) => {
+    const pl = r.place; let p, held = false, fire = false, note = '';
+    if (pl.kind === 'objective') {
+      const k = atObj[r.type] = (atObj[r.type] || 0) + 1;
+      if (r.type === 'sbf') { p = { x: (k % 2 ? -1 : 1) * 150, y: 200 }; fire = true; }
+      else p = { x: (k - 1) * 30 * (k % 2 ? 1 : -1), y: 0 };
+    } else if (pl.kind === 'flank') {
+      p = pl.pick === 'close' ? { x: pl.dir * 230, y: 60 } : pl.pick === 'deep' ? { x: pl.dir * 260, y: -40 } : { x: pl.dir * 270, y: 170 };
+      held = pl.dir; note = `else ${ty(pl.fallback).icon}`;
+    } else if (pl.kind === 'offset') p = { x: pl.side, y: -pl.fwd };
+    else p = { x: pl.side, y: pl.dist };
+    out.push({ r, p, held, fire, note });
+  });
+  return out;
+}
+function bnSVG(t, vi) {
+  const v = doc.bn[t].variants[vi], G = bnGeom(v);
+  const pts = []; G.forEach(g => { pts.push(g.p, { x: g.p.x, y: g.p.y + 120 }); });
+  const w = svgWrap(pts, `battalion ${t} variant ${vi + 1}`), S = w.S;
+  let s = w.open + scaleBar(w) + approach(w) + objRing(S, w.k, ty(t).icon, 75);
+  G.forEach((g, i) => {
+    const c = RC[i % RC.length];
+    if (g.held) { const [x, y] = S(g.p), rr = Math.max(14, 55 * w.k); s += `<circle cx="${x}" cy="${y}" r="${rr}" fill="rgba(210,69,58,.18)" stroke="#d2453a" stroke-width="2" stroke-dasharray="5 4"/><text x="${x + g.held * rr}" y="${y + rr + 12}" font-size="10" text-anchor="middle" fill="#ffb0a0">held?</text>`; }
+    if (g.fire) s += line(S, g.p, shorten(g.p, { x: 0, y: 0 }, 70), '#ff9b6a', 2, '2 5', false);
+    else if (['seize', 'clear', 'assault', 'recon', 'screen', 'withdraw'].includes(g.r.type)) s += line(S, { x: g.p.x, y: g.p.y + 115 }, shorten({ x: g.p.x, y: g.p.y + 115 }, g.p, 14), c, g.r.type === 'seize' || g.r.type === 'clear' ? 3.5 : 2, g.r.type === 'seize' || g.r.type === 'clear' ? '' : '6 5', true);
+  });
+  G.forEach((g, i) => {
+    s += marker(S, g.p, i, ty(g.r.type).icon);
+    const ex = [g.r.gate === 'sbf' ? '⏳🔥' : g.r.gate === 'rear' ? '🛡last' : '', g.r.woods ? '🌲=🧹' : '', g.note].filter(Boolean).join(' ');
+    if (ex) { const [x, y] = S(g.p), wd = ex.length * 7 + 10; s += `<rect x="${x - wd / 2}" y="${y - 36}" width="${wd}" height="17" rx="8" fill="rgba(0,0,0,.6)"/><text x="${x}" y="${y - 23.5}" font-size="11" text-anchor="middle" fill="#ffe08a">${ex}</text>`; }
+  });
+  return s + '</svg>';
+}
 function redrawDia(el) {
   const box = el.closest('[data-var]'); if (!box) return;
   const [lv, t, vi] = box.dataset.var.split(':');
-  const d = box.querySelector('.dia'); if (d && doc[lv] && doc[lv][t] && doc[lv][t].variants[+vi]) d.innerHTML = lv === 'coy' ? coySVG(t, +vi) : plSVG(t, +vi);
+  const d = box.querySelector('.dia'); if (d && doc[lv] && doc[lv][t] && doc[lv][t].variants[+vi]) d.innerHTML = lv === 'bn' ? bnSVG(t, +vi) : lv === 'coy' ? coySVG(t, +vi) : plSVG(t, +vi);
 }
 
 // ---------------------------------------------------------------- tabs
-const TABS = [['types', '🏷 Task types'], ['coy', '🗺 Company maps'], ['pl', '🗺 Platoon maps'], ['drills', '⚙ Section drills'], ['score', '📊 Scoring'], ['data', '⇅ Import / Export']];
+const TABS = [['types', '🏷 Task types'], ['bn', '🗺 Battalion maps'], ['coy', '🗺 Company maps'], ['pl', '🗺 Platoon maps'], ['drills', '⚙ Section drills'], ['score', '📊 Scoring'], ['data', '⇅ Import / Export']];
 function renderTypes() {
-  const lvN = { coy: 'Company objectives', pl: 'Platoon tasks', sec: 'Section tasks' };
+  const lvN = { bn: 'Battalion objectives', coy: 'Company objectives', pl: 'Platoon tasks', sec: 'Section tasks' };
   let h = `<p class="intro">Each level can only be given the task types switched on here (they show up as the objective chips in the game's Orders panel). Rename and re-icon any task type below.</p>`;
-  for (const lv of ['coy', 'pl', 'sec']) {
+  for (const lv of D.LEVELS) {
     const on = doc.levels[lv];
-    h += grp('lv:' + lv, lv === 'coy' ? '🅰' : lv === 'pl' ? '🅿' : '🆂', lvN[lv], `${on.length} allowed: ${on.map(t => ty(t).icon).join(' ')}`, () => {
+    h += grp('lv:' + lv, lv === 'bn' ? '🅱' : lv === 'coy' ? '🅰' : lv === 'pl' ? '🅿' : '🆂', lvN[lv], `${on.length} allowed: ${on.map(t => ty(t).icon).join(' ')}`, () => {
       let b = '<div class="hint">Allowed types (top to bottom = order of the chips in the game):</div>';
-      on.forEach((t, i) => { b += `<div class="lvrow"><span style="font-size:20px">${ty(t).icon}</span><div class="nm"><b>${esc(ty(t).label)}</b>${lv !== 'sec' && !doc[lv === 'coy' ? 'coy' : 'pl'][t] ? `<small>${lv === 'coy' ? '⚠ no company map yet: create one in 🗺 Company maps' : 'uses the Hold breakdown'}</small>` : ''}</div><button data-act="lvUp" data-a="${lv}:${i}" ${i ? '' : 'disabled'} aria-label="Move up">↑</button><button class="sw on" data-act="lvTog" data-a="${lv}:${t}" aria-label="Allowed" ${on.length < 2 ? 'disabled' : ''}></button></div>`; });
+      on.forEach((t, i) => { b += `<div class="lvrow"><span style="font-size:20px">${ty(t).icon}</span><div class="nm"><b>${esc(ty(t).label)}</b>${lv !== 'sec' && !doc[lv][t] ? `<small>${lv === 'bn' ? '⚠ no battalion map yet: create one in 🗺 Battalion maps' : lv === 'coy' ? '⚠ no company map yet: create one in 🗺 Company maps' : 'uses the Hold breakdown'}</small>` : ''}</div><button data-act="lvUp" data-a="${lv}:${i}" ${i ? '' : 'disabled'} aria-label="Move up">↑</button><button class="sw on" data-act="lvTog" data-a="${lv}:${t}" aria-label="Allowed" ${on.length < 2 ? 'disabled' : ''}></button></div>`; });
       const offT = D.TYPE_IDS.filter(t => !on.includes(t));
       if (offT.length) b += '<div class="lbl">Not allowed</div>';
       for (const t of offT) {
@@ -167,7 +206,7 @@ function renderTypes() {
       return b;
     });
   }
-  h += grp('cat', '🏷', 'Icons and labels', `${D.TYPE_IDS.length} task types`, () => D.TYPE_IDS.map(t => `<div class="tyrow"><input class="ic" data-txt="types.${t}.icon" value="${esc(ty(t).icon)}" maxlength="4" aria-label="${t} icon"><input data-txt="types.${t}.label" value="${esc(ty(t).label)}" maxlength="40" aria-label="${t} label"><span class="lvls">${['coy', 'pl', 'sec'].map(l => `<span class="${doc.levels[l].includes(t) ? 'on' : ''}">${l === 'coy' ? 'C' : l === 'pl' ? 'P' : 'S'}</span>`).join('')}</span></div>`).join('') + '<div class="hint">C / P / S = allowed for company / platoon / section.</div>');
+  h += grp('cat', '🏷', 'Icons and labels', `${D.TYPE_IDS.length} task types`, () => D.TYPE_IDS.map(t => `<div class="tyrow"><input class="ic" data-txt="types.${t}.icon" value="${esc(ty(t).icon)}" maxlength="4" aria-label="${t} icon"><input data-txt="types.${t}.label" value="${esc(ty(t).label)}" maxlength="40" aria-label="${t} label"><span class="lvls">${D.LEVELS.map(l => `<span class="${doc.levels[l].includes(t) ? 'on' : ''}">${l === 'bn' ? 'B' : l === 'coy' ? 'C' : l === 'pl' ? 'P' : 'S'}</span>`).join('')}</span></div>`).join('') + '<div class="hint">B / C / P / S = allowed for battalion / company / platoon / section.</div>');
   return h;
 }
 function tagChips(path) {
@@ -180,8 +219,8 @@ function varHead(lv, t, vi, n) {
     <div class="lbl">Style (commander tastes)</div>${tagChips(p + '.tags')}`;
 }
 function varActs(lv, t, vi, n) {
-  const p = `${lv}.${t}.variants.${vi}`, k = getP(p + '.roles').length, who = lv === 'coy' ? 'platoon' : 'section';
-  const note = k < 3 ? `Only ${k} role${k > 1 ? 's' : ''}: the spare ${who}${3 - k > 1 ? 's' : ''} will ${lv === 'coy' ? 'go into reserve' : 'hold at the platoon position'}.` : k > 3 ? `${k} roles for 3 ${who}s: ${lv === 'coy' ? 'the least important are' : 'the last ones are'} dropped.` : '';
+  const p = `${lv}.${t}.variants.${vi}`, k = getP(p + '.roles').length, who = lv === 'bn' ? 'company' : lv === 'coy' ? 'platoon' : 'section', whos = lv === 'bn' ? 'companies' : who + 's';
+  const note = k < 3 ? `Only ${k} role${k > 1 ? 's' : ''}: the spare ${3 - k > 1 ? whos : who} will ${lv !== 'pl' ? 'go into reserve' : 'hold at the platoon position'}.` : k > 3 ? `${k} roles for 3 ${whos}: ${lv !== 'pl' ? 'the least important are' : 'the last ones are'} dropped.` : '';
   return `${note ? `<div class="hint">ℹ ${note}</div>` : ''}<div class="acts"><button data-act="addRole" data-a="${p}" ${getP(p + '.roles').length >= 6 ? 'disabled' : ''}>＋ Role</button><button data-act="dupVar" data-a="${p}">⧉ Duplicate</button><button data-act="upVar" data-a="${p}" ${vi ? '' : 'disabled'}>↑</button><button data-act="delVar" data-a="${p}" ${n < 2 ? 'disabled' : ''}>🗑 Delete</button></div>`;
 }
 function siteChain(path) {
@@ -230,6 +269,37 @@ function renderCoy() {
           ${v.roles.map((r, ri) => coyRole(t, vi, ri, v.roles.length)).join('')}${varActs('coy', t, vi, B.variants.length)}</div>`;
       });
       return b + `<button class="addv" data-act="addVar" data-a="coy.${t}">＋ Add variant</button>`;
+    });
+  }
+  return h;
+}
+function bnRole(t, vi, ri, nRoles) {
+  const p = `bn.${t}.variants.${vi}.roles.${ri}`, r = getP(p), pl = r.place;
+  const typeOpts = [{ group: 'Company objectives', items: doc.levels.coy.map(x => [x, tyL(x)]) }, { group: 'Other', items: D.TYPE_IDS.filter(x => !doc.levels.coy.includes(x)).map(x => [x, tyL(x)]) }];
+  let prm = '';
+  if (pl.kind === 'flank') prm = `<div class="full nf"><label>Which flank</label>${seg(p + '.place.dir', [[-1, '⬅ Left'], [1, 'Right ➡']])}</div><div class="full nf"><label>If there are several, take</label>${sel(p + '.place.pick', BN_PICK_L)}</div>`
+    + nf(p + '.place.minSide', 'At least this far to the side', 'of the approach line', { unit: 'm', step: 10, min: 0, max: 800 }) + `<div class="nf"><label>If none is held<small>task instead</small></label>${sel(p + '.place.fallback', D.TYPE_IDS.map(x => [x, tyL(x)]))}</div>`
+    + nf(p + '.place.fbSide', '…at a spot to the side', '', { unit: 'm', step: 10 }) + nf(p + '.place.fbFwd', '…and forward', '+ beyond / − short', { unit: 'm', step: 10 });
+  else if (pl.kind === 'offset') prm = nf(p + '.place.fwd', 'Forward', '+ beyond / − short of it', { unit: 'm', step: 10 }) + nf(p + '.place.side', 'Side', '+ right / − left', { unit: 'm', step: 10 });
+  else if (pl.kind === 'behind') prm = nf(p + '.place.dist', 'Distance behind', '', { unit: 'm', step: 10, min: 0, max: 800 }) + nf(p + '.place.side', 'Side', '+ right / − left', { unit: 'm', step: 10 });
+  return `<div class="role" style="--rc:${RC[ri % RC.length]}"><div class="rh"><span class="rn">${ri + 1}</span>${sel(p + '.type', typeOpts)}<button data-act="delRole" data-a="${p}" ${nRoles < 2 ? 'disabled' : ''} aria-label="Delete role">✕</button></div>
+    <div class="prm"><div class="full nf"><label>Company objective goes to</label><select data-bnkind="${p}.place">${D.BN_PLACES.map(k => `<option value="${k}"${pl.kind === k ? ' selected' : ''}>${esc(BN_PLACE_L[k])}</option>`).join('')}</select></div>${prm}
+    ${nf(p + '.imp', 'Importance', 'kept first if companies are short', { step: 1, min: 1, max: 5 })}<div class="nf"><label>Wait for<small>gate</small></label>${sel(p + '.gate', GATE_L)}</div>
+    ${tog(p + '.woods', 'Clear instead of seize if it is a wood')}</div></div>`;
+}
+function renderBn() {
+  let h = `<p class="intro">How the battalion CO (Lt Col) breaks your battalion objective into 3 company tasks. He scores every variant with the 🅱 battalion weights in 📊 Scoring, adds his own misjudgement and tastes, and picks one; each company then plans its task with the 🗺 Company maps. "Flank" roles go to a known enemy-held position beside the approach (Farm, Wood…). "Wait for: fire support" holds that company's assault until the fire-base company is shooting. Diagrams are schematic.</p>`;
+  const order = [...doc.levels.bn, ...D.TYPE_IDS.filter(t => !doc.levels.bn.includes(t) && doc.bn[t])];
+  for (const t of order) {
+    const B = doc.bn[t];
+    if (!B) { h += grp('bn:' + t, ty(t).icon, ty(t).label, 'no map yet', `<p class="hint">The battalion can be given this objective but its CO has no plan for it.</p><button class="addv" data-act="mkBn" data-a="${t}">＋ Create a map for ${esc(ty(t).label)} (copy of Hold)</button>`); continue; }
+    h += grp('bn:' + t, ty(t).icon, ty(t).label, `${B.variants.length} variant${B.variants.length > 1 ? 's' : ''} · scored as ${(BN_SCORE_L.find(x => x[0] === B.scoreAs) || ['', B.scoreAs])[1]}${doc.levels.bn.includes(t) ? '' : ' · not allowed for the battalion'}`, () => {
+      let b = `<div class="row"><span class="hint grow">Scored as</span>${sel(`bn.${t}.scoreAs`, BN_SCORE_L)}</div>`;
+      B.variants.forEach((v, vi) => {
+        b += `<div class="var" data-var="bn:${t}:${vi}">${varHead('bn', t, vi, B.variants.length)}<div class="dia">${bnSVG(t, vi)}</div>
+          ${v.roles.map((r, ri) => bnRole(t, vi, ri, v.roles.length)).join('')}${varActs('bn', t, vi, B.variants.length)}</div>`;
+      });
+      return b + `<button class="addv" data-act="addVar" data-a="bn.${t}">＋ Add variant</button>`;
     });
   }
   return h;
@@ -285,7 +355,7 @@ function renderDrills() {
     ${arr('objective clear = achieved')}
     ${phase(3, '🛡', 'Consolidate and mop up', 'Hunts enemy still near the objective, sweeps it for hidden ones, then settles on the target.', tog(s + '.assault.consolidate.on', 'Use this step', 'Off = just stop on the objective') + (A.consolidate.on ? ['radius:Mop-up radius:m:5', 'clearRadius:…on a Clear objective:m:5', 'hunt:Hunts enemy up to:m:10', 'memory:Remembers unseen enemy:s:5', 'closeIn:Closes to:m:1', 'huntSpeed:Hunt speed ×::0.05', 'sweepSpeed:Sweep speed ×::0.05', 'ring:Sweep ring (× radius)::0.05', 'back:Back to target if over:m:5'].map(x => { const [k, l, u, st] = x.split(':'); return nf(`${s}.assault.consolidate.${k}`, l, '', { unit: u, step: +st }); }).join('') : ''), A.consolidate.on, '#9fd36a')}
   </div>`);
-  h += grp('sm:gates', '🚦', 'Platoon gates', 'fire support / rearguard timing', () => `<div class="prm">${nf(s + '.gates.sbfWait', 'Assault waits for fire support up to', '', { unit: 's', step: 10 })}${nf(s + '.gates.sbfEngaged', 'Fire support counts after firing for', '', { unit: 's', step: 1 })}${nf(s + '.gates.rearHold', 'Rearguard holds for', '', { unit: 's', step: 5 })}<span></span>${nf(s + '.gates.aggrScale.0', 'Careful: wait ×', '', { step: 0.05 })}${nf(s + '.gates.aggrScale.1', 'Normal: wait ×', '', { step: 0.05 })}${nf(s + '.gates.aggrScale.2', 'Bold: wait ×', '', { step: 0.05 })}</div>`);
+  h += grp('sm:gates', '🚦', 'Platoon gates', 'fire support / rearguard timing', () => `<div class="prm">${nf(s + '.gates.sbfWait', 'Assault waits for fire support up to', '', { unit: 's', step: 10 })}${nf(s + '.gates.sbfEngaged', 'Fire support counts after firing for', '', { unit: 's', step: 1 })}${nf(s + '.gates.rearHold', 'Rearguard holds for', '', { unit: 's', step: 5 })}${nf(s + '.gates.coyWait', 'Company assault waits for the fire-base company up to', 'battalion gate', { unit: 's', step: 10 })}${nf(s + '.gates.aggrScale.0', 'Careful: wait ×', '', { step: 0.05 })}${nf(s + '.gates.aggrScale.1', 'Normal: wait ×', '', { step: 0.05 })}${nf(s + '.gates.aggrScale.2', 'Bold: wait ×', '', { step: 0.05 })}</div>`);
   h += grp('sm:states', '⬇', 'Pinned and broken (British sections)', 'interrupt any step', () => `<div class="flow">${phase('any', '▶', 'Any step above', '')}
     ${arr(`suppression > ${doc.sm.pinned.at} + ${doc.sm.pinned.expBonus} × experience`)}
     ${phase('⬇', '', 'Pinned', 'Stops and hugs the ground. After a while it returns fire at whoever is pinning it, then resumes its task once the fire slackens.', nf(s + '.pinned.at', 'Pinned when suppression over', '', { step: 1 }) + nf(s + '.pinned.expBonus', '+ × experience', '', { step: 1 }) + nf(s + '.pinned.recover', 'Recovers under', '', { step: 1 }) + nf(s + '.pinned.returnFire', 'Returns fire after', '', { unit: 's', step: 1 }) + nf(s + '.pinned.expFaster', '− × experience', '', { unit: 's', step: 1 }) + nf(s + '.pinned.resume', 'Resumes task after OK for', '', { unit: 's', step: 1 }), true, '#ffd34a')}
@@ -294,6 +364,7 @@ function renderDrills() {
   return h;
 }
 const SCORE_L = {
+  bn: ['🅱', 'Battalion plans', [['main', 'Main effort on the objective', 'pts'], ['onObjDist', '…on the objective = within', 'm'], ['flanks', 'Flanking enemy positions dealt with (× share)', 'pts'], ['threatMin', '…flanking position = further than', 'm'], ['threatMax', '…and within', 'm'], ['threatFwd', '…and at most this far beyond the objective', 'm'], ['fire', 'Fire base on the objective', 'pts'], ['reserve', 'A company in reserve', 'pts'], ['base', 'Base points', 'pts'], ['spread', 'Defence / screen: good frontage', 'pts'], ['minGap', '…companies at least', 'm'], ['maxSpread', '…frontage under', 'm'], ['depth', 'Defence: depth', 'pts'], ['depthDist', '…depth = a company back by', 'm'], ['cover', 'Defence / screen: cover (× cover)', 'pts'], ['view', 'Screen: sees the approaches (× share)', 'pts'], ['viewRange', '…checked to', 'm'], ['rearguard', 'Withdrawal: has a rearguard', 'pts'], ['near', 'Withdrawal: ends near the rally point (× share)', 'pts'], ['nearDist', '…near = within', 'm']]],
   attack: ['⚔', 'Attack plans (seize, clear, platoon assault)', [['supLos', 'Fire support sees the objective', 'pts'], ['supCover', 'Fire support in cover (× cover)', 'pts'], ['supRange', 'Fire support at a good range', 'pts'], ['supMin', '…good range from', 'm'], ['supMax', '…good range to', 'm'], ['clearNoSup', 'Clear without fire support', 'pts'], ['flank', 'Assault comes in from a flank', 'pts'], ['flankAngle', '…flank = angle off the fire line over', 'deg'], ['approach', 'Covered approach (× cover)', 'pts'], ['onTarget', 'Assault on the right target', 'pts'], ['onTargetDist', '…right target = within', 'm'], ['reserve', 'Has a reserve / cut-off / overwatch', 'pts'], ['base', 'Base points', 'pts']]],
   defend: ['🛡', 'Defence plans (hold, reserve, cut-off)', [['cover', 'Positions in cover (× cover)', 'pts'], ['depth', 'Depth (Hold only)', 'pts'], ['depthDist', '…depth = someone back by', 'm'], ['spacing', 'Good spacing', 'pts'], ['minGap', '…bunched if closer than', 'm'], ['maxGap', '…spread out if wider than', 'm'], ['fields', 'Fields of fire (× share)', 'pts'], ['fieldRange', '…field of fire checked to', 'm']]],
   screen: ['👁', 'Screen plans', [['spread', 'Spread out', 'pts'], ['minSpread', '…spread = wider than', 'm'], ['view', 'Can see the approaches (× share)', 'pts'], ['viewRange', '…checked to', 'm'], ['cover', 'Cover (× cover)', 'pts']]],
@@ -317,7 +388,7 @@ function renderData() {
   ${msg ? `<div class="msg ${msg.k}">${esc(msg.t)}</div>` : ''}
   <h2>⬆ Export</h2><textarea id="exTxt" readonly aria-label="Exported JSON">${esc(json)}</textarea>
   <div class="acts"><button id="bCopy">📋 Copy</button><button id="bDown">💾 Download .json</button></div>
-  <h2>⬇ Import</h2><textarea id="imTxt" placeholder='Paste doctrine JSON here: { "version": 1, ... }' aria-label="JSON to import"></textarea>
+  <h2>⬇ Import</h2><textarea id="imTxt" placeholder='Paste doctrine JSON here: { "version": 2, ... } (v1 files without the battalion work too)' aria-label="JSON to import"></textarea>
   <div class="acts"><button id="bImport" class="go">⬇ Import pasted JSON</button><label style="flex:1"><input type="file" id="imFile" accept=".json,application/json,text/plain" hidden><button style="width:100%" onclick="this.previousElementSibling.click()">📂 From file</button></label></div>
   <h2>↺ Defaults</h2><p class="hint">Reset puts every map, drill and weight back to how Dev B wrote the game (and clears the saved copy).</p><div class="acts"><button class="warn" data-act="reset">↺ Reset everything to defaults</button></div>`;
 }
@@ -330,7 +401,7 @@ function renderStatus() {
 function render() {
   const y = window.scrollY, im = $('imTxt') ? $('imTxt').value : '';
   $('tabs').innerHTML = TABS.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('');
-  const f = { types: renderTypes, coy: renderCoy, pl: renderPl, drills: renderDrills, score: renderScore, data: renderData }[tab];
+  const f = { types: renderTypes, bn: renderBn, coy: renderCoy, pl: renderPl, drills: renderDrills, score: renderScore, data: renderData }[tab];
   $('main').innerHTML = (msg && tab !== 'data' ? `<div class="msg ${msg.k}">${esc(msg.t)}</div>` : '') + f();
   if (im && $('imTxt')) $('imTxt').value = im;
   renderStatus();
@@ -340,6 +411,7 @@ function toast(t, k = 'ok') { msg = { k, t }; render(); clearTimeout(toast.h); t
 
 // ---------------------------------------------------------------- actions
 const newCoyRole = () => ({ type: 'reserve', place: { kind: 'behind', dist: 280, side: 40, mirror: false }, imp: 1, gate: '', mistake: false });
+const newBnRole = () => ({ type: 'reserve', place: { kind: 'behind', dist: 300, side: 0 }, imp: 1, gate: '', woods: false });
 const newSecRole = () => ({ type: 'hold', pos: null, target: { base: 'pos', side: 0, fwd: -30, pick: 28, look: 'none', lookFwd: 200 } });
 function act(a, arg, el) {
   const lastDot = (p) => { const i = p.lastIndexOf('.'); return [p.slice(0, i), +p.slice(i + 1)]; };
@@ -347,20 +419,22 @@ function act(a, arg, el) {
     case 'lvTog': { const [lv, t] = arg.split(':'), L = doc.levels[lv]; const i = L.indexOf(t); if (i >= 0) { if (L.length > 1) L.splice(i, 1); } else L.push(t); break; }
     case 'lvUp': { const [lv, i] = arg.split(':'), L = doc.levels[lv], k = +i; if (k > 0) [L[k - 1], L[k]] = [L[k], L[k - 1]]; break; }
     case 'tag': { const i = arg.lastIndexOf(':'), p = arg.slice(0, i), t = arg.slice(i + 1), tags = getP(p); const j = tags.indexOf(t); if (j >= 0) tags.splice(j, 1); else tags.push(t); break; }
-    case 'addVar': { const B = getP(arg), lv = arg.split('.')[0]; const v = { id: 'v' + Date.now().toString(36), name: 'New variant', tags: [], roles: lv === 'coy' ? [newCoyRole(), newCoyRole(), newCoyRole()] : [newSecRole(), newSecRole(), newSecRole()] };
-      if (lv === 'coy') { v.roles[0] = { type: 'assault', place: { kind: 'fup', off: 0, dist: 130, sweep: true }, imp: 3, gate: 'sbf', mistake: false }; v.roles[1] = { type: 'sbf', place: { kind: 'fire', site: ['sweep', 'rank:0'] }, imp: 2, gate: '', mistake: false }; }
+    case 'addVar': { const B = getP(arg), lv = arg.split('.')[0]; const v = { id: 'v' + Date.now().toString(36), name: 'New variant', tags: [], roles: lv === 'bn' ? [newBnRole(), newBnRole(), newBnRole()] : lv === 'coy' ? [newCoyRole(), newCoyRole(), newCoyRole()] : [newSecRole(), newSecRole(), newSecRole()] };
+      if (lv === 'bn') { v.roles[0] = { type: 'seize', place: { kind: 'objective' }, imp: 3, gate: '', woods: false }; v.roles[1] = { type: 'seize', place: Object.assign({ kind: 'flank' }, clone(D.BN_PLACE_DEF.flank)), imp: 2, gate: '', woods: true }; }
+      else if (lv === 'coy') { v.roles[0] = { type: 'assault', place: { kind: 'fup', off: 0, dist: 130, sweep: true }, imp: 3, gate: 'sbf', mistake: false }; v.roles[1] = { type: 'sbf', place: { kind: 'fire', site: ['sweep', 'rank:0'] }, imp: 2, gate: '', mistake: false }; }
       else { v.roles[0].target.side = -30; v.roles[1].target.side = 30; v.roles[2].target.fwd = -40; }
       B.variants.push(v); break; }
     case 'dupVar': { const [p, i] = lastDot(arg), L = getP(p), v = clone(L[i]); v.id = 'v' + Date.now().toString(36); v.name = v.name + ' (copy)'; L.splice(i + 1, 0, v); break; }
     case 'delVar': { const [p, i] = lastDot(arg), L = getP(p); if (L.length > 1) L.splice(i, 1); break; }
     case 'upVar': { const [p, i] = lastDot(arg), L = getP(p); if (i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]]; break; }
-    case 'addRole': { const L = getP(arg + '.roles'); if (L.length < 6) L.push(arg.startsWith('coy') ? newCoyRole() : newSecRole()); break; }
+    case 'addRole': { const L = getP(arg + '.roles'); if (L.length < 6) L.push(arg.startsWith('bn') ? newBnRole() : arg.startsWith('coy') ? newCoyRole() : newSecRole()); break; }
     case 'delRole': { const [p, i] = lastDot(arg), L = getP(p); if (L.length > 1) L.splice(i, 1); break; }
     case 'ptOn': setP(arg, { base: 'pos', side: 0, fwd: 0, pick: 30, look: 'obj', lookFwd: 200 }); break;
     case 'ptOff': setP(arg, null); break;
     case 'delSite': case 'delAng': { const [p, i] = arg.split(':'); getP(p).splice(+i, 1); break; }
     case 'addAng': { const [p, t] = arg.split(':'), inp = $('ang-' + t), v = parseFloat(inp && inp.value); if (!isFinite(v) || Math.abs(v) > 180) { if (inp) inp.classList.add('bad'); return; } const L = getP(p); if (L.length < 9) L.push(v / R2D); break; }
     case 'pv': pv[arg] = (pv[arg] || 0) + 1; break;
+    case 'mkBn': doc.bn[arg] = clone(doc.bn.hold || D.DEFAULT_DOCTRINE.bn.hold); open.add('bn:' + arg); break;
     case 'mkCoy': doc.coy[arg] = clone(doc.coy.hold || D.DEFAULT_DOCTRINE.coy.hold); open.add('coy:' + arg); break;
     case 'mkPl': doc.pl[arg] = clone(doc.pl.hold || D.DEFAULT_DOCTRINE.pl.hold); open.add('pl:' + arg); break;
     case 'reset': confirmBox('Reset everything to defaults?', 'Every task type, objective map, drill and scoring weight goes back to the original. The saved custom doctrine is deleted.', [['↺ Reset', 'warn', () => { D.reset(); doc = D.defaults(); savedJSON = JSON.stringify(doc); toast('Reset to defaults ✓ (the game uses them on its next load)'); }], ['Cancel', '', null]]); return;
@@ -433,6 +507,7 @@ function bind() {
     if (d.num) { numInput(el, true); return; }
     if (d.txt) { render(); return; }
     if (d.sel) { setP(d.sel, el.value); render(); return; }
+    if (d.bnkind) { setP(d.bnkind, Object.assign({ kind: el.value }, clone(D.BN_PLACE_DEF[el.value]))); render(); return; }
     if (d.kindsel) { setP(d.kindsel, Object.assign({ kind: el.value }, clone(D.PLACE_DEF[el.value]))); render(); return; }
     if (d.addsite) { if (el.value) { const L = getP(d.addsite); if (L.length < 8) L.push(el.value); } render(); return; }
     if (d.chain) {

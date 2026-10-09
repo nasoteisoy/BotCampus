@@ -2,6 +2,8 @@
    Shared by game.js (reads it) and editor.html (reads + writes it). Plain data, no dependencies.
    Stored in localStorage under 'command-doctrine-v1'; anything missing or invalid falls back per field
    to DEFAULT_DOCTRINE, so a bad edit can't break the game.
+   v2 adds the battalion level (levels.bn, bn maps, score.bn, sm.gates.coyWait); a v1 doctrine without them still
+   loads, the missing parts come from the defaults.
    Units: metres, seconds, angles in radians (the editor shows degrees). */
 (function (root) {
 'use strict';
@@ -21,6 +23,17 @@ const PLACE_DEF = {
 const GATES = ['', 'sbf', 'rear'];
 const SITE_RE = /^(sweep|blind|last|random|rank:[0-9]|apart:\d{1,3}|seeApart:\d{1,3}|role:[0-5])$/;
 const LOOKS = ['obj', 'none', 'ahead'];
+const LEVELS = ['bn', 'coy', 'pl', 'sec'];
+// battalion maps: where each company role goes, relative to the battalion objective
+const BN_PLACES = ['objective', 'flank', 'offset', 'behind'];
+const BN_PLACE_DEF = {
+  objective: {},                                                                          // the battalion objective itself
+  flank: { dir: -1, pick: 'near', minSide: 100, fallback: 'screen', fbSide: 250, fbFwd: -100 }, // a known enemy-held feature on that flank of the approach
+  offset: { fwd: 0, side: 0 },                                                            // a spot relative to the objective (forward / side)
+  behind: { dist: 300, side: 0 },                                                         // a spot behind the objective, back toward the start
+};
+const BN_PICKS = ['near', 'close', 'deep'];
+const BN_SCORE_KINDS = ['attack', 'defend', 'screen', 'recon', 'withdraw', 'other'];
 
 // ---------------------------------------------------------------- defaults (reproduce v1.0 behaviour exactly)
 const fup = (off = 0, dist = 130, sweep = true) => ({ kind: 'fup', off, dist, sweep });
@@ -63,18 +76,58 @@ function assaultPl() {
     ],
   };
 }
+// battalion roles
+const bnr = (type, place, imp = 1, gate = '', woods = false) => ({ type, place, imp, gate, woods });
+const bOBJ = () => ({ kind: 'objective' });
+const bFL = (dir, fallback = 'screen') => ({ kind: 'flank', dir, pick: 'near', minSide: 100, fallback, fbSide: 250, fbFwd: -100 });
+const bOF = (fwd, side) => ({ kind: 'offset', fwd, side });
+const bBH = (dist = 300, side = 0) => ({ kind: 'behind', dist, side });
+function attackBn(t) {
+  return {
+    scoreAs: 'attack',
+    variants: [
+      V('book', 'Main effort + both flanking positions taken', ['book'], [bnr(t, bOBJ(), 3), bnr('seize', bFL(-1), 2, '', true), bnr('seize', bFL(1), 2, '', true)]),
+      V('fire', 'Fire base, assault, reserve', ['reserve'], [bnr(t, bOBJ(), 3, 'sbf'), bnr('sbf', bOBJ(), 2), bnr('reserve', bBH(), 1)]),
+      V('twoUp', 'Two up (objective + left flank), one back', ['reserve'], [bnr(t, bOBJ(), 3), bnr('seize', bFL(-1), 2, '', true), bnr('reserve', bBH(), 1)]),
+      V('allIn', 'All in: two companies on the objective + fire base', ['allIn'], [bnr(t, bOBJ(), 3), bnr(t, bOBJ(), 2), bnr('sbf', bOBJ(), 1)]),
+    ],
+  };
+}
 const sbfRoles = () => [-30, 0, 30].map(s => sr('suppress', pt('pos', s, 0, 30, 'obj'), OBJ));
 const DEFAULT_DOCTRINE = {
-  version: 1,
+  version: 2,
   types: {
     seize: { icon: '⚔', label: 'Seize' }, hold: { icon: '🛡', label: 'Hold' }, clear: { icon: '🧹', label: 'Clear' }, screen: { icon: '👁', label: 'Screen' },
     recon: { icon: '🔭', label: 'Recon' }, sbf: { icon: '🔥', label: 'Support by fire' }, reserve: { icon: '⏸', label: 'Reserve' }, withdraw: { icon: '↩', label: 'Withdraw to' },
     assault: { icon: '⚔', label: 'Assault' }, cutoff: { icon: '✂', label: 'Cut-off' }, move: { icon: '➜', label: 'Move to' }, suppress: { icon: '🔥', label: 'Suppress' }, overwatch: { icon: '👁', label: 'Overwatch' },
   },
   levels: {
+    bn: ['seize', 'clear', 'hold', 'screen', 'recon', 'withdraw'],
     coy: ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw'],
     pl: ['assault', 'sbf', 'cutoff', 'reserve', 'hold', 'clear', 'screen', 'recon', 'withdraw'],
     sec: ['move', 'suppress', 'assault', 'hold', 'overwatch'],
+  },
+  // battalion objective -> 3 company roles
+  bn: {
+    seize: attackBn('seize'),
+    clear: attackBn('clear'),
+    hold: { scoreAs: 'defend', variants: [
+      V('book', 'Two up, one back in reserve', ['book'], [bnr('hold', bOF(0, -150), 2), bnr('hold', bOF(0, 150), 2), bnr('reserve', bBH(250), 1)]),
+      V('line', 'Three up, wide line', [], [bnr('hold', bOF(0, -260), 2), bnr('hold', bOF(0, 0), 2), bnr('hold', bOF(0, 260), 2)]),
+      V('bunched', 'All three on the objective', ['bunched'], [bnr('hold', bOF(0, -50), 2), bnr('hold', bOF(0, 0), 2), bnr('hold', bOF(0, 50), 2)]),
+    ] },
+    screen: { scoreAs: 'screen', variants: [
+      V('book', 'Wide screen, three companies', ['book'], [bnr('screen', bOF(0, -300), 2), bnr('screen', bOF(0, 0), 2), bnr('screen', bOF(0, 300), 2)]),
+      V('depth', 'Two screen, one in reserve', ['reserve'], [bnr('screen', bOF(0, -220), 2), bnr('screen', bOF(0, 220), 2), bnr('reserve', bBH(200), 1)]),
+    ] },
+    recon: { scoreAs: 'recon', variants: [
+      V('book', 'One company feels forward, one screens, one in reserve', ['book'], [bnr('recon', bOBJ(), 3), bnr('screen', bOF(-200, -250), 1), bnr('reserve', bBH(350), 1)]),
+      V('allIn', 'All in: recon the objective and both flanks', ['allIn'], [bnr('recon', bOBJ(), 3), bnr('recon', bFL(-1, 'recon'), 2), bnr('recon', bFL(1, 'recon'), 2)]),
+    ] },
+    withdraw: { scoreAs: 'withdraw', variants: [
+      V('book', 'Two back, one company as rearguard', ['book'], [bnr('withdraw', bOF(0, -200), 2), bnr('withdraw', bOF(0, 200), 2), bnr('withdraw', bOF(0, 0), 1, 'rear')]),
+      V('all', 'Everyone back at once', [], [bnr('withdraw', bOF(0, -200), 2), bnr('withdraw', bOF(0, 200), 2), bnr('withdraw', bOF(0, 0), 1)]),
+    ] },
   },
   // company objective -> 3 platoon roles
   coy: {
@@ -137,12 +190,14 @@ const DEFAULT_DOCTRINE = {
       charge: { far: 1.1, close: 1.8, closeDist: 120, shock: 35, shockSupp: 45, shockBase: 2.5, shockAggr: 1.5, take: 35 },
       consolidate: { on: true, radius: 65, clearRadius: 100, hunt: 160, memory: 60, closeIn: 14, huntSpeed: 1.4, sweepSpeed: 0.8, ring: 0.6, back: 30 },
     },
-    gates: { sbfWait: 420, sbfEngaged: 25, rearHold: 90, aggrScale: [1.4, 1, 0.5] },
+    gates: { sbfWait: 420, sbfEngaged: 25, rearHold: 90, aggrScale: [1.4, 1, 0.5], coyWait: 600 },
     pinned: { at: 66, expBonus: 18, recover: 35, returnFire: 28, expFaster: 16, resume: 15 },
     broken: { morale: 25, strength: 0.3, speed: 1.8, rallySupp: 15, rallyMorale: 40, rallyDelay: 20 },
   },
   // plan scoring weights (points out of 100)
   score: {
+    bn: { main: 25, onObjDist: 100, flanks: 50, threatMin: 120, threatMax: 500, threatFwd: 60, fire: 12, reserve: 12, base: 10,
+      spread: 25, minGap: 120, maxSpread: 800, depth: 20, depthDist: 120, cover: 20, view: 25, viewRange: 250, rearguard: 40, near: 50, nearDist: 350 },
     attack: { supLos: 25, supCover: 10, supRange: 10, supMin: 120, supMax: 380, clearNoSup: 15, flank: 20, flankAngle: 0.75, approach: 15, onTarget: 15, onTargetDist: 70, reserve: 15, base: 5 },
     defend: { cover: 40, depth: 20, depthDist: 50, spacing: 20, minGap: 25, maxGap: 320, fields: 20, fieldRange: 150 },
     screen: { spread: 40, minSpread: 120, view: 40, viewRange: 200, cover: 20 },
@@ -156,7 +211,7 @@ const DEFAULT_DOCTRINE = {
 };
 
 // canonical key order (catalog order), so a saved copy compares equal to the defaults
-for (const k of ['coy', 'pl']) { const o = DEFAULT_DOCTRINE[k], r = {}; for (const t of TYPE_IDS) if (o[t]) r[t] = o[t]; DEFAULT_DOCTRINE[k] = r; }
+for (const k of ['bn', 'coy', 'pl']) { const o = DEFAULT_DOCTRINE[k], r = {}; for (const t of TYPE_IDS) if (o[t]) r[t] = o[t]; DEFAULT_DOCTRINE[k] = r; }
 
 // ---------------------------------------------------------------- validation: per-field fallback
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -164,7 +219,7 @@ const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
 const fin = (v) => typeof v === 'number' && isFinite(v);
 // numeric ranges by field name (anything else: generous bounds by sign of the default)
 const RANGE = {
-  off: [-Math.PI, Math.PI], dist: [0, 800], fwd: [-800, 800], side: [-800, 800], imp: [1, 5], pick: [0, 200], lookFwd: [-800, 800],
+  off: [-Math.PI, Math.PI], dist: [0, 800], fwd: [-800, 800], side: [-800, 800], dir: [-1, 1], minSide: [0, 800], fbSide: [-800, 800], fbFwd: [-800, 800], imp: [1, 5], pick: [0, 200], lookFwd: [-800, 800],
   wrongChance: [0, 1], speed: [0.05, 10], far: [0.05, 10], close: [0.05, 10], huntSpeed: [0.05, 10], sweepSpeed: [0.05, 10], ring: [0, 2],
   arrive: [0.5, 100], strength: [0, 1], flankAngle: [0, Math.PI], dumbBelow: [0, 1], frontal: [-10, 10], noLos: [-10, 10], allIn: [-10, 10], bunched: [-10, 10], wrong: [-10, 10],
 };
@@ -216,6 +271,23 @@ function sanPoint(p, def, warn, path) {
     pick: num(p.pick, 0, 'pick', warn, path + '.pick'), look: LOOKS.includes(p.look) ? p.look : 'none', lookFwd: num(p.lookFwd, 200, 'lookFwd', warn, path + '.lookFwd'),
   };
 }
+function sanBnPlace(p, warn, path) {
+  if (!isObj(p) || !BN_PLACES.includes(p.kind)) { warn.push(path); return null; }
+  const d = BN_PLACE_DEF[p.kind], out = { kind: p.kind };
+  for (const k of Object.keys(d)) {
+    const dv = d[k], v = p[k], pp = path + '.' + k;
+    if (k === 'pick') { out.pick = BN_PICKS.includes(v) ? v : dv; if (v !== undefined && out.pick !== v) warn.push(pp); }
+    else if (k === 'fallback') { out.fallback = TYPE_IDS.includes(v) ? v : dv; if (v !== undefined && out.fallback !== v) warn.push(pp); }
+    else if (k === 'dir') { const n = num(v, dv, k, warn, pp); out.dir = n < 0 ? -1 : 1; }
+    else out[k] = num(v, dv, k, warn, pp);
+  }
+  return out;
+}
+function sanBnRole(r, warn, path) {
+  if (!isObj(r) || !TYPE_IDS.includes(r.type)) { warn.push(path); return null; }
+  const place = sanBnPlace(r.place, warn, path + '.place'); if (!place) return null;
+  return { type: r.type, place, imp: Math.round(num(r.imp, 1, 'imp', warn, path + '.imp')), gate: GATES.includes(r.gate) ? r.gate : (r.gate == null ? '' : (warn.push(path + '.gate'), '')), woods: r.woods === true };
+}
 function sanSecRole(r, warn, path) {
   if (!isObj(r) || !SEC_SM.includes(r.type)) { warn.push(path); return null; }
   return { type: r.type, pos: r.pos == null ? null : sanPoint(r.pos, null, warn, path + '.pos'), target: sanPoint(r.target, OBJ, warn, path + '.target') };
@@ -244,14 +316,26 @@ function sanSearch(s, def, warn, path) {
 function sanitize(inp) {
   const warn = [], D = DEFAULT_DOCTRINE;
   if (!isObj(inp)) return { doc: clone(D), warnings: ['not an object'], ok: false };
-  const doc = { version: 1 };
+  const doc = { version: 2 };
   doc.types = shape(inp.types, D.types, warn, 'types');
   doc.levels = {};
-  for (const lv of ['coy', 'pl', 'sec']) {
+  for (const lv of LEVELS) {
     const v = inp.levels && inp.levels[lv];
     const ok = Array.isArray(v) ? [...new Set(v.filter(t => TYPE_IDS.includes(t) && (lv !== 'sec' || SEC_SM.includes(t))))] : [];
     if (v !== undefined && (!Array.isArray(v) || ok.length !== v.length)) warn.push('levels.' + lv);
     doc.levels[lv] = ok.length ? ok : clone(D.levels[lv]);
+  }
+  // battalion maps (absent in v1 doctrines: defaults fill in)
+  doc.bn = {};
+  const ib = isObj(inp.bn) ? inp.bn : {};
+  for (const t of TYPE_IDS) {
+    const d = D.bn[t], v = ib[t];
+    if (!v && !d) continue;
+    if (!isObj(v)) { if (v !== undefined) warn.push('bn.' + t); if (d) doc.bn[t] = clone(d); continue; }
+    const tmpl = d || D.bn.hold;
+    const variants = sanVariants(v.variants, sanBnRole, warn, `bn.${t}.variants`);
+    if (!variants) warn.push(`bn.${t}.variants`);
+    doc.bn[t] = { scoreAs: BN_SCORE_KINDS.includes(v.scoreAs) ? v.scoreAs : tmpl.scoreAs, variants: variants || clone(tmpl.variants) };
   }
   doc.coy = {};
   const ic = isObj(inp.coy) ? inp.coy : {};
@@ -277,7 +361,7 @@ function sanitize(inp) {
   }
   doc.sm = shape(inp.sm, D.sm, warn, 'sm');
   doc.score = shape(inp.score, D.score, warn, 'score');
-  const known = ['types', 'levels', 'coy', 'pl', 'sm', 'score'].filter(k => inp[k] !== undefined).length;
+  const known = ['types', 'levels', 'bn', 'coy', 'pl', 'sm', 'score'].filter(k => inp[k] !== undefined).length;
   return { doc, warnings: warn, ok: known > 0 };
 }
 // parse text from Import: rejects garbage outright, otherwise returns the cleaned doctrine + what was fixed
@@ -286,7 +370,7 @@ function parse(text) {
   try { o = JSON.parse(String(text)); } catch (e) { return { ok: false, error: 'Not valid JSON: ' + e.message }; }
   if (!isObj(o)) return { ok: false, error: 'Expected a JSON object { … }.' };
   const r = sanitize(o);
-  if (!r.ok) return { ok: false, error: 'No doctrine sections found (types, levels, coy, pl, sm, score).' };
+  if (!r.ok) return { ok: false, error: 'No doctrine sections found (types, levels, bn, coy, pl, sm, score).' };
   return { ok: true, doc: r.doc, warnings: r.warnings };
 }
 const store = {
@@ -305,5 +389,5 @@ function save(doc) { const r = sanitize(doc); return store.set(JSON.stringify(r.
 function reset() { store.del(); }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-root.CLDoctrine = { KEY, DEFAULT_DOCTRINE, TYPE_IDS, SEC_SM, SCORE_KINDS, TAGS, COY_PLACES, PLACE_DEF, GATES, SITE_RE, LOOKS, defaults: () => clone(DEFAULT_DOCTRINE), sanitize, parse, load, save, reset, same, clone };
+root.CLDoctrine = { KEY, DEFAULT_DOCTRINE, TYPE_IDS, SEC_SM, SCORE_KINDS, TAGS, COY_PLACES, PLACE_DEF, GATES, SITE_RE, LOOKS, LEVELS, BN_PLACES, BN_PLACE_DEF, BN_PICKS, BN_SCORE_KINDS, defaults: () => clone(DEFAULT_DOCTRINE), sanitize, parse, load, save, reset, same, clone };
 })(typeof window !== 'undefined' ? window : globalThis);
