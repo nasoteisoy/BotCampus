@@ -5,8 +5,8 @@
 // the doctrine (all objective maps, drills and scoring weights) lives in doctrine.js; load it first if a stale page missed it
 if (!window.CLDoctrine) { const sc = document.createElement('script'); sc.src = 'doctrine.js'; sc.onload = boot; document.head.appendChild(sc); return; }
 const DOCL = window.CLDoctrine.load(), DOC = DOCL.doc;
-const VERSION = 'v1.2';
-const WW = 1200, WH = 900, TAU = Math.PI * 2, TICK = 0.5;
+const VERSION = 'v2.0';
+const WW = 3000, WH = 1000, TAU = Math.PI * 2, TICK = 0.5;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -39,84 +39,161 @@ function segRect(ax, ay, bx, by, x0, y0, x1, y1) {
 function polyDist(P, x, y) { let b = 1e9; for (let i = 0; i < P.length - 1; i++) b = Math.min(b, segDist(x, y, P[i][0], P[i][1], P[i + 1][0], P[i + 1][1])); return b; }
 
 // ---------------------------------------------------------------- map (metres; north is up, the British attack from the south)
-const RIVER = [[0, 214], [180, 196], [360, 204], [520, 226], [690, 214], [860, 196], [1040, 206], [1200, 198]], RIVER_W = 24;
-const BRIDGE = { x: 690, y: 214 };
+// A 3 km brigade front, 1 km deep. The old 1.2 km battalion map is the centre sector (2nd Bn), shifted by (900, 100);
+// 1st Bn attacks in the west sector (Ashford), 3rd Bn in the east sector (Manor), across the Mill Brook.
+const OX = 900, OY = 100, sh = (P) => P.map(([x, y]) => [x + OX, y + OY]);
+const RIVER = [[0, 312], [150, 298], [300, 304], [420, 318], [560, 326], [740, 304], [900, 314],
+  ...sh([[180, 196], [360, 204], [520, 226], [690, 214], [860, 196], [1040, 206]]), [2100, 298], [2250, 306], [2420, 320], [2600, 312], [2780, 296], [3000, 306]], RIVER_W = 24;
+const BRIDGES = [{ x: 420, y: 318 }, { x: 1590, y: 314 }, { x: 2600, y: 312 }]; // three crossings
+const BROOK = [[2185, 309], [2165, 420], [2195, 540], [2178, 660], [2205, 800], [2188, 1000]], BROOK_W = 9; // wadeable, slow
 const ROADS = [
-  [[690, 0], [690, 180], [690, 250], [650, 360], [620, 450], [608, 620], [600, 900]],
-  [[0, 478], [180, 470], [300, 462], [460, 456], [620, 450], [800, 444], [1000, 432], [1200, 428]],
-  [[300, 462], [292, 520], [286, 572]],
+  [[1590, 0], ...sh([[690, 0], [690, 180], [690, 250], [650, 360], [620, 450], [608, 620], [600, 900]]), [1500, 1000]],
+  [[0, 600], [200, 590], [420, 568], [620, 585], [800, 580], ...sh([[0, 478], [180, 470], [300, 462], [460, 456], [620, 450], [800, 444], [1000, 432], [1200, 428]]), [2300, 540], [2450, 552], [2600, 560], [2780, 548], [3000, 540]],
+  sh([[300, 462], [292, 520], [286, 572]]),
+  [[420, 0], [420, 200], [420, 318], [425, 450], [420, 568], [430, 700], [450, 1000]],
+  [[2600, 0], [2600, 200], [2600, 312], [2595, 450], [2600, 560], [2620, 750], [2640, 1000]],
+  [[2600, 560], [2740, 532], [2860, 512]],
 ];
 const HOUSES = [
-  // village round the crossroads
-  [560, 428, 14, 12], [645, 405, 14, 12], [655, 462, 14, 14], [590, 462, 14, 14], [628, 470, 12, 12],
-  [560, 462, 16, 12], [585, 425, 14, 12], [672, 425, 14, 12], [700, 456, 12, 14], [584, 500, 12, 14],
-  // church (nave + tower)
-  [516, 372, 22, 42, 'church'], [521, 359, 12, 13, 'church'],
-  // farm
-  [266, 584, 22, 14, 'farm'], [296, 596, 14, 26, 'farm'],
-  // north bank hamlet
-  [640, 120, 14, 12], [728, 112, 16, 12],
+  // centre: village round the crossroads, church (nave + tower), farm, north bank hamlet
+  ...[[560, 428, 14, 12], [645, 405, 14, 12], [655, 462, 14, 14], [590, 462, 14, 14], [628, 470, 12, 12],
+    [560, 462, 16, 12], [585, 425, 14, 12], [672, 425, 14, 12], [700, 456, 12, 14], [584, 500, 12, 14],
+    [516, 372, 22, 42, 'church'], [521, 359, 12, 13, 'church'], [266, 584, 22, 14, 'farm'], [296, 596, 14, 26, 'farm'],
+    [640, 120, 14, 12], [728, 112, 16, 12]].map(([x, y, w, h, k]) => [x + OX, y + OY, w, h, k]),
+  // west: Ashford village, the Mill on the north bank
+  [380, 530, 14, 12], [440, 528, 14, 12], [455, 585, 14, 14], [388, 590, 14, 14], [350, 555, 16, 12], [470, 550, 12, 14], [400, 500, 14, 12], [445, 615, 12, 12], [372, 612, 14, 12],
+  [395, 226, 20, 14, 'farm'], [442, 212, 14, 12], [360, 240, 12, 12],
+  // east: the Manor and outbuildings, the windmill, Northend hamlet, a farm behind the start line
+  [2582, 538, 32, 22, 'manor'], [2628, 584, 14, 12], [2560, 590, 12, 14], [2632, 530, 12, 10],
+  [2866, 506, 10, 10, 'mill'], [2580, 208, 14, 12], [2626, 222, 14, 12], [2602, 180, 12, 12], [2440, 820, 22, 14, 'farm'],
 ].map(([x, y, w, h, k]) => ({ x, y, w, h, k: k || 'house' }));
-const WOOD = { x: 960, y: 560, rx: 150, ry: 110 };
-const RIDGE = { x: 230, y: 330, rx: 230, ry: 78, a: -0.25 };
-const HEDGES = [
-  [[60, 700], [280, 690]], [[320, 688], [560, 700]], [[640, 700], [900, 690]], [[950, 705], [1150, 690]],
-  [[100, 540], [240, 530]], [[380, 560], [520, 540]], [[740, 560], [800, 640]],
-  [[420, 330], [480, 420]], [[740, 330], [820, 380]], [[840, 300], [1000, 320]],
-  [[150, 780], [150, 880]], [[450, 760], [450, 880]], [[780, 760], [780, 880]], [[360, 470], [380, 640]],
+const WOODS = [
+  { id: 'wood', x: 1860, y: 660, rx: 150, ry: 110, n: 420 },
+  { id: 'orchard', x: 160, y: 650, rx: 95, ry: 70, n: 0, orchard: true },
+  { id: 'gwood', x: 2330, y: 640, rx: 140, ry: 105, n: 400 },
+  { id: 'copse', x: 1010, y: 800, rx: 45, ry: 32, n: 50 },
 ];
+const RIDGES = [
+  { x: 1130, y: 430, rx: 230, ry: 78, a: -0.25 }, // the Ridge (centre)
+  { x: 720, y: 520, rx: 170, ry: 75, a: 0.15 },   // Hill 108 (west)
+  { x: 2870, y: 520, rx: 150, ry: 80, a: -0.1 },  // Windmill Hill (east)
+];
+const HEDGES = [
+  ...[[[60, 700], [280, 690]], [[320, 688], [560, 700]], [[640, 700], [900, 690]], [[950, 705], [1150, 690]],
+    [[100, 540], [240, 530]], [[380, 560], [520, 540]], [[740, 560], [800, 640]],
+    [[420, 330], [480, 420]], [[740, 330], [820, 380]], [[840, 300], [1000, 320]],
+    [[150, 780], [150, 880]], [[450, 760], [450, 880]], [[780, 760], [780, 880]], [[360, 470], [380, 640]]].map(([a, b]) => [[a[0] + OX, a[1] + OY], [b[0] + OX, b[1] + OY]]),
+  [[40, 800], [300, 790]], [[340, 790], [600, 800]], [[620, 700], [760, 690]], [[250, 470], [330, 450]], [[520, 640], [600, 700]], [[150, 880], [150, 990]], [[620, 880], [620, 990]], [[560, 420], [600, 470]],
+  [[2260, 800], [2500, 790]], [[2540, 795], [2800, 805]], [[2700, 650], [2820, 640]], [[2440, 470], [2520, 430]], [[2700, 430], [2760, 380]], [[2500, 880], [2500, 990]], [[2760, 880], [2760, 990]], [[2880, 640], [2980, 660]],
+];
+// named places; sec = sector (0 west / 1 centre / 2 east), rear = behind the river, start = a start line
 const FEATS = [
-  { id: 'bridge', name: 'Bridge', x: 690, y: 222, r: 45, icon: '🌉' },
-  { id: 'xroads', name: 'Crossroads', x: 622, y: 452, r: 70, icon: '✚' },
-  { id: 'church', name: 'Church', x: 527, y: 392, r: 55, icon: '⛪' },
-  { id: 'wood', name: 'Wood', x: 950, y: 560, r: 120, icon: '🌲' },
-  { id: 'ridge', name: 'Ridge', x: 230, y: 330, r: 110, icon: '⛰' },
-  { id: 'farm', name: 'Farm', x: 288, y: 598, r: 55, icon: '🏚' },
-  { id: 'nbank', name: 'North bank', x: 690, y: 130, r: 70, icon: '🏞' },
-  { id: 'start', name: 'Start line', x: 620, y: 810, r: 160, icon: '🚩' },
+  { id: 'ashford', name: 'Ashford', x: 420, y: 565, r: 70, icon: '🏘', sec: 0 },
+  { id: 'orchard', name: 'Orchard', x: 160, y: 650, r: 85, icon: '🍎', sec: 0 },
+  { id: 'hill', name: 'Hill 108', x: 720, y: 520, r: 110, icon: '⛰', sec: 0 },
+  { id: 'wbridge', name: 'West Bridge', x: 420, y: 326, r: 45, icon: '🌉', sec: 0 },
+  { id: 'mill', name: 'The Mill', x: 410, y: 228, r: 70, icon: '⚙', sec: 0, rear: true },
+  { id: 'bridge', name: 'Centre Bridge', x: 1590, y: 322, r: 45, icon: '🌉', sec: 1 },
+  { id: 'xroads', name: 'Crossroads', x: 1522, y: 552, r: 70, icon: '✚', sec: 1 },
+  { id: 'church', name: 'Church', x: 1427, y: 492, r: 55, icon: '⛪', sec: 1 },
+  { id: 'wood', name: 'Wood', x: 1850, y: 660, r: 120, icon: '🌲', sec: 1 },
+  { id: 'ridge', name: 'Ridge', x: 1130, y: 430, r: 110, icon: '⛰', sec: 1 },
+  { id: 'farm', name: 'Farm', x: 1188, y: 698, r: 55, icon: '🏚', sec: 1 },
+  { id: 'nbank', name: 'North bank', x: 1590, y: 230, r: 70, icon: '🏞', sec: 1, rear: true },
+  { id: 'manor', name: 'Manor', x: 2600, y: 560, r: 65, icon: '🏰', sec: 2 },
+  { id: 'gwood', name: 'Great Wood', x: 2330, y: 640, r: 120, icon: '🌳', sec: 2 },
+  { id: 'wmill', name: 'Windmill Hill', x: 2870, y: 515, r: 110, icon: '⛰', sec: 2 },
+  { id: 'ebridge', name: 'East Bridge', x: 2600, y: 320, r: 45, icon: '🌉', sec: 2 },
+  { id: 'nend', name: 'Northend', x: 2600, y: 210, r: 70, icon: '🏘', sec: 2, rear: true },
+  { id: 'start1', name: 'Start line W', x: 450, y: 910, r: 160, icon: '🚩', sec: 0, start: true },
+  { id: 'start2', name: 'Start line C', x: 1520, y: 910, r: 160, icon: '🚩', sec: 1, start: true },
+  { id: 'start3', name: 'Start line E', x: 2610, y: 910, r: 160, icon: '🚩', sec: 2, start: true },
 ];
 const FEAT = Object.fromEntries(FEATS.map(f => [f.id, f]));
-const TREES = (() => { const r = mulberry(11), out = []; for (let i = 0; i < 420; i++) { const a = r() * TAU, d = Math.sqrt(r()); out.push([WOOD.x + Math.cos(a) * d * WOOD.rx * 0.97, WOOD.y + Math.sin(a) * d * WOOD.ry * 0.97, 4 + r() * 5]); } return out; })();
-const inWood = (x, y) => ((x - WOOD.x) / WOOD.rx) ** 2 + ((y - WOOD.y) / WOOD.ry) ** 2 < 1;
-function elev(x, y) {
-  const c = Math.cos(-RIDGE.a), s = Math.sin(-RIDGE.a), dx = x - RIDGE.x, dy = y - RIDGE.y;
-  const u = dx * c - dy * s, v = dx * s + dy * c;
-  return Math.max(0, 1 - (u / RIDGE.rx) ** 2 - (v / RIDGE.ry) ** 2);
+const TREES = (() => {
+  const r = mulberry(11), out = [];
+  for (const w of WOODS) {
+    if (w.orchard) { for (let y = -w.ry; y <= w.ry; y += 14) for (let x = -w.rx; x <= w.rx; x += 14) if ((x / w.rx) ** 2 + (y / w.ry) ** 2 < 0.92) out.push([w.x + x + (r() - 0.5) * 3, w.y + y + (r() - 0.5) * 3, 3.5 + r() * 1.5, 1]); continue; }
+    for (let i = 0; i < w.n; i++) { const a = r() * TAU, d = Math.sqrt(r()); out.push([w.x + Math.cos(a) * d * w.rx * 0.97, w.y + Math.sin(a) * d * w.ry * 0.97, 4 + r() * 5, 0]); }
+  }
+  return out;
+})();
+const inWoodA = (x, y) => WOODS.some(w => ((x - w.x) / w.rx) ** 2 + ((y - w.y) / w.ry) ** 2 < 1);
+function elevA(x, y) {
+  let e = 0;
+  for (const R of RIDGES) {
+    const c = Math.cos(-R.a), s = Math.sin(-R.a), dx = x - R.x, dy = y - R.y;
+    const u = dx * c - dy * s, v = dx * s + dy * c;
+    e = Math.max(e, 1 - (u / R.rx) ** 2 - (v / R.ry) ** 2);
+  }
+  return e;
 }
-const onBridge = (x, y) => Math.abs(x - BRIDGE.x) < 8 && Math.abs(y - BRIDGE.y) < 26;
-const inRiver = (x, y) => !onBridge(x, y) && polyDist(RIVER, x, y) < RIVER_W / 2;
-const houseAt = (x, y, m = 0) => HOUSES.find(h => x > h.x - m && x < h.x + h.w + m && y > h.y - m && y < h.y + h.h + m);
-const hedgeDist = (x, y) => { let b = 1e9; for (const [a, c] of HEDGES) b = Math.min(b, segDist(x, y, a[0], a[1], c[0], c[1])); return b; };
-const roadDist = (x, y) => { let b = 1e9; for (const R of ROADS) b = Math.min(b, polyDist(R, x, y)); return b; };
+const onBridge = (x, y) => BRIDGES.some(b => Math.abs(x - b.x) < 8 && Math.abs(y - b.y) < 26);
+// spatial index (100 m tiles) for houses and line features, so terrain queries stay cheap on the big map
+const TI = 100, TX = Math.ceil(WW / TI), TY = Math.ceil(WH / TI);
+function mkIndex(items, box, pad) {
+  const B = Array.from({ length: TX * TY }, () => []);
+  for (const it of items) {
+    const [x0, y0, x1, y1] = box(it);
+    for (let ty = clamp(Math.floor((y0 - pad) / TI), 0, TY - 1); ty <= clamp(Math.floor((y1 + pad) / TI), 0, TY - 1); ty++)
+      for (let tx = clamp(Math.floor((x0 - pad) / TI), 0, TX - 1); tx <= clamp(Math.floor((x1 + pad) / TI), 0, TX - 1); tx++) B[ty * TX + tx].push(it);
+  }
+  return (x, y) => B[clamp(Math.floor(y / TI), 0, TY - 1) * TX + clamp(Math.floor(x / TI), 0, TX - 1)];
+}
+const segsOf = (P) => { const o = []; for (let i = 0; i < P.length - 1; i++) o.push([P[i][0], P[i][1], P[i + 1][0], P[i + 1][1]]); return o; };
+const segBox = (s) => [Math.min(s[0], s[2]), Math.min(s[1], s[3]), Math.max(s[0], s[2]), Math.max(s[1], s[3])];
+const houseIx = mkIndex(HOUSES, h => [h.x, h.y, h.x + h.w, h.y + h.h], 12);
+const hedgeIx = mkIndex(HEDGES.map(([a, b]) => [a[0], a[1], b[0], b[1]]), segBox, 12);
+const roadIx = mkIndex(ROADS.flatMap(segsOf), segBox, 12);
+const riverIx = mkIndex(segsOf(RIVER), segBox, 30), brookIx = mkIndex(segsOf(BROOK), segBox, 20);
+const nearSeg = (ix, x, y, far = 1e9) => { let b = far; for (const s of ix(x, y)) b = Math.min(b, segDist(x, y, s[0], s[1], s[2], s[3])); return b; };
+const inRiver = (x, y) => !onBridge(x, y) && nearSeg(riverIx, x, y, 99) < RIVER_W / 2;
+const inBrook = (x, y) => nearSeg(brookIx, x, y, 99) < BROOK_W / 2;
+const houseAt = (x, y, m = 0) => houseIx(x, y).find(h => x > h.x - m && x < h.x + h.w + m && y > h.y - m && y < h.y + h.h + m);
+const hedgeDist = (x, y) => nearSeg(hedgeIx, x, y, 99);
+const roadDist = (x, y) => nearSeg(roadIx, x, y, 99);
+const riverY = (x) => { for (let i = 0; i < RIVER.length - 1; i++) { const [a, b] = [RIVER[i], RIVER[i + 1]]; if (x >= a[0] && x <= b[0]) return lerp(a[1], b[1], (x - a[0]) / (b[0] - a[0] || 1)); } return 310; };
+// 5 m raster of the slow-to-compute terrain (wood, elevation): line of sight samples it many times per tick
+const GC = 5, GX = WW / GC, GY = WH / GC, NC = GX * GY;
+const woodG = new Uint8Array(NC), elevG = new Uint8Array(NC);
+const cellAt = (x, y) => clamp(Math.floor(y / GC), 0, GY - 1) * GX + clamp(Math.floor(x / GC), 0, GX - 1);
+for (let gy = 0; gy < GY; gy++) for (let gx = 0; gx < GX; gx++) { const x = gx * GC + GC / 2, y = gy * GC + GC / 2, i = gy * GX + gx; woodG[i] = inWoodA(x, y) ? 1 : 0; elevG[i] = Math.round(elevA(x, y) * 250); }
+const inWood = (x, y) => woodG[cellAt(x, y)] === 1;
+const elev = (x, y) => elevG[cellAt(x, y)] / 250;
 function coverAt(x, y) {
   const h = houseAt(x, y, 5);
-  if (h) return h.k === 'church' ? 0.32 : 0.4;
+  if (h) return h.k === 'church' ? 0.32 : h.k === 'manor' ? 0.34 : 0.4;
   if (inWood(x, y)) return 0.55;
   if (hedgeDist(x, y) < 6) return 0.6;
   if (elev(x, y) > 0.55) return 0.85;
+  if (inBrook(x, y)) return 0.8;
   return 1;
 }
 function terrMul(x, y) {
   if (inWood(x, y)) return 0.6;
   if (hedgeDist(x, y) < 3) return 0.5;
   if (roadDist(x, y) < 5) return 1.2;
+  if (inBrook(x, y)) return 0.45;
   return 1;
 }
-// line of sight: houses, the wood, hedges (unless you're on them) and the ridge crest
+// line of sight: houses, woods, hedges (unless you're on them) and ridge crests
 function los(ax, ay, bx, by) {
   const ea = elev(ax, ay), eb = elev(bx, by), high = ea > 0.45 || eb > 0.45;
+  const x0 = Math.min(ax, bx), x1 = Math.max(ax, bx), y0 = Math.min(ay, by), y1 = Math.max(ay, by);
   for (const h of HOUSES) {
+    if (h.x > x1 || h.x + h.w < x0 || h.y > y1 || h.y + h.h < y0) continue;
     if ((ax > h.x - 4 && ax < h.x + h.w + 4 && ay > h.y - 4 && ay < h.y + h.h + 4) || (bx > h.x - 4 && bx < h.x + h.w + 4 && by > h.y - 4 && by < h.y + h.h + 4)) continue;
     if (segRect(ax, ay, bx, by, h.x, h.y, h.x + h.w, h.y + h.h)) return false;
   }
   const L = hyp(bx - ax, by - ay), n = Math.ceil(L / 8);
   let woodRun = 0;
   for (let i = 1; i < n; i++) {
-    const t = i / n, x = lerp(ax, bx, t), y = lerp(ay, by, t), dA = t * L, dB = L - dA;
-    if (dA > 22 && dB > 22 && inWood(x, y)) { woodRun += L / n; if (woodRun > 30) return false; }
-    if (!high && elev(x, y) > 0.6 && ea < 0.35 && eb < 0.35) return false; // over the crest
+    const t = i / n, x = lerp(ax, bx, t), y = lerp(ay, by, t), dA = t * L, dB = L - dA, c = cellAt(x, y);
+    if (dA > 22 && dB > 22 && woodG[c]) { woodRun += L / n; if (woodRun > 30) return false; }
+    if (!high && elevG[c] > 150 && ea < 0.35 && eb < 0.35) return false; // over the crest
   }
   if (!high) for (const [p, q] of HEDGES) {
+    if (Math.max(p[0], q[0]) < x0 || Math.min(p[0], q[0]) > x1 || Math.max(p[1], q[1]) < y0 || Math.min(p[1], q[1]) > y1) continue;
     if (segSeg(ax, ay, bx, by, p[0], p[1], q[0], q[1]) && segDist(ax, ay, p[0], p[1], q[0], q[1]) > 12 && segDist(bx, by, p[0], p[1], q[0], q[1]) > 12) return false;
   }
   return true;
@@ -133,7 +210,6 @@ function losT(ax, ay, bx, by) {
   return los(ax, ay, bx + ux * d, by + uy * d);
 }
 // ---------------------------------------------------------------- pathfinding: 5 m weighted grid, A*, string-pull
-const GC = 5, GX = WW / GC, GY = WH / GC, NC = GX * GY;
 const costG = new Uint8Array(NC); // 0 = blocked, else cost x10
 (function buildGrid() {
   for (let gy = 0; gy < GY; gy++) for (let gx = 0; gx < GX; gx++) {
@@ -142,13 +218,13 @@ const costG = new Uint8Array(NC); // 0 = blocked, else cost x10
     if (houseAt(x, y, 2) || inRiver(x, y)) c = 0;
     else if (roadDist(x, y) < 5 || onBridge(x, y)) c = 8;
     else if (inWood(x, y)) c = 17;
+    else if (inBrook(x, y)) c = 34;
     else if (hedgeDist(x, y) < 3) c = 26;
     else if (elev(x, y) > 0.3) c = 11;
     if (gx === 0 || gy === 0 || gx === GX - 1 || gy === GY - 1) c = 0;
     costG[gy * GX + gx] = c;
   }
 })();
-const cellAt = (x, y) => clamp(Math.floor(y / GC), 0, GY - 1) * GX + clamp(Math.floor(x / GC), 0, GX - 1);
 const passable = (x, y) => costG[cellAt(x, y)] > 0;
 function nearestOpen(x, y) {
   if (passable(x, y)) return { x, y };
@@ -167,7 +243,7 @@ function astar(start, goal) {
   gen++; hn = 0;
   const hf = (x, y) => { const dx = Math.abs(x - g0), dy = Math.abs(y - g1); return (Math.max(dx, dy) + 0.414 * Math.min(dx, dy)) * 0.8; };
   gS[start] = 0; seen[start] = gen; from[start] = -1; hPush(start, hf(start % GX, (start / GX) | 0));
-  let budget = 45000;
+  let budget = 90000;
   while (hn > 0 && budget-- > 0) {
     const cur = hPop();
     if (shut[cur] === gen) continue;
@@ -213,17 +289,30 @@ function findPath(sx, sy, tx, ty) {
 }
 
 // ---------------------------------------------------------------- order of battle, commanders
-const COYS = [{ id: 'A', col: '#e4573f', home: [300, 840] }, { id: 'B', col: '#3f8fe4', home: [620, 845] }, { id: 'C', col: '#e8c440', home: [950, 840] }];
+// three battalions side by side, three rifle companies each (company letters are unique across the brigade)
+const BNS = [
+  { id: 'B1', name: '1st Bn', short: 'Bn1', col: '#ff9f86', sec: 0, start: 'start1', home: [450, 972], coys: ['A', 'B', 'C'] },
+  { id: 'B2', name: '2nd Bn', short: 'Bn2', col: '#8fc4ff', sec: 1, start: 'start2', home: [1523, 972], coys: ['D', 'E', 'F'] },
+  { id: 'B3', name: '3rd Bn', short: 'Bn3', col: '#ffe48a', sec: 2, start: 'start3', home: [2613, 972], coys: ['G', 'H', 'I'] },
+];
+const BN = Object.fromEntries(BNS.map(b => [b.id, b]));
+const COYS = [
+  { id: 'A', bn: 'B1', col: '#e4573f', home: [180, 940] }, { id: 'B', bn: 'B1', col: '#f08a3c', home: [450, 945] }, { id: 'C', bn: 'B1', col: '#d9467e', home: [720, 940] },
+  { id: 'D', bn: 'B2', col: '#3f8fe4', home: [1200, 940] }, { id: 'E', bn: 'B2', col: '#35c3d6', home: [1520, 945] }, { id: 'F', bn: 'B2', col: '#8a78f0', home: [1850, 940] },
+  { id: 'G', bn: 'B3', col: '#e8c440', home: [2350, 940] }, { id: 'H', bn: 'B3', col: '#8fcf4a', home: [2620, 945] }, { id: 'I', bn: 'B3', col: '#d7a35c', home: [2840, 940] },
+];
+const COY = Object.fromEntries(COYS.map(c => [c.id, c]));
 const COYCOL = Object.fromEntries(COYS.map(c => [c.id, c.col]));
-const BN = { id: 'BN', name: '1st Bn', col: '#efe6c8', home: [623, 872] }; // battalion HQ (a marker: it doesn't fight)
-COYCOL.BN = BN.col;
-const BN_FROM = { x: avgOf(COYS.map(c => c.home[0])), y: avgOf(COYS.map(c => c.home[1])) };
+for (const b of BNS) { COYCOL[b.id] = b.col; b.from = { x: avgOf(b.coys.map(c => COY[c].home[0])), y: avgOf(b.coys.map(c => COY[c].home[1])) }; }
 function avgOf(a) { return a.reduce((s, v) => s + v, 0) / a.length; }
+const bnOfCoy = (c) => COY[c].bn;
+const bnName = (id) => BN[id].name;
+const startOf = (bnId) => FEAT[BN[bnId].start];
 const QUIRKS = { aggressive: ['🔥', 'Aggressive'], cautious: ['🐢', 'Cautious'], glory: ['🏅', 'Glory-seeker'], book: ['📘', 'By-the-book'] };
 const FIRST = ['Alfie', 'Bert', 'Cyril', 'Dennis', 'Eddie', 'Frank', 'George', 'Harry', 'Ivor', 'Jack', 'Ken', 'Len', 'Monty', 'Norman', 'Ollie', 'Percy', 'Reg', 'Stan', 'Ted', 'Vic', 'Wilf', 'Arthur', 'Basil', 'Clive', 'Donald', 'Ernie', 'Fred', 'Gordon', 'Hugh', 'Jim', 'Laurie', 'Maurice', 'Neville', 'Ron', 'Sid', 'Tom', 'Wally', 'Les', 'Alec', 'Bob'];
 const LAST = ['Ashby', 'Barlow', 'Carver', 'Dunmore', 'Ellery', 'Fenwick', 'Garside', 'Hollis', 'Ingram', 'Jessop', 'Kettle', 'Lofthouse', 'Marlow', 'Naylor', 'Oakes', 'Pruett', 'Quayle', 'Rudd', 'Selby', 'Thwaite', 'Upton', 'Varley', 'Whitlock', 'Yeats', 'Brindle', 'Cobbold', 'Dimmock', 'Frayne', 'Gadsby', 'Hext', 'Kember', 'Lusk', 'Mabey', 'Pell', 'Rook', 'Starling', 'Tebbit', 'Wragg', 'Cottam', 'Penhale', 'Druce', 'Halsey'];
 const S = {
-  seed: 1, rng: mulberry(1), time: 0, phase: 'plan', speed: 4, paused: true, autoPause: store.get('cl-ap', '1') === '1',
+  seed: 1, pathBudget: 1e9, rng: mulberry(1), time: 0, phase: 'plan', speed: 4, paused: true, autoPause: store.get('cl-ap', '1') === '1',
   hqExp: +store.get('cl-hq', '1'), units: [], U: {}, nodes: {}, feed: [], reqs: [], toasts: [], tracers: [], pending: [],
   sel: null, nextReq: 1, casualty: {}, stats: STATS, endMsg: null, dbg: {}, dragOn: false,
 };
@@ -258,33 +347,50 @@ function buildOOB() {
   S.units = []; S.U = {};
   const add = (u) => { u = mkUnit(u); S.units.push(u); S.U[u.id] = u; return u; };
   COYS.forEach((C, ci) => {
-    const [hx, hy] = C.home;
-    add({ id: C.id, side: 'GB', kind: 'coyhq', coy: C.id, name: `${C.id} Coy HQ`, men: 6, lmg: 0, x: hx, y: hy + 35, cmdr: mkPersona('coy') });
+    const [hx, hy] = C.home, bn = C.bn;
+    add({ id: C.id, side: 'GB', kind: 'coyhq', coy: C.id, bn, name: `${C.id} Coy HQ`, men: 6, lmg: 0, x: hx, y: hy + 35, cmdr: mkPersona('coy') });
     for (let p = 0; p < 3; p++) {
       const pn = ci * 3 + p + 1, pid = 'P' + pn, px = hx + (p - 1) * 85, py = hy;
-      add({ id: pid, side: 'GB', kind: 'plhq', coy: C.id, pl: pid, pn, name: `${pn} Pl HQ`, men: 4, lmg: 0, x: px, y: py + 18, cmdr: mkPersona('pl') });
-      for (let s = 0; s < 3; s++) add({ id: `${pid}S${s + 1}`, side: 'GB', kind: 'sec', coy: C.id, pl: pid, pn, sn: s + 1, name: `${pn} Pl/${s + 1} Sec`, men: 10, lmg: 1, x: px + (s - 1) * 24, y: py - 12, cmdr: mkPersona('sec') });
+      add({ id: pid, side: 'GB', kind: 'plhq', coy: C.id, bn, pl: pid, pn, name: `${pn} Pl HQ`, men: 4, lmg: 0, x: px, y: py + 18, cmdr: mkPersona('pl') });
+      for (let s = 0; s < 3; s++) add({ id: `${pid}S${s + 1}`, side: 'GB', kind: 'sec', coy: C.id, bn, pl: pid, pn, sn: s + 1, name: `${pn} Pl/${s + 1} Sec`, men: 10, lmg: 1, x: px + (s - 1) * 24, y: py - 12, cmdr: mkPersona('sec') });
     }
   });
-  // battalion HQ: kept out of S.units (no firing, no casualties, no dice in the battle loop)
-  S.U.BN = withB(() => mkUnit({ id: 'BN', side: 'GB', kind: 'bnhq', coy: 'BN', name: '1st Bn HQ', men: 8, lmg: 0, x: BN.home[0], y: BN.home[1], cmdr: mkPersona('bn') }));
-  // German force: positions vary by scenario
+  // battalion HQs: kept out of S.units (no firing, no casualties, no dice in the battle loop)
+  for (const B of BNS) S.U[B.id] = withB(() => mkUnit({ id: B.id, side: 'GB', kind: 'bnhq', coy: B.id, bn: B.id, name: `${B.name} HQ`, men: 8, lmg: 0, x: B.home[0], y: B.home[1], cmdr: mkPersona('bn') }));
+  // German force: an infantry regiment's forward line, one sector per battalion; positions vary by scenario
   const v = S.seed % 3;
   const G = [
-    ['church', 527, 384, 'mg'], ['church', 548, 418, 'sec'], ['xroads', 640, 440, v === 1 ? 'mg' : 'sec'], ['farm', 282, 578, v === 2 ? 'mg' : 'sec'],
-    ['wood', 905, 518, v === 0 ? 'mg' : 'sec'], ['wood', 985, 602, 'sec'], ['bridge', 690, 252, 'mg'], ['ridge', 236, 318, 'op'],
-    ['nbank', 665, 140, 'res'], ['nbank', 715, 140, 'res'], ...(v === 2 ? [['nbank', 690, 120, 'res']] : []),
+    // west (1st Bn): Ashford village, Orchard, Hill 108, West Bridge, reserves at the Mill
+    ['ashford', 430, 548, 'mg'], ['ashford', 395, 586, 'sec'], ['ashford', 455, 600, v === 0 ? 'mg' : 'sec'], ['orchard', 170, 632, v === 1 ? 'mg' : 'sec'],
+    ['hill', 712, 508, 'op'], ['hill', 690, 540, v === 2 ? 'mg' : 'sec'], ['wbridge', 420, 352, 'mg'],
+    ['mill', 395, 250, 'res'], ['mill', 445, 250, 'res'], ...(v === 1 ? [['mill', 420, 236, 'res']] : []),
+    // centre (2nd Bn): the original battalion position
+    ['church', 1427, 484, 'mg'], ['church', 1448, 518, 'sec'], ['xroads', 1540, 540, v === 1 ? 'mg' : 'sec'], ['farm', 1182, 678, v === 2 ? 'mg' : 'sec'],
+    ['wood', 1805, 618, v === 0 ? 'mg' : 'sec'], ['wood', 1885, 702, 'sec'], ['bridge', 1590, 352, 'mg'], ['ridge', 1136, 418, 'op'],
+    ['nbank', 1565, 240, 'res'], ['nbank', 1615, 240, 'res'], ...(v === 2 ? [['nbank', 1590, 220, 'res']] : []),
+    // east (3rd Bn): the Manor, Great Wood, Windmill Hill, East Bridge, reserves at Northend
+    ['manor', 2598, 528, 'mg'], ['manor', 2630, 572, 'sec'], ['manor', 2566, 578, v === 2 ? 'mg' : 'sec'], ['gwood', 2300, 606, v === 0 ? 'mg' : 'sec'], ['gwood', 2365, 680, 'sec'],
+    ['wmill', 2862, 500, 'op'], ['wmill', 2840, 532, v === 1 ? 'mg' : 'sec'], ['ebridge', 2600, 350, 'mg'],
+    ['nend', 2575, 240, 'res'], ['nend', 2625, 240, 'res'], ...(v === 0 ? [['nend', 2600, 254, 'res']] : []),
   ];
   G.forEach(([f, x, y, k], i) => add({
-    id: 'G' + (i + 1), side: 'DE', kind: k === 'mg' ? 'mg' : 'gsec', role: k === 'res' ? 'reserve' : k === 'op' ? 'outpost' : 'hold', feat: f, home: f,
+    id: 'G' + (i + 1), side: 'DE', kind: k === 'mg' ? 'mg' : 'gsec', role: k === 'res' ? 'reserve' : k === 'op' ? 'outpost' : 'hold', feat: f, home: f, sector: FEAT[f].sec,
     name: k === 'mg' ? 'MG team' : k === 'op' ? 'Outpost' : 'Gruppe', men: k === 'mg' ? 6 : k === 'op' ? 6 : 9, lmg: k === 'mg' ? 2 : 1, x, y, postX: x, postY: y,
   }));
 }
+// per-sector German plans: where a pushed-back outpost goes, where broken troops run, what the reserve counter-attacks
+const DE_SEC = [
+  { fall: [440, 560], rally: [420, 200], keys: ['ashford', 'wbridge', 'hill'] },
+  { fall: [1498, 532], rally: [1590, 212], keys: ['church', 'xroads', 'bridge'] },
+  { fall: [2610, 560], rally: [2600, 196], keys: ['manor', 'ebridge', 'wmill'] },
+];
 const alive = (u) => u && u.state !== 'dead' && u.state !== 'surr';
 const secsOf = (plId) => [1, 2, 3].map(s => S.U[`${plId}S${s}`]);
 const plsOf = (coy) => [0, 1, 2].map(p => S.U['P' + (COYS.findIndex(c => c.id === coy) * 3 + p + 1)]);
+const bnCoys = (bnId) => BN[bnId].coys;
 function strength(units) { let m = 0, m0 = 0; for (const u of units) { m0 += u.men0; if (alive(u)) m += u.men; } return m0 ? m / m0 : 0; }
 const coyUnits = (coy) => S.units.filter(u => u.side === 'GB' && u.coy === coy);
+const bnSecs = (bnId) => S.units.filter(u => u.side === 'GB' && u.kind === 'sec' && u.bn === bnId);
 function centroid(us) { const a = us.filter(alive); if (!a.length) return { x: 0, y: 0 }; return { x: a.reduce((s, u) => s + u.x, 0) / a.length, y: a.reduce((s, u) => s + u.y, 0) / a.length }; }
 function tName(p) {
   if (!p) return '—';
@@ -398,7 +504,7 @@ const OFF_T = new Set(['seize', 'clear', 'assault']);
 // known enemy-held features flanking the approach to X (not the objective itself, not beyond it)
 function threatFeats(X, from) {
   const W = DOC.score.bn, ad = unitV(X.x - from.x, X.y - from.y), perp = { x: -ad.y, y: ad.x };
-  return FEATS.filter(f => f.id !== 'start').map(f => {
+  return FEATS.filter(f => !f.start).map(f => {
     const dx = f.x - X.x, dy = f.y - X.y;
     return { f, d: hyp(dx, dy), fwd: dx * ad.x + dy * ad.y, lat: dx * perp.x + dy * perp.y };
   }).filter(o => o.d > W.threatMin && o.d <= W.threatMax && o.fwd <= W.threatFwd && enemyNear(o.f, o.f.r, true).n > 0);
@@ -513,7 +619,7 @@ function coyCandidates(type, X, from, cmdr) {
   };
   const siteChain = (chain, s, got) => { for (const c of chain) { const z = site1(c, s, got); if (z) return z; } return undefined; };
   const sweep = srch.sites.length ? srch.sites.map(c => site1(c, null, [])).filter(Boolean) : [null];
-  const wrong = srch.wrongChance > 0 ? FEATS.filter(f => f.id !== 'start' && hyp(f.x - X.x, f.y - X.y) > 120).sort((a, b) => hyp(a.x - X.x, a.y - X.y) - hyp(b.x - X.x, b.y - X.y))[0] : null;
+  const wrong = srch.wrongChance > 0 ? FEATS.filter(f => !f.start && hyp(f.x - X.x, f.y - X.y) > 120).sort((a, b) => hyp(a.x - X.x, a.y - X.y) - hyp(b.x - X.x, b.y - X.y))[0] : null;
   const angles = srch.angles.length ? srch.angles : [null];
   for (const s of sweep) for (const ang of angles) for (const v of B.variants) {
     const a0 = ang === null ? 0 : ang, side = Math.sign(a0) || 1;
@@ -588,22 +694,22 @@ function mkNode(id, level, coy, parent) {
 }
 function buildTree() {
   S.nodes = {};
-  const bn = S.nodes.BN = mkNode('BN', 'bn', 'BN', null);
+  for (const B of BNS) { const bn = S.nodes[B.id] = mkNode(B.id, 'bn', B.id, null); bn.bn = B.id; }
   for (const C of COYS) {
-    const cn = S.nodes[C.id] = mkNode(C.id, 'coy', C.id, 'BN'); bn.kids.push(C.id);
+    const bn = S.nodes[C.bn], cn = S.nodes[C.id] = mkNode(C.id, 'coy', C.id, C.bn); bn.kids.push(C.id); cn.bn = C.bn;
     for (const pu of plsOf(C.id)) {
       const pn = S.nodes[pu.id] = mkNode(pu.id, 'pl', C.id, C.id); cn.kids.push(pu.id);
       for (const su of secsOf(pu.id)) { S.nodes[su.id] = mkNode(su.id, 'sec', C.id, pu.id); pn.kids.push(su.id); }
+      pn.bn = C.bn; for (const k of pn.kids) S.nodes[k].bn = C.bn;
     }
   }
 }
 const cmdrOf = (n) => S.U[n.id].cmdr;
 const unitOf = (n) => S.U[n.id];
-const nodeName = (n) => (n.level === 'bn' ? BN.name : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${S.U[n.id].pn} Pl` : S.U[n.id].name);
+const nodeName = (n) => (n.level === 'bn' ? bnName(n.id) : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${S.U[n.id].pn} Pl` : S.U[n.id].name);
 const label = (sp) => `${T[sp.type][0]} ${T[sp.type][1]} ${tName(sp.target)}`;
-const gbSecs = () => S.units.filter(u => u.side === 'GB' && u.kind === 'sec');
 function nodeFrom(n) {
-  if (n.level === 'bn') return S.phase === 'plan' ? BN_FROM : centroid(gbSecs());
+  if (n.level === 'bn') return S.phase === 'plan' ? BN[n.id].from : centroid(bnSecs(n.id));
   if (n.level === 'coy') return S.phase === 'plan' ? { x: COYS.find(c => c.id === n.id).home[0], y: COYS.find(c => c.id === n.id).home[1] } : centroid(coyUnits(n.id).filter(u => u.kind === 'sec'));
   if (n.level === 'pl') return centroid(secsOf(n.id));
   return S.U[n.id];
@@ -700,8 +806,8 @@ function decomposeBn(n, who, dry) {
   return res;
 }
 // battalion quality after a company changed under it
-function bnRequal() {
-  const n = S.nodes.BN; if (!n || !n.type) return;
+function bnRequal(n) {
+  if (!n || !n.type) return;
   const coys = n.kids.map(k => S.nodes[k]), r = rateBn(bnKind(n.type), n.target, coys.map(c => (c.type ? specOf(c) : null)), nodeFrom(n));
   n.q = Math.round(0.6 * r.q + 0.4 * avg(coys.filter(c => c.type).map(c => c.q))); n.notes = r.notes;
 }
@@ -851,8 +957,8 @@ function applyProp(n, prop, who) {
   setSpec(n, prop, who);
   n.byYou = who === 'you'; n.manual = who === 'you';
   n.flash = performance.now();
-  if (n.level === 'bn') { const r = decomposeBn(n, 'cmdr'); log('bn', 'chg', n.id, `${BN.name} re-plans (${n.vname || 'own plan'}): ${r.coys} company, ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); }
-  else if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); if (r.pls + r.secs) log('coy', 'chg', n.id, `${n.id} Coy re-plans: ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); bnRequal(); }
+  if (n.level === 'bn') { const r = decomposeBn(n, 'cmdr'); log('bn', 'chg', n.id, `${bnName(n.id)} re-plans (${n.vname || 'own plan'}): ${r.coys} company, ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); }
+  else if (n.level === 'coy') { const r = decomposeCoy(n, 'cmdr'); if (r.pls + r.secs) log('coy', 'chg', n.id, `${n.id} Coy re-plans: ${r.pls} platoon, ${r.secs} section tasks updated (plan quality ${n.q}).`, 'auto'); bnRequal(S.nodes[n.parent]); }
   else if (n.level === 'pl') { const k = decomposePl(n, 'cmdr'); if (k) log('pl', 'chg', n.id, `${nodeName(n)}: ${k} section tasks updated.`, 'auto'); }
   else { const par = S.nodes[n.parent], from = nodeFrom(par), r = rateSec(specOf(n), unitV(par.target.x - from.x, par.target.y - from.y)); n.q = r.q; n.notes = r.notes; }
   if (n.level === 'pl') { const par = S.nodes[n.parent]; par.q = Math.round(0.6 * qualityOf(n, specOf(n)) + 0.4 * avg(par.kids.map(k => S.nodes[k].q))); }
@@ -876,11 +982,11 @@ function answerCounter(rq, how) {
   refreshUI();
 }
 // feed
-function log(lvl, kind, unit, text, who) {
-  const e = { id: S.feed.length + 1, t: S.time, lvl, kind, unit, text, who };
-  S.feed.push(e);
+function log(lvl, kind, unit, text, who, bn) {
   const u = S.U[unit];
-  if (u && S.toasts.length < 6 && (lvl !== 'sec' || kind === 'fail' || kind === 'req' || who === 'you' || who === 'them')) S.toasts.push({ x: u.x, y: u.y, text: text.length > 46 ? text.slice(0, 44) + '…' : text, kind, t: performance.now() });
+  const e = { id: S.feed.length + 1, t: S.time, lvl, kind, unit, text, who, bn: bn || (u ? u.bn || (u.sector !== undefined ? BNS[u.sector].id : null) : null) };
+  S.feed.push(e);
+  if (u && S.toasts.length < 6 && !(lvl === 'bn' && kind === 'info') && (lvl !== 'sec' || kind === 'fail' || kind === 'req' || who === 'you' || who === 'them')) S.toasts.push({ x: u.x, y: u.y, text: text.length > 46 ? text.slice(0, 44) + '…' : text, kind, t: performance.now() });
   if (typeof feedDirty !== 'undefined') feedDirty = true;
   return e;
 }
@@ -926,7 +1032,11 @@ function updVis() {
 }
 function moveTo(u, gx, gy, sp, dt, arrive = 3) {
   if (hyp(gx - u.x, gy - u.y) < arrive) { u.moving = false; return true; }
-  if (!u.path || hyp(u.gx - gx, u.gy - gy) > 4) { u.path = findPath(u.x, u.y, gx, gy); u.gx = gx; u.gy = gy; }
+  if (!u.path || hyp(u.gx - gx, u.gy - gy) > 4) {
+    // route planning is spread over ticks (H-hour: ~150 units want a route at once); a unit without one waits a tick
+    if (S.pathBudget <= 0) { u.moving = false; return false; }
+    const n0 = STATS.plans; u.path = findPath(u.x, u.y, gx, gy); u.gx = gx; u.gy = gy; S.pathBudget -= STATS.plans - n0;
+  }
   let rem = sp * terrMul(u.x, u.y) * dt;
   while (rem > 0 && u.path.length) {
     const w = u.path[0], d = hyp(w.x - u.x, w.y - u.y);
@@ -1030,10 +1140,10 @@ function secAct(u, n, dt) {
     }
   }
 }
-function bnHqAct(dt) { // the battalion HQ follows behind the battalion
-  const u = S.U.BN; u.px = u.x; u.py = u.y; u.pa = u.a;
-  const c = centroid(gbSecs()); if (!c.x) { u.moving = false; return; }
-  const back = unitV(BN.home[0] - c.x, BN.home[1] - c.y), g = nearestOpen(c.x + back.x * 110, c.y + back.y * 110);
+function bnHqAct(B, dt) { // a battalion HQ follows behind its battalion
+  const u = S.U[B.id]; u.px = u.x; u.py = u.y; u.pa = u.a;
+  const c = centroid(bnSecs(B.id)); if (!c.x) { u.moving = false; return; }
+  const back = unitV(B.home[0] - c.x, B.home[1] - c.y), g = nearestOpen(c.x + back.x * 110, c.y + back.y * 110);
   if (hyp(g.x - u.x, g.y - u.y) > 15) moveTo(u, g.x, g.y, 1.5, dt); else u.moving = false;
 }
 function hqAct(u, dt) {
@@ -1046,33 +1156,33 @@ function hqAct(u, dt) {
 }
 function deAct(u, dt) {
   if (u.state === 'broken') {
-    moveTo(u, 690, 112, 1.9, dt);
+    const rp = DE_SEC[u.sector].rally; moveTo(u, rp[0], rp[1], 1.9, dt);
     if (S.units.some(g => g.side === 'GB' && alive(g) && g.state !== 'broken' && hyp(g.x - u.x, g.y - u.y) < 35)) { u.state = 'surr'; log('coy', 'cas', u.id, `${u.name} at ${tName(u)} surrenders.`, 'auto'); }
     return;
   }
   if (u.state === 'pinned') { u.moving = false; return; }
   if (u.role === 'outpost' && S.units.some(g => g.side === 'GB' && alive(g) && hyp(g.x - u.x, g.y - u.y) < 300 && g.vis)) {
-    u.role = 'hold'; u.postX = 598; u.postY = 432;
+    const fp = DE_SEC[u.sector].fall; u.role = 'hold'; u.postX = fp[0]; u.postY = fp[1];
     if (u.vis) log('coy', 'info', u.id, `Enemy outpost on the ${tName(u)} pulling back.`, 'auto');
   }
   if (u.role === 'reserve') { u.moving = false; return; }
   moveTo(u, u.postX, u.postY, u.role === 'catk' ? 1.6 : 1.4, dt);
 }
 function featLost(fid) { const f = FEAT[fid]; return gbNear(f, 55) && targetClear(f, 60); }
-function deBrain() {
-  if (S.de.catk) return;
-  const lost = ['church', 'xroads', 'bridge'].find(featLost);
-  if (lost || S.time > S.de.catkT) {
+function deBrain() { // each sector's reserve counter-attacks once: a lost key position, or the hardest-pressed one after a while
+  S.de.sec.forEach((D, si) => {
+    if (D.catk) return;
+    const lost = DE_SEC[si].keys.find(featLost);
+    if (!lost && S.time <= D.catkT) return;
     let fid = lost;
-    if (!fid) { // reinforce the most threatened position
+    if (!fid) {
       let worst = null;
-      for (const u of S.units) if (u.side === 'DE' && alive(u) && u.role === 'hold' && (!worst || u.supp > worst.supp)) worst = u;
-      fid = worst ? worst.feat : 'church';
+      for (const u of S.units) if (u.side === 'DE' && u.sector === si && alive(u) && u.role === 'hold' && (!worst || u.supp > worst.supp)) worst = u;
+      fid = worst ? worst.feat : DE_SEC[si].keys[0];
     }
-    S.de.catk = fid; S.de.obj = `Counter-attack ${FEAT[fid].name}`;
-    for (const u of S.units) if (u.side === 'DE' && alive(u) && u.role === 'reserve') { const p = nearestOpen(FEAT[fid].x + (R() - 0.5) * 30, FEAT[fid].y + (R() - 0.5) * 30); u.role = 'catk'; u.postX = p.x; u.postY = p.y; u.feat = fid; }
-    S.de.catkLogged = false;
-  }
+    D.catk = fid; D.logged = false;
+    for (const u of S.units) if (u.side === 'DE' && u.sector === si && alive(u) && u.role === 'reserve') { const p = nearestOpen(FEAT[fid].x + (R() - 0.5) * 30, FEAT[fid].y + (R() - 0.5) * 30); u.role = 'catk'; u.postX = p.x; u.postY = p.y; u.feat = fid; }
+  });
 }
 function masked(u, p) { // own troops in the line of fire
   for (const f of S.units) {
@@ -1226,7 +1336,7 @@ function updNodes() {
     }
     coyStatus(cn);
   }
-  withB(() => bnStatus(S.nodes.BN));
+  for (const B of BNS) withB(() => bnStatus(S.nodes[B.id]));
 }
 function bnStatus(n) {
   if (!n || !n.type) return;
@@ -1234,11 +1344,11 @@ function bnStatus(n) {
   n.prog = avg(cs.map(c => (c.type ? c.prog : 0)));
   if (n.status === 'achieved' || n.status === 'failed') {
     if (n.status === 'achieved' && (n.type === 'hold' || OFFENSIVE.has(n.type)) && !targetClear(n.target, 40) && !gbNear(n.target, 70) && !n.lostLogged) {
-      n.lostLogged = true; n.status = 'failed'; S.stats.fail.bn++; log('bn', 'fail', n.id, `${BN.name}: We've lost the ${tName(n.target)}!`, 'auto');
+      n.lostLogged = true; n.status = 'failed'; S.stats.fail.bn++; log('bn', 'fail', n.id, `${bnName(n.id)}: We've lost the ${tName(n.target)}!`, 'auto');
     }
     return;
   }
-  if (strength(gbSecs()) < 0.35) return fail(n, 'battalion shattered');
+  if (strength(bnSecs(n.id)) < 0.35) return fail(n, 'battalion shattered');
   if (OFFENSIVE.has(n.type)) {
     if (targetClear(n.target, n.type === 'clear' ? 90 : 60) && gbNear(n.target, n.type === 'clear' ? 90 : 55)) return achieve(n, 'objective taken');
     if (S.time - n.t0 > [2000, 2600, 3400][n.prio]) return fail(n, 'attack ran out of steam');
@@ -1319,7 +1429,7 @@ function adapt() {
     decomposePl(res, 'auto');
     log('coy', 'chg', C.id, `${C.id} Coy: ${cname(c)} commits ${nodeName(res)} to the ${cn.type === 'clear' ? 'clearance' : 'assault'}.`, 'auto');
   }
-  withB(bnCommit);
+  for (const B of BNS) withB(() => bnCommit(S.nodes[B.id]));
   for (const C of COYS) for (const pid of S.nodes[C.id].kids) {
     const pl = S.nodes[pid], c = cmdrOf(pl);
     if (pl.status === 'achieved' || pl.status === 'failed' || !(pl.type === 'assault' || pl.type === 'clear')) continue;
@@ -1337,8 +1447,8 @@ function adapt() {
   }
 }
 // battalion CO commits a reserve company when the companies on the objective are spent
-function bnCommit() {
-  const bn = S.nodes.BN, c = cmdrOf(bn);
+function bnCommit(bn) {
+  const c = cmdrOf(bn);
   if (!bn.type || !OFFENSIVE.has(bn.type) || bn.status === 'achieved' || bn.status === 'failed' || S.time < (bn.commitCd || 0)) return;
   const cs = bn.kids.map(k => S.nodes[k]);
   const main = cs.filter(co => OFFENSIVE.has(co.type) && hyp(co.target.x - bn.target.x, co.target.y - bn.target.y) < 100);
@@ -1349,7 +1459,7 @@ function bnCommit() {
   if (!res || R() > 0.3 + 0.7 * c.judg) return;
   setSpec(res, { type: bn.type, target: bn.target, pos: null, gate: null }, 'auto');
   decomposeCoy(res, 'auto');
-  log('bn', 'chg', 'BN', `${BN.name}: ${cname(c)} commits ${res.id} Coy to the ${bn.type === 'clear' ? 'clearance' : 'attack'} on the ${tName(bn.target)}.`, 'auto');
+  log('bn', 'chg', bn.id, `${bnName(bn.id)}: ${cname(c)} commits ${res.id} Coy to the ${bn.type === 'clear' ? 'clearance' : 'attack'} on the ${tName(bn.target)}.`, 'auto');
 }
 // ---- bottom-up requests
 const REQ_WHY = { cas: 'Casualties over 40%', stall: 'Attack stalled', early: 'Objective achieved early', weak: 'Enemy weakening', flank: 'Flank open' };
@@ -1361,16 +1471,16 @@ function sugQ(n, s) {
   if ((s.type === 'hold' || s.type === 'withdraw') && str < 0.6) q += 20;
   return clamp(Math.round(q), 0, 100);
 }
-function heldFeats() { return FEATS.filter(f => f.id !== 'start' && enemyNear(f, f.r, true).n > 0); }
+function heldFeats() { return FEATS.filter(f => !f.start && enemyNear(f, f.r, true).n > 0); }
 function makeReq(n, kind) {
   const c = cmdrOf(n), here = centroid(coyUnits(n.id).filter(u => u.kind === 'sec'));
-  const hereP = nearestOpen(here.x, here.y), tgts = COYS.map(C => S.nodes[C.id]).filter(o => o !== n && OFFENSIVE.has(o.type) && o.status !== 'achieved');
+  const hereP = nearestOpen(here.x, here.y), tgts = bnCoys(n.bn).map(id => S.nodes[id]).filter(o => o !== n && OFFENSIVE.has(o.type) && o.status !== 'achieved');
   const nearFeat = (excl) => heldFeats().filter(f => !excl || hyp(f.x - excl.x, f.y - excl.y) > 60).sort((a, b) => hyp(a.x - here.x, a.y - here.y) - hyp(b.x - here.x, b.y - here.y))[0];
   let sugs = [];
   const S_ = (type, target, why) => target && sugs.push({ type, target: { x: target.x, y: target.y }, why });
   if (kind === 'cas') {
     S_('hold', hereP, "Dig in where we are, we can't go on like this");
-    S_('withdraw', FEAT.start, 'Pull back to the start line and reorganise');
+    S_('withdraw', startOf(n.bn), 'Pull back to the start line and reorganise');
     S_('sbf', n.target, 'Support others by fire instead of assaulting');
   } else if (kind === 'stall') {
     S_('sbf', n.target, 'Pin them down, let another company go round');
@@ -1410,20 +1520,20 @@ function makeReq(n, kind) {
 function bnSugQ(n, s) {
   const save = specOf(n); n.type = s.type; n.target = s.target;
   let q = decomposeBn(n, null, true); n.type = save.type; n.target = save.target;
-  const e = enemyNear(s.target, 120, true), str = strength(gbSecs());
+  const e = enemyNear(s.target, 120, true), str = strength(bnSecs(n.id));
   if (OFFENSIVE.has(s.type)) q -= 8 * e.mg + 4 * e.n + (str < 0.6 ? 25 : 0);
   if ((s.type === 'hold' || s.type === 'withdraw') && str < 0.6) q += 20;
   return clamp(Math.round(q), 0, 100);
 }
 function makeBnReq(n, kind) {
-  const c = cmdrOf(n), here = centroid(gbSecs()), hereP = nearestOpen(here.x, here.y);
+  const c = cmdrOf(n), here = centroid(bnSecs(n.id)), hereP = nearestOpen(here.x, here.y);
   const ok = (t) => !!DOC.bn[t];
   let sugs = [];
   const S_ = (type, target, why) => target && ok(type) && sugs.push({ type, target: { x: target.x, y: target.y }, why });
   const next = heldFeats().filter(f => hyp(f.x - n.target.x, f.y - n.target.y) > 80).sort((a, b) => hyp(a.x - n.target.x, a.y - n.target.y) - hyp(b.x - n.target.x, b.y - n.target.y))[0];
   if (kind === 'cas') {
     S_('hold', hereP, "The battalion's hurt. Let us dig in where we are");
-    S_('withdraw', FEAT.start, 'Pull the battalion back to the start line');
+    S_('withdraw', startOf(n.id), 'Pull the battalion back to the start line');
     S_('recon', n.target, 'Stop attacking, just watch them');
   } else if (kind === 'stall') {
     if (next) S_('seize', next, `Switch the main effort to the ${next.name}`);
@@ -1441,15 +1551,15 @@ function makeBnReq(n, kind) {
   let txt = pickL(lines[kind]);
   if (c.quirk === 'aggressive' && kind !== 'cas') txt += ' Let us at them!';
   if (c.quirk === 'cautious') txt += ' Suggest we play it safe.';
-  addReq({ kind: 'req', why: kind, coy: 'BN', node: 'BN', text: `${cname(c)} (${BN.name}): ${txt}`, sugs, cmdr: c });
+  addReq({ kind: 'req', why: kind, coy: n.id, node: n.id, text: `${cname(c)} (${bnName(n.id)}): ${txt}`, sugs, cmdr: c });
   S.stats.reqs['bn-' + kind] = (S.stats.reqs['bn-' + kind] || 0) + 1;
-  log('bn', 'req', 'BN', `${BN.name} request — ${REQ_WHY[kind]}: ${txt}`, 'them');
+  log('bn', 'req', n.id, `${bnName(n.id)} request — ${REQ_WHY[kind]}: ${txt}`, 'them');
 }
-function checkBnReqs() {
-  const n = S.nodes.BN; if (!n || !n.type) return; n.flags = n.flags || {};
-  if (S.reqs.some(r => r.status === 'open' && r.coy === 'BN' && r.kind === 'req')) return;
+function checkBnReqs(n) {
+  if (!n || !n.type) return; n.flags = n.flags || {};
+  if (S.reqs.some(r => r.status === 'open' && r.coy === n.id && r.kind === 'req')) return;
   if (S.time < (n.reqCd || 90)) return;
-  const str = strength(gbSecs());
+  const str = strength(bnSecs(n.id));
   let kind = null;
   if (str < 0.6 && !n.flags.cas && n.status !== 'achieved' && n.status !== 'failed' && n.type !== 'withdraw') kind = 'cas';
   else if (OFFENSIVE.has(n.type) && n.status !== 'achieved' && !n.flags.stall && S.time - n.t0 > 1100 && n.prog < 0.55) kind = 'stall';
@@ -1457,7 +1567,7 @@ function checkBnReqs() {
   if (kind) { n.flags[kind] = 1; n.reqCd = S.time + 200; makeBnReq(n, kind); }
 }
 function addReq(r) {
-  r.id = S.nextReq++; r.t = S.time; r.status = 'open'; r.coy = r.coy || S.nodes[r.node].coy;
+  r.id = S.nextReq++; r.t = S.time; r.status = 'open'; r.coy = r.coy || S.nodes[r.node].coy; r.bn = S.nodes[r.node].bn;
   S.reqs.push(r);
   if (S.autoPause && S.phase === 'battle' && !S.noPause) { S.paused = true; S.pausedBy = 'req'; }
   if (typeof onReq === 'function') onReq(r);
@@ -1476,7 +1586,7 @@ function checkReqs() {
     else if (n.status === 'achieved' && !n.flags.early && n.doneT && S.time - n.doneT > 20 && (OFFENSIVE.has(n.type) || n.type === 'recon' || n.type === 'sbf')) kind = 'early';
     else if (!n.flags.weak) {
       const here = centroid(secs);
-      const f = FEATS.find(f => f.id !== 'start' && f.id !== 'nbank' && hyp(f.x - here.x, f.y - here.y) < 450 && !COYS.some(o => S.nodes[o.id].target && hyp(S.nodes[o.id].target.x - f.x, S.nodes[o.id].target.y - f.y) < 60)
+      const f = FEATS.find(f => !f.start && !f.rear && hyp(f.x - here.x, f.y - here.y) < 450 && !COYS.some(o => S.nodes[o.id].target && hyp(S.nodes[o.id].target.x - f.x, S.nodes[o.id].target.y - f.y) < 60)
         && S.units.some(u => u.side === 'DE' && u.feat === f.id && u.vis && u.state === 'broken') && enemyNear(f, f.r, true).n <= 1);
       if (f && !S.weakDone[f.id]) { kind = 'weak'; n.weakF = f; S.weakDone[f.id] = 1; }
     }
@@ -1516,7 +1626,7 @@ function feedCas() {
 }
 function tick() {
   const dt = TICK;
-  S.time += dt; S.tickN++;
+  S.time += dt; S.tickN++; S.pathBudget = 12;
   for (const u of S.units) { u.px = u.x; u.py = u.y; u.pa = u.a; }
   if (S.tickN % 2 === 0) updVis();
   for (const u of S.units) { if (!alive(u)) continue; moraleUpd(u, dt); }
@@ -1526,7 +1636,7 @@ function tick() {
     else if (u.kind === 'sec') secAct(u, S.nodes[u.id], dt);
     else hqAct(u, dt);
   }
-  bnHqAct(dt);
+  for (const B of BNS) bnHqAct(B, dt);
   for (const u of S.units) {
     if (!alive(u)) continue;
     u.fireCd -= dt;
@@ -1534,8 +1644,8 @@ function tick() {
   }
   if (S.tickN % 2 === 0) { updNodes(); adapt(); }
   if (S.tickN % 10 === 0) deBrain();
-  if (S.de.catk && !S.de.catkLogged && S.units.some(u => u.side === 'DE' && u.role === 'catk' && u.vis)) { S.de.catkLogged = true; log('coy', 'info', null, `⚠ Enemy counter-attack toward the ${FEAT[S.de.catk].name}!`, 'auto'); }
-  if (S.tickN % 30 === 0) { checkReqs(); withB(checkBnReqs); }
+  S.de.sec.forEach((D, si) => { if (D.catk && !D.logged && S.units.some(u => u.side === 'DE' && u.sector === si && u.role === 'catk' && u.vis)) { D.logged = true; log('coy', 'info', null, `⚠ Enemy counter-attack toward the ${FEAT[D.catk].name}!`, 'auto', BNS[si].id); } });
+  if (S.tickN % 30 === 0) { checkReqs(); for (const B of BNS) withB(() => checkBnReqs(S.nodes[B.id])); }
   if (S.tickN % 120 === 0) feedCas();
   for (let i = S.pending.length - 1; i >= 0; i--) {
     const p = S.pending[i];
@@ -1554,14 +1664,14 @@ function tick() {
 }
 function checkEnd() {
   if (S.endMsg) return;
-  const de = S.units.filter(u => u.side === 'DE' && alive(u) && u.state !== 'broken' && u.y > 240);
+  const de = S.units.filter(u => u.side === 'DE' && alive(u) && u.state !== 'broken' && u.y > riverY(u.x) + 14);
   const gb = strength(S.units.filter(u => u.side === 'GB' && u.kind === 'sec'));
   const coys = COYS.map(C => S.nodes[C.id]);
   const done = coys.every(n => n.status === 'achieved' || n.status === 'failed');
   let msg = null;
   if (!de.length) msg = 'Enemy south of the river routed. Victory!';
-  else if (gb < 0.3) msg = 'The battalion is spent. Defeat.';
-  else if (done && S.time > 120) { const a = coys.filter(n => n.status === 'achieved').length; msg = a === 3 ? 'All company objectives achieved.' : `${a} of 3 company objectives achieved.`; }
+  else if (gb < 0.3) msg = 'The brigade is spent. Defeat.';
+  else if (done && S.time > 120) { const a = coys.filter(n => n.status === 'achieved').length; msg = a === coys.length ? 'All company objectives achieved.' : `${a} of ${coys.length} company objectives achieved.`; }
   else if (S.time >= 3600) msg = 'Time is up (H+60).';
   if (msg) {
     S.endMsg = msg; S.paused = true;
@@ -1570,26 +1680,32 @@ function checkEnd() {
   }
 }
 // ---------------------------------------------------------------- scenario
-// the battalion is ordered to seize the Church; its textbook plan puts A Coy on the Farm, B Coy on the Church and C Coy into the Wood
-const DEFAULT_PLAN = { BN: ['seize', 'church'] };
+// each battalion attacks the village or strongpoint in its own sector; the textbook CO plans put companies on the flanking positions too
+const DEFAULT_PLAN = { B1: ['seize', 'ashford'], B2: ['seize', 'church'], B3: ['seize', 'manor'] };
 function newScenario(seed, plan) {
   S.seed = seed; S.rng = mulberry(seed * 7919 + 13); S.brng = mulberry(seed * 104729 + 31);
   S.time = 0; S.tickN = 0; S.phase = 'plan'; S.paused = true; S.feed = []; S.reqs = []; S.toasts = []; S.tracers = []; S.pending = [];
   S.casualty = {}; S.endMsg = null; S.sel = null; S.nextReq = 1; S.weakDone = {}; S.flankDone = {};
   S.stats = { ach: { bn: 0, coy: 0, pl: 0, sec: 0 }, fail: { bn: 0, coy: 0, pl: 0, sec: 0 }, reqs: {}, gbCas: 0, deCas: 0, found: 0, nav: STATS };
-  S.de = { catk: null, catkT: 480 + R() * 300, obj: 'Hold the village line' };
+  S.de = { sec: DE_SEC.map(() => ({ catk: null, catkT: 480 + R() * 300, logged: false })), obj: 'Hold the river line' };
   buildOOB(); buildTree();
   plan = plan || DEFAULT_PLAN;
-  const bn = S.nodes.BN;
-  if (plan.BN) bn.type = plan.BN[0], bn.target = { x: FEAT[plan.BN[1]].x, y: FEAT[plan.BN[1]].y };
-  bn.flags = {};
-  if (plan.A) { // company-level plan (tests / old callers): the battalion keeps its objective but doesn't re-plan the companies
-    for (const C of COYS) { const n = S.nodes[C.id], [t, f] = plan[C.id]; n.type = t; n.target = { x: FEAT[f].x, y: FEAT[f].y }; n.flags = {}; }
-    planAll(); if (bn.type) bnRequal();
-  } else decomposeBn(bn, 'plan');
+  for (const B of BNS) {
+    const bn = S.nodes[B.id], o = plan[B.id];
+    if (o) bn.type = o[0], bn.target = { x: FEAT[o[1]].x, y: FEAT[o[1]].y };
+    bn.flags = {};
+  }
+  if (plan.A) { // company-level plan (tests / old callers): the battalions keep their objectives but don't re-plan the companies
+    for (const C of COYS) { const n = S.nodes[C.id], o = plan[C.id]; if (!o) continue; n.type = o[0]; n.target = { x: FEAT[o[1]].x, y: FEAT[o[1]].y }; n.flags = {}; }
+    planAll(); for (const B of BNS) bnRequal(S.nodes[B.id]);
+  } else for (const B of BNS) decomposeBn(S.nodes[B.id], 'plan');
   for (const id in S.nodes) { S.nodes[id].flash = 0; S.nodes[id].ghost = null; S.nodes[id].status = 'planned'; }
-  if (bn.type) log('bn', 'info', 'BN', `${BN.name} orders: ${label(bn)}. ${cname(cmdrOf(bn))} plans: ${bn.vname || 'own plan'} (quality ${bn.q}).`, 'auto');
-  log('coy', 'info', null, `Orders: ${COYS.map(C => `${C.id} Coy ${label(S.nodes[C.id])}`).join(' · ')}. Review, edit, then ▶ Play.`, 'auto');
+  for (const B of BNS) {
+    const bn = S.nodes[B.id];
+    if (bn.type) log('bn', 'info', B.id, `${B.name} orders: ${label(bn)}. ${cname(cmdrOf(bn))} plans: ${bn.vname || 'own plan'} (quality ${bn.q}). Companies: ${B.coys.map(c => `${c} ${label(S.nodes[c])}`).join(' · ')}.`, 'auto');
+  }
+  log('coy', 'info', null, 'Brigade orders issued. Review, edit, then ▶ Play.', 'auto');
+  if (typeof resetTreeView === 'function') resetTreeView();
 }
 function startBattle() {
   if (S.phase !== 'plan') return;
@@ -1602,15 +1718,13 @@ function startBattle() {
 const cv = document.getElementById('cv'), cx = cv.getContext('2d');
 const cam = { x: WW / 2, y: WH * 0.62, z: 1, vw: 1, vh: 1, ox: 0, oy: 0, fit: true };
 let DPR = 1, W = 1, H = 1;
-const MS = 1.5; // map raster px per metre
-let mapImg = null;
-function prerender() {
-  const c = document.createElement('canvas'); c.width = WW * MS; c.height = WH * MS;
-  const g = c.getContext('2d'); g.scale(MS, MS);
+const MS = 1.5, TILE = 1000; // map raster px per metre; the map is cut into 1 km tiles (1500 px: safe as phone GPU textures)
+let tiles = [];
+function drawMap(g) {
   const r = mulberry(77);
   g.fillStyle = '#7f9a58'; g.fillRect(0, 0, WW, WH);
   // fields
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 200; i++) {
     const x = r() * WW, y = r() * WH, w = 60 + r() * 140, h = 40 + r() * 110;
     g.fillStyle = ['#86a15d', '#90a764', '#7a9452', '#9aa96a', '#8a9d5a'][(r() * 5) | 0]; g.globalAlpha = 0.55;
     g.save(); g.translate(x, y); g.rotate((r() - 0.5) * 0.3); g.fillRect(-w / 2, -h / 2, w, h);
@@ -1619,54 +1733,69 @@ function prerender() {
     g.restore();
   }
   g.globalAlpha = 1;
-  // ridge shading
-  for (let k = 8; k >= 1; k--) {
-    g.save(); g.translate(RIDGE.x, RIDGE.y); g.rotate(RIDGE.a);
-    g.beginPath(); g.ellipse(0, 0, RIDGE.rx * k / 8, RIDGE.ry * k / 8, 0, 0, TAU);
-    g.fillStyle = `rgba(150,130,80,${0.07})`; g.fill();
+  // ridges and hills: contour shading
+  for (const RG of RIDGES) for (let k = 8; k >= 1; k--) {
+    g.save(); g.translate(RG.x, RG.y); g.rotate(RG.a);
+    g.beginPath(); g.ellipse(0, 0, RG.rx * k / 8, RG.ry * k / 8, 0, 0, TAU);
+    g.fillStyle = 'rgba(150,130,80,0.07)'; g.fill();
     if (k % 2 === 0) { g.strokeStyle = 'rgba(90,70,40,0.35)'; g.lineWidth = 0.9; g.stroke(); }
     g.restore();
   }
-  // river
+  // river and brook
   const path = (P) => { g.beginPath(); g.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) g.lineTo(P[i][0], P[i][1]); };
   g.lineJoin = 'round'; g.lineCap = 'round';
   path(RIVER); g.strokeStyle = '#4f6b3a'; g.lineWidth = RIVER_W + 8; g.stroke();
   path(RIVER); g.strokeStyle = '#3d6f95'; g.lineWidth = RIVER_W; g.stroke();
   path(RIVER); g.strokeStyle = 'rgba(160,200,230,0.35)'; g.lineWidth = 3; g.setLineDash([12, 18]); g.stroke(); g.setLineDash([]);
+  path(BROOK); g.strokeStyle = '#557a45'; g.lineWidth = BROOK_W + 6; g.stroke();
+  path(BROOK); g.strokeStyle = '#4a7ea3'; g.lineWidth = BROOK_W - 2; g.stroke();
   // roads
   for (const R of ROADS) { path(R); g.strokeStyle = '#6d6250'; g.lineWidth = 9; g.stroke(); path(R); g.strokeStyle = '#b8a888'; g.lineWidth = 6.5; g.stroke(); }
-  // bridge
-  g.fillStyle = '#8c8577'; g.fillRect(BRIDGE.x - 7, BRIDGE.y - 24, 14, 48);
-  g.strokeStyle = '#3a352c'; g.lineWidth = 1.6; g.strokeRect(BRIDGE.x - 7, BRIDGE.y - 24, 14, 48);
+  // bridges
+  for (const B of BRIDGES) { g.fillStyle = '#8c8577'; g.fillRect(B.x - 7, B.y - 24, 14, 48); g.strokeStyle = '#3a352c'; g.lineWidth = 1.6; g.strokeRect(B.x - 7, B.y - 24, 14, 48); }
   // hedges
   for (const [a, b] of HEDGES) {
     const L = hyp(b[0] - a[0], b[1] - a[1]);
     for (let d = 0; d < L; d += 3) { const t = d / L; g.fillStyle = r() < 0.5 ? '#3f5a2a' : '#4b6a31'; g.beginPath(); g.arc(lerp(a[0], b[0], t) + (r() - 0.5) * 1.5, lerp(a[1], b[1], t) + (r() - 0.5) * 1.5, 2.2 + r(), 0, TAU); g.fill(); }
   }
-  // wood
-  g.beginPath(); g.ellipse(WOOD.x, WOOD.y, WOOD.rx, WOOD.ry, 0, 0, TAU); g.fillStyle = '#41592c'; g.fill();
-  for (const [x, y, s] of TREES) { g.fillStyle = 'rgba(25,40,18,0.5)'; g.beginPath(); g.arc(x + 1.5, y + 1.5, s, 0, TAU); g.fill(); g.fillStyle = r() < 0.5 ? '#4f6e33' : '#5b7b3a'; g.beginPath(); g.arc(x, y, s, 0, TAU); g.fill(); }
+  // woods (orchard: trees in rows)
+  for (const w of WOODS) { g.beginPath(); g.ellipse(w.x, w.y, w.rx, w.ry, 0, 0, TAU); g.fillStyle = w.orchard ? '#6f8d48' : '#41592c'; g.fill(); }
+  for (const [x, y, sz, orch] of TREES) {
+    g.fillStyle = 'rgba(25,40,18,0.5)'; g.beginPath(); g.arc(x + 1.5, y + 1.5, sz, 0, TAU); g.fill();
+    g.fillStyle = orch ? (r() < 0.5 ? '#5f8a3a' : '#6c963f') : r() < 0.5 ? '#4f6e33' : '#5b7b3a'; g.beginPath(); g.arc(x, y, sz, 0, TAU); g.fill();
+    if (orch && r() < 0.5) { g.fillStyle = '#c94f3a'; g.beginPath(); g.arc(x + 1, y - 1, 0.9, 0, TAU); g.fill(); }
+  }
   // buildings
   for (const h of HOUSES) {
     g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(h.x + 2, h.y + 2, h.w, h.h);
-    g.fillStyle = h.k === 'church' ? '#9c968a' : h.k === 'farm' ? '#8b6a4a' : '#a5533f'; g.fillRect(h.x, h.y, h.w, h.h);
+    g.fillStyle = h.k === 'church' ? '#9c968a' : h.k === 'farm' ? '#8b6a4a' : h.k === 'manor' ? '#b7a88a' : h.k === 'mill' ? '#d8cdb4' : '#a5533f'; g.fillRect(h.x, h.y, h.w, h.h);
     g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 0.8; g.strokeRect(h.x, h.y, h.w, h.h);
     g.beginPath(); if (h.w > h.h) { g.moveTo(h.x, h.y + h.h / 2); g.lineTo(h.x + h.w, h.y + h.h / 2); } else { g.moveTo(h.x + h.w / 2, h.y); g.lineTo(h.x + h.w / 2, h.y + h.h); } g.stroke();
+    if (h.k === 'manor') { g.fillStyle = '#6a5f4c'; g.fillRect(h.x - 2, h.y - 2, 6, 6); g.fillRect(h.x + h.w - 4, h.y - 2, 6, 6); g.fillRect(h.x - 2, h.y + h.h - 4, 6, 6); g.fillRect(h.x + h.w - 4, h.y + h.h - 4, 6, 6); }
+    if (h.k === 'mill') { const mx = h.x + h.w / 2, my = h.y + h.h / 2; g.strokeStyle = '#3b3328'; g.lineWidth = 1.8; g.beginPath(); for (let k = 0; k < 4; k++) { const an = 0.5 + k * Math.PI / 2; g.moveTo(mx, my); g.lineTo(mx + Math.cos(an) * 13, my + Math.sin(an) * 13); } g.stroke(); }
   }
   const tw = HOUSES.find(h => h.k === 'church' && h.h < 20);
   g.strokeStyle = '#2d2a26'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(tw.x + tw.w / 2, tw.y + 2); g.lineTo(tw.x + tw.w / 2, tw.y + tw.h - 2); g.moveTo(tw.x + 2, tw.y + tw.h / 2 - 1); g.lineTo(tw.x + tw.w - 2, tw.y + tw.h / 2 - 1); g.stroke();
   // start line
-  g.setLineDash([6, 6]); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(80, 790); g.lineTo(1120, 790); g.stroke(); g.setLineDash([]);
-  mapImg = c;
+  g.setLineDash([6, 6]); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(40, 890); g.lineTo(WW - 40, 890); g.stroke(); g.setLineDash([]);
+}
+function prerender() {
+  tiles = [];
+  for (let ty = 0; ty < WH; ty += TILE) for (let tx = 0; tx < WW; tx += TILE) {
+    const w = Math.min(TILE, WW - tx), h = Math.min(TILE, WH - ty), c = document.createElement('canvas');
+    c.width = Math.ceil(w * MS); c.height = Math.ceil(h * MS);
+    const g = c.getContext('2d'); g.scale(MS, MS); g.translate(-tx, -ty); drawMap(g);
+    tiles.push({ c, x: tx, y: ty, w, h });
+  }
 }
 const w2s = (x, y) => [(x - cam.x) * cam.z + cam.ox + cam.vw / 2, (y - cam.y) * cam.z + cam.oy + cam.vh / 2];
 const s2w = (sx, sy) => [(sx - cam.ox - cam.vw / 2) / cam.z + cam.x, (sy - cam.oy - cam.vh / 2) / cam.z + cam.y];
-const FITBOX = { x0: 140, x1: 1110, y0: 250, y1: 885 };
-function fitCam() {
-  const fz = Math.min(cam.vw / (FITBOX.x1 - FITBOX.x0), cam.vh / (FITBOX.y1 - FITBOX.y0));
-  cam.z = Math.max(fz, Math.min(cam.vh / WH * 0.85, cam.vw / 860)); // tall phone screens: fill the height rather than letterbox
-  cam.x = (FITBOX.x0 + FITBOX.x1) / 2; cam.y = (FITBOX.y0 + FITBOX.y1) / 2; cam.fit = true; clampCam();
-}
+const FITBOX = { x0: 0, x1: WW, y0: 160, y1: WH }; // ⤢ Fit: the whole front
+function fitBox(B) { cam.z = Math.min(cam.vw / (B.x1 - B.x0), cam.vh / (B.y1 - B.y0)); cam.x = (B.x0 + B.x1) / 2; cam.y = (B.y0 + B.y1) / 2; clampCam(); }
+function fitCam() { fitBox(FITBOX); cam.fit = true; }
+// one battalion's sector
+function fitBn(id) { const x = BN[id].home[0]; fitBox({ x0: x - 520, x1: x + 520, y0: 240, y1: WH - 10 }); cam.fit = false; }
+const FAR = 0.32; // below this zoom companies are drawn as one marker each
 function clampCam() {
   const zmin = Math.min(cam.vw / WW, cam.vh / WH) * 0.9; cam.z = clamp(cam.z, zmin, 8);
   const hw = cam.vw / 2 / cam.z, hh = cam.vh / 2 / cam.z;
@@ -1693,23 +1822,23 @@ function txt(s, x, y, size, col, align = 'center', bg) {
   cx.fillStyle = col; cx.fillText(s, x, y);
 }
 function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
-function nodePos(n) { if (n.level === 'bn') return centroid(gbSecs().map(u => ({ ...ipos(u), state: u.state }))); if (n.level === 'sec') return ipos(S.U[n.id]); if (n.level === 'pl') return centroid(secsOf(n.id).map(u => ({ ...ipos(u), state: u.state, men: u.men }))); return centroid(coyUnits(n.id).filter(u => u.kind === 'sec').map(u => ({ ...ipos(u), state: u.state }))); }
+function nodePos(n) { if (n.level === 'bn') return centroid(bnSecs(n.id).map(u => ({ ...ipos(u), state: u.state }))); if (n.level === 'sec') return ipos(S.U[n.id]); if (n.level === 'pl') return centroid(secsOf(n.id).map(u => ({ ...ipos(u), state: u.state, men: u.men }))); return centroid(coyUnits(n.id).filter(u => u.kind === 'sec').map(u => ({ ...ipos(u), state: u.state }))); }
 function selChain() { const out = new Set(); let n = S.sel && S.nodes[S.sel]; while (n) { out.add(n.id); n = n.parent && S.nodes[n.parent]; } return out; }
 function drawOrders(now) {
   const chain = selChain(), selN = S.sel && S.nodes[S.sel];
   // battalion objective: big khaki ring; when the battalion is selected, lines to each company's objective
-  const bnN = S.nodes.BN;
-  if (bnN && bnN.type) {
-    const ds = dispSpec(bnN), br = Math.max(24, 78 * cam.z), [bx, by] = w2s(ds.target.x, ds.target.y);
-    cx.globalAlpha = selN && selN.level !== 'bn' ? 0.45 : 0.9;
-    if (selN && selN.level === 'bn') for (const k of bnN.kids) { const cs = dispSpec(S.nodes[k]); if (cs.type && far(cs.target, ds.target, 30)) arrow(ds.target.x, ds.target.y, cs.target.x, cs.target.y, COYCOL[k], 2, [2, 6], false); }
-    ring(ds.target.x, ds.target.y, br, 'rgba(0,0,0,0.4)', 5, [14, 8]); ring(ds.target.x, ds.target.y, br, BN.col, 2.5, [14, 8]);
-    txt(`${BN.name} ${T[ds.type][0]} ${T[ds.type][1]}`, bx, by - br - 10, 11, '#111', 'center', BN.col);
+  for (const B of BNS) {
+    const bnN = S.nodes[B.id]; if (!bnN || !bnN.type) continue;
+    const ds = dispSpec(bnN), br = Math.max(24, 78 * cam.z), [bx, by] = w2s(ds.target.x, ds.target.y), mine = selN && selN.id === B.id;
+    cx.globalAlpha = selN && !mine && (selN.level !== 'bn') ? 0.45 : selN && !mine ? 0.6 : 0.9;
+    if (mine) for (const k of bnN.kids) { const cs = dispSpec(S.nodes[k]); if (cs.type && far(cs.target, ds.target, 30)) arrow(ds.target.x, ds.target.y, cs.target.x, cs.target.y, COYCOL[k], 2, [2, 6], false); }
+    ring(ds.target.x, ds.target.y, br, 'rgba(0,0,0,0.4)', 5, [14, 8]); ring(ds.target.x, ds.target.y, br, B.col, mine ? 3.5 : 2.5, [14, 8]);
+    txt(`${cam.z < FAR ? B.short : B.name} ${T[ds.type][0]}${cam.z < FAR ? '' : ' ' + T[ds.type][1]}`, bx, by - br - 10, 11, '#111', 'center', B.col);
     cx.globalAlpha = 1;
   }
   for (const C of COYS) {
     const cn = S.nodes[C.id]; if (!cn.type) continue;
-    const ds = dispSpec(cn), col = C.col, dim = selN && selN.level !== 'bn' && !chain.has(C.id) && selN.coy !== C.id;
+    const ds = dispSpec(cn), col = C.col, dim = selN && (selN.level === 'bn' ? selN.id !== C.bn : !chain.has(C.id) && selN.coy !== C.id);
     cx.globalAlpha = dim ? 0.35 : 1;
     // company: phase line through the FUPs, target circle, main arrow
     const fups = cn.kids.map(k => dispSpec(S.nodes[k])).filter(s => (s.type === 'assault' || s.type === 'clear') && s.pos).map(s => s.pos);
@@ -1718,7 +1847,7 @@ function drawOrders(now) {
       const f = fups[0], ad = unitV(ds.target.x - from.x, ds.target.y - from.y), px = -ad.y, py = ad.x;
       const [a, b] = w2s(f.x - px * 110, f.y - py * 110), [c, d] = w2s(f.x + px * 110, f.y + py * 110);
       cx.strokeStyle = col; cx.lineWidth = 1.5; cx.setLineDash([3, 5]); cx.beginPath(); cx.moveTo(a, b); cx.lineTo(c, d); cx.stroke(); cx.setLineDash([]);
-      if (cam.z > 0.55) txt(`PL ${['ALPHA', 'BRAVO', 'CHARLIE'][COYS.indexOf(C)]}`, c, d, 10, col, 'left', 'rgba(0,0,0,0.45)');
+      if (cam.z > 0.55) txt(`PL ${['ALPHA', 'BRAVO', 'CHARLIE'][BN[C.bn].coys.indexOf(C.id)]}`, c, d, 10, col, 'left', 'rgba(0,0,0,0.45)');
     }
     const tr = Math.max(14, 40 * cam.z);
     ring(ds.target.x, ds.target.y, tr, col, 3, ds.type === 'withdraw' || ds.type === 'screen' ? [8, 6] : null);
@@ -1733,6 +1862,7 @@ function drawOrders(now) {
     for (const pid of cn.kids) {
       const pn = S.nodes[pid], ps = dispSpec(pn); if (!ps.type || !secsOf(pid).some(alive)) continue;
       const pf = nodePos(pn), sel = chain.has(pid) || (selN && selN.parent === pid);
+      if (cam.z < FAR && !sel && !chain.has(C.id)) continue; // zoomed out: company arrows only
       const goal = ps.pos || ps.target;
       if (pn.status !== 'achieved' || sel) arrow(pf.x, pf.y, goal.x, goal.y, col, sel ? 3 : 2, [7, 5]);
       if (FIRE_T.has(ps.type) && ps.pos) { cx.globalAlpha *= 0.8; arrow(ps.pos.x, ps.pos.y, ps.target.x, ps.target.y, '#ff9b6a', 1.5, [2, 4], false); cx.globalAlpha = dim ? 0.35 : 1; }
@@ -1802,16 +1932,16 @@ function drawUnit(u, now) {
   }
   // symbol
   const bnhq = u.kind === 'bnhq', hq = u.kind === 'coyhq' || u.kind === 'plhq' || bnhq;
-  const w = bnhq ? 22 : hq ? 14 : 18, h = bnhq ? 13 : hq ? 10 : 12, by = z >= 1.6 ? sy - 6 * z - 10 : sy;
+  const w = bnhq ? 26 : hq ? 14 : 18, h = bnhq ? 14 : hq ? 10 : 12, by = z >= 1.6 ? sy - 6 * z - 10 : sy;
   const col = gb ? COYCOL[u.coy] : '#c9443a';
   const n = S.nodes[u.id], sel = S.sel === u.id;
   if (n && n.flash && now - n.flash < 1600) { const t = Math.max(0, (now - n.flash) / 1600); cx.strokeStyle = `rgba(255,225,74,${1 - t})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(sx, by, 14 + 16 * t, 0, TAU); cx.stroke(); }
   if (sel) { cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(sx, by, 15, 0, TAU); cx.stroke(); }
   if (gb) { cx.fillStyle = col; rr(sx - w / 2, by - h / 2, w, h, 2); cx.fill(); cx.strokeStyle = 'rgba(0,0,0,0.7)'; cx.lineWidth = 1; cx.stroke(); }
   else { // hostile: diamond
-    const d = 10; cx.fillStyle = '#d2453a'; cx.beginPath(); cx.moveTo(sx, by - d); cx.lineTo(sx + d, by); cx.lineTo(sx, by + d); cx.lineTo(sx - d, by); cx.closePath(); cx.fill();
+    const d = z < FAR ? 6 : 10; cx.fillStyle = '#d2453a'; cx.beginPath(); cx.moveTo(sx, by - d); cx.lineTo(sx + d, by); cx.lineTo(sx, by + d); cx.lineTo(sx - d, by); cx.closePath(); cx.fill();
     cx.strokeStyle = '#1b1b1b'; cx.lineWidth = 1.5; cx.stroke();
-    txt(u.kind === 'mg' ? 'MG' : u.role === 'outpost' ? 'OP' : '', sx, by + 0.5, 7, '#fff');
+    if (d > 6) txt(u.kind === 'mg' ? 'MG' : u.role === 'outpost' ? 'OP' : '', sx, by + 0.5, 7, '#fff');
     const f = u.men / u.men0; cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - 8, by + d + 2, 16, 3); cx.fillStyle = f > 0.6 ? '#ffb0a0' : '#ff6a5a'; cx.fillRect(sx - 8, by + d + 2, 16 * f, 3);
     if (u.state === 'pinned') txt('⬇', sx + d + 6, by - 2, 11, '#ffd34a');
     if (u.state === 'broken') txt('✖', sx + d + 6, by - 2, 11, '#ff6a5a');
@@ -1828,14 +1958,30 @@ function drawUnit(u, now) {
   if (u.state === 'pinned') txt('⬇', sx + w / 2 + 6, by - 2, 11, '#ffd34a');
   if (u.state === 'broken') txt('✖', sx + w / 2 + 6, by - 2, 11, '#ff6a5a');
   if (z > 1.1 && gb && u.kind === 'sec') txt(`${u.pn}/${u.sn}`, sx, by - h / 2 - 7, 9, '#fff', 'center', 'rgba(0,0,0,0.45)');
-  if (gb && hq && (z > 0.8 || bnhq)) txt(bnhq ? 'Bn' : u.kind === 'coyhq' ? u.coy : `${u.pn}`, sx + 4, by, 8, '#000');
+  if (gb && hq && (z > 0.8 || bnhq)) txt(bnhq ? BN[u.id].short : u.kind === 'coyhq' ? u.coy : `${u.pn}`, sx + (bnhq ? 2 : 4), by, 8, '#000');
+}
+// zoomed far out: one marker per company at its sections' centre (tap it to select the company)
+function coyBlobPos(C) { const us = coyUnits(C.id).filter(u => u.kind === 'sec' && alive(u)); return us.length ? centroid(us.map(u => ({ ...ipos(u), state: u.state }))) : null; }
+function drawCoyBlob(C, now) {
+  const p = coyBlobPos(C); if (!p) return;
+  const [sx, sy] = w2s(p.x, p.y), n = S.nodes[C.id], secs = coyUnits(C.id).filter(u => u.kind === 'sec');
+  if (sx < -30 || sy < -30 || sx > W + 30 || sy > H + 30) return;
+  if (n.flash && now - n.flash < 1600) { const t = clamp((now - n.flash) / 1600, 0, 1); cx.strokeStyle = `rgba(255,225,74,${1 - t})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(sx, sy, 12 + 14 * t, 0, TAU); cx.stroke(); }
+  const ch = selChain(); if (S.sel === C.id || (S.sel && ch.has(C.id))) { cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(sx, sy, 15, 0, TAU); cx.stroke(); }
+  cx.fillStyle = C.col; rr(sx - 10, sy - 7, 20, 14, 3); cx.fill(); cx.strokeStyle = 'rgba(0,0,0,0.75)'; cx.lineWidth = 1; cx.stroke();
+  txt(C.id, sx, sy + 0.5, 10, '#000');
+  const f = strength(secs); cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - 10, sy + 9, 20, 3); cx.fillStyle = f > 0.6 ? '#7fe07a' : f > 0.35 ? '#f0c040' : '#ef5a4a'; cx.fillRect(sx - 10, sy + 9, 20 * f, 3);
+  const live = secs.filter(alive), pin = live.filter(u => u.state === 'pinned').length, brk = live.filter(u => u.state === 'broken').length;
+  if (brk * 2 > live.length) txt('✖', sx + 15, sy - 2, 11, '#ff6a5a'); else if (pin * 2 > live.length) txt('⬇', sx + 15, sy - 2, 11, '#ffd34a');
 }
 function drawToasts(now) {
   let k = 0;
   S.toasts = S.toasts.filter(t => now - t.t < 4500);
-  for (const t of S.toasts.slice(-4)) {
+  const farOut = cam.z < FAR; // zoomed far out: only the important ones, so the whole front stays readable
+  for (const t of (farOut ? S.toasts.filter(t => t.kind === 'req' || t.kind === 'fail' || t.kind === 'ach' || t.kind === 'chg') : S.toasts).slice(farOut ? -2 : -4)) {
     const a = Math.min(1, (4500 - (now - t.t)) / 800);
     const [sx, sy] = w2s(t.x, t.y);
+    if (sx < cam.ox - 40 || sx > cam.ox + cam.vw + 40 || sy < cam.oy - 30 || sy > cam.oy + cam.vh + 40) continue; // happening elsewhere on the big map: the feed has it
     cx.globalAlpha = a;
     const col = t.kind === 'ach' ? '#2f7d3a' : t.kind === 'fail' ? '#8a2b22' : t.kind === 'req' ? '#9a6a10' : t.kind === 'chg' ? '#33507a' : 'rgba(20,20,20,0.85)';
     txt(t.text, clamp(sx, 110, cam.ox + cam.vw - 110), clamp(sy - 30 - (k++ % 2) * 18, cam.oy + 44, cam.oy + cam.vh - 20), 11, '#fff', 'center', col);
@@ -1845,19 +1991,25 @@ function drawToasts(now) {
 function draw(now) {
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   cx.fillStyle = '#2b3324'; cx.fillRect(0, 0, W, H);
-  const [x0, y0] = w2s(0, 0);
   cx.imageSmoothingEnabled = true;
-  cx.drawImage(mapImg, x0, y0, WW * cam.z, WH * cam.z);
-  // feature labels
+  for (const t of tiles) {
+    const [a, b] = w2s(t.x, t.y), dw = t.w * cam.z, dh = t.h * cam.z;
+    if (a > W || b > H || a + dw < 0 || b + dh < 0) continue;
+    cx.drawImage(t.c, a, b, dw + 0.75, dh + 0.75);
+  }
+  // feature labels (zoomed far out: icons only)
   for (const f of FEATS) {
-    if (f.id === 'start') continue;
+    if (f.start) continue;
     const [a, b] = w2s(f.x, f.y);
-    txt(`${f.icon} ${f.name}`, a, b + Math.max(16, f.r * cam.z * 0.6), 11, '#f4efe0', 'center', 'rgba(20,24,16,0.55)');
+    if (a < -80 || b < -40 || a > W + 80 || b > H + 40) continue;
+    if (cam.z < 0.2) txt(f.icon, a, b + 12, 11, '#f4efe0', 'center', 'rgba(20,24,16,0.45)');
+    else txt(`${f.icon} ${f.name}`, a, b + Math.max(16, f.r * cam.z * 0.6), cam.z < FAR ? 10 : 11, '#f4efe0', 'center', 'rgba(20,24,16,0.55)');
   }
   // intel: planning-phase enemy estimates
   if (S.phase === 'plan') {
     const seen = new Set();
-    for (const u of S.units) if (u.side === 'DE' && intelKnown(u) && !seen.has(u.feat)) { seen.add(u.feat); const f = FEAT[u.feat]; const [a, b] = w2s(f.x + 18, f.y - 18); cx.fillStyle = 'rgba(180,40,30,0.85)'; cx.beginPath(); cx.arc(a, b, 10, 0, TAU); cx.fill(); txt('?', a, b, 13, '#fff'); }
+    const ir = cam.z < FAR ? 6 : 10;
+    for (const u of S.units) if (u.side === 'DE' && intelKnown(u) && !seen.has(u.feat)) { seen.add(u.feat); const f = FEAT[u.feat]; const [a, b] = w2s(f.x + 18, f.y - 18); cx.fillStyle = 'rgba(180,40,30,0.85)'; cx.beginPath(); cx.arc(a + (ir < 10 ? 4 : 0), b - (ir < 10 ? 4 : 0), ir, 0, TAU); cx.fill(); txt('?', a + (ir < 10 ? 4 : 0), b - (ir < 10 ? 4 : 0), ir < 10 ? 9 : 13, '#fff'); }
   }
   drawOrders(now);
   // tracers
@@ -1877,8 +2029,8 @@ function draw(now) {
       else if (u.last && alive(u) && S.time - u.seenT < 300) { const [a, b] = w2s(u.last.x, u.last.y); cx.globalAlpha = 0.5; cx.strokeStyle = '#ff7a6a'; cx.lineWidth = 1.5; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(a, b - 10); cx.lineTo(a + 10, b); cx.lineTo(a, b + 10); cx.lineTo(a - 10, b); cx.closePath(); cx.stroke(); cx.setLineDash([]); txt('?', a, b, 10, '#ffb0a0'); cx.globalAlpha = 1; }
     }
   }
-  for (const u of S.units) if (u.side === 'GB') drawUnit(u, now);
-  if (S.U.BN) drawUnit(S.U.BN, now);
+  if (cam.z < FAR) { for (const C of COYS) drawCoyBlob(C, now); } else for (const u of S.units) if (u.side === 'GB') drawUnit(u, now);
+  for (const B of BNS) drawUnit(S.U[B.id], now);
   drawToasts(now);
   // clock
   const t = S.time, cl = S.phase === 'plan' ? 'PLANNING' : `H+${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -1893,7 +2045,12 @@ const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 S.tab = 'orders'; S.sheet = 'half';
 let uiDirty = true, feedDirty = true, lastUI = 0;
 const collapsed = new Set();
-const fl = { lvl: 'all', kinds: new Set(['ach', 'chg', 'fail', 'req', 'cas', 'info', 'say']) };
+const fl = { lvl: 'all', bn: 'all', kinds: new Set(['ach', 'chg', 'fail', 'req', 'cas', 'info', 'say']) };
+S.bnF = 'all'; S.rqF = 'all';
+// a new scenario starts with every company folded (battalion + company rows only)
+function resetTreeView() { collapsed.clear(); for (const C of COYS) { collapsed.add(C.id); for (const k of S.nodes[C.id].kids) collapsed.add(k); } S.bnF = 'all'; }
+// battalion filter chips, shared by the Orders, Feed and Requests tabs
+const bnChips = (attr, cur) => ['all', ...BNS.map(b => b.id)].map(id => `<button class="ch bnc${cur === id ? ' on' : ''}" data-${attr}="${id}" style="--cc:${id === 'all' ? '#888' : BN[id].col}">${id === 'all' ? 'All Bns' : BN[id].name}</button>`).join('');
 function refreshUI() { uiDirty = true; }
 const hstr = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
 const grade = (q) => (q >= 80 ? 'A' : q >= 65 ? 'B' : q >= 50 ? 'C' : q >= 35 ? 'D' : 'F');
@@ -1922,7 +2079,7 @@ function rowHTML(n, depth) {
   const u = S.U[n.id], st = dispStatus(n), dead = !alive(u) && n.level === 'sec';
   const hasKids = n.kids.length > 0, col = collapsed.has(n.id);
   const marks = (n.locked ? '🔒' : '') + (n.manual ? '✎' : '') + (n.auto ? '⚙' : '') + (n.wait ? '⏳' : '') + (u.state === 'pinned' ? '⬇' : '') + (u.state === 'broken' ? '✖' : '');
-  const title = n.level === 'bn' ? BN.name : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${u.pn} Pl` : `${u.sn} Sec`;
+  const title = n.level === 'bn' ? bnName(n.id) : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${u.pn} Pl` : `${u.sn} Sec`;
   return `<div class="row lv-${n.level}${S.sel === n.id ? ' sel' : ''}${st === 'changed' ? ' fl' : ''}${dead ? ' dead' : ''}" data-id="${n.id}" style="--d:${depth};--cc:${COYCOL[n.coy]}">
     ${hasKids ? `<button class="tg" data-tg="${n.id}" aria-label="Expand">${col ? '▸' : '▾'}</button>` : '<span class="tg0"></span>'}
     <span class="ti">${T[ds.type][0]}</span>
@@ -1931,9 +2088,10 @@ function rowHTML(n, depth) {
     <span class="chip st-${st}">${ST_IC[st]} ${st}</span></div>`;
 }
 function treeHTML() {
-  let h = '';
+  const open = COYS.some(C => !collapsed.has(C.id));
+  let h = `<div class="filters bnf">${bnChips('bnf', S.bnF)}${open ? '<button class="ch" data-fold="1" aria-label="Fold all companies">⊟ Fold</button>' : ''}</div>`;
   const walk = (id, d) => { const n = S.nodes[id]; h += rowHTML(n, d); if (!collapsed.has(id)) for (const k of n.kids) walk(k, d + 1); };
-  walk('BN', 0);
+  for (const B of BNS) if (S.bnF === 'all' || S.bnF === B.id) walk(B.id, 0);
   return h;
 }
 function editorHTML() {
@@ -1942,7 +2100,11 @@ function editorHTML() {
   const name = nodeName(n);
   const notes = S.hqExp >= 2 ? n.notes : S.hqExp === 1 ? n.notes.slice(0, 1) : [];
   const types = TYPES[n.level].map(t => `<button class="ch${t === ds.type ? ' on' : ''}" data-ty="${t}">${T[t][0]} ${T[t][1]}</button>`).join('');
-  const feats = FEATS.map(f => `<button class="ch${tName(ds.target) === f.name ? ' on' : ''}" data-ft="${f.id}">${f.icon} ${f.name}</button>`).join('');
+  // places nearest this unit first; the far ones fold away
+  const here = nodePos(n).x ? nodePos(n) : ds.target, tn = tName(ds.target);
+  const fs = FEATS.slice().sort((a, b) => hyp(a.x - here.x, a.y - here.y) - hyp(b.x - here.x, b.y - here.y));
+  const near = S.moreFeats ? fs : fs.filter((f, i) => i < 8 || f.name === tn);
+  const feats = near.map(f => `<button class="ch${tn === f.name ? ' on' : ''}" data-ft="${f.id}">${f.icon} ${f.name}</button>`).join('') + (fs.length > near.length ? `<button class="ch" id="moreFt">＋ ${fs.length - near.length} more</button>` : '');
   const seg = (k, v, labels) => `<div class="seg">${labels.map((l, i) => `<button class="${v === i ? 'on' : ''}" data-${k}="${i}">${l}</button>`).join('')}</div>`;
   return `<div class="ed" style="--cc:${COYCOL[n.coy]}">
     <div class="edh"><span class="ti">${T[ds.type][0]}</span><div class="edn"><b>${esc(name)}</b><small>${esc(cname(c))} · ${word('obed', c.obed)}, ${word('judg', c.judg)}</small></div>${personaMini(n)}${qShow(n.q, n.id)}<button class="x" id="edClose" aria-label="Close">✕</button></div>
@@ -1960,17 +2122,19 @@ function renderOrders() {
 const KIND_IC = { ach: '✅', chg: '🔄', fail: '❌', req: '❗', cas: '✚', info: 'ℹ', say: '💬' };
 const tfmt = (t) => `H+${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 function renderFeed() {
+  const bnr = bnChips('fb', fl.bn);
   const lv = ['all', 'bn', 'coy', 'pl', 'sec'].map(l => `<button class="ch${fl.lvl === l ? ' on' : ''}" data-fl="${l}">${l === 'all' ? 'All' : l === 'bn' ? 'Bn' : l === 'coy' ? 'Coy' : l === 'pl' ? 'Pl' : 'Sec'}</button>`).join('');
   const kd = ['ach', 'chg', 'fail', 'req', 'cas', 'info'].map(k => `<button class="ch${fl.kinds.has(k) ? ' on' : ''}" data-fk="${k}" aria-label="${k}">${KIND_IC[k]}</button>`).join('');
   const items = [];
   for (let i = S.feed.length - 1; i >= 0 && items.length < 250; i--) {
     const e = S.feed[i];
     if (fl.lvl !== 'all' && e.lvl !== fl.lvl) continue;
+    if (fl.bn !== 'all' && e.bn && e.bn !== fl.bn) continue;
     if (!fl.kinds.has(e.kind === 'say' ? 'chg' : e.kind)) continue;
     const who = e.who === 'you' ? '<span class="who y">you</span>' : e.who === 'auto' && e.kind === 'chg' ? '<span class="who a">auto</span>' : e.who === 'them' ? '<span class="who t">them</span>' : '';
     items.push(`<div class="fe k-${e.kind}" data-u="${e.unit || ''}" style="--cc:${e.unit && S.U[e.unit] && S.U[e.unit].side === 'GB' ? COYCOL[S.U[e.unit].coy] : '#888'}"><span class="ft">${S.phase === 'plan' && !e.t ? 'PLAN' : tfmt(e.t)}</span><span class="fi">${KIND_IC[e.kind]}</span><span class="fx">${who}${esc(e.text)}</span></div>`);
   }
-  $('pFeed').innerHTML = `<div class="filters">${lv}<span class="sp"></span>${kd}</div><div class="list">${items.join('') || '<div class="empty">No messages yet.</div>'}</div>`;
+  $('pFeed').innerHTML = `<div class="filters">${bnr}</div><div class="filters f2">${lv}<span class="sp"></span>${kd}</div><div class="list">${items.join('') || '<div class="empty">No messages yet.</div>'}</div>`;
 }
 function reqCard(r) {
   const n = S.nodes[r.node], c = r.cmdr;
@@ -1985,8 +2149,9 @@ function reqCard(r) {
   return `<div class="rq" data-rq="${r.id}" style="--cc:${COYCOL[n.coy]}">${head}<div class="rx">${esc(r.text)}</div>${sugs}<div class="acts"><button data-edr="${r.id}">✎ Edit</button><button data-den="${r.id}">✖ Deny</button></div></div>`;
 }
 function renderReqs() {
-  const open = S.reqs.filter(r => r.status === 'open'), old = S.reqs.filter(r => r.status !== 'open').slice(-6).reverse();
-  $('pReqs').innerHTML = (open.length ? open.map(reqCard).join('') : '<div class="empty">No open requests. Commanders will ask when things change.</div>')
+  const mine = (r) => S.rqF === 'all' || r.bn === S.rqF;
+  const open = S.reqs.filter(r => r.status === 'open' && mine(r)), old = S.reqs.filter(r => r.status !== 'open' && mine(r)).slice(-6).reverse();
+  $('pReqs').innerHTML = `<div class="filters">${bnChips('rf', S.rqF)}</div>` + (open.length ? open.map(reqCard).join('') : '<div class="empty">No open requests. Commanders will ask when things change.</div>')
     + (old.length ? `<div class="lbl">Earlier</div>${old.map(reqCard).join('')}` : '')
     + `<label class="apt"><input type="checkbox" id="apChk" ${S.autoPause ? 'checked' : ''}> Auto-pause on requests</label>`;
 }
@@ -2017,9 +2182,10 @@ function renderAll() {
 }
 function setTab(t) { S.tab = t; if (S.sheet === 'min') S.sheet = 'half'; renderAll(); }
 function select(id, jump) {
+  if (id !== S.sel) S.moreFeats = false;
   S.sel = id; S.pickMode = false;
   if (id) { let n = S.nodes[id]; while (n && n.parent) { collapsed.delete(n.parent); n = S.nodes[n.parent]; } }
-  if (jump && id) { const p = nodePos(S.nodes[id]); if (p.x) centerOn(p.x, p.y, 1.4); }
+  if (jump && id) { const nn = S.nodes[id]; if (nn.level === 'bn') fitBn(id); else { const p = nodePos(nn); if (p.x) centerOn(p.x, p.y, nn.level === 'coy' ? 0.7 : 1.4); } }
   S.tab = 'orders'; if (S.sheet === 'min') S.sheet = 'half';
   renderAll();
   $('pane').scrollTop = 0;
@@ -2048,9 +2214,12 @@ function cardHTML(id, editing) {
     <div class="acts">${editing ? '<button data-rnd="1">🎲 Randomize</button><button data-done="1">✓ Done</button>' : '<button data-edt="1">✎ Edit traits</button><button data-sel="1">📋 Orders</button>'}</div></div>`;
 }
 function openCard(id, editing) { S.cardFor = id; openOv(cardHTML(id, editing), 'card'); }
-function slotInfo(i) { try { const d = JSON.parse(store.get('cl-slot' + i, 'null')); return d ? `#${d.seed} · ${new Date(d.saved).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'empty'; } catch (e) { return 'empty'; } }
+// a save from before the 3-battalion map (v1.x: one battalion on the small map) can't be placed on the new map
+const oldSave = (d) => !d || !(d.v >= 3) || !Array.isArray(d.nodes) || !Array.isArray(d.cmdrs);
+function slotInfo(i) { try { const d = JSON.parse(store.get('cl-slot' + i, 'null')); return d ? `#${d.seed} · ${new Date(d.saved).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${oldSave(d) ? ' · old 1-battalion map' : ''}` : 'empty'; } catch (e) { return 'empty'; } }
+function slotOld(i) { try { const d = JSON.parse(store.get('cl-slot' + i, 'null')); return !!d && oldSave(d); } catch (e) { return true; } }
 function menuHTML() {
-  const slots = [1, 2, 3].map(i => `<div class="slot"><span>Slot ${i}<small>${slotInfo(i)}</small></span><button data-sv="${i}">💾 Save</button><button data-ld="${i}" ${slotInfo(i) === 'empty' ? 'disabled' : ''}>📂 Load</button></div>`).join('');
+  const slots = [1, 2, 3].map(i => `<div class="slot"><span>Slot ${i}<small>${slotInfo(i)}</small></span><button data-sv="${i}">💾 Save</button><button data-ld="${i}" ${slotInfo(i) === 'empty' ? 'disabled' : ''}>📂 Load</button></div>`).join('') + (S.loadMsg ? `<div class="notes">⚠ ${esc(S.loadMsg)}</div>` : '');
   const hq = ['Green', 'Regular', 'Veteran'].map((l, i) => `<button class="${S.hqExp === i ? 'on' : ''}" data-hq="${i}">${l}</button>`).join('');
   return `<div class="menu"><div class="ch1"><b>Command Layers</b><small>${VERSION} · scenario #${S.seed}</small><button class="x" data-close="1" aria-label="Close">✕</button></div>
     <div class="acts"><button data-m="restart">↺ Restart</button><button data-m="new">🎲 New scenario</button></div>
@@ -2062,15 +2231,17 @@ function menuHTML() {
     <div class="acts"><button data-m="tut">🎓 Tutorial</button><button data-m="help">❓ Help</button></div></div>`;
 }
 const TUT = [
-  ['📋 Orders', 'You command the battalion (1st Bn). Give it an objective and its CO splits it into company tasks for A, B and C; each company splits its task for its platoons, and so on down to sections. Tap a row in Orders, or a unit on the map, to open it.'],
+  ['📋 Orders', 'You command a brigade: 1st, 2nd and 3rd Bn side by side on a 3 km front. Give each battalion an objective and its CO splits it into tasks for its three companies; each company splits its task for its platoons, and so on down to sections. Tap a row in Orders, or a unit on the map, to open it. Companies start folded: tap ▸ to see their platoons, or use the battalion chips to show one battalion.'],
+  ['⤢ Map', 'Pinch to zoom, drag one finger to pan. ⤢ Fit (top right) shows the whole front again; a battalion chip or its row zooms to that battalion\'s sector. Zoomed far out, each company is one marker (tap it to select the company).'],
   ['✎ Edit', 'Change the objective type or target at any level (battalion, company, platoon, section). Lower layers re-plan at once (yellow flash, ghost line from old to new). Your edits are suggestions: a commander may agree, grumble, push back or quietly ignore you. 🔒 turns it into an order, and locked tasks survive re-plans from above.'],
   ['✋ Drag', 'Moving things on the map is off by default, so a stray finger only pans. Tap ✋ Drag (top right of the map) to switch it on: the selected task\'s ◎ target and ◇ position light up yellow and can be dragged. It stays on until you tap it again.'],
   ['▶ Play', 'Press Play. Use the slider for 0.1× to 16× speed, ⏸ to pause, ⏭ to step while paused. You can edit at any time.'],
-  ['❗ Requests', 'Company commanders ask for changes with 1–3 suggestions. Accept, Edit or Deny. The 📻 Feed logs every change; tap a message to jump to that unit.'],
+  ['❗ Requests', 'Battalion and company commanders ask for changes with 1–3 suggestions. Accept, Edit or Deny. The 📻 Feed logs every change; tap a message to jump to that unit. Both tabs can be filtered by battalion.'],
 ];
 function tutHTML(i) { const [h, b] = TUT[i]; return `<div class="tut"><div class="tn">${i + 1} / ${TUT.length}</div><h3>${h}</h3><p>${b}</p><div class="acts"><button data-tskip="1">Skip</button><button data-tnext="${i + 1}">${i + 1 < TUT.length ? 'Next ›' : 'Got it'}</button></div></div>`; }
 function helpHTML() {
   return `<div class="help"><div class="ch1"><b>How it works</b><button class="x" data-close="1" aria-label="Close">✕</button></div>
+  <p><b>Brigade front.</b> Three battalions attack side by side: 1st Bn (A, B, C Coy) in the west towards Ashford, 2nd Bn (D, E, F) in the centre towards the Church, 3rd Bn (G, H, I) in the east towards the Manor, with the river and its three bridges behind the German line and the Mill Brook between the centre and the east. Each battalion is ordered separately; the doctrine (Objective Editor) applies to all of them. ⤢ Fit shows the whole front; pinch or the battalion chips zoom in.</p>
   <p><b>Layers.</b> Battalion → company → platoon → section. The battalion CO breaks your battalion objective into company tasks (e.g. Seize: main effort on the objective plus the flanking enemy positions, or a fire base + assault + reserve); companies break theirs into platoon tasks (assault, support by fire, cut-off, reserve…); platoons into section tasks (move, suppress, assault, hold, overwatch). You can still edit or 🔒 lock any company, platoon or section task directly; locked tasks are left alone when the level above re-plans.</p>
   <p><b>✋ Drag.</b> Off by default: one finger pans the map and taps select. Turn it on (button at the top right of the map) to drag the selected task's ◎ target or ◇ position; they glow yellow while it's on. It stays on until you tap it again. 📍 Tap map in the order panel also sets a target.</p>
   <p><b>Commanders.</b> Every leader has obedience, judgment, experience, maybe a quirk, and trust in you. Smart ones make good plans (cover, line of sight, flanking, reserves) and push back on bad edits; dumb ones charge across open ground. Insisting works but costs trust and morale. Plans you suggested that work raise trust.</p>
@@ -2082,7 +2253,7 @@ function helpHTML() {
 function endHTML() {
   const st = S.stats;
   return `<div class="endb"><h3>🏁 ${esc(S.endMsg)}</h3><p>Time ${tfmt(S.time)} · British casualties ${st.gbCas} · enemy ${st.deCas}</p>
-  <p>${BN.name}: ${S.nodes.BN && S.nodes.BN.type ? `${esc(label(S.nodes.BN))} · ${esc(S.nodes.BN.status)}` : '—'}</p>
+  ${BNS.map(B => { const n = S.nodes[B.id]; return `<p>${B.name}: ${n && n.type ? `${esc(label(n))} · ${esc(n.status)}` : '—'} · ${Math.round(strength(bnSecs(B.id)) * 100)}% strength</p>`; }).join('')}
   <p>Objectives achieved: ${st.ach.coy} coy, ${st.ach.pl} pl, ${st.ach.sec} sec · failed: ${st.fail.coy}/${st.fail.pl}/${st.fail.sec}</p>
   <div class="acts"><button data-close="1">👀 Keep watching</button><button data-m="restart">↺ Restart</button><button data-m="new">🎲 New scenario</button></div></div>`;
 }
@@ -2094,16 +2265,20 @@ function onReq(r) {
 }
 // save / load (plan + commanders)
 function snapshot() {
-  return { v: 2, seed: S.seed, saved: Date.now(), nodes: Object.values(S.nodes).map(n => ({ id: n.id, type: n.type, target: n.target, pos: n.pos, gate: n.gate, prio: n.prio, aggr: n.aggr, locked: n.locked, manual: n.manual, q: n.q, notes: n.notes, vname: n.vname })), cmdrs: S.units.concat(S.U.BN ? [S.U.BN] : []).filter(u => u.cmdr).map(u => ({ id: u.id, ...u.cmdr })) };
+  return { v: 3, map: 'brigade-3bn', seed: S.seed, saved: Date.now(), nodes: Object.values(S.nodes).map(n => ({ id: n.id, type: n.type, target: n.target, pos: n.pos, gate: n.gate, prio: n.prio, aggr: n.aggr, locked: n.locked, manual: n.manual, q: n.q, notes: n.notes, vname: n.vname })), cmdrs: S.units.concat(BNS.map(B => S.U[B.id])).filter(u => u.cmdr).map(u => ({ id: u.id, ...u.cmdr })) };
 }
 function savePlan(i) { store.set('cl-slot' + i, JSON.stringify(snapshot())); log('coy', 'info', null, `Plan saved to slot ${i}.`, 'you'); }
 function loadPlan(i) {
   let d; try { d = JSON.parse(store.get('cl-slot' + i, 'null')); } catch (e) { d = null; }
   if (!d) return false;
+  if (oldSave(d)) { // cleanly refuse: the old single-battalion plans don't fit the new map
+    S.loadMsg = `Slot ${i} holds a plan from the old single-battalion map (v1.x). It can't be loaded on the 3-battalion map; save a new plan over it.`;
+    log('coy', 'info', null, `⚠ ${S.loadMsg}`, 'auto'); return false;
+  }
+  S.loadMsg = null;
   newScenario(d.seed);
   for (const c of d.cmdrs) if (S.U[c.id]) { const { id, ...rest } = c; Object.assign(S.U[c.id].cmdr, rest); }
   for (const s of d.nodes) if (S.nodes[s.id]) Object.assign(S.nodes[s.id], s, { status: 'planned', flash: 0, ghost: null });
-  if (d.v < 2) bnRequal(); // a v1.x save has no battalion: it keeps the default battalion objective, rated against the loaded companies
   log('coy', 'info', null, `Plan loaded from slot ${i}.`, 'you');
   S.sel = null; renderAll(); return true;
 }
@@ -2112,8 +2287,9 @@ function bindUI() {
   $('bPlay').onclick = playPause;
   $('bStep').onclick = () => { stepOnce(); renderAll(); };
   $('spd').oninput = (e) => setSpeedV(+e.target.value);
-  $('bMenu').onclick = () => openOv(menuHTML(), 'menuov');
+  $('bMenu').onclick = () => { S.loadMsg = null; openOv(menuHTML(), 'menuov'); };
   $('bDrag').onclick = () => toggleDrag();
+  $('bFit').onclick = () => { fitCam(); };
   for (const t of ['orders', 'feed', 'reqs']) $('tab-' + t).onclick = () => setTab(t);
   // sheet grab: tap cycles, drag sets
   let gy = null, gs = null;
@@ -2131,6 +2307,11 @@ function bindUI() {
     const d = b.dataset;
     if (d.pc) { openCard(d.pc); return; }
     if (d.tg) { collapsed.has(d.tg) ? collapsed.delete(d.tg) : collapsed.add(d.tg); renderAll(); return; }
+    if (d.bnf) { S.bnF = d.bnf; if (d.bnf === 'all') fitCam(); else fitBn(d.bnf); renderAll(); return; }
+    if (d.fold) { for (const C of COYS) { collapsed.add(C.id); for (const k of S.nodes[C.id].kids) collapsed.add(k); } renderAll(); return; }
+    if (d.fb) { fl.bn = d.fb; renderAll(); return; }
+    if (d.rf) { S.rqF = d.rf; renderAll(); return; }
+    if (b.id === 'moreFt') { S.moreFeats = true; renderAll(); return; }
     if (d.id) { select(d.id, true); return; }
     const n = S.sel && S.nodes[S.sel];
     if (d.ty && n) { proposeEdit(n, { type: d.ty }); renderAll(); return; }
@@ -2167,7 +2348,7 @@ function bindUI() {
     if (d.m === 'help') { openOv(helpHTML(), 'helpov'); return; }
     if (d.m === 'editor') { location.href = 'editor.html'; return; }
     if (d.sv) { savePlan(+d.sv); openOv(menuHTML(), 'menuov'); return; }
-    if (d.ld) { if (loadPlan(+d.ld)) { fitCam(); closeOv(); } return; }
+    if (d.ld) { if (loadPlan(+d.ld)) { fitCam(); closeOv(); } else openOv(menuHTML(), 'menuov'); return; }
     if (d.hq !== undefined) { S.hqExp = +d.hq; store.set('cl-hq', String(S.hqExp)); openOv(menuHTML(), 'menuov'); renderAll(); return; }
     if (d.tskip) { store.set('cl-tut', '1'); closeOv(); return; }
     if (d.tnext) { const i = +d.tnext; if (i >= TUT.length) { store.set('cl-tut', '1'); closeOv(); } else openOv(tutHTML(i), 'tutov'); return; }
@@ -2202,8 +2383,10 @@ function tapAt(x, y) {
   const [wx, wy] = s2w(x, y);
   if (S.pickMode && S.sel) { S.pickMode = false; const p = nearestOpen(clamp(wx, 10, WW - 10), clamp(wy, 10, WH - 10)); proposeEdit(S.nodes[S.sel], { target: p }); renderAll(); return; }
   let best = null, bd = 28;
-  for (const u of S.U.BN ? S.units.concat([S.U.BN]) : S.units) {
-    if (!alive(u)) continue;
+  const farOut = cam.z < FAR;
+  if (farOut) for (const C of COYS) { const p = coyBlobPos(C); if (!p) continue; const [a, b] = w2s(p.x, p.y), d = hyp(a - x, b - y) - 3; if (d < bd) { bd = d; best = S.U[C.id]; } }
+  for (const u of S.units.concat(BNS.map(B => S.U[B.id]))) {
+    if (!alive(u) || (farOut && u.side === 'GB' && u.kind !== 'bnhq')) continue;
     if (u.side === 'DE' && !u.vis && !S.reveal) continue;
     const [a, b] = unitScreen(u), d = hyp(a - x, b - y) + (u.kind === 'sec' ? 0 : 4);
     if (d < bd) { bd = d; best = u; }
@@ -2275,6 +2458,7 @@ function bindCanvas() {
 let paneBusy = 0, lastT = 0, acc = 0;
 S.perf = { frames: 0, ticks: 0 };
 function frame(now) {
+  requestAnimationFrame(frame); // first, so one bad frame can't stop the game loop
   const dt = Math.min(0.1, Math.max(0, (now - (lastT || now)) / 1000)); lastT = now;
   layout();
   if (S.phase === 'battle' && !S.paused) {
@@ -2286,7 +2470,6 @@ function frame(now) {
   draw(now);
   S.perf.frames++;
   if (uiDirty && now > paneBusy && now - lastUI > (S.phase === 'battle' && !S.paused ? 450 : 60)) renderAll();
-  requestAnimationFrame(frame);
 }
 // ---------------------------------------------------------------- boot
 prerender(); bindUI(); bindCanvas();
@@ -2301,8 +2484,8 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) naviga
 requestAnimationFrame(frame);
 window.CL = {
   S, cam, VERSION, FEAT, COYS, T, TYPES, specOf, label, dispSpec, proposeEdit, decide, decomposeCoy, decomposePl, answerReq, answerCounter, makeReq, tick, startBattle, newScenario,
-  qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, decomposeBn, bnCandidates, rateBn, threatFeats, makeBnReq, checkBnReqs, bnStatus, coyGateOK, markerHit, toggleDrag, BN, withB, tapAt, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
-  savePlan, loadPlan, restart, fitCam, centerOn, STATS, DOC, DOCL,
+  qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, decomposeBn, bnCandidates, rateBn, threatFeats, makeBnReq, checkBnReqs, bnStatus, coyGateOK, markerHit, toggleDrag, BN, BNS, COY, withB, tapAt, fitBn, FAR, coyBlobPos, bnSecs, riverY, WW, WH, FEATS, los, findPath, resetTreeView, collapsed, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
+  savePlan, loadPlan, restart, fitCam, draw, prerender, centerOn, STATS, DOC, DOCL,
   fast(sec) { for (let i = 0; i < sec / TICK && !S.endMsg; i++) tick(); renderAll(); },
 };
 })();

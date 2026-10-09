@@ -288,7 +288,7 @@ function bnRole(t, vi, ri, nRoles) {
     ${tog(p + '.woods', 'Clear instead of seize if it is a wood')}</div></div>`;
 }
 function renderBn() {
-  let h = `<p class="intro">How the battalion CO (Lt Col) breaks your battalion objective into 3 company tasks. He scores every variant with the 🅱 battalion weights in 📊 Scoring, adds his own misjudgement and tastes, and picks one; each company then plans its task with the 🗺 Company maps. "Flank" roles go to a known enemy-held position beside the approach (Farm, Wood…). "Wait for: fire support" holds that company's assault until the fire-base company is shooting. Diagrams are schematic.</p>`;
+  let h = `<p class="intro">How a battalion CO (Lt Col) breaks your battalion objective into 3 company tasks. All three battalions (1st, 2nd and 3rd Bn) use the same maps; their COs differ only in personality. He scores every variant with the 🅱 battalion weights in 📊 Scoring, adds his own misjudgement and tastes, and picks one; each company then plans its task with the 🗺 Company maps. "Flank" roles go to a known enemy-held position beside the approach (Farm, Wood, Hill 108, Great Wood…). "Wait for: fire support" holds that company's assault until the fire-base company is shooting. Diagrams are schematic.</p>`;
   const order = [...doc.levels.bn, ...D.TYPE_IDS.filter(t => !doc.levels.bn.includes(t) && doc.bn[t])];
   for (const t of order) {
     const B = doc.bn[t];
