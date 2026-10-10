@@ -17,12 +17,14 @@ Quest-only data lives in `core.js` and is not a copy of anything in Trainers:
 
 ## Playing
 - **Map**: tall grass 🌿, ponds 💧 and the cave 🪨 have wild encounters. ✨ marks an item, ❔ a hidden item (only visible to a Scout II trainer). The 🧑‍🌾 wanderers are trainers who challenge you when you walk past, then rest 💤. 🏥 heals the party. A fog hides tiles nobody has seen yet. Dotted lines show where each trainer is heading.
-- **Flags**: pick 🚩🧢, 🚩🎀 or 🚩👥, then tap the map. The trainer walks there and wanders near the flag. Tap the same flag again to remove it. ✕ clears both flags. Tapping the Bridge sends the trainer to try it. Dragging flags only works with ✋ Drag switched on; without it, swipes on the map are ignored.
+- **Screen (v2, map first)**: one slim top row (area 🌉x/5 · 🚩 target · ✕ · ✋ · ⏸ · ×1), the map, one row of slim trainer cards, the tab bar. The map is cropped to the playable area (the outer tree ring is not drawn) and fills about 78% of a portrait phone screen (24px tiles at 390px wide, 22.5px at 360px). In landscape the map takes the full height on the left, with the cards and panel on the right. Nothing opens over the map by itself: battles show in the trainer card and as a mini-banner above the trainer, toasts sit in the map's top-right corner, and the 🌙 away summary is a small card on the bottom edge (✕, or it hides after 30 s). The 📜 feed and 🧠 Why tabs open as half-height sheets with ✕.
+- **✋ pan/zoom**: off by default, so swipes and pinches on the map do nothing. Switch ✋ on (the map gets a yellow outline) to pinch or wheel zoom (up to ×3), drag with one finger to pan, or drag a flag. Switching ✋ off returns to the whole-map view.
+- **Flags**: tap 🚩 to cycle the target 🚩🧢 → 🚩🎀 → 🚩👥, then tap the map. The trainer walks there and wanders near the flag. Tap the same flag again to remove it. ✕ clears both flags. Tapping the Bridge sends the trainer to try it. Dragging flags only works with ✋ switched on.
 - **Trainers decide** with a scored planner, just like the battle AI: 🏥 heal, 🌉 Bridge, 🎁 item, 🚩 flag, 🌿 fight, 🗺 explore or 🚶 wander. The top 3 options and their scores go to the 🧠 Why log, next to the battle Why rows in Trainers format. Tap a move or monster there to open its wiki page.
-- **Battles** run in the Trainers engine. A strip over the map shows each running battle; tap it to watch the big view, including orb throws and shakes.
+- **Battles** run in the Trainers engine. A running battle shows inside that trainer's card (both monsters and HP bars) and as a small ⚔ banner above the trainer on the map. Tap the card or the trainer to open the big view, including orb throws and shakes.
 - **Catching**: weaken the monster, then throw an orb. Catch chance = `min(1.2, 360/bst) × 0.42 × (3 − 2·HP%)/3`, × 2 if asleep or × 1.5 for another status, × the orb, × trait bonuses, minus 4% per level the wild monster is above your lead (down to ×0.4). The result is clamped to 2–97%. A catch joins the party if there is room, otherwise it goes to the 📦 box.
 - **Tabs**: 🧬 traits, 🐾 party/box (⬆ lead, 📦 to box, → take from box, 🍬 candy), 🎒 bag (use heal items between fights), 📕 dex (🎯 caught, 👁 seen, tap a monster to open its wiki page), 📜 feed, 🧠 Why, ⚙ (stats, 💾 save, 🗑 reset; tap twice to confirm).
-- **Time**: ⏸ pauses, ×1 ×2 ×4 sets the speed. The game autosaves every 5 s to `localStorage` key `trainer-quest-v1`, and also when the page is hidden. When you come back, the time away is simulated (up to **2 h**) and a 🌙 summary shows what happened.
+- **Time**: ⏸ pauses, and tapping ×1 cycles the speed ×1 → ×2 → ×4. The game autosaves every 5 s to `localStorage` key `trainer-quest-v1`, and also when the page is hidden. When you come back, the time away is simulated (up to **2 h**) and a 🌙 summary shows what happened.
 
 ## Traits (per trainer; each tier needs the one before it; costs ✨4 / 8 / 16 / 28)
 An untrained trainer plays with the **Bug-kid doctrine**: high randomness, never switches, and uses at most one potion per battle at 15% HP. Traits change that doctrine or a Quest rule.
@@ -50,9 +52,8 @@ An untrained trainer plays with the **Bug-kid doctrine**: high randomness, never
 The good build buys traits in this order: Leader I, Battler I, Medic I, Coach I, Leader II, Catcher I, Battler II, Medic II, Scout I, and so on, in whatever order TP allows. The Bridge win rate is low partly because Bridge attempts include untrained trainers trying too early, which is how they learn. With the good build (6 seeds), Bridge 2 falls at 35–68 min and Bridge 3 at 49–143 min.
 
 ## Files
-`index.html` (layout and CSS), `core.js` (world sim, no DOM, runs in node), `ui.js` (canvas map, cards, battle strips and view, tabs), `sw.js` (cache `trainer-quest-v1`, network first with cache fallback; it also caches the Trainers files it loads), `manifest.webmanifest`, `icon-192.png`, `icon-512.png`.
+`index.html` (layout and CSS), `core.js` (world sim, no DOM, runs in node), `ui.js` (canvas map, cards, battle mini-banners and big view, tabs, ✋ pan/zoom), `sw.js` (cache `trainer-quest-v2`; on activate it deletes only older `trainer-quest-*` caches, network first with cache fallback; it also caches the Trainers files it loads), `manifest.webmanifest`, `icon-192.png`, `icon-512.png`.
 
 ## Known gaps
 - There is no sound and no walking animation; tiles snap from one to the next.
 - Battles are resolved as soon as they start and then replayed. Managing the party during a battle is blocked (⚔ …).
-- Trainers' `sw.js` deletes every cache that isn't its own when it activates. If that happens, Trainer Quest's offline cache is refilled the next time it is opened online.

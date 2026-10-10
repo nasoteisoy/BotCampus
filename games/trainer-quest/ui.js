@@ -1,4 +1,4 @@
-/* Trainer Quest phone UI: map canvas, trainer cards, battle strips/view, tabs (traits, party/box, bag, dex, feed, why, menu). */
+/* Trainer Quest phone UI: map canvas (fit, ✋ pan/zoom), slim trainer strip (battles live there), tabs (traits, party/box, bag, dex, feed, why, menu). */
 (function () {
 'use strict';
 const D = TRDoctrine, Q = TQ, $ = (id) => document.getElementById(id);
@@ -20,9 +20,10 @@ function toast(t, ms = 1800) { const e = $('toast'); e.textContent = t; e.classL
 function save() { if (!W) return; store.set(Q.SAVE_KEY, Q.serialize(W)); lastSave = performance.now(); }
 function awaySummary(sum) {
   const R = [['⚔', sum.wins], ['🎯', sum.catches], ['🎁', sum.finds], ['⬆', sum.lv], ['✨', '+' + sum.tp], ['😵', sum.losses], ['🌉', sum.bridgeTries]];
-  $('awayBox').innerHTML = `<h2>🌙 ${fmt(sum.secs)}${sum.capped ? ' (max 2h)' : ''}</h2>${sum.areaUp ? `<h2>🎉 ${Q.AREAS[sum.area].icon} ${esc(Q.AREAS[sum.area].name)}</h2>` : ''}<div class="sum">${R.map(([i, v]) => `<div>${i} ${v}</div>`).join('')}</div><button class="big" id="awayOk">▶</button>`;
-  $('away').hidden = false; $('awayOk').onclick = () => { $('away').hidden = true; };
+  $('awayBox').innerHTML = `<b>🌙 ${fmt(sum.secs)}${sum.capped ? ' (max 2h)' : ''}${sum.areaUp ? ` · 🎉 ${Q.AREAS[sum.area].icon}` : ''}</b>${R.map(([i, v]) => `<span>${i}${v}</span>`).join('')}`;
+  $('away').hidden = false; clearTimeout(awaySummary.h); awaySummary.h = setTimeout(() => { $('away').hidden = true; }, 30000);
 }
+$('awayOk').onclick = () => { $('away').hidden = true; };
 function catchUp(secs) { if (!W || secs < 30) return; const s = Q.catchUp(W, secs); W.sink = []; save(); if (s.wins + s.catches + s.finds + s.lv + s.losses + s.bridgeTries > 0 || s.secs >= 60) awaySummary(s); dirty = true; }
 function boot() {
   const raw = store.get(Q.SAVE_KEY);
@@ -51,16 +52,22 @@ function startScreen() {
 
 // ---------------------------------------------------------------- map rendering
 const cv = $('map'), g = cv.getContext('2d'), wrap = $('mapWrap');
-let view = { s: 20, ox: 0, oy: 0, w: 0, h: 0 }, bg = null, bgKey = '';
+let view = { s: 20, ox: 0, oy: 0, w: 0, h: 0, z: 1, panX: 0, panY: 0 }, bg = null, bgKey = '';
+const CROP = { x0: 1, y0: 1, w: Q.MW - 2, h: Q.MH - 2 };   // the outer ring is always trees: not drawn, so tiles get bigger
 const imgs = {}; const img = (id) => { if (!imgs[id]) { const i = new Image(); i.src = art(id); imgs[id] = i; } return imgs[id]; };
 function layout() {
   const r = wrap.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
-  // keep the flag bar off the map: a column on the left in landscape, a row on top in portrait
-  const L = landscape(), rl = L ? 56 : 0, rt = L ? 0 : 54;
-  const s = Math.max(8, Math.min((r.width - rl - 4) / Q.MW, (r.height - rt - 4) / (Q.MH - 1)));
-  view = { s, ox: rl + (r.width - rl - s * Q.MW) / 2, oy: rt + (r.height - rt - s * (Q.MH - 1)) / 2 - s, w: r.width, h: r.height, dpr };
   cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
-  bgKey = ''; dirty = true;
+  view.w = r.width; view.h = r.height; view.dpr = dpr;
+  view.s0 = Math.max(6, Math.min(r.width / CROP.w, r.height / CROP.h));
+  place(); bgKey = ''; dirty = true;
+}
+// zoom z (1 = whole map fits) and pan, clamped so the map never leaves the screen
+function place() {
+  const s = view.s0 * view.z, mw = CROP.w * s, mh = CROP.h * s;
+  const lx = Math.max(0, (mw - view.w) / 2), ly = Math.max(0, (mh - view.h) / 2);
+  view.panX = Math.max(-lx, Math.min(lx, view.panX)); view.panY = Math.max(-ly, Math.min(ly, view.panY));
+  view.s = s; view.ox = view.w / 2 + view.panX - (CROP.x0 + CROP.w / 2) * s; view.oy = view.h / 2 + view.panY - (CROP.y0 + CROP.h / 2) * s;
 }
 addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 200));
 function drawBg() {
@@ -116,14 +123,23 @@ function render(now) {
     const x = px(T.x), y = py(T.y);
     g.fillStyle = T.col; g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, s * 0.48, 0, 7); g.fill(); g.stroke();
     emoji(T.icon, x, y, s * 0.7);
-    const l = T.party.find(m => m.hp > 0) || T.party[0]; if (l) { const im = img(l.id); if (im.complete) g.drawImage(im, x + s * 0.2, y - s * 1.1, s * 0.95, s * 0.95); }
-    const st = { battle: '⚔', ko: '😵', heal: '💗', dig: '⛏' }[T.state]; if (st) emoji(st, x - s * 0.55, y - s * 0.6, s * 0.65);
+    const r = T.battle && replay(T);
+    if (r) {   // mini-banner: the foe + its HP over the trainer; tap the trainer (or its card) to watch
+      const fo = sideView(r.b, r.snap, 1), im = img(fo.m.id), bx = x - s * 0.1, by = y - s * 1.25;
+      g.fillStyle = 'rgba(20,24,14,.85)'; g.strokeStyle = '#ef6a3a'; g.lineWidth = 1.5; g.beginPath(); g.roundRect ? g.roundRect(bx - s * 0.5, by - s * 0.05, s * 1.3, s * 0.85, s * 0.2) : g.rect(bx - s * 0.5, by - s * 0.05, s * 1.3, s * 0.85); g.fill(); g.stroke();
+      emoji('⚔', bx - s * 0.25, by + s * 0.35, s * 0.42);
+      if (im.complete) g.drawImage(im, bx, by, s * 0.7, s * 0.7);
+      g.fillStyle = '#0008'; g.fillRect(bx, by + s * 0.68, s * 0.7, s * 0.1); g.fillStyle = fo.hp / fo.m.max > 0.5 ? '#5fd35f' : fo.hp / fo.m.max > 0.2 ? '#f2c933' : '#ef5a3a'; g.fillRect(bx, by + s * 0.68, s * 0.7 * Math.max(0, fo.hp / fo.m.max), s * 0.1);
+    } else {
+      const l = T.party.find(m => m.hp > 0) || T.party[0]; if (l) { const im = img(l.id); if (im.complete) g.drawImage(im, x + s * 0.22, y - s * 0.95, s * 0.7, s * 0.7); }
+      const st = { ko: '😵', heal: '💗', dig: '⛏' }[T.state]; if (st) emoji(st, x - s * 0.5, y - s * 0.55, s * 0.55);
+    }
   });
   // floating icons
   for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i], a = (now - f.t0) / 1400; if (a >= 1) { fx.splice(i, 1); continue; } const T = W.trainers[f.ti]; g.globalAlpha = 1 - a; emoji(f.icon, px(T.x), py(T.y) - s * (0.8 + a * 1.6), s * (f.big ? 1.2 : 0.9)); g.globalAlpha = 1; }
 }
 
-// ---------------------------------------------------------------- battle replay (strips + big view)
+// ---------------------------------------------------------------- battle replay (trainer cards, map mini-banner, big view)
 const ST_IC = TR.STAT_IC;
 function replay(T) {
   const b = T.battle; if (!b) return null;
@@ -163,14 +179,6 @@ function sideView(b, snap, si) {
   const S = snap[si], list = si ? b.foe : b.me, i = S.act, m = list[i] || list[0];
   return { m, hp: S.hp[i], st: S.st[i] };
 }
-function renderStrips() {
-  const html = W.trainers.filter(T => T.battle).map(T => {
-    const r = replay(T), me = sideView(r.b, r.snap, 0), fo = sideView(r.b, r.snap, 1);
-    return `<div class="strip" data-bv="${T.i}" role="button" aria-label="Watch ${esc(T.name)}'s battle"><span class="who">${T.icon}</span><span class="side me"><img src="${art(me.m.id)}" alt="">${hpBar(me.hp, me.m.max)}</span><span>${r.b.kind === 'bridge' ? '🌉' : r.b.kind === 'npc' ? '🏅' : '⚔'}</span><span class="side"><img src="${art(fo.m.id)}" alt="">${hpBar(fo.hp, fo.m.max)}</span><span class="cap">${evText(r.ev, r.b)}</span></div>`;
-  }).join('');
-  if (renderStrips.last !== html) { $('strips').innerHTML = html; renderStrips.last = html; }
-}
-$('strips').addEventListener('click', (e) => { const s = e.target.closest('[data-bv]'); if (s) openBv(+s.dataset.bv); });
 function openBv(ti) { bvTi = ti; $('bv').hidden = false; renderBv(); }
 $('bvX').onclick = () => { bvTi = -1; $('bv').hidden = true; };
 function renderBv() {
@@ -190,12 +198,17 @@ function renderBv() {
 // ---------------------------------------------------------------- top bar + cards
 function renderTop() {
   const A = Q.AREAS[W.area], AR = W.areas[W.area];
-  const h = `${A.icon} <span>${W.area + 1}</span> <small>🌉 ${AR.cleared ? '✔' : (AR.best || 0) + '/5'}</small> <small>⏱ ${fmt(W.t)}</small>${W.champion ? ' 🏆' : ''}`;
+  const h = `${A.icon} <span>${W.area + 1}</span> <small>🌉${AR.cleared ? '✔' : (AR.best || 0) + '/5'}</small>${W.champion ? ' 🏆' : ''}`;
   if ($('areaChip').innerHTML !== h) $('areaChip').innerHTML = h;
   $('pause').textContent = paused ? '▶' : '⏸'; $('pause').classList.toggle('on', paused);
-  document.querySelectorAll('#spd button').forEach(b => b.classList.toggle('on', +b.dataset.s === ui.speed));
-  const stIc = (T) => T.bridge ? '🌉' : ({ battle: '⚔', ko: '😵', heal: '💗', dig: '⛏', walk: '🚶', idle: '🧍' }[T.state] || '🚶');
-  const html = W.trainers.map(T => `<button class="tcard" data-card="${T.i}" aria-label="${esc(T.name)}"><span class="h">${T.icon} ${esc(T.name)} <span class="tp">✨${T.tp}</span><span class="st">${stIc(T)}</span></span><span class="minis">${T.party.map(m => `<span class="mini"><img src="${art(m.id)}" alt="">${hpBar(m.hp, m.max)}</span>`).join('')}</span></button>`).join('');
+  if ($('spd').textContent !== '×' + ui.speed) $('spd').textContent = '×' + ui.speed; $('spd').classList.toggle('on', ui.speed > 1);
+  const mini = (id, h, m, cls = '') => `<span class="mini ${cls}"><img src="${art(id)}" alt="">${hpBar(h, m)}</span>`;
+  const html = W.trainers.map(T => {
+    if (T.battle) { const r = replay(T), me = sideView(r.b, r.snap, 0), fo = sideView(r.b, r.snap, 1);
+      return `<button class="tcard fight" data-card="${T.i}" data-bv="${T.i}" aria-label="Watch ${esc(T.name)}'s battle"><span class="ic">${T.icon}</span><span class="vs">${mini(me.m.id, me.hp, me.m.max, 'me')}<span>${r.b.kind === 'bridge' ? '🌉' : r.b.kind === 'npc' ? '🏅' : '⚔'}</span>${mini(fo.m.id, fo.hp, fo.m.max)}</span><span class="tp">⤢</span></button>`; }
+    const st = T.bridge ? '🌉' : ({ ko: '😵', heal: '💗', dig: '⛏' }[T.state] || '');
+    return `<button class="tcard" data-card="${T.i}" aria-label="${esc(T.name)}"><span class="ic">${T.icon}</span><span class="tp">✨${T.tp}</span><span class="minis">${T.party.map(m => mini(m.id, m.hp, m.max)).join('')}</span>${st ? `<span class="ic">${st}</span>` : ''}</button>`;
+  }).join('');
   if (renderTop.last !== html) { $('cards').innerHTML = html; renderTop.last = html; }
   const canBuy = W.trainers.some(T => Q.TREES.some(tr => tr.tiers.some(x => Q.canBuy(T, x.id))));
   const tb = document.querySelector('#nav [data-tab="traits"]'); const dot = canBuy ? '<span class="dot">!</span>' : ''; if (tb.innerHTML !== '🧬' + dot) tb.innerHTML = '🧬' + dot;
@@ -205,7 +218,7 @@ $('cards').addEventListener('click', (e) => { const c = e.target.closest('[data-
 // ---------------------------------------------------------------- tabs
 function setTab(t) {
   ui.tab = t; document.querySelectorAll('#nav [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  document.body.classList.toggle('sheet', t !== 'map');
+  document.body.classList.toggle('sheet', t !== 'map'); document.body.classList.toggle('half', t === 'feed' || t === 'why');
   $('panel').scrollTop = 0; renderPanel(true);
 }
 $('nav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab === ui.tab && b.dataset.tab !== 'map' ? 'map' : b.dataset.tab); });
@@ -275,7 +288,8 @@ function renderPanel(force) {
   if (!force && now - (renderPanel.t || 0) < 700) return;
   if (!force && (t === 'traits' || t === 'party' || t === 'bag' || t === 'menu' || t === 'dex') && renderPanel.k === key && !dirty) return;
   renderPanel.t = now; renderPanel.k = key;
-  const html = t === 'traits' ? panelTraits() : t === 'party' ? panelParty() : t === 'bag' ? panelBag() : t === 'dex' ? panelDex() : t === 'why' ? panelWhy() : t === 'menu' ? panelMenu() : panelFeed(t === 'map' ? 30 : 80);
+  let html = t === 'traits' ? panelTraits() : t === 'party' ? panelParty() : t === 'bag' ? panelBag() : t === 'dex' ? panelDex() : t === 'why' ? panelWhy() : t === 'menu' ? panelMenu() : panelFeed(t === 'map' ? 30 : 80);
+  if (t !== 'map' && !landscape()) html = '<button class="pclose" data-close="1" aria-label="Close">✕</button>' + html;
   if (renderPanel.html !== html) { const p = $('panel'), st = p.scrollTop; p.innerHTML = html; p.scrollTop = st; renderPanel.html = html; }
   dirty = false;
 }
@@ -283,6 +297,7 @@ const uidFind = (uid) => { for (const T of W.trainers) { const m = T.party.find(
 $('panel').addEventListener('click', (e) => {
   const b = e.target.closest('button, [data-wiki]'); if (!b) return;
   const d = b.dataset;
+  if (d.close) { setTab('map'); return; }
   if (d.wiki) { openWiki(d.wiki); return; }
   if (d.pt != null) { ui.pt = +d.pt; saveUi(); renderPanel(true); return; }
   if (d.buy) { const x = Q.TRAIT[d.buy]; if (Q.buy(W, ui.pt, d.buy)) { toast(`${x.icon} ${x.name} ✔`); save(); } dirty = true; renderPanel(true); return; }
@@ -313,16 +328,17 @@ $('wkX').onclick = () => { $('wiki').hidden = true; $('wkF').src = 'about:blank'
 
 // ---------------------------------------------------------------- controls: pause, speed, flags (tap), drag (behind ✋)
 $('pause').onclick = () => { paused = !paused; toast(paused ? '⏸' : '▶', 700); };
-$('spd').addEventListener('click', (e) => { const b = e.target.closest('[data-s]'); if (!b) return; ui.speed = +b.dataset.s; saveUi(); toast('×' + ui.speed, 700); });
-function syncFlagBar() { document.querySelectorAll('#flagBar [data-f]').forEach(b => b.classList.toggle('on', +b.dataset.f === ui.flag)); $('drag').classList.toggle('on', ui.drag); }
+$('spd').onclick = () => { ui.speed = ui.speed === 1 ? 2 : ui.speed === 2 ? 4 : 1; saveUi(); toast('×' + ui.speed, 700); };
+const FLAG_IC = ['🚩🧢', '🚩🎀', '🚩👥'];
+function syncFlagBar() { $('flagT').textContent = FLAG_IC[ui.flag]; $('flagT').dataset.f = ui.flag; $('drag').classList.toggle('on', ui.drag); document.body.classList.toggle('dragon', ui.drag); }
 // map controls fire on pointerup too: a tap right after a swipe on the map can lose its click on some phones
 let fbLast = 0;
 const fbTap = (e) => {
   const b = e.target.closest('button'); if (!b) return; e.stopPropagation();
   if (e.type === 'click' && performance.now() - fbLast < 600) return; if (e.type === 'pointerup') fbLast = performance.now();
-  if (b.dataset.f != null) { ui.flag = +b.dataset.f; saveUi(); }
+  if (b.id === 'flagT') { ui.flag = (ui.flag + 1) % 3; saveUi(); toast(FLAG_IC[ui.flag], 700); }
   else if (b.id === 'flagX') { Q.setFlag(W, 0, null); Q.setFlag(W, 1, null); toast('🚩✕', 700); }
-  else if (b.id === 'drag') { ui.drag = !ui.drag; toast(ui.drag ? '✋ on' : '✋ off', 700); }
+  else if (b.id === 'drag') { ui.drag = !ui.drag; if (!ui.drag) { view.z = 1; view.panX = view.panY = 0; place(); bgKey = ''; } toast(ui.drag ? '✋ pinch / drag' : '✋ off · whole map', 900); }
   syncFlagBar();
 };
 $('flagBar').addEventListener('pointerup', fbTap); $('flagBar').addEventListener('click', fbTap);
@@ -333,36 +349,62 @@ function snapWalk(p) {
   let best = null, bd = 1e9; for (let y = 7; y < Q.MH; y++) for (let x = 0; x < Q.MW; x++) if (Q.walk(M, x, y)) { const d = Math.abs(x - p.x) + Math.abs(y - p.y); if (d < bd) { bd = d; best = { x, y }; } }
   return bd <= 3 ? best : null;
 }
-let drag = null, downAt = null;
+let drag = null, downAt = null, pan = null;
+const ptrs = new Map();
+const local = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+function zoomAt(z, cx, cy) {
+  const old = view.s, nz = Math.max(1, Math.min(3, z));
+  // keep the point under the fingers fixed
+  const wx = (cx - view.ox) / old, wy = (cy - view.oy) / old;
+  view.z = nz; place(); view.panX += cx - (view.ox + wx * view.s); view.panY += cy - (view.oy + wy * view.s); place(); bgKey = '';
+}
 cv.addEventListener('pointerdown', (e) => {
-  if (!W) return; const r = cv.getBoundingClientRect(), t = tileAt(e.clientX - r.left, e.clientY - r.top);
-  downAt = { x: e.clientX, y: e.clientY, t };
-  if (ui.drag) { let i = -1, bd = 99; W.flags.forEach((f, k) => { if (!f) return; const d = Math.abs(f.x - t.x) + Math.abs(f.y - t.y) - (k === ui.flag ? 0.5 : 0); if (d <= 1.5 && d < bd) { bd = d; i = k; } }); if (i >= 0) { drag = i; cv.setPointerCapture(e.pointerId); } }
+  if (!W) return; const l = local(e), t = tileAt(l.x, l.y);
+  ptrs.set(e.pointerId, l);
+  if (ptrs.size === 1) downAt = { x: e.clientX, y: e.clientY, t };
+  if (!ui.drag) return;
+  cv.setPointerCapture(e.pointerId);
+  if (ptrs.size === 2) { drag = null; const [a, b] = [...ptrs.values()]; pan = { pinch: Math.hypot(a.x - b.x, a.y - b.y), z: view.z }; downAt = null; return; }
+  let i = -1, bd = 99; W.flags.forEach((f, k) => { if (!f) return; const d = Math.abs(f.x - t.x) + Math.abs(f.y - t.y) - (k === ui.flag ? 0.5 : 0); if (d <= 1.5 && d < bd) { bd = d; i = k; } });
+  if (i >= 0) drag = i; else pan = { x: l.x, y: l.y, px: view.panX, py: view.panY };
 });
-cv.addEventListener('pointermove', (e) => { if (drag == null) return; const r = cv.getBoundingClientRect(), p = snapWalk(tileAt(e.clientX - r.left, e.clientY - r.top)); if (p) W.flags[drag] = p; });
-cv.addEventListener('pointerup', (e) => {
-  if (!W) return;
+cv.addEventListener('pointermove', (e) => {
+  if (!ptrs.has(e.pointerId)) return; const l = local(e); ptrs.set(e.pointerId, l);
+  if (!ui.drag) return;
+  if (drag != null) { const p = snapWalk(tileAt(l.x, l.y)); if (p) W.flags[drag] = p; return; }
+  if (pan && pan.pinch && ptrs.size >= 2) { const [a, b] = [...ptrs.values()]; zoomAt(pan.z * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(10, pan.pinch), (a.x + b.x) / 2, (a.y + b.y) / 2); return; }
+  if (pan && !pan.pinch) { view.panX = pan.px + l.x - pan.x; view.panY = pan.py + l.y - pan.y; place(); }
+});
+const ptrEnd = (e) => {
+  const had = ptrs.delete(e.pointerId); if (!W || !had) return;
+  if (ptrs.size) return;
+  const wasPan = pan; pan = null;
   if (drag != null) { const p = W.flags[drag]; Q.setFlag(W, drag, p); drag = null; downAt = null; return; }
-  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 12) { downAt = null; return; }   // a move without ✋ is ignored
-  const p = snapWalk(downAt.t); downAt = null; if (!p) return;
+  if (e.type === 'pointercancel' || !downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 12 || (wasPan && wasPan.pinch)) { downAt = null; return; }   // a move without ✋ is ignored
+  const t = downAt.t; downAt = null;
+  const bt = W.trainers.find(T => T.battle && Math.abs(T.x - t.x) <= 0 && Math.abs(T.y - t.y) <= 1);   // the trainer or its mini-banner
+  if (bt) { openBv(bt.i); return; }
+  const p = snapWalk(t); if (!p) return;
   const who = ui.flag === 2 ? [0, 1] : [ui.flag];
   for (const i of who) { const f = W.flags[i]; if (f && f.x === p.x && f.y === p.y && who.length === 1) Q.setFlag(W, i, null); else Q.setFlag(W, i, p); }
   fx.push({ ti: who[0], icon: p.y === 7 && p.x === 9 ? '🌉' : '🚩', t0: performance.now() });
-});
+};
+cv.addEventListener('pointerup', ptrEnd); cv.addEventListener('pointercancel', ptrEnd);
+cv.addEventListener('wheel', (e) => { if (!ui.drag) return; e.preventDefault(); const l = local(e); zoomAt(view.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), l.x, l.y); }, { passive: false });
 
 // ---------------------------------------------------------------- main loop
 function frame(now) {
   const dt = Math.min(0.25, (now - (lastT || now)) / 1000); lastT = now;
-  if (W && !paused && $('start').hidden && $('away').hidden) {
+  if (W && !paused && $('start').hidden) {
     acc += dt * ui.speed; let n = 0;
     while (acc >= Q.TICK && n++ < 40) { acc -= Q.TICK; const area = W.area; Q.step(W); if (W.area !== area) { toast(`🎉 ${Q.AREAS[W.area].icon} ${Q.AREAS[W.area].name}`, 3000); bgKey = ''; } }
     if (W.sink && W.sink.length) { for (const s of W.sink) { fx.push({ ti: s.ti, icon: s.icon, big: s.big, t0: now }); } W.sink.length = 0; dirty = true; }
     if (now - lastSave > 5000) save();
   }
-  if (W) { render(now); renderStrips(); renderTop(); renderBv(); renderPanel(false); }
+  if (W) { render(now); renderTop(); renderBv(); renderPanel(false); }
   requestAnimationFrame(frame);
 }
 // test / debug hooks
-window.TQG = { get W() { return W; }, set W(v) { W = v; }, save, boot, catchUp, setTab, openWiki, get paused() { return paused; }, get speed() { return ui.speed; }, view: () => view, px: (x, y) => { const r = cv.getBoundingClientRect(); return { x: r.left + px(x), y: r.top + py(y) }; } };
+window.TQG = { get W() { return W; }, set W(v) { W = v; }, save, boot, catchUp, setTab, openWiki, get paused() { return paused; }, get speed() { return ui.speed; }, get flagMode() { return ui.flag; }, get drag() { return ui.drag; }, view: () => view, crop: CROP, px: (x, y) => { const r = cv.getBoundingClientRect(); return { x: r.left + px(x), y: r.top + py(y) }; } };
 syncFlagBar(); layout(); boot(); requestAnimationFrame(frame);
 })();

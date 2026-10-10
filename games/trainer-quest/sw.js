@@ -1,5 +1,5 @@
 /* Trainer Quest service worker: precache the game + the shared Trainers data/engine/wiki it loads. */
-const CACHE = 'trainer-quest-v1';
+const CACHE = 'trainer-quest-v2';
 const ASSETS = ['./', 'index.html', 'core.js', 'ui.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   '../trainers/doctrine.js', '../trainers/game.js', '../trainers/wiki.html', '../trainers/wiki.js'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
