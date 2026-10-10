@@ -6,7 +6,8 @@ const D = root.TRDoctrine;
 const R = D.RULES, LV = R.level, ROLLS = R.rolls;
 const clone = D.clone;
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const calcStat = (b, hp) => hp ? Math.floor((2 * b + 31) * LV / 100) + LV + 10 : Math.floor((2 * b + 31) * LV / 100) + 5;
+// lv defaults to the Trainers fixed level; Trainer Quest passes its own levels (mon.lv)
+const calcStat = (b, hp, lv = LV) => hp ? Math.floor((2 * b + 31) * lv / 100) + lv + 10 : Math.floor((2 * b + 31) * lv / 100) + 5;
 const stgM = (s) => s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
 const accM = (s) => s >= 0 ? (3 + s) / 3 : 3 / (3 - s);
 const CRIT = R.critStages, STAT_IC = R.statusIcon, STAT_NAME = R.statusName, IMMUNE = R.immune;
@@ -36,7 +37,7 @@ function damage(att, def, mv, crit, roll) {
   let A = att.st[ak] * stgM(as); const Dv = def.st[dk] * stgM(ds);
   if (phys && att.status === 'brn') A *= R.brnAtk;
   const pow = mv.pow * (mv.hex && def.status ? 2 : 1);
-  const base = Math.floor(Math.floor(Math.floor(2 * LV / 5 + 2) * pow * A / Dv) / 50) + 2;
+  const base = Math.floor(Math.floor(Math.floor(2 * (att.lv || LV) / 5 + 2) * pow * A / Dv) / 50) + 2;
   const e = D.eff(mv.type, def.type);
   const mult = (mv.type && mv.type === att.type ? R.stab : 1) * e * (crit ? R.critMult : 1) * roll;
   return e === 0 ? 0 : Math.max(1, Math.floor(base * mult));
