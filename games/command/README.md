@@ -10,7 +10,7 @@ The map is 3000 × 1000 m (3.0 km², up from 1200 × 900 m in v1.x). A river run
 - **Centre, 2nd Bn** (blue, D/E/F Coy): the old v1 map. Centre Bridge, Crossroads, Church, Wood, Ridge and Farm, with the North Bank in the rear.
 - **East, 3rd Bn** (yellow, G/H/I Coy): the Manor, the Great Wood, Windmill Hill, the East Bridge, and Northend in the rear.
 
-Each sector has its own German defence: outposts, MG posts, a main position and a local reserve that counterattacks in that sector. That is about 30 German units in all, against 9 British companies (27 platoons).
+In the default **🛡 Defenders** mode, each sector has its own German defence: outposts, MG posts, a main position and a local reserve that counterattacks in that sector. That is about 30 German units in all, against 9 British companies (27 platoons).
 
 ## Playing
 - **Planning**: the game starts paused. 1st Bn is ordered to seize Ashford, 2nd Bn the Church and 3rd Bn the Manor. Each CO picks his own plan.
@@ -35,6 +35,61 @@ Spamming Seize gets people killed. Preparation wins:
 - **After-action report.** The end screen shows a grade (A–F) and score (places held, casualties, enemy losses), British and enemy casualties, each battalion's strength and cohesion, the mistakes ("B Coy failed at the Church without fire support: 38% casualties", "1st Bn chained 3 attacks without regrouping", places retaken or left unguarded, sections pinned in the open) and what went well.
 - Ammunition and fatigue are not modelled separately: cohesion already covers exertion, and a separate ammo track would mostly add bookkeeping.
 
+## ⚖ Mirror: an equal enemy (v2.2)
+**☰ Menu → Enemy force** has two choices:
+- **🛡 Defenders**: the classic sector defence. It is the default, and old saves load into it.
+- **⚖ Mirror**: a German regiment the same size as your brigade.
+
+Switching restarts the current scenario, and the choice is remembered.
+
+**The German force**
+- The order of battle matches yours exactly. The regiment is led by an Oberst, with three battalions: I., II. and III. Bataillon, each under an Oberstlt or Maj.
+- Each battalion has three companies, 1.–9. Kompanie, each under a Hptm or Oblt.
+- Below them are 27 platoons (Lt/Fw) and 81 sections (Uffz/Ogefr).
+- That makes 117 units plus HQs per side, 234 in all.
+- German officers have German names and the same personality model as yours.
+
+**Same logic for the German commanders.** German companies, platoons and sections use the same planner, objective maps, section drills, cohesion and requests as British ones. When German companies send requests, their HQ answers them for itself.
+
+**The German battalion HQ** (`deHQ`, every 30 s) picks a posture for each battalion, in this order:
+1. **Withdraw** to the rear assembly area if strength falls below 45%.
+2. **Call off** a failing attack after 25% losses or 15 minutes, then defend.
+3. **Regroup** when cohesion is below 50% and the battalion is out of contact.
+4. **Consolidate** a place it has taken.
+5. **Counter-attack** a British gain within 550 m. This only happens when the British there are weak (low cohesion or not yet dug in) and the Germans are stronger.
+6. **Attack** when clearly stronger, by 1.5× with good cohesion.
+
+At least one battalion makes an initial push for a village. The others advance to hold the ridge, hill or high ground next to their sector. Fog of war applies to both sides:
+- You only see Germans your units have spotted.
+- German radio traffic stays hidden.
+- The German regiment's tree is shown only after the battle.
+
+**Fair start: a meeting battle.** The Germans form up north of the river, at the Mill, North Bank and Northend, about as far from the villages and bridges as you are on the south side. Nobody owns any place at the start. Both sides race for the same 14 places, so speed matters as much as preparation.
+
+The south has more cover, which favours you. To balance it, the German MG Gruppe keeps its historical firepower edge (`combat.mirror.deLmg` = 7, versus the British Bren 4).
+
+**Winning.** The battle ends at H+60, when one side drops below 30% strength, or after 4 minutes with no fire from H+25 onwards. When it ends, the fog lifts.
+- The verdict comes from places held (yours vs the Germans', 1 point each) plus 6 × (German losses − your losses as fractions).
+- A margin of ±1.5 or more is a Victory or a Defeat; anything in between is a Draw.
+- The AAR scores both places and casualties on both sides. It also lists German counter-attacks you beat off or that retook ground.
+
+**Doctrine.** The doctrine is shared by both sides; there is no side switch in the editor. The German HQ's own settings are in **⚔ Combat → ⚖ Mirror: German regiment**:
+- the think interval and opening weights;
+- the attack and counter-attack ratios;
+- the stop-loss, withdraw and rout thresholds;
+- the request switch and the German MG firepower;
+- the scoring weights.
+
+**Balance.** Tested headless with seeded runs, default doctrine, Regular HQ:
+
+| Strategy | Seeds | Victory / Draw / Defeat |
+|---|---|---|
+| Default plans, no player input | 24 | 12 / 5 / 7 (50% British wins) |
+| Seize spam | 12 | 0 / 0 / 12 |
+| Deliberate gated attacks | 12 | 3 / 6 / 3 |
+
+Typical losses are 35–45% on each side.
+
 ## Objective Editor
 Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything the commanders use to plan lives in one data object, the *doctrine* (`DEFAULT_DOCTRINE` in `doctrine.js`). The doctrine applies to **all three battalions**; their COs differ only in personality. The editor has eight tabs:
 - **🏷 Task types**: label and icon for each task type, and which types each level may use.
@@ -42,7 +97,7 @@ Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything 
 - **🗺 Company maps** / **🗺 Platoon maps**: the same breakdown into platoon and section tasks, with diagrams.
 - **⚙ Section drills**: section state machines (move, hold, suppress, overwatch, assault, charge, consolidate, pinned, broken…) with editable timings and gates.
 - **📊 Scoring**: the weights behind plan quality, battalion section included.
-- **⚔ Combat**: the fire model (suppression, open ground, MGs, cover, area fire), cohesion (losses, recovery, effects, thresholds), digging in and the after-action score weights.
+- **⚔ Combat**: the fire model (suppression, open ground, MGs, cover, area fire), cohesion (losses, recovery, effects, thresholds), digging in, the after-action score weights and the **⚖ Mirror** German regiment settings.
 - **⇅ Import / Export**: export, import, reset.
 
 **💾 Save** stores the doctrine in `localStorage` (`command-doctrine-v1`; doctrine version 3). Imports are checked one field at a time. Version-1 and version-2 doctrines still load: they get the Regroup task and the default combat section.
@@ -52,7 +107,10 @@ Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything 
 - A* is capped at 12 path plans per tick, so H-hour has no spike.
 - The map is pre-rendered in 1 km tiles, and only visible tiles are drawn.
 - Zoomed-out views use simplified markers.
-- With about 147 units, a sim tick costs about 0.5–1.5 ms. At 16× the game runs at 60 fps and 32 ticks/s on desktop.
+- Spotting uses a 200 m grid that works the same for both sides, and unit lists per company and battalion are cached.
+- Defenders mode has about 147 units, and a sim tick costs about 0.5–1.5 ms.
+- Mirror mode has 234 units. A sim tick costs about 1.9 ms on average (p99 5 ms). Only the first 5 s after H-hour cost more, up to about 40 ms per tick, while every unit plans its first moves.
+- At 390×844 and 16×, both modes run at 60 fps. In Mirror mode the worst frame mid-battle is 17 ms, whether the map is fit or zoomed.
 
 ## Files
-`index.html` (UI and styles), `doctrine.js` (default doctrine, validation, storage), `editor.html` + `editor.js` (Objective Editor), `game.js` (map, pathfinding, line of sight, objectives tree, commanders, simulation, rendering, UI), `sw.js` (offline cache `command-v5`), `manifest.webmanifest`, icons.
+`index.html` (UI and styles), `doctrine.js` (default doctrine, validation, storage), `editor.html` + `editor.js` (Objective Editor), `game.js` (map, pathfinding, line of sight, objectives tree, commanders, simulation, rendering, UI), `sw.js` (offline cache `command-v6`), `manifest.webmanifest`, icons.

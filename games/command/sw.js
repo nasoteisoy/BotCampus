@@ -1,5 +1,5 @@
 // Command Layers: simple offline cache (stale-while-revalidate).
-const CACHE = 'command-v5';
+const CACHE = 'command-v6';
 const ASSETS = ['./', './index.html', './doctrine.js', './game.js', './editor.html', './editor.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

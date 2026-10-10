@@ -232,6 +232,9 @@ const DEFAULT_DOCTRINE = {
     dig: { time: 300, cover: 0.5, supp: 0.4, holdRate: 1, otherRate: 0.35 },
     // after-action score (0-100): objectives held at the end, casualties, enemy losses
     aar: { objPts: 55, objFull: 9, casPts: 35, casZero: 50, killPts: 10 },
+    // ⚖ Mirror mode: the German regimental commander (posture every 'think' s) and how the meeting battle is scored
+    mirror: { think: 30, cooldown: 150, holdT: 240, main: 0.5, meet: 0.3, attackRatio: 1.5, attackCoh: 70, catkRatio: 1.2, catkCoh: 55, catkDig: 0.3, catkOwnCoh: 65,
+      reach: 550, stopLoss: 0.25, reqs: 1, deLmg: 7, atkMax: 900, regroupCoh: 50, withdrawStr: 0.45, rout: 0.3, quietT: 240, placeW: 1, casW: 6, win: 1.5, placeSpan: 6, casSpan: 1.5 },
   },
 };
 
@@ -246,7 +249,7 @@ const fin = (v) => typeof v === 'number' && isFinite(v);
 const RANGE = {
   off: [-Math.PI, Math.PI], dist: [0, 800], fwd: [-800, 800], side: [-800, 800], dir: [-1, 1], minSide: [0, 800], fbSide: [-800, 800], fbFwd: [-800, 800], imp: [1, 5], pick: [0, 200], lookFwd: [-800, 800],
   wrongChance: [0, 1], speed: [0.05, 10], far: [0.05, 10], close: [0.05, 10], huntSpeed: [0.05, 10], sweepSpeed: [0.05, 10], ring: [0, 2],
-  arrive: [0.5, 100], strength: [0, 1], suppFloor: [0, 1], farShare: [0, 1], speedMin: [0.05, 1], fireMin: [0, 1], coverPow: [0.2, 4], open: [0.3, 1], lethal: [0, 10], objFull: [1, 15], areaR: [10, 150], areaSupp: [0, 5], reveal: [0, 1], flankAngle: [0, Math.PI], dumbBelow: [0, 1], frontal: [-10, 10], noLos: [-10, 10], allIn: [-10, 10], bunched: [-10, 10], wrong: [-10, 10],
+  arrive: [0.5, 100], strength: [0, 1], suppFloor: [0, 1], farShare: [0, 1], speedMin: [0.05, 1], fireMin: [0, 1], coverPow: [0.2, 4], open: [0.3, 1], lethal: [0, 10], objFull: [1, 15], areaR: [10, 150], areaSupp: [0, 5], reveal: [0, 1], think: [5, 300], main: [0, 1], meet: [0, 1], attackRatio: [0.3, 5], catkRatio: [0.2, 5], catkDig: [0, 1], withdrawStr: [0, 1], rout: [0, 1], stopLoss: [0, 1], reqs: [0, 1], deLmg: [0, 12], placeSpan: [1, 15], casSpan: [0.1, 10], win: [0.1, 10], flankAngle: [0, Math.PI], dumbBelow: [0, 1], frontal: [-10, 10], noLos: [-10, 10], allIn: [-10, 10], bunched: [-10, 10], wrong: [-10, 10],
 };
 function num(v, d, key, warn, path) {
   if (!fin(v)) { if (v !== undefined) warn.push(path); return d; }
