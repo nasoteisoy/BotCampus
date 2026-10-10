@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b2238">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Carrier Traits</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0b2238;--panel:#10304d;--panel2:#16405f;--line:#24577d;--txt:#e8f1f8;--dim:#8fb0c8;--gold:#ffd54f;--red:#ff6b5e;--grn:#7bd389;--blue:#7cc4ff;--warn:#ffb74d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:15px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Color Emoji",sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;cursor:pointer}
+button:active{transform:scale(.96)}
+button.on{background:#2b6a3f;border-color:#58b86f}
+button:disabled{opacity:.45}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#top{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line);height:48px;flex:0 0 auto}
+#top .chip{display:flex;align-items:center;gap:4px;padding:3px 7px;border-radius:9px;background:#0d2a44;white-space:nowrap;font-size:14px}
+#top button{padding:5px 9px;min-width:40px}
+#hpw{flex:1;min-width:60px;display:flex;align-items:center;gap:4px}
+.bar{flex:1;height:9px;border-radius:5px;background:#26394a;overflow:hidden;min-width:30px}
+.bar i{display:block;height:100%;background:var(--grn);transition:width .3s}
+#mapw{position:relative;flex:1 1 auto;min-height:200px;overflow:hidden}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#mbtn{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+#mbtn button{width:44px;height:44px;padding:0;font-size:19px;background:rgba(16,48,77,.88)}
+#banner{position:absolute;left:8px;right:60px;top:8px;display:none;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(120,30,30,.9);font-size:16px}
+#banner.show{display:flex}
+#banner button{margin-left:auto}
+#objc{position:absolute;left:8px;bottom:8px;padding:4px 9px;border-radius:9px;background:rgba(16,48,77,.85);font-size:15px}
+#sel{position:absolute;left:8px;bottom:42px;display:none;gap:6px;align-items:center;padding:6px 8px;border-radius:12px;background:rgba(16,48,77,.95);border:1px solid var(--line)}
+#sel.show{display:flex}
+#bot{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+#deck{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+#phase{min-width:62px;text-align:center;padding:4px 6px;border-radius:9px;background:#0d2a44;font-size:15px}
+#phase.busy{background:#5b4a12}#phase.bad{background:#6b1f1f}
+#hang{display:flex;gap:4px;flex:1;justify-content:flex-end}
+#hang span{padding:3px 6px;border-radius:8px;background:#0d2a44;font-size:14px;white-space:nowrap}
+#slots{display:flex;gap:3px;height:26px}
+#slots i{flex:1;border-radius:6px;background:#0a2033;border:1px dashed #2c5677;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:14px}
+#slots i.p{border-style:solid;background:#24445f}
+#slots i.a{background:#6e2a20;border-color:#ff8a65;box-shadow:0 0 6px #ff7043}
+#orders{display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr;gap:6px}
+#orders button{height:50px;font-size:22px;display:flex;align-items:center;justify-content:center;gap:4px}
+#orders button.mode{background:#7a2b1f;border-color:#ff8a65}
+#capw{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:0 3px}
+#capw button{height:42px;width:34px;padding:0;font-size:20px;border:none;background:#0d2a44}
+#capw b{font-size:18px;white-space:nowrap}
+#feed{height:84px;overflow-y:auto;background:#0a1f33;border-radius:9px;padding:3px 6px;font-size:13.5px}
+#feed div{padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#feed .good{color:var(--grn)}#feed .bad{color:var(--red)}#feed .warn{color:var(--warn)}
+#feed .tm{color:var(--dim);font-size:11.5px;margin-right:4px}
+.ov{position:fixed;inset:0;background:rgba(5,15,28,.86);display:none;z-index:20;overflow-y:auto;padding:calc(10px + env(safe-area-inset-top)) 10px calc(14px + env(safe-area-inset-bottom))}
+.ov.show{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 auto 10px;max-width:520px}
+h1,h2,h3{margin:0 0 8px}h1{font-size:22px}h2{font-size:18px}h3{font-size:15px;color:var(--dim);font-weight:600}
+.row{display:flex;gap:8px;align-items:center}
+.sp{flex:1}
+#port{background:linear-gradient(#0b2238,#081a2b);display:none;z-index:15}
+#port.show{display:block}
+.zones{display:flex;gap:6px;margin-bottom:8px}
+.zones button{flex:1;font-size:20px;padding:6px 0;position:relative}
+.zones button small{display:block;font-size:11px;color:var(--dim)}
+.zones button.cur{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.mis{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.mis button{padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:92px}
+.mis button .big{font-size:32px}
+.mis button small{color:var(--dim);font-size:12px}
+.mis button.gate{background:#4a1f2a;border-color:#c0596b}
+.mis button.gate.ok{background:#5b1f2c;border-color:#ff8a80;box-shadow:0 0 10px #ff8a8055}
+.dots{letter-spacing:2px;font-size:12px}
+.tabs{display:flex;gap:4px;margin-bottom:8px;overflow-x:auto}
+.tabs button{font-size:20px;padding:6px 9px;flex:1}
+.tabs button.cur{background:#28587e;border-color:var(--gold)}
+.tr{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #1e4566}
+.tr:last-child{border:none}
+.tr .ic{font-size:24px;width:34px;text-align:center}
+.tr .nm{font-weight:600}
+.tr .fx{font-size:13px;color:var(--dim)}
+.tr button{min-width:64px}
+.tr.own .nm::after{content:" ✓";color:var(--grn)}
+.tr.lock{opacity:.55}
+.big1{font-size:44px;text-align:center}
+.lst div{padding:4px 0;font-size:15px}
+.lst .i{display:inline-block;width:28px;text-align:center}
+.stat{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0}
+.stat span{background:#0d2a44;border-radius:9px;padding:4px 8px;font-size:15px}
+.gold{color:var(--gold)}.dim{color:var(--dim)}.red{color:var(--red)}.grn{color:var(--grn)}
+.help p{margin:6px 0}
+.help .k{display:inline-block;min-width:30px;font-size:19px}
+.tut{text-align:center}
+.tut .big1{font-size:64px;margin:10px 0}
+.tut p{font-size:17px}
+.air{display:flex;gap:6px;flex-wrap:wrap}
+.air span{background:#0d2a44;border-radius:9px;padding:4px 8px}
+@media (min-width:700px){#feed{height:110px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <button id="bPause" aria-label="pause">⏸</button>
+    <button id="bSpeed" aria-label="speed">×1</button>
+    <span class="chip" id="clock">🕕 06:00</span>
+    <span class="chip gold" id="pts">⭐0</span>
+    <div id="hpw"><span>❤</span><div class="bar"><i id="hpb" style="width:100%"></i></div><span id="fireI"></span></div>
+    <button id="bWd" aria-label="withdraw">⚓</button>
+    <button id="bHelp" aria-label="help">❓</button>
+  </div>
+  <div id="mapw">
+    <canvas id="map"></canvas>
+    <div id="banner"><span id="bannerT">💥 Tap a target</span><button id="bCancel">✖</button></div>
+    <div id="mbtn">
+      <button id="bDrag" title="Drag to pan">✋</button>
+      <button id="bFollow" class="on" title="Follow carrier">🎯</button>
+      <button id="bFit" title="Whole map">⤢</button>
+      <button id="bZin" title="Zoom in">＋</button>
+      <button id="bZout" title="Zoom out">－</button>
+    </div>
+    <div id="sel"></div>
+    <div id="objc"></div>
+  </div>
+  <div id="bot">
+    <div id="deck"><span id="phase">⚓</span><div id="hang"></div></div>
+    <div id="slots"></div>
+    <div id="orders">
+      <button id="bScout" title="Scout">🔭</button>
+      <button id="bStrike" title="Strike">💥</button>
+      <div id="capw"><button id="bCapM">−</button><b id="capN">🛡2</b><button id="bCapP">＋</button></div>
+      <button id="bRec" title="Recall all">🛬</button>
+    </div>
+    <div id="feed"></div>
+  </div>
+</div>
+<div id="port" class="ov"></div>
+<div id="aar" class="ov"></div>
+<div id="help" class="ov"></div>
+<div id="tut" class="ov"></div>
+<script src="sim.js"></script>
+<script src="game.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

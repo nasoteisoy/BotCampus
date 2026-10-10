@@ -1,0 +1,16 @@
+{
+  "name": "Carrier Traits · WW2 Pacific carrier",
+  "short_name": "Carrier Traits",
+  "description": "Command a WW2 aircraft carrier: scout, strike, defend your deck and buy traits as you fight.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b2238",
+  "theme_color": "#0b2238",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
