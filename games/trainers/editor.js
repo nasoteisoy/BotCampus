@@ -52,7 +52,7 @@ function renderTrainers() {
     h += `<div class="trow${id === sel ? ' on' : ''}"><button class="pick" data-sel="${esc(id)}"><span class="ic">${esc(t.icon)}</span><span class="t"><b>${esc(t.name)}</b><small>${esc(PRESET_L[t.preset] || t.preset)}${pre ? '' : ' · copy'}</small><span class="tm">${t.team.map(s => `<img src="${art(s.mon)}" alt="">`).join('')}</span></span></button>${trDirty(id) ? '<span class="badge" style="background:#a08a10;color:#111">●</span>' : trCustom(id) ? '<span class="badge c">✎</span>' : ''}<button data-act="dup" data-a="${esc(id)}" aria-label="Duplicate">⧉</button>${pre ? '' : `<button data-act="del" data-a="${esc(id)}" aria-label="Delete">🗑</button>`}</div>`;
   }
   h += `<h2>✎ ${esc(T().name)}</h2><div class="tyrow"><input class="ic" data-txt="${P('icon')}" value="${esc(T().icon)}" maxlength="4" aria-label="Icon"><input data-txt="${P('name')}" value="${esc(T().name)}" maxlength="40" aria-label="Name"><span></span></div>
-    <div class="hint">Based on: ${esc(PRESET_L[T().preset])}. ↺ Reset puts this trainer back to that preset.</div>`;
+    <div class="hint">Based on: ${esc(PRESET_L[T().preset])}. ↺ Reset puts this trainer back to that preset.</div><div class="acts"><button data-wiki="${(() => { const sv = JSON.parse(savedJSON).trainers[sel]; return !D.PRESETS[sel] || (sv && !D.same(sv, D.PRESETS[sel])) ? 'mytrainer' : 'trainer'; })()}/${esc(sel)}">📖 Wiki page (saved version)</button></div>`;
   return h;
 }
 function renderMoves() {
@@ -65,7 +65,7 @@ function renderMoves() {
     + wrow(P('movePri.heal'), '❤', 'Healing moves', 'Mend, Regrow, Purify, Deep Rest', { step: 1 })
     + wrow(P('movePri.priority'), '⚡', 'First-strike bonus', 'Extra for a priority move when someone is about to be KO\'d', { step: 1 })
     + wrow(P('movePri.strongest'), '🏋', 'Strongest-move bonus', 'Extra for the highest power move, matchup or not', { step: 1 }));
-  h += grp('mp:prev', '👀', 'Team moves preview', 'which kind each move counts as', () => `<div class="prev">${t.team.map(s => `<div class="lbl">${tIc(D.DEX[s.mon].type)} ${esc(D.DEX[s.mon].name)}</div>${s.moves.map(id => { const m = D.MOVES[id]; const k = m.pow ? '💥 attack' : m.st ? '💤 status' : m.heal || m.rest ? '❤ heal' : '📈 setup'; const kk = m.pow ? 'attack' : m.st ? 'status' : m.heal || m.rest ? 'heal' : 'setup'; return `<div class="pr"><span>${tIc(m.type)} ${esc(m.name)}${m.pri ? ' ⚡' : ''}</span><span>${k} ${t.movePri[kk] >= 0 ? '+' : ''}${t.movePri[kk]}</span></div>`; }).join('')}`).join('')}</div>`);
+  h += grp('mp:prev', '👀', 'Team moves preview', 'which kind each move counts as', () => `<div class="prev">${t.team.map(s => `<div class="lbl">${tIc(D.DEX[s.mon].type)} ${esc(D.DEX[s.mon].name)}</div>${s.moves.map(id => { const m = D.MOVES[id]; const k = m.pow ? '💥 attack' : m.st ? '💤 status' : m.heal || m.rest ? '❤ heal' : '📈 setup'; const kk = m.pow ? 'attack' : m.st ? 'status' : m.heal || m.rest ? 'heal' : 'setup'; return `<div class="pr" data-wiki="move/${id}"><span>📖 ${tIc(m.type)} ${esc(m.name)}${m.pri ? ' ⚡' : ''}</span><span>${k} ${t.movePri[kk] >= 0 ? '+' : ''}${t.movePri[kk]}</span></div>`; }).join('')}`).join('')}</div>`);
   return h;
 }
 function renderSwitch() {
@@ -125,8 +125,8 @@ function renderTeam() {
   let h = whoBar() + `<p class="intro">Up to 6 monsters, 4 moves each. Order matters: the first one leads, and 3 v 3 battles use the first 3.</p>`;
   t.team.forEach((s, i) => {
     const d = D.DEX[s.mon], p = P(`team.${i}`);
-    h += `<div class="slot${i >= 3 ? ' bench3' : ''}"><div class="sh"><span class="sn">${i + 1}</span><img src="${art(s.mon)}" alt=""><select data-mon="${i}" aria-label="Monster ${i + 1}">${D.MON_IDS.map(id => `<option value="${id}"${id === s.mon ? ' selected' : ''}>${tIc(D.DEX[id].type)} ${esc(D.DEX[id].name)}</option>`).join('')}</select></div>
-      <div class="sa"><div class="stats">${STAT_L.map(([k, l]) => `<span>${l} ${d.base[k]}</span>`).join('')}${i >= 3 ? '<span>6 v 6 only</span>' : ''}</div><button data-act="up" data-a="${i}" ${i ? '' : 'disabled'} aria-label="Move up">↑</button><button data-act="down" data-a="${i}" ${i < n - 1 ? '' : 'disabled'} aria-label="Move down">↓</button><button data-act="rm" data-a="${i}" ${n > 3 ? '' : 'disabled'} aria-label="Remove">✕</button></div>
+    h += `<div class="slot${i >= 3 ? ' bench3' : ''}"><div class="sh"><span class="sn">${i + 1}</span><img src="${art(s.mon)}" alt="" data-wiki="monster/${s.mon}"><select data-mon="${i}" aria-label="Monster ${i + 1}">${D.MON_IDS.map(id => `<option value="${id}"${id === s.mon ? ' selected' : ''}>${tIc(D.DEX[id].type)} ${esc(D.DEX[id].name)}</option>`).join('')}</select></div>
+      <div class="sa"><div class="stats">${STAT_L.map(([k, l]) => `<span>${l} ${d.base[k]}</span>`).join('')}${i >= 3 ? '<span>6 v 6 only</span>' : ''}</div><button data-wiki="monster/${s.mon}" aria-label="${esc(d.name)} in the wiki">📖</button><button data-act="up" data-a="${i}" ${i ? '' : 'disabled'} aria-label="Move up">↑</button><button data-act="down" data-a="${i}" ${i < n - 1 ? '' : 'disabled'} aria-label="Move down">↓</button><button data-act="rm" data-a="${i}" ${n > 3 ? '' : 'disabled'} aria-label="Remove">✕</button></div>
       <div class="mvs">${[0, 1, 2, 3].map(j => `<select data-mv="${p}.moves.${j}" aria-label="Move ${j + 1}">${d.pool.map(id => `<option value="${id}"${s.moves[j] === id ? ' selected' : ''}${s.moves.includes(id) && s.moves[j] !== id ? ' disabled' : ''}>${esc(moveLabel(id))}</option>`).join('')}</select>`).join('')}</div></div>`;
   });
   if (n < 6) h += `<button class="addv" data-act="add">＋ Add a monster</button>`;
@@ -218,6 +218,7 @@ function numInput(el, commit) {
 }
 function bind() {
   document.addEventListener('click', (e) => {
+    const wk = e.target.closest('[data-wiki]'); if (wk && window.TRWiki) { e.preventDefault(); TRWiki(wk.dataset.wiki); return; }
     const b = e.target.closest('button, a'); if (!b || b.disabled) return;
     const d = b.dataset;
     if (b.id === 'back') { if (isDirty()) { e.preventDefault(); confirmBox('Unsaved changes', 'Save your edits before going back to the game?', [['💾 Save & play', 'go', () => { if (save()) location.href = 'index.html'; }], ['Discard', 'warn', () => { location.href = 'index.html'; }], ['Stay', '', null]]); } return; }

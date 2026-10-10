@@ -11,6 +11,24 @@ Live: https://nasoteisoy.github.io/BotCampus/games/trainers/
 - **🏆 Tournament**: 10/50/200 battles between two trainers, with a win-rate bar and a list of earlier runs. "Both use the blue team" tests only the brains.
 - During play there is almost no text: icons, HP bars, team pips, stage chips and short floating numbers (−45, ×2!, CRIT!, 💤, MISS).
 
+## 📖 Wiki (wiki.html + wiki.js)
+Open it from the home screen (📖 in the top bar, or the "📖 Wiki" row) or from the editor (📖). Every page is generated from the game's own data:
+- doctrine.js: dex, type chart, presets, and `RULES` (all battle constants).
+- game.js: the real damage function, stage multipliers and sprites.
+
+So nothing is duplicated and the wiki can't drift from the game.
+- **🐾 Monsters:** picture grid with search (name, type or move) and a type filter. The detail page shows the sprite, type, base stats as bars (plus the level-50 value), the move list (★ = default set), matchups computed from the chart (weak to / resists / immune / status immunity), and which preset teams use it.
+- **💥 Moves:** list sortable by name, type, power, accuracy, priority or effect, with a type filter. The detail page shows power, accuracy, priority, crit %, effect and every monster that can learn it.
+- **🔺 Types:** an attacker × defender chart (icons, colors, sticky attacker column) and a list view. Each type page lists its offense, defense, monsters and moves.
+- **📜 Battle rules:** the damage formula with a live worked example from the engine, same-type bonus, crit table, stage tables, turn order, statuses and items, plus each preset's item thresholds.
+- **🎓 Trainers:** the 6 presets with team sprites, a one-line personality summary and bars for their strongest weights, generated from the doctrine. Trainers you edited in the editor (saved in localStorage) appear in a ✎ section.
+- **Deep links:** `wiki.html#monster/<id>`, `#move/<id>`, `#type/<id>`, `#trainer/<id>`, `#mytrainer/<id>` (your edited version), plus `#monsters`, `#moves`, `#types`, `#rules`, `#trainers`.
+- **← Back:** follows in-wiki history (kept in `history.state`). On a fresh deep link it goes to the parent list.
+- **Tap to look up:** these open the wiki in a sheet (an iframe), so a running battle or unsaved editor edits are kept, and AI vs AI pauses while it's open:
+  - in a battle: the monster card, the sprite, or the move caption;
+  - in the Why log: any scored option or the monster name;
+  - in the editor: the team builder's sprite or 📖 button, or a Move-priorities preview row.
+
 ## Battle rules (game.js, part 1)
 - Level 50 stats from base stats.
 - Damage = ((2L/5+2)·Power·A/D)/50+2, then × same-type 1.5 × type chart × crit 1.5 × random 0.85–1.0. Physical moves use Atk/Def, special moves use SpA/SpD.
@@ -63,9 +81,10 @@ Presets: 🪲 Bug-kid (random-ish, never switches), 🎖 Ace (smart scorer; weig
 ## Files
 - `index.html`: game UI and styles.
 - `game.js`: engine and AI (runs in node too), then the UI.
-- `doctrine.js`: dex (types, chart, moves, monsters, items), presets, validation and storage.
+- `doctrine.js`: dex (types, chart, moves, monsters, items), battle `RULES` constants, presets, validation and storage.
+- `wiki.html` / `wiki.js`: the in-game wiki.
 - `editor.html` / `editor.js`: the trainer editor.
-- `sw.js`: offline cache `trainers-v1`.
+- `sw.js`: offline cache `trainers-v2` (includes the wiki).
 - `manifest.webmanifest`, `icon-192.png`, `icon-512.png`.
 
 ## Test numbers (node, 200 battles each)

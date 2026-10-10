@@ -40,6 +40,7 @@ body[data-scr=battle] #bar { display: none; }
 .tm { display: flex; gap: 2px; } .tm img { width: 30px; height: 30px; }
 .ck { color: var(--hi); font-size: 20px; }
 .seg { display: flex; } .seg button { flex: 1; border-radius: 0; } .seg button:first-child { border-radius: 12px 0 0 12px; } .seg button:last-child { border-radius: 0 12px 12px 0; }
+.edl + .edl { margin-top: 8px; }
 .edl { display: flex; align-items: center; justify-content: center; min-height: 52px; margin-top: 14px; border: 2px dashed var(--line); border-radius: 12px; text-decoration: none; font-weight: 800; }
 .cols { display: grid; grid-template-columns: 1fr; gap: 4px 12px; }
 body.land .cols { grid-template-columns: 1fr 1fr 1fr; }
@@ -69,7 +70,7 @@ img.enter { animation: enter .45s ease-out; } @keyframes enter { from { opacity:
 img.hit { animation: hit .35s; } @keyframes hit { 25% { translate: -6px 0; filter: brightness(2.2); } 50% { translate: 6px 0; } 75% { translate: -3px 0; filter: brightness(1.6); } }
 img.lunge { animation: lunge .3s; } .s1 img.lunge { animation-name: lunge1; } @keyframes lunge { 50% { translate: 18px -12px; } } @keyframes lunge1 { 50% { translate: -18px 12px; } }
 img.faint { animation: faint .6s forwards; } @keyframes faint { to { opacity: .12; translate: 0 26px; filter: grayscale(1); } }
-#nar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.6); border-radius: 12px; padding: 5px 12px; font-weight: 800; font-size: 15px; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+#nar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.6); border-radius: 12px; padding: 0 12px; min-height: 44px; line-height: 44px; font-weight: 800; font-size: 15px; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
 #nar:empty { display: none; } #nar.pop { animation: pop .25s; } @keyframes pop { from { transform: translate(-50%, -50%) scale(.85); } }
 #turnN { position: absolute; right: calc(8px + var(--safeR)); top: 50%; translate: 0 -50%; font-size: 12px; font-weight: 800; background: rgba(0,0,0,.45); border-radius: 8px; padding: 2px 6px; }
 #bExit { position: absolute; left: calc(6px + var(--safeL)); top: 50%; translate: 0 -50%; z-index: 3; background: rgba(20,24,14,.8); }
@@ -96,7 +97,9 @@ img.faint { animation: faint .6s forwards; } @keyframes faint { to { opacity: .1
 .why { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
 .wr { display: flex; gap: 6px; align-items: flex-start; padding: 6px; border-radius: 10px; background: rgba(255,255,255,.04); border-left: 4px solid var(--blue); } .wr.s1 { border-left-color: var(--red); }
 .wt { font-size: 11px; font-weight: 800; background: #444b33; border-radius: 6px; padding: 2px 5px; } .wi { font-size: 18px; } .wb { flex: 1; min-width: 0; }
-.wl { font-size: 13px; line-height: 1.5; } .wl i { color: var(--dim); margin: 0 4px; font-style: normal; } .wl span.pk { background: var(--hi); color: #111; border-radius: 6px; padding: 0 4px; font-weight: 700; } .wl .rnd { color: #ffd84a; }
+.wl { font-size: 13px; line-height: 1.5; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; } .wl i { color: var(--dim); margin: 0 2px; font-style: normal; } .wl .rnd { color: #ffd84a; }
+button.wk { min-height: 44px; padding: 0 8px; border-radius: 10px; font-size: 13px; background: #313822; border-width: 1px; } button.wk.pk { background: var(--hi); color: #111; font-weight: 700; } button.wk.mon { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.card[data-wiki] .mn { text-decoration: underline dotted rgba(255,255,255,.5); } #nar[data-wiki] { pointer-events: auto; }
 .wb small { color: var(--dim); font-size: 11px; }
 textarea { width: 100%; min-height: 90px; background: #171b10; color: var(--txt); border: 2px solid var(--line); border-radius: 10px; padding: 8px; font: 11px ui-monospace, Menlo, monospace; }
 /* tournament */
@@ -113,7 +116,7 @@ body.land #tourn { max-width: 720px; margin: 0 auto; }
 </style>
 </head>
 <body data-scr="home">
-<div id="top"><button id="bHome" hidden aria-label="Home">🏠</button><h1>🎓 Trainers</h1><a href="editor.html">🛠 Editor</a></div>
+<div id="top"><button id="bHome" hidden aria-label="Home">🏠</button><h1>🎓 Trainers</h1><a href="wiki.html" aria-label="Wiki">📖</a><a href="editor.html">🛠 Editor</a></div>
 <main id="home"></main>
 <section id="battle" hidden></section>
 <section id="tourn" hidden></section>

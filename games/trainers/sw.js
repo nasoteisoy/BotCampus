@@ -1,6 +1,6 @@
 // Trainers: simple offline cache (stale-while-revalidate).
-const CACHE = 'trainers-v1';
-const ASSETS = ['./', './index.html', './game.js', './doctrine.js', './editor.html', './editor.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'trainers-v2';
+const ASSETS = ['./', './index.html', './game.js', './doctrine.js', './editor.html', './editor.js', './wiki.html', './wiki.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

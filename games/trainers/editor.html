@@ -116,13 +116,13 @@ h2 { font-size: 16px; margin: 12px 2px 6px; }
 .sa { display: flex; align-items: center; gap: 6px; margin: 6px 0; } .sa .stats { flex: 1; margin: 0; }
 .stats { display: flex; flex-wrap: wrap; gap: 4px; font-size: 11px; color: var(--dim); margin: 6px 2px; } .stats span { background: rgba(0,0,0,.25); border-radius: 6px; padding: 2px 5px; }
 .mvs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .mvs select { width: 100%; font-size: 13px; }
-.prev { font-size: 12px; } .prev .pr { display: flex; justify-content: space-between; gap: 6px; padding: 4px 6px; border-radius: 8px; background: rgba(0,0,0,.2); margin: 3px 0; }
+.prev { font-size: 12px; } .prev .pr { min-height: 44px; align-items: center; display: flex; justify-content: space-between; gap: 6px; padding: 4px 6px; border-radius: 8px; background: rgba(0,0,0,.2); margin: 3px 0; }
 @media (max-height: 520px) and (orientation: landscape) { body { padding-top: 0; padding-bottom: calc(66px + var(--safeB)); } #top { position: static; margin: 0 -8px 6px; } #bar { padding-top: 6px; padding-bottom: calc(6px + var(--safeB)); } #bar button { min-height: 48px; } }
 </style>
 </head>
 <body>
 <div id="top">
-  <div class="tb"><a id="back" href="index.html">← Game</a><h1>🛠 Trainer editor</h1><span id="st">Default</span></div>
+  <div class="tb"><a id="back" href="index.html">← Game</a><h1>🛠 Trainer editor</h1><button id="bWiki" data-wiki="" aria-label="Wiki">📖</button><span id="st">Default</span></div>
   <div id="tabs"></div>
 </div>
 <main id="main"></main>

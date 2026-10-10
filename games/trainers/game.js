@@ -3,16 +3,14 @@
 (function (root) {
 'use strict';
 const D = root.TRDoctrine;
-const LV = 50, ROLLS = 16;
+const R = D.RULES, LV = R.level, ROLLS = R.rolls;
 const clone = D.clone;
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const calcStat = (b, hp) => hp ? Math.floor((2 * b + 31) * LV / 100) + LV + 10 : Math.floor((2 * b + 31) * LV / 100) + 5;
 const stgM = (s) => s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
 const accM = (s) => s >= 0 ? (3 + s) / 3 : 3 / (3 - s);
-const CRIT = [1 / 24, 1 / 8, 1 / 2, 1];
-const STAT_IC = { slp: '💤', par: '⚡', psn: '☠', brn: '🔥', cnf: '💫' };
-const STAT_NAME = { slp: 'sleep', par: 'paralysis', psn: 'poison', brn: 'burn', cnf: 'confusion' };
-const IMMUNE = { brn: 'flame', psn: 'toxin', par: 'volt' };
+const CRIT = R.critStages, STAT_IC = R.statusIcon, STAT_NAME = R.statusName, IMMUNE = R.immune;
+const rollAt = (i) => R.rollMin + (R.rollMax - R.rollMin) * i / (ROLLS - 1);
 
 function mkMon(slot) {
   const d = D.DEX[slot.mon], st = {};
@@ -27,7 +25,7 @@ function newBattle(trA, trB, o = {}) {
 }
 const act = (S) => S.team[S.act];
 const alive = (S) => S.team.some(m => m.hp > 0);
-const speedOf = (m) => m.st.spe * stgM(m.stg.spe) * (m.status === 'par' ? 0.5 : 1);
+const speedOf = (m) => m.st.spe * stgM(m.stg.spe) * (m.status === 'par' ? R.parSpeed : 1);
 const fainted = (S) => S.team.filter(m => m.hp <= 0).length;
 
 // ---------------------------------------------------------------- hit math
@@ -36,11 +34,11 @@ function damage(att, def, mv, crit, roll) {
   const ak = phys ? 'atk' : 'spa', dk = phys ? 'def' : 'spd';
   const as = crit ? Math.max(0, att.stg[ak]) : att.stg[ak], ds = crit ? Math.min(0, def.stg[dk]) : def.stg[dk];
   let A = att.st[ak] * stgM(as); const Dv = def.st[dk] * stgM(ds);
-  if (phys && att.status === 'brn') A *= 0.5;
+  if (phys && att.status === 'brn') A *= R.brnAtk;
   const pow = mv.pow * (mv.hex && def.status ? 2 : 1);
   const base = Math.floor(Math.floor(Math.floor(2 * LV / 5 + 2) * pow * A / Dv) / 50) + 2;
   const e = D.eff(mv.type, def.type);
-  const mult = (mv.type && mv.type === att.type ? 1.5 : 1) * e * (crit ? 1.5 : 1) * roll;
+  const mult = (mv.type && mv.type === att.type ? R.stab : 1) * e * (crit ? R.critMult : 1) * roll;
   return e === 0 ? 0 : Math.max(1, Math.floor(base * mult));
 }
 const hitChance = (att, def, mv) => mv.acc == null ? 1 : Math.min(1, mv.acc / 100 * accM(Math.max(-6, Math.min(6, att.stg.acc - def.stg.eva))));
@@ -51,7 +49,7 @@ function analyze(att, def, mv) {
   const hit = hitChance(att, def, mv), cc = critChance(att, mv);
   let exp = 0, ko = 0;
   for (const [crit, p] of [[false, 1 - cc], [true, cc]]) for (let i = 0; i < ROLLS; i++) {
-    const d = damage(att, def, mv, crit, 0.85 + 0.01 * i);
+    const d = damage(att, def, mv, crit, rollAt(i));
     exp += p * Math.min(d, def.hp) / ROLLS; if (d >= def.hp) ko += p / ROLLS;
   }
   return { exp: exp * hit, ko: ko * hit, hit, eff: D.eff(mv.type, def.type), cc };
@@ -168,8 +166,8 @@ function snap(B) { return B.sides.map(S => ({ act: S.act, hp: S.team.map(m => m.
 function ev(B, o) { if (!B.fast) o.snap = snap(B); B.ev.push(o); }
 function setStatus(B, side, m, s, src) {
   if (!canStatus(m, s)) return false;
-  if (s === 'cnf') m.cnf = 2 + Math.floor(B.rng() * 4);
-  else { m.status = s; if (s === 'slp') m.slp = 1 + Math.floor(B.rng() * 3); }
+  if (s === 'cnf') m.cnf = R.cnfMin + Math.floor(B.rng() * (R.cnfMax - R.cnfMin + 1));
+  else { m.status = s; if (s === 'slp') m.slp = R.sleepMin + Math.floor(B.rng() * (R.sleepMax - R.sleepMin + 1)); }
   ev(B, { t: 'status', side, mon: m.name, s, src }); return true;
 }
 function doMove(B, si, i) {
@@ -180,18 +178,18 @@ function doMove(B, si, i) {
     if (a.slp <= 0) { a.status = null; ev(B, { t: 'wake', side: si, mon: a.name }); }
     return;
   }
-  if (a.status === 'par' && B.rng() < 0.25) { ev(B, { t: 'skip', side: si, mon: a.name, why: 'par' }); return; }
+  if (a.status === 'par' && B.rng() < R.parSkip) { ev(B, { t: 'skip', side: si, mon: a.name, why: 'par' }); return; }
   if (a.cnf > 0) {
     a.cnf--;
     if (a.cnf === 0) ev(B, { t: 'snap', side: si, mon: a.name });
-    else if (B.rng() < 1 / 3) { const d = damage(a, a, { pow: 40, cat: 'phys', type: null }, false, 0.85 + 0.15 * B.rng()); a.hp = Math.max(0, a.hp - d); ev(B, { t: 'self', side: si, mon: a.name, amt: d }); if (a.hp <= 0) ev(B, { t: 'faint', side: si, mon: a.name }); return; }
+    else if (B.rng() < R.cnfSelf) { const d = damage(a, a, { pow: R.cnfPow, cat: 'phys', type: null }, false, R.rollMin + (R.rollMax - R.rollMin) * B.rng()); a.hp = Math.max(0, a.hp - d); ev(B, { t: 'self', side: si, mon: a.name, amt: d }); if (a.hp <= 0) ev(B, { t: 'faint', side: si, mon: a.name }); return; }
   }
-  ev(B, { t: 'use', side: si, mon: a.name, move: mv.name, type: mv.type });
+  ev(B, { t: 'use', side: si, mon: a.name, move: mv.name, mid: a.moves[i], type: mv.type });
   const targetsFoe = mv.pow || mv.st || mv.drop;
   if (targetsFoe && f.hp > 0 && B.rng() >= hitChance(a, f, mv)) { ev(B, { t: 'miss', side: si, mon: a.name }); return; }
   if (mv.pow) {
     if (f.hp <= 0) return;
-    const crit = B.rng() < critChance(a, mv), d = damage(a, f, mv, crit, 0.85 + 0.01 * Math.floor(B.rng() * ROLLS));
+    const crit = B.rng() < critChance(a, mv), d = damage(a, f, mv, crit, rollAt(Math.floor(B.rng() * ROLLS)));
     f.hp = Math.max(0, f.hp - d);
     ev(B, { t: 'dmg', side: 1 - si, mon: f.name, amt: d, eff: D.eff(mv.type, f.type), crit });
     if (f.hp <= 0) { ev(B, { t: 'faint', side: 1 - si, mon: f.name }); return; }
@@ -199,11 +197,11 @@ function doMove(B, si, i) {
     return;
   }
   if (mv.st) { if (f.hp > 0 && !setStatus(B, 1 - si, f, mv.st[0], mv.name)) ev(B, { t: 'fail', side: si, mon: a.name }); }
-  if (mv.boost) for (const [k, b] of Object.entries(mv.boost)) { const o = a.stg[k]; a.stg[k] = Math.max(-6, Math.min(k === 'crit' ? 3 : 6, o + b)); ev(B, { t: 'boost', side: si, mon: a.name, k, d: a.stg[k] - o }); }
+  if (mv.boost) for (const [k, b] of Object.entries(mv.boost)) { const o = a.stg[k]; a.stg[k] = Math.max(-6, Math.min(k === 'crit' ? R.critStageMax : R.stageMax, o + b)); ev(B, { t: 'boost', side: si, mon: a.name, k, d: a.stg[k] - o }); }
   if (mv.drop) for (const [k, b] of Object.entries(mv.drop)) { const o = f.stg[k]; f.stg[k] = Math.max(-6, o + b); ev(B, { t: 'boost', side: 1 - si, mon: f.name, k, d: f.stg[k] - o }); }
   if (mv.cure && a.status) { a.status = null; a.slp = 0; ev(B, { t: 'cure', side: si, mon: a.name }); }
   if (mv.heal) { const h = Math.min(a.max - a.hp, Math.round(a.max * mv.heal)); a.hp += h; ev(B, { t: 'heal', side: si, mon: a.name, amt: h }); }
-  if (mv.rest) { const h = a.max - a.hp; a.hp = a.max; a.status = 'slp'; a.slp = 2; ev(B, { t: 'heal', side: si, mon: a.name, amt: h }); ev(B, { t: 'status', side: si, mon: a.name, s: 'slp', src: mv.name }); }
+  if (mv.rest) { const h = a.max - a.hp; a.hp = a.max; a.status = 'slp'; a.slp = R.restSleep; ev(B, { t: 'heal', side: si, mon: a.name, amt: h }); ev(B, { t: 'status', side: si, mon: a.name, s: 'slp', src: mv.name }); }
 }
 function doSwitch(B, si, to) {
   const S = B.sides[si], o = act(S);
@@ -216,7 +214,7 @@ function doItem(B, si, ch) {
   S.bag[it]--; S.used++;
   if (it === 'potion' || it === 'super') { const h = Math.min(D.ITEMS[it].heal, a.max - a.hp); a.hp += h; ev(B, { t: 'item', side: si, item: it, mon: a.name, amt: h }); }
   else if (it === 'full') { const s = a.status; a.status = null; a.slp = 0; a.cnf = 0; ev(B, { t: 'item', side: si, item: it, mon: a.name, s }); }
-  else if (it === 'revive') { const m = S.team[ch.target]; if (m && m.hp <= 0) { m.hp = Math.floor(m.max / 2); m.status = null; ev(B, { t: 'item', side: si, item: it, mon: m.name, amt: m.hp }); } }
+  else if (it === 'revive') { const m = S.team[ch.target]; if (m && m.hp <= 0) { m.hp = Math.floor(m.max * R.reviveFrac); m.status = null; ev(B, { t: 'item', side: si, item: it, mon: m.name, amt: m.hp }); } }
 }
 function legal(B, si) {
   const S = B.sides[si], a = act(S);
@@ -240,7 +238,7 @@ function turn(B, choices = []) {
   for (const si of [0, 1]) {
     const m = act(B.sides[si]);
     if (m.hp > 0 && (m.status === 'psn' || m.status === 'brn')) {
-      const d = Math.max(1, Math.floor(m.max / (m.status === 'psn' ? 8 : 16))); m.hp = Math.max(0, m.hp - d);
+      const d = Math.max(1, Math.floor(m.max * (m.status === 'psn' ? R.psnFrac : R.brnFrac))); m.hp = Math.max(0, m.hp - d);
       ev(B, { t: 'dot', side: si, mon: m.name, s: m.status, amt: d }); if (m.hp <= 0) ev(B, { t: 'faint', side: si, mon: m.name });
     }
   }
@@ -249,7 +247,7 @@ function turn(B, choices = []) {
 }
 function checkOver(B) {
   const a0 = alive(B.sides[0]), a1 = alive(B.sides[1]);
-  if (!a0 || !a1 || B.turn >= 200) {
+  if (!a0 || !a1 || B.turn >= R.turnCap) {
     B.over = true;
     if (a0 && !a1) B.winner = 0; else if (a1 && !a0) B.winner = 1;
     else if (a0 && a1) { const hp = (S) => S.team.reduce((x, m) => x + m.hp / m.max, 0); const h0 = hp(B.sides[0]), h1 = hp(B.sides[1]); B.winner = h0 > h1 ? 0 : h1 > h0 ? 1 : -1; }
@@ -278,7 +276,7 @@ function tournament(trA, trB, n, o = {}) {
   r.rate = r.w[0] / n; r.avgTurns = r.turns / n;
   return r;
 }
-root.TR = { D, snap, LV, mulberry, calcStat, stgM, accM, damage, analyze, hitChance, critChance, bestThreat, matchup, plan, whyLine, newBattle, turn, legal, needsReplace, replace, runBattle, tournament, act, alive, speedOf, fainted, STAT_IC, STAT_NAME, mkMon };
+root.TR = { D, R, CRIT, snap, LV, mulberry, calcStat, stgM, accM, damage, analyze, hitChance, critChance, bestThreat, matchup, plan, whyLine, newBattle, turn, legal, needsReplace, replace, runBattle, tournament, act, alive, speedOf, fainted, STAT_IC, STAT_NAME, mkMon };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 /* ---------------------------------------------------------------- Part 2: phone UI */
@@ -330,7 +328,41 @@ function art(id) {
   return (artCache[id] = c.toDataURL());
 }
 window.TRArt = art;
-if (!document.getElementById('home')) return; // editor page: art + engine only
+// ---------------------------------------------------------------- wiki overlay (game + editor): opens wiki.html#<route> in a sheet so nothing is lost
+const WIKI_CSS = `#wikiOv { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.6); display: flex; flex-direction: column; padding: calc(10px + env(safe-area-inset-top, 0px)) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+#wikiOv .wkb { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #262c1b; border: 2px solid #55603a; border-bottom: none; border-radius: 16px 16px 0 0; }
+#wikiOv .wkb b { flex: 1; font-size: 16px; } #wikiOv .wkb a, #wikiOv .wkb button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border: 2px solid #55603a; border-radius: 12px; background: #3a4229; color: #eef0e2; text-decoration: none; font: 700 16px system-ui, sans-serif; }
+#wikiOv iframe { flex: 1; width: 100%; border: 2px solid #55603a; border-top: none; background: #1f2416; }
+[data-wiki] { cursor: pointer; }`;
+const wikiHooks = {};
+function openWiki(h) {
+  let o = document.getElementById('wikiOv');
+  if (!o) {
+    const st = document.createElement('style'); st.textContent = WIKI_CSS; document.head.appendChild(st);
+    o = document.createElement('div'); o.id = 'wikiOv'; o.hidden = true;
+    o.innerHTML = '<div class="wkb"><button id="wkX" aria-label="Close wiki">✕</button><b>📖 Wiki</b><a id="wkFull" href="wiki.html" aria-label="Open the full wiki">↗</a></div><iframe id="wkF" title="Wiki"></iframe>';
+    document.body.appendChild(o);
+    o.querySelector('#wkX').addEventListener('click', (e) => { e.stopPropagation(); closeWiki(); });
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') closeWiki(); });
+  }
+  o.querySelector('#wkF').src = 'wiki.html?embed=1#' + h;
+  o.querySelector('#wkFull').href = 'wiki.html#' + h;
+  o.hidden = false;
+  if (wikiHooks.open) wikiHooks.open();
+}
+function closeWiki() { const o = document.getElementById('wikiOv'); if (!o || o.hidden) return; o.hidden = true; o.querySelector('#wkF').src = 'about:blank'; if (wikiHooks.close) wikiHooks.close(); }
+const MOVE_BY_NAME = {}, MON_BY_NAME = {};
+for (const id of D.MOVE_IDS) MOVE_BY_NAME[D.MOVES[id].name] = id;
+for (const id of D.MON_IDS) MON_BY_NAME[D.DEX[id].name] = id;
+// a Why-log option label ("Tide Lash", "Switch→Flarelynx", "Revive Sparkit", "Potion") -> wiki route
+function wikiFor(label) {
+  if (MOVE_BY_NAME[label]) return 'move/' + MOVE_BY_NAME[label];
+  const m = /(?:→|Revive )(.+)$/.exec(label); if (m && MON_BY_NAME[m[1]]) return 'monster/' + MON_BY_NAME[m[1]];
+  if (MON_BY_NAME[label]) return 'monster/' + MON_BY_NAME[label];
+  return 'rules';
+}
+window.TRWiki = Object.assign(openWiki, { close: closeWiki, hooks: wikiHooks, wikiFor });
+if (!document.getElementById('home')) return; // editor / wiki page: art + engine + wiki overlay only
 const tIc = (t) => (t ? D.TYPES[t].icon : '⭘');
 const tCol = (t) => (t ? D.TYPES[t].col : '#9aa088');
 
@@ -352,7 +384,7 @@ function renderHome() {
   $('home').innerHTML = `<div class="cols"><div>
     <div class="lbl">Mode</div><div class="list">${M.map(([k, ic, t, s]) => `<button class="mrow${ui.mode === k ? ' on' : ''}" data-mode="${k}"><span class="tic">${ic}</span><span class="t"><b>${t}</b><small>${s}</small></span>${ui.mode === k ? '<span class="ck">✔</span>' : ''}</button>`).join('')}</div>
     <div class="lbl">Team size</div><div class="seg">${[3, 6].map(n => `<button class="${ui.size === n ? 'on' : ''}" data-size="${n}">${n} v ${n}</button>`).join('')}</div>
-    <a class="edl" href="editor.html">🛠 Train the trainers (editor)</a></div>
+    <a class="edl" href="editor.html">🛠 Train the trainers (editor)</a><a class="edl" href="wiki.html">📖 Wiki: monsters, moves, types, rules</a></div>
     <div><div class="lbl">🔵 ${ui.mode === 'you' ? 'You play' : 'Blue trainer'}</div><div class="list">${roster.order.map(id => trRow(trOf(id), 'a', ui.a === id)).join('')}</div></div>
     <div><div class="lbl">🔴 Red trainer</div><div class="list">${roster.order.map(id => trRow(trOf(id), 'b', ui.b === id)).join('')}</div></div></div>`;
   $('bar').innerHTML = `<button id="bStart" class="go">${ui.mode === 'tourn' ? '🏆 Open tournament' : '▶ Battle!'}</button>`;
@@ -380,7 +412,7 @@ function drawSides(snap) {
     const img = el.querySelector('img');
     if (ST.view[si] !== sn.act) { img.src = art(m.id); img.classList.remove('faint'); img.classList.remove('enter'); void img.offsetWidth; img.classList.add('enter'); ST.view[si] = sn.act; }
     if (hp > 0) img.classList.remove('faint');
-    el.querySelector('.mn').textContent = m.name;
+    el.querySelector('.mn').textContent = m.name; el.querySelector('.card').dataset.wiki = 'monster/' + m.id; img.dataset.wiki = 'monster/' + m.id;
     const st = sn.st[sn.act];
     el.querySelector('.sx').textContent = `${tIc(m.type)}${st ? ' ' + TR.STAT_IC[st] : ''}${sn.cnf ? ' 💫' : ''}`;
     const bar = el.querySelector('.hp i'); bar.style.width = pct + '%'; bar.style.background = pct > 50 ? '#5fd35a' : pct > 20 ? '#f2c933' : '#ef5a4a';
@@ -397,12 +429,12 @@ function float(si, txt, cls) {
   d.style.left = (30 + Math.random() * 40) + '%'; d.style.animationDuration = Math.max(0.5, 1.3 / Math.sqrt(spd())) + 's';
   box.appendChild(d); setTimeout(() => d.remove(), 1600);
 }
-function nar(t) { const n = $('nar'); n.textContent = t; n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); }
+function nar(t) { const n = $('nar'); n.textContent = t; delete n.dataset.wiki; n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); }
 function sprFx(si, cls) { const img = $('side' + si) && $('side' + si).querySelector('img'); if (!img) return; img.classList.remove(cls); void img.offsetWidth; img.classList.add(cls); }
 const KEYN = { atk: 'ATK', def: 'DEF', spa: 'SpA', spd: 'SpD', spe: 'SPD', acc: 'ACC', eva: 'EVA', crit: 'CRIT' };
 function applyEv(e) {
   ST.evCount = (ST.evCount || 0) + 1;
-  if (e.t === 'use') { nar(`${tIc(e.type)} ${e.mon}: ${e.move}`); sprFx(e.side, 'lunge'); }
+  if (e.t === 'use') { nar(`${tIc(e.type)} ${e.mon}: ${e.move} 📖`); $('nar').dataset.wiki = 'move/' + e.mid; sprFx(e.side, 'lunge'); }
   if (e.snap) drawSides(e.snap);
   switch (e.t) {
     case 'dmg': float(e.side, '−' + e.amt, 'dmg'); if (e.crit) float(e.side, 'CRIT!', 'crit'); if (e.eff > 1) float(e.side, '×' + e.eff + '!', 'sup'); else if (e.eff === 0) float(e.side, '✖ 0', 'weak'); else if (e.eff < 1) float(e.side, '×½', 'weak'); sprFx(e.side, 'hit'); break;
@@ -484,7 +516,7 @@ function renderPanel() {
 function liveWhy() {
   const B = ST.B; if (!B) return '';
   const rows = B.why.slice(-6).reverse();
-  return rows.length ? `<div class="lbl">🧠 Latest choices</div><div class="why">${rows.map(w => `<div class="wr s${w.side}"><span class="wt">T${w.turn}</span><span class="wi">${esc(w.icon)}</span><div class="wb"><div class="wl">${w.top.map(o => `<span class="${o.label === w.pick.label ? 'pk' : ''}">${esc(o.label)} <b>${Math.round(o.s)}</b></span>`).join('<i>›</i>')}</div></div></div>`).join('')}</div>` : '';
+  return rows.length ? `<div class="lbl">🧠 Latest choices</div><div class="why">${rows.map(w => `<div class="wr s${w.side}"><span class="wt">T${w.turn}</span><span class="wi">${esc(w.icon)}</span><div class="wb"><div class="wl">${w.top.map(o => `<button class="wk${o.label === w.pick.label ? ' pk' : ''}" data-wiki="${wikiFor(o.label)}">${esc(o.label)} <b>${Math.round(o.s)}</b></button>`).join('<i>›</i>')}</div></div></div>`).join('')}</div>` : '';
 }
 function showEnd() {
   const B = ST.B, w = B.winner, o = $('endOv');
@@ -495,11 +527,11 @@ function showEnd() {
 function whyHTML(B) {
   const rows = B.why;
   if (!rows.length) return '<p class="hint">No AI decisions yet.</p>';
-  return `<div class="why">${rows.map(w => `<div class="wr s${w.side}"><span class="wt">T${w.turn}</span><span class="wi">${esc(w.icon)}</span><div class="wb"><div class="wl">${w.top.map((o, k) => `<span class="${o.label === w.pick.label ? 'pk' : ''}">${esc(o.label)} <b>${Math.round(o.s)}</b></span>`).join('<i>›</i>')}${w.random ? ` <span class="rnd">🎲 ${esc(w.pick.label)}</span>` : ''}</div><small>${esc(w.mon)}${w.replace ? ' fainted' : ''}${w.pick.why.length ? ' · ' + esc(w.pick.why.join(', ')) : ''}</small></div></div>`).join('')}</div>`;
+  return `<div class="why">${rows.map(w => `<div class="wr s${w.side}"><span class="wt">T${w.turn}</span><span class="wi">${esc(w.icon)}</span><div class="wb"><div class="wl">${w.top.map((o, k) => `<button class="wk${o.label === w.pick.label ? ' pk' : ''}" data-wiki="${wikiFor(o.label)}">${esc(o.label)} <b>${Math.round(o.s)}</b></button>`).join('<i>›</i>')}${w.random ? ` <span class="rnd">🎲 ${esc(w.pick.label)}</span>` : ''}</div><small><button class="wk mon" data-wiki="${wikiFor(w.mon)}">${tIc(D.DEX[MON_BY_NAME[w.mon]] ? D.DEX[MON_BY_NAME[w.mon]].type : null)} ${esc(w.mon)}</button>${w.replace ? ' fainted' : ''}${w.pick.why.length ? ' · ' + esc(w.pick.why.join(', ')) : ''}</small></div></div>`).join('')}</div>`;
 }
 function openWhy() {
   const B = ST.B; if (!B) return;
-  $('ovBox').innerHTML = `<div class="ovh"><h3>🧠 Why (${B.why.length} AI choices)</h3><button id="bOvX">✕</button></div><p class="hint">Top 3 scored options each turn. Highlighted = picked. 🎲 = personality noise picked another one.</p>${whyHTML(B)}<textarea id="whyTxt" readonly aria-label="Why log as text">${esc(B.why.map(TR.whyLine).join('\n'))}</textarea>`;
+  $('ovBox').innerHTML = `<div class="ovh"><h3>🧠 Why (${B.why.length} AI choices)</h3><button id="bOvX">✕</button></div><p class="hint">Top 3 scored options each turn. Highlighted = picked. 🎲 = personality noise picked another one. Tap a move or monster for its 📖 wiki page.</p>${whyHTML(B)}<textarea id="whyTxt" readonly aria-label="Why log as text">${esc(B.why.map(TR.whyLine).join('\n'))}</textarea>`;
   $('ov').hidden = false;
 }
 
@@ -543,6 +575,7 @@ function runTourn(n) {
 // ---------------------------------------------------------------- input
 function bind() {
   document.addEventListener('click', (e) => {
+    const wk = e.target.closest('[data-wiki]'); if (wk) { openWiki(wk.dataset.wiki); return; }
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     const d = b.dataset;
     if (b.id === 'bHome' || b.id === 'bHome2' || b.id === 'bExit') { clearTimeout(ST.timer); ST.B = null; $('bar').hidden = false; $('ov').hidden = true; renderHome(); return; }
@@ -579,6 +612,9 @@ function bind() {
   addEventListener('pageshow', () => { if (ST.screen === 'home') renderHome(); });
 }
 bind(); renderHome();
+// pause AI vs AI while the wiki sheet is open
+wikiHooks.open = () => { if (ST.B && ST.screen === 'battle' && !ST.human && ST.playing) { ST.wikiPaused = true; ST.playing = false; renderPanel(); } };
+wikiHooks.close = () => { if (ST.wikiPaused) { ST.wikiPaused = false; ST.playing = true; renderPanel(); schedule(50); } };
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 // test hooks
 window.TG = { ST, ui, get B() { return ST.B; }, startBattle, runTourn, renderHome, art, openWhy, roster: () => roster };

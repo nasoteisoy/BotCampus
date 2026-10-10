@@ -102,6 +102,21 @@ const DEX = {
   sporeshroom: D_('Sporeshroom', 'toxin', [105, 60, 90, 90, 100, 40], ['sludge', 'spores', 'purify', 'mend'], ['toxmist', 'rest', 'petalstorm'], { cap: 1 }),
 };
 const MON_IDS = Object.keys(DEX), MOVE_IDS = Object.keys(MOVES);
+// ---------------------------------------------------------------- battle rules: the engine (game.js) and the wiki both read these
+const RULES = {
+  level: 50, rolls: 16, rollMin: 0.85, rollMax: 1, stab: 1.5, critMult: 1.5,
+  critStages: [1 / 24, 1 / 8, 1 / 2, 1],          // crit chance by crit stage (move crit + Sharpen boosts)
+  stageMax: 6, critStageMax: 3,
+  sleepMin: 1, sleepMax: 3,                       // turns skipped
+  restSleep: 2,                                   // Deep Rest: full heal, then sleeps this many turns
+  parSkip: 0.25, parSpeed: 0.5,
+  psnFrac: 1 / 8, brnFrac: 1 / 16, brnAtk: 0.5,
+  cnfMin: 2, cnfMax: 5, cnfSelf: 1 / 3, cnfPow: 40,
+  immune: { brn: 'flame', psn: 'toxin', par: 'volt' }, // a type that can't get this status
+  reviveFrac: 0.5, turnCap: 200,
+  statusIcon: { slp: '💤', par: '⚡', psn: '☠', brn: '🔥', cnf: '💫' },
+  statusName: { slp: 'sleep', par: 'paralysis', psn: 'poison', brn: 'burn', cnf: 'confusion' },
+};
 const ITEMS = {
   potion: { name: 'Potion', icon: '🧪', heal: 60 },
   super: { name: 'Super Potion', icon: '⚗', heal: 140 },
@@ -232,5 +247,5 @@ function load() {
 function save(doc) { const r = sanitize(doc); return r.ok && store.set(JSON.stringify(r.doc)) ? r : null; }
 function reset() { store.del(); }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-root.TRDoctrine = { KEY, TYPES, CHART, eff, MOVES, MOVE_IDS, DEX, MON_IDS, ITEMS, FEATURES, PRESETS, PRESET_IDS, DEFAULT_DOCTRINE, sanitize, sanTrainer, parse, load, save, reset, same, clone, defaults: () => clone(DEFAULT_DOCTRINE) };
+root.TRDoctrine = { KEY, RULES, TYPES, CHART, eff, MOVES, MOVE_IDS, DEX, MON_IDS, ITEMS, FEATURES, PRESETS, PRESET_IDS, DEFAULT_DOCTRINE, sanitize, sanTrainer, parse, load, save, reset, same, clone, defaults: () => clone(DEFAULT_DOCTRINE) };
 })(typeof window !== 'undefined' ? window : globalThis);
