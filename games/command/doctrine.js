@@ -4,11 +4,14 @@
    to DEFAULT_DOCTRINE, so a bad edit can't break the game.
    v2 adds the battalion level (levels.bn, bn maps, score.bn, sm.gates.coyWait); a v1 doctrine without them still
    loads, the missing parts come from the defaults.
+   v3 adds combat (fire vs open ground / suppression, cohesion, digging in, after-action score), the Regroup task
+   (bn / coy / pl maps) and the attack penalties score.attack.noSup / openPen. Older doctrines load; Regroup is added
+   to their allowed levels and the new parts come from the defaults.
    Units: metres, seconds, angles in radians (the editor shows degrees). */
 (function (root) {
 'use strict';
 const KEY = 'command-doctrine-v1';
-const TYPE_IDS = ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw', 'assault', 'cutoff', 'move', 'suppress', 'overwatch'];
+const TYPE_IDS = ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw', 'assault', 'cutoff', 'move', 'suppress', 'overwatch', 'regroup'];
 const SEC_SM = ['move', 'hold', 'suppress', 'overwatch', 'assault']; // section tasks with a drill (state machine)
 const SCORE_KINDS = ['seize', 'clear', 'assault', 'hold', 'reserve', 'cutoff', 'screen', 'recon', 'sbf', 'withdraw', 'other'];
 const TAGS = ['book', 'allIn', 'bunched', 'reserve', 'cutoff'];
@@ -95,16 +98,17 @@ function attackBn(t) {
 }
 const sbfRoles = () => [-30, 0, 30].map(s => sr('suppress', pt('pos', s, 0, 30, 'obj'), OBJ));
 const DEFAULT_DOCTRINE = {
-  version: 2,
+  version: 3,
   types: {
     seize: { icon: '⚔', label: 'Seize' }, hold: { icon: '🛡', label: 'Hold' }, clear: { icon: '🧹', label: 'Clear' }, screen: { icon: '👁', label: 'Screen' },
     recon: { icon: '🔭', label: 'Recon' }, sbf: { icon: '🔥', label: 'Support by fire' }, reserve: { icon: '⏸', label: 'Reserve' }, withdraw: { icon: '↩', label: 'Withdraw to' },
     assault: { icon: '⚔', label: 'Assault' }, cutoff: { icon: '✂', label: 'Cut-off' }, move: { icon: '➜', label: 'Move to' }, suppress: { icon: '🔥', label: 'Suppress' }, overwatch: { icon: '👁', label: 'Overwatch' },
+    regroup: { icon: '⟳', label: 'Regroup' },
   },
   levels: {
-    bn: ['seize', 'clear', 'hold', 'screen', 'recon', 'withdraw'],
-    coy: ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw'],
-    pl: ['assault', 'sbf', 'cutoff', 'reserve', 'hold', 'clear', 'screen', 'recon', 'withdraw'],
+    bn: ['seize', 'clear', 'hold', 'screen', 'recon', 'withdraw', 'regroup'],
+    coy: ['seize', 'hold', 'clear', 'screen', 'recon', 'sbf', 'reserve', 'withdraw', 'regroup'],
+    pl: ['assault', 'sbf', 'cutoff', 'reserve', 'hold', 'clear', 'screen', 'recon', 'withdraw', 'regroup'],
     sec: ['move', 'suppress', 'assault', 'hold', 'overwatch'],
   },
   // battalion objective -> 3 company roles
@@ -123,6 +127,10 @@ const DEFAULT_DOCTRINE = {
     recon: { scoreAs: 'recon', variants: [
       V('book', 'One company feels forward, one screens, one in reserve', ['book'], [bnr('recon', bOBJ(), 3), bnr('screen', bOF(-200, -250), 1), bnr('reserve', bBH(350), 1)]),
       V('allIn', 'All in: recon the objective and both flanks', ['allIn'], [bnr('recon', bOBJ(), 3), bnr('recon', bFL(-1, 'recon'), 2), bnr('recon', bFL(1, 'recon'), 2)]),
+    ] },
+    regroup: { scoreAs: 'defend', variants: [
+      V('book', 'Regroup in place: two forward, one back', ['book'], [bnr('regroup', bOF(0, -130), 2), bnr('regroup', bOF(0, 130), 2), bnr('regroup', bBH(160), 1)]),
+      V('tight', 'Regroup close together', ['bunched'], [bnr('regroup', bOF(0, -60), 2), bnr('regroup', bOF(0, 60), 2), bnr('regroup', bOF(-60, 0), 1)]),
     ] },
     withdraw: { scoreAs: 'withdraw', variants: [
       V('book', 'Two back, one company as rearguard', ['book'], [bnr('withdraw', bOF(0, -200), 2), bnr('withdraw', bOF(0, 200), 2), bnr('withdraw', bOF(0, 0), 1, 'rear')]),
@@ -158,6 +166,10 @@ const DEFAULT_DOCTRINE = {
       V('book', 'Textbook: two fire positions + reserve', ['book'], [role('sbf', fire('rank:0'), 2), role('sbf', fire('apart:70', 'rank:1'), 2), role('reserve', behind(168), 1)]),
       V('allIn', 'All in: three fire positions', ['allIn'], [role('sbf', fire('random'), 2), role('sbf', fire('blind', 'last'), 2), role('sbf', fire('rank:3', 'role:0'), 1)]),
     ] },
+    regroup: { scoreAs: 'reserve', search: NOSWEEP, variants: [
+      V('book', 'Textbook: all-round, platoons close to Coy HQ', ['book'], offs('regroup', [[10, -45], [10, 45], [-45, 0]])),
+      V('bunched', 'Bunched', ['bunched'], offs('regroup', [[0, -12], [0, 0], [0, 12]])),
+    ] },
     withdraw: { scoreAs: 'withdraw', search: NOSWEEP, variants: [
       V('book', 'Textbook: two back, rearguard covers', ['book'], [role('withdraw', ofs(0, -60), 2), role('withdraw', ofs(0, 60), 2), role('withdraw', ofs(0, 0), 1, 'rear')]),
       V('all', 'Everyone back at once', [], [role('withdraw', ofs(0, -60), 2), role('withdraw', ofs(0, 60), 2), role('withdraw', ofs(0, 0), 1)]),
@@ -175,7 +187,7 @@ const DEFAULT_DOCTRINE = {
     cutoff: { scoreAs: 'cutoff', variants: [
       V('book', 'Textbook: two block, one watches', ['book'], [sr('hold', null, pt('pos', -25, 0, 30, 'none')), sr('hold', null, pt('pos', 25, 0, 30, 'none')), sr('overwatch', pt('pos', 0, -20, 30, 'obj'), OBJ)]),
     ] },
-    hold: holdPl('hold', 32), reserve: holdPl('hold', 32), withdraw: holdPl('move', 32), screen: holdPl('hold', 45, true),
+    hold: holdPl('hold', 32), reserve: holdPl('hold', 32), withdraw: holdPl('move', 32), screen: holdPl('hold', 45, true), regroup: holdPl('hold', 22),
   },
   // section drills (state machines), plus the platoon gates and pinned / broken states
   sm: {
@@ -198,7 +210,7 @@ const DEFAULT_DOCTRINE = {
   score: {
     bn: { main: 25, onObjDist: 100, flanks: 50, threatMin: 120, threatMax: 500, threatFwd: 60, fire: 12, reserve: 12, base: 10,
       spread: 25, minGap: 120, maxSpread: 800, depth: 20, depthDist: 120, cover: 20, view: 25, viewRange: 250, rearguard: 40, near: 50, nearDist: 350 },
-    attack: { supLos: 25, supCover: 10, supRange: 10, supMin: 120, supMax: 380, clearNoSup: 15, flank: 20, flankAngle: 0.75, approach: 15, onTarget: 15, onTargetDist: 70, reserve: 15, base: 5 },
+    attack: { supLos: 25, supCover: 10, supRange: 10, supMin: 120, supMax: 380, clearNoSup: 15, flank: 20, flankAngle: 0.75, approach: 15, onTarget: 15, onTargetDist: 70, reserve: 15, base: 5, noSup: -10, openPen: -10 },
     defend: { cover: 40, depth: 20, depthDist: 50, spacing: 20, minGap: 25, maxGap: 320, fields: 20, fieldRange: 150 },
     screen: { spread: 40, minSpread: 120, view: 40, viewRange: 200, cover: 20 },
     recon: { observer: 50, coveringFire: 25, reserve: 25 },
@@ -207,6 +219,19 @@ const DEFAULT_DOCTRINE = {
     other: { base: 60 },
     sec: { fireLos: 45, fireCover: 30, fireRange: 25, rangeMin: 70, rangeMax: 360, assaultBase: 25, fupCover: 20, approach: 30, runIn: 25, runInMax: 220, holdCover: 50, holdField: 30, holdBase: 20, moveBase: 50, moveApproach: 30, moveCover: 20 },
     prefs: { noise: 45, dumbBelow: 0.45, dumbScale: 90, frontal: 1, noLos: 0.7, allIn: 0.6, bunched: 0.8, wrong: 0.5, aggressive: 14, cautious: 12, glory: 10, book: 12 },
+  },
+  // combat: what makes a rushed attack expensive and a prepared one cheap (v3)
+  combat: {
+    // fire: suppressed shooters miss, men moving in the open get hit, cover saves lives
+    fire: { lethal: 1, suppAcc: 105, suppFloor: 0.1, moveOpen: 3, moveCover: 1.15, mgOpen: 2, closeRange: 250, farShare: 0.35, openSupp: 1.3, coverPow: 1.6, drawMove: 110, open: 0.85, areaR: 60, areaSupp: 2, reveal: 1 },
+    // cohesion (0-100 per section; platoon / company / battalion = average): lost by casualties, fire, long moves and
+    // assaults; regained standing still out of the fire, faster in cover, near the HQ and under a Regroup order
+    cohesion: { casLoss: 4, suppLoss: 0.06, moveLoss: 1.2, chargeLoss: 0.5, assaultDrop: 22, breakDrop: 30, recover: 0.1, coverMul: 1.4, hqMul: 1.3, regroupMul: 2.6,
+      capBase: 50, speedMin: 0.6, fireMin: 0.45, breakBonus: 25, pinBonus: 22, moraleMul: 0.8, piecemeal: 50, scatterOk: 70, scatterBad: 150, done: 80, warn: 55, pushback: 55, chainT: 240 },
+    // digging in: a section standing still builds a fighting position (full in 'time' s); hold / regroup / consolidation dig at full rate
+    dig: { time: 300, cover: 0.5, supp: 0.4, holdRate: 1, otherRate: 0.35 },
+    // after-action score (0-100): objectives held at the end, casualties, enemy losses
+    aar: { objPts: 55, objFull: 9, casPts: 35, casZero: 50, killPts: 10 },
   },
 };
 
@@ -221,7 +246,7 @@ const fin = (v) => typeof v === 'number' && isFinite(v);
 const RANGE = {
   off: [-Math.PI, Math.PI], dist: [0, 800], fwd: [-800, 800], side: [-800, 800], dir: [-1, 1], minSide: [0, 800], fbSide: [-800, 800], fbFwd: [-800, 800], imp: [1, 5], pick: [0, 200], lookFwd: [-800, 800],
   wrongChance: [0, 1], speed: [0.05, 10], far: [0.05, 10], close: [0.05, 10], huntSpeed: [0.05, 10], sweepSpeed: [0.05, 10], ring: [0, 2],
-  arrive: [0.5, 100], strength: [0, 1], flankAngle: [0, Math.PI], dumbBelow: [0, 1], frontal: [-10, 10], noLos: [-10, 10], allIn: [-10, 10], bunched: [-10, 10], wrong: [-10, 10],
+  arrive: [0.5, 100], strength: [0, 1], suppFloor: [0, 1], farShare: [0, 1], speedMin: [0.05, 1], fireMin: [0, 1], coverPow: [0.2, 4], open: [0.3, 1], lethal: [0, 10], objFull: [1, 15], areaR: [10, 150], areaSupp: [0, 5], reveal: [0, 1], flankAngle: [0, Math.PI], dumbBelow: [0, 1], frontal: [-10, 10], noLos: [-10, 10], allIn: [-10, 10], bunched: [-10, 10], wrong: [-10, 10],
 };
 function num(v, d, key, warn, path) {
   if (!fin(v)) { if (v !== undefined) warn.push(path); return d; }
@@ -316,7 +341,7 @@ function sanSearch(s, def, warn, path) {
 function sanitize(inp) {
   const warn = [], D = DEFAULT_DOCTRINE;
   if (!isObj(inp)) return { doc: clone(D), warnings: ['not an object'], ok: false };
-  const doc = { version: 2 };
+  const doc = { version: 3 };
   doc.types = shape(inp.types, D.types, warn, 'types');
   doc.levels = {};
   for (const lv of LEVELS) {
@@ -325,6 +350,8 @@ function sanitize(inp) {
     if (v !== undefined && (!Array.isArray(v) || ok.length !== v.length)) warn.push('levels.' + lv);
     doc.levels[lv] = ok.length ? ok : clone(D.levels[lv]);
   }
+  // a doctrine from before v3 never saw Regroup: allow it at battalion, company and platoon level
+  if (!(inp.version >= 3)) for (const lv of ['bn', 'coy', 'pl']) if (!doc.levels[lv].includes('regroup')) doc.levels[lv].push('regroup');
   // battalion maps (absent in v1 doctrines: defaults fill in)
   doc.bn = {};
   const ib = isObj(inp.bn) ? inp.bn : {};
@@ -361,7 +388,8 @@ function sanitize(inp) {
   }
   doc.sm = shape(inp.sm, D.sm, warn, 'sm');
   doc.score = shape(inp.score, D.score, warn, 'score');
-  const known = ['types', 'levels', 'bn', 'coy', 'pl', 'sm', 'score'].filter(k => inp[k] !== undefined).length;
+  doc.combat = shape(inp.combat, D.combat, warn, 'combat');
+  const known = ['types', 'levels', 'bn', 'coy', 'pl', 'sm', 'score', 'combat'].filter(k => inp[k] !== undefined).length;
   return { doc, warnings: warn, ok: known > 0 };
 }
 // parse text from Import: rejects garbage outright, otherwise returns the cleaned doctrine + what was fixed
@@ -370,7 +398,7 @@ function parse(text) {
   try { o = JSON.parse(String(text)); } catch (e) { return { ok: false, error: 'Not valid JSON: ' + e.message }; }
   if (!isObj(o)) return { ok: false, error: 'Expected a JSON object { … }.' };
   const r = sanitize(o);
-  if (!r.ok) return { ok: false, error: 'No doctrine sections found (types, levels, bn, coy, pl, sm, score).' };
+  if (!r.ok) return { ok: false, error: 'No doctrine sections found (types, levels, bn, coy, pl, sm, score, combat).' };
   return { ok: true, doc: r.doc, warnings: r.warnings };
 }
 const store = {

@@ -188,7 +188,7 @@ function redrawDia(el) {
 }
 
 // ---------------------------------------------------------------- tabs
-const TABS = [['types', '🏷 Task types'], ['bn', '🗺 Battalion maps'], ['coy', '🗺 Company maps'], ['pl', '🗺 Platoon maps'], ['drills', '⚙ Section drills'], ['score', '📊 Scoring'], ['data', '⇅ Import / Export']];
+const TABS = [['types', '🏷 Task types'], ['bn', '🗺 Battalion maps'], ['coy', '🗺 Company maps'], ['pl', '🗺 Platoon maps'], ['drills', '⚙ Section drills'], ['score', '📊 Scoring'], ['combat', '⚔ Combat'], ['data', '⇅ Import / Export']];
 function renderTypes() {
   const lvN = { bn: 'Battalion objectives', coy: 'Company objectives', pl: 'Platoon tasks', sec: 'Section tasks' };
   let h = `<p class="intro">Each level can only be given the task types switched on here (they show up as the objective chips in the game's Orders panel). Rename and re-icon any task type below.</p>`;
@@ -365,7 +365,7 @@ function renderDrills() {
 }
 const SCORE_L = {
   bn: ['🅱', 'Battalion plans', [['main', 'Main effort on the objective', 'pts'], ['onObjDist', '…on the objective = within', 'm'], ['flanks', 'Flanking enemy positions dealt with (× share)', 'pts'], ['threatMin', '…flanking position = further than', 'm'], ['threatMax', '…and within', 'm'], ['threatFwd', '…and at most this far beyond the objective', 'm'], ['fire', 'Fire base on the objective', 'pts'], ['reserve', 'A company in reserve', 'pts'], ['base', 'Base points', 'pts'], ['spread', 'Defence / screen: good frontage', 'pts'], ['minGap', '…companies at least', 'm'], ['maxSpread', '…frontage under', 'm'], ['depth', 'Defence: depth', 'pts'], ['depthDist', '…depth = a company back by', 'm'], ['cover', 'Defence / screen: cover (× cover)', 'pts'], ['view', 'Screen: sees the approaches (× share)', 'pts'], ['viewRange', '…checked to', 'm'], ['rearguard', 'Withdrawal: has a rearguard', 'pts'], ['near', 'Withdrawal: ends near the rally point (× share)', 'pts'], ['nearDist', '…near = within', 'm']]],
-  attack: ['⚔', 'Attack plans (seize, clear, platoon assault)', [['supLos', 'Fire support sees the objective', 'pts'], ['supCover', 'Fire support in cover (× cover)', 'pts'], ['supRange', 'Fire support at a good range', 'pts'], ['supMin', '…good range from', 'm'], ['supMax', '…good range to', 'm'], ['clearNoSup', 'Clear without fire support', 'pts'], ['flank', 'Assault comes in from a flank', 'pts'], ['flankAngle', '…flank = angle off the fire line over', 'deg'], ['approach', 'Covered approach (× cover)', 'pts'], ['onTarget', 'Assault on the right target', 'pts'], ['onTargetDist', '…right target = within', 'm'], ['reserve', 'Has a reserve / cut-off / overwatch', 'pts'], ['base', 'Base points', 'pts']]],
+  attack: ['⚔', 'Attack plans (seize, clear, platoon assault)', [['supLos', 'Fire support sees the objective', 'pts'], ['supCover', 'Fire support in cover (× cover)', 'pts'], ['supRange', 'Fire support at a good range', 'pts'], ['supMin', '…good range from', 'm'], ['supMax', '…good range to', 'm'], ['clearNoSup', 'Clear without fire support', 'pts'], ['noSup', 'Seize / assault without any fire support', 'pts'], ['openPen', 'Jump-off in the open', 'pts'], ['flank', 'Assault comes in from a flank', 'pts'], ['flankAngle', '…flank = angle off the fire line over', 'deg'], ['approach', 'Covered approach (× cover)', 'pts'], ['onTarget', 'Assault on the right target', 'pts'], ['onTargetDist', '…right target = within', 'm'], ['reserve', 'Has a reserve / cut-off / overwatch', 'pts'], ['base', 'Base points', 'pts']]],
   defend: ['🛡', 'Defence plans (hold, reserve, cut-off)', [['cover', 'Positions in cover (× cover)', 'pts'], ['depth', 'Depth (Hold only)', 'pts'], ['depthDist', '…depth = someone back by', 'm'], ['spacing', 'Good spacing', 'pts'], ['minGap', '…bunched if closer than', 'm'], ['maxGap', '…spread out if wider than', 'm'], ['fields', 'Fields of fire (× share)', 'pts'], ['fieldRange', '…field of fire checked to', 'm']]],
   screen: ['👁', 'Screen plans', [['spread', 'Spread out', 'pts'], ['minSpread', '…spread = wider than', 'm'], ['view', 'Can see the approaches (× share)', 'pts'], ['viewRange', '…checked to', 'm'], ['cover', 'Cover (× cover)', 'pts']]],
   recon: ['🔭', 'Recon plans', [['observer', 'Observers see the target', 'pts'], ['coveringFire', 'Covering fire', 'pts'], ['reserve', 'Someone held back', 'pts']]],
@@ -382,13 +382,27 @@ function renderScore() {
   }
   return h;
 }
+// combat model: fire, cohesion, digging in and the after-action score
+const COMBAT_L = {
+  fire: ['🎯', 'Fire', 'suppression, open ground, cover', [['lethal', 'Lethality ×', '', 0.05], ['suppAcc', 'Shooter is useless at suppression', '', 1], ['suppFloor', '…but keeps at least this share of its fire', 'pct', 5], ['moveOpen', 'Moving in the open: hit ×', '', 0.1], ['moveCover', 'Moving through cover: hit ×', '', 0.05], ['mgOpen', 'MG grazing fire on movers in the open ×', '', 0.1], ['closeRange', 'Open-ground / MG multipliers in full inside', 'm', 10], ['farShare', '…beyond that, share of the extra', 'pct', 5], ['openSupp', 'Suppression on movers in the open ×', '', 0.05], ['coverPow', 'Cover protection (losses ∝ cover ^ this)', '', 0.1], ['drawMove', 'Germans prefer movers in the open (m closer)', 'm', 10], ['open', 'Counts as open ground when cover over', '', 0.05], ['areaR', 'Area fire covers', 'm', 5], ['areaSupp', 'Area fire suppression ×', '', 0.1], ['reveal', 'Firing gives a hidden German away (1 = on)', '', 1]]],
+  cohesion: ['⛓', 'Cohesion', 'how organised a unit is; lost in action, regained by Regroup', [['casLoss', 'Lost per man hit', '', 0.5], ['suppLoss', 'Lost per s under heavy fire (×suppression)', '', 0.01], ['moveLoss', 'Lost per 100 m moved (×2 under fire)', '', 0.1], ['chargeLoss', 'Lost per s charging', '', 0.1], ['assaultDrop', 'Lost when an assault takes the objective', '', 1], ['breakDrop', 'Broken units drop to', '', 1], ['recover', 'Regained per s at rest', '', 0.01], ['coverMul', '…× in cover', '', 0.05], ['hqMul', '…× near the platoon HQ', '', 0.05], ['regroupMul', '…× under a Regroup / Hold order', '', 0.1], ['capBase', 'Max cohesion of a shattered unit', '', 1], ['speedMin', 'Speed at 0 cohesion ×', '', 0.05], ['fireMin', 'Fire at 0 cohesion ×', '', 0.05], ['breakBonus', 'Breaks this much sooner at 0 cohesion', '', 1], ['pinBonus', 'Pins this much sooner at 0 cohesion', '', 1], ['moraleMul', 'Extra morale loss per hit at 0 cohesion ×', '', 0.05], ['piecemeal', 'Platoon goes in piecemeal under', '', 1], ['scatterOk', 'Platoon spread is fine up to', 'm', 5], ['scatterBad', '…scattered (−35%) at', 'm', 5], ['done', 'Regroup is done at', '', 1], ['warn', 'Warn when under', '', 1], ['pushback', 'Good commanders ask for time under', '', 1], ['chainT', 'Next attack within this long counts as chained', 's', 10]]],
+  dig: ['⛏', 'Digging in', 'standing still builds a fighting position', [['time', 'Fully dug in after', 's', 10], ['cover', 'Dug in: hits ×(1 − this)', 'pct', 5], ['supp', 'Dug in: suppression ×(1 − this)', 'pct', 5], ['holdRate', 'Dig rate under Hold / Regroup', '', 0.05], ['otherRate', 'Dig rate otherwise (standing still)', '', 0.05]]],
+  aar: ['🏁', 'After-action score', 'grade A ≥ 80, B ≥ 65, C ≥ 50, D ≥ 35', [['objPts', 'Points for places held', 'pts', 1], ['objFull', '…full points at this many places', '', 1], ['casPts', 'Points for low casualties', 'pts', 1], ['casZero', '…zero points at this casualty %', '', 1], ['killPts', 'Points for enemy losses', 'pts', 1]]],
+};
+function renderCombat() {
+  let h = `<p class="intro">How fighting works: suppressed defenders can barely shoot, men moving in the open close to unsuppressed MGs get cut down, cover saves lives; cohesion wears down in action and comes back with ⟳ Regroup; units that stand still dig in. The end-of-battle score uses the last group.</p>`;
+  for (const [g, [ic, title, sub, rows]] of Object.entries(COMBAT_L)) {
+    h += grp('cb:' + g, ic, title, sub, () => `<div class="prm">${rows.map(([f, l, u, st]) => nf(`combat.${g}.${f}`, l, '', { unit: u === 'pct' ? '' : u, kind: u === 'pct' ? 'pct' : '', step: st, min: u === 'pct' ? 0 : undefined, max: u === 'pct' ? 100 : undefined })).join('')}</div>`);
+  }
+  return h;
+}
 function renderData() {
   const json = JSON.stringify(doc, null, 1);
   return `<p class="intro">Back up or share the doctrine as JSON. Import replaces the working copy (checked field by field; anything invalid falls back to the default), then tap 💾 Save.</p>
   ${msg ? `<div class="msg ${msg.k}">${esc(msg.t)}</div>` : ''}
   <h2>⬆ Export</h2><textarea id="exTxt" readonly aria-label="Exported JSON">${esc(json)}</textarea>
   <div class="acts"><button id="bCopy">📋 Copy</button><button id="bDown">💾 Download .json</button></div>
-  <h2>⬇ Import</h2><textarea id="imTxt" placeholder='Paste doctrine JSON here: { "version": 2, ... } (v1 files without the battalion work too)' aria-label="JSON to import"></textarea>
+  <h2>⬇ Import</h2><textarea id="imTxt" placeholder='Paste doctrine JSON here: { "version": 3, ... } (older v1 / v2 files work too)' aria-label="JSON to import"></textarea>
   <div class="acts"><button id="bImport" class="go">⬇ Import pasted JSON</button><label style="flex:1"><input type="file" id="imFile" accept=".json,application/json,text/plain" hidden><button style="width:100%" onclick="this.previousElementSibling.click()">📂 From file</button></label></div>
   <h2>↺ Defaults</h2><p class="hint">Reset puts every map, drill and weight back to how Dev B wrote the game (and clears the saved copy).</p><div class="acts"><button class="warn" data-act="reset">↺ Reset everything to defaults</button></div>`;
 }
@@ -401,7 +415,7 @@ function renderStatus() {
 function render() {
   const y = window.scrollY, im = $('imTxt') ? $('imTxt').value : '';
   $('tabs').innerHTML = TABS.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('');
-  const f = { types: renderTypes, bn: renderBn, coy: renderCoy, pl: renderPl, drills: renderDrills, score: renderScore, data: renderData }[tab];
+  const f = { types: renderTypes, bn: renderBn, coy: renderCoy, pl: renderPl, drills: renderDrills, score: renderScore, combat: renderCombat, data: renderData }[tab];
   $('main').innerHTML = (msg && tab !== 'data' ? `<div class="msg ${msg.k}">${esc(msg.t)}</div>` : '') + f();
   if (im && $('imTxt')) $('imTxt').value = im;
   renderStatus();

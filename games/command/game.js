@@ -5,7 +5,7 @@
 // the doctrine (all objective maps, drills and scoring weights) lives in doctrine.js; load it first if a stale page missed it
 if (!window.CLDoctrine) { const sc = document.createElement('script'); sc.src = 'doctrine.js'; sc.onload = boot; document.head.appendChild(sc); return; }
 const DOCL = window.CLDoctrine.load(), DOC = DOCL.doc;
-const VERSION = 'v2.0';
+const VERSION = 'v2.1';
 const WW = 3000, WH = 1000, TAU = Math.PI * 2, TICK = 0.5;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const hyp = Math.hypot;
@@ -340,7 +340,7 @@ function mkUnit(o) {
   return Object.assign({
     px: o.x, py: o.y, a: -Math.PI / 2, path: null, gx: NaN, gy: NaN, supp: 0, morale: o.side === 'GB' ? 80 : 75, state: 'ok',
     fireCd: R() * 4, firedT: -99, hitT: -99, men0: o.men, moving: false, seenT: -999, last: null, vis: false, kills: 0, ph: 0, waitT: 0,
-    pinT: 0, okT: 0,
+    pinT: 0, okT: 0, coh: 100, dig: 0,
   }, o);
 }
 function buildOOB() {
@@ -404,6 +404,12 @@ function tName(p) {
 const T = Object.fromEntries(Object.entries(DOC.types).map(([k, v]) => [k, [v.icon, v.label]]));
 const TYPES = DOC.levels;
 const FIRE_T = new Set(['sbf', 'suppress', 'overwatch']);
+// combat tunables (doctrine.combat, Objective Editor ⚔ Combat tab)
+const CB = DOC.combat, KC = CB.cohesion;
+const OFFX = new Set(['seize', 'clear', 'assault']);
+const isOpen = (x, y) => coverAt(x, y) > CB.fire.open;
+const cohCap = (u) => KC.capBase + (100 - KC.capBase) * u.men / u.men0;
+const cohF = (u, min) => (u.side === 'GB' && u.kind === 'sec' ? min + (1 - min) * u.coh / 100 : 1);
 
 // ---------------------------------------------------------------- plan scoring (0-100) + reasons
 const P = (x, y) => ({ x: clamp(x, 8, WW - 8), y: clamp(y, 8, WH - 8) });
@@ -451,11 +457,12 @@ function ratePlan(kind, X, roles, from) {
       if (losT(sup.pos.x, sup.pos.y, X.x, X.y)) q += W.supLos; else notes.push("support can't see the objective");
       q += W.supCover * coverScore(sup.pos);
       const d = hyp(sup.pos.x - X.x, sup.pos.y - X.y); if (d > W.supMin && d < W.supMax) q += W.supRange; else notes.push(d <= W.supMin ? 'support too close' : 'support too far back');
-    } else if (kind !== 'clear') notes.push('no fire support');
+    } else if (kind !== 'clear') { notes.push('no fire support'); q += W.noSup; }
     else q += W.clearNoSup;
     const a = asl[0];
     if (a) {
       const fup = a.pos || from;
+      if (a.pos && isOpen(a.pos.x, a.pos.y)) { q += W.openPen; notes.push('jump-off in the open'); }
       const ref = sup && sup.pos ? { x: sup.pos.x - X.x, y: sup.pos.y - X.y } : { x: from.x - X.x, y: from.y - X.y };
       const ang = angBetween({ x: fup.x - X.x, y: fup.y - X.y }, ref);
       if (ang > W.flankAngle) q += W.flank; else notes.push(sup ? 'frontal, in line with our own fire' : 'frontal assault');
@@ -564,9 +571,19 @@ function supportCands(X, from) {
   }
   return out.sort((a, b) => b.sc - a.sc);
 }
+// jump-off point: around 'dist' back from the objective on that bearing, in the best cover within ~45 m (hedge, wood, house, crest)
 function fupAt(X, from, ang, dist = 130) {
   const back = Math.atan2(from.y - X.y, from.x - X.x) + ang;
-  return nearestOpen(X.x + Math.cos(back) * dist, X.y + Math.sin(back) * dist);
+  const c = nearestOpen(X.x + Math.cos(back) * dist, X.y + Math.sin(back) * dist);
+  let best = c, bs = coverAt(c.x, c.y);
+  if (bs <= CB.fire.open) return c;
+  for (let r = 15; r <= 45; r += 15) for (let k = 0; k < 8; k++) {
+    const a = k * TAU / 8 + r, x = c.x + Math.cos(a) * r, y = c.y + Math.sin(a) * r, d = hyp(x - X.x, y - X.y);
+    if (d < dist * 0.6 || d > dist * 1.5 || !passable(x, y)) continue;
+    const cv = coverAt(x, y) + r / 1500;
+    if (cv < bs) { bs = cv; best = { x, y }; }
+  }
+  return best;
 }
 // ---- objective maps (doctrine.bn / doctrine.coy / doctrine.pl, editable in the Objective Editor)
 const tagObj = (tags) => { const o = {}; for (const t of tags) o[t] = 1; return o; };
@@ -690,7 +707,7 @@ const cp = (p) => (p ? { x: p.x, y: p.y } : null);
 const specOf = (n) => ({ type: n.type, target: cp(n.target), pos: cp(n.pos), gate: n.gate });
 function mkNode(id, level, coy, parent) {
   return { id, level, coy, parent, kids: [], type: null, target: null, pos: null, gate: null, prio: 1, aggr: 1, locked: false, manual: false, auto: false,
-    status: 'planned', prog: 0, q: 50, notes: [], flash: 0, ghost: null, changedT: -99, shown: null, ignored: null, byYou: false, rejected: false, orig: null, t0: 0, e0: 0, done: false };
+    status: 'planned', prog: 0, q: 50, coh: 100, notes: [], flash: 0, ghost: null, changedT: -99, shown: null, ignored: null, byYou: false, rejected: false, orig: null, t0: 0, e0: 0, done: false };
 }
 function buildTree() {
   S.nodes = {};
@@ -726,7 +743,8 @@ function setSpec(n, sp, who) {
     }
     n.status = 'planned'; n.prog = 0; n.t0 = S.time; n.done = false; n.e0 = 0; n.orig = null; n.flags = {}; n.d0 = 0; n.goT = 0; n.engT = 0; n.lostLogged = false; n.seen = 0; n.wait = false;
     const u = S.U[n.id]; if (u) { u.ph = 0; u.path = null; u.waitT = 0; }
-    n.shown = null; n.ignored = null; n.byYou = false; n.rejected = false;
+    n.shown = null; n.ignored = null; n.byYou = false; n.rejected = false; n.pmLog = false; n.nfLog = false; n.after = null; n.wpos = null;
+    if (n.level === 'coy' && S.phase === 'battle') { atkEnd(n, 'changed'); if (OFFX.has(n.type)) atkStart(n); }
   }
   n.manual = who === 'you' ? true : (changed ? false : n.manual);
   n.auto = who === 'auto' && changed ? true : (changed ? false : n.auto);
@@ -923,8 +941,19 @@ function proposeEdit(n, patch, opts = {}) {
     if (n.level === 'pl' && prop.type !== 'assault' && prop.type !== 'clear') prop.gate = null;
   }
   if ((n.level === 'coy' || n.level === 'bn') && patch.type) prop.pos = null;
+  if (patch.type === 'regroup' && !patch.target && S.phase === 'battle') { const h = nodePos(n); if (h.x) prop.target = nearestOpen(h.x, h.y); }
   const c = cmdrOf(n);
   const mode = opts.mode || (n.locked || opts.lock ? 'order' : 'suggest');
+  // a sharp commander won't throw a disorganised unit into a new attack without asking for time to reorganise
+  if (!opts.force && mode === 'suggest' && S.phase === 'battle' && n.level !== 'sec' && OFFX.has(prop.type) && n.coh < KC.pushback && c.judg + 0.4 * c.exp > 0.6) {
+    const h = nodePos(n), here = h.x ? nearestOpen(h.x, h.y) : prop.target, mins = Math.max(1, Math.round(regroupSecs(n) / 60));
+    const theirs = { type: 'regroup', target: here, pos: null, gate: null };
+    const reason = `${nodeName(n)} needs about ${mins} minute${mins > 1 ? 's' : ''} to reorganise (cohesion ${Math.round(n.coh)}%). Let us regroup first.`;
+    const qY = qualityOf(n, prop) - Math.round((KC.pushback - n.coh) * 0.8), who = `${cname(c)} (${nodeName(n)})`;
+    addReq({ kind: 'counter', node: n.id, prop, theirs, reason, text: `${who}: ${reason}`, qY: clamp(qY, 0, 100), qT: 75, cmdr: c, regroup: true });
+    log(n.level, 'req', n.id, `${who} pushes back: ${reason}`, 'them');
+    const d = { out: 'counter', perc: -20, qY, qT: 75, regroup: true }; S.lastDecision = d; refreshUI(); return d;
+  }
   const qY = qualityOf(n, prop), qT = n.type ? qualityOf(n, cur) : 0;
   const d = opts.force ? { out: 'accept', perc: 0 } : decide(c, qY, qT, mode, n.level);
   d.qY = qY; d.qT = qT;
@@ -970,6 +999,12 @@ function answerCounter(rq, how) {
   if (how === 'insist') {
     const d = proposeEdit(n, { type: rq.prop.type, target: rq.prop.target, pos: rq.prop.pos }, { mode: 'insist' });
     rq.result = d.out;
+  } else if (how === 'theirs' && rq.regroup) {
+    applyProp(n, rq.theirs, 'you'); c.trust = clamp(c.trust + 0.05, 0, 1);
+    log(n.level, 'chg', n.id, `${cname(c)}: Thank you, sir. Regrouping first. → ${label(rq.theirs)}`, 'you');
+  } else if (how === 'compromise' && rq.regroup) { // regroup, then go: the attack starts by itself once reorganised
+    applyProp(n, rq.theirs, 'you'); n.after = { type: rq.prop.type, target: rq.prop.target, pos: rq.prop.pos }; c.trust = clamp(c.trust + 0.03, 0, 1);
+    log(n.level, 'chg', n.id, `${cname(c)}: Right, we regroup, then ${label(rq.prop)}.`, 'you');
   } else if (how === 'theirs') {
     c.trust = clamp(c.trust + 0.05, 0, 1); n.rejected = true;
     log(n.level, 'chg', n.id, `${cname(c)}: Thank you, sir. Carrying on with ${label(rq.theirs)}.`, 'you');
@@ -1080,7 +1115,7 @@ function secAct(u, n, dt) {
   if (u.state === 'pinned') { u.moving = false; return; }
   if (!n.type) return;
   const pl = S.nodes[n.parent];
-  const sp = SM.common.speed * AGG[n.aggr];
+  const sp = SM.common.speed * AGG[n.aggr] * cohF(u, KC.speedMin);
   n.wait = false;
   switch (n.type) {
     case 'move': case 'hold': {
@@ -1103,17 +1138,29 @@ function secAct(u, n, dt) {
     }
     case 'assault': {
       const A = SM.assault;
-      if (u.ph === 0) { // 0: move to the jump-off point
+      if (u.ph === 0) { // 0: move to the jump-off point (gated: wait in cover further back until the fire support is on)
         if (!n.pos || !A.jumpoff.on) { u.ph = 1; break; }
-        n.prog = progTo(n, u, n.pos) * 0.3;
-        if (moveTo(u, n.pos.x, n.pos.y, sp * A.jumpoff.speed, dt, A.jumpoff.arrive)) { u.ph = 1; u.waitT = 0; }
+        const go = !A.wait.on || !A.wait.gate || (gateOK(pl, n) && coyGateOK(S.nodes[u.coy]));
+        let g = n.pos;
+        if (!go) {
+          if (!n.wpos) { const v = unitV(n.pos.x - n.target.x, n.pos.y - n.target.y), d = hyp(n.pos.x - n.target.x, n.pos.y - n.target.y); n.wpos = fupAt(n.target, { x: n.pos.x + v.x * 300, y: n.pos.y + v.y * 300 }, 0, d + 120); }
+          g = n.wpos; n.wait = true;
+        }
+        n.prog = progTo(n, u, g) * 0.3;
+        if (moveTo(u, g.x, g.y, sp * A.jumpoff.speed, dt, A.jumpoff.arrive)) { if (go) { u.ph = 1; u.waitT = 0; } else u.moving = false; }
         setSt(n, 'moving');
       } else if (u.ph === 1) { // 1: wait for the other assault sections and the fire-support gate
         const Wt = A.wait;
         u.waitT += dt; n.wait = Wt.on; n.prog = 0.35; u.moving = false;
         const sibs = pl && Wt.sync ? pl.kids.map(k => S.nodes[k]).filter(k => k.type === 'assault' && alive(S.U[k.id]) && S.U[k.id].state !== 'broken') : [];
         const ready = sibs.every(k => S.U[k.id].ph >= 1) || u.waitT > Wt.syncMax;
-        if (!Wt.on || ((!Wt.gate || (gateOK(pl, n) && coyGateOK(S.nodes[u.coy]))) && ready) || u.waitT > Wt.maxWait) { u.ph = 2; n.wait = false; if (pl && !pl.goT) { pl.goT = S.time; log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); } }
+        // a disorganised platoon can't co-ordinate: sections go in one at a time as they arrive
+        const piece = pl && pl.coh < KC.piecemeal && u.waitT > 4;
+        if (!Wt.on || piece || ((!Wt.gate || (gateOK(pl, n) && coyGateOK(S.nodes[u.coy]))) && ready) || u.waitT > Wt.maxWait) {
+          u.ph = 2; n.wait = false;
+          if (piece && !pl.pmLog) { pl.pmLog = true; log('pl', 'fail', pl.id, `⚠ ${nodeName(pl)} going in piecemeal: cohesion ${Math.round(pl.coh)}%, sections arrive one at a time.`, 'auto'); }
+          if (pl && !pl.goT) { pl.goT = S.time; goIn(pl); log('pl', 'info', pl.id, `${nodeName(pl)}: ${pickL(['Going in now!', 'Assault going in.', 'Up and at \'em!'])}`, 'auto'); }
+        }
       } else if (u.ph === 2) { // 2: charge
         const C = A.charge, d = hyp(n.target.x - u.x, n.target.y - u.y);
         n.prog = 0.4 + 0.5 * progTo(n, u, n.target);
@@ -1121,7 +1168,7 @@ function secAct(u, n, dt) {
         // close assault: suppressed defenders near the bayonets crack
         for (const e of S.units) if (e.side === 'DE' && alive(e) && e.state !== 'broken' && e.supp > C.shockSupp && hyp(e.x - u.x, e.y - u.y) < C.shock) e.morale -= dt * (C.shockBase + C.shockAggr * n.aggr) * (u.men / 10);
         if (moveTo(u, n.target.x, n.target.y, sp * (d < C.closeDist ? C.close : C.far), dt)) {
-          if (targetClear(n.target, C.take)) { u.ph = 3; achieve(n, 'objective taken'); }
+          if (targetClear(n.target, C.take)) { u.ph = 3; u.coh = Math.max(0, u.coh - KC.assaultDrop); achieve(n, 'objective taken'); }
         }
       } else { // 3: consolidate; mop up anything left near the objective
         const K = A.consolidate;
@@ -1166,6 +1213,7 @@ function deAct(u, dt) {
     if (u.vis) log('coy', 'info', u.id, `Enemy outpost on the ${tName(u)} pulling back.`, 'auto');
   }
   if (u.role === 'reserve') { u.moving = false; return; }
+  if (u.role === 'catk') for (const g of S.units) if (g.side === 'GB' && g.kind === 'sec' && alive(g) && g.state !== 'broken' && g.supp > 40 && hyp(g.x - u.x, g.y - u.y) < 40) g.morale -= dt * 3 * (u.men / 9) * (1.5 - g.coh / 100) * (1 - 0.5 * g.dig);
   moveTo(u, u.postX, u.postY, u.role === 'catk' ? 1.6 : 1.4, dt);
 }
 function featLost(fid) { const f = FEAT[fid]; return gbNear(f, 55) && targetClear(f, 60); }
@@ -1198,12 +1246,14 @@ function shoot(u, tgt, area) {
   const turned = u.side === 'DE' && tgt && flankOf(u, tgt) ? 0.6 : 1; // defenders turning to meet a flank attack
   const rifles = Math.max(0, u.men - u.lmg - (u.kind === 'coyhq' || u.kind === 'plhq' ? 2 : 0)), lmgs = Math.min(u.lmg, u.men);
   let fp = rifles * Math.max(0, 1 - d / 350) + lmgs * (u.side === 'GB' ? 4 : 7) * Math.max(0, 1 - d / 600);
-  fp *= turned * (u.state === 'pinned' ? 0.2 : 1) * (1 - u.supp / 180) * (u.moving ? 0.5 : 1);
+  fp *= turned * (u.state === 'pinned' ? 0.2 : 1) * Math.max(CB.fire.suppFloor, 1 - u.supp / CB.fire.suppAcc) * (u.moving ? 0.5 : 1) * cohF(u, KC.fireMin);
   if (fp <= 0.05) return false;
   u.firedT = S.time;
   const close = d < 40 ? 2.5 : 1;
   if (tgt) hit(tgt, fp * close, 1, u);
-  else for (const f of S.units) if (f.side !== u.side && alive(f) && hyp(f.x - area.x, f.y - area.y) < 45) hit(f, fp, 0.35, u);
+  else for (const f of S.units) if (f.side !== u.side && alive(f) && hyp(f.x - area.x, f.y - area.y) < CB.fire.areaR) hit(f, fp, 0.35, u, CB.fire.areaSupp);
+  // muzzle flashes give a hidden German position away roughly (a dashed marker): fire support can then hose it down
+  if (u.side === 'DE' && tgt && !u.vis && CB.fire.reveal && d < 450) { u.last = { x: u.x + (R() - 0.5) * 24, y: u.y + (R() - 0.5) * 24 }; u.seenT = S.time; }
   if (S.tracers.length < 220) S.tracers.push({ x0: u.x, y0: u.y, x1: p.x + (R() - 0.5) * 16, y1: p.y + (R() - 0.5) * 16, t: S.time, de: u.side === 'DE', mg: u.lmg > 0 });
   return true;
 }
@@ -1213,19 +1263,25 @@ function flankOf(t, src) {
   const v = unitV(src.x - t.x, src.y - t.y);
   return v.x * t.fx + v.y * t.fy < 0.5;
 }
-function hit(t, fp, eff, src) {
+function hit(t, fp, eff, src, sMul = 1) {
   const dS = hyp(src.x - t.x, src.y - t.y);
   const fl = t.side === 'DE' && dS < 200 && flankOf(t, src);
   if (t.side === 'DE' && dS > 60 && !fl) { const v = unitV(src.x - t.x, src.y - t.y); const fx = (t.fx || 0) * 0.7 + v.x * 0.3, fy = (t.fy || 0) * 0.7 + v.y * 0.3, l = hyp(fx, fy) || 1; t.fx = fx / l; t.fy = fy / l; }
   if (fl) { eff *= 1.3; }
   const dug = t.side === 'DE' && t.role === 'hold' && coverAt(t.x, t.y) > 0.5 && hyp(t.x - t.postX, t.y - t.postY) < 12 ? 0.65 : 1; // foxholes, not on top of building cover
-  const cov = coverAt(t.x, t.y) * dug, mv = t.moving ? (coverAt(t.x, t.y) > 0.9 ? 1.7 : 1.2) : 1, ex = t.cmdr ? t.cmdr.exp : 0.5;
-  t.supp = Math.min(100, t.supp + fp * 2.6 * eff * (0.45 + 0.55 * cov) * (1.2 - 0.4 * ex));
-  const e = fp * 0.0045 * eff * (fl ? Math.min(1, cov * 1.7) : cov) * mv * (t.state === 'pinned' ? 0.6 : 1);
+  const F = CB.fire, ct = coverAt(t.x, t.y), open = ct > F.open, dg = t.side === 'GB' ? t.dig || 0 : 0;
+  // moving in the open is deadly inside effective range (the assault), much less so on a long approach march
+  const near = dS < F.closeRange ? 1 : F.farShare, ext = (m) => 1 + (m - 1) * near;
+  const cov = ct * dug * (1 - CB.dig.cover * dg), mv = t.moving ? (open ? ext(F.moveOpen) : F.moveCover) : 1, ex = t.cmdr ? t.cmdr.exp : 0.5;
+  const mg = src.kind === 'mg' && t.moving && open ? ext(F.mgOpen) : 1; // grazing MG fire across open ground
+  if (src.kind === 'mg') t.mgT = S.time;
+  t.supp = Math.min(100, t.supp + fp * 2.6 * eff * sMul * (0.45 + 0.55 * cov) * (1.2 - 0.4 * ex) * (t.moving && open ? F.openSupp : 1) * (1 - CB.dig.supp * dg));
+  const e = fp * 0.0045 * F.lethal * eff * (fl ? Math.min(1, cov * 1.7) : Math.pow(cov, F.coverPow)) * mv * mg * (t.state === 'pinned' ? 0.6 : 1);
   let k = Math.floor(e); if (R() < e - k) k++;
   if (!k) return;
   k = Math.min(k, t.men); t.men -= k; t.hitT = S.time; src.kills += k;
-  t.morale -= k * (t.side === 'GB' ? 6 : 7);
+  if (t.side === 'GB' && t.kind === 'sec') t.coh = Math.max(0, t.coh - k * KC.casLoss);
+  t.morale -= k * (t.side === 'GB' ? 6 * (1 + KC.moraleMul * (1 - (t.coh ?? 100) / 100)) : 7);
   if (t.side === 'GB') { S.casualty[t.coy] = (S.casualty[t.coy] || 0) + k; S.stats.gbCas += k; } else S.stats.deCas += k;
   if (t.men <= 0) {
     t.state = 'dead'; t.moving = false;
@@ -1241,15 +1297,21 @@ function moraleUpd(u, dt) {
     if (u.side === 'GB' && u.supp < SM.broken.rallySupp && u.morale > SM.broken.rallyMorale && u.men > Math.ceil(u.men0 * SM.broken.strength) && S.time - (u.brokeT || 0) > SM.broken.rallyDelay) { u.state = 'ok'; u.ph = 0; u.path = null; const n = S.nodes[u.id]; log(n ? n.level : 'sec', 'info', u.id, `${u.name} rallied.`, 'auto'); }
     return;
   }
-  const gb = u.side === 'GB', brk = gb ? SM.broken : null, pin = gb ? SM.pinned : null;
-  if (u.morale < (gb ? brk.morale : 25) || u.men <= Math.ceil(u.men0 * (gb ? brk.strength : 0.3))) {
-    u.state = 'broken'; u.path = null; u.brokeT = S.time;
+  const gb = u.side === 'GB', brk = gb ? SM.broken : null, pin = gb ? SM.pinned : null, dc = gb && u.kind === 'sec' ? 1 - u.coh / 100 : 0;
+  if (u.morale < (gb ? brk.morale + KC.breakBonus * dc : 25) || u.men <= Math.ceil(u.men0 * (gb ? brk.strength : 0.3))) {
+    u.state = 'broken'; u.path = null; u.brokeT = S.time; if (gb) u.coh = Math.min(u.coh, KC.breakDrop);
     if (u.side === 'GB') { const n = S.nodes[u.id]; log(n ? n.level : 'sec', 'cas', u.id, `${u.name} has broken and is falling back!`, 'auto'); }
     else if (u.vis) log('coy', 'info', u.id, `Enemy ${u.name} at ${tName(u)} is breaking!`, 'auto');
     return;
   }
   if (u.state === 'pinned') { if (u.supp < (gb ? pin.recover : 35)) { u.state = 'ok'; u.okT = S.time; } else u.pinT += dt; }
-  else if (u.supp > (gb ? pin.at + pin.expBonus * ex : 70)) { u.state = 'pinned'; u.pinT = 0; }
+  else if (u.supp > (gb ? pin.at + pin.expBonus * ex - KC.pinBonus * dc : 70)) {
+    const wasMoving = u.moving; u.state = 'pinned'; u.pinT = 0;
+    if (gb && u.kind === 'sec' && wasMoving && isOpen(u.x, u.y)) {
+      const pl = S.nodes[u.pl]; S.aar.pinned++;
+      if (pl && S.time - (pl.openLogT || -999) > 90) { pl.openLogT = S.time; log('pl', 'fail', pl.id, `${nodeName(pl)} caught in the open${S.time - (u.mgT || -99) < 6 ? ' by an MG' : ''}, pinned.`, 'auto'); }
+    }
+  }
   if (u.supp < 20) u.morale = Math.min(top, u.morale + dt * 0.15);
 }
 function pickTarget(u, pref, maxD = 560) {
@@ -1257,7 +1319,7 @@ function pickTarget(u, pref, maxD = 560) {
   for (const f of S.units) {
     if (f.side === u.side || !alive(f) || !f.vis) continue;
     const d = hyp(f.x - u.x, f.y - u.y); if (d > maxD) continue;
-    let s = d - (f.kind === 'mg' ? 60 : 0) + (f.state === 'broken' ? 150 : 0);
+    let s = d - (f.kind === 'mg' ? 60 : 0) + (f.state === 'broken' ? 150 : 0) - (u.side === 'DE' && f.moving && isOpen(f.x, f.y) ? CB.fire.drawMove : 0);
     if (pref) s += hyp(f.x - pref.x, f.y - pref.y) * 0.8;
     if (s < bs && los(u.x, u.y, f.x, f.y)) { bs = s; best = f; }
   }
@@ -1291,6 +1353,8 @@ function achieve(n, why) {
   if (n.status === 'achieved') return;
   const wasFail = n.status === 'failed';
   n.status = 'achieved'; n.prog = 1; n.doneT = S.time;
+  if (n.level === 'coy' && S.phase === 'battle') { atkEnd(n, 'taken'); if (OFFX.has(n.type)) { n.lastAchT = S.time; n.lastAchX = cp(n.target); const f = featAt(n.target); if (f) S.aar.taken[f.id] = n.id; } }
+  if (n.type === 'regroup' && n.after && S.phase === 'battle') { S.pending.push({ node: n.id, prop: n.after, at: S.time + 1, lock: false, after: true }); n.after = null; }
   if (wasFail) return;
   S.stats.ach[n.level]++;
   const c = cmdrOf(n);
@@ -1306,6 +1370,7 @@ function achieve(n, why) {
 function fail(n, why) {
   if (n.status === 'failed' || n.status === 'achieved') return;
   n.status = 'failed'; n.failWhy = why; n.doneT = S.time;
+  if (n.level === 'coy' && S.phase === 'battle') atkEnd(n, 'failed');
   S.stats.fail[n.level]++;
   const c = cmdrOf(n);
   log(n.level, 'fail', n.id, `${nodeName(n)}: ${say(c, 'failed')} ${why ? '(' + why + ')' : ''}`, 'auto');
@@ -1331,12 +1396,162 @@ function updNodes() {
       } else if (pl.type === 'sbf') {
         setSt(pl, live.some(k => k.status === 'engaging') ? 'engaging' : 'moving');
         if (targetClear(pl.target, 55)) achieve(pl, 'target silenced');
+      } else if (pl.type === 'regroup') { // broken sections are sorting themselves out at the rear: don't wait for them
+        const ok = live.filter(k => S.U[k.id].state !== 'broken');
+        if (ok.length && ok.every(k => k.status === 'achieved') && (ok.every(k => S.U[k.id].coh >= Math.min(KC.done, cohCap(S.U[k.id])) - 1) || S.time - pl.t0 > 300)) achieve(pl, `reorganised (cohesion ${Math.round(pl.coh)}%)`);
+        else setSt(pl, 'moving');
       } else if (live.every(k => k.status === 'achieved')) achieve(pl, 'in position');
       else setSt(pl, 'moving');
     }
     coyStatus(cn);
   }
   for (const B of BNS) withB(() => bnStatus(S.nodes[B.id]));
+}
+// cohesion of every node: sections own it, platoons average their sections (minus scatter), companies and battalions average below
+function updCoh() {
+  for (const B of BNS) {
+    const bn = S.nodes[B.id]; let bs = 0, bw = 0;
+    for (const cid of bn.kids) {
+      const cn = S.nodes[cid]; let cs = 0, cw = 0;
+      for (const pid of cn.kids) {
+        const pn = S.nodes[pid], secs = secsOf(pid).filter(alive);
+        for (const u of secsOf(pid)) S.nodes[u.id].coh = u.coh;
+        if (!secs.length) continue;
+        const c = centroid(secs), spread = avg(secs.map(u => hyp(u.x - c.x, u.y - c.y)));
+        const sc = 1 - 0.35 * clamp((spread - KC.scatterOk) / KC.scatterBad, 0, 1);
+        pn.coh = avg(secs.map(u => u.coh)) * sc; pn.scatter = sc < 0.95;
+        cs += pn.coh * secs.length; cw += secs.length;
+      }
+      if (cw) cn.coh = cs / cw;
+      bs += cs; bw += cw;
+    }
+    if (bw) bn.coh = bs / bw;
+  }
+}
+// one section's cohesion and fighting position, after it moved this tick
+function cohUpd(u, dt) {
+  const n = S.nodes[u.id], pl = S.nodes[n.parent], moved = hyp(u.x - u.px, u.y - u.py), still = moved < 0.05;
+  let c = u.coh;
+  if (!still) c -= moved / 100 * KC.moveLoss * (u.supp > 20 ? 2 : 1);
+  if (u.supp > 60) c -= KC.suppLoss * dt;
+  if (n.type === 'assault' && u.ph === 2) c -= KC.chargeLoss * dt;
+  const rg = pl && pl.type === 'regroup', cap = cohCap(u);
+  if (u.state === 'ok' && still && u.supp < 15 && S.time - u.firedT > 6 && S.time - u.hitT > 10 && c < cap) {
+    const hq = S.U[n.parent];
+    c = Math.min(cap, c + dt * KC.recover * (isOpen(u.x, u.y) ? 1 : KC.coverMul) * (hq && alive(hq) && hyp(hq.x - u.x, hq.y - u.y) < 70 ? KC.hqMul : 1) * (rg ? KC.regroupMul : 1) * (0.8 + 0.4 * u.cmdr.exp));
+  }
+  u.coh = clamp(c, 0, 100);
+  const D = CB.dig;
+  if (still && u.state !== 'broken') {
+    const full = rg || n.type === 'hold' || n.type === 'overwatch' || (n.type === 'assault' && u.ph === 3) || n.status === 'achieved';
+    u.dig = Math.min(1, u.dig + dt / D.time * (full ? D.holdRate : D.otherRate));
+  } else if (!still) u.dig = Math.max(0, u.dig - dt * 0.5);
+}
+// seconds a node needs under a Regroup order to get back to 'done' cohesion (an estimate for the commander's request)
+function regroupSecs(n) {
+  const r = KC.recover * KC.regroupMul * KC.coverMul * 1.1;
+  return Math.max(30, (KC.done - Math.min(n.coh, KC.done)) / r);
+}
+// ---- plan warnings: what a rushed plan is missing (shown on the plan, in the Orders tree and on the map)
+function featAt(p) { let best = null; for (const f of FEATS) { if (f.start) continue; const d = hyp(f.x - p.x, f.y - p.y); if (d < f.r * 1.25 && (!best || d < best.d)) best = { f, d }; } return best ? best.f : null; }
+function fireOn(X, not) { // a fire task (support-by-fire company / platoon) aimed at X, from someone else
+  for (const id in S.nodes) {
+    const m = S.nodes[id]; if (m === not || m.level === 'sec' || m.level === 'bn' || !m.target) continue;
+    const sp = dispSpec(m); if (sp.type !== 'sbf' || hyp(sp.target.x - X.x, sp.target.y - X.y) > 160) continue;
+    if (m.level === 'coy' ? coyUnits(m.id).some(u => u.kind === 'sec' && alive(u)) : secsOf(m.id).some(alive)) return true;
+  }
+  return false;
+}
+function warnsOf(n) {
+  const now = performance.now();
+  if (n.wc && now - n.wcT < 500) return n.wc;
+  const out = [], ds = dispSpec(n);
+  if (ds.type && OFFX.has(ds.type) && n.status !== 'achieved' && n.status !== 'failed' && ds.target) {
+    if (n.level === 'bn') {
+      const by = {};
+      for (const k of n.kids) for (const w of warnsOf(S.nodes[k])) (by[w] = by[w] || []).push(k);
+      for (const [w, ks] of Object.entries(by)) out.push(`${ks.join(', ')} Coy: ${w}`);
+    } else {
+      const pls = n.level === 'coy' ? n.kids.map(k => S.nodes[k]).filter(p => secsOf(p.id).some(alive)) : [n];
+      const asl = pls.map(p => [p, dispSpec(p)]).filter(([, sp]) => sp.type === 'assault' || sp.type === 'clear');
+      const own = n.level === 'coy' ? pls.some(p => dispSpec(p).type === 'sbf') : S.nodes[n.parent].kids.some(k => k !== n.id && dispSpec(S.nodes[k]).type === 'sbf') || n.kids.some(k => FIRE_T.has(dispSpec(S.nodes[k]).type));
+      if (!own && !fireOn(ds.target, n)) out.push(enemyNear(ds.target, 120, true).mg ? 'unsuppressed MG, no fire support' : 'no fire support');
+      if (asl.some(([, sp]) => sp.pos && isOpen(sp.pos.x, sp.pos.y))) out.push('open ground');
+      if (S.phase === 'battle' && n.coh < KC.warn) out.push(`cohesion ${Math.round(n.coh)}%`);
+    }
+  }
+  n.wc = out; n.wcT = now;
+  return out;
+}
+// ---- after-action bookkeeping: every company attack, how it was set up and what it cost
+const secMen = (coy) => coyUnits(coy).filter(u => u.kind === 'sec').reduce((s, u) => s + (alive(u) ? u.men : 0), 0);
+function atkStart(n) {
+  const sp = specOf(n), f = featAt(sp.target);
+  const chain = !!(n.lastAchT && S.time - n.lastAchT < KC.chainT && n.coh < 65 && n.lastAchX && hyp(n.lastAchX.x - sp.target.x, n.lastAchX.y - sp.target.y) > 120);
+  n.atk = { coy: n.id, bn: n.bn, tgt: f ? f.name : tName(sp.target), x: sp.target.x, y: sp.target.y, t0: S.time, men0: Math.max(1, secMen(n.id)), coh0: Math.round(n.coh), chain, noFire: null, open: null, cohGo: null, res: null, foe: enemyNear(sp.target, 130, false).n > 0 };
+  S.aar.atk.push(n.atk);
+  if (chain) { S.aar.chain[n.bn] = (S.aar.chain[n.bn] || 0) + 1; n.lastAchT = null; } // counted once per objective taken
+}
+function atkEnd(n, res) {
+  const a = n.atk; if (!a || a.res) return;
+  a.res = res; a.t1 = S.time; a.cas = Math.max(0, (a.men0 - secMen(n.id)) / a.men0); n.atk = null;
+}
+// the first platoon of a company attack going in: was anyone shooting for it, is it crossing open ground, is it organised?
+const theN = (s) => (/^(Ashford|Northend|Hill |Grid )/.test(s) ? s : 'the ' + s);
+function goIn(pl) {
+  const cn = S.nodes[pl.parent], a = cn.atk, X = pl.target;
+  const sup = S.units.some(u => u.side === 'GB' && u.kind === 'sec' && alive(u) && u.pl !== pl.id && S.time - u.firedT < 20 && hyp(u.x - X.x, u.y - X.y) < 600 && FIRE_T.has(S.nodes[u.id].type) && !S.nodes[u.id].orig && S.nodes[u.id].target && hyp(S.nodes[u.id].target.x - X.x, S.nodes[u.id].target.y - X.y) < 200);
+  const open = !!(pl.pos && isOpen(pl.pos.x, pl.pos.y));
+  if (!sup && !cn.nfLog) { cn.nfLog = true; log('coy', 'fail', cn.id, `⚠ ${cn.id} Coy is going in at ${theN(tName(X))} without fire support.`, 'auto'); }
+  if (a && a.noFire === null) { a.noFire = !sup; a.open = open; a.cohGo = Math.round(pl.coh); }
+}
+// which places each side holds right now
+function control() {
+  const out = {};
+  for (const f of FEATS) {
+    if (f.start || f.rear) continue;
+    const r = Math.max(60, f.r);
+    const de = S.units.some(u => u.side === 'DE' && alive(u) && u.state !== 'broken' && hyp(u.x - f.x, u.y - f.y) < r);
+    const gb = S.units.some(u => u.side === 'GB' && u.kind === 'sec' && alive(u) && u.state !== 'broken' && hyp(u.x - f.x, u.y - f.y) < r);
+    out[f.id] = de ? (gb ? 'contested' : 'DE') : gb ? 'GB' : 'empty';
+  }
+  return out;
+}
+// the after-action report: score, grade, mistakes and what went well
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+function aar() {
+  const A = CB.aar, ctl = control(), held = Object.keys(ctl).filter(k => ctl[k] === 'GB');
+  const gb = S.units.filter(u => u.side === 'GB' && u.kind === 'sec'), de = S.units.filter(u => u.side === 'DE');
+  const m0 = gb.reduce((s, u) => s + u.men0, 0), m1 = gb.reduce((s, u) => s + (alive(u) ? u.men : 0), 0), cas = 1 - m1 / m0;
+  const d0 = de.reduce((s, u) => s + u.men0, 0), d1 = de.reduce((s, u) => s + (alive(u) && u.state !== 'surr' ? u.men : 0), 0), kill = 1 - d1 / d0;
+  const score = Math.round(A.objPts * Math.min(1, held.length / A.objFull) + A.casPts * clamp(1 - cas * 100 / A.casZero, 0, 1) + A.killPts * kill);
+  const pc = (x) => `${Math.round(x * 100)}%`, bad = [], good = [];
+  for (const a of S.aar.atk) {
+    if (a.res === null && a.t1 === undefined) { a.cas = Math.max(0, (a.men0 - secMen(a.coy)) / a.men0); }
+    if (a.noFire === null && a.res !== 'taken') continue; // never went in
+    const why = [a.noFire && 'without fire support', a.open && 'across open ground', a.cohGo !== null && a.cohGo < KC.piecemeal && `disorganised (cohesion ${a.cohGo}%)`].filter(Boolean);
+    const res = a.res === 'taken' ? 'took' : a.res === 'failed' ? 'failed at' : 'attacked';
+    if (why.length) bad.push({ w: a.cas + 0.01, t: `${a.coy} Coy ${res} ${theN(a.tgt)} ${why.join(', ')}: ${pc(a.cas)} casualties` });
+    else if (a.res === 'taken' && a.cas < 0.2 && a.foe) good.push({ w: 1 - a.cas, t: `${a.coy} Coy took ${theN(a.tgt)} with fire support from cover: ${pc(a.cas)} casualties` });
+  }
+  for (const B of BNS) { const k = S.aar.chain[B.id] || 0; if (k) bad.push({ w: 0.3 + 0.1 * k, t: `${B.name} chained ${k + 1} attacks without regrouping` }); }
+  for (const [fid, coy] of Object.entries(S.aar.taken)) {
+    const f = FEAT[fid];
+    if (ctl[fid] === 'DE') bad.push({ w: 0.5, t: `${cap(theN(f.name))} (taken by ${coy} Coy) was retaken by the enemy` });
+    else if (ctl[fid] === 'empty') bad.push({ w: 0.2, t: `${cap(theN(f.name))} (taken by ${coy} Coy) was left unguarded` });
+    else if (ctl[fid] === 'GB') {
+      const dug = S.units.filter(u => u.side === 'GB' && u.kind === 'sec' && alive(u) && hyp(u.x - f.x, u.y - f.y) < Math.max(80, f.r));
+      if (dug.length && avg(dug.map(u => u.dig)) > 0.5) good.push({ w: 0.6, t: `${cap(theN(f.name))} held, dug in` });
+    }
+  }
+  S.de.sec.forEach((D, si) => {
+    if (!D.catk) return;
+    const cu = S.units.filter(u => u.side === 'DE' && u.sector === si && u.role === 'catk');
+    if (cu.length && cu.every(u => !alive(u) || u.state === 'broken') && ctl[D.catk] !== 'DE') good.push({ w: 0.8, t: `${BNS[si].name} beat off the counter-attack on ${theN(FEAT[D.catk].name)}` });
+  });
+  if (S.aar.pinned > 6) bad.push({ w: 0.25, t: `Sections were caught in the open and pinned ${S.aar.pinned} times (section pins while moving in the open)` });
+  bad.sort((a, b) => b.w - a.w); good.sort((a, b) => b.w - a.w);
+  return { score, grade: score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 50 ? 'C' : score >= 35 ? 'D' : 'F', held, ctl, cas, kill, gbCas: m0 - m1, m0, bad: bad.map(x => x.t), good: good.map(x => x.t) };
 }
 function bnStatus(n) {
   if (!n || !n.type) return;
@@ -1387,8 +1602,8 @@ function coyStatus(n) {
     case 'sbf':
       if (targetClear(n.target, 60)) return achieve(n);
       break;
-    case 'hold': case 'reserve': case 'screen': case 'withdraw':
-      if (pls.every(p => p.status === 'achieved' || p.status === 'failed' || !secsOf(p.id).some(alive))) return achieve(n);
+    case 'hold': case 'reserve': case 'screen': case 'withdraw': case 'regroup':
+      if (pls.every(p => p.status === 'achieved' || p.status === 'failed' || !secsOf(p.id).some(alive))) return achieve(n, n.type === 'regroup' ? `reorganised (cohesion ${Math.round(n.coh)}%)` : undefined);
       break;
   }
   setSt(n, pls.some(p => p.status === 'engaging') ? 'engaging' : 'moving');
@@ -1462,13 +1677,14 @@ function bnCommit(bn) {
   log('bn', 'chg', bn.id, `${bnName(bn.id)}: ${cname(c)} commits ${res.id} Coy to the ${bn.type === 'clear' ? 'clearance' : 'attack'} on the ${tName(bn.target)}.`, 'auto');
 }
 // ---- bottom-up requests
-const REQ_WHY = { cas: 'Casualties over 40%', stall: 'Attack stalled', early: 'Objective achieved early', weak: 'Enemy weakening', flank: 'Flank open' };
+const REQ_WHY = { cas: 'Casualties over 40%', stall: 'Attack stalled', early: 'Objective achieved early', weak: 'Enemy weakening', flank: 'Flank open', coh: 'Needs to reorganise' };
 function sugQ(n, s) {
   const save = specOf(n); n.type = s.type; n.target = s.target;
   let q = decomposeCoy(n, null, true); n.type = save.type; n.target = save.target;
   const e = enemyNear(s.target, 90, true), str = strength(coyUnits(n.id).filter(u => u.kind === 'sec'));
-  if (OFFENSIVE.has(s.type)) q -= 12 * e.mg + 5 * e.n + (str < 0.6 ? 25 : 0);
+  if (OFFENSIVE.has(s.type)) q -= 12 * e.mg + 5 * e.n + (str < 0.6 ? 25 : 0) + Math.max(0, KC.done - n.coh) * 0.7;
   if ((s.type === 'hold' || s.type === 'withdraw') && str < 0.6) q += 20;
+  if (s.type === 'regroup') q = 55 + Math.max(0, KC.done - n.coh) * 0.8;
   return clamp(Math.round(q), 0, 100);
 }
 function heldFeats() { return FEATS.filter(f => !f.start && enemyNear(f, f.r, true).n > 0); }
@@ -1478,7 +1694,12 @@ function makeReq(n, kind) {
   const nearFeat = (excl) => heldFeats().filter(f => !excl || hyp(f.x - excl.x, f.y - excl.y) > 60).sort((a, b) => hyp(a.x - here.x, a.y - here.y) - hyp(b.x - here.x, b.y - here.y))[0];
   let sugs = [];
   const S_ = (type, target, why) => target && sugs.push({ type, target: { x: target.x, y: target.y }, why });
-  if (kind === 'cas') {
+  const mins = Math.max(1, Math.round(regroupSecs(n) / 60)), rgWhy = `${n.id} Coy needs ${mins} minute${mins > 1 ? 's' : ''} to reorganise`;
+  if (kind === 'coh') {
+    S_('regroup', hereP, rgWhy);
+    S_('sbf', n.target, 'Shoot from here while we sort ourselves out');
+    S_('hold', hereP, 'Dig in where we are');
+  } else if (kind === 'cas') {
     S_('hold', hereP, "Dig in where we are, we can't go on like this");
     S_('withdraw', startOf(n.bn), 'Pull back to the start line and reorganise');
     S_('sbf', n.target, 'Support others by fire instead of assaulting');
@@ -1488,8 +1709,9 @@ function makeReq(n, kind) {
     S_('recon', n.target, 'Find out what we are really up against');
     S_('seize', n.target, 'Give us another go, new plan');
   } else if (kind === 'early') {
+    if (n.coh < 70) S_('regroup', n.target, `${rgWhy} on the ${tName(n.target)}`);
     const nx = nearFeat(n.target); if (nx) S_('seize', nx, `Push on to the ${nx.name} while they're off balance`);
-    S_('hold', n.target, `Consolidate on the ${tName(n.target)}`);
+    S_('hold', n.target, `Consolidate and dig in on the ${tName(n.target)}`);
     if (tgts[0]) S_('sbf', tgts[0].target, `Help ${tgts[0].id} Coy at the ${tName(tgts[0].target)}`);
   } else if (kind === 'weak') {
     S_('seize', n.weakF, `Enemy at the ${n.weakF.name} is breaking, exploit it`);
@@ -1506,6 +1728,7 @@ function makeReq(n, kind) {
     cas: ["We've taken a beating, sir.", 'Lost a lot of good lads.', 'Casualties heavy.'],
     stall: ["We're held up, sir.", "Can't get forward.", 'Pinned in front of them.'],
     early: ["We're on the objective, sir. What next?", 'Objective ours. Ready for more.'],
+    coh: ["We're all over the place, sir.", 'The company is badly mixed up.', 'Lost touch with half my sections, sir.'],
     weak: ['Jerry looks shaky over there.', "They're pulling out, sir!"],
     flank: ['Our flank is hanging in the air.', 'Nobody on our flank, sir.'],
   };
@@ -1521,8 +1744,9 @@ function bnSugQ(n, s) {
   const save = specOf(n); n.type = s.type; n.target = s.target;
   let q = decomposeBn(n, null, true); n.type = save.type; n.target = save.target;
   const e = enemyNear(s.target, 120, true), str = strength(bnSecs(n.id));
-  if (OFFENSIVE.has(s.type)) q -= 8 * e.mg + 4 * e.n + (str < 0.6 ? 25 : 0);
+  if (OFFENSIVE.has(s.type)) q -= 8 * e.mg + 4 * e.n + (str < 0.6 ? 25 : 0) + Math.max(0, KC.done - n.coh) * 0.7;
   if ((s.type === 'hold' || s.type === 'withdraw') && str < 0.6) q += 20;
+  if (s.type === 'regroup') q = 55 + Math.max(0, KC.done - n.coh) * 0.8;
   return clamp(Math.round(q), 0, 100);
 }
 function makeBnReq(n, kind) {
@@ -1540,8 +1764,9 @@ function makeBnReq(n, kind) {
     S_('recon', n.target, 'Find out what we are really up against');
     S_(n.type, n.target, 'Give us another go, new plan');
   } else if (kind === 'early') {
+    if (n.coh < 70) S_('regroup', n.target, `The battalion needs ${Math.max(1, Math.round(regroupSecs(n) / 60))} minutes to reorganise`);
     if (next) S_('seize', next, `Push on to the ${next.name} while they're off balance`);
-    S_('hold', n.target, `Consolidate the battalion on the ${tName(n.target)}`);
+    S_('hold', n.target, `Consolidate and dig in on the ${tName(n.target)}`);
   }
   sugs = sugs.slice(0, 3);
   if (!sugs.length) return;
@@ -1572,6 +1797,7 @@ function addReq(r) {
   if (S.autoPause && S.phase === 'battle' && !S.noPause) { S.paused = true; S.pausedBy = 'req'; }
   if (typeof onReq === 'function') onReq(r);
 }
+const c0 = (n) => cmdrOf(n);
 function checkReqs() {
   for (const C of COYS) {
     const n = S.nodes[C.id]; n.flags = n.flags || {};
@@ -1582,6 +1808,7 @@ function checkReqs() {
     let kind = null;
     const off = OFFENSIVE.has(n.type);
     if (str < (n.prio === 2 ? 0.5 : 0.6) && !n.flags.cas && n.status !== 'achieved' && n.status !== 'failed' && n.type !== 'withdraw') kind = 'cas';
+    else if (off && n.status !== 'achieved' && !n.flags.coh && n.coh < 40 && n.prog < 0.8 && c0(n).judg > 0.45) kind = 'coh';
     else if (off && n.status !== 'achieved' && !n.flags.stall && (secs.some(u => { const sn = S.nodes[u.id]; return sn.orig && S.time - sn.adaptT > 50; }) || (S.time - n.t0 > 800 && n.prog < 0.6))) kind = 'stall';
     else if (n.status === 'achieved' && !n.flags.early && n.doneT && S.time - n.doneT > 20 && (OFFENSIVE.has(n.type) || n.type === 'recon' || n.type === 'sbf')) kind = 'early';
     else if (!n.flags.weak) {
@@ -1637,19 +1864,21 @@ function tick() {
     else hqAct(u, dt);
   }
   for (const B of BNS) bnHqAct(B, dt);
+  for (const u of S.units) if (u.side === 'GB' && u.kind === 'sec' && alive(u)) cohUpd(u, dt);
   for (const u of S.units) {
     if (!alive(u)) continue;
+    if (u.side === 'DE' && S.time - u.firedT < 0.01) S.lastDEfire = S.time;
     u.fireCd -= dt;
     if (u.fireCd <= 0) { u.fireCd = 1.8 + R() * 0.6; fireStep(u); }
   }
-  if (S.tickN % 2 === 0) { updNodes(); adapt(); }
+  if (S.tickN % 2 === 0) { updCoh(); updNodes(); adapt(); }
   if (S.tickN % 10 === 0) deBrain();
   S.de.sec.forEach((D, si) => { if (D.catk && !D.logged && S.units.some(u => u.side === 'DE' && u.sector === si && u.role === 'catk' && u.vis)) { D.logged = true; log('coy', 'info', null, `⚠ Enemy counter-attack toward the ${FEAT[D.catk].name}!`, 'auto', BNS[si].id); } });
   if (S.tickN % 30 === 0) { checkReqs(); for (const B of BNS) withB(() => checkBnReqs(S.nodes[B.id])); }
   if (S.tickN % 120 === 0) feedCas();
   for (let i = S.pending.length - 1; i >= 0; i--) {
     const p = S.pending[i];
-    if (S.time >= p.at) { S.pending.splice(i, 1); const n = S.nodes[p.node]; applyProp(n, p.prop, 'you'); if (p.lock) n.locked = true; log(n.level, 'chg', n.id, `${cname(cmdrOf(n))}: Right, doing it your way now. → ${label(p.prop)}`, 'you'); }
+    if (S.time >= p.at) { S.pending.splice(i, 1); const n = S.nodes[p.node]; applyProp(n, p.prop, 'you'); if (p.lock) n.locked = true; log(n.level, 'chg', n.id, p.after ? `${cname(cmdrOf(n))}: Reorganised (cohesion ${Math.round(n.coh)}%). Moving off now. → ${label(p.prop)}` : `${cname(cmdrOf(n))}: Right, doing it your way now. → ${label(p.prop)}`, 'you'); }
   }
   for (const id in S.nodes) {
     const n = S.nodes[id];
@@ -1662,6 +1891,12 @@ function tick() {
   S.tracers = S.tracers.filter(t => S.time - t.t < 1.2);
   if (S.tickN % 10 === 0) checkEnd();
 }
+// the battle isn't over while a German counter-attack is still to come or still moving, or the front is still firing
+function endQuiet() {
+  const pending = S.de.sec.some((D, si) => !D.catk && S.units.some(u => u.side === 'DE' && u.sector === si && u.role === 'reserve' && alive(u)));
+  const moving = S.units.some(u => u.side === 'DE' && u.role === 'catk' && alive(u) && u.state !== 'broken' && hyp(u.x - u.postX, u.y - u.postY) > 20);
+  return !pending && !moving && S.time - (S.lastDEfire || 0) > 120;
+}
 function checkEnd() {
   if (S.endMsg) return;
   const de = S.units.filter(u => u.side === 'DE' && alive(u) && u.state !== 'broken' && u.y > riverY(u.x) + 14);
@@ -1671,10 +1906,10 @@ function checkEnd() {
   let msg = null;
   if (!de.length) msg = 'Enemy south of the river routed. Victory!';
   else if (gb < 0.3) msg = 'The brigade is spent. Defeat.';
-  else if (done && S.time > 120) { const a = coys.filter(n => n.status === 'achieved').length; msg = a === coys.length ? 'All company objectives achieved.' : `${a} of ${coys.length} company objectives achieved.`; }
+  else if (done && S.time > 120 && endQuiet()) { const a = coys.filter(n => n.status === 'achieved').length; msg = a === coys.length ? 'All company objectives achieved.' : `${a} of ${coys.length} company objectives achieved.`; }
   else if (S.time >= 3600) msg = 'Time is up (H+60).';
   if (msg) {
-    S.endMsg = msg; S.paused = true;
+    S.endMsg = msg; S.paused = true; S.result = aar();
     log('coy', 'info', null, `🏁 ${msg} British casualties ${S.stats.gbCas}, enemy ${S.stats.deCas}.`, 'auto');
     if (typeof onEnd === 'function') onEnd();
   }
@@ -1687,6 +1922,7 @@ function newScenario(seed, plan) {
   S.time = 0; S.tickN = 0; S.phase = 'plan'; S.paused = true; S.feed = []; S.reqs = []; S.toasts = []; S.tracers = []; S.pending = [];
   S.casualty = {}; S.endMsg = null; S.sel = null; S.nextReq = 1; S.weakDone = {}; S.flankDone = {};
   S.stats = { ach: { bn: 0, coy: 0, pl: 0, sec: 0 }, fail: { bn: 0, coy: 0, pl: 0, sec: 0 }, reqs: {}, gbCas: 0, deCas: 0, found: 0, nav: STATS };
+  S.aar = { atk: [], chain: {}, taken: {}, pinned: 0 }; S.result = null; S.lastDEfire = 0;
   S.de = { sec: DE_SEC.map(() => ({ catk: null, catkT: 480 + R() * 300, logged: false })), obj: 'Hold the river line' };
   buildOOB(); buildTree();
   plan = plan || DEFAULT_PLAN;
@@ -1711,6 +1947,7 @@ function startBattle() {
   if (S.phase !== 'plan') return;
   S.phase = 'battle'; S.paused = false;
   for (const id in S.nodes) { const n = S.nodes[id]; n.t0 = 0; }
+  for (const C of COYS) { const n = S.nodes[C.id]; if (OFFX.has(n.type)) atkStart(n); }
   log('coy', 'info', null, 'H-hour. Advance!', 'auto');
 }
 
@@ -1854,6 +2091,7 @@ function drawOrders(now) {
     ring(ds.target.x, ds.target.y, tr, 'rgba(0,0,0,0.35)', 1);
     const [tx, ty] = w2s(ds.target.x, ds.target.y);
     txt(T[ds.type][0], tx, ty - tr - 9, 14, '#fff');
+    if (OFFX.has(ds.type) && !dim) { const ws = warnsOf(cn); if (ws.length) { if (cam.z > 0.55) txt(`⚠ ${cn.id}: ${ws[0]}${ws.length > 1 ? ' +' + (ws.length - 1) : ''}`, tx, ty + tr + 10, 10, '#ffe14a', 'center', 'rgba(60,20,0,0.75)'); else txt('⚠', tx + tr * 0.8, ty - tr * 0.8, 13, '#ffe14a'); } }
     if (from.x) {
       const [fx, fy] = w2s(from.x, from.y);
       if (hyp(tx - fx, ty - fy) > tr + 30) { const L = hyp(ds.target.x - from.x, ds.target.y - from.y), k = (tr / cam.z + 6) / L; arrow(from.x, from.y, ds.target.x - (ds.target.x - from.x) * k, ds.target.y - (ds.target.y - from.y) * k, col, 4.5, null); }
@@ -1955,6 +2193,7 @@ function drawUnit(u, now) {
   cx.stroke();
   // strength bar
   const f = u.men / u.men0; cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - w / 2, by + h / 2 + 2, w, 3); cx.fillStyle = f > 0.6 ? '#7fe07a' : f > 0.35 ? '#f0c040' : '#ef5a4a'; cx.fillRect(sx - w / 2, by + h / 2 + 2, w * f, 3);
+  if (u.kind === 'sec' && S.phase === 'battle') { const c = u.coh / 100; cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - w / 2, by + h / 2 + 6, w, 2.5); cx.fillStyle = cohCol(u.coh); cx.fillRect(sx - w / 2, by + h / 2 + 6, w * c, 2.5); }
   if (u.state === 'pinned') txt('⬇', sx + w / 2 + 6, by - 2, 11, '#ffd34a');
   if (u.state === 'broken') txt('✖', sx + w / 2 + 6, by - 2, 11, '#ff6a5a');
   if (z > 1.1 && gb && u.kind === 'sec') txt(`${u.pn}/${u.sn}`, sx, by - h / 2 - 7, 9, '#fff', 'center', 'rgba(0,0,0,0.45)');
@@ -1971,6 +2210,7 @@ function drawCoyBlob(C, now) {
   cx.fillStyle = C.col; rr(sx - 10, sy - 7, 20, 14, 3); cx.fill(); cx.strokeStyle = 'rgba(0,0,0,0.75)'; cx.lineWidth = 1; cx.stroke();
   txt(C.id, sx, sy + 0.5, 10, '#000');
   const f = strength(secs); cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - 10, sy + 9, 20, 3); cx.fillStyle = f > 0.6 ? '#7fe07a' : f > 0.35 ? '#f0c040' : '#ef5a4a'; cx.fillRect(sx - 10, sy + 9, 20 * f, 3);
+  if (S.phase === 'battle') { cx.fillStyle = 'rgba(0,0,0,0.6)'; cx.fillRect(sx - 10, sy + 13, 20, 2.5); cx.fillStyle = cohCol(n.coh); cx.fillRect(sx - 10, sy + 13, 20 * n.coh / 100, 2.5); }
   const live = secs.filter(alive), pin = live.filter(u => u.state === 'pinned').length, brk = live.filter(u => u.state === 'broken').length;
   if (brk * 2 > live.length) txt('✖', sx + 15, sy - 2, 11, '#ff6a5a'); else if (pin * 2 > live.length) txt('⬇', sx + 15, sy - 2, 11, '#ffd34a');
 }
@@ -2080,13 +2320,18 @@ function rowHTML(n, depth) {
   const hasKids = n.kids.length > 0, col = collapsed.has(n.id);
   const marks = (n.locked ? '🔒' : '') + (n.manual ? '✎' : '') + (n.auto ? '⚙' : '') + (n.wait ? '⏳' : '') + (u.state === 'pinned' ? '⬇' : '') + (u.state === 'broken' ? '✖' : '');
   const title = n.level === 'bn' ? bnName(n.id) : n.level === 'coy' ? `${n.id} Coy` : n.level === 'pl' ? `${u.pn} Pl` : `${u.sn} Sec`;
+  const ws = n.level === 'sec' ? [] : warnsOf(n);
   return `<div class="row lv-${n.level}${S.sel === n.id ? ' sel' : ''}${st === 'changed' ? ' fl' : ''}${dead ? ' dead' : ''}" data-id="${n.id}" style="--d:${depth};--cc:${COYCOL[n.coy]}">
     ${hasKids ? `<button class="tg" data-tg="${n.id}" aria-label="Expand">${col ? '▸' : '▾'}</button>` : '<span class="tg0"></span>'}
     <span class="ti">${T[ds.type][0]}</span>
     <div class="main"><div class="l1"><b>${title}</b> ${esc(T[ds.type][1])} <span class="tgt">${esc(tName(ds.target))}</span></div>
-      <div class="l2"><span class="pb"><i style="width:${Math.round(n.prog * 100)}%"></i></span>${personaMini(n)}${qShow(n.q, n.id)}<span class="mk">${marks}</span></div></div>
+      <div class="l2"><span class="pb"><i style="width:${Math.round(n.prog * 100)}%"></i></span>${personaMini(n)}${qShow(n.q, n.id)}<span class="mk">${marks}</span>${dead ? '' : cohBar(n)}</div>${ws.length ? `<div class="l3">⚠ ${ws.map(esc).join(' · ')}</div>` : ''}</div>
     <span class="chip st-${st}">${ST_IC[st]} ${st}</span></div>`;
 }
+// cohesion: how organised the unit is (100 = formed up, low = scattered and mixed up after an assault)
+const cohOf = (n) => (n.level === 'sec' ? S.U[n.id].coh : n.coh) ?? 100;
+const cohCol = (c) => (c >= 70 ? '#6fb7ff' : c >= KC.warn ? '#f0c040' : '#ef5a4a');
+function cohBar(n) { const c = Math.round(cohOf(n)); return `<span class="cohb" title="Cohesion ${c}%" aria-label="Cohesion ${c}%"><i style="width:${c}%;background:${cohCol(c)}"></i></span><span class="cohn">⛓${c}</span>`; }
 function treeHTML() {
   const open = COYS.some(C => !collapsed.has(C.id));
   let h = `<div class="filters bnf">${bnChips('bnf', S.bnF)}${open ? '<button class="ch" data-fold="1" aria-label="Fold all companies">⊟ Fold</button>' : ''}</div>`;
@@ -2108,7 +2353,7 @@ function editorHTML() {
   const seg = (k, v, labels) => `<div class="seg">${labels.map((l, i) => `<button class="${v === i ? 'on' : ''}" data-${k}="${i}">${l}</button>`).join('')}</div>`;
   return `<div class="ed" style="--cc:${COYCOL[n.coy]}">
     <div class="edh"><span class="ti">${T[ds.type][0]}</span><div class="edn"><b>${esc(name)}</b><small>${esc(cname(c))} · ${word('obed', c.obed)}, ${word('judg', c.judg)}</small></div>${personaMini(n)}${qShow(n.q, n.id)}<button class="x" id="edClose" aria-label="Close">✕</button></div>
-    <div class="cur">${esc(label(ds))} · <b>${dispStatus(n)}</b>${u.state !== 'ok' ? ` · ${u.state}` : ''}${n.locked ? ' · 🔒 order' : ''}${notes.length ? `<div class="notes">⚠ ${notes.map(esc).join(' · ')}</div>` : ''}</div>
+    <div class="cur">${esc(label(ds))} · <b>${dispStatus(n)}</b>${u.state !== 'ok' ? ` · ${u.state}` : ''}${n.locked ? ' · 🔒 order' : ''}${notes.length ? `<div class="notes">⚠ ${notes.map(esc).join(' · ')}</div>` : ''}${n.level !== 'sec' && warnsOf(n).length ? `<div class="warns">${warnsOf(n).map(w => `<span class="wch">⚠ ${esc(w)}</span>`).join('')}</div>` : ''}${S.phase === 'battle' ? `<div class="cohl">${cohBar(n)} cohesion${cohOf(n) < KC.done ? ` · about ${Math.max(1, Math.round(regroupSecs({ coh: cohOf(n) }) / 60))} min to reorganise (⟳ Regroup)` : ''}</div>` : ''}</div>
     <div class="lbl">Objective</div><div class="chips">${types}</div>
     <div class="lbl">Target</div><div class="chips">${feats}<button class="ch${S.pickMode ? ' on' : ''}" id="pickMap">📍 Tap map</button></div>
     <div class="hint">${S.dragOn ? '✋ Drag is on: drag' : 'Turn on ✋ Drag (top right of the map) to drag'} ◎ target${ds.pos && n.level !== 'coy' && n.level !== 'bn' ? ' / ◇ position' : ''} on the map. Edits go to ${esc(c.rank)} ${esc(c.last)} as suggestions${n.locked ? ' — 🔒 now as orders' : ''}.</div>
@@ -2143,7 +2388,7 @@ function reqCard(r) {
   if (r.kind === 'counter') {
     return `<div class="rq counter" data-rq="${r.id}" style="--cc:${COYCOL[n.coy]}">${head}<div class="rx">“${esc(r.reason)}”</div>
       <div class="vs"><div class="opt you"><small>Yours</small><div>${esc(label(r.prop))}</div>${qShow(r.qY, n.id + 'y')}</div><div class="opt th"><small>Theirs</small><div>${esc(label(r.theirs))}</div>${qShow(r.qT, n.id + 't')}</div></div>
-      <div class="acts"><button data-ins="${r.id}">✊ Insist</button><button data-the="${r.id}">👍 Accept theirs</button><button data-cmp="${r.id}">🤝 Compromise</button></div></div>`;
+      <div class="acts"><button data-ins="${r.id}">✊ Insist</button><button data-the="${r.id}">👍 Accept theirs</button><button data-cmp="${r.id}">${r.regroup ? '🤝 Regroup, then go' : '🤝 Compromise'}</button></div></div>`;
   }
   const sugs = r.sugs.map((s, i) => `<div class="sug"><div class="sl"><b>${i === 0 ? '★ ' : ''}${esc(label(s))}</b><small>${esc(s.why)}</small></div>${qShow(s.q, n.id + 's' + i)}<button data-acc="${r.id}:${i}">Accept</button></div>`).join('');
   return `<div class="rq" data-rq="${r.id}" style="--cc:${COYCOL[n.coy]}">${head}<div class="rx">${esc(r.text)}</div>${sugs}<div class="acts"><button data-edr="${r.id}">✎ Edit</button><button data-den="${r.id}">✖ Deny</button></div></div>`;
@@ -2236,6 +2481,7 @@ const TUT = [
   ['✎ Edit', 'Change the objective type or target at any level (battalion, company, platoon, section). Lower layers re-plan at once (yellow flash, ghost line from old to new). Your edits are suggestions: a commander may agree, grumble, push back or quietly ignore you. 🔒 turns it into an order, and locked tasks survive re-plans from above.'],
   ['✋ Drag', 'Moving things on the map is off by default, so a stray finger only pans. Tap ✋ Drag (top right of the map) to switch it on: the selected task\'s ◎ target and ◇ position light up yellow and can be dragged. It stays on until you tap it again.'],
   ['▶ Play', 'Press Play. Use the slider for 0.1× to 16× speed, ⏸ to pause, ⏭ to step while paused. You can edit at any time.'],
+  ['🎯 Prepare attacks', 'Spamming Seize gets people killed. Before a company goes in, give another company (or one of its platoons) ⊕ Support by fire on the same place, and jump off from cover (hedge, wood, crest), not open fields. Unsuppressed MGs shred anyone crossing open ground. After an attack the unit is disorganised: watch the ⛓ cohesion bar, use ⟳ Regroup (or Hold, which also digs in) before the next objective, because the Germans will counter-attack. Rows and map rings show ⚠ warnings for rushed plans.'],
   ['❗ Requests', 'Battalion and company commanders ask for changes with 1–3 suggestions. Accept, Edit or Deny. The 📻 Feed logs every change; tap a message to jump to that unit. Both tabs can be filtered by battalion.'],
 ];
 function tutHTML(i) { const [h, b] = TUT[i]; return `<div class="tut"><div class="tn">${i + 1} / ${TUT.length}</div><h3>${h}</h3><p>${b}</p><div class="acts"><button data-tskip="1">Skip</button><button data-tnext="${i + 1}">${i + 1 < TUT.length ? 'Next ›' : 'Got it'}</button></div></div>`; }
@@ -2247,14 +2493,25 @@ function helpHTML() {
   <p><b>Commanders.</b> Every leader has obedience, judgment, experience, maybe a quirk, and trust in you. Smart ones make good plans (cover, line of sight, flanking, reserves) and push back on bad edits; dumb ones charge across open ground. Insisting works but costs trust and morale. Plans you suggested that work raise trust.</p>
   <p><b>Quality badge.</b> How good a plan is (0–100). How precisely you see it depends on your HQ staff (menu).</p>
   <p><b>Status.</b> · planned, ➜ moving, 💥 engaging, ✅ achieved, ❌ failed, 🔄 changed. Marks: 🔒 order/locked, ✎ your edit, ⚙ automatic change, ⏳ waiting, ⬇ pinned, ✖ broken.</p>
+  <p><b>Preparing attacks.</b> Fire decides it. Suppressed defenders (pinned under fire) can barely shoot back; unsuppressed ones, above all MGs, cut down anyone moving across open ground inside 250 m. So: put a support-by-fire element on the objective first (fire support can hose down a wood or village even when nobody can see the defenders: their muzzle flashes give them away), pick jump-offs in cover, and let the assault go in when the fire is on. Plans missing this get a ⚠ (no fire support, unsuppressed MG, open ground, low cohesion) in the Orders tree, the order panel and under the company's ring on the map; the feed tells you when a platoon is caught in the open and pinned, or a company goes in without fire support.</p>
+  <p><b>Cohesion ⛓.</b> Blue bar next to each unit (and under it on the map): how well organised it is. Assaults, casualties, long moves and scattered platoons wear it down; ⟳ Regroup (or Hold) restores it, faster in cover and near the HQ. A disorganised unit moves slower, shoots worse, breaks sooner and goes in piecemeal, one section at a time. Good commanders will ask for time to reorganise before you push them on: “🤝 Regroup, then go” gives them that time and then carries on with your order. Units that Hold dig in over a few minutes and shrug off the German counter-attacks that each sector will launch.</p>
+  <p><b>After-action report.</b> The end screen grades you (A–F) on places held, your casualties and enemy losses, and lists what went wrong (e.g. an assault without fire support and what it cost, battalions chaining attacks without regrouping, places retaken) and what went well.</p>
   <p><b>Fog.</b> Enemy only shows when someone can see it; dashed “?” is a last-known position.</p>
   <p><b>Objective Editor.</b> Menu → 🛠 Editor: change which tasks each level can get, how every objective is broken down (the plan variants commanders choose from), the section drills and the plan-scoring weights.</p></div>`;
 }
 function endHTML() {
-  const st = S.stats;
-  return `<div class="endb"><h3>🏁 ${esc(S.endMsg)}</h3><p>Time ${tfmt(S.time)} · British casualties ${st.gbCas} · enemy ${st.deCas}</p>
-  ${BNS.map(B => { const n = S.nodes[B.id]; return `<p>${B.name}: ${n && n.type ? `${esc(label(n))} · ${esc(n.status)}` : '—'} · ${Math.round(strength(bnSecs(B.id)) * 100)}% strength</p>`; }).join('')}
-  <p>Objectives achieved: ${st.ach.coy} coy, ${st.ach.pl} pl, ${st.ach.sec} sec · failed: ${st.fail.coy}/${st.fail.pl}/${st.fail.sec}</p>
+  const st = S.stats, a = S.result || aar(), pc = (x) => `${Math.round(x * 100)}%`;
+  const li = (xs, n) => xs.slice(0, n).map(x => `<li>${esc(x)}</li>`).join('');
+  return `<div class="endb"><h3>🏁 ${esc(S.endMsg)}</h3>
+  <div class="grade g-${a.grade}"><b>${a.grade}</b><span>Score ${a.score}<small>places held · casualties · enemy losses</small></span></div>
+  <p>Time ${tfmt(S.time)} · held <b>${a.held.length}</b> of ${FEATS.filter(f => !f.start && !f.rear).length} places · British casualties <b>${a.gbCas}</b> (${pc(a.cas)}) · enemy losses ${pc(a.kill)}</p>
+  ${BNS.map(B => { const n = S.nodes[B.id]; return `<p class="bnl">${B.name}: ${n && n.type ? `${esc(label(n))} · ${esc(n.status)}` : '—'} · ${Math.round(strength(bnSecs(B.id)) * 100)}% strength · cohesion ${Math.round(n ? n.coh : 0)}%</p>`; }).join('')}
+  <div class="aar"><div class="lbl">After-action report</div>
+  ${a.bad.length ? `<div class="ab">Mistakes</div><ul class="bad">${li(a.bad, 6)}</ul>` : ''}
+  ${a.good.length ? `<div class="ag">Went well</div><ul class="good">${li(a.good, 5)}</ul>` : ''}
+  ${!a.bad.length && !a.good.length ? '<p>Nothing remarkable either way.</p>' : ''}
+  ${a.held.length ? `<p class="held">Held: ${a.held.map(id => esc(FEAT[id].name)).join(', ')}</p>` : ''}</div>
+  <p class="sm">Objectives achieved: ${st.ach.coy} coy, ${st.ach.pl} pl, ${st.ach.sec} sec · failed: ${st.fail.coy}/${st.fail.pl}/${st.fail.sec}</p>
   <div class="acts"><button data-close="1">👀 Keep watching</button><button data-m="restart">↺ Restart</button><button data-m="new">🎲 New scenario</button></div></div>`;
 }
 function onEnd() { openOv(endHTML(), 'end'); renderAll(); }
@@ -2485,7 +2742,7 @@ requestAnimationFrame(frame);
 window.CL = {
   S, cam, VERSION, FEAT, COYS, T, TYPES, specOf, label, dispSpec, proposeEdit, decide, decomposeCoy, decomposePl, answerReq, answerCounter, makeReq, tick, startBattle, newScenario,
   qualityOf, mkPersona, choose, coyCandidates, plCandidates, ratePlan, decomposeBn, bnCandidates, rateBn, threatFeats, makeBnReq, checkBnReqs, bnStatus, coyGateOK, markerHit, toggleDrag, BN, BNS, COY, withB, tapAt, fitBn, FAR, coyBlobPos, bnSecs, riverY, WW, WH, FEATS, los, findPath, resetTreeView, collapsed, strength, coyUnits, cmdrOf, unitsUnder, nodePos, unitScreen, w2s, s2w, select, renderAll, setSpeedV, speedToV,
-  savePlan, loadPlan, restart, fitCam, draw, prerender, centerOn, STATS, DOC, DOCL,
+  savePlan, loadPlan, restart, fitCam, draw, prerender, centerOn, STATS, DOC, DOCL, aar, control, warnsOf, updCoh, regroupSecs, featAt, setSpec, applyProp, nearestOpen, CB, OFFX,
   fast(sec) { for (let i = 0; i < sec / TICK && !S.endMsg; i++) tick(); renderAll(); },
 };
 })();

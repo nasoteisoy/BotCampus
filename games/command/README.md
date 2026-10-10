@@ -26,16 +26,26 @@ Each sector has its own German defence: outposts, MG posts, a main position and 
 - **📻 Feed**: a radio log with battalion, level and type filters. Tap a message to jump to that unit.
 - **☰ Menu**: restart, new scenario, save or load a plan (3 slots, all three battalions), HQ experience, tutorial, help, and **🛠 Editor**. Saves from v1.x (one-battalion map) can't be placed on the new map. They are refused with a message, and the slot shows "old 1-battalion map".
 
+## Preparing attacks (v2.1)
+Spamming Seize gets people killed. Preparation wins:
+- **Fire decides it.** A suppressed defender loses most of his accuracy. An unsuppressed one, and above all an MG, cuts down men moving across open ground inside about 250 m. Cover protects much more than before (losses scale with cover^1.6). Support by fire can area-fire a wood or village even when nobody can see the defenders, because their muzzle flashes show a rough position (dashed marker).
+- **⚠ Plan warnings.** These appear in the Orders tree, the order panel and under a company's ring on the map: *no fire support*, *unsuppressed MG, no fire support*, *open ground* (jump-off in the open), *cohesion N%*. Plan scoring adds penalties for both (`noSup`, `openPen`). The feed reports "2 Pl caught in the open (by an MG), pinned" and "⚠ E Coy is going in at the Church without fire support".
+- **⛓ Cohesion** (sections, platoons, companies, battalions). It drops with assaults, casualties, long moves, heavy fire and scattered platoons. It comes back at rest, faster in cover, near the HQ and under **⟳ Regroup** (a new task for battalions, companies and platoons) or Hold. Low cohesion means slower movement, worse fire, earlier pinning and breaking, and platoons that go in piecemeal. It shows as a bar in the Orders tree and under units on the map. Commanders with good judgment answer an attack order at low cohesion with "C Coy needs about 4 minutes to reorganise", and **🤝 Regroup, then go** gives them the time and then carries out your order.
+- **Dig-in and counterattacks.** Sections standing still dig in over about 5 minutes (full rate on Hold/Regroup): they take fewer hits and less suppression. Each German sector counterattacks once, and the counterattack wears down units that are suppressed, disorganised and not dug in.
+- **After-action report.** The end screen shows a grade (A–F) and score (places held, casualties, enemy losses), British and enemy casualties, each battalion's strength and cohesion, the mistakes ("B Coy failed at the Church without fire support: 38% casualties", "1st Bn chained 3 attacks without regrouping", places retaken or left unguarded, sections pinned in the open) and what went well.
+- Ammunition and fatigue are not modelled separately: cohesion already covers exertion, and a separate ammo track would mostly add bookkeeping.
+
 ## Objective Editor
-Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything the commanders use to plan lives in one data object, the *doctrine* (`DEFAULT_DOCTRINE` in `doctrine.js`). The doctrine applies to **all three battalions**; their COs differ only in personality. The editor has seven tabs:
+Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything the commanders use to plan lives in one data object, the *doctrine* (`DEFAULT_DOCTRINE` in `doctrine.js`). The doctrine applies to **all three battalions**; their COs differ only in personality. The editor has eight tabs:
 - **🏷 Task types**: label and icon for each task type, and which types each level may use.
 - **🗺 Battalion maps**: for each battalion objective type, its variants with company roles (task type, placement rule, importance, "wait for" gate, clear-if-wood) and a live diagram.
 - **🗺 Company maps** / **🗺 Platoon maps**: the same breakdown into platoon and section tasks, with diagrams.
 - **⚙ Section drills**: section state machines (move, hold, suppress, overwatch, assault, charge, consolidate, pinned, broken…) with editable timings and gates.
 - **📊 Scoring**: the weights behind plan quality, battalion section included.
+- **⚔ Combat**: the fire model (suppression, open ground, MGs, cover, area fire), cohesion (losses, recovery, effects, thresholds), digging in and the after-action score weights.
 - **⇅ Import / Export**: export, import, reset.
 
-**💾 Save** stores the doctrine in `localStorage` (`command-doctrine-v1`; doctrine version 2). Imports are checked one field at a time, and version-1 doctrines still load.
+**💾 Save** stores the doctrine in `localStorage` (`command-doctrine-v1`; doctrine version 3). Imports are checked one field at a time. Version-1 and version-2 doctrines still load: they get the Regroup task and the default combat section.
 
 ## Performance
 - Line of sight, woods and elevation use precomputed 5 m grids plus a 100 m spatial index.
@@ -45,4 +55,4 @@ Open **☰ Menu → 🛠 Editor** (or go straight to `editor.html`). Everything 
 - With about 147 units, a sim tick costs about 0.5–1.5 ms. At 16× the game runs at 60 fps and 32 ticks/s on desktop.
 
 ## Files
-`index.html` (UI and styles), `doctrine.js` (default doctrine, validation, storage), `editor.html` + `editor.js` (Objective Editor), `game.js` (map, pathfinding, line of sight, objectives tree, commanders, simulation, rendering, UI), `sw.js` (offline cache `command-v4`), `manifest.webmanifest`, icons.
+`index.html` (UI and styles), `doctrine.js` (default doctrine, validation, storage), `editor.html` + `editor.js` (Objective Editor), `game.js` (map, pathfinding, line of sight, objectives tree, commanders, simulation, rendering, UI), `sw.js` (offline cache `command-v5`), `manifest.webmanifest`, icons.
