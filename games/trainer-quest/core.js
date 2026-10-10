@@ -8,23 +8,33 @@ const MW = 18, MH = 28;                       // map size in tiles
 const TICK = 0.25, STEP_T = 0.5, TURN_T = 1.1, INTRO_T = 1.2, OUTRO_T = 1.2, HEAL_T = 3, DIG_T = 2, KO_T = 6;
 const DOOR = { x: 9, y: 23 }, SPAWN = { x: 9, y: 22 }, BRIDGE_IN = { x: 9, y: 7 };
 const OFFLINE_CAP = 2 * 3600, MAX_LV = 50;
+// ---------------------------------------------------------------- difficulty (Hard is the default; Normal is the old, gentler game)
+const DIFF = {
+  hard: { id: 'hard', icon: '🔥', name: 'Hard', bag: { potion: 1, net: 5 }, bridgeMin: 2, wildUp: [-5, -3], wildCap: 8, rare: 0.04, counter: 0.15, spots: 6, hidden: 4, respawn: [300, 480], dazeT: 8, healT: 8, tpLoss: 0.3, itemLoss: 0.6, npcPotion: 0.25, rivalLoss: 3, rivalUp: -1, bridgeCool: 180, herb: 0.01, wildTpMin: -4, bridgeLvAdd: 0 },
+  normal: { id: 'normal', icon: '🌱', name: 'Normal', bag: { potion: 3, net: 6 }, bridgeMin: 1, wildUp: [-7, -4], wildCap: 4, rare: 0.02, counter: 0.08, spots: 8, hidden: 6, respawn: [150, 300], dazeT: 4, healT: 3, tpLoss: 0.1, itemLoss: 0, npcPotion: 0.5, rivalLoss: 1, rivalUp: -3, bridgeCool: 90, herb: 0.02, wildTpMin: -6, bridgeLvAdd: -1 },
+};
+const DF = (W) => DIFF[W.diff] || DIFF.hard;
 
 // ---------------------------------------------------------------- areas (spawns, levels, Bridge line-up)
 const AREAS = [
   { name: 'Mossy Meadow', icon: '🌲', pal: { g: '#5f9a3c', tg: '#3f7a2a', t: '#2c5a22', w: '#3f8fe4', c: '#6b5a48', r: '#4a3f33', p: '#c9b27a' },
     wild: { grass: [['gustling', 5], ['sparkit', 3], ['mossling', 4], ['pebblin', 4], ['emberpup', 2], ['vilefang', 2]], water: [['tidebolt', 4], ['shellguard', 2], ['sparkit', 1]], cave: [['pebblin', 4], ['gloomoth', 3], ['vilefang', 2], ['cindermole', 1]] },
-    lv: [3, 6], npcLv: [5, 8], npcs: ['bugkid', 'bugkid', 'status'],
-    bridge: { lv: [7, 8, 9, 10, 12], size: [1, 2, 2, 3, 3], ai: ['bugkid', 'bugkid', 'status', 'gambler', 'ace'] } },
+    lv: [3, 6], npcLv: [5, 8], npcs: ['bugkid', 'bugkid', 'status'], rare: ['duskmaw', 'bouldrake', 'flarelynx'],
+    bridge: { lv: [8, 9, 10, 11, 12], size: [1, 2, 2, 3, 3], nsize: [1, 2, 2, 3, 3], ai: ['bugkid', 'bugkid', 'status', 'gambler', 'ace'], hai: ['status', 'setup', 'gambler', 'ace', 'ace'],
+      teams: [['pebblin', 'gustling'], ['vilefang', 'tidebolt'], ['mossling', 'sparkit', 'emberpup'], ['gloomoth', 'pebblin', 'tidebolt'], ['shellguard', 'gustling', 'sparkit', 'cindermole']] } },
   { name: 'Ember Dunes', icon: '🏜', pal: { g: '#b59a52', tg: '#8a7a2a', t: '#6a5a2a', w: '#2f7fc4', c: '#7a4a38', r: '#5a3426', p: '#e0c890' },
     wild: { grass: [['flarelynx', 3], ['thornback', 4], ['vilefang', 3], ['sporeshroom', 3], ['voltusk', 2], ['emberpup', 3]], water: [['brinemaw', 3], ['tidebolt', 3], ['shellguard', 2]], cave: [['bouldrake', 3], ['duskmaw', 3], ['cindermole', 3], ['gloomoth', 2]] },
-    lv: [11, 16], npcLv: [13, 17], npcs: ['status', 'gambler', 'healer'],
-    bridge: { lv: [16, 17, 18, 19, 21], size: [2, 2, 3, 3, 4], ai: ['status', 'gambler', 'healer', 'setup', 'ace'] } },
+    lv: [11, 16], npcLv: [13, 17], npcs: ['status', 'gambler', 'healer'], rare: ['skyreaver', 'brinemaw', 'bouldrake'],
+    bridge: { lv: [17, 18, 19, 20, 22], size: [2, 2, 3, 3, 4], nsize: [2, 2, 3, 3, 4], ai: ['status', 'gambler', 'healer', 'setup', 'ace'], hai: ['status', 'setup', 'healer', 'ace', 'ace'],
+      teams: [['thornback', 'voltusk', 'cindermole'], ['flarelynx', 'brinemaw', 'sporeshroom'], ['bouldrake', 'tidebolt', 'thornback'], ['duskmaw', 'cindermole', 'shellguard', 'voltusk'], ['brinemaw', 'voltusk', 'bouldrake', 'flarelynx']] } },
   { name: 'Frost Peak', icon: '🏔', pal: { g: '#9fb8c8', tg: '#6f94a8', t: '#3f5f72', w: '#5aa0e8', c: '#5a6270', r: '#3a404a', p: '#e8eef2' },
     wild: { grass: [['skyreaver', 3], ['voltusk', 3], ['flarelynx', 2], ['thornback', 2], ['gustling', 2], ['sparkit', 2]], water: [['brinemaw', 3], ['shellguard', 3], ['tidebolt', 2]], cave: [['cindermole', 3], ['bouldrake', 3], ['duskmaw', 3], ['sporeshroom', 2], ['gloomoth', 2]] },
-    lv: [21, 27], npcLv: [23, 28], npcs: ['setup', 'ace', 'healer'],
-    bridge: { lv: [27, 28, 29, 30, 32], size: [3, 3, 4, 4, 5], ai: ['gambler', 'healer', 'setup', 'status', 'ace'] } },
+    lv: [21, 27], npcLv: [23, 28], npcs: ['setup', 'ace', 'healer'], rare: ['duskmaw', 'bouldrake', 'flarelynx'],
+    bridge: { lv: [28, 29, 30, 31, 33], size: [3, 3, 4, 4, 5], nsize: [3, 3, 4, 4, 5], ai: ['gambler', 'healer', 'setup', 'status', 'ace'], hai: ['status', 'setup', 'healer', 'ace', 'ace'],
+      teams: [['skyreaver', 'voltusk', 'shellguard'], ['flarelynx', 'brinemaw', 'thornback', 'gloomoth'], ['duskmaw', 'bouldrake', 'gustling', 'tidebolt'], ['cindermole', 'skyreaver', 'sporeshroom', 'brinemaw', 'voltusk'], ['skyreaver', 'voltusk', 'flarelynx', 'brinemaw', 'duskmaw']] } },
 ];
 const NPC_LOOK = ['🧑‍🌾', '🧒', '🧑‍🎤', '🧙', '🥷', '🧑‍🚀'];
+const RIVALS = [['😈', 'Rex'], ['🦹', 'Vex'], ['👺', 'Oni']];
 
 // ---------------------------------------------------------------- items (heal items are the Trainers ITEMS; orbs and candy are Quest-only)
 const QITEMS = {
@@ -41,37 +51,37 @@ const FIND = { open: [['potion', 30], ['net', 30], ['star', 10], ['super', 8], [
 const TREES = [
   { id: 'battler', icon: '⚔', name: 'Battler', tiers: [
     { id: 'b1', icon: '🔺', name: 'Type sense', cost: 4, tip: '+type & damage weights', fn: (t) => { Object.assign(t.score, { type: 10, dmg: 0.6, ko: 25 }); t.pers.temp = 10; t.movePri.attack = 4; } },
-    { id: 'b2', icon: '👁', name: 'Read the foe', cost: 8, tip: '+KO, risk, priority · knows when the Bridge is beatable', fn: (t) => { Object.assign(t.score, { ko: 50, risk: 28, prio: 18, acc: 0.25 }); t.pers.risk = 0.5; t.pers.temp = 4; } },
+    { id: 'b2', icon: '👁', name: 'Read the foe', cost: 8, ex: 'c2', tip: '+KO, risk, priority · simulates the Bridge, only tries at ≥50%', fn: (t) => { Object.assign(t.score, { ko: 50, risk: 28, prio: 18, acc: 0.25 }); t.pers.risk = 0.5; t.pers.temp = 4; } },
     { id: 'b3', icon: '🔁', name: 'Switch timing', cost: 16, tip: 'switches out of bad matchups / low HP', fn: (t) => { Object.assign(t.sw, { never: false, hp: 0.25, bad: 1, bonus: 23, penalty: 35 }); t.score.match = 10; } },
-    { id: 'b4', icon: '✨', name: 'Crit focus', cost: 28, tip: '+crit, +setup', fn: (t) => { Object.assign(t.score, { crit: 10, setup: 45, status: 25 }); t.movePri.setup = 6; t.pers.temp = 2; } },
+    { id: 'b4', icon: '✨', name: 'Crit focus', cost: 28, down: 'sets up even when behind', tip: '+crit, +setup', fn: (t) => { Object.assign(t.score, { crit: 10, setup: 45, status: 25 }); t.movePri.setup = 6; t.pers.temp = 2; } },
   ] },
   { id: 'catcher', icon: '🎯', name: 'Catcher', tiers: [
-    { id: 'c1', icon: '🤲', name: 'Steady throw', cost: 4, tip: 'catch ×1.3 · throws when the foe is weak' },
-    { id: 'c2', icon: '🪶', name: 'Weaken first', cost: 8, tip: 'avoids KOs, puts targets to sleep before throwing' },
+    { id: 'c1', icon: '🤲', name: 'Steady throw', cost: 4, down: 'throws more orbs', tip: 'catch ×1.3 · throws when the foe is weak' },
+    { id: 'c2', icon: '🪶', name: 'Weaken first', cost: 8, ex: 'b2', down: 'long fights, takes more hits', tip: 'avoids KOs, puts targets to sleep before throwing' },
     { id: 'c3', icon: '💎', name: 'Collector', cost: 16, tip: 'catch ×1.25 · hunts missing species & types' },
     { id: 'c4', icon: '🔮', name: 'Orb sense', cost: 28, tip: 'picks the right orb for the odds' },
   ] },
   { id: 'scout', icon: '🧭', name: 'Scout', tiers: [
     { id: 's1', icon: '👀', name: 'Keen eye', cost: 4, tip: 'walks to items it can see' },
     { id: 's2', icon: '⛏', name: 'Hidden finds', cost: 8, tip: 'spots & digs hidden items' },
-    { id: 's3', icon: '🔭', name: 'Wide view', cost: 16, tip: 'sight 2→4 · explores the map' },
+    { id: 's3', icon: '🔭', name: 'Wide view', cost: 16, ex: 'm2', down: 'roams far from 🏥', tip: 'sight 2→4 · explores the map' },
     { id: 's4', icon: '🦊', name: 'Fight sense', cost: 28, tip: 'avoids fights when weak, seeks them when strong' },
   ] },
   { id: 'medic', icon: '⛑', name: 'Medic', tiers: [
-    { id: 'm1', icon: '🧪', name: 'First aid', cost: 4, tip: 'potions in battle at 35% HP (3/battle)', fn: (t) => { Object.assign(t.items, { healAt: 0.35, superAt: 0.25, maxPerBattle: 3 }); t.score.item = 35; } },
-    { id: 'm2', icon: '🏥', name: 'Field care', cost: 8, tip: 'heals at the center early · potions after fights' },
+    { id: 'm1', icon: '🧪', name: 'First aid', cost: 4, down: 'burns potions fast', tip: 'potions in battle at 35% HP (3/battle)', fn: (t) => { Object.assign(t.items, { healAt: 0.35, superAt: 0.25, maxPerBattle: 3 }); t.score.item = 35; } },
+    { id: 'm2', icon: '🏥', name: 'Field care', cost: 8, ex: 's3', down: 'walks home often (less EXP)', tip: 'heals at the center early · potions after fights' },
     { id: 'm3', icon: '💊', name: 'Full care', cost: 16, tip: 'cures status, revives in battle', fn: (t) => { Object.assign(t.items, { fullHealSleep: true, fullHealOther: true, reviveAt: 1, healAt: 0.4, superAt: 0.3, maxPerBattle: 5 }); t.score.heal = 36; } },
-    { id: 'm4', icon: '🌱', name: 'Herbalist', cost: 28, tip: 'party regenerates while walking · potions +50%' },
+    { id: 'm4', icon: '🌱', name: 'Herbalist', cost: 28, ex: 'k4', tip: 'party regenerates while walking · potions +50%' },
   ] },
   { id: 'coach', icon: '📣', name: 'Coach', tiers: [
-    { id: 'k1', icon: '🤝', name: 'EXP share', cost: 4, tip: 'bench gets 50% EXP' },
+    { id: 'k1', icon: '🤝', name: 'EXP share', cost: 4, down: 'fighters get −20% EXP', tip: 'bench gets 50% EXP' },
     { id: 'k2', icon: '📚', name: 'Smart moves', cost: 8, tip: 'keeps the best 4 moves (power, coverage, utility)' },
     { id: 'k3', icon: '🎓', name: 'Tutor', cost: 16, tip: 'learns moves 3 levels early' },
-    { id: 'k4', icon: '🏋', name: 'Hard training', cost: 28, tip: '+30% EXP' },
+    { id: 'k4', icon: '🏋', name: 'Hard training', cost: 28, ex: 'm4', down: 'no ✨ from wild wins', tip: '+30% EXP' },
   ] },
   { id: 'leader', icon: '👑', name: 'Leader', tiers: [
     { id: 'l1', icon: '2️⃣', name: 'Duo', cost: 4, tip: 'party cap 1→2' },
-    { id: 'l2', icon: '3️⃣', name: 'Trio', cost: 8, tip: 'party cap 3' },
+    { id: 'l2', icon: '3️⃣', name: 'Trio', cost: 8, down: 'EXP split 3 ways', tip: 'party cap 3' },
     { id: 'l3', icon: '🔄', name: 'Rotation', cost: 16, tip: 'cap 4 · picks the best party at the center, leads with the best matchup' },
     { id: 'l4', icon: '6️⃣', name: 'Full party', cost: 28, tip: 'party cap 6' },
   ] },
@@ -93,11 +103,12 @@ function doctrineOf(T) {
   t.id = 'tq' + T.i; t.name = T.name; t.icon = T.icon;
   return t;
 }
-function canBuy(T, id) { const x = TRAIT[id]; if (!x || has(T, id)) return false; const tree = TREES.find(t => t.id === x.tree); return (x.tier === 0 || has(T, tree.tiers[x.tier - 1].id)) && T.tp >= x.cost; }
+const blockedBy = (T, id) => { const x = TRAIT[id]; return x && x.ex && has(T, x.ex) ? x.ex : null; };   // mutually exclusive pairs
+function canBuy(T, id) { const x = TRAIT[id]; if (!x || has(T, id) || blockedBy(T, id)) return false; const tree = TREES.find(t => t.id === x.tree); return (x.tier === 0 || has(T, tree.tiers[x.tier - 1].id)) && T.tp >= x.cost; }
 function buy(W, ti, id) {
   const T = W.trainers[ti]; if (!canBuy(T, id)) return false;
   T.tp -= TRAIT[id].cost; T.traits[id] = Math.round(W.t);
-  feed(W, ti, '🧬', `${TRAIT[id].icon} ${TRAIT[id].name}`);
+  feed(W, ti, '🧬', `${TRAIT[id].icon} ${TRAIT[id].name}`, { pop: 'trait', now: 1 });
   if (id === 'l1' || id === 'l2' || id === 'l3' || id === 'l4') fillParty(W, T);
   return true;
 }
@@ -114,7 +125,7 @@ for (const id of D.MON_IDS) {
   const atk = d.moves.filter(pw).sort((a, b) => pw(a) - pw(b)), sta = d.moves.filter(m => !pw(m));
   const def = [atk[0], ...(sta.length ? [sta[0]] : []), ...atk.slice(1), ...sta.slice(1)].slice(0, 4);
   const extra = d.pool.filter(m => !def.includes(m)).sort((a, b) => pw(a) - pw(b));
-  LEARN[id] = [...def.map((m, i) => [[1, 1, 8, 13][i], m]), ...extra.map((m, i) => [[17, 22, 27][i], m])];
+  LEARN[id] = [...def.map((m, i) => [[1, 1, 5, 11][i], m]), ...extra.map((m, i) => [[16, 21, 26][i], m])];   // v3: 2nd attack at Lv5 so no starter is stuck with one weak move
 }
 const movesAt = (id, lv) => LEARN[id].filter(([l]) => l <= lv).map(([, m]) => m).slice(-4);
 const expFor = (lv) => lv * lv * lv;                  // total EXP to reach lv
@@ -132,7 +143,7 @@ function hydrate(m) {
   return m;
 }
 function newMon(W, id, lv) { return hydrate({ uid: ++W.uid, id, lv, exp: expFor(lv), moves: movesAt(id, lv), hp: null }); }
-const strip = (m) => ({ uid: m.uid, id: m.id, lv: m.lv, exp: m.exp, moves: m.moves, hp: m.hp, status: m.status, slp: m.slp, ot: m.ot });
+const strip = (m) => ({ uid: m.uid, id: m.id, lv: m.lv, exp: m.exp, moves: m.moves.slice(), hp: m.hp, status: m.status, slp: m.slp, ot: m.ot });
 
 // move-set value, used by Coach II (Smart moves) to choose the 4 to keep
 function moveVal(m, id) {
@@ -148,7 +159,7 @@ function setVal(m, set) {
 function learn(W, T, m, mv) {
   if (m.moves.includes(mv)) return;
   const nm = D.MOVES[mv].name;
-  if (m.moves.length < 4) { m.moves.push(mv); feed(W, T.i, '📖', `${m.name} +${nm}`, { mon: m.id }); return; }
+  if (m.moves.length < 4) { m.moves.push(mv); feed(W, T.i, '📖', `${m.name} +${nm}`, { mon: m.id, pop: 'move' }); return; }
   let drop;
   if (has(T, 'k2')) {
     let best = -1e9; for (let i = -1; i < 4; i++) { const s = i < 0 ? m.moves : m.moves.map((x, j) => j === i ? mv : x); const v = setVal(m, s); if (v > best) { best = v; drop = i; } }
@@ -156,14 +167,14 @@ function learn(W, T, m, mv) {
   } else drop = rnd(W) < 0.5 ? -1 : ri(W, 0, 3);
   if (drop < 0) { feed(W, T.i, '🚫', `${m.name} ✗${nm}`, { mon: m.id }); return; }
   const old = D.MOVES[m.moves[drop]].name; m.moves[drop] = mv;
-  feed(W, T.i, '📖', `${m.name} ${old}→${nm}`, { mon: m.id });
+  feed(W, T.i, '📖', `${m.name} ${old}→${nm}`, { mon: m.id, pop: 'move' });
 }
 function gainExp(W, T, m, amt) {
   if (m.lv >= MAX_LV) return;
   m.exp += amt; W.stats.exp += amt;
   while (m.lv < MAX_LV && m.exp >= expFor(m.lv + 1)) {
     const oldMax = m.max; m.lv++; hydrate(m); m.hp = Math.min(m.max, m.hp + (m.max - oldMax));
-    W.stats.lv++; feed(W, T.i, '⬆', `${m.name} Lv${m.lv}`, { mon: m.id });
+    W.stats.lv++; feed(W, T.i, '⬆', `${m.name} Lv${m.lv}`, { mon: m.id, pop: 'lv', now: 1 });
     const early = has(T, 'k3') ? 3 : 0;
     for (const [l, mv] of LEARN[m.id]) if (l === m.lv + early || (early && l <= m.lv + early && !m.moves.includes(mv) && l > m.lv - 1 + early)) learn(W, T, m, mv);
   }
@@ -232,10 +243,10 @@ const maps = {};
 function mapOf(W, a = W.area) { const k = W.seed + ':' + a; return maps[k] || (maps[k] = genMap(W.seed, a)); }
 const STARTERS = ['emberpup', 'tidebolt', 'mossling', 'sparkit', 'pebblin', 'gustling'];
 function newWorld(o = {}) {
-  const seed = o.seed == null ? (Math.random() * 1e9) | 0 : o.seed;
-  const W = { v: 1, seed, rs: seed ^ 0x5bd1e995, t: 0, area: 0, best: 0, uid: 0, nb: 0, champion: false, box: [], dex: {}, feed: [], why: [], flags: [null, null],
-    bag: { potion: 3, super: 0, full: 0, revive: 0, net: 5, star: 0, moon: 0, candy: 0 },
-    stats: { wins: 0, losses: 0, catches: 0, throws: 0, finds: 0, lv: 0, exp: 0, tp: 0, bridgeTries: 0, bridgeWins: 0, npcWins: 0, wild: 0 },
+  const seed = o.seed == null ? (Math.random() * 1e9) | 0 : o.seed, diff = DIFF[o.diff] ? o.diff : 'hard';
+  const W = { v: 1, diff, seed, rs: seed ^ 0x5bd1e995, t: 0, area: 0, best: 0, uid: 0, nb: 0, champion: false, box: [], dex: {}, feed: [], why: [], flags: [null, null],
+    bag: { potion: DIFF[diff].bag.potion, super: 0, full: 0, revive: 0, net: DIFF[diff].bag.net, star: 0, moon: 0, candy: 0 },
+    stats: { wins: 0, losses: 0, faints: 0, catches: 0, throws: 0, finds: 0, lv: 0, exp: 0, tp: 0, tpLost: 0, bridgeTries: 0, bridgeWins: 0, npcWins: 0, wild: 0, rare: 0, rivalWins: 0, rivalLosses: 0 },
     trainers: [], areas: [], log: [] };
   const st = o.starters || [];
   [['Kai', '🧢', '#ff7a45'], ['Mia', '🎀', '#4fc3f7']].forEach(([name, icon, col], i) => {
@@ -252,16 +263,19 @@ function initArea(W, a) {
   const tiles = []; for (let y = 8; y < MH - 1; y++) for (let x = 1; x < MW - 1; x++) if (walk(M, x, y) && M.g[y][x] !== '=' && Math.abs(x - SPAWN.x) + Math.abs(y - SPAWN.y) > 3) tiles.push({ x, y });
   const take = () => tiles.splice(Math.floor(r() * tiles.length), 1)[0];
   const spots = [];
-  for (let i = 0; i < 8; i++) spots.push(Object.assign(take(), { h: 0, next: 0 }));
+  const dd = DF(W);
+  for (let i = 0; i < dd.spots; i++) spots.push(Object.assign(take(), { h: 0, next: 0 }));
   const cave = tiles.filter(p => M.g[p.y][p.x] === 'c' || M.g[p.y][p.x] === '"');
-  for (let i = 0; i < 6; i++) { const p = (cave.length && r() < 0.6) ? cave.splice(Math.floor(r() * cave.length), 1)[0] : take(); const k = tiles.indexOf(p); if (k >= 0) tiles.splice(k, 1); spots.push(Object.assign({ x: p.x, y: p.y }, { h: 1, next: 0 })); }
+  for (let i = 0; i < dd.hidden; i++) { const p = (cave.length && r() < 0.6) ? cave.splice(Math.floor(r() * cave.length), 1)[0] : take(); const k = tiles.indexOf(p); if (k >= 0) tiles.splice(k, 1); spots.push(Object.assign({ x: p.x, y: p.y }, { h: 1, next: 0 })); }
   const npcs = A.npcs.map((ai, i) => { let p; do { p = take(); } while (p.y > 19 && tiles.length > 10); return { i, ai, look: NPC_LOOK[(a * 3 + i) % NPC_LOOK.length], x: p.x, y: p.y, hx: p.x, hy: p.y, rest: 0, mv: 0, wins: 0 }; });
-  W.areas[a] = { rev: new Array(MW * MH).fill(0), spots, npcs, cleared: false, tries: 0 };
+  let rp; do { rp = take(); } while (rp.y > 18 && tiles.length > 10);
+  const rival = { look: RIVALS[a % RIVALS.length][0], name: RIVALS[a % RIVALS.length][1], x: rp.x, y: rp.y, rest: 60, mv: 0, wins: 0, losses: 0 };
+  W.areas[a] = { rev: new Array(MW * MH).fill(0), spots, npcs, rival, cleared: false, tries: 0 };
   for (const T of W.trainers) { T.x = SPAWN.x + (T.i ? 1 : -1); T.y = SPAWN.y; T.path = []; T.goal = null; reveal(W, T); }
 }
 function reveal(W, T) { const R = W.areas[W.area].rev, s = sightOf(T); for (let y = T.y - s; y <= T.y + s; y++) for (let x = T.x - s; x <= T.x + s; x++) if (x >= 0 && y >= 0 && x < MW && y < MH && Math.abs(x - T.x) + Math.abs(y - T.y) <= s + 1) R[y * MW + x] = 1; }
 function seen(W, id, caught) { const e = W.dex[id] || (W.dex[id] = { seen: 0, caught: 0 }); e.seen++; if (caught) e.caught++; }
-function feed(W, ti, icon, text, o = {}) { W.feed.push(Object.assign({ t: W.t, ti, icon, text }, o)); if (W.feed.length > 150) W.feed.splice(0, W.feed.length - 150); if (W.sink) W.sink.push(Object.assign({ ti, icon }, o)); }
+function feed(W, ti, icon, text, o = {}) { W.feed.push(Object.assign({ t: W.t, ti, icon, text }, o)); if (W.feed.length > 150) W.feed.splice(0, W.feed.length - 150); if (W.sink) W.sink.push(Object.assign({ ti, icon, text }, o)); }
 function why(W, T, head, top, note) { W.why.push({ t: W.t, ti: T.i, head, top: top.map(o => ({ label: o.label, s: Math.round(o.s) })), note }); if (W.why.length > 120) W.why.splice(0, W.why.length - 120); }
 function addTp(W, T, n, icon) { T.tp += n; T.tpAll += n; W.stats.tp += n; if (icon) feed(W, T.i, '✨', `+${n} TP ${icon}`); }
 
@@ -297,7 +311,7 @@ function npcTeam(W, A, n, lvs) { const all = [...A.wild.grass, ...A.wild.water, 
 function npcTr(ai, name, icon, bag) { const t = clone(D.PRESETS[ai]); t.name = name; t.icon = icon; t.bag = bag || { potion: 0, super: 0, full: 0, revive: 0 }; return t; }
 function catchChance(W, T, f, ball) {
   const hpF = f.hp / f.max, lvl = lead(T) ? lead(T).lv : 1;
-  let p = Math.min(1.2, 360 / bst(f.id)) * 0.42 * (3 - 2 * hpF) / 3;
+  let p = Math.min(1.2, 360 / bst(f.id)) * 0.55 * (3 - 2 * hpF) / 3;
   p *= f.status === 'slp' ? 2 : f.status ? 1.5 : 1;
   p *= QITEMS[ball].ball;
   if (has(T, 'c1')) p *= 1.3; if (has(T, 'c3')) p *= 1.25;
@@ -371,7 +385,7 @@ function award(W, T, res, foeTeam, mult) {
   const n = [...parts].filter(i => T.party[i] && T.party[i].hp > 0).length || 1;
   const fl = foeTeam.reduce((x, f) => Math.max(x, f.lv), 1);
   // level scaling: farming far weaker foes gives little EXP
-  T.party.forEach((m, i) => { if (m.hp <= 0) return; const share = parts.has(i) ? 1 / n : has(T, 'k1') ? 0.5 : 0; const sc = Math.pow((2 * fl + 10) / (fl + m.lv + 10), EXP_POW); if (share) gainExp(W, T, m, Math.max(1, Math.floor(total * share * sc))); });
+  T.party.forEach((m, i) => { if (m.hp <= 0) return; const share = parts.has(i) ? (has(T, 'k1') ? 0.8 : 1) / n : has(T, 'k1') ? 0.5 : 0; const sc = Math.pow((2 * fl + 10) / (fl + m.lv + 10), EXP_POW); if (share) gainExp(W, T, m, Math.max(1, Math.floor(total * share * sc))); });
 }
 function startBattle(W, T, kind, foe, extra = {}) {
   const res = runFight(W, T, foe, kind);
@@ -381,12 +395,15 @@ function startBattle(W, T, kind, foe, extra = {}) {
   return res;
 }
 function partyDown(W, T) { return !T.party.some(m => m.hp > 0); }
+// fainted: drop some ✨ (and maybe an item), lie dazed, then walk back to 🏥 (no fights on the way). Healing only happens at the center.
 function whiteout(W, T, why_) {
-  W.stats.losses++;
-  for (const m of T.party) { m.hp = m.max; m.status = null; m.slp = 0; }
-  feed(W, T.i, '😵', why_ || 'blacked out → 🏥');
-  T.pendingTp = 0; T.x = DOOR.x + (T.i ? 1 : -1); T.y = DOOR.y - 1; T.path = []; T.goal = null;
-  T.state = 'ko'; T.busy = Math.max(T.busy, W.t) + KO_T;
+  const dd = DF(W); W.stats.losses++; W.stats.faints++; T.faints = (T.faints || 0) + 1;
+  for (const m of T.party) { m.hp = 0; m.status = null; m.slp = 0; }
+  const lost = Math.min(T.tp, Math.max(T.tp > 0 ? 1 : 0, Math.round(T.tp * dd.tpLoss))); T.tp -= lost; W.stats.tpLost += lost;
+  let item = null; if (rnd(W) < dd.itemLoss) { const ks = ['potion', 'super', 'net', 'star', 'moon', 'revive'].filter(k => W.bag[k] > 0); if (ks.length) { item = ks[ri(W, 0, ks.length - 1)]; W.bag[item]--; } }
+  feed(W, T.i, '😵', `${why_ || 'fainted'}${lost ? ' −' + lost + '✨' : ''}${item ? ' −' + QITEMS[item].icon : ''}`, { now: 1, pop: 'faint' });
+  T.fainted = true; T.bridge = null; T.path = []; T.goal = null; if (T.y < BRIDGE_IN.y) { T.x = BRIDGE_IN.x; T.y = BRIDGE_IN.y; }
+  T.state = 'ko'; T.busy = Math.max(T.busy, W.t) + dd.dazeT;
 }
 function afterFight(W, T) {
   // Medic II: potions on hurt party members after the fight
@@ -395,19 +412,32 @@ function afterFight(W, T) {
     W.bag[k]--; const h = Math.min(m.max - m.hp, Math.floor(D.ITEMS[k].heal * (has(T, 'm4') ? 1.5 : 1))); m.hp += h; feed(W, T.i, QITEMS[k].icon, `${m.name} +${h}`, { mon: m.id });
   }
 }
+function wildPick(W, T, terrain) {
+  const A = AREAS[W.area], dd = DF(W), team = Math.round(avgLv(T)), L = lead(T);
+  let id = pickW(W, A.wild[terrain]), lv = ri(W, A.lv[0], A.lv[1]), rare = false;
+  lv = Math.min(A.lv[1] + dd.wildCap, Math.max(lv, team + ri(W, dd.wildUp[0], dd.wildUp[1])));
+  const r = rnd(W);
+  if (r < dd.rare && team >= 6) { rare = true; id = A.rare[ri(W, 0, A.rare.length - 1)]; lv = Math.max(lv, team + ri(W, 3, 5)); }
+  else if (r < dd.rare + dd.counter && L && team >= 7) {   // a bad matchup for your lead (not in the first minutes)
+    const ids = [...new Set(A.wild[terrain].map(([k]) => k))]; let best = id, bs = -1e9;
+    for (const k of ids) { const s = TR.matchup(hydrate({ id: k, lv, moves: movesAt(k, lv) }), L); if (s > bs) { bs = s; best = k; } }
+    id = best;
+  }
+  return { id, lv: Math.max(2, Math.min(MAX_LV, lv)), rare };
+}
 function wildBattle(W, T, terrain) {
-  const A = AREAS[W.area], id = pickW(W, A.wild[terrain]), lv = ri(W, A.lv[0], A.lv[1]);
-  const f = newMon(W, id, lv); seen(W, id, false); W.stats.wild++;
+  const pk = wildPick(W, T, terrain), id = pk.id;
+  const f = newMon(W, id, pk.lv); f.rare = pk.rare; seen(W, id, false); W.stats.wild++; if (pk.rare) { W.stats.rare++; feed(W, T.i, '⭐', `${f.name} Lv${f.lv}!`, { mon: id, now: 1 }); }
   const res = startBattle(W, T, 'wild', { tr: wildTr(), team: [f] });
   T.after = () => {
     if (res.caught) {
       f.ot = T.i; f.status = f.status === 'slp' ? null : f.status; f.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0, eva: 0, crit: 0 };
       W.dex[id].caught++; W.stats.catches++;
       if (T.party.length < capOf(T)) T.party.push(f); else W.box.push(f);
-      feed(W, T.i, '🎯', `${f.name} Lv${f.lv}${T.party.includes(f) ? '' : ' → 📦'}`, { mon: id, big: 1 });
+      feed(W, T.i, QITEMS[(res.turns.flat().filter(e => e.t === 'throw').pop() || {}).ball || 'net'].icon, `${f.name}!${T.party.includes(f) ? '' : ' → 📦'}`, { mon: id, big: 1, pop: 'catch', now: 1 });
       award(W, T, res, [f], 0.6); addTp(W, T, 2);
-    } else if (res.win) { W.stats.wins++; feed(W, T.i, '⚔', `${f.name} Lv${f.lv} ✔`, { mon: id }); award(W, T, res, [f], 1); if (f.lv >= avgLv(T) - 2) addTp(W, T, 1); }   // no TP for farming far weaker monsters
-    else if (partyDown(W, T)) whiteout(W, T);
+    } else if (res.win) { W.stats.wins++; feed(W, T.i, '⚔', `${f.name} Lv${f.lv} ✔`, { mon: id }); award(W, T, res, [f], f.rare ? 1.5 : 1); if (f.lv >= avgLv(T) + DF(W).wildTpMin && !has(T, 'k4')) addTp(W, T, f.rare ? 3 : 1); }   // no TP for farming weaker monsters
+    else if (partyDown(W, T)) whiteout(W, T, `${f.name} Lv${f.lv}`);
     else feed(W, T.i, '💨', `${f.name} fled`, { mon: id });
     afterFight(W, T);
   };
@@ -417,54 +447,108 @@ function npcBattle(W, T, n) {
   const team = npcTeam(W, A, 1 + (n.i % 2) + (W.area ? 1 : 0), [lvl - 1, lvl]);
   const res = startBattle(W, T, 'npc', { tr: npcTr(n.ai, 'Trainer', n.look, { potion: 1, super: 0, full: 0, revive: 0 }), team });
   n.rest = W.t + 150; T.after = () => {
-    if (res.win) { W.stats.wins++; W.stats.npcWins++; n.wins++; feed(W, T.i, '🏅', `${n.look} beaten`, { big: 1 }); award(W, T, res, team, 1.5); addTp(W, T, 3); W.bag.potion += rnd(W) < 0.5 ? 1 : 0; }
-    else if (partyDown(W, T)) whiteout(W, T, `${n.look} won → 🏥`); else feed(W, T.i, '🤝', `${n.look} draw`);
+    if (res.win) { W.stats.wins++; W.stats.npcWins++; n.wins++; feed(W, T.i, '🏅', `${n.look} beaten`, { big: 1, now: 1 }); award(W, T, res, team, 1.5); addTp(W, T, 3); W.bag.potion += rnd(W) < DF(W).npcPotion ? 1 : 0; W.bag.net += rnd(W) < 0.5 ? 1 : 0; }
+    else if (partyDown(W, T)) whiteout(W, T, `${n.look} won`); else feed(W, T.i, '🤝', `${n.look} draw`);
+    afterFight(W, T);
+  };
+}
+// the rival: roams the whole map, picks monsters that beat your lead, and takes ✨ when you lose
+function rivalBattle(W, T, rv) {
+  const A = AREAS[W.area], dd = DF(W), L = lead(T), lvl = Math.max(A.lv[0] + 1, Math.round(avgLv(T)) + dd.rivalUp);
+  const all = [...new Set([...A.wild.grass, ...A.wild.water, ...A.wild.cave].map(([k]) => k))];
+  const sc = (k) => L ? TR.matchup(hydrate({ id: k, lv: lvl, moves: movesAt(k, lvl) }), L) : 0;
+  const pool = all.map(k => [k, sc(k) + rnd(W) * 1.5]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  const n = (W.area ? 2 : 1) + (rv.losses >= 2 ? 1 : 0);   // gets a second monster once you have beaten them twice
+  const team = pool.slice(0, n).map((k, j) => newMon(W, k, lvl - (j < n - 1 ? 1 : 0)));
+  const res = startBattle(W, T, 'rival', { tr: npcTr(W.diff === 'hard' ? 'ace' : 'gambler', rv.name, rv.look, { potion: 1, super: 0, full: 0, revive: 0 }), team });
+  rv.rest = W.t + 360; T.after = () => {
+    if (res.win) { W.stats.wins++; W.stats.rivalWins++; rv.losses++; feed(W, T.i, '🏆', `${rv.look} ${rv.name} beaten`, { big: 1, now: 1 }); award(W, T, res, team, 1.6); addTp(W, T, 4); if (rnd(W) < 0.5) W.bag.potion++; }
+    else {
+      W.stats.rivalLosses++; rv.wins++; const lost = Math.min(T.tp, dd.rivalLoss); T.tp -= lost; W.stats.tpLost += lost;
+      if (partyDown(W, T)) whiteout(W, T, `${rv.look} ${rv.name}${lost ? ' −' + lost + '✨' : ''}`); else feed(W, T.i, rv.look, `${rv.name} wins${lost ? ' −' + lost + '✨' : ''}`, { now: 1 });
+    }
     afterFight(W, T);
   };
 }
 // the Bridge: 5 trainers in a row, no healing between (items allowed)
-function bridgeTeams(W, a) { const A = AREAS[a], r = TR.mulberry(W.seed * 3 + a * 101); const all = [...A.wild.grass, ...A.wild.water, ...A.wild.cave].map(([k]) => k);
-  return A.bridge.lv.map((lv, k) => ({ ai: A.bridge.ai[k], team: Array.from({ length: A.bridge.size[k] }, () => all[Math.floor(r() * all.length)]).map((id, j) => ({ id, lv: lv - (j < A.bridge.size[k] - 1 ? 1 : 0) })) })); }
-const bridgeLv = (a) => AREAS[a].bridge.lv.reduce((x, y) => x + y, 0) / 5;
+// fixed line-ups with type coverage. Hard: every Bridge trainer plays the Ace doctrine, bigger teams, higher levels.
+function bridgeTeams(W, a) {
+  const A = AREAS[a], B = A.bridge, hard = !W || W.diff !== 'normal', add = hard ? 0 : DIFF.normal.bridgeLvAdd;
+  return B.lv.map((lv0, k) => { const lv = lv0 + add, n = (hard ? B.size : B.nsize)[k]; return { ai: hard ? (B.hai || B.ai)[k] : B.ai[k], team: B.teams[k].slice(0, n).map((id, j) => ({ id, lv: lv - (j < n - 1 ? 1 : 0) })) }; });
+}
+const bridgeBag = (W, k) => k === 4 ? { potion: 2, super: W && W.diff !== 'normal' ? 1 : 0, full: 0, revive: 0 } : { potion: k > 1 ? 1 : 0, super: 0, full: 0, revive: 0 };
+const bridgeLv = (a, W) => { const T = bridgeTeams(W, a); return T.reduce((x, t) => x + t.team[t.team.length - 1].lv, 0) / 5; };
 function bridgeStep(W, T) {
-  const k = T.bridge.idx, spec = bridgeTeams(W, W.area)[k], A = AREAS[W.area];
+  const k = T.bridge.idx, spec = bridgeTeams(W, W.area)[k];
   const team = spec.team.map(s => newMon(W, s.id, s.lv));
   T.x = 9; T.y = 6 - k + 1; // stands just south of the next bridge trainer
-  const res = startBattle(W, T, 'bridge', { tr: npcTr(spec.ai, `Bridge ${k + 1}/5`, ['🥉', '🥈', '🥇', '🎖', '👑'][k], k === 4 ? { potion: 2, super: 1, full: 0, revive: 0 } : { potion: k > 1 ? 1 : 0, super: 0, full: 0, revive: 0 }), team }, { idx: k });
+  const res = startBattle(W, T, 'bridge', { tr: npcTr(spec.ai, `Bridge ${k + 1}/5`, ['🥉', '🥈', '🥇', '🎖', '👑'][k], bridgeBag(W, k)), team }, { idx: k });
   T.after = () => {
     if (res.win) {
       award(W, T, res, team, 1.5); addTp(W, T, 2); W.areas[W.area].best = Math.max(W.areas[W.area].best || 0, k + 1);
-      feed(W, T.i, '🌉', `${k + 1}/5 ✔`, { big: 1 });
+      feed(W, T.i, '🌉', `${k + 1}/5 ✔`, { big: 1, now: 1 });
       if (k === 4) {
         W.stats.bridgeWins++; addTp(W, T, 10, '🌉'); W.areas[W.area].cleared = true; W.log.push({ t: W.t, ev: 'bridge', area: W.area, ti: T.i });
         T.bridge = null;
         if (W.area < AREAS.length - 1) { W.unlock = { at: W.t + 1.5, to: W.area + 1 }; feed(W, T.i, '🎉', `${AREAS[W.area + 1].icon} ${AREAS[W.area + 1].name} unlocked`, { big: 1 }); }
         else { W.champion = true; feed(W, T.i, '🏆', 'Champion!', { big: 1 }); }
         for (const m of T.party) { m.hp = m.max; m.status = null; }
-      } else T.bridge.idx++;
+      } else if (T.bridge) T.bridge.idx++;
     } else {
-      T.bridge = null; T.cool = W.t + 90; W.log.push({ t: W.t, ev: 'bridgefail', area: W.area, ti: T.i, k });
-      whiteout(W, T, `🌉 ${k + 1}/5 ✖ → 🏥`);
+      T.bridge = null; T.bfails = (T.bfails || 0) + 1; T.cool = W.t + DF(W).bridgeCool * Math.min(3, T.bfails); W.log.push({ t: W.t, ev: 'bridgefail', area: W.area, ti: T.i, k });
+      whiteout(W, T, `🌉 ${k + 1}/5 ✖`);
     }
   };
+}
+
+// ---------------------------------------------------------------- Bridge readiness: honest, from simulations
+// N full Bridge runs with a copy of this trainer's party at full HP, its traits/doctrine and the current bag. Cached per party/traits/bag.
+const RCACHE = new Map();
+function readiness(W, T, n = 12) {
+  const a = W.area, AR = W.areas[a]; if (!AR || AR.cleared) return { p: 1, stage: 5, n: 0 };
+  const specs = bridgeTeams(W, a);
+  const key = [T.i, W.seed, a, W.diff, specs.map(x => x.ai + x.team.map(y => y.id + y.lv).join()).join('/'), Object.keys(T.traits).sort().join(''), T.party.map(m => m.id + m.lv + m.moves.join('')).join('|'), W.bag.potion, W.bag.super, W.bag.full, W.bag.revive, n].join(';');
+  const c = RCACHE.get(key); if (c) return c;
+  let wins = 0, st = 0;
+  for (let k = 0; k < n; k++) {
+    const S = { seed: (W.seed + 7777 * (k + 1)) | 0, rs: (W.seed ^ (k * 40503 + 99)) | 0, nb: 0, uid: 0, fast: true, diff: W.diff, area: a, bag: Object.assign({}, W.bag), why: [], feed: [], dex: {}, stats: { exp: 0, lv: 0, throws: 0 } };
+    const P = { i: T.i, name: T.name, icon: T.icon, traits: T.traits, party: T.party.map(m => hydrate(Object.assign(strip(m), { hp: null, status: null, slp: 0 }))) };
+    let i = 0;
+    for (; i < 5; i++) { const sp = specs[i]; const res = runFight(S, P, { tr: npcTr(sp.ai, 'B', '🌉', bridgeBag(W, i)), team: sp.team.map(x => newMon(S, x.id, x.lv)) }, 'bridge'); if (!res.win) break; }
+    if (i === 5) wins++; st += i;
+  }
+  const r = { p: wins / n, stage: st / n, n };
+  RCACHE.set(key, r); if (RCACHE.size > 80) RCACHE.delete(RCACHE.keys().next().value);
+  return r;
+}
+// when will this trainer try the Bridge? Read the foe (b2): at ≥50% simulated clears. Untrained: blindly, once the levels look close.
+const blindLv = (W, T) => Math.ceil(bridgeLv(W.area, W) - 2 - (T.party.length - 2) * 1.2);
+function bridgeIntent(W, T) {
+  const AR = W.areas[W.area]; if (!AR || AR.cleared) return { k: 'done' };
+  if (T.bridge) return { k: 'on' };
+  if (T.cool > W.t) return { k: 'cool', left: T.cool - W.t };
+  if (T.party.length < DF(W).bridgeMin) return { k: 'team', need: DF(W).bridgeMin };   // Hard: the Bridge refuses lone monsters
+  if (has(T, 'b2')) { const r = readiness(W, T); return { k: 'smart', p: r.p, ok: r.p >= 0.5 }; }
+  const need = blindLv(W, T); return { k: 'blind', need, ok: avgLv(T) >= need };
 }
 
 // ---------------------------------------------------------------- trainer decisions (a scored planner like the battle AI; rows go to the Why log)
 function decide(W, T) {
   const M = mapOf(W), AR = W.areas[W.area], A = AREAS[W.area], hp = partyHp(T), down = T.party.filter(m => m.hp <= 0).length, sight = sightOf(T);
+  if (T.fainted) { setGoal(W, T, { x: DOOR.x, y: DOOR.y, k: 'heal' }); return; }   // fainted: straight back to 🏥
   const opts = [], dist = bfs(M, T);
   const d = (p) => dist[p.y * MW + p.x];
   const strong = hp > 0.6 && avgLv(T) >= A.lv[1] - 1;
   // heal
-  let hs = has(T, 'm2') ? 150 * (1 - hp) + 35 * down + (hp < 0.5 ? 30 : 0) : (hp < 0.2 || (lead(T) && lead(T) !== T.party[0] && hp < 0.4) ? 90 : 0) + 25 * (1 - hp);
+  let hs = has(T, 'm2') ? 150 * (1 - hp) + 35 * down + (hp < 0.5 ? 30 : 0) : (hp < 0.35 || (lead(T) && lead(T) !== T.party[0] && hp < 0.5) ? 90 : 0) + 25 * (1 - hp);
   if (hp >= 0.999) hs = -100;
   opts.push({ label: '🏥 heal', s: hs, k: 'heal', why: `HP ${Math.round(hp * 100)}%` });
   // the Bridge
   if (!AR.cleared && !(W.unlock) && W.t >= T.cool && !W.trainers.some(o => o !== T && o.bridge)) {
-    const gap = avgLv(T) - bridgeLv(W.area) + (T.party.length - 2) * 1.2;
-    let s = has(T, 'b2') ? (gap >= 0 && hp > 0.9 ? 95 + 8 * gap : -40) : (hp > 0.7 ? 18 + 7 * gap + 12 * rnd(W) : -20);
+    const it = bridgeIntent(W, T);
+    let s = it.ok && hp > 0.9 ? (it.k === 'smart' ? 95 + 40 * (it.p - 0.5) : 70) : -40;
     const fl = W.flags[T.i]; if (fl && fl.y <= 7 && Math.abs(fl.x - 9) <= 2) s += 250;
-    opts.push({ label: '🌉 bridge', s, k: 'bridge', why: `Lv ${avgLv(T).toFixed(1)} vs ${bridgeLv(W.area).toFixed(1)}` });
+    opts.push({ label: '🌉 bridge', s, k: 'bridge', why: it.k === 'smart' ? `sim ${Math.round(it.p * 100)}%` : `Lv ${avgLv(T).toFixed(1)} vs ${it.need}` });
   }
   // items (Scout I: open items in sight; Scout II: hidden spots in sight)
   if (has(T, 's1') || has(T, 's2')) {
@@ -515,7 +599,9 @@ function arrive(W, T) {
   if (g.k === 'heal' && T.x === DOOR.x && T.y === DOOR.y) {
     for (const m of T.party) { m.hp = m.max; m.status = null; m.slp = 0; }
     if (has(T, 'l3')) rotate(W, T);
-    T.state = 'heal'; T.busy = W.t + HEAL_T; feed(W, T.i, '🏥', 'healed');
+    T.state = 'heal'; T.busy = W.t + DF(W).healT; T.fainted = false; feed(W, T.i, '🏥', 'healed');
+  } else if (g.k === 'bridge' && T.x === BRIDGE_IN.x && T.y === BRIDGE_IN.y && T.party.length < DF(W).bridgeMin) {
+    feed(W, T.i, '🌉', `🚫 ${DF(W).bridgeMin}+ 🐾`, { now: 1 }); if (W.flags[T.i] && W.flags[T.i].y <= 7) W.flags[T.i] = null; T.cool = W.t + 30;
   } else if (g.k === 'bridge' && T.x === BRIDGE_IN.x && T.y === BRIDGE_IN.y && !W.areas[W.area].cleared && !W.trainers.some(o => o !== T && o.bridge)) {
     W.stats.bridgeTries++; W.areas[W.area].tries++; T.bridge = { idx: 0 }; feed(W, T.i, '🌉', 'Bridge!', { big: 1 }); W.log.push({ t: W.t, ev: 'bridgetry', area: W.area, ti: T.i, lv: T.party.map(m => m.lv), hp: Math.round(partyHp(T) * 100) });
     if (W.flags[T.i] && W.flags[T.i].y <= 7) W.flags[T.i] = null;
@@ -528,8 +614,8 @@ function pickup(W, T) {
     if (p.next > W.t || p.x !== T.x || p.y !== T.y) continue;
     if (p.h && !has(T, 's2')) continue;
     const k = pickW(W, FIND[p.h ? 'hidden' : 'open']); W.bag[k]++; W.stats.finds++;
-    p.next = W.t + (p.h ? 300 : 150);
-    feed(W, T.i, p.h ? '⛏' : '🎁', `${QITEMS[k].icon} ${QITEMS[k].name}`, { big: p.h }); addTp(W, T, p.h ? 2 : 1);
+    const rs = DF(W).respawn; p.next = W.t + (p.h ? rs[1] : rs[0]);
+    feed(W, T.i, p.h ? '⛏' : '🎁', `${QITEMS[k].icon} ${QITEMS[k].name}`, { big: p.h, now: 1, item: k }); addTp(W, T, p.h ? 2 : 1); T.found = W.t;
     if (p.h) { T.state = 'dig'; T.busy = W.t + DIG_T; }
     return true;
   }
@@ -547,13 +633,16 @@ function stepTrainer(W, T) {
   }
   if (T.state === 'walk') T.state = 'idle';
   if (W.unlock) return;
-  if (!T.path.length) { if (T.goal) arrive(W, T); if (T.busy > W.t || T.state !== 'idle') return; if (pickup(W, T)) return; decide(W, T); if (!T.path.length) { T.busy = W.t + 1; return; } }
+  if (!T.path.length) { if (T.goal) arrive(W, T); if (T.busy > W.t || T.state !== 'idle') return; if (!T.fainted && pickup(W, T)) return; decide(W, T); if (!T.path.length) { T.busy = W.t + 1; return; } }
   // walk one tile
   const n = T.path.shift(); if (!walk(M, n.x, n.y)) { T.path = []; return; }
   T.x = n.x; T.y = n.y; T.steps++; T.state = 'walk'; T.busy = W.t + STEP_T; reveal(W, T);
-  if (has(T, 'm4') && T.steps % 3 === 0) for (const m of T.party) if (m.hp > 0 && m.hp < m.max) m.hp = Math.min(m.max, m.hp + Math.max(1, Math.round(m.max * 0.02)));
+  if (has(T, 'm4') && T.steps % 3 === 0) for (const m of T.party) if (m.hp > 0 && m.hp < m.max) m.hp = Math.min(m.max, m.hp + Math.max(1, Math.round(m.max * DF(W).herb)));
+  if (T.fainted) return;   // walking home: no items, no fights
   pickup(W, T);
   if (T.state === 'dig') return;
+  const rv = W.areas[W.area].rival;
+  if (rv && rv.rest <= W.t && Math.abs(rv.x - T.x) + Math.abs(rv.y - T.y) <= 1 && T.party.some(m => m.hp > 0) && partyHp(T) > 0.25) { rivalBattle(W, T, rv); return; }
   // trainers nearby challenge
   for (const nn of W.areas[W.area].npcs) if (nn.rest <= W.t && Math.abs(nn.x - T.x) + Math.abs(nn.y - T.y) <= 1 && T.party.some(m => m.hp > 0)) { npcBattle(W, T, nn); return; }
   const ter = ENC[M.g[T.y][T.x]];
@@ -571,15 +660,25 @@ function stepNpcs(W) {
     if (walk(M, nx, ny) && Math.abs(nx - n.hx) + Math.abs(ny - n.hy) <= 3 && M.g[ny][nx] !== '=' && !W.trainers.some(T => T.x === nx && T.y === ny)) { n.x = nx; n.y = ny; }
   }
 }
+// the rival roams anywhere and walks toward a nearby trainer to challenge them
+function stepRival(W) {
+  const rv = W.areas[W.area].rival; if (!rv || rv.mv > W.t) return; rv.mv = W.t + 1.2 + rnd(W);
+  const M = mapOf(W); let dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const tgt = rv.rest <= W.t ? W.trainers.filter(T => !T.fainted && T.state !== 'battle' && !T.bridge && Math.abs(T.x - rv.x) + Math.abs(T.y - rv.y) <= 5).sort((a, b) => (Math.abs(a.x - rv.x) + Math.abs(a.y - rv.y)) - (Math.abs(b.x - rv.x) + Math.abs(b.y - rv.y)))[0] : null;
+  if (tgt) dirs = dirs.sort((a, b) => (Math.abs(rv.x + a[0] - tgt.x) + Math.abs(rv.y + a[1] - tgt.y)) - (Math.abs(rv.x + b[0] - tgt.x) + Math.abs(rv.y + b[1] - tgt.y)));
+  else dirs = [dirs[ri(W, 0, 3)]];
+  rv.chase = tgt ? tgt.i : -1;
+  for (const [dx, dy] of dirs) { const nx = rv.x + dx, ny = rv.y + dy; if (walk(M, nx, ny) && ny >= 8 && ny < DOOR.y - 1 && !W.trainers.some(T => T.x === nx && T.y === ny)) { rv.x = nx; rv.y = ny; break; } }
+}
 function step(W) {
   W.t += TICK;
   if (W.unlock && W.t >= W.unlock.at && !W.trainers.some(T => T.state === 'battle' && T.busy > W.t)) {
     W.area = W.unlock.to; W.best = Math.max(W.best, W.area); W.unlock = null; W.flags = [null, null];
-    for (const T of W.trainers) { T.bridge = null; T.battle = null; T.after = null; T.state = 'idle'; T.busy = W.t + 1; for (const m of T.party) { m.hp = m.max; m.status = null; } }
+    for (const T of W.trainers) { T.bridge = null; T.battle = null; T.after = null; T.state = 'idle'; T.fainted = false; T.busy = W.t + 1; for (const m of T.party) { m.hp = m.max; m.status = null; } }
     if (!W.areas[W.area]) initArea(W, W.area); else for (const T of W.trainers) { T.x = SPAWN.x + (T.i ? 1 : -1); T.y = SPAWN.y; T.path = []; T.goal = null; }
     W.log.push({ t: W.t, ev: 'area', area: W.area });
   }
-  stepNpcs(W);
+  stepNpcs(W); stepRival(W);
   for (const T of W.trainers) stepTrainer(W, T);
 }
 function run(W, secs, o = {}) { const end = W.t + secs; const was = W.fast; W.fast = !!o.fast; while (W.t < end) { step(W); if (o.until && o.until(W)) break; if (o.each) o.each(W); } W.fast = was; }
@@ -593,21 +692,22 @@ function catchUp(W, secs) {
   for (const T of W.trainers) if (T.state === 'battle') { T.busy = W.t; }
   run(W, s, { fast: true });
   const S = W.stats, B = before.st;
-  return { secs: s, capped: secs > OFFLINE_CAP, wins: S.wins - B.wins, catches: S.catches - B.catches, finds: S.finds - B.finds, lv: S.lv - B.lv, tp: S.tp - B.tp, losses: S.losses - B.losses, bridgeTries: S.bridgeTries - B.bridgeTries, area: W.area, areaUp: W.area - before.area };
+  return { secs: s, capped: secs > OFFLINE_CAP, wins: S.wins - B.wins, catches: S.catches - B.catches, finds: S.finds - B.finds, lv: S.lv - B.lv, tp: S.tp - B.tp, losses: S.losses - B.losses, faints: (S.faints || 0) - (B.faints || 0), tpLost: (S.tpLost || 0) - (B.tpLost || 0), bridgeTries: S.bridgeTries - B.bridgeTries, area: W.area, areaUp: W.area - before.area };
 }
 // ---------------------------------------------------------------- save / load
 const SAVE_KEY = 'trainer-quest-v1';
 function serialize(W) {
-  const T = W.trainers.map(t => ({ i: t.i, name: t.name, icon: t.icon, col: t.col, x: t.x, y: t.y, tp: t.tp, tpAll: t.tpAll, traits: t.traits, party: t.party.map(strip), cool: t.cool, steps: t.steps, bridge: null }));
-  return JSON.stringify({ v: 1, seed: W.seed, rs: W.rs, t: W.t, area: W.area, best: W.best, uid: W.uid, nb: W.nb, champion: W.champion, box: W.box.map(strip), dex: W.dex, feed: W.feed.slice(-80), why: W.why.slice(-60), flags: W.flags, bag: W.bag, stats: W.stats, trainers: T, areas: W.areas, log: W.log.slice(-200), saved: Date.now() });
+  const T = W.trainers.map(t => ({ i: t.i, name: t.name, icon: t.icon, col: t.col, x: t.x, y: t.y, tp: t.tp, tpAll: t.tpAll, traits: t.traits, party: t.party.map(strip), cool: t.cool, steps: t.steps, faints: t.faints || 0, bfails: t.bfails || 0, fainted: !!t.fainted, bridge: null }));
+  return JSON.stringify({ v: 1, diff: W.diff, seed: W.seed, rs: W.rs, t: W.t, area: W.area, best: W.best, uid: W.uid, nb: W.nb, champion: W.champion, box: W.box.map(strip), dex: W.dex, feed: W.feed.slice(-80), why: W.why.slice(-60), flags: W.flags, bag: W.bag, stats: W.stats, trainers: T, areas: W.areas, log: W.log.slice(-200), saved: Date.now() });
 }
 function deserialize(s) {
   const o = JSON.parse(s); if (!o || o.v !== 1) throw new Error('bad save');
-  const W = Object.assign(newWorld({ seed: o.seed }), { rs: o.rs, t: o.t, area: o.area, best: o.best, uid: o.uid, nb: o.nb, champion: o.champion, dex: o.dex, feed: o.feed || [], why: o.why || [], flags: o.flags || [null, null], bag: o.bag, stats: o.stats, areas: o.areas, log: o.log || [], saved: o.saved });
+  const W = Object.assign(newWorld({ seed: o.seed, diff: o.diff }), { rs: o.rs, t: o.t, area: o.area, best: o.best, uid: o.uid, nb: o.nb, champion: o.champion, dex: o.dex, feed: o.feed || [], why: o.why || [], flags: o.flags || [null, null], bag: o.bag, stats: Object.assign({ faints: 0, tpLost: 0, rare: 0, rivalWins: 0, rivalLosses: 0 }, o.stats), areas: o.areas, log: o.log || [], saved: o.saved });
   W.box = (o.box || []).map(hydrate);
+  W.areas.forEach((AR, a) => { if (AR && !AR.rival) AR.rival = { look: RIVALS[a % RIVALS.length][0], name: RIVALS[a % RIVALS.length][1], x: AR.npcs[0].hx, y: AR.npcs[0].hy, rest: o.t + 60, mv: 0, wins: 0, losses: 0 }; });
   W.trainers = o.trainers.map(t => Object.assign({ path: [], state: 'idle', busy: o.t, goal: null, battle: null, bridge: null }, t, { party: t.party.map(hydrate) }));
   return W;
 }
-root.TQ = { gainExp, path, decide, bfs, tune: (k, p) => { EXP_K = k; EXP_POW = p; }, MW, MH, TICK, STEP_T, TURN_T, INTRO_T, OUTRO_T, DOOR, SPAWN, BRIDGE_IN, AREAS, QITEMS, BALLS, TREES, TRAIT, LEARN, STARTERS, OFFLINE_CAP, SAVE_KEY, ENC,
-  newWorld, mapOf, step, run, buy, canBuy, has, capOf, sightOf, doctrineOf, baseDoctrine, setFlag, catchUp, serialize, deserialize, hydrate, expFor, movesAt, partyHp, avgLv, bridgeLv, bridgeTeams, walk, catchChance, fillParty, rotate, feed, setVal };
+root.TQ = { _rf: runFight, DIFF, readiness, bridgeIntent, blindLv, blockedBy, wildPick, gainExp, path, decide, bfs, tune: (k, p) => { EXP_K = k; EXP_POW = p; }, MW, MH, TICK, STEP_T, TURN_T, INTRO_T, OUTRO_T, DOOR, SPAWN, BRIDGE_IN, AREAS, QITEMS, BALLS, TREES, TRAIT, LEARN, STARTERS, OFFLINE_CAP, SAVE_KEY, ENC,
+  newWorld, mapOf, step, run, buy, canBuy, has, capOf, sightOf, doctrineOf, baseDoctrine, setFlag, catchUp, serialize, deserialize, hydrate, expFor, movesAt, partyHp, avgLv, bridgeLv, bridgeTeams, bridgeBag, walk, lead, catchChance, fillParty, rotate, feed, setVal };
 })(typeof window !== 'undefined' ? window : globalThis);

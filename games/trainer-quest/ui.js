@@ -1,4 +1,4 @@
-/* Trainer Quest phone UI: map canvas (fit, ✋ pan/zoom), slim trainer strip (battles live there), tabs (traits, party/box, bag, dex, feed, why, menu). */
+/* Trainer Quest phone UI: map canvas (fit, ✋ pan/zoom, activity bubbles, on-map battles), goal tracker, Now strip, pops, tutorial, trainer cards, tabs. */
 (function () {
 'use strict';
 const D = TRDoctrine, Q = TQ, $ = (id) => document.getElementById(id);
@@ -6,11 +6,11 @@ const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt
 const art = (id) => TRArt(id);
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } }, del(k) { try { localStorage.removeItem(k); } catch (e) { /* */ } } };
 const UI_KEY = 'trainer-quest-ui-v1';
-const ui = Object.assign({ speed: 1, flag: 0, drag: false, tab: 'map', pt: 0 }, (() => { try { return JSON.parse(store.get(UI_KEY)) || {}; } catch (e) { return {}; } })());
-const saveUi = () => store.set(UI_KEY, JSON.stringify({ speed: ui.speed, flag: ui.flag, pt: ui.pt }));
+const ui = Object.assign({ speed: 1, flag: 0, drag: false, tab: 'map', pt: 0, tut: 0 }, (() => { try { return JSON.parse(store.get(UI_KEY)) || {}; } catch (e) { return {}; } })());
+const saveUi = () => store.set(UI_KEY, JSON.stringify({ speed: ui.speed, flag: ui.flag, pt: ui.pt, tut: ui.tut }));
 let W = null, paused = false, acc = 0, lastT = 0, lastSave = 0, bvTi = -1, dirty = true, lastRender = 0;
 const fx = [];
-function landscape() { return matchMedia('(orientation: landscape) and (min-width: 600px)').matches; }   // floating icons over the map
+function landscape() { return matchMedia('(orientation: landscape) and (min-width: 600px)').matches; }
 const fmt = (s) => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}:${String(x).padStart(2, '0')}`; };
 const hpCls = (f) => f > 0.5 ? '' : f > 0.2 ? 'mid' : 'low';
 const hpBar = (h, m) => `<div class="hp"><i class="${hpCls(h / m)}" style="width:${Math.max(0, Math.min(100, h / m * 100))}%"></i></div>`;
@@ -19,7 +19,7 @@ function toast(t, ms = 1800) { const e = $('toast'); e.textContent = t; e.classL
 // ---------------------------------------------------------------- save / load / offline catch-up
 function save() { if (!W) return; store.set(Q.SAVE_KEY, Q.serialize(W)); lastSave = performance.now(); }
 function awaySummary(sum) {
-  const R = [['⚔', sum.wins], ['🎯', sum.catches], ['🎁', sum.finds], ['⬆', sum.lv], ['✨', '+' + sum.tp], ['😵', sum.losses], ['🌉', sum.bridgeTries]];
+  const R = [['⚔', sum.wins], ['🎯', sum.catches], ['🎁', sum.finds], ['⬆', sum.lv], ['✨', '+' + sum.tp + (sum.tpLost ? ' −' + sum.tpLost : '')], ['😵', sum.faints != null ? sum.faints : sum.losses], ['🌉', sum.bridgeTries]];
   $('awayBox').innerHTML = `<b>🌙 ${fmt(sum.secs)}${sum.capped ? ' (max 2h)' : ''}${sum.areaUp ? ` · 🎉 ${Q.AREAS[sum.area].icon}` : ''}</b>${R.map(([i, v]) => `<span>${i}${v}</span>`).join('')}`;
   $('away').hidden = false; clearTimeout(awaySummary.h); awaySummary.h = setTimeout(() => { $('away').hidden = true; }, 30000);
 }
@@ -40,12 +40,13 @@ addEventListener('pagehide', save);
 
 // ---------------------------------------------------------------- start screen (pick starters)
 function startScreen() {
-  const pick = [Q.STARTERS[0], Q.STARTERS[1]];
+  const pick = [Q.STARTERS[0], Q.STARTERS[1]]; let diff = 'hard';
   const names = [['🧢', 'Kai'], ['🎀', 'Mia']];
   const draw = () => {
-    $('startBox').innerHTML = `<h2>🗺 Trainer Quest</h2>` + [0, 1].map(i => `<h3>${names[i][0]} ${names[i][1]}</h3><div class="starters">${Q.STARTERS.map(id => `<button data-i="${i}" data-m="${id}" class="${pick[i] === id ? 'on' : ''}" aria-label="${D.DEX[id].name}"><img src="${art(id)}" alt="">${D.TYPES[D.DEX[id].type].icon}</button>`).join('')}<button data-i="${i}" data-m="?" aria-label="Random">🎲</button></div>`).join('') + `<button class="big" id="go">▶ Start</button>`;
+    $('startBox').innerHTML = `<h2>🗺 Trainer Quest</h2><div class="diffSeg">${['hard', 'normal'].map(d => `<button id="diff_${d}" data-diff="${d}" class="${diff === d ? 'on' : ''}">${Q.DIFF[d].icon} ${Q.DIFF[d].name}</button>`).join('')}</div>` + [0, 1].map(i => `<h3>${names[i][0]} ${names[i][1]}</h3><div class="starters">${Q.STARTERS.map(id => `<button data-i="${i}" data-m="${id}" class="${pick[i] === id ? 'on' : ''}" aria-label="${D.DEX[id].name}"><img src="${art(id)}" alt="">${D.TYPES[D.DEX[id].type].icon}</button>`).join('')}<button data-i="${i}" data-m="?" aria-label="Random">🎲</button></div>`).join('') + `<button class="big" id="go">▶ Start</button>`;
+    $('startBox').querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { diff = b.dataset.diff; draw(); });
     $('startBox').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const i = +b.dataset.i; pick[i] = b.dataset.m === '?' ? Q.STARTERS[Math.floor(Math.random() * Q.STARTERS.length)] : b.dataset.m; draw(); });
-    $('go').onclick = () => { W = Q.newWorld({ starters: pick }); W.sink = []; $('start').hidden = true; save(); dirty = true; toast(`${D.DEX[pick[0]].name} & ${D.DEX[pick[1]].name}!`); };
+    $('go').onclick = () => { W = Q.newWorld({ starters: pick, diff }); W.sink = []; $('start').hidden = true; save(); dirty = true; toast(`${Q.DIFF[diff].icon} ${D.DEX[pick[0]].name} & ${D.DEX[pick[1]].name}!`); if (!ui.tut) tutStart(); };
   };
   draw(); $('start').hidden = false;
 }
@@ -110,33 +111,81 @@ function render(now) {
   if (AR.cleared) emoji('✔', px(9), py(4), s);
   // npcs
   for (const n of AR.npcs) { emoji(n.look, px(n.x), py(n.y), s * 0.9); if (n.rest > W.t) emoji('💤', px(n.x) + s * 0.4, py(n.y) - s * 0.45, s * 0.5); }
+  // the rival (red ring; ❗ when chasing one of yours)
+  const rv = AR.rival; if (rv) { const x = px(rv.x), y = py(rv.y); g.strokeStyle = '#ef3a3a'; g.lineWidth = Math.max(2, s / 9); g.beginPath(); g.arc(x, y, s * 0.46, 0, 7); g.stroke(); emoji(rv.look, x, y, s * 0.8); if (rv.rest > W.t) emoji('💤', x + s * 0.4, y - s * 0.45, s * 0.5); else if (rv.chase >= 0) emoji('❗', x + s * 0.4, y - s * 0.5, s * 0.55); }
   // fog
   g.fillStyle = 'rgba(10,14,8,.62)';
   for (let y = 7; y < Q.MH; y++) for (let x = 0; x < Q.MW; x++) if (!AR.rev[y * Q.MW + x]) g.fillRect(view.ox + x * s, view.oy + y * s, s + 0.5, s + 0.5);
   // planned paths + flags
   W.trainers.forEach(T => {
-    if (T.path.length && T.state !== 'battle') { g.strokeStyle = T.col; g.globalAlpha = 0.6; g.setLineDash([s * 0.2, s * 0.2]); g.lineWidth = Math.max(1.5, s / 10); g.beginPath(); g.moveTo(px(T.x), py(T.y)); for (const p of T.path) g.lineTo(px(p.x), py(p.y)); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+    if (T.path.length && T.state !== 'battle') {   // dotted line to where they are going + a ring on the target tile
+      g.strokeStyle = T.col; g.globalAlpha = 0.75; g.setLineDash([s * 0.2, s * 0.2]); g.lineWidth = Math.max(1.5, s / 9); g.beginPath(); g.moveTo(px(T.x), py(T.y)); for (const p of T.path) g.lineTo(px(p.x), py(p.y)); g.stroke(); g.setLineDash([]);
+      const e = T.path[T.path.length - 1]; g.lineWidth = Math.max(2, s / 8); g.beginPath(); g.arc(px(e.x), py(e.y), s * 0.36, 0, 7); g.stroke(); g.globalAlpha = 1;
+    }
     const f = W.flags[T.i]; if (f) { g.fillStyle = T.col; g.beginPath(); g.arc(px(f.x), py(f.y) + s * 0.3, s * 0.32, 0, 7); g.fill(); emoji('🚩', px(f.x) + (T.i ? s * 0.12 : -s * 0.12), py(f.y), s * 0.85); }
   });
-  // trainers
+  // trainers: an activity bubble over each one; a battle shows as a small face-off next to them (HP bars, damage numbers, result)
+  drawn.bubbles = []; drawn.boxes = [];
   W.trainers.forEach(T => {
-    const x = px(T.x), y = py(T.y);
+    const x = px(T.x), y = py(T.y), r = T.battle && replay(T);
+    g.globalAlpha = T.fainted ? 0.5 : 1;
     g.fillStyle = T.col; g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, s * 0.48, 0, 7); g.fill(); g.stroke();
-    emoji(T.icon, x, y, s * 0.7);
-    const r = T.battle && replay(T);
-    if (r) {   // mini-banner: the foe + its HP over the trainer; tap the trainer (or its card) to watch
-      const fo = sideView(r.b, r.snap, 1), im = img(fo.m.id), bx = x - s * 0.1, by = y - s * 1.25;
-      g.fillStyle = 'rgba(20,24,14,.85)'; g.strokeStyle = '#ef6a3a'; g.lineWidth = 1.5; g.beginPath(); g.roundRect ? g.roundRect(bx - s * 0.5, by - s * 0.05, s * 1.3, s * 0.85, s * 0.2) : g.rect(bx - s * 0.5, by - s * 0.05, s * 1.3, s * 0.85); g.fill(); g.stroke();
-      emoji('⚔', bx - s * 0.25, by + s * 0.35, s * 0.42);
-      if (im.complete) g.drawImage(im, bx, by, s * 0.7, s * 0.7);
-      g.fillStyle = '#0008'; g.fillRect(bx, by + s * 0.68, s * 0.7, s * 0.1); g.fillStyle = fo.hp / fo.m.max > 0.5 ? '#5fd35f' : fo.hp / fo.m.max > 0.2 ? '#f2c933' : '#ef5a3a'; g.fillRect(bx, by + s * 0.68, s * 0.7 * Math.max(0, fo.hp / fo.m.max), s * 0.1);
-    } else {
-      const l = T.party.find(m => m.hp > 0) || T.party[0]; if (l) { const im = img(l.id); if (im.complete) g.drawImage(im, x + s * 0.22, y - s * 0.95, s * 0.7, s * 0.7); }
-      const st = { ko: '😵', heal: '💗', dig: '⛏' }[T.state]; if (st) emoji(st, x - s * 0.5, y - s * 0.55, s * 0.55);
-    }
+    emoji(T.icon, x, y, s * 0.7); g.globalAlpha = 1;
+    if (r) { faceoff(T, r, x, y, now); return; }
+    const l = T.party.find(m => m.hp > 0) || T.party[0]; if (l && !T.fainted) { const im = img(l.id); if (im.complete) g.drawImage(im, x + s * 0.2, y - s * 0.15, s * 0.62, s * 0.62); }
+    bubble(T, activity(T, null), x, y);
   });
-  // floating icons
-  for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i], a = (now - f.t0) / 1400; if (a >= 1) { fx.splice(i, 1); continue; } const T = W.trainers[f.ti]; g.globalAlpha = 1 - a; emoji(f.icon, px(T.x), py(T.y) - s * (0.8 + a * 1.6), s * (f.big ? 1.2 : 0.9)); g.globalAlpha = 1; }
+  // floating icons + damage numbers
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i], a = (now - f.t0) / (f.num ? 900 : 1400); if (a >= 1) { fx.splice(i, 1); continue; } const T = W.trainers[f.ti];
+    g.globalAlpha = 1 - a * a;
+    if (f.num) { const P = foPos[f.ti]; if (P) { const X = f.side === 0 ? P.mx : P.fx, Y = P.y - a * s * 0.9; g.font = `900 ${Math.round(s * 0.62)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 3; g.strokeStyle = '#000'; g.strokeText(f.num, X, Y); g.fillStyle = f.col; g.fillText(f.num, X, Y); } }
+    else if (!T.battle) emoji(f.icon, px(T.x) - s * 0.75, py(T.y) - s * (0.3 + a * 1.2), s * (f.big ? 0.9 : 0.7));
+    g.globalAlpha = 1;
+  }
+}
+// what each trainer is doing, as 1-2 icons
+const ACT = { flag: ['🚶', '🚩'], fight: ['🌿'], heal: ['🏥'], bridge: ['🌉'], item: ['🎁'], explore: ['🗺'], wander: ['🚶'] };
+function activity(T, r) {
+  if (r) return r.ev && r.ev.t === 'throw' ? { k: 'throw', ic: [Q.QITEMS[r.ev.ball].icon] } : { k: 'fight', ic: ['⚔'] };
+  if (T.fainted || T.state === 'ko') return { k: 'faint', ic: ['😵', '🏥'] };
+  if (T.state === 'heal') return { k: 'rest', ic: ['😴'] };
+  if (T.state === 'dig') return { k: 'dig', ic: ['⛏'] };
+  if (T.found != null && W.t - T.found < 2.5) return { k: 'found', ic: ['🎁'] };
+  if (!T.goal) return { k: 'rest', ic: ['😴'] };
+  return { k: T.goal.k, ic: ACT[T.goal.k] || ['🚶'] };
+}
+const FX_IC = new Set(['🎁', '⛏', '⬆', '🌉', '🏅', '🏆', '⭐']);
+const drawn = { bubbles: [], boxes: [] }, foPos = {}, lastEv = {};
+function rr(x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
+function bubble(T, a, x, y) {
+  const s = view.s, n = a.ic.length, w = s * (0.3 + 0.62 * n), h = s * 0.78, bx = x - w / 2 - s * 0.15, by = y - s * 0.55 - h;
+  g.fillStyle = 'rgba(255,255,255,.93)'; g.strokeStyle = T.col; g.lineWidth = Math.max(1.5, s / 12); rr(bx, by, w, h, h / 2); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(x - s * 0.12, by + h - 1); g.lineTo(x, by + h + s * 0.2); g.lineTo(x + s * 0.1, by + h - 1); g.fillStyle = 'rgba(255,255,255,.93)'; g.fill();
+  a.ic.forEach((ic, k) => emoji(ic, bx + s * 0.15 + s * 0.62 * (k + 0.5), by + h / 2 + 1, s * 0.52));
+  drawn.bubbles.push({ ti: T.i, k: a.k, ic: a.ic.join(''), x: bx, y: by, w, h });
+}
+function faceoff(T, r, x, y, now) {
+  const s = view.s, b = r.b, me = sideView(b, r.snap, 0), fo = sideView(b, r.snap, 1), sz = s * 0.95, bw = sz * 2 + s * 0.55, bh = sz + s * 0.42;
+  const minX = view.ox + CROP.x0 * s + 2, maxX = view.ox + (CROP.x0 + CROP.w) * s - bw - 2;
+  const bx = Math.max(minX, Math.min(maxX, x - bw / 2)), by = Math.max(view.oy + CROP.y0 * s + 2, y - s * 0.55 - bh);
+  g.fillStyle = 'rgba(16,20,12,.86)'; g.strokeStyle = { wild: '#5fd35f', npc: '#f2a033', rival: '#ef3a3a', bridge: '#f2c933' }[b.kind] || '#fff'; g.lineWidth = Math.max(1.5, s / 10);
+  rr(bx, by, bw, bh, s * 0.25); g.fill(); g.stroke();
+  const mx = bx + s * 0.12, fxp = bx + bw - s * 0.12 - sz, sy = by + s * 0.08, im1 = img(me.m.id), im2 = img(fo.m.id);
+  const outro = r.el >= Q.INTRO_T + b.turns.length * Q.TURN_T, thr = r.ev && r.ev.t === 'throw', gone = b.caught && outro;
+  g.globalAlpha = me.hp > 0 ? 1 : 0.3; if (im1.complete) { g.save(); g.translate(mx + sz, sy); g.scale(-1, 1); g.drawImage(im1, 0, 0, sz, sz); g.restore(); }
+  g.globalAlpha = gone ? 0 : thr ? 0.25 : fo.hp > 0 ? 1 : 0.3; if (im2.complete) g.drawImage(im2, fxp, sy, sz, sz); g.globalAlpha = 1;
+  const bar = (X, h, m) => { const f = Math.max(0, h / m); g.fillStyle = '#000a'; g.fillRect(X, by + bh - s * 0.24, sz, s * 0.15); g.fillStyle = f > 0.5 ? '#5fd35f' : f > 0.2 ? '#f2c933' : '#ef5a3a'; g.fillRect(X, by + bh - s * 0.24, sz * f, s * 0.15); };
+  bar(mx, me.hp, me.m.max); bar(fxp, fo.hp, fo.m.max);
+  emoji(thr ? Q.QITEMS[r.ev.ball].icon : '⚔', bx + bw / 2, sy + sz * 0.45, s * (thr ? 0.6 : 0.42));
+  if (thr) { const sh = Math.sin(now / 70) * 0.35; g.save(); g.translate(fxp + sz / 2, sy + sz * 0.6); g.rotate(sh); emoji(Q.QITEMS[r.ev.ball].icon, 0, 0, s * 0.6); g.restore(); }
+  foPos[T.i] = { mx: mx + sz / 2, fx: fxp + sz / 2, y: sy + sz * 0.3 };
+  // damage numbers: one per new hit
+  const key = b.start + ':' + (r.ev ? b.turns.findIndex(l => l.includes(r.ev)) + ':' + r.ev.t + (r.ev.amt || '') + (r.ev.side != null ? r.ev.side : '') : '');
+  if (r.ev && lastEv[T.i] !== key) { lastEv[T.i] = key; if (r.ev.t === 'dmg' || r.ev.t === 'dot' || r.ev.t === 'self') fx.push({ ti: T.i, num: '−' + r.ev.amt, side: r.ev.side != null ? r.ev.side : 0, col: r.ev.eff > 1 ? '#ffd23a' : '#fff', t0: now }); else if (r.ev.t === 'heal' || (r.ev.t === 'item' && r.ev.amt)) fx.push({ ti: T.i, num: '+' + r.ev.amt, side: r.ev.side != null ? r.ev.side : 0, col: '#7dff7d', t0: now }); }
+  const res = outro ? (b.caught ? Q.QITEMS[b.ball || 'net'].icon : b.win ? '✅' : '❌') : null;
+  if (res) { g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.arc(bx + bw / 2, by - s * 0.05, s * 0.45, 0, 7); g.fill(); emoji(res, bx + bw / 2, by - s * 0.03, s * 0.62); }
+  drawn.boxes.push({ ti: T.i, kind: b.kind, res, foe: fo.m.id, x: bx, y: by, w: bw, h: bh });
 }
 
 // ---------------------------------------------------------------- battle replay (trainer cards, map mini-banner, big view)
@@ -198,7 +247,7 @@ function renderBv() {
 // ---------------------------------------------------------------- top bar + cards
 function renderTop() {
   const A = Q.AREAS[W.area], AR = W.areas[W.area];
-  const h = `${A.icon} <span>${W.area + 1}</span> <small>🌉${AR.cleared ? '✔' : (AR.best || 0) + '/5'}</small>${W.champion ? ' 🏆' : ''}`;
+  const h = `${A.icon} <span>${W.area + 1}</span> <small>${Q.DIFF[W.diff].icon}</small>${W.champion ? ' 🏆' : ''}`;
   if ($('areaChip').innerHTML !== h) $('areaChip').innerHTML = h;
   $('pause').textContent = paused ? '▶' : '⏸'; $('pause').classList.toggle('on', paused);
   if ($('spd').textContent !== '×' + ui.speed) $('spd').textContent = '×' + ui.speed; $('spd').classList.toggle('on', ui.speed > 1);
@@ -206,19 +255,82 @@ function renderTop() {
   const html = W.trainers.map(T => {
     if (T.battle) { const r = replay(T), me = sideView(r.b, r.snap, 0), fo = sideView(r.b, r.snap, 1);
       return `<button class="tcard fight" data-card="${T.i}" data-bv="${T.i}" aria-label="Watch ${esc(T.name)}'s battle"><span class="ic">${T.icon}</span><span class="vs">${mini(me.m.id, me.hp, me.m.max, 'me')}<span>${r.b.kind === 'bridge' ? '🌉' : r.b.kind === 'npc' ? '🏅' : '⚔'}</span>${mini(fo.m.id, fo.hp, fo.m.max)}</span><span class="tp">⤢</span></button>`; }
-    const st = T.bridge ? '🌉' : ({ ko: '😵', heal: '💗', dig: '⛏' }[T.state] || '');
+    const st = T.bridge ? '🌉' : T.fainted ? '😵' : ({ ko: '😵', heal: '😴', dig: '⛏' }[T.state] || '');
     return `<button class="tcard" data-card="${T.i}" aria-label="${esc(T.name)}"><span class="ic">${T.icon}</span><span class="tp">✨${T.tp}</span><span class="minis">${T.party.map(m => mini(m.id, m.hp, m.max)).join('')}</span>${st ? `<span class="ic">${st}</span>` : ''}</button>`;
   }).join('');
   if (renderTop.last !== html) { $('cards').innerHTML = html; renderTop.last = html; }
+  renderGoal(); renderNow();
   const canBuy = W.trainers.some(T => Q.TREES.some(tr => tr.tiers.some(x => Q.canBuy(T, x.id))));
   const tb = document.querySelector('#nav [data-tab="traits"]'); const dot = canBuy ? '<span class="dot">!</span>' : ''; if (tb.innerHTML !== '🧬' + dot) tb.innerHTML = '🧬' + dot;
 }
+// ---------------------------------------------------------------- goal tracker: the next Bridge step, levels, honest readiness (simulated) and when each trainer will try
+const BIC = ['🥉', '🥈', '🥇', '🎖', '👑'];
+let rdAt = 0; const rdLast = {};
+function ready(T) {   // simulated clear chance (12 full Bridge runs, cached in core); throttled so a level-up never stalls a frame twice
+  const now = performance.now(); if (rdLast[T.i] && now - rdAt < 1200) return rdLast[T.i];
+  rdAt = now; return (rdLast[T.i] = Q.readiness(W, T));
+}
+function intentTxt(it) { return it.k === 'smart' ? '🎯50%' : it.k === 'blind' ? `🎲Lv${it.need}` : it.k === 'team' ? `🚫${it.need}🐾` : it.k === 'cool' ? '⏳' + fmt(it.left) : it.k === 'on' ? '🌉!' : '✔'; }
+function goalInfo() {
+  const AR = W.areas[W.area], on = W.trainers.find(T => T.bridge), k = AR.cleared ? 5 : on ? on.bridge.idx : 0;
+  const top = Math.max(...W.trainers.map(T => Q.avgLv(T)));
+  return { AR, k, best: AR.best || 0, team: Math.round(top), need: Math.round(Q.bridgeLv(W.area, W)),
+    tr: W.trainers.map(T => { const r = AR.cleared ? { p: 1 } : ready(T), it = Q.bridgeIntent(W, T); return { i: T.i, icon: T.icon, p: r.p, stage: r.stage, it, when: intentTxt(it) }; }) };
+}
+function renderGoal() {
+  const G = goalInfo(); let h;
+  if (G.AR.cleared) h = W.champion ? '<span class="g0">🏆 Champion!</span>' : `<span class="g0">🌉✔ → ${Q.AREAS[Math.min(Q.AREAS.length - 1, W.area + 1)].icon}</span>`;
+  else h = `<span class="g0">🌉${BIC[Math.min(4, G.k)]}<b>${G.k}/5</b></span><span class="lv">⬆${G.team}→${G.need}</span>` + G.tr.map(t => { const p = Math.round(t.p * 100); return `<span class="rd" data-rd="${t.i}" data-p="${p}">${t.icon}<span class="bar"><i class="${p >= 50 ? 'ok' : p >= 25 ? 'mid' : ''}" style="width:${Math.max(3, p)}%"></i><u style="left:50%"></u></span>${p}%<span class="w">${t.when}</span></span>`; }).join('');
+  if (renderGoal.h !== h) { $('goal').innerHTML = h; renderGoal.h = h; }
+}
+$('goal').addEventListener('click', () => setTab(ui.tab === 'goal' ? 'map' : 'goal'));
+function panelGoal() {
+  const G = goalInfo(), specs = Q.bridgeTeams(W, W.area), AIC = { ace: '🎖', status: '🌀', setup: '📈', gambler: '🎲', healer: '💚', bugkid: '🐛' };
+  return `<h2>🌉 ${Q.AREAS[W.area].icon} ${G.AR.cleared ? '✔' : G.k + '/5'} <small style="font-size:12px;color:var(--dim)">${Q.DIFF[W.diff].icon} ${Q.DIFF[W.diff].bridgeMin > 1 ? '2+ 🐾 · ' : ''}no 🏥 between</small></h2>` +
+    G.tr.map(t => `<div class="row"><span style="font-size:24px">${t.icon}</span><div class="grow"><b>🎯 ${Math.round(t.p * 100)}%</b> <span class="sub">(${12} 🎲 sims · reaches ${BIC[Math.min(4, Math.floor(t.stage || 0))]})</span><div class="hp"><i class="${t.p >= 0.5 ? '' : t.p >= 0.25 ? 'mid' : 'low'}" style="width:${Math.max(2, t.p * 100)}%"></i></div></div><b style="font-size:15px">${t.when}</b></div>`).join('') +
+    specs.map((sp, k) => `<div class="row ${G.AR.cleared || k < G.best ? 'own' : ''}"><span style="font-size:24px">${BIC[k]}</span><span title="${sp.ai}">${AIC[sp.ai] || ''}</span><div class="grow chips">${sp.team.map(m => `<span style="display:inline-flex;align-items:center" data-wiki="monster/${m.id}"><img src="${art(m.id)}" alt="" style="width:36px;height:36px">${D.TYPES[D.DEX[m.id].type].icon}${m.lv}</span>`).join('')}</div></div>`).join('') +
+    `<div class="sub" style="padding:4px 8px">🎯 = sims · 🎲Lv = tries blindly at that level · 🎯50% = 👁 Read the foe waits for 50% · ⏳ = cooldown after a loss</div>`;
+}
+// ---------------------------------------------------------------- Now strip: the last 3 big events
+function renderNow() {
+  const L = W.feed.filter(f => f.now).slice(-3).reverse();
+  const h = L.length ? L.map(f => `<div class="ev" data-ti="${f.ti}">${(W.trainers[f.ti] || {}).icon || ''}<span class="bi">${f.icon}</span>${f.mon ? `<img src="${art(f.mon)}" alt="">` : ''}<span class="t">${esc(f.text.replace(/ Lv\d+$/, ''))}</span></div>`).join('') : '<div class="ev"><span class="bi">🚶</span><span class="bi">🌿</span><span class="bi">…</span></div>';
+  if (renderNow.h !== h) { $('now').innerHTML = h; renderNow.h = h; }
+}
+$('now').addEventListener('click', () => setTab('feed'));
+// ---------------------------------------------------------------- pops: small celebrations in the map's top-left corner
+const POP_IC = { lv: '⬆', move: '📖', trait: '🧬' };
+function pop(e) {
+  const d = document.createElement('div'); d.className = 'pop ' + e.pop;
+  d.innerHTML = `<span>${(W.trainers[e.ti] || {}).icon || ''}</span><span class="bi">${e.pop === 'catch' ? e.icon : POP_IC[e.pop] || e.icon}</span>${e.mon ? `<img src="${art(e.mon)}" alt="">` : ''}<span>${esc(e.text || '')}</span>`;
+  const P = $('pops'); P.prepend(d); while (P.children.length > 3) P.lastChild.remove();
+  setTimeout(() => d.remove(), 2800);
+}
+// ---------------------------------------------------------------- tutorial: 5 short steps, skippable, replayable from ⚙
+const TUT = [
+  { ic: '🚩', t: 'Tap the map → 🧢 walks there', hl: '#flagT' },
+  { ic: '⚔', t: 'Fights show next to them: ❤ bars, −dmg, ✅ ❌ 🟣', hl: '#cards' },
+  { ic: '✨', t: 'Spend ✨ in 🧬 traits', hl: '#nav [data-tab="traits"]' },
+  { ic: '🎯', t: 'This bar = simulated 🌉 win chance', hl: '#goal' },
+  { ic: '🌉', t: 'Ready? Tap the 🌉 Bridge on the map', hl: null },
+];
+const tut = { i: -1 };
+function tutStart() { tut.i = 0; showTut(); }
+function tutEnd() { tut.i = -1; ui.tut = 1; saveUi(); showTut(); }
+function showTut() {
+  document.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+  if (tut.i < 0) { $('tut').hidden = true; return; }
+  const st = TUT[tut.i];
+  $('tut').innerHTML = `<div class="tb"><span class="bi">${st.ic}</span><span class="tx">${st.t}</span><button id="tutSkip" aria-label="Skip tutorial">✕</button></div><div class="tn">${tut.i ? '<button id="tutBack" aria-label="Back">◀</button>' : ''}<span class="dots">${TUT.map((_, k) => k === tut.i ? '●' : '○').join('')}</span><button id="tutNext" class="on" aria-label="Next">${tut.i === TUT.length - 1 ? '✔' : '▶'}</button></div>`;
+  $('tut').hidden = false; if (st.hl) { const e = document.querySelector(st.hl); if (e) e.classList.add('hl'); }
+}
+$('tut').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.id === 'tutSkip') tutEnd(); else if (b.id === 'tutBack') { tut.i = Math.max(0, tut.i - 1); showTut(); } else if (b.id === 'tutNext') { if (tut.i >= TUT.length - 1) tutEnd(); else { tut.i++; showTut(); } } });
 $('cards').addEventListener('click', (e) => { const c = e.target.closest('[data-card]'); if (!c) return; ui.pt = +c.dataset.card; const T = W.trainers[ui.pt]; if (T.battle) openBv(ui.pt); else setTab('party'); });
 
 // ---------------------------------------------------------------- tabs
 function setTab(t) {
   ui.tab = t; document.querySelectorAll('#nav [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  document.body.classList.toggle('sheet', t !== 'map'); document.body.classList.toggle('half', t === 'feed' || t === 'why');
+  document.body.classList.toggle('sheet', t !== 'map'); document.body.classList.toggle('half', t === 'feed' || t === 'why' || t === 'goal');
   $('panel').scrollTop = 0; renderPanel(true);
 }
 $('nav').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab === ui.tab && b.dataset.tab !== 'map' ? 'map' : b.dataset.tab); });
@@ -231,8 +343,8 @@ function doctrineBars(T) {
 function panelTraits() {
   const T = W.trainers[ui.pt];
   return `<h2>🧬 Traits</h2>${trSeg()}${doctrineBars(T)}` + Q.TREES.map(tr => `<h3>${tr.icon} ${tr.name}</h3>` + tr.tiers.map(x => {
-    const own = Q.has(T, x.id), can = Q.canBuy(T, x.id), prev = x.tier === 0 || Q.has(T, tr.tiers[x.tier - 1].id);
-    return `<div class="row ${own ? 'own' : prev ? '' : 'lock'}"><span style="font-size:24px">${x.icon}</span><div class="grow"><b>${esc(x.name)}</b><div class="sub">${esc(x.tip)}</div></div>${own ? '<span style="font-size:22px">✔</span>' : `<button data-buy="${x.id}" ${can ? '' : 'disabled'} aria-label="Buy ${esc(x.name)}">${prev ? '' : '🔒'}✨${x.cost}</button>`}</div>`;
+    const own = Q.has(T, x.id), can = Q.canBuy(T, x.id), prev = x.tier === 0 || Q.has(T, tr.tiers[x.tier - 1].id), blk = Q.blockedBy(T, x.id), ex = x.ex && Q.TRAIT[x.ex];
+    return `<div class="row ${own ? 'own' : prev && !blk ? '' : 'lock'}"><span style="font-size:24px">${x.icon}</span><div class="grow"><b>${esc(x.name)}</b><div class="sub">${esc(x.tip)}${x.down ? ` <span class="down">⚠ ${esc(x.down)}</span>` : ''}${ex ? ` <span class="exb">✕ ${ex.icon} ${esc(ex.name)}</span>` : ''}</div></div>${own ? '<span style="font-size:22px">✔</span>' : `<button data-buy="${x.id}" ${can ? '' : 'disabled'} aria-label="Buy ${esc(x.name)}">${blk ? '✕' : prev ? '' : '🔒'}✨${x.cost}</button>`}</div>`;
   }).join('')).join('');
 }
 function monRow(T, m, inParty, idx) {
@@ -272,8 +384,10 @@ function panelWhy() {
 }
 function panelMenu() {
   const S = W.stats;
-  return `<h2>⚙ Menu</h2><div class="sum"><div>⏱ ${fmt(W.t)}</div><div>⚔ ${S.wins}</div><div>🎯 ${S.catches}</div><div>🎁 ${S.finds}</div><div>😵 ${S.losses}</div><div>🌉 ${S.bridgeWins}/${S.bridgeTries}</div></div>
-  <div class="row" style="margin-top:8px"><span style="font-size:24px">💾</span><div class="grow">Save<div class="sub" id="savedAt">${lastSave ? '✔ ' + Math.round((performance.now() - lastSave) / 1000) + 's' : ''}</div></div><button id="saveNow">💾</button></div>
+  return `<h2>⚙ Menu</h2><div class="sum"><div>⏱ ${fmt(W.t)}</div><div>⚔ ${S.wins}</div><div>🎯 ${S.catches}</div><div>🎁 ${S.finds}</div><div>😵 ${S.faints != null ? S.faints : S.losses}</div><div>✨ −${S.tpLost || 0}</div><div>${(W.areas[W.area].rival || {}).look || '😈'} ${S.rivalWins || 0}/${(S.rivalWins || 0) + (S.rivalLosses || 0)}</div><div>🌉 ${S.bridgeWins}/${S.bridgeTries}</div></div>
+  <div class="row" style="margin-top:8px"><span style="font-size:24px">${Q.DIFF[W.diff].icon}</span><div class="grow diffSeg">${['hard', 'normal'].map(d => `<button data-diff="${d}" class="${W.diff === d ? 'on' : ''}">${Q.DIFF[d].icon} ${Q.DIFF[d].name}</button>`).join('')}</div></div>
+  <div class="row"><span style="font-size:24px">🎓</span><div class="grow">Tutorial</div><button id="tutAgain" aria-label="Replay tutorial">↻</button></div>
+  <div class="row"><span style="font-size:24px">💾</span><div class="grow">Save<div class="sub" id="savedAt">${lastSave ? '✔ ' + Math.round((performance.now() - lastSave) / 1000) + 's' : ''}</div></div><button id="saveNow">💾</button></div>
   <div class="row"><span style="font-size:24px">📖</span><div class="grow">Wiki</div><button data-wiki="monsters">📖</button></div>
   <div class="row"><span style="font-size:24px">⚔</span><div class="grow">Trainers</div><a href="../trainers/"><button tabindex="-1">↗</button></a></div>
   <div class="row"><span style="font-size:24px">🗑</span><div class="grow">Reset run</div><button id="reset">${resetArm ? '⚠ ✔?' : '🗑'}</button></div>`;
@@ -286,9 +400,9 @@ function renderPanel(force) {
   const key = t === 'map' ? 'feedmini' : t;
   const now = performance.now();
   if (!force && now - (renderPanel.t || 0) < 700) return;
-  if (!force && (t === 'traits' || t === 'party' || t === 'bag' || t === 'menu' || t === 'dex') && renderPanel.k === key && !dirty) return;
+  if (!force && (t === 'traits' || t === 'party' || t === 'bag' || t === 'menu' || t === 'dex' || t === 'goal') && renderPanel.k === key && !dirty) return;
   renderPanel.t = now; renderPanel.k = key;
-  let html = t === 'traits' ? panelTraits() : t === 'party' ? panelParty() : t === 'bag' ? panelBag() : t === 'dex' ? panelDex() : t === 'why' ? panelWhy() : t === 'menu' ? panelMenu() : panelFeed(t === 'map' ? 30 : 80);
+  let html = t === 'goal' ? panelGoal() : t === 'traits' ? panelTraits() : t === 'party' ? panelParty() : t === 'bag' ? panelBag() : t === 'dex' ? panelDex() : t === 'why' ? panelWhy() : t === 'menu' ? panelMenu() : panelFeed(t === 'map' ? 30 : 80);
   if (t !== 'map' && !landscape()) html = '<button class="pclose" data-close="1" aria-label="Close">✕</button>' + html;
   if (renderPanel.html !== html) { const p = $('panel'), st = p.scrollTop; p.innerHTML = html; p.scrollTop = st; renderPanel.html = html; }
   dirty = false;
@@ -300,12 +414,14 @@ $('panel').addEventListener('click', (e) => {
   if (d.close) { setTab('map'); return; }
   if (d.wiki) { openWiki(d.wiki); return; }
   if (d.pt != null) { ui.pt = +d.pt; saveUi(); renderPanel(true); return; }
-  if (d.buy) { const x = Q.TRAIT[d.buy]; if (Q.buy(W, ui.pt, d.buy)) { toast(`${x.icon} ${x.name} ✔`); save(); } dirty = true; renderPanel(true); return; }
+  if (d.buy) { const x = Q.TRAIT[d.buy]; if (Q.buy(W, ui.pt, d.buy)) { save(); } else if (Q.blockedBy(W.trainers[ui.pt], d.buy)) toast(`✕ ${Q.TRAIT[Q.blockedBy(W.trainers[ui.pt], d.buy)].icon}`); dirty = true; renderPanel(true); return; }
   if (d.lead) { const [ti, uid] = d.lead.split(':').map(Number), T = W.trainers[ti], i = T.party.findIndex(m => m.uid === uid); if (i > 0) { const [m] = T.party.splice(i, 1); T.party.unshift(m); } dirty = true; renderPanel(true); return; }
   if (d.tobox) { const [ti, uid] = d.tobox.split(':').map(Number), T = W.trainers[ti]; if (T.state === 'battle') { toast('⚔ …'); return; } const i = T.party.findIndex(m => m.uid === uid); if (i >= 0 && T.party.length > 1) { const [m] = T.party.splice(i, 1); W.box.push(m); } dirty = true; renderPanel(true); return; }
   if (d.take) { const [ti, uid] = d.take.split(':').map(Number), T = W.trainers[ti]; if (T.state === 'battle') { toast('⚔ …'); return; } const i = W.box.findIndex(m => m.uid === uid); if (i >= 0 && T.party.length < Q.capOf(T)) { const [m] = W.box.splice(i, 1); m.ot = ti; T.party.push(m); } dirty = true; renderPanel(true); return; }
   if (d.candy) { const [ti, uid] = d.candy.split(':').map(Number), r = uidFind(uid); if (r && W.bag.candy > 0 && r.m.lv < 50) { W.bag.candy--; Q.feed(W, ti, '🍬', r.m.name); const T = W.trainers[ti]; r.m.exp = Math.max(r.m.exp, Q.expFor(r.m.lv + 1)); Q.gainExp(W, T, r.m, 0); } dirty = true; renderPanel(true); return; }
   if (d.use) { const [k, ti] = d.use.split(':'), T = W.trainers[+ti]; useItem(T, k); dirty = true; renderPanel(true); return; }
+  if (d.diff) { W.diff = d.diff; save(); toast(`${Q.DIFF[d.diff].icon} ${Q.DIFF[d.diff].name}`); dirty = true; renderPanel(true); return; }
+  if (b.id === 'tutAgain') { setTab('map'); tutStart(); return; }
   if (b.id === 'saveNow') { save(); toast('💾 ✔'); renderPanel(true); return; }
   if (b.id === 'reset') { if (!resetArm) { resetArm = true; renderPanel(true); setTimeout(() => { resetArm = false; }, 4000); return; } resetArm = false; store.del(Q.SAVE_KEY); W = null; fx.length = 0; setTab('map'); startScreen(); return; }
 });
@@ -388,6 +504,7 @@ const ptrEnd = (e) => {
   const who = ui.flag === 2 ? [0, 1] : [ui.flag];
   for (const i of who) { const f = W.flags[i]; if (f && f.x === p.x && f.y === p.y && who.length === 1) Q.setFlag(W, i, null); else Q.setFlag(W, i, p); }
   fx.push({ ti: who[0], icon: p.y === 7 && p.x === 9 ? '🌉' : '🚩', t0: performance.now() });
+  if (tut.i === 0) { tut.i = 1; showTut(); }
 };
 cv.addEventListener('pointerup', ptrEnd); cv.addEventListener('pointercancel', ptrEnd);
 cv.addEventListener('wheel', (e) => { if (!ui.drag) return; e.preventDefault(); const l = local(e); zoomAt(view.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), l.x, l.y); }, { passive: false });
@@ -398,13 +515,13 @@ function frame(now) {
   if (W && !paused && $('start').hidden) {
     acc += dt * ui.speed; let n = 0;
     while (acc >= Q.TICK && n++ < 40) { acc -= Q.TICK; const area = W.area; Q.step(W); if (W.area !== area) { toast(`🎉 ${Q.AREAS[W.area].icon} ${Q.AREAS[W.area].name}`, 3000); bgKey = ''; } }
-    if (W.sink && W.sink.length) { for (const s of W.sink) { fx.push({ ti: s.ti, icon: s.icon, big: s.big, t0: now }); } W.sink.length = 0; dirty = true; }
+    if (W.sink && W.sink.length) { for (const s of W.sink) { if (FX_IC.has(s.icon)) fx.push({ ti: s.ti, icon: s.icon, big: s.big, t0: now }); if (s.pop && s.pop !== 'faint') pop(s); } W.sink.length = 0; dirty = true; }
     if (now - lastSave > 5000) save();
   }
   if (W) { render(now); renderTop(); renderBv(); renderPanel(false); }
   requestAnimationFrame(frame);
 }
 // test / debug hooks
-window.TQG = { get W() { return W; }, set W(v) { W = v; }, save, boot, catchUp, setTab, openWiki, get paused() { return paused; }, get speed() { return ui.speed; }, get flagMode() { return ui.flag; }, get drag() { return ui.drag; }, view: () => view, crop: CROP, px: (x, y) => { const r = cv.getBoundingClientRect(); return { x: r.left + px(x), y: r.top + py(y) }; } };
+window.TQG = { get W() { return W; }, set W(v) { W = v; }, save, boot, catchUp, setTab, openWiki, get paused() { return paused; }, get speed() { return ui.speed; }, get flagMode() { return ui.flag; }, get drag() { return ui.drag; }, get tut() { return tut.i; }, drawn, fxNums: () => fx.filter(f => f.num), activity: (i) => activity(W.trainers[i], W.trainers[i].battle && replay(W.trainers[i])), goalInfo, tutStart, pop, view: () => view, crop: CROP, px: (x, y) => { const r = cv.getBoundingClientRect(); return { x: r.left + px(x), y: r.top + py(y) }; } };
 syncFlagBar(); layout(); boot(); requestAnimationFrame(frame);
 })();
