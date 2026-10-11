@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-11T16:15:00-07:00",
+  "updatedAt": "2026-10-11T16:30:00-07:00",
   "updatedBy": "Dev B",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -10,7 +10,8 @@
       "summary": "Offer $135k base + $1.2k Mafia + $1.2k cell + $5k RSUs; bonus eligible no %; 401k contribute ~30 days, match after 1yr+1000hrs. He emailed Chloe (Phil may CC) asking $150k base; downplays Mafia/cell; asked if May contract time counts for match. Chloe replied 10/2: package is under review, update promised by EOD Tue 10/6; 401(k) service clock starts at FTE conversion (contractor time does not count).",
       "leftOff": "Waiting on Chloe's package update (promised EOD Tue 10/6; follow up if nothing yet). Contract time won't count toward 401(k) match, so use that as leverage. Call script: hold $150k; bridge with sign-on $10–15k + ~10% written bonus if base stuck.",
       "updatedAt": "2026-10-07T14:28:00-07:00",
-      "note": "What: Counter offer for Senior Engineer, Data / HQ convert.\n\nSummary: Offer $135k base + $1.2k Mafia + $1.2k cell + $5k RSUs; bonus eligible no %; 401k contribute ~30 days, match after 1yr+1000hrs. He emailed Chloe (Phil may CC) asking $150k base; downplays Mafia/cell; asked if May contract time counts for match. Chloe replied 10/2: package is under review, update promised by EOD Tue 10/6; 401(k) service clock starts at FTE conversion (contractor time does not count).\n\nLeft off: Waiting on Chloe's package update (promised EOD Tue 10/6; follow up if nothing yet). Contract time won't count toward 401(k) match, so use that as leverage. Call script: hold $150k; bridge with sign-on $10–15k + ~10% written bonus if base stuck."
+      "note": "What: Counter offer for Senior Engineer, Data / HQ convert.\n\nSummary: Offer $135k base + $1.2k Mafia + $1.2k cell + $5k RSUs; bonus eligible no %; 401k contribute ~30 days, match after 1yr+1000hrs. He emailed Chloe (Phil may CC) asking $150k base; downplays Mafia/cell; asked if May contract time counts for match. Chloe replied 10/2: package is under review, update promised by EOD Tue 10/6; 401(k) service clock starts at FTE conversion (contractor time does not count).\n\nLeft off: Waiting on Chloe's package update (promised EOD Tue 10/6; follow up if nothing yet). Contract time won't count toward 401(k) match, so use that as leverage. Call script: hold $150k; bridge with sign-on $10–15k + ~10% written bonus if base stuck.",
+      "bot": "Field Marshal"
     },
     {
       "id": "metlife",
@@ -19,7 +20,8 @@
       "summary": "Heather emailed; fill SOH (per dependent if needed); send to Billy MacNair bmacnair@mne-consulting.net, NOT back to MyBasePay.",
       "leftOff": "Not started; paused during offer work.",
       "updatedAt": "2026-10-02T14:07:32-07:00",
-      "note": "What: MyBasePay MetLife EOI / Statement of Health.\n\nSummary: Heather emailed; fill SOH (per dependent if needed); send to Billy MacNair bmacnair@mne-consulting.net, NOT back to MyBasePay.\n\nLeft off: Not started; paused during offer work."
+      "note": "What: MyBasePay MetLife EOI / Statement of Health.\n\nSummary: Heather emailed; fill SOH (per dependent if needed); send to Billy MacNair bmacnair@mne-consulting.net, NOT back to MyBasePay.\n\nLeft off: Not started; paused during offer work.",
+      "bot": "Field Marshal"
     },
     {
       "id": "venmo",
@@ -28,7 +30,8 @@
       "summary": "Venmo emailed ~10:07am PT new device; if not him reset password. He wants to reset/maintain all passwords (Bitwarden free or 1Password ~$4/mo); paused for offer.",
       "leftOff": "Passwords paused; resume when he says.",
       "updatedAt": "2026-10-02T14:07:32-07:00",
-      "note": "What: New-device sign-in alert + password reset plan.\n\nSummary: Venmo emailed ~10:07am PT new device; if not him reset password. He wants to reset/maintain all passwords (Bitwarden free or 1Password ~$4/mo); paused for offer.\n\nLeft off: Passwords paused; resume when he says."
+      "note": "What: New-device sign-in alert + password reset plan.\n\nSummary: Venmo emailed ~10:07am PT new device; if not him reset password. He wants to reset/maintain all passwords (Bitwarden free or 1Password ~$4/mo); paused for offer.\n\nLeft off: Passwords paused; resume when he says.",
+      "bot": "Field Marshal"
     },
     {
       "id": "party-games",
@@ -37,7 +40,8 @@
       "summary": "Built phone party games in Uno-, Among Us-, Mario Party-, Exploding Kittens-, Codenames-, Cards Against Humanity-, Goose Goose Duck-, Pictionary-, Werewolf-, and Clue-style. Friends join over a small server; pretend-friend demo mode for solo testing.",
       "leftOff": "Ten games live on a temporary link (Oct 3–7).",
       "updatedAt": "2026-10-07T12:00:00-07:00",
-      "note": "What: Custom phone party games playable with friends over a small server, plus pretend-friend demo mode.\n\nSummary: Built phone party games in Uno-, Among Us-, Mario Party-, Exploding Kittens-, Codenames-, Cards Against Humanity-, Goose Goose Duck-, Pictionary-, Werewolf-, and Clue-style. Friends join over a small server; pretend-friend demo mode for solo testing.\n\nLeft off: Ten games live on a temporary link (Oct 3–7)."
+      "note": "What: Custom phone party games playable with friends over a small server, plus pretend-friend demo mode.\n\nSummary: Built phone party games in Uno-, Among Us-, Mario Party-, Exploding Kittens-, Codenames-, Cards Against Humanity-, Goose Goose Duck-, Pictionary-, Werewolf-, and Clue-style. Friends join over a small server; pretend-friend demo mode for solo testing.\n\nLeft off: Ten games live on a temporary link (Oct 3–7).",
+      "bot": "Field Marshal"
     },
     {
       "id": "pc-upgrade",
@@ -46,7 +50,8 @@
       "summary": "Current desktop: GTX 1050 Ti, Ryzen 5 2600, 16 GB. MSI Codex prebuilt: RTX 5060 Ti, Core Ultra 7 265, 32 GB DDR5, 2 TB NVMe. MSI is better in every part.",
       "leftOff": "His decision (Oct 5).",
       "updatedAt": "2026-10-05T12:00:00-07:00",
-      "note": "What: Compare current desktop to an MSI Codex prebuilt and decide whether to upgrade.\n\nSummary: Current desktop: GTX 1050 Ti, Ryzen 5 2600, 16 GB. MSI Codex prebuilt: RTX 5060 Ti, Core Ultra 7 265, 32 GB DDR5, 2 TB NVMe. MSI is better in every part.\n\nLeft off: His decision (Oct 5)."
+      "note": "What: Compare current desktop to an MSI Codex prebuilt and decide whether to upgrade.\n\nSummary: Current desktop: GTX 1050 Ti, Ryzen 5 2600, 16 GB. MSI Codex prebuilt: RTX 5060 Ti, Core Ultra 7 265, 32 GB DDR5, 2 TB NVMe. MSI is better in every part.\n\nLeft off: His decision (Oct 5).",
+      "bot": "Field Marshal"
     },
     {
       "id": "passwords",
@@ -55,7 +60,8 @@
       "summary": "Picked 1Password over Bitwarden for a full password overhaul. Plan to run a Watchtower check every three months.",
       "leftOff": "Choose Individual vs Families plan (Oct 9).",
       "updatedAt": "2026-10-09T12:00:00-07:00",
-      "note": "What: Password overhaul with a chosen manager and recurring checks.\n\nSummary: Picked 1Password over Bitwarden for a full password overhaul. Plan to run a Watchtower check every three months.\n\nLeft off: Choose Individual vs Families plan (Oct 9)."
+      "note": "What: Password overhaul with a chosen manager and recurring checks.\n\nSummary: Picked 1Password over Bitwarden for a full password overhaul. Plan to run a Watchtower check every three months.\n\nLeft off: Choose Individual vs Families plan (Oct 9).",
+      "bot": "Field Marshal"
     },
     {
       "id": "close-combat-2-save",
@@ -64,7 +70,8 @@
       "summary": "Found the 'A Bridge Too Far' Steam save on the desktop. Steam Cloud already synced it to the laptop; files verified identical.",
       "leftOff": "Laptop needed a game update before playing (Oct 10).",
       "updatedAt": "2026-10-10T12:00:00-07:00",
-      "note": "What: Recover and verify the 'A Bridge Too Far' Steam save across desktop and laptop.\n\nSummary: Found the 'A Bridge Too Far' Steam save on the desktop. Steam Cloud already synced it to the laptop; files verified identical.\n\nLeft off: Laptop needed a game update before playing (Oct 10)."
+      "note": "What: Recover and verify the 'A Bridge Too Far' Steam save across desktop and laptop.\n\nSummary: Found the 'A Bridge Too Far' Steam save on the desktop. Steam Cloud already synced it to the laptop; files verified identical.\n\nLeft off: Laptop needed a game update before playing (Oct 10).",
+      "bot": "Field Marshal"
     },
     {
       "id": "cursor-agent-kit",
@@ -73,7 +80,8 @@
       "summary": "Built a kit with AGENTS.md, Cursor rules, docs, starter app, and phone tap tests. All 100/100 tests pass.",
       "leftOff": "Zip delivered, ready to drop into a new repo (Oct 10).",
       "updatedAt": "2026-10-10T18:00:00-07:00",
-      "note": "What: Reusable kit so Cursor agents can build and maintain apps like Coffee Opening.\n\nSummary: Built a kit with AGENTS.md, Cursor rules, docs, starter app, and phone tap tests. All 100/100 tests pass.\n\nLeft off: Zip delivered, ready to drop into a new repo (Oct 10)."
+      "note": "What: Reusable kit so Cursor agents can build and maintain apps like Coffee Opening.\n\nSummary: Built a kit with AGENTS.md, Cursor rules, docs, starter app, and phone tap tests. All 100/100 tests pass.\n\nLeft off: Zip delivered, ready to drop into a new repo (Oct 10).",
+      "bot": "Field Marshal"
     },
     {
       "id": "thermostat",
@@ -82,7 +90,298 @@
       "summary": "Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.",
       "leftOff": "Confirm the AC is actually blowing cold (Oct 11).",
       "updatedAt": "2026-10-11T16:15:00-07:00",
-      "note": "What: Nest thermostat not cooling; restore Cool and optional Grok Bot control.\n\nSummary: Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.\n\nLeft off: Confirm the AC is actually blowing cold (Oct 11)."
+      "note": "What: Nest thermostat not cooling; restore Cool and optional Grok Bot control.\n\nSummary: Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.\n\nLeft off: Confirm the AC is actually blowing cold (Oct 11).",
+      "bot": "Field Marshal"
+    },
+    {
+      "id": "leader-render-school",
+      "title": "Blender render school",
+      "what": "Teaching the render bots to make real 3D game art in Blender by following real tutorials until they pass.",
+      "summary": "1. Sep 25-26 overnight: 5 rounds (figures, hard-surface, environment, export, VFX), each bot on a different tutorial.\n2. Sep 26 PASS-ONE: each bot repeated one tutorial until Leader passed it (house, donut, cute monster, low-poly girl).\n3. Sep 26: a rigged walk test passed using free assets.\n4. Sep 26-27: tried Python 'blueprint' renders, like a cute Roman soldier.",
+      "leftOff": "Sep 27 PT: all four passed one tutorial, but side by side the results did not truly match the tutorial look. Art work then moved to the Game Art Director.",
+      "updatedAt": "2026-09-27T21:42:00-07:00",
+      "note": "What: Teaching the render bots to make real 3D game art in Blender by following real tutorials until they pass.\n\nSummary: 1. Sep 25-26 overnight: 5 rounds (figures, hard-surface, environment, export, VFX), each bot on a different tutorial.\n2. Sep 26 PASS-ONE: each bot repeated one tutorial until Leader passed it (house, donut, cute monster, low-poly girl).\n3. Sep 26: a rigged walk test passed using free assets.\n4. Sep 26-27: tried Python 'blueprint' renders, like a cute Roman soldier.\n\nLeft off: Sep 27 PT: all four passed one tutorial, but side by side the results did not truly match the tutorial look. Art work then moved to the Game Art Director.\n\nBot: Leader (with Render A, Render B, Render C, Game Art Director)",
+      "bot": "Leader"
+    },
+    {
+      "id": "leader-crew-roles",
+      "title": "Bot crew roles and schools",
+      "what": "How the bot crew is set up: who does what, and the schools that train each role.",
+      "summary": "1. Roles: Leader, Dev A/B/C, Render A/B/C, Researcher A/B, Profile A/B, Game Art Director.\n2. Rules: only Dev A pushes the site; makers never grade their own work; free tools only.\n3. Schools: Game Rendering, Game Dev, Website Dev, Bot Leadership, Research Craft, Profile Craft.\n4. Sep 26: roles redefined with free-only 'levers' (skills, memory, tools, practice, checks).\n5. A weekly usage hard stop pauses overnight work.",
+      "leftOff": "Sep 26 PT: free-only role definitions done. Oct 3: advised keeping check bots separate with one bot sending the morning summary.",
+      "updatedAt": "2026-10-03T09:04:00-07:00",
+      "note": "What: How the bot crew is set up: who does what, and the schools that train each role.\n\nSummary: 1. Roles: Leader, Dev A/B/C, Render A/B/C, Researcher A/B, Profile A/B, Game Art Director.\n2. Rules: only Dev A pushes the site; makers never grade their own work; free tools only.\n3. Schools: Game Rendering, Game Dev, Website Dev, Bot Leadership, Research Craft, Profile Craft.\n4. Sep 26: roles redefined with free-only 'levers' (skills, memory, tools, practice, checks).\n5. A weekly usage hard stop pauses overnight work.\n\nLeft off: Sep 26 PT: free-only role definitions done. Oct 3: advised keeping check bots separate with one bot sending the morning summary.\n\nBot: Leader (with Researcher A, Researcher B, Profile A, Profile B)",
+      "bot": "Leader"
+    },
+    {
+      "id": "deva-tactics-games",
+      "title": "Austerlitz, Command Layers and Carrier Traits",
+      "what": "Phone tactics games: a Napoleonic battle, a WW2 command sandbox, and a carrier game.",
+      "summary": "1. Austerlitz 1805 v1-v5 (Oct 7-8): division commanders, setup by dragging, drawn battle lines, slower marching in formation.\n2. Command Layers v1.1-2.2 (Oct 9-10): objective editor, battalion level, 3-battalion map, rushing gets punished, mirror enemy force.\n3. Carrier Traits v1.0 (Oct 10): run a WW2 carrier and buy traits as you fight.",
+      "leftOff": "Oct 10, 10:32 AM PT: Command Layers mirror mode and Carrier Traits are live. No open requests.",
+      "updatedAt": "2026-10-10T10:32:00-07:00",
+      "note": "What: Phone tactics games: a Napoleonic battle, a WW2 command sandbox, and a carrier game.\n\nSummary: 1. Austerlitz 1805 v1-v5 (Oct 7-8): division commanders, setup by dragging, drawn battle lines, slower marching in formation.\n2. Command Layers v1.1-2.2 (Oct 9-10): objective editor, battalion level, 3-battalion map, rushing gets punished, mirror enemy force.\n3. Carrier Traits v1.0 (Oct 10): run a WW2 carrier and buy traits as you fight.\n\nLeft off: Oct 10, 10:32 AM PT: Command Layers mirror mode and Carrier Traits are live. No open requests.\n\nBot: Dev A (with Dev B)",
+      "bot": "Dev A"
+    },
+    {
+      "id": "deva-monster-trainers",
+      "title": "Trainers and Trainer Quest",
+      "what": "Pokemon-style games with original monsters where you shape how trainer AIs think and fight.",
+      "summary": "1. Trainers v1.0 (Oct 9): 18 monsters, 8 types, 42 moves, trainer AI editor, Why log, tournaments.\n2. Trainers wiki (Oct 9): built from the game's own data.\n3. Trainer Quest v1-v2 (Oct 10): 2 trainers explore on their own; you place flags and buy traits; map unblocked.\n4. Trainer Quest v3 (Oct 10): Hard mode, rival, status bubbles, 5-step tutorial.",
+      "leftOff": "Oct 10, 2:55 PM PT: Trainer Quest v3 is live. Waiting on your feedback.",
+      "updatedAt": "2026-10-10T14:55:00-07:00",
+      "note": "What: Pokemon-style games with original monsters where you shape how trainer AIs think and fight.\n\nSummary: 1. Trainers v1.0 (Oct 9): 18 monsters, 8 types, 42 moves, trainer AI editor, Why log, tournaments.\n2. Trainers wiki (Oct 9): built from the game's own data.\n3. Trainer Quest v1-v2 (Oct 10): 2 trainers explore on their own; you place flags and buy traits; map unblocked.\n4. Trainer Quest v3 (Oct 10): Hard mode, rival, status bubbles, 5-step tutorial.\n\nLeft off: Oct 10, 2:55 PM PT: Trainer Quest v3 is live. Waiting on your feedback.\n\nBot: Dev A (with Dev B (built them))",
+      "bot": "Dev A"
+    },
+    {
+      "id": "deva-coffee-opening",
+      "title": "Coffee Opening: pitch and business plan",
+      "what": "Growing the Coffee Opening tracker into a pitch app with real business detail.",
+      "summary": "1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. Plan: a process map with owners and approvals, a workflow designer, and more site detail (all fake data).\n4. Drafted a handoff kit so other coding agents can rebuild it on real data.",
+      "leftOff": "Oct 11, 4:03 PM PT: v4 is live; v5 'Compare sites' is saved locally, not pushed. Business-detail update and workflow designer are next.",
+      "updatedAt": "2026-10-11T16:09:00-07:00",
+      "note": "What: Growing the Coffee Opening tracker into a pitch app with real business detail.\n\nSummary: 1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. Plan: a process map with owners and approvals, a workflow designer, and more site detail (all fake data).\n4. Drafted a handoff kit so other coding agents can rebuild it on real data.\n\nLeft off: Oct 11, 4:03 PM PT: v4 is live; v5 'Compare sites' is saved locally, not pushed. Business-detail update and workflow designer are next.\n\nBot: Dev A (with Dev B)",
+      "bot": "Dev A"
+    },
+    {
+      "id": "deva-bot-campus",
+      "title": "Bot Campus live page",
+      "what": "A public phone page that showed what every bot is doing, like a game map of the crew.",
+      "summary": "1. Sep 20: built Campus Live with live status, desks, interns, pan and zoom, then name circles; Dev C passed each round.\n2. Sep 20: became the only bot that publishes the site.\n3. Sep 25: retired the old Campus Live and Bot Office pages; the hub now links Bot Crossing and Agent World demos.",
+      "leftOff": "Sep 25 PT: old campus taken down, new hub live with demo pages only. Dev A keeps publishing for the other bots.",
+      "updatedAt": "2026-09-25T20:30:00-07:00",
+      "note": "What: A public phone page that showed what every bot is doing, like a game map of the crew.\n\nSummary: 1. Sep 20: built Campus Live with live status, desks, interns, pan and zoom, then name circles; Dev C passed each round.\n2. Sep 20: became the only bot that publishes the site.\n3. Sep 25: retired the old Campus Live and Bot Office pages; the hub now links Bot Crossing and Agent World demos.\n\nLeft off: Sep 25 PT: old campus taken down, new hub live with demo pages only. Dev A keeps publishing for the other bots.\n\nBot: Dev A (with Dev B, Dev C, Bot Campus Scientist)",
+      "bot": "Dev A"
+    },
+    {
+      "id": "devb-ww2-games",
+      "title": "Bridge Too Far, Formations and Command Layers",
+      "what": "Phone WW2 tactics games inspired by Close Combat.",
+      "summary": "1. Bridge Too Far v1-v3 (Oct 7): real-time squad tactics, sound, deploy phase, fire-range rings with hit chance, after-action report.\n2. Formations v1.0-1.1 (Oct 8): WW2 formation sandbox; soldiers path around buildings.\n3. Command Layers v1.0 (Oct 9): companies, platoons and sections each with objectives and commander personalities.",
+      "leftOff": "Oct 9 PT: all live. Later Command Layers updates continued with Dev A.",
+      "updatedAt": "2026-10-09T12:53:00-07:00",
+      "note": "What: Phone WW2 tactics games inspired by Close Combat.\n\nSummary: 1. Bridge Too Far v1-v3 (Oct 7): real-time squad tactics, sound, deploy phase, fire-range rings with hit chance, after-action report.\n2. Formations v1.0-1.1 (Oct 8): WW2 formation sandbox; soldiers path around buildings.\n3. Command Layers v1.0 (Oct 9): companies, platoons and sections each with objectives and commander personalities.\n\nLeft off: Oct 9 PT: all live. Later Command Layers updates continued with Dev A.\n\nBot: Dev B",
+      "bot": "Dev B"
+    },
+    {
+      "id": "devb-lead-fight",
+      "title": "Lead Fight",
+      "what": "A small game where two leads fight with squads, copying the logic of a classic monster-battle AI tournament.",
+      "summary": "1. Units have HP, attack, defense, speed, a type and a few actions.\n2. A squad is three units in order; a lead decides moves.\n3. Installable on the phone.",
+      "leftOff": "Oct 4, 10:17 AM PT: explained what was copied (speed order, type chart) and what was not yet (exact hit math, sleep stops). This grew into the Trainers games.",
+      "updatedAt": "2026-10-04T10:17:00-07:00",
+      "note": "What: A small game where two leads fight with squads, copying the logic of a classic monster-battle AI tournament.\n\nSummary: 1. Units have HP, attack, defense, speed, a type and a few actions.\n2. A squad is three units in order; a lead decides moves.\n3. Installable on the phone.\n\nLeft off: Oct 4, 10:17 AM PT: explained what was copied (speed order, type chart) and what was not yet (exact hit math, sleep stops). This grew into the Trainers games.\n\nBot: Dev B",
+      "bot": "Dev B"
+    },
+    {
+      "id": "devb-coffee-opening",
+      "title": "Coffee Opening tracker",
+      "what": "A 3D phone app that tracks opening new coffee shops, built from a reel you liked.",
+      "summary": "1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.",
+      "leftOff": "Oct 11, 4:09 PM PT: v5 is saved locally (not pushed). Next: business detail and a workflow designer.",
+      "updatedAt": "2026-10-11T16:09:00-07:00",
+      "note": "What: A 3D phone app that tracks opening new coffee shops, built from a reel you liked.\n\nSummary: 1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.\n\nLeft off: Oct 11, 4:09 PM PT: v5 is saved locally (not pushed). Next: business detail and a workflow designer.\n\nBot: Dev B (with Dev A)",
+      "bot": "Dev B"
+    },
+    {
+      "id": "devb-heliopause",
+      "title": "Heliopause planet war (first build)",
+      "what": "A space version of Axis and Allies.",
+      "summary": "1. 5 factions and a galaxy map with planets, orbits and hyperlanes.\n2. Beacon: a 3D battle with land, sea, air and space units.\n3. Packaged with Play.bat so it runs on the PC.",
+      "leftOff": "Aug 30 PT: Beacon playable on the PC. The planet war idea continued with Render C and Researcher A.",
+      "updatedAt": "2026-08-30T14:52:00-07:00",
+      "note": "What: A space version of Axis and Allies.\n\nSummary: 1. 5 factions and a galaxy map with planets, orbits and hyperlanes.\n2. Beacon: a 3D battle with land, sea, air and space units.\n3. Packaged with Play.bat so it runs on the PC.\n\nLeft off: Aug 30 PT: Beacon playable on the PC. The planet war idea continued with Render C and Researcher A.\n\nBot: Dev B",
+      "bot": "Dev B"
+    },
+    {
+      "id": "devc-board-night",
+      "title": "Board night and Know Me games",
+      "what": "Party games for game nights, played from phones with almost no reading.",
+      "summary": "1. Board night (Sep 28-29): Map Heist, Dice Duel Draft, Story Saboteur, icon-first, then more depth.\n2. Know Me (Oct 9): three 'how well do we know each other' games.\n3. Oct 9: each friend plays from their own phone with a room code or QR.",
+      "leftOff": "Oct 9, 7:33 PM PT: all three Know Me games tested start to finish with one host and three phones. Ready to play.",
+      "updatedAt": "2026-10-09T19:33:00-07:00",
+      "note": "What: Party games for game nights, played from phones with almost no reading.\n\nSummary: 1. Board night (Sep 28-29): Map Heist, Dice Duel Draft, Story Saboteur, icon-first, then more depth.\n2. Know Me (Oct 9): three 'how well do we know each other' games.\n3. Oct 9: each friend plays from their own phone with a room code or QR.\n\nLeft off: Oct 9, 7:33 PM PT: all three Know Me games tested start to finish with one host and three phones. Ready to play.\n\nBot: Dev C",
+      "bot": "Dev C"
+    },
+    {
+      "id": "devc-chummy-games",
+      "title": "Early games and Chummy Games hub",
+      "what": "Games built for you and friends before the crew had roles.",
+      "summary": "1. Little Element Ninja: wordless picture-and-sound ninja game.\n2. Battle Fleet, Ranks 3D (all US branches with rank names), Battleship Command (walk the ship, multiplayer).\n3. Code Rooms and Party Rooms, then Chummy Games: 3D lobby with Haunted Dig, Pass the Bomb, Relic Run, Neon Blitz FPS.\n4. Sep 15: built the Command Board for your sign-offs.",
+      "leftOff": "Sep 15 PT: Command Board live with sign-off questions waiting for your answers.",
+      "updatedAt": "2026-09-15T20:59:00-07:00",
+      "note": "What: Games built for you and friends before the crew had roles.\n\nSummary: 1. Little Element Ninja: wordless picture-and-sound ninja game.\n2. Battle Fleet, Ranks 3D (all US branches with rank names), Battleship Command (walk the ship, multiplayer).\n3. Code Rooms and Party Rooms, then Chummy Games: 3D lobby with Haunted Dig, Pass the Bomb, Relic Run, Neon Blitz FPS.\n4. Sep 15: built the Command Board for your sign-offs.\n\nLeft off: Sep 15 PT: Command Board live with sign-off questions waiting for your answers.\n\nBot: Dev C",
+      "bot": "Dev C"
+    },
+    {
+      "id": "gad-style-pipeline",
+      "title": "Chumby style and 3D character pipeline",
+      "what": "Getting bots to make game characters you approve: a still first, then a 3D model.",
+      "summary": "1. Style labels: chumby-cute, then Chumby2 (just eyes, no mouth).\n2. Pipeline: very detailed prompt, still, your approval, then front, 45 degree, side and back views go to a 3D model tool to model and rig.\n3. Lesson: longer, more detailed prompts give more consistent stills.\n4. Made: Roman soldier, Germanic fighter, grenadier, WW2 soldier, fire bro and ice bro.",
+      "leftOff": "Oct 8, 8:51 PM PT: fire and ice bro fronts shown side by side. A phone play page for fire bro waits on a Cloudflare sign-in.",
+      "updatedAt": "2026-10-08T20:51:00-07:00",
+      "note": "What: Getting bots to make game characters you approve: a still first, then a 3D model.\n\nSummary: 1. Style labels: chumby-cute, then Chumby2 (just eyes, no mouth).\n2. Pipeline: very detailed prompt, still, your approval, then front, 45 degree, side and back views go to a 3D model tool to model and rig.\n3. Lesson: longer, more detailed prompts give more consistent stills.\n4. Made: Roman soldier, Germanic fighter, grenadier, WW2 soldier, fire bro and ice bro.\n\nLeft off: Oct 8, 8:51 PM PT: fire and ice bro fronts shown side by side. A phone play page for fire bro waits on a Cloudflare sign-in.\n\nBot: Game Art Director (with Render A, Render B)",
+      "bot": "Game Art Director"
+    },
+    {
+      "id": "gad-seraphina",
+      "title": "Story game: Seraphina character design",
+      "what": "Designing Lady Seraphina for a story game: face, outfits and weapons.",
+      "summary": "1. Arms-up stills, hood instead of cape, bow and quiver on the back.\n2. Locked face rules (smile, copper curly ponytail) and outfit folders.\n3. Tested local image models and long prompts to get the same look every time.\n4. Ballroom dress variations.",
+      "leftOff": "Oct 4 PT: style_game look is the favorite; face and art style still drift between images.",
+      "updatedAt": "2026-10-04T10:58:00-07:00",
+      "note": "What: Designing Lady Seraphina for a story game: face, outfits and weapons.\n\nSummary: 1. Arms-up stills, hood instead of cape, bow and quiver on the back.\n2. Locked face rules (smile, copper curly ponytail) and outfit folders.\n3. Tested local image models and long prompts to get the same look every time.\n4. Ballroom dress variations.\n\nLeft off: Oct 4 PT: style_game look is the favorite; face and art style still drift between images.\n\nBot: Game Art Director (with Story)",
+      "bot": "Game Art Director"
+    },
+    {
+      "id": "gm-shared-stack",
+      "title": "Shared friend-games stack",
+      "what": "Group chat where the game bots split into lanes to build one shared setup for phone games hosted on your PC.",
+      "summary": "1. Lanes: host pipe, lobby and rules, skins kit, vehicles, arcade, fleet.\n2. Rules: every game has a clear end, winners and rematch; rooms close when idle.\n3. Games are saved with how many players they support.\n4. Command Board: one place for your sign-offs and the task board.",
+      "leftOff": "Sep 15 PT: prototypes ready and sign-off questions waiting on the Command Board. Not touched since.",
+      "updatedAt": "2026-09-15T20:54:00-07:00",
+      "note": "What: Group chat where the game bots split into lanes to build one shared setup for phone games hosted on your PC.\n\nSummary: 1. Lanes: host pipe, lobby and rules, skins kit, vehicles, arcade, fleet.\n2. Rules: every game has a clear end, winners and rematch; rooms close when idle.\n3. Games are saved with how many players they support.\n4. Command Board: one place for your sign-offs and the task board.\n\nLeft off: Sep 15 PT: prototypes ready and sign-off questions waiting on the Command Board. Not touched since.\n\nBot: Game Makers (group) (with Dev B, Dev C, Render A, Render B, Render C, Researcher A)",
+      "bot": "Game Makers (group)"
+    },
+    {
+      "id": "ra-ww2-tank",
+      "title": "WW2 tank game",
+      "what": "A WW2 tank you drive and shoot, with rotating treads.",
+      "summary": "1. 2D version, then a 3D version.\n2. Keyboard only: WASD drive, Q/E turret, Space fire.",
+      "leftOff": "Sep 4 PT: both versions updated in the games folder. No open requests.",
+      "updatedAt": "2026-09-04T22:21:00-07:00",
+      "note": "What: A WW2 tank you drive and shoot, with rotating treads.\n\nSummary: 1. 2D version, then a 3D version.\n2. Keyboard only: WASD drive, Q/E turret, Space fire.\n\nLeft off: Sep 4 PT: both versions updated in the games folder. No open requests.\n\nBot: Render A",
+      "bot": "Render A"
+    },
+    {
+      "id": "ra-roman-stills",
+      "title": "Roman soldier style stills",
+      "what": "Blender-style stills to explore looks.",
+      "summary": "1. Roman soldier in a T-pose, plus shield and sword.\n2. Clay, toon and flat-shaded versions.\n3. Seraphina outfit turned into an arms-out still.",
+      "leftOff": "Oct 3, 6:35 PM PT: explained exactly how the image was made (reference image plus prompt).",
+      "updatedAt": "2026-10-03T18:35:00-07:00",
+      "note": "What: Blender-style stills to explore looks.\n\nSummary: 1. Roman soldier in a T-pose, plus shield and sword.\n2. Clay, toon and flat-shaded versions.\n3. Seraphina outfit turned into an arms-out still.\n\nLeft off: Oct 3, 6:35 PM PT: explained exactly how the image was made (reference image plus prompt).\n\nBot: Render A",
+      "bot": "Render A"
+    },
+    {
+      "id": "rb-friend-games",
+      "title": "Battle Wordle and hunter-gatherer game",
+      "what": "Friend games hosted on your PC and played from phones.",
+      "summary": "1. Battle Wordle: everyone races to the same word, 3-letter room codes, timers, ranks, spectator view.\n2. 3D hunter-gatherer with gather, spear, sprint and eat buttons.",
+      "leftOff": "Sep 14 PT: hunter-gatherer v4 fixed falling through the floor and made buttons bigger.",
+      "updatedAt": "2026-09-14T17:08:00-07:00",
+      "note": "What: Friend games hosted on your PC and played from phones.\n\nSummary: 1. Battle Wordle: everyone races to the same word, 3-letter room codes, timers, ranks, spectator view.\n2. 3D hunter-gatherer with gather, spear, sprint and eat buttons.\n\nLeft off: Sep 14 PT: hunter-gatherer v4 fixed falling through the floor and made buttons bigger.\n\nBot: Render B",
+      "bot": "Render B"
+    },
+    {
+      "id": "rb-side-back-views",
+      "title": "Side and back views",
+      "what": "Turning an approved front still into side and back views.",
+      "summary": "1. Used your approved front as the reference with a short note.\n2. One back view and two side options.",
+      "leftOff": "Oct 4, 9:45 PM PT: back view solid; Game Art Director copied the method for ice bro.",
+      "updatedAt": "2026-10-04T21:45:00-07:00",
+      "note": "What: Turning an approved front still into side and back views.\n\nSummary: 1. Used your approved front as the reference with a short note.\n2. One back view and two side options.\n\nLeft off: Oct 4, 9:45 PM PT: back view solid; Game Art Director copied the method for ice bro.\n\nBot: Render B (with Game Art Director)",
+      "bot": "Render B"
+    },
+    {
+      "id": "rc-planetary-war",
+      "title": "Planetary War Games",
+      "what": "A 3D planet war game with space, air, land and sea forces.",
+      "summary": "1. 3D planets, unit gallery, better unit models.\n2. Free space movement and easier clicking.\n3. Sizes tuned many times; units stay small.\n4. Fewer, bigger planets and resources that pay income.\n5. Sep 15: fleet-layer prototype for the shared friend-games host.",
+      "leftOff": "Sep 15 PT: fleet layer ready for your sign-off on map size, moves, AI and resources.",
+      "updatedAt": "2026-09-15T20:00:00-07:00",
+      "note": "What: A 3D planet war game with space, air, land and sea forces.\n\nSummary: 1. 3D planets, unit gallery, better unit models.\n2. Free space movement and easier clicking.\n3. Sizes tuned many times; units stay small.\n4. Fewer, bigger planets and resources that pay income.\n5. Sep 15: fleet-layer prototype for the shared friend-games host.\n\nLeft off: Sep 15 PT: fleet layer ready for your sign-off on map size, moves, AI and resources.\n\nBot: Render C",
+      "bot": "Render C"
+    },
+    {
+      "id": "resa-bot-docs",
+      "title": "Bot Docs and Mechanics Museum",
+      "what": "Command-word playbooks for working with bots, and a museum of tiny 30-second game prototypes.",
+      "summary": "1. Bot Docs commands: LIST, NEW, FEATURE, IDEA, PROTOTYPE.\n2. Mechanics Museum: one tiny playable per game type.\n3. 28 types done.",
+      "leftOff": "Early Sep PT: 23 types still open; next is Party RPG. Say PROTOTYPE to build the next one.",
+      "updatedAt": "2026-09-04T12:00:00-07:00",
+      "note": "What: Command-word playbooks for working with bots, and a museum of tiny 30-second game prototypes.\n\nSummary: 1. Bot Docs commands: LIST, NEW, FEATURE, IDEA, PROTOTYPE.\n2. Mechanics Museum: one tiny playable per game type.\n3. 28 types done.\n\nLeft off: Early Sep PT: 23 types still open; next is Party RPG. Say PROTOTYPE to build the next one.\n\nBot: Researcher A",
+      "bot": "Researcher A"
+    },
+    {
+      "id": "resa-planet-zones",
+      "title": "Planet Zones",
+      "what": "Planets split into Axis and Allies style territories.",
+      "summary": "1. Spheres with land, sea and space zones joined by space lanes.\n2. Built on a 'Terra Divided' map you sent.\n3. Small 2-player Axis and Allies loop: buy, move, fight, place.",
+      "leftOff": "Sep 5 PT: playable hotseat version; planets no longer spin.",
+      "updatedAt": "2026-09-05T16:07:00-07:00",
+      "note": "What: Planets split into Axis and Allies style territories.\n\nSummary: 1. Spheres with land, sea and space zones joined by space lanes.\n2. Built on a 'Terra Divided' map you sent.\n3. Small 2-player Axis and Allies loop: buy, move, fight, place.\n\nLeft off: Sep 5 PT: playable hotseat version; planets no longer spin.\n\nBot: Researcher A",
+      "bot": "Researcher A"
+    },
+    {
+      "id": "resb-lotr-lore",
+      "title": "LOTR mod and Tolkien lore",
+      "what": "Looking up the kingdoms in the Total War LOTR mod and comparing them to the books.",
+      "summary": "1. Mod factions with banners and ruler portraits.\n2. Real kingdoms across the Ages.\n3. Who the Eagles, Gandalf, Sauron, Maiar and Valar are.",
+      "leftOff": "Sep 5 PT: questions answered. Nothing open.",
+      "updatedAt": "2026-09-05T18:00:00-07:00",
+      "note": "What: Looking up the kingdoms in the Total War LOTR mod and comparing them to the books.\n\nSummary: 1. Mod factions with banners and ruler portraits.\n2. Real kingdoms across the Ages.\n3. Who the Eagles, Gandalf, Sauron, Maiar and Valar are.\n\nLeft off: Sep 5 PT: questions answered. Nothing open.\n\nBot: Researcher B",
+      "bot": "Researcher B"
+    },
+    {
+      "id": "sci-bot-campus",
+      "title": "New Bot Campus (Crossing and Agent World)",
+      "what": "Replacing the old Bot Campus with better live views of the bots.",
+      "summary": "1. Sep 25: old campus taken down; Bot Crossing and Agent World demo pages put on the hub.\n2. Oct 1: ranked ideas to borrow (wait-on-you markers, permission desk, inbox to shipped).\n3. Oct 1: what Campus could do for you.",
+      "leftOff": "Oct 1, 9:35 PM PT: you said you don't see practical uses yet. It needs a live link to the real crew and a clear job first.",
+      "updatedAt": "2026-10-01T21:35:00-07:00",
+      "note": "What: Replacing the old Bot Campus with better live views of the bots.\n\nSummary: 1. Sep 25: old campus taken down; Bot Crossing and Agent World demo pages put on the hub.\n2. Oct 1: ranked ideas to borrow (wait-on-you markers, permission desk, inbox to shipped).\n3. Oct 1: what Campus could do for you.\n\nLeft off: Oct 1, 9:35 PM PT: you said you don't see practical uses yet. It needs a live link to the real crew and a clear job first.\n\nBot: Bot Campus Scientist (with Dev A, Screenshot Investigator)",
+      "bot": "Bot Campus Scientist"
+    },
+    {
+      "id": "story-letters",
+      "title": "Letters of the Two Worlds",
+      "what": "Tolkien-style planning letters for the fantasy comic world.",
+      "summary": "1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.",
+      "leftOff": "Sep 20 PT: a 'where we left off' summary was saved. No Letter VI yet; the Ashavar fall is still open.",
+      "updatedAt": "2026-09-20T20:06:00-07:00",
+      "note": "What: Tolkien-style planning letters for the fantasy comic world.\n\nSummary: 1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.\n\nLeft off: Sep 20 PT: a 'where we left off' summary was saved. No Letter VI yet; the Ashavar fall is still open.\n\nBot: Story",
+      "bot": "Story"
+    },
+    {
+      "id": "story-characters",
+      "title": "Black Guard character sheets",
+      "what": "Character designs for the comic in the approved 'Main look'.",
+      "summary": "1. Sir Alaric Vaelen and Lady Seraphina sheets.\n2. Four commanders and nine unit leads, each with a distinct face.\n3. Banner lineup in one shared kit, and a meeting comic.",
+      "leftOff": "Oct 3 PT: Seraphina's locked look sent to the Game Art Director for the story game.",
+      "updatedAt": "2026-10-03T11:36:00-07:00",
+      "note": "What: Character designs for the comic in the approved 'Main look'.\n\nSummary: 1. Sir Alaric Vaelen and Lady Seraphina sheets.\n2. Four commanders and nine unit leads, each with a distinct face.\n3. Banner lineup in one shared kit, and a meeting comic.\n\nLeft off: Oct 3 PT: Seraphina's locked look sent to the Game Art Director for the story game.\n\nBot: Story",
+      "bot": "Story"
+    },
+    {
+      "id": "ip-data-eng",
+      "title": "Data engineering interview prep",
+      "what": "Practice labs for a data engineering technical interview.",
+      "summary": "1. Labs 1-3: SQL, Python and pandas drills with expected answers.\n2. Lab 4: 10 architecture and design scenarios.\n3. Answer files saved for review.",
+      "leftOff": "Sep 25 PT: Lab 4 finished. Lab windows closed Oct 3. Nothing open.",
+      "updatedAt": "2026-09-25T08:51:00-07:00",
+      "note": "What: Practice labs for a data engineering technical interview.\n\nSummary: 1. Labs 1-3: SQL, Python and pandas drills with expected answers.\n2. Lab 4: 10 architecture and design scenarios.\n3. Answer files saved for review.\n\nLeft off: Sep 25 PT: Lab 4 finished. Lab windows closed Oct 3. Nothing open.\n\nBot: Interview Prep",
+      "bot": "Interview Prep"
+    },
+    {
+      "id": "random-game-mashups",
+      "title": "Game mashups and history lookups",
+      "what": "Game ideas and quick questions.",
+      "summary": "1. How Steel Division 2 plays.\n2. Easy Company and 101st Airborne structure.\n3. Mashup ideas from your Steam library.\n4. Steps to build a mashup scenario in Age of Empires DE.",
+      "leftOff": "Oct 9, 2:08 PM PT: AoE DE scenario steps given; the editor building is the part you would do.",
+      "updatedAt": "2026-10-09T14:08:00-07:00",
+      "note": "What: Game ideas and quick questions.\n\nSummary: 1. How Steel Division 2 plays.\n2. Easy Company and 101st Airborne structure.\n3. Mashup ideas from your Steam library.\n4. Steps to build a mashup scenario in Age of Empires DE.\n\nLeft off: Oct 9, 2:08 PM PT: AoE DE scenario steps given; the editor building is the part you would do.\n\nBot: Random",
+      "bot": "Random"
+    },
+    {
+      "id": "si-reels",
+      "title": "Reel and screenshot investigations",
+      "what": "Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.",
+      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.",
+      "leftOff": "Oct 11, 10:44 AM PT: #112 logged (rated MED for Campus). Waiting on the next link.",
+      "updatedAt": "2026-10-11T10:44:00-07:00",
+      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n\nLeft off: Oct 11, 10:44 AM PT: #112 logged (rated MED for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
+      "bot": "Screenshot Investigator"
     }
   ]
 }

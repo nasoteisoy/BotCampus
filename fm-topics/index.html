@@ -37,6 +37,7 @@
   .hint{margin:.5rem 0 0;color:#8ab;font-size:.8rem;line-height:1.4}
   .how{margin-top:1.25rem;padding-top:1rem;border-top:1px solid #333;color:#888;font-size:.8rem;line-height:1.45}
   .err{color:#f88;font-size:.9rem}
+  li.sec{border:0;margin:1rem 0 .4rem;color:#8ab;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -169,7 +170,21 @@
       list.innerHTML = "<li class=\"err\">No topics yet.</li>";
       return;
     }
+    var groups = {}, order = ["Field Marshal"];
     topics.forEach(function (t) {
+      var g = t.bot || "Field Marshal";
+      if (!groups[g]) { groups[g] = []; if (order.indexOf(g) < 0) order.push(g); }
+      groups[g].push(t);
+    });
+    order.forEach(function (g) {
+      if (!groups[g]) return;
+      var h = document.createElement("li");
+      h.className = "sec";
+      h.textContent = g;
+      list.appendChild(h);
+      groups[g].forEach(addTopic);
+    });
+    function addTopic(t) {
       var li = document.createElement("li");
       var b = document.createElement("button");
       b.type = "button";
@@ -179,7 +194,7 @@
       b.onclick = function () { show(t); };
       li.appendChild(b);
       list.appendChild(li);
-    });
+    }
   }
 
   fetch("topics.json?v=" + Date.now(), { cache: "no-store" })
