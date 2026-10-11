@@ -4,7 +4,18 @@ A 3D tracker for opening a **new** coffee shop. An isometric lot builds itself u
 
 Live once pushed: https://nasoteisoy.github.io/BotCampus/games/coffee-opening/ (Add to Home Screen to install it; it works offline after the first visit.)
 
-**🧪 Example data.** The 4 stores and every task are a generic example plan, not a real company. ⚙ → ↺ resets everything back to the example plan.
+**🧪 Example data.** The 11 example stores, their tasks and their issues are generic, not a real company. ⚙ → 🧹 Clear examples (tap twice) removes only the 🧪 stores and keeps yours. ⚙ → ↺ resets everything back to the examples.
+
+## v2: many stores, open stores
+- **🏪 ▾ store picker**: an icon list. Filter 🏪 all / 🏗 opening / ☕ open / ⚠️ needs attention, each with its count. Sort 🚨 urgency / 📶 stage / 🔤 name. Each row shows the icon, the name, 🧪, a status line of icons and a bar. ＋ adds a store; ✏️ renames it or changes its icon; 🗑 deletes it (tap twice).
+- **🗺 District map** (side button, picker header or ⚙): every store is a mini 3D building that grows with its own build progress. Each has a status ring (coral: opening; 🟢 open and normal; 🟠 attention or at risk; 🔴 urgent, rejected or blocked, pulsing) and a label. Tap a building or its label to fly into that store. The bottom bar holds the filter chips with counts: non-matching stores are dimmed and the list opens. 🎬 there runs the **district tour**, flying store to store (urgent ones first, about 2.4 s each).
+- **🏪 Open / Operating**: the lifecycle state after 🎉. The timeline ends with a 🏪 node; once all 11 stages are at 100%, "🏪 Open the store" appears there and on the 🎉 sheet. ↩ in the picker moves a store back to opening (tap twice).
+  - **3D**: the stations are gone and the lot is in business. Windows are lit, the sign says NOW OPEN, customers walk in, the drive-thru is full and road traffic is busy. A **3D bubble** floats over the roof for each open issue, with a border colour by priority and a red pulse when it is urgent. ✅ shows when there are none. Tap a bubble to open that issue.
+  - **Dashboard bar** (replaces the timeline): the status chip, the issue icons, 🔁 checks done/total, and ➕.
+  - **Status**: 🔴 Urgent if any open issue is urgent; 🟠 Needs attention if any is high, any is past its due date, or any routine check is overdue; otherwise 🟢 Normal. 🤖 / 🟢 / 🟠 / 🔴 overrides it manually.
+  - **🛠 Issues**: icon, title, 👤 owner, 📅 due, and a priority chip (tap it: 🔵 low → 🟠 high → 🔴 urgent). ✔ resolves an issue (it moves to "✔ resolved", where ↩ reopens it). ✏️ edits the title and owner, and 🗑 deletes (tap twice). Presets: 🧊 walk-in cooler down, ☕ espresso machine service, 👥 staffing short, 🧾 health inspection due, 📦 low inventory, 🧹 deep clean, 🔧 HVAC repair, 📄 permit renewal, ⭐ bad review follow-up. You can also type your own.
+  - **🔁 Routine checks**: daily (temps, sanitize, cash, floor), weekly (backflush, inventory, schedule) and monthly (HVAC filter, water filter, safety walk). Each one resets at the start of its day, week (Monday) or month: ✅ done, ⏳ due, ⚠️ overdue (missed the previous period). When all are done the header shows "✅ Normal".
+- **Saving**: v2 saves to `coffee-opening-v2`. On first load it migrates an existing v1 save (`coffee-opening-v1`, stores and checklists kept, and the old key is left as a backup). ⬆ Import accepts v1 exports too.
 
 ## The 11 stages (bottom timeline)
 | # | Stage | In the 3D lot |
@@ -30,15 +41,15 @@ Live once pushed: https://nasoteisoy.github.io/BotCampus/games/coffee-opening/ (
 ## Using it
 - **Tap** a station, its floating label, the building, or a timeline node. The camera glides there and the panel opens: a bottom sheet on a phone held upright (at most about half the scene), a floating side panel in landscape. The panel shows %, status, 👤 owner, 📅 due date, the vote buttons or the readiness checks, and the checklist.
 - **Checklist**: tap the box to tick. ✏️ renames, 📅 sets a date (red when overdue), 🗑 deletes (tap twice). ＋ adds a task. ◀ ▶ step through the stages.
-- **📋** lists all 11 stages with bars. **🏪 ▾** lists the stores: switch, rename, change the icon, ＋ add a new store with a blank plan, or 🗑 delete one.
-- **🎬 Auto tour**: plays the whole build from 0 to 100% in 60 s, with the camera following each stage. It never changes your data. ⏹ or any timeline tap stops it.
+- **📋** lists all 11 stages with bars (on an open store it opens the dashboard). **🏪 ▾** is the store picker (see above).
+- **🎬 Build tour** (on a store; on the 🗺 map 🎬 is the district tour): plays the whole build from 0 to 100% in 60 s, with the camera following each stage. It never changes your data. ⏹ or any timeline tap stops it.
 - **🌙 / ☀️**: night mode (dark, neon orange routes, lit lamps and windows) or day mode (light, coral accents).
 - **✋ Drag** is off by default, so swipes and pinches on the scene do nothing. Switch it on (orange outline) to drag-pan, pinch-zoom, twist-rotate or wheel-zoom. ➕ ➖ ⟳ ⌂ always work.
-- **Saving**: every edit is saved to `localStorage` (`coffee-opening-v1`). ⚙ → ⬇ Export JSON / ⬆ Import JSON (it accepts a full export or one store; anything else is rejected and your data is kept).
+- **Saving**: every edit is saved to `localStorage` (`coffee-opening-v2`). ⚙ → ⬇ Export JSON / ⬆ Import JSON (it accepts a full export or one store; anything else is rejected and your data is kept).
 
 ## Tech
 - Plain files, no build step. `three.module.min.js` is three.js r169 (MIT), vendored so the app works offline.
 - `data.js`: stages, the example plan, progress, status, load and import. It has no DOM, so it also runs in node.
-- `app.js`: the Three.js scene (OrthographicCamera, flat-shaded low-poly boxes and cylinders, ground progress rings, dotted routes with glowing pulses, movers), the HTML labels, the panel, the timeline, the tour, and input.
+- `app.js`: the Three.js scene (one `lot` group for the store and one `dist` group for the 🗺 map; the issue bubbles are emoji canvas sprites) (OrthographicCamera, flat-shaded low-poly boxes and cylinders, ground progress rings, dotted routes with glowing pulses, movers), the HTML labels, the panel, the timeline, the tour, and input.
 - Phones: the pixel ratio is capped at 2, there is one shadow-casting light (1024 map), and geometry stays low (about 17k triangles). The dots on each route are a single instanced mesh.
-- `sw.js`: cache `coffee-opening-v1`, network first with a cache fallback. On activate it deletes only keys starting with `coffee-opening-` (the origin is shared with the other games).
+- `sw.js`: cache `coffee-opening-v2`, network first with a cache fallback. On activate it deletes only keys starting with `coffee-opening-` (the origin is shared with the other games).

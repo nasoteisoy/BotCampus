@@ -1,6 +1,6 @@
 /* Coffee Opening service worker: offline after the first visit. The origin is shared with other games,
    so activate only ever deletes old caches whose key starts with 'coffee-opening-'. */
-const CACHE = 'coffee-opening-v1';
+const CACHE = 'coffee-opening-v2';
 const ASSETS = ['./', 'index.html', 'data.js', 'app.js', 'three.module.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('coffee-opening-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

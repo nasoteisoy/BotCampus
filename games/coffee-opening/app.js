@@ -11,7 +11,7 @@ const DEMO_S = 60;
 
 // ---------------------------------------------------------------- state
 let state = CO.load(localStorage);
-const ui = { sel: -1, sheet: null, drag: false, demo: null, editing: null, confirm: null, today: CO.today() };
+const ui = { sel: -1, sheet: null, drag: false, demo: null, dtour: null, mode: 'lot', filter: 'all', sort: 'urgency', editing: null, confirm: null, hiIssue: null, today: CO.today() };
 const store = () => state.stores.find((s) => s.id === state.cur) || state.stores[0];
 let saveT = 0;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => localStorage.setItem(CO.KEY, JSON.stringify(state)), 150); }
@@ -25,6 +25,7 @@ function model() {
     return { p, status: p.map((v) => (v >= 1 ? 'done' : 'ok')), vote: p[V] >= 1 ? 'approved' : 'pending', stopped: p.map(() => false), cur: Math.min(N - 1, Math.floor(f)), overall: x, days: Math.round((1 - x) * 250), demo: true, x };
   }
   const st = store(), d = ui.today;
+  if (CO.isOpen(st)) { const one = S.map(() => 1); return { p: one, status: S.map(() => 'done'), vote: 'approved', stopped: S.map(() => false), cur: N - 1, overall: 1, days: CO.diffDays(st.ops.opened, d), open: true, ops: CO.opsStatus(st, d) }; }
   return { p: S.map((_, i) => CO.eff(st, i)), status: S.map((_, i) => CO.status(st, i, d)), vote: st.stages[V].vote, stopped: S.map((_, i) => CO.stopped(st, i)), cur: CO.current(st), overall: CO.overall(st), days: CO.daysTo(st, d) };
 }
 let M = model();
@@ -36,6 +37,8 @@ renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const cam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 400);
+const lot = new THREE.Group(); scene.add(lot);    // one store's lot (hidden on the 🗺 district map)
+const dist = new THREE.Group(); scene.add(dist); dist.visible = false;
 let EL = THREE.MathUtils.degToRad(38);   // camera elevation: steeper in portrait so the lot fills the tall screen
 const view = { tx: 0, tz: 0, h: 30, az: Math.PI / 4, ox: 0, oy: 0 };   // shown
 const dst = { tx: 0, tz: 0, h: 30, az: Math.PI / 4, ox: 0, oy: 0 };   // wanted
@@ -73,13 +76,13 @@ function cgeo(rt, rb, h, seg = 8) { const k = `c${rt},${rb},${h},${seg}`; if (!G
 function sgeo(r, seg = 8) { const k = `s${r},${seg}`; if (!G[k]) G[k] = new THREE.SphereGeometry(r, seg, Math.max(4, seg - 2)); return G[k]; }
 function add(geo, role, x, y, z, parent, shadow = true) {
   const m = new THREE.Mesh(geo, typeof role === 'string' ? mat(role) : role); m.position.set(x, y, z);
-  m.castShadow = shadow; m.receiveShadow = true; (parent || scene).add(m); return m;
+  m.castShadow = shadow; m.receiveShadow = true; (parent || lot).add(m); return m;
 }
 const box = (w, h, d, role, x, y, z, p, sh) => add(bgeo(w, h, d), role, x, y, z, p, sh);
 const cyl = (rt, rb, h, role, x, y, z, p, seg) => add(cgeo(rt, rb, h, seg), role, x, y, z, p);
 const ball = (r, role, x, y, z, p, seg) => add(sgeo(r, seg), role, x, y, z, p);
 const flat = (w, d, role, x, z, y = 0.02, p) => { const m = box(w, 0.02, d, role, x, y, z, p, false); return m; };
-function group(x = 0, z = 0, parent = scene) { const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g); return g; }
+function group(x = 0, z = 0, parent = lot) { const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g); return g; }
 
 // text on a canvas texture (signs)
 function textTex(lines, bg, fg, w = 256, h = 96) {
@@ -157,13 +160,13 @@ const POS = [[-14.5, 9], [-14.5, 3], [-14.5, -3], [-10, -9.5], [-4.5, -11.2], [1
 const RIN = 1.45, ROUT = 1.72;
 const stations = POS.map(([x, z], i) => {
   const g = group(x, z);
-  add(cgeo(1.85, 1.85, 0.06, 36), 'pad', 0, 0, 0, g, false).castShadow = false;
+  const pad = add(cgeo(1.85, 1.85, 0.06, 36), 'pad', 0, 0, 0, g, false); pad.castShadow = false;
   const base = new THREE.Mesh(new THREE.RingGeometry(RIN, ROUT, 48), new THREE.MeshBasicMaterial({ color: 0xd7dbe1 })); base.rotation.x = -Math.PI / 2; base.position.y = 0.075; g.add(base);
   const fillMat = new THREE.MeshBasicMaterial({ color: 0xff6b5b });
   const fill = new THREE.Mesh(new THREE.BufferGeometry(), fillMat); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.085; g.add(fill);
   const dot = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), fillMat); dot.rotation.x = -Math.PI / 2; dot.position.set(0, 0.09, -(RIN + ROUT) / 2); g.add(dot);
   const hit = new THREE.Mesh(cgeo(1.9, 1.9, 1.4, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })); hit.userData.stage = i; g.add(hit);
-  return { i, g, x, z, base, fill, fillMat, dot, hit, shown: -1, shownP: 0, props: null, labelY: 2.4 };
+  return { i, g, x, z, pad, base, fill, fillMat, dot, hit, shown: -1, shownP: 0, props: null, labelY: 2.4 };
 });
 function setRing(s, p) {
   if (Math.abs(p - s.shown) < 0.004) return; s.shown = p; s.fill.geometry.dispose();
@@ -216,7 +219,7 @@ function person(parent, role = 'staff') { const g = group(0, 0, parent); cyl(0.1
   P.ribbon = box(2.6, 0.12, 0.04, 'trim', 0, 0.8, 0, g); }
 const CONF = 90, conf = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.02, 0.08), new THREE.MeshBasicMaterial({ color: 0xffffff }), CONF);
 const confD = []; { const cols = [0xff6b5b, 0xffc23d, 0x5b8def, 0x2fb171, 0xff8c1a, 0xffffff]; for (let k = 0; k < CONF; k++) { conf.setColorAt(k, new THREE.Color(cols[k % cols.length])); confD.push({ x: 0, y: -1, z: 0, vy: 0, r: Math.random() * 6, life: 0 }); } }
-conf.visible = false; conf.frustumCulled = false; scene.add(conf);
+conf.visible = false; conf.frustumCulled = false; lot.add(conf);
 
 // ---------------------------------------------------------------- routes: dotted paths + glowing pulses + movers
 function polyPath(pts, r = 1.2) {   // straight segments, rounded corners
@@ -238,8 +241,8 @@ function route(id, pts, o = {}) {
   const curve = polyPath(pts, o.r || 1.2), len = curve.getLength(), n = Math.floor(len / 0.6);
   const mesh = new THREE.InstancedMesh(dotGeo, mat('route', true), n); const m4 = new THREE.Matrix4();
   for (let k = 0; k < n; k++) { const p = curve.getPointAt((k + 0.5) / n); m4.makeTranslation(p.x, 0.06, p.z); mesh.setMatrixAt(k, m4); }
-  mesh.frustumCulled = false; scene.add(mesh);
-  const pulses = []; for (let k = 0; k < (o.pulses ?? 3); k++) { const b = new THREE.Mesh(pulseGeo, mat('pulse', true)); const s = new THREE.Sprite(glowMat); s.scale.setScalar(1.1); b.add(s); scene.add(b); pulses.push({ b, u: k / (o.pulses ?? 3) }); }
+  mesh.frustumCulled = false; lot.add(mesh);
+  const pulses = []; for (let k = 0; k < (o.pulses ?? 3); k++) { const b = new THREE.Mesh(pulseGeo, mat('pulse', true)); const s = new THREE.Sprite(glowMat); s.scale.setScalar(1.1); b.add(s); lot.add(b); pulses.push({ b, u: k / (o.pulses ?? 3) }); }
   return (routes[id] = { id, curve, len, mesh, pulses, on: false, fade: 0, speed: o.speed || 3, movers: [] });
 }
 route('scout', [[-30, 13.8], [-12, 13.8], [-12, -6]]);
@@ -256,9 +259,9 @@ const journey = (() => {
     const a2 = a.clone().add(dir.clone().multiplyScalar(2.05)), b2 = b.clone().sub(dir.clone().multiplyScalar(2.05)), L = a2.distanceTo(b2), n = Math.max(1, Math.floor(L / 0.5));
     const mesh = new THREE.InstancedMesh(dotGeo, mat('todo', true), n);
     for (let k = 0; k < n; k++) { const p = a2.clone().lerp(b2, (k + 0.5) / n); m4.makeTranslation(p.x, 0.06, p.z); mesh.setMatrixAt(k, m4); }
-    mesh.frustumCulled = false; scene.add(mesh); segs.push({ a: a2, b: b2, L, mesh });
+    mesh.frustumCulled = false; lot.add(mesh); segs.push({ a: a2, b: b2, L, mesh });
   }
-  const pulses = []; for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(pulseGeo, mat('pulse', true)); const s = new THREE.Sprite(glowMat); s.scale.setScalar(1.1); b.add(s); scene.add(b); pulses.push({ b, u: k / 4 }); }
+  const pulses = []; for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(pulseGeo, mat('pulse', true)); const s = new THREE.Sprite(glowMat); s.scale.setScalar(1.1); b.add(s); lot.add(b); pulses.push({ b, u: k / 4 }); }
   return { segs, pulses };
 })();
 // vehicles (built facing +z)
@@ -273,9 +276,10 @@ const movers = [
   mover(truck(), routes.truck.curve, { mode: 'ping', speed: 3.4, r: 'truck' }),
   mover(truck(), routes.truck.curve, { mode: 'ping', speed: 3.4, r: 'truck', u: 0.5 }),
   mover(van(), routes.van.curve, { mode: 'ping', speed: 3.6, r: 'van' }),
-  ...[0, 1, 2].map((k) => mover(person(scene), routes.staff.curve, { mode: 'ping', speed: 1.2, r: 'staff', u: k / 3, dir: k % 2 ? -1 : 1 })),
+  ...[0, 1, 2].map((k) => mover(person(lot), routes.staff.curve, { mode: 'ping', speed: 1.2, r: 'staff', u: k / 3, dir: k % 2 ? -1 : 1 })),
   ...[0, 1, 2, 3, 4].map((k) => mover(car(k), routes.drive.curve, { speed: 3, r: 'drive', u: k / 5, need: k })),
   ...[0, 1, 2].map((k) => mover(car(k + 1), k % 2 ? roadB : roadA, { speed: 5 + k, r: 'road', u: k / 3, need: k })),
+  ...[0, 1, 2, 3].map((k) => mover(person(lot, 'car' + k), routes.staff.curve, { mode: 'ping', speed: 1.1, r: 'cust', u: 0.15 + k * 0.22, dir: k % 2 ? 1 : -1 })),   // 🏪 customers walking in
 ];
 for (const m of movers) m.obj.position.y = 0;
 const tan = new THREE.Vector3();
@@ -301,7 +305,8 @@ function apply(dt, now) {
   // stations: rings + colours by status
   stations.forEach((s, i) => {
     const stt = M.stopped[i] ? 'blocked' : M.status[i] === 'ok' && M.p[i] === 0 && i !== M.cur ? 'todo' : M.status[i];
-    setRing(s, shown[i]); s.fillMat.color.setHex(C[stt]); s.base.material.color.setHex(M.stopped[i] ? C.blocked : PAL[state.theme].ringBase);
+    s.g.visible = !M.open || i === 9; s.pad.visible = s.base.visible = s.fill.visible = !M.open;   // open store: only the patio stays
+    setRing(s, shown[i]); if (M.open) s.dot.visible = false; s.fillMat.color.setHex(C[stt]); s.base.material.color.setHex(M.stopped[i] ? C.blocked : PAL[state.theme].ringBase);
     s.base.material.transparent = M.stopped[i]; s.base.material.opacity = M.stopped[i] ? 0.45 : 1;
   });
   // 1-5
@@ -331,28 +336,136 @@ function apply(dt, now) {
   P.pallets.forEach((p, j) => { p.visible = p9 * 3 > j + 0.01; });
   P.rollLamps.forEach((L, j) => { const ok = (j ? p8 : p7) >= 0.999; L.m.color.setHex(ok ? 0x2fb171 : night ? 0x3a4250 : 0xb7bec8); L.m.emissive.setHex(ok ? 0x2fb171 : 0); L.m.emissiveIntensity = ok ? 0.5 : 0; });
   P.tables.forEach((t, j) => { t.visible = p10 * 3 > j + 0.01; });
-  P.arch.visible = p11 > 0.01; P.arch.scale.setScalar(Math.max(0.01, p11)); P.ribbon.visible = p11 > 0.5 && p11 < 1;
+  P.arch.visible = p11 > 0.01 && !M.open; P.arch.scale.setScalar(Math.max(0.01, p11)); P.ribbon.visible = p11 > 0.5 && p11 < 1;
   patioLights.visible = p10 > 0.5 && rf > 0.9;
   // night glow
-  const lit = night && wl > 0.6; mat('glass').emissive.setHex(lit ? GLOW.night.glass : 0); mat('glassLamp').color.setHex(night ? 0xffd27a : 0xfff1c9); mat('glassLamp').emissive.setHex(night ? 0xffb030 : 0x000000);
+  const lit = (night && wl > 0.6) || M.open; mat('glass').emissive.setHex(lit ? (night ? GLOW.night.glass : 0x5a3c0c) : 0); mat('glassLamp').color.setHex(night ? 0xffd27a : 0xfff1c9); mat('glassLamp').emissive.setHex(night ? 0xffb030 : 0x000000);
   lamps.forEach((L) => { L.s.visible = night; L.b.material = night ? mat('lampOn') : mat('lampOff'); });
   // routes on/off by stage
   const R = { scout: M.cur <= 2 && !M.demo || (M.demo && M.cur <= 2), truck: !M.stopped[5] && (p6 > 0 && p6 < 1 || M.cur === 5 || (M.cur === 4 && p5 > 0.5)),
     van: !M.stopped[6] && (M.cur >= 6 && M.cur <= 8 && p9 < 1), staff: p8 >= 0.5, drive: p10 > 0.2 || p11 > 0 };
   for (const id in routes) { const r = routes[id]; r.on = !!R[id]; r.fade = lerp(r.fade, r.on ? 1 : 0, k); r.mesh.visible = r.fade > 0.05; r.pulses.forEach((p) => { p.b.visible = r.on; }); }
-  const busy = (p10 > 0.2 ? 2 : 0) + (p11 > 0 ? 1 : 0) + (p11 >= 1 ? 2 : 0), roadCars = 1 + (p10 > 0 ? 1 : 0) + (p11 >= 1 ? 1 : 0);
-  for (const m of movers) m.on = m.r === 'road' ? m.need < roadCars : m.r === 'drive' ? routes.drive.on && m.need < busy : routes[m.r].on;
+  const busy = M.open ? 5 : (p10 > 0.2 ? 2 : 0) + (p11 > 0 ? 1 : 0) + (p11 >= 1 ? 2 : 0), roadCars = M.open ? 3 : 1 + (p10 > 0 ? 1 : 0) + (p11 >= 1 ? 1 : 0);
+  for (const m of movers) m.on = m.r === 'road' ? m.need < roadCars : m.r === 'drive' ? routes.drive.on && m.need < busy : m.r === 'cust' ? (M.open || p11 >= 0.999) && !M.demo : routes[m.r].on;
+  applyOpen(now, night);
   // confetti at the grand opening
-  conf.visible = p11 >= 0.999;
+  conf.visible = p11 >= 0.999 && !M.open;
 }
+
+// ---------------------------------------------------------------- 🏪 open store: floating 3D issue bubbles over the roof (red pulse = urgent)
+const OPS = { ok: ['🟢', 'Normal', 'var(--ok)', 0x2fb171], attn: ['🟠', 'Needs attention', 'var(--risk)', 0xf5a524], urgent: ['🔴', 'Urgent', 'var(--block)', 0xe5484d] };
+const PRI = { low: ['🔵', 'Low', '#5b8def'], high: ['🟠', 'High', '#f5a524'], urgent: ['🔴', 'Urgent', '#e5484d'] };
+const PRANK = { urgent: 0, high: 1, low: 2 };
+const byPrio = (a, b) => PRANK[a.prio] - PRANK[b.prio] || (a.due || '9').localeCompare(b.due || '9');
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const bubCache = new Map();
+function bubTex(icon, col, night) {
+  const key = icon + col + night; if (bubCache.has(key)) return bubCache.get(key);
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.beginPath(); g.moveTo(50, 100); g.lineTo(64, 124); g.lineTo(78, 100); g.fillStyle = col; g.fill();
+  g.beginPath(); g.arc(64, 58, 50, 0, Math.PI * 2); g.fillStyle = night ? '#1b2230' : '#ffffff'; g.fill(); g.lineWidth = 10; g.strokeStyle = col; g.stroke();
+  g.font = `56px ${EMOJI}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#333'; g.fillText(icon, 64, 62);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; bubCache.set(key, t); return t;
+}
+const pulseTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.lineWidth = 9; g.strokeStyle = '#e5484d'; g.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const BUBN = 10, bubbles = [];
+for (let k = 0; k < BUBN; k++) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); sp.scale.set(1.5, 1.5, 1); sp.center.set(0.5, 0.1); sp.renderOrder = 6; sp.visible = false; lot.add(sp);
+  const pu = new THREE.Sprite(new THREE.SpriteMaterial({ map: pulseTex, transparent: true, depthWrite: false })); pu.center.set(0.5, 0.5); pu.renderOrder = 5; pu.visible = false; lot.add(pu);
+  bubbles.push({ sp, pu, id: null, key: '', prio: '' });
+}
+function applyOpen(now, night) {
+  const s = store(), on = M.open && !ui.demo, list = on ? CO.openIssues(s).slice().sort(byPrio) : [];
+  const items = on ? (list.length ? list.slice(0, BUBN) : [{ id: 'ok', icon: '✅', prio: 'ok' }]) : [];
+  const n = items.length, rx = Math.cos(view.az), rz = -Math.sin(view.az), gap = 2.1;
+  bubbles.forEach((b, k) => {
+    const it = items[k]; b.sp.visible = !!it; b.pu.visible = false; if (!it) { b.id = null; b.prio = ''; return; }
+    const col = it.prio === 'ok' ? '#2fb171' : PRI[it.prio][2], key = it.icon + col + night;
+    if (b.key !== key) { b.key = key; b.sp.material.map = bubTex(it.icon, col, night); b.sp.material.needsUpdate = true; }
+    b.id = it.id; b.prio = it.prio; b.sp.userData.issue = it.id;
+    const off = (k - (n - 1) / 2) * gap, y = 5.6 + Math.sin(now / 520 + k * 1.3) * 0.18 + (it.id === ui.hiIssue ? 0.5 : 0);
+    b.sp.position.set(rx * off, y, rz * off); const sc = it.id === ui.hiIssue ? 2.5 : 2; b.sp.scale.set(sc, sc, 1);
+    if (it.prio === 'urgent') { const ph = (now / 1100 + k * 0.3) % 1; b.pu.visible = true; b.pu.position.set(rx * off, y + 0.9 * sc / 1.5, rz * off); b.pu.scale.setScalar(1.8 + ph * 2.2); b.pu.material.opacity = 0.95 * (1 - ph); }
+  });
+}
+
+// ---------------------------------------------------------------- 🗺 district map: every store as a mini 3D building with a status ring
+const DCELL = 11, dHits = [], dPulse = []; let distSig = '', distPos = [], distPts = [];
+const HCOL = { ok: 0xff6b5b, risk: 0xf5a524, blocked: 0xe5484d, attn: 0xf5a524, urgent: 0xe5484d, open: 0x2fb171 };
+const dHitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+function dLayout(n) {
+  const cols = Math.max(1, Math.min(n, isPortrait() ? 3 : Math.min(6, Math.max(4, Math.ceil(n / 2))))), rows = Math.ceil(n / cols), az = Math.PI / 4;
+  const R = [Math.cos(az), -Math.sin(az)], F = [-Math.sin(az), -Math.cos(az)];   // screen right / screen up (on the ground) at the home angle
+  return Array.from({ length: n }, (_, k) => { const r = Math.floor(k / cols), c = k % cols, rowN = Math.min(cols, n - r * cols);
+    const u = (c - (rowN - 1) / 2) * DCELL, v = ((rows - 1) / 2 - r) * DCELL * (isPortrait() ? 1.05 : 1.5); return [R[0] * u + F[0] * v, R[1] * u + F[1] * v]; });
+}
+const dKind = (s) => (CO.isOpen(s) ? 'open:' + CO.opsStatus(s, ui.today) : 'opening:' + CO.health(s, ui.today));
+function buildDistrict(force) {
+  const list = state.stores, sig = (isPortrait() ? 'p' : 'l') + state.theme + list.map((s) => [s.id, s.icon, dKind(s), Math.round(CO.overall(s) * 50), Math.round(CO.eff(s, 5) * 20)].join(',')).join('|');
+  if (!force && sig === distSig) return; distSig = sig;
+  for (const c of [...dist.children]) { c.traverse((o) => { if (o.userData.own) o.geometry.dispose(); }); dist.remove(c); }
+  dHits.length = 0; dPulse.length = 0; distPos = dLayout(list.length); distPts = [];
+  const az = Math.PI / 4;
+  list.forEach((s, k) => {
+    const [x, z] = distPos[k]; for (let a = 0; a < 8; a++) distPts.push([x + Math.cos(a * Math.PI / 4) * 4.6, 0, z + Math.sin(a * Math.PI / 4) * 4.6]); distPts.push([x, 6.2, z]);
+    const g = group(x, z, dist); g.userData.store = s.id;
+    const open = CO.isOpen(s), h = CO.health(s, ui.today), b = open ? 1 : CO.stopped(s, 5) ? 0 : CO.eff(s, 5), p = open ? 1 : CO.overall(s), rej = CO.rejected(s);
+    const pad = add(cgeo(4.3, 4.3, 0.06, 32), 'pad', 0, 0, 0, g, false); pad.castShadow = false;
+    flat(5.6, 1.1, open || b >= 0.86 ? 'asphalt' : 'dirt2', 0, 2.9, 0.07, g);
+    const base = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, 48), mat('ringBase', true)); base.userData.own = true; base.rotation.x = -Math.PI / 2; base.position.y = 0.08; g.add(base);
+    const col = open ? (h === 'ok' ? HCOL.open : HCOL[h]) : HCOL[h] || HCOL.ok, fm = new THREE.MeshBasicMaterial({ color: col });
+    if (p > 0.002) { const f = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, Math.max(3, Math.ceil(48 * p)), 1, Math.PI / 2 - p * Math.PI * 2, p * Math.PI * 2), fm); f.userData.own = true; f.rotation.x = -Math.PI / 2; f.position.y = 0.09; g.add(f); }
+    if (rej) { const f = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, 48), fm); f.userData.own = true; f.rotation.x = -Math.PI / 2; f.position.y = 0.09; g.add(f); }
+    // the mini shop grows like the big one: slab → walls → roof → glass → sign
+    const wl = clamp((b - 0.2) / 0.3);
+    if (b > 0.001) box(4.4, 0.2, 3.2, 'concrete', 0, 0, 0, g);
+    if (wl > 0.01) { const w = box(4, 1.7, 2.8, 'wall', 0, 0.2, 0, g); w.scale.y = Math.max(0.05, wl); }
+    if (b >= 0.62) { box(4.6, 0.14, 3.4, 'trim', 0, 1.9, 0, g); box(4.4, 0.22, 3.2, 'roof', 0, 1.98, 0, g); }
+    if (b >= 0.74) box(2.4, 1.0, 0.06, open ? 'lampOn' : 'glass', 0.2, 0.5, 1.42, g, false);
+    if (b >= 0.93) { box(2.2, 0.7, 0.16, 'trim', 0.2, 2.2, 1.3, g); box(1.9, 0.42, 0.04, open ? 'lampOn' : 'sign', 0.2, 2.34, 1.39, g, false); }
+    if (b > 0.001 && b < 0.999) { box(0.22, 5, 0.22, 'crane', 1.7, 0, -1.1, g); box(3.6, 0.22, 0.22, 'crane', 0.6, 4.9, -1.1, g); }
+    if (b <= 0.001) { for (const [sx, sz] of [[-1.8, -1.2], [1.8, -1.2], [-1.8, 1.2], [1.8, 1.2]]) cyl(0.06, 0.06, 0.8, rej ? 'dark' : 'wood', sx, 0, sz, g, 5);
+      const sg = group(-2.4, 1.8, g); cyl(0.06, 0.06, 1.3, 'metal', 0, 0, 0, sg, 5); box(1.1, 0.6, 0.08, rej ? 'dark' : 'paper', 0, 1.0, 0, sg); }
+    if (open) { for (let c = 0; c < 2; c++) { const cg = group(-1.2 + c * 1.9, 2.9, g); cg.rotation.y = Math.PI / 2; box(0.6, 0.3, 1.1, 'car' + ((k + c) % 4), 0, 0.08, 0, cg); }
+      for (let c = 0; c < 2; c++) { cyl(0.13, 0.15, 0.42, 'car' + ((k + c + 1) % 4), 1.6 + c * 0.5, 0, 1.9, g, 6); ball(0.11, 'skin', 1.6 + c * 0.5, 0.53, 1.9, g, 6); } }
+    for (const [tx, tz] of [[-3.4, -3.0], [3.5, -2.6]]) { const t = group(tx, tz, g); cyl(0.08, 0.1, 0.6, 'trunk', 0, 0, 0, t, 5); add(new THREE.ConeGeometry(0.55, 1.4, 6), 'leaf', 0, 1.2, 0, t); }
+    if (h === 'urgent' || h === 'blocked') { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: pulseTex, transparent: true, depthWrite: false })); sp.position.set(0, 3.2, 0); g.add(sp); dPulse.push(sp); }
+    const hit = new THREE.Mesh(cgeo(4.3, 4.3, 3.2, 12), dHitMat); hit.userData.store = s.id; g.add(hit); dHits.push(hit);
+  });
+  // roads between the rows
+  const rows = [...new Set(distPos.map(([x, z]) => Math.round((x * -Math.sin(az) + z * -Math.cos(az)) * 10) / 10))];
+  for (const v of rows) { const off = DCELL * (isPortrait() ? 1.05 : 1.5) / 2, cx = -Math.sin(az) * (v - off), cz = -Math.cos(az) * (v - off);
+    const r = flat(4 * DCELL + 10, 1.8, 'road', cx, cz, 0.012, dist); r.rotation.y = az; }
+  renderDistLabels();
+}
+function applyDistrict(now) {
+  if (!dist.visible) return;
+  dPulse.forEach((sp, k) => { const ph = (now / 1200 + k * 0.37) % 1; sp.scale.setScalar(2 + ph * 3); sp.material.opacity = 0.9 * (1 - ph); });
+}
+// district pills: icon + % or status, name always shown
+const dLabels = [];
+function renderDistLabels() {
+  const list = state.stores;
+  while (dLabels.length < list.length) { const b = document.createElement('button'); b.className = 'pill dpill'; labels.appendChild(b); dLabels.push(b); }
+  dLabels.forEach((b, k) => { const s = list[k]; if (!s) { b.hidden = true; b.dataset.store = ''; return; } b.hidden = false; b.dataset.store = s.id;
+    const open = CO.isOpen(s), h = CO.health(s, ui.today), n = open ? CO.openIssues(s).length : 0;
+    const pc = open ? `${OPS[h][0]}${n ? ' ' + n : ''}` : CO.rejected(s) ? '❌' : Math.round(CO.overall(s) * 100) + '%';
+    const cls = open ? (h === 'ok' ? 'st-done' : h === 'attn' ? 'st-risk' : 'st-blocked pulse') : 'st-' + (h === 'blocked' ? 'blocked' : h);
+    const dim = !CO.FILTERS[ui.filter](s, ui.today);
+    b.className = `pill dpill ${cls}${dim ? ' dim' : ''}${s.id === state.cur ? ' cur' : ''}${(ui.dtour && ui.tourId === s.id) || ui.flying === s.id ? ' sel' : ''}`;
+    b.innerHTML = `<b>${s.icon}</b><span class="pc">${pc}</span><span class="nm">${esc(s.name)}</span>${open ? '<i class="op">🏪</i>' : ''}`; b.setAttribute('aria-label', s.name); });
+}
+
 const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), v3 = new THREE.Vector3();
 function animate(dt, now) {
   for (const id in routes) { const r = routes[id]; if (!r.on) continue; for (const p of r.pulses) { p.u = (p.u + r.speed * 1.6 * dt / r.len) % 1; const pt = r.curve.getPointAt(clamp(p.u, 0.0001, 0.9999)); p.b.position.set(pt.x, 0.25, pt.z); } }
   // journey: done segments lit, pulses travel from station 1 to the current one
   const reach = M.stopped.some(Boolean) ? V : M.cur;
+  journey.segs.forEach((s) => { s.mesh.visible = !M.open; });
   journey.segs.forEach((s, i) => { const done = shown[i] >= 0.999 && i < reach + (shown[reach] >= 0.999 ? 1 : 0); const m = done ? mat('route', true) : mat('todo', true); if (s.mesh.material !== m) s.mesh.material = m; });
   const total = journey.segs.slice(0, reach).reduce((a, s) => a + s.L, 0);
-  journey.pulses.forEach((p) => { p.b.visible = total > 0.5 && !M.stopped[V + 1]; if (!p.b.visible) return; p.u = (p.u + 4 * dt / Math.max(4, total)) % 1; let d = p.u * total;
+  journey.pulses.forEach((p) => { p.b.visible = total > 0.5 && !M.stopped[V + 1] && !M.open; if (!p.b.visible) return; p.u = (p.u + 4 * dt / Math.max(4, total)) % 1; let d = p.u * total;
     for (let i = 0; i < reach; i++) { const s = journey.segs[i]; if (d <= s.L) { v3.copy(s.a).lerp(s.b, d / s.L); break; } d -= s.L; } p.b.position.set(v3.x, 0.25, v3.z); });
   moveAll(dt);
   if (conf.visible) {
@@ -391,15 +504,18 @@ function sheetPx() { const sh = $('sheet'); if (sh.hidden) return { h: 0, w: 0 }
 // fit the whole lot (all 11 stations + the shop) into the free part of the canvas for the current rotation
 const FITPTS = []; for (const [x, z] of [[-14.5, 9], [-14.5, 3], [-14.5, -3], [-10, -9.5], [-4.5, -11.2], [1.5, -9], [7.5, -11.2], [12.5, -8], [14, -1.5], [12.5, 6], [9.5, 11]]) for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) FITPTS.push([x + dx, 0, z + dz], [x, 3, z]);
 FITPTS.push([1.5, 9.5, -9], [0, 4, 0]);
-function fitView() {
+const sp0 = () => sheetPx().w > 0;   // a side panel already covers the right-hand buttons
+function fitView(pts = FITPTS) {
   const az = dst.az, R = [Math.cos(az), 0, -Math.sin(az)], F = [-Math.sin(az), 0, -Math.cos(az)];
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-  for (const [x, y, z] of FITPTS) { const u = x * R[0] + z * R[2], v = -(x * F[0] + z * F[2]) * Math.sin(EL) * -1 + y * Math.cos(EL); x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); }
-  const sp = sheetPx(), W = Math.max(1, stageEl.clientWidth - sp.w), H = Math.max(1, stageEl.clientHeight - sp.h - 30), ppu = Math.min(W / ((x1 - x0) * 1.06), H / ((y1 - y0) * 1.1));
-  const cu = (x0 + x1) / 2, cv2 = (y0 + y1) / 2;   // centre in (right, up) units; ground point shift along F moves up by sin(EL)
+  for (const [x, y, z] of pts) { const u = x * R[0] + z * R[2], v = -(x * F[0] + z * F[2]) * Math.sin(EL) * -1 + y * Math.cos(EL); x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); }
+  const padR = pts === distPts && !sp0() ? 56 : 0, sp = sheetPx(), W = Math.max(1, stageEl.clientWidth - sp.w - padR), H = Math.max(1, stageEl.clientHeight - sp.h - 30), ppu = Math.min(W / ((x1 - x0) * (pts === distPts ? 1.16 : 1.06)), H / ((y1 - y0) * 1.1));
+  const cu = (x0 + x1) / 2 + padR / 2 / ppu, cv2 = (y0 + y1) / 2;   // centre in (right, up) units; ground point shift along F moves up by sin(EL)
   return { tx: R[0] * cu + F[0] * cv2 / Math.sin(EL), tz: R[2] * cu + F[2] * cv2 / Math.sin(EL), h: stageEl.clientHeight / ppu };
 }
-function home() { const f = fitView(); dst.tx = f.tx; dst.tz = f.tz; dst.h = f.h; }
+const FITOPEN = [[-12.5, 0, 6.5], [-12.5, 0, 13], [-2, 0, 16], [10, 0, 15.5], [14.5, 0, 6], [7, 0, -6.5], [-7, 0, -6.5], [0, 7.5, 0], [7, 4.5, 11.6]];
+function home() { const f = fitView(ui.mode === 'district' && distPts.length ? distPts : M && M.open && !ui.demo ? FITOPEN : FITPTS); dst.tx = f.tx; dst.tz = f.tz; dst.h = f.h; }
+function focusShop() { dst.tx = 0; dst.tz = 0.5; dst.h = focusH(13, 12); }
 function focus(i) { if (i < 0) return home(); const s = stations[i]; dst.tx = i === 5 ? 0.6 : s.x; dst.tz = i === 5 ? -3.2 : s.z; dst.h = i === 5 ? focusH(15, 13) : focusH(); }
 function resize() {
   const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); EL = THREE.MathUtils.degToRad(h > w * 1.2 ? 52 : 36);
@@ -423,6 +539,11 @@ const ptrs = new Map(); let gest = null, tapStart = null;
 const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function pick(cx, cy) {
   const r = cv.getBoundingClientRect(); ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1); raycaster.setFromCamera(ndc, cam);
+  if (ui.mode === 'district') { const h = raycaster.intersectObjects(dHits, false)[0]; return h ? { store: h.object.userData.store } : -1; }
+  if (M.open && !ui.demo) {
+    const hb = raycaster.intersectObjects(bubbles.filter((b) => b.sp.visible).map((b) => b.sp), false)[0]; if (hb) return { issue: hb.object.userData.issue };
+    return raycaster.intersectObjects([shop, stations[9].hit], true).length ? { ops: true } : -1;
+  }
   const hits = raycaster.intersectObjects([...stations.map((s) => s.hit), shop], true);
   for (const h of hits) { let o = h.object; while (o) { if (o.userData.stage != null) return o.userData.stage; if (o === shop) return 5; o = o.parent; } }
   return -1;
@@ -448,10 +569,12 @@ cv.addEventListener('pointermove', (e) => {
 });
 function up(e) {
   ptrs.delete(e.pointerId); if (ptrs.size < 2) gest = null;
-  if (tapStart && !tapStart.moved && performance.now() - tapStart.t < 600 && ptrs.size === 0) { const i = pick(e.clientX, e.clientY); if (i >= 0) select(i); }
+  if (tapStart && !tapStart.moved && performance.now() - tapStart.t < 600 && ptrs.size === 0) { const i = pick(e.clientX, e.clientY); if (typeof i === 'object') { if (i.store) flyTo(i.store); else openOps(i.issue && i.issue !== 'ok' ? i.issue : null); } else if (i >= 0) select(i); }
   if (ptrs.size === 0) tapStart = null;
 }
-cv.addEventListener('pointerup', up); cv.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });   // no ghost click into the sheet that just opened cv.addEventListener('pointercancel', (e) => { ptrs.delete(e.pointerId); gest = null; tapStart = null; });
+cv.addEventListener('pointerup', up);
+cv.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });   // no ghost click into the sheet that just opened
+cv.addEventListener('pointercancel', (e) => { ptrs.delete(e.pointerId); gest = null; tapStart = null; });
 cv.addEventListener('wheel', (e) => { e.preventDefault(); if (!ui.drag) return; dst.h = clamp(dst.h * Math.exp(e.deltaY * 0.001), 4, 120); }, { passive: false });
 stageEl.addEventListener('touchmove', (e) => { if (!e.target.closest('#sheet')) e.preventDefault(); }, { passive: false });
 document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -464,11 +587,15 @@ $('dragBtn').onclick = () => { ui.drag = !ui.drag; $('dragBtn').classList.toggle
 // ---------------------------------------------------------------- labels (HTML pills pinned to stations)
 const labels = $('labels'); const pills = stations.map((s, i) => {
   const b = document.createElement('button'); b.className = 'pill'; b.dataset.st = i; b.innerHTML = `<b>${S[i].icon}</b><span class="pc"></span><span class="nm">${esc(S[i].name)}</span>`; labels.appendChild(b); return b; });
-labels.addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (b) select(+b.dataset.st); });
+labels.addEventListener('click', (e) => { const d = e.target.closest('[data-store]'); if (d && d.dataset.store) return flyTo(d.dataset.store); const b = e.target.closest('[data-st]'); if (b) select(+b.dataset.st); });
 const pv = new THREE.Vector3();
 function placeLabels() {
-  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  const w = stageEl.clientWidth, h = stageEl.clientHeight, lotOn = ui.mode === 'lot', hideSt = !lotOn || (M.open && !M.demo);
+  dLabels.forEach((pl, k) => { const p = distPos[k]; if (lotOn || !p || pl.hidden) { pl.style.display = 'none'; return; }
+    pv.set(p[0], 4.6, p[1]).project(cam); const x = (pv.x + 1) / 2 * w, y = (1 - pv.y) / 2 * h, out = x < -60 || x > w + 60 || y < -10 || y > h + 40;
+    pl.style.display = out ? 'none' : ''; if (!out) pl.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`; });
   stations.forEach((s, i) => {
+    if (hideSt) { pills[i].style.display = 'none'; return; }
     pv.set(s.x, i === 5 ? 3 : 2.4, s.z).project(cam); const x = (pv.x + 1) / 2 * w, y = (1 - pv.y) / 2 * h;
     const pl = pills[i]; const out = x < -40 || x > w + 40 || y < -10 || y > h + 40; pl.style.display = out ? 'none' : '';
     if (!out) pl.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
@@ -479,31 +606,64 @@ const pctTxt = (i) => (M.stopped[i] ? '⛔' : M.p[i] >= 1 ? '✅' : Math.round(M
 let lastSig = '';
 function refreshLabels() {
   stations.forEach((s, i) => { const pl = pills[i]; pl.className = `pill ${stCls(i)}${ui.sel === i ? ' sel' : ''}${M.cur === i ? ' cur' : ''}`; pl.querySelector('.pc').textContent = pctTxt(i); });
+  if (ui.mode === 'district') renderDistLabels();
 }
 
-// ---------------------------------------------------------------- top bar + timeline
+// ---------------------------------------------------------------- top bar + bottom bars (timeline / 🏪 ops dashboard / 🗺 district filters)
 function renderTop() {
-  const s = store(); $('storeIc').textContent = s.icon; $('storeName').textContent = s.name; $('exTag').hidden = !s.example;
-  const o = Math.round(M.overall * 100), ring = $('overall'); ring.style.setProperty('--p', o); $('overallTxt').textContent = o + '%';
+  const s = store(), ring = $('overall'), days = $('days');
+  if (ui.mode === 'district') {
+    const L = state.stores, nOpen = L.filter(CO.isOpen).length, nAttn = L.filter((x) => CO.needsAttention(x, ui.today)).length;
+    $('storeIc').textContent = '🗺'; $('storeName').textContent = `District · ${L.length}`; $('exTag').hidden = !L.some((x) => x.example);
+    ring.style.setProperty('--p', Math.round(nOpen / L.length * 100)); ring.style.setProperty('--c', 'var(--ok)'); $('overallTxt').textContent = `🏪${nOpen}`;
+    $('daysIc').textContent = '⚠️'; $('daysN').textContent = nAttn; days.querySelector('small').textContent = ''; days.classList.add('nodate'); days.setAttribute('aria-label', 'Stores needing attention');
+    return;
+  }
+  $('storeIc').textContent = s.icon; $('storeName').textContent = s.name; $('exTag').hidden = !s.example;
+  if (M.open && !ui.demo) {
+    const st = M.ops; ring.style.setProperty('--p', 100); ring.style.setProperty('--c', OPS[st][2]); $('overallTxt').textContent = OPS[st][0];
+    $('daysIc').textContent = '🏪'; $('daysN').textContent = Math.max(0, M.days); days.querySelector('small').textContent = 'd'; days.classList.add('nodate'); days.setAttribute('aria-label', 'Days open');
+    return;
+  }
+  const o = Math.round(M.overall * 100); ring.style.setProperty('--p', o); $('overallTxt').textContent = o + '%';
   ring.style.setProperty('--c', M.stopped.some(Boolean) ? 'var(--block)' : o >= 100 ? 'var(--ok)' : 'var(--acc)');
-  $('daysN').textContent = M.days; if (document.activeElement !== $('target')) $('target').value = s.target;
+  $('daysIc').textContent = '🎉'; $('daysN').textContent = M.days; days.querySelector('small').textContent = 'd'; days.classList.remove('nodate'); days.setAttribute('aria-label', 'Days to grand opening');
+  if (document.activeElement !== $('target')) $('target').value = s.target;
 }
 function renderTL() {
   const tl = $('tl');
-  if (!tl.children.length) tl.innerHTML = S.map((x, i) => `${i ? '<i class="chev"></i>' : ''}<button class="node" data-i="${i}" aria-label="${esc(x.name)}"><span class="ring">${x.icon}</span><small>${esc(x.short)}</small></button>`).join('');
-  tl.querySelectorAll('.node').forEach((b) => { const i = +b.dataset.i; b.className = `node ${stCls(i)}${M.cur === i ? ' cur' : ''}${ui.sel === i ? ' sel' : ''}${M.stopped[i] ? ' stop' : ''}`;
+  if (!tl.children.length) tl.innerHTML = S.map((x, i) => `${i ? '<i class="chev"></i>' : ''}<button class="node" data-i="${i}" aria-label="${esc(x.name)}"><span class="ring">${x.icon}</span><small>${esc(x.short)}</small></button>`).join('') +
+    `<i class="chev"></i><button class="node opennode" data-open="1" aria-label="Open the store"><span class="ring">🏪</span><small>Open</small></button>`;
+  tl.querySelectorAll('.node[data-i]').forEach((b) => { const i = +b.dataset.i; b.className = `node ${stCls(i)}${M.cur === i ? ' cur' : ''}${ui.sel === i ? ' sel' : ''}${M.stopped[i] ? ' stop' : ''}`;
     const r = b.querySelector('.ring'); r.style.setProperty('--p', Math.round(M.p[i] * 100)); b.title = `${S[i].name} ${pctTxt(i)}`; });
-  tl.querySelectorAll('.chev').forEach((c, i) => c.classList.toggle('done', M.p[i] >= 1));
+  const rd = !M.demo && CO.ready(store()), on = tl.querySelector('.opennode'); on.className = `node opennode ${rd ? 'st-done ready' : 'st-todo'}${ui.sheet === 'open' ? ' sel' : ''}`; on.querySelector('.ring').style.setProperty('--p', rd ? 100 : 0);
+  tl.querySelectorAll('.chev').forEach((c, i) => c.classList.toggle('done', i < N - 1 ? M.p[i] >= 1 : rd));
+}
+function renderBars() {
+  const district = ui.mode === 'district', open = !district && M.open && !ui.demo;
+  $('tl').hidden = district || open; $('ops').hidden = !open; $('dbar').hidden = !district;
+  if (open) {
+    const s = store(), st = M.ops, iss = CO.openIssues(s).slice().sort(byPrio), ch = s.ops.checks, done = ch.filter((c) => CO.checkState(c, ui.today) === 'done').length, late = ch.filter((c) => CO.checkState(c, ui.today) === 'late').length;
+    $('ops').innerHTML = `<button class="ostat" data-ops="1" style="--c:${OPS[st][2]}" aria-label="Status ${OPS[st][1]}"><span class="dotc">${OPS[st][0]}</span><b>${OPS[st][1]}</b></button>
+      <button class="oiss" data-ops="1" aria-label="${iss.length} open issues">${iss.length ? iss.slice(0, 4).map((x) => `<span class="bub p-${x.prio}">${x.icon}</span>`).join('') + (iss.length > 4 ? `<small>+${iss.length - 4}</small>` : '') : '<span class="bub p-ok">✅</span>'}<small class="n">${iss.length}</small></button>
+      <button class="ochk ${late ? 'late' : done === ch.length ? 'ok' : ''}" data-ops="checks" aria-label="Routine checks ${done} of ${ch.length}">🔁<b>${done}/${ch.length}</b></button>
+      <button class="ibtn oadd" data-ops="add" aria-label="Add issue">➕</button>`;
+  }
+  if (district) {
+    const L = state.stores, F = { all: '🏪', opening: '🏗', open: '☕', attn: '⚠️' }, T = { all: 'All', opening: 'Opening', open: 'Open', attn: 'Attention' };
+    $('dbar').innerHTML = Object.keys(F).map((k) => `<button class="fchip ${ui.filter === k ? 'on' : ''}" data-filter="${k}" aria-label="${T[k]}"><span>${F[k]}</span><b>${L.filter((x) => CO.FILTERS[k](x, ui.today)).length}</b><small>${T[k]}</small></button>`).join('') +
+      `<button class="fchip" data-act="dtour" aria-label="District tour"><span>🎬</span><small>Tour</small></button>`;
+  }
 }
 function scrollTL(i) { const b = $('tl').querySelector(`[data-i="${i}"]`); if (b) { const tl = $('tl'); tl.scrollTo({ left: b.offsetLeft - tl.clientWidth / 2 + b.offsetWidth / 2, behavior: 'smooth' }); } }
-$('tl').addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (b) { if (ui.demo) stopDemo(); select(+b.dataset.i); } });
+$('tl').addEventListener('click', (e) => { if (e.target.closest('[data-open]')) { if (ui.demo) stopDemo(); ui.sel = -1; openSheet('open'); requestAnimationFrame(() => { resize(); focusShop(); }); return refresh(); } const b = e.target.closest('[data-i]'); if (b) { if (ui.demo) stopDemo(); select(+b.dataset.i); } });
 
 // ---------------------------------------------------------------- sheet: stage detail (editable checklist), stage list, stores, menu
 const STAT = { ok: ['🟢', 'On track'], risk: ['🟠', 'At risk'], blocked: ['🔴', 'Blocked'], done: ['✅', 'Done'] };
 const VOTE = { approved: ['✅', 'Approved', 'var(--ok)'], rejected: ['❌', 'Rejected', 'var(--block)'], deferred: ['⏸', 'Deferred', 'var(--risk)'], pending: ['⏳', 'Pending', 'var(--sub)'] };
 const short = (d) => { if (!CO.isDate(d)) return '📅'; const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
 function openSheet(kind) { ui.sheet = kind; ui.openedAt = performance.now(); $('sheet').hidden = false; renderSheet(); requestAnimationFrame(resize); }
-function closeSheet() { ui.sheet = null; ui.sel = -1; ui.editing = null; $('sheet').hidden = true; resize(); home(); refresh(); }
+function closeSheet() { ui.sheet = null; ui.sel = -1; ui.editing = null; ui.hiIssue = null; $('sheet').hidden = true; resize(); home(); refresh(); }
 function select(i) {
   if (ui.demo) stopDemo();
   ui.sel = i; ui.editing = null; openSheet('stage'); requestAnimationFrame(() => { resize(); focus(i); }); scrollTL(i); refresh();
@@ -532,6 +692,7 @@ function renderSheet() {
         <button class="mini" data-act="edit" aria-label="Rename">✏️</button><button class="mini ${ui.confirm === t.id ? 'warn' : ''}" data-act="del" aria-label="Delete">${ui.confirm === t.id ? '🗑?' : '🗑'}</button></div>`; }).join('')}</div>
       <div class="add"><label class="fld">＋<input id="newTask" placeholder="New task" aria-label="New task" enterkeyhint="done"></label><button class="ibtn" data-act="add" aria-label="Add task">＋</button></div>
       <div class="nav2"><button class="chip" data-goto="${Math.max(0, i - 1)}" ${i ? '' : 'disabled'}>◀ ${S[Math.max(0, i - 1)].icon}</button><button class="chip" data-goto="${Math.min(N - 1, i + 1)}" ${i < N - 1 ? '' : 'disabled'}>${S[Math.min(N - 1, i + 1)].icon} ▶</button></div>`;
+    if (i === N - 1 && CO.ready(s)) h += `<button class="bigbtn" data-act="goOpen">🏪 Open the store</button>`;
     bd.innerHTML = h;
     const ed = bd.querySelector('[data-f="rename"]'); if (ed) { ed.focus(); ed.select(); }
   } else if (ui.sheet === 'list') {
@@ -539,20 +700,64 @@ function renderSheet() {
     bd.innerHTML = S.map((x, i) => { const stt = M.stopped[i] ? 'blocked' : M.status[i], sg = s.stages[i]; return `<button class="li st-${stt}" data-goto="${i}"><span class="ic">${x.icon}</span><span class="grow"><div class="nm">${esc(x.name)}</div>
       <div class="sub">${STAT[stt][0]} ${sg.tasks.filter((t) => t.done).length}/${sg.tasks.length} · 📅 ${short(sg.due)}${x.vote ? ' · ' + VOTE[sg.vote][0] : ''}</div><div class="bar"><i style="width:${Math.round(M.p[i] * 100)}%"></i></div></span><span class="pc">${pctTxt(i)}</span></button>`; }).join('');
   } else if (ui.sheet === 'stores') {
-    hd.innerHTML = `<span class="big">🏪</span><h2>Stores</h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
-    bd.innerHTML = state.stores.map((x) => { const o = CO.overall(x), c = CO.current(x), rej = CO.rejected(x); return `<button class="li ${x.id === s.id ? 'on' : ''}" data-store="${x.id}"><span class="ic">${x.icon}</span><span class="grow">
-      <div class="nm">${esc(x.name)} ${x.example ? '<i class="ex">🧪</i>' : ''}</div><div class="sub">${rej ? '❌ REC' : S[c].icon + ' ' + esc(S[c].short)} · 🎉 ${CO.daysTo(x, ui.today)}d</div><div class="bar" style="--c:${rej ? 'var(--block)' : 'var(--acc)'}"><i style="width:${Math.round(o * 100)}%"></i></div></span><span class="pc">${Math.round(o * 100)}%</span></button>`; }).join('') +
-      `<h3>✏️ ${esc(s.icon)}</h3><div class="row"><button class="ibtn" data-act="icon" aria-label="Change icon">${s.icon}</button><label class="fld"><input data-f="sname" value="${esc(s.name)}" aria-label="Store name"></label></div>
-      <div class="row" style="margin-top:8px"><button class="chip" data-act="newStore">＋ 🏪 New</button><button class="chip ${ui.confirm === 'delStore' ? 'on' : ''}" style="--c:var(--block)" data-act="delStore" ${state.stores.length < 2 ? 'disabled' : ''}>${ui.confirm === 'delStore' ? '🗑 Sure?' : '🗑 Delete'}</button></div>`;
+    const L = state.stores, F = { all: '🏪', opening: '🏗', open: '☕', attn: '⚠️' }, T = { all: 'All', opening: 'Opening', open: 'Open', attn: 'Needs attention' };
+    hd.innerHTML = `<span class="big">🏪</span><h2>Stores · ${L.length}</h2><button class="ibtn ${ui.mode === 'district' ? 'on' : ''}" data-act="map" aria-label="District map">🗺</button><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
+    const list = CO.sorted(L.filter((x) => CO.FILTERS[ui.filter](x, ui.today)), ui.sort, ui.today);
+    let h = `<div class="chips filt" role="group" aria-label="Filter">${Object.keys(F).map((k) => `<button class="chip ${ui.filter === k ? 'on' : ''}" data-filter="${k}" aria-label="${T[k]}">${F[k]} ${k === 'all' ? '' : ''}<b>${L.filter((x) => CO.FILTERS[k](x, ui.today)).length}</b></button>`).join('')}</div>
+      <div class="chips sortc" role="group" aria-label="Sort">↕ ${[['urgency', '🚨'], ['stage', '📶'], ['name', '🔤']].map(([k, ic]) => `<button class="chip ${ui.sort === k ? 'on' : ''}" data-sort="${k}" aria-label="Sort by ${k}">${ic}</button>`).join('')}</div><div id="storeList">`;
+    h += list.map((x) => { const open = CO.isOpen(x), hl = CO.health(x, ui.today), o = CO.overall(x), c = CO.current(x), rej = CO.rejected(x);
+      let sub, pc, bar;
+      if (open) { const iss = CO.openIssues(x).slice().sort(byPrio), ch = x.ops.checks, dn = ch.filter((q) => CO.checkState(q, ui.today) === 'done').length;
+        sub = `${OPS[hl][0]} 🏪 ${iss.length ? iss.slice(0, 5).map((i) => i.icon).join('') : '✅'} · 🔁 ${dn}/${ch.length}`; pc = OPS[hl][0]; bar = `<div class="bar" style="--c:${OPS[hl][2]}"><i style="width:100%"></i></div>`; }
+      else { sub = `${rej ? '❌ REC' : S[c].icon + ' ' + esc(S[c].short)} · 🎉 ${CO.daysTo(x, ui.today)}d${hl !== 'ok' ? ' · ' + STAT[hl][0] : ''}`; pc = rej ? '❌' : Math.round(o * 100) + '%';
+        bar = `<div class="bar" style="--c:${rej || hl === 'blocked' ? 'var(--block)' : hl === 'risk' ? 'var(--risk)' : 'var(--acc)'}"><i style="width:${Math.round(o * 100)}%"></i></div>`; }
+      return `<button class="li st-${open ? (hl === 'ok' ? 'done' : hl === 'attn' ? 'risk' : 'blocked') : hl} ${x.id === s.id ? 'on' : ''}" data-store="${x.id}"><span class="ic">${x.icon}</span><span class="grow">
+      <div class="nm">${esc(x.name)} ${x.example ? '<i class="ex">🧪</i>' : ''}</div><div class="sub">${sub}</div>${bar}</span><span class="pc">${pc}</span></button>`; }).join('') || '<div class="banner gray">∅</div>';
+    h += `</div><h3>✏️ ${esc(s.icon)} <span class="grow"></span></h3><div class="row"><button class="ibtn" data-act="icon" aria-label="Change icon">${s.icon}</button><label class="fld"><input data-f="sname" value="${esc(s.name)}" aria-label="Store name"></label></div>
+      <div class="row wrap" style="margin-top:8px"><button class="chip" data-act="newStore">＋ 🏪 New</button><button class="chip ${ui.confirm === 'delStore' ? 'on' : ''}" style="--c:var(--block)" data-act="delStore" ${L.length < 2 ? 'disabled' : ''}>${ui.confirm === 'delStore' ? '🗑 Sure?' : '🗑 Delete'}</button>
+      ${CO.isOpen(s) ? `<button class="chip ${ui.confirm === 'unopen' ? 'on' : ''}" style="--c:var(--risk)" data-act="unopen">${ui.confirm === 'unopen' ? '↩ Sure?' : '↩ 🏗 Opening'}</button>` : ''}</div>`;
+    bd.innerHTML = h;
+  } else if (ui.sheet === 'open') {
+    const rd = CO.ready(s);
+    hd.innerHTML = `<span class="big">🏪</span><h2>Open / Operating</h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
+    bd.innerHTML = rd ? `<div class="banner green">🎉 ✅ 11/11</div><button class="bigbtn" data-act="goOpen">🏪 Open the store</button><div class="sub" style="color:var(--sub);margin-top:6px">→ 🛠 issues · 🔁 routine checks · 🟢🟠🔴</div>`
+      : `<div class="banner gray">🔒 ${Math.round(CO.overall(s) * 100)}% → 🎉 first</div>` + S.map((x, i) => { const p = CO.eff(s, i); return p >= 1 ? '' : `<button class="li" data-goto="${i}"><span class="ic">${x.icon}</span><span class="grow"><div class="nm">${esc(x.name)}</div><div class="bar"><i style="width:${Math.round(p * 100)}%"></i></div></span><span class="pc">${Math.round(p * 100)}%</span></button>`; }).join('');
+  } else if (ui.sheet === 'ops') {
+    const o = s.ops, st = CO.opsStatus(s, ui.today), auto = CO.opsAuto(s, ui.today), iss = o.issues.filter((x) => !x.done).sort(byPrio), res = o.issues.filter((x) => x.done);
+    hd.innerHTML = `<span class="big">${s.icon}</span><h2>${esc(s.name)}</h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
+    let h = `<div class="meta"><span class="ring" style="--p:100;--c:${OPS[st][2]}" id="opsRing">${OPS[st][0]}</span>
+      <div class="chips" role="group" aria-label="Status">${['auto', 'ok', 'attn', 'urgent'].map((k) => `<button class="chip ${o.status === k ? 'on' : ''}" data-ostatus="${k}" aria-label="${k === 'auto' ? 'Auto status' : OPS[k][1]}">${k === 'auto' ? '🤖 ' + OPS[auto][0] : OPS[k][0]}</button>`).join('')}</div>
+      <div class="row"><span class="chip on" style="--c:${OPS[st][2]}" id="opsTxt">${OPS[st][0]} ${OPS[st][1]}</span><small style="color:var(--sub)">🏪 ${Math.max(0, CO.diffDays(o.opened, ui.today))}d</small></div></div>`;
+    h += `<h3>🛠 <span class="grow">${iss.length}</span></h3><div id="issues">${iss.map((x) => { const late = CO.isDate(x.due) && x.due < ui.today, ed = ui.editing === x.id;
+      return `<div class="task issue p-${x.prio}${ui.hiIssue === x.id ? ' hi' : ''}" data-issue="${x.id}"><button class="ck" data-act="resolve" aria-label="Resolve"></button><span class="iic">${x.icon}</span>
+        <span class="tx">${ed ? `<input data-f="ititle" value="${esc(x.t)}" aria-label="Issue"><input data-f="iowner" value="${esc(x.owner)}" aria-label="Owner" class="ow">` : `${esc(x.t)}<small>👤 ${esc(x.owner || '—')}</small>`}</span>
+        <button class="mini pri" data-act="prio" aria-label="Priority ${x.prio}">${PRI[x.prio][0]}</button>
+        <label class="dt ${late ? 'late' : ''}">${short(x.due)}<input type="date" data-f="idue" value="${x.due}" aria-label="Due date"></label>
+        <button class="mini" data-act="iedit" aria-label="Edit">✏️</button><button class="mini ${ui.confirm === x.id ? 'warn' : ''}" data-act="idel" aria-label="Delete">${ui.confirm === x.id ? '🗑?' : '🗑'}</button></div>`; }).join('') || '<div class="banner green">✅ 0 🛠</div>'}</div>
+      <div class="presets" role="group" aria-label="Add an issue">${CO.ISSUES.map(([ic, t, p], k) => `<button class="pre p-${p}" data-preset="${k}" aria-label="${esc(t)}" title="${esc(t)}"><span>${ic}</span><small>${esc(t.split(' ')[0])}</small></button>`).join('')}</div>
+      <div class="add"><label class="fld">🛠<input id="newIssue" placeholder="Other issue" aria-label="New issue" enterkeyhint="done"></label><button class="ibtn" data-act="addIssue" aria-label="Add issue">＋</button></div>`;
+    if (res.length) h += `<h3>✔ <span class="grow">${res.length}</span></h3>${res.map((x) => `<div class="task done issue" data-issue="${x.id}"><button class="ck" data-act="reopen" aria-label="Reopen">✔</button><span class="iic">${x.icon}</span><span class="tx">${esc(x.t)}</span><button class="mini" data-act="reopen" aria-label="Reopen">↩</button><button class="mini ${ui.confirm === x.id ? 'warn' : ''}" data-act="idel" aria-label="Delete">${ui.confirm === x.id ? '🗑?' : '🗑'}</button></div>`).join('')}`;
+    const cs = o.checks.map((c) => CO.checkState(c, ui.today)), dn = cs.filter((x) => x === 'done').length, lt = cs.filter((x) => x === 'late').length;
+    h += `<h3 id="routineHd">🔁 <span class="grow">${dn}/${o.checks.length}</span>${dn === o.checks.length ? '<span class="chip on" style="--c:var(--ok)" id="routineOk">✅ Normal</span>' : `<span class="chip">⏳ ${o.checks.length - dn - lt}</span>${lt ? `<span class="chip on" style="--c:var(--risk)">⚠️ ${lt}</span>` : ''}`}</h3>`;
+    const EV = { daily: '📅 Daily', weekly: '🗓 Weekly', monthly: '🗓 Monthly' };
+    for (const ev of CO.EVERY) { const cc = o.checks.filter((c) => c.every === ev); if (!cc.length) continue;
+      h += `<div class="evh">${EV[ev]}</div>` + cc.map((c) => { const k = CO.checkState(c, ui.today); return `<div class="task check ${k === 'done' ? 'done' : ''} ck-${k}" data-check="${c.id}"><button class="ck" data-act="ctick" aria-label="${k === 'done' ? 'Untick' : 'Tick'}">${k === 'done' ? '✔' : ''}</button><span class="iic">${c.icon}</span><span class="tx">${esc(c.t)}</span><span class="cst">${k === 'done' ? '✅' : k === 'late' ? '⚠️' : '⏳'}</span></div>`; }).join(''); }
+    bd.innerHTML = h;
+    const ed = bd.querySelector('[data-f="ititle"]'); if (ed && ui.focusEdit) { ui.focusEdit = false; ed.focus(); ed.select(); }
+    if (ui.scrollTo) { const t = bd.querySelector(ui.scrollTo); ui.scrollTo = null; if (t) { bd.scrollTop = t.offsetTop - 8; return; } }
   } else if (ui.sheet === 'menu') {
     hd.innerHTML = `<span class="big">⚙</span><h2>Coffee Opening</h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
-    bd.innerHTML = `<div class="banner gray">🧪 Example data: a generic plan, not a real company. Edit it, or ↺ reset.</div><div class="menu">
+    const nEx = state.stores.filter((x) => x.example).length;
+    bd.innerHTML = `${nEx ? `<div class="banner gray">🧪 Example data: ${nEx} generic stores, not a real company. Edit, 🧹 clear or ↺ reset.</div>` : ''}<div class="menu">
+      <button class="li" data-act="map"><span class="ic">🗺</span><span class="grow nm">District map</span></button>
+      <button class="li" data-act="dtour"><span class="ic">🎬</span><span class="grow nm">District tour</span></button>
       <label class="li"><span class="ic">🎉</span><span class="grow"><div class="nm">Grand opening</div><div class="sub">${esc(s.name)}</div></span><input type="date" data-f="starget" value="${s.target}" aria-label="Grand opening date"></label>
       <button class="li" data-act="export"><span class="ic">⬇</span><span class="grow nm">Export JSON</span></button>
       <button class="li" data-act="import"><span class="ic">⬆</span><span class="grow nm">Import JSON</span></button>
       <button class="li" data-act="theme"><span class="ic">${state.theme === 'night' ? '☀️' : '🌙'}</span><span class="grow nm">${state.theme === 'night' ? 'Day' : 'Night'}</span></button>
-      <button class="li" data-act="demo"><span class="ic">🎬</span><span class="grow nm">Auto tour (60 s)</span></button>
-      <button class="li ${ui.confirm === 'reset' ? 'on' : ''}" data-act="reset"><span class="ic">↺</span><span class="grow nm">${ui.confirm === 'reset' ? 'Tap again: reset ALL to example data' : 'Reset to example data'}</span></button></div>
+      <button class="li" data-act="demo"><span class="ic">🏗</span><span class="grow nm">Build tour (60 s)</span></button>
+      <button class="li ${ui.confirm === 'reset' ? 'on' : ''}" data-act="reset"><span class="ic">↺</span><span class="grow nm">${ui.confirm === 'reset' ? 'Tap again: reset ALL to example data' : 'Reset to example data'}</span></button>
+      <button class="li ${ui.confirm === 'clearEx' ? 'on' : ''}" data-act="clearEx" ${nEx ? '' : 'disabled'}><span class="ic">🧹</span><span class="grow nm">${ui.confirm === 'clearEx' ? `Tap again: remove ${nEx} 🧪 stores` : `Clear examples (${nEx})`}</span></button></div>
       <div class="sub" style="color:var(--sub);font-size:11px;margin-top:8px">Saved on this device. 3D: three.js (MIT).</div>`;
   }
   bd.scrollTop = keep;
@@ -565,7 +770,26 @@ $('sheet').addEventListener('click', (e) => {
   const act = b.dataset.act;
   if (act === 'close') return closeSheet();
   if (b.dataset.goto != null) return select(+b.dataset.goto);
-  if (b.dataset.store) { state.cur = b.dataset.store; ui.sel = -1; save(); M = model(); stations.forEach((x) => { x.shown = -1; }); toast(`${store().icon} ${store().name}`); refresh(); renderSheet(); return; }
+  if (act === 'map') { hideSheet(); return setMode(ui.mode === 'district' ? 'lot' : 'district'); }
+  if (act === 'dtour') { hideSheet(); return startDTour(); }
+  if (b.dataset.filter) { ui.filter = b.dataset.filter; refresh(); return renderSheet(); }
+  if (b.dataset.sort) { ui.sort = b.dataset.sort; return renderSheet(); }
+  if (b.dataset.store && ui.mode === 'district') return flyTo(b.dataset.store);
+  if (b.dataset.ostatus) { s.ops.status = b.dataset.ostatus; return edited(); }
+  const iEl = b.closest('[data-issue]'), iss = iEl && s.ops ? s.ops.issues.find((x) => x.id === iEl.dataset.issue) : null;
+  if (act === 'resolve' && iss) { iss.done = true; iss.at = ui.today; if (ui.hiIssue === iss.id) ui.hiIssue = null; toast(`✔ ${iss.icon}`); return edited(); }
+  if (act === 'reopen' && iss) { iss.done = false; iss.at = ''; return edited(); }
+  if (act === 'prio' && iss) { iss.prio = CO.PRIO[(CO.PRIO.indexOf(iss.prio) + 1) % CO.PRIO.length]; return edited(); }
+  if (act === 'iedit' && iss) { ui.editing = ui.editing === iss.id ? null : iss.id; ui.focusEdit = !!ui.editing; return renderSheet(); }
+  if (act === 'idel' && iss) { if (ui.confirm !== iss.id) { arm(iss.id); return renderSheet(); } s.ops.issues = s.ops.issues.filter((x) => x !== iss); ui.confirm = null; toast('🗑'); return edited(); }
+  if (b.dataset.preset != null && s.ops) { const n = CO.preset(+b.dataset.preset, ui.today); s.ops.issues.push(n); ui.hiIssue = n.id; toast(`＋ ${n.icon}`); return edited(); }
+  if (act === 'addIssue') return addIssue();
+  const cEl = b.closest('[data-check]'), chk = cEl && s.ops ? s.ops.checks.find((x) => x.id === cEl.dataset.check) : null;
+  if (act === 'ctick' && chk) { if (CO.checkState(chk, ui.today) === 'done') chk.last = chk.prev && chk.prev < CO.pStart(chk.every, ui.today) ? chk.prev : ''; else { chk.prev = chk.last; chk.last = ui.today; } return edited(); }
+  if (act === 'goOpen') { if (!CO.ready(s)) return; CO.openStore(s, ui.today); save(); hideSheet(); snapStore(); toast('🏪 Open!'); refresh(); home(); return; }
+  if (act === 'unopen') { if (ui.confirm !== 'unopen') { arm('unopen'); return renderSheet(); } s.phase = 'opening'; ui.confirm = null; snapStore(); toast('↩ 🏗'); edited(); return home(); }
+  if (act === 'clearEx') { if (ui.confirm !== 'clearEx') { arm('clearEx'); return renderSheet(); } CO.clearExamples(state); ui.confirm = null; ui.sel = -1; saveNow(); snapStore(); toast('🧹 ✅'); refresh(); if (ui.mode === 'district') home(); return renderSheet(); }
+  if (b.dataset.store) { state.cur = b.dataset.store; ui.sel = -1; save(); M = model(); stations.forEach((x) => { x.shown = -1; }); toast(`${store().icon} ${store().name}`); refresh(); home(); renderSheet(); return; }
   if (b.dataset.status) { sg.status = b.dataset.status; return edited(); }
   if (b.dataset.vote) { sg.vote = b.dataset.vote; return edited(); }
   if (act === 'tick' && task) { task.done = !task.done; if (task.done) burst(ui.sel); return edited(); }
@@ -574,27 +798,37 @@ $('sheet').addEventListener('click', (e) => {
   if (act === 'add') return addTask();
   if (act === 'icon') { const I = ['🏪', '🌳', '🌊', '✈️', '⛰', '🌵', '🏙', '🌻', '🚗', '🏖']; s.icon = I[(I.indexOf(s.icon) + 1) % I.length]; return edited(); }
   if (act === 'newStore') { const n = CO.newStore({ name: `New store ${state.stores.length + 1}` }); state.stores.push(n); state.cur = n.id; toast('＋ 🏪'); stations.forEach((x) => { x.shown = -1; }); return edited(); }
-  if (act === 'delStore') { if (ui.confirm !== 'delStore') { arm('delStore'); return renderSheet(); } state.stores = state.stores.filter((x) => x !== s); state.cur = state.stores[0].id; ui.confirm = null; toast('🗑 🏪'); return edited(); }
+  if (act === 'delStore') { if (ui.confirm !== 'delStore') { arm('delStore'); return renderSheet(); } state.stores = state.stores.filter((x) => x !== s); state.cur = state.stores[0].id; ui.confirm = null; snapStore(); toast('🗑 🏪'); return edited(); }
   if (act === 'export') return exportJSON();
   if (act === 'import') return $('importFile').click();
   if (act === 'theme') return toggleTheme();
   if (act === 'demo') { closeSheet(); return startDemo(); }
-  if (act === 'reset') { if (ui.confirm !== 'reset') { arm('reset'); return renderSheet(); } const th = state.theme; state = CO.fresh(); state.theme = th; ui.confirm = null; ui.sel = -1; saveNow(); M = model(); toast('↺ 🧪'); stations.forEach((x) => { x.shown = -1; }); refresh(); return renderSheet(); }
+  if (act === 'reset') { if (ui.confirm !== 'reset') { arm('reset'); return renderSheet(); } const th = state.theme; state = CO.fresh(); state.theme = th; ui.confirm = null; ui.sel = -1; saveNow(); snapStore(); toast('↺ 🧪'); refresh(); if (ui.mode === 'district') home(); return renderSheet(); }
 });
+function addIssue() { const inp = $('newIssue'), t = (inp && inp.value || '').trim(); if (!t) { inp && inp.focus(); return; } const n = CO.issue('🛠', t.slice(0, 80), 'high', CO.addDays(ui.today, 3)); store().ops.issues.push(n); ui.hiIssue = n.id; toast('＋ 🛠'); edited(); }
 function addTask() { const inp = $('newTask'), t = (inp && inp.value || '').trim(); if (!t) { inp && inp.focus(); return; } store().stages[ui.sel].tasks.push({ id: CO.uid(), t: t.slice(0, 120), done: false, due: '' }); edited(); const n = $('newTask'); if (n) { n.focus(); const tk = $('tasks'); tk && tk.lastElementChild && tk.lastElementChild.scrollIntoView({ block: 'nearest' }); } }
 $('sheet').addEventListener('change', (e) => {
   const f = e.target.dataset.f; if (!f) return; const s = store(), sg = ui.sel >= 0 ? s.stages[ui.sel] : null, tEl = e.target.closest('[data-task]'), task = tEl && sg ? sg.tasks.find((t) => t.id === tEl.dataset.task) : null, v = e.target.value;
   if (f === 'owner') sg.owner = v.slice(0, 60); else if (f === 'due') sg.due = CO.isDate(v) ? v : '';
   else if (f === 'tdue' && task) task.due = CO.isDate(v) ? v : '';
   else if (f === 'rename' && task) { if (v.trim()) task.t = v.trim().slice(0, 120); ui.editing = null; }
+  else if (f === 'idue' || f === 'ititle' || f === 'iowner') { const iEl = e.target.closest('[data-issue]'), iss = iEl && s.ops ? s.ops.issues.find((x) => x.id === iEl.dataset.issue) : null; if (!iss) return;
+    if (f === 'idue') iss.due = CO.isDate(v) ? v : ''; else if (f === 'ititle') { if (v.trim()) iss.t = v.trim().slice(0, 80); } else iss.owner = v.trim().slice(0, 40); }
   else if (f === 'sname') s.name = v.trim().slice(0, 40) || s.name;
   else if (f === 'starget' && CO.isDate(v)) s.target = v;
   edited();
 });
-$('sheet').addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; if (e.target.id === 'newTask') { e.preventDefault(); addTask(); } else if (e.target.dataset.f === 'rename' || e.target.dataset.f === 'sname' || e.target.dataset.f === 'owner') e.target.blur(); });
+$('sheet').addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; if (e.target.id === 'newTask') { e.preventDefault(); addTask(); } else if (e.target.id === 'newIssue') { e.preventDefault(); addIssue(); } else if (e.target.dataset.f === 'iowner') { ui.editing = null; e.target.blur(); renderSheet(); } else if (e.target.dataset.f === 'ititle') e.target.blur(); else if (e.target.dataset.f === 'rename' || e.target.dataset.f === 'sname' || e.target.dataset.f === 'owner') e.target.blur(); });
 $('target').addEventListener('change', (e) => { if (CO.isDate(e.target.value)) { store().target = e.target.value; toast(`🎉 ${short(e.target.value)}`); edited(); } });
 $('storeBtn').onclick = () => { if (ui.demo) stopDemo(); ui.sel = -1; ui.sheet === 'stores' ? closeSheet() : (openSheet('stores'), refresh()); };
-$('overall').onclick = $('listBtn').onclick = () => { if (ui.demo) stopDemo(); ui.sel = -1; ui.sheet === 'list' ? closeSheet() : (openSheet('list'), home(), refresh()); };
+$('overall').onclick = $('listBtn').onclick = () => { if (ui.demo) stopDemo(); ui.sel = -1;
+  if (ui.mode === 'district') return ui.sheet === 'stores' ? closeSheet() : (openSheet('stores'), refresh());
+  if (M.open) return ui.sheet === 'ops' ? closeSheet() : openOps();
+  ui.sheet === 'list' ? closeSheet() : (openSheet('list'), home(), refresh()); };
+$('mapBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); setMode(ui.mode === 'district' ? 'lot' : 'district'); };
+$('ops').addEventListener('click', (e) => { const b = e.target.closest('[data-ops]'); if (!b) return; const k = b.dataset.ops; ui.scrollTo = k === 'checks' ? '#routineHd' : k === 'add' ? '.presets' : null; openOps(); });
+$('dbar').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.act === 'dtour') return ui.dtour ? stopDTour() : startDTour();
+  if (b.dataset.filter) { if (ui.dtour) stopDTour(); ui.filter = b.dataset.filter; openSheet('stores'); refresh(); } });
 $('menuBtn').onclick = () => { if (ui.demo) stopDemo(); ui.sel = -1; ui.sheet === 'menu' ? closeSheet() : (openSheet('menu'), refresh()); };
 function exportJSON() {
   saveNow(); const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }), a = document.createElement('a');
@@ -613,12 +847,28 @@ function burst(i) { const s = stations[i]; s.burst = performance.now(); }
 
 // ---------------------------------------------------------------- 🎬 auto tour: 0 → 100% in 60 s (does not touch your data)
 function startDemo() {
+  if (ui.dtour) stopDTour(true); if (ui.mode !== 'lot') setMode('lot');
   if (ui.sheet) closeSheet(); ui.demo = { t0: performance.now(), lastCur: -1 }; $('demoBar').hidden = false; $('demoBtn').classList.add('on');
   stations.forEach((x) => { x.shown = -1; }); for (let i = 0; i < N; i++) shown[i] = 0; paved = 0; toast('🎬 0 → 🎉');
 }
 function stopDemo() { ui.demo = null; $('demoBar').hidden = true; $('demoBtn').classList.remove('on'); M = model(); home(); refresh(); }
-$('demoBtn').onclick = () => (ui.demo ? stopDemo() : startDemo());
-$('demoStop').onclick = stopDemo;
+$('demoBtn').onclick = () => (ui.dtour ? stopDTour() : ui.mode === 'district' ? startDTour() : ui.demo ? stopDemo() : startDemo());
+$('demoStop').onclick = () => (ui.dtour ? stopDTour() : stopDemo());
+// 🎬 district tour: fly over every store (in the current filter + sort), ~2.4 s each
+function startDTour() {
+  if (ui.demo) stopDemo(); if (ui.mode !== 'district') setMode('district'); if (ui.sheet) hideSheet();
+  let ids = CO.sorted(state.stores.filter((x) => CO.FILTERS[ui.filter](x, ui.today)), ui.sort, ui.today).map((x) => x.id); if (!ids.length) ids = state.stores.map((x) => x.id);
+  ui.dtour = { t0: performance.now(), ids, i: -1 }; $('demoBar').hidden = false; $('demoBtn').classList.add('on'); toast('🎬 🗺');
+}
+function stopDTour(quiet) { ui.dtour = null; ui.tourId = null; $('demoBar').hidden = true; $('demoBtn').classList.remove('on'); if (!quiet) { home(); refresh(); } }
+function dtourTick(now) {
+  const d = ui.dtour, el = (now - d.t0) / 1000, k = Math.floor(el / 2.4), n = d.ids.length;
+  $('demoFill').style.width = Math.round(Math.min(1, el / (2.4 * n)) * 100) + '%'; $('demoPct').textContent = `${Math.min(n, k + 1)}/${n}`;
+  if (k >= n) { if (!d.end) { d.end = el; ui.tourId = null; home(); renderDistLabels(); toast('🗺 ✅'); } if (el - d.end > 1.6) stopDTour(); return; }
+  if (k !== d.i) { d.i = k; const id = d.ids[k], j = state.stores.findIndex((x) => x.id === id), s = state.stores[j]; if (!s) return;
+    const [x, z] = distPos[j]; dst.tx = x; dst.tz = z; dst.h = focusH(17, 14); ui.tourId = id; renderDistLabels();
+    const h = CO.health(s, ui.today); toast(`${s.icon} ${s.name} ${CO.isOpen(s) ? OPS[h][0] : CO.rejected(s) ? '❌' : Math.round(CO.overall(s) * 100) + '%'}`, 2200); }
+}
 function demoTick() {
   const d = ui.demo; if (!d) return;
   const el = (performance.now() - d.t0) / 1000;
@@ -629,10 +879,32 @@ function demoTick() {
   if (d.end && el - d.end > 4) stopDemo();
 }
 
+// ---------------------------------------------------------------- 🗺 mode switch + fly-to
+function setMode(m) {
+  if (ui.demo) stopDemo(); if (ui.dtour && m === 'lot') stopDTour(true);
+  ui.mode = m; lot.visible = m === 'lot'; dist.visible = m === 'district'; ui.sel = -1; ui.hiIssue = null;
+  stageEl.classList.toggle('district', m === 'district'); $('mapBtn').classList.toggle('on', m === 'district');
+  if (m === 'district') { if (ui.sheet && ui.sheet !== 'stores' && ui.sheet !== 'menu') hideSheet(); buildDistrict(true); }
+  refresh(); resize(); home();
+}
+function hideSheet() { ui.sheet = null; ui.sel = -1; ui.editing = null; $('sheet').hidden = true; resize(); }
+function snapStore() { M = model(); stations.forEach((x) => { x.shown = -1; }); for (let i = 0; i < N; i++) shown[i] = M.p[i]; paved = M.p[5] >= 0.86 ? 1 : 0; }
+function flyTo(id) {
+  const k = state.stores.findIndex((x) => x.id === id); if (k < 0 || ui.flying) return;
+  if (ui.dtour) stopDTour(true); if (ui.sheet) hideSheet();
+  const [x, z] = distPos[k] || [0, 0]; dst.tx = x; dst.tz = z; dst.h = 9; ui.flying = id; renderDistLabels();
+  setTimeout(() => {
+    ui.flying = null; state.cur = id; save(); snapStore(); setMode('lot');
+    view.tx = 0; view.tz = 0; view.h = 9; const s = store(); toast(`${s.icon} ${s.name}`);
+    if (CO.isOpen(s) && CO.opsStatus(s, ui.today) !== 'ok') setTimeout(() => { if (ui.mode === 'lot' && !ui.sheet) openOps(); }, 500);
+  }, 650);
+}
+function openOps(issueId) { if (ui.demo) stopDemo(); ui.sel = -1; ui.hiIssue = issueId || null; openSheet('ops'); requestAnimationFrame(() => { resize(); dst.tx = 0; dst.tz = 0.5; dst.h = focusH(13, 12); }); refresh(); }
+
 // ---------------------------------------------------------------- misc
 let toastT = 0; function toast(t, ms = 1600) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, ms); }
-function refresh() { M = model(); renderTop(); renderTL(); refreshLabels(); }
-new ResizeObserver(() => { resize(); if (ui.sel >= 0) focus(ui.sel); else if (!ui.demo) home(); }).observe(stageEl);
+function refresh() { M = model(); if (ui.mode === 'district') buildDistrict(); renderTop(); renderTL(); renderBars(); refreshLabels(); }
+new ResizeObserver(() => { resize(); if (ui.mode === 'district') buildDistrict(); if (ui.sel >= 0) focus(ui.sel); else if (ui.sheet === 'ops' || ui.sheet === 'open') focusShop(); else if (!ui.demo && !ui.dtour) home(); }).observe(stageEl);
 new ResizeObserver(() => resize()).observe($('sheet'));
 setInterval(() => { const d = CO.today(); if (d !== ui.today) { ui.today = d; refresh(); } }, 30000);
 
@@ -640,8 +912,9 @@ setInterval(() => { const d = CO.today(); if (d !== ui.today) { ui.today = d; re
 let last = performance.now(), sigT = 0;
 function loop(now) {
   const rdt = Math.min(0.5, (now - last) / 1000), dt = Math.min(0.1, rdt); last = now;
-  if (ui.demo) { M = model(); demoTick(); if (now - sigT > 120) { sigT = now; renderTop(); renderTL(); refreshLabels(); } }
-  apply(dt, now); animate(dt, now);
+  if (ui.demo) { M = model(); demoTick(); if (now - sigT > 120) { sigT = now; renderTop(); renderTL(); renderBars(); refreshLabels(); } }
+  if (ui.dtour) dtourTick(now);
+  if (lot.visible) { apply(dt, now); animate(dt, now); } applyDistrict(now);
   stations.forEach((s) => { const b = s.burst ? (now - s.burst) / 600 : 2; const sc = b < 1 ? 1 + Math.sin(b * Math.PI) * 0.18 : 1; s.base.scale.setScalar(sc); s.fill.scale.setScalar(sc); });
   camUpdate(rdt); placeLabels(); renderer.render(scene, cam);
   requestAnimationFrame(loop);
@@ -650,5 +923,5 @@ applyTheme(); resize(); home(); Object.assign(view, dst); refresh(); for (let i 
 requestAnimationFrame(loop);
 
 // test hooks (read-only views + helpers used by the headless checks)
-window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines }, select, startDemo, stopDemo, focus, home, pick,
+window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines }, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, openOps, startDTour, stopDTour, select, startDemo, stopDemo, focus, home, pick,
   project: (x, y, z) => { pv.set(x, y, z).project(cam); const r = cv.getBoundingClientRect(); return { x: r.left + (pv.x + 1) / 2 * r.width, y: r.top + (1 - pv.y) / 2 * r.height }; }, saveNow };
