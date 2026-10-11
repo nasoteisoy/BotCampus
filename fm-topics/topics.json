@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-07T14:28:00-07:00",
+  "updatedAt": "2026-10-11T16:15:00-07:00",
   "updatedBy": "Dev B",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -29,6 +29,60 @@
       "leftOff": "Passwords paused; resume when he says.",
       "updatedAt": "2026-10-02T14:07:32-07:00",
       "note": "What: New-device sign-in alert + password reset plan.\n\nSummary: Venmo emailed ~10:07am PT new device; if not him reset password. He wants to reset/maintain all passwords (Bitwarden free or 1Password ~$4/mo); paused for offer.\n\nLeft off: Passwords paused; resume when he says."
+    },
+    {
+      "id": "party-games",
+      "title": "Party games",
+      "what": "Custom phone party games playable with friends over a small server, plus pretend-friend demo mode.",
+      "summary": "Built phone party games in Uno-, Among Us-, Mario Party-, Exploding Kittens-, Codenames-, Cards Against Humanity-, Goose Goose Duck-, Pictionary-, Werewolf-, and Clue-style. Friends join over a small server; pretend-friend demo mode for solo testing.",
+      "leftOff": "Ten games live on a temporary link (Oct 3–7).",
+      "updatedAt": "2026-10-07T12:00:00-07:00",
+      "note": "What: Custom phone party games playable with friends over a small server, plus pretend-friend demo mode.\n\nSummary: Built phone party games in Uno-, Among Us-, Mario Party-, Exploding Kittens-, Codenames-, Cards Against Humanity-, Goose Goose Duck-, Pictionary-, Werewolf-, and Clue-style. Friends join over a small server; pretend-friend demo mode for solo testing.\n\nLeft off: Ten games live on a temporary link (Oct 3–7)."
+    },
+    {
+      "id": "pc-upgrade",
+      "title": "PC upgrade",
+      "what": "Compare current desktop to an MSI Codex prebuilt and decide whether to upgrade.",
+      "summary": "Current desktop: GTX 1050 Ti, Ryzen 5 2600, 16 GB. MSI Codex prebuilt: RTX 5060 Ti, Core Ultra 7 265, 32 GB DDR5, 2 TB NVMe. MSI is better in every part.",
+      "leftOff": "His decision (Oct 5).",
+      "updatedAt": "2026-10-05T12:00:00-07:00",
+      "note": "What: Compare current desktop to an MSI Codex prebuilt and decide whether to upgrade.\n\nSummary: Current desktop: GTX 1050 Ti, Ryzen 5 2600, 16 GB. MSI Codex prebuilt: RTX 5060 Ti, Core Ultra 7 265, 32 GB DDR5, 2 TB NVMe. MSI is better in every part.\n\nLeft off: His decision (Oct 5)."
+    },
+    {
+      "id": "passwords",
+      "title": "Passwords",
+      "what": "Password overhaul with a chosen manager and recurring checks.",
+      "summary": "Picked 1Password over Bitwarden for a full password overhaul. Plan to run a Watchtower check every three months.",
+      "leftOff": "Choose Individual vs Families plan (Oct 9).",
+      "updatedAt": "2026-10-09T12:00:00-07:00",
+      "note": "What: Password overhaul with a chosen manager and recurring checks.\n\nSummary: Picked 1Password over Bitwarden for a full password overhaul. Plan to run a Watchtower check every three months.\n\nLeft off: Choose Individual vs Families plan (Oct 9)."
+    },
+    {
+      "id": "close-combat-2-save",
+      "title": "Close Combat 2 save",
+      "what": "Recover and verify the 'A Bridge Too Far' Steam save across desktop and laptop.",
+      "summary": "Found the 'A Bridge Too Far' Steam save on the desktop. Steam Cloud already synced it to the laptop; files verified identical.",
+      "leftOff": "Laptop needed a game update before playing (Oct 10).",
+      "updatedAt": "2026-10-10T12:00:00-07:00",
+      "note": "What: Recover and verify the 'A Bridge Too Far' Steam save across desktop and laptop.\n\nSummary: Found the 'A Bridge Too Far' Steam save on the desktop. Steam Cloud already synced it to the laptop; files verified identical.\n\nLeft off: Laptop needed a game update before playing (Oct 10)."
+    },
+    {
+      "id": "cursor-agent-kit",
+      "title": "Cursor agent kit",
+      "what": "Reusable kit so Cursor agents can build and maintain apps like Coffee Opening.",
+      "summary": "Built a kit with AGENTS.md, Cursor rules, docs, starter app, and phone tap tests. All 100/100 tests pass.",
+      "leftOff": "Zip delivered, ready to drop into a new repo (Oct 10).",
+      "updatedAt": "2026-10-10T18:00:00-07:00",
+      "note": "What: Reusable kit so Cursor agents can build and maintain apps like Coffee Opening.\n\nSummary: Built a kit with AGENTS.md, Cursor rules, docs, starter app, and phone tap tests. All 100/100 tests pass.\n\nLeft off: Zip delivered, ready to drop into a new repo (Oct 10)."
+    },
+    {
+      "id": "thermostat",
+      "title": "Thermostat",
+      "what": "Nest thermostat not cooling; restore Cool and optional Grok Bot control.",
+      "summary": "Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.",
+      "leftOff": "Confirm the AC is actually blowing cold (Oct 11).",
+      "updatedAt": "2026-10-11T16:15:00-07:00",
+      "note": "What: Nest thermostat not cooling; restore Cool and optional Grok Bot control.\n\nSummary: Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.\n\nLeft off: Confirm the AC is actually blowing cold (Oct 11)."
     }
   ]
 }
