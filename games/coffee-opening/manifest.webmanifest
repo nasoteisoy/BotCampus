@@ -1,13 +1,13 @@
 {
-  "name": "Coffee Opening",
-  "short_name": "Coffee Open",
-  "description": "3D tracker for opening a new coffee shop: 11 stages from site scouting to grand opening, with editable checklists.",
+  "name": "Dutch Bros · New Shop Opening Tracker",
+  "short_name": "Dutch Bros",
+  "description": "Dutch Bros · New Shop Opening Tracker (pitch concept, unofficial): a 3D double drive-thru stand that builds itself up through 11 stages, plus open-shop dashboards.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#eef0f3",
-  "theme_color": "#eef0f3",
+  "background_color": "#16295a",
+  "theme_color": "#16295a",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

@@ -3,33 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Coffee Opening</title>
-<meta name="theme-color" content="#eef0f3">
+<title>Dutch Bros · New Shop Opening Tracker</title>
+<meta name="description" content="Dutch Bros · New Shop Opening Tracker: a 3D double drive-thru stand that builds itself up as the opening plan moves. Pitch concept, unofficial.">
+<meta name="theme-color" content="#16295a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Coffee Opening">
+<meta name="apple-mobile-web-app-title" content="Dutch Bros">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root { --top: 52px; --tl: 76px; --sheetH: 0px; --panelW: 0px;
-  --bg: #eef0f3; --card: #ffffff; --ink: #1f2430; --sub: #6b7280; --acc: #ff6b5b; --ok: #2fb171; --risk: #f5a524; --block: #e5484d; --todo: #c9ced6; --line: #e3e6ea; --soft: #f4f5f7;
-  --shadow: 0 10px 30px rgba(20, 30, 50, .16), 0 2px 6px rgba(20, 30, 50, .08); }
-body.night { --bg: #0b0f17; --card: #161c27; --ink: #e8ecf2; --sub: #8b95a5; --acc: #ff8c1a; --todo: #2c3646; --line: #263041; --soft: #1d2532;
-  --shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 140, 26, .12); }
+  --bg: #eef3fa; --card: #ffffff; --ink: #12203f; --sub: #5d6b85; --acc: #1f5fd1; --navy: #16295a; --sky: #7cc4f0; --ok: #2fb171; --risk: #f5a524; --block: #e5484d; --todo: #c5cfdd; --line: #e0e6ef; --soft: #f1f5fb;
+  --shadow: 0 10px 30px rgba(18, 32, 63, .16), 0 2px 6px rgba(18, 32, 63, .08); }
+body.night { --bg: #060d1c; --card: #0f1a31; --ink: #e6edf8; --sub: #8796b2; --acc: #4fb3ff; --navy: #0d1733; --sky: #4fb3ff; --todo: #26344f; --line: #1f2d4a; --soft: #16233f;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 0 1px rgba(79, 179, 255, .14); }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: 14px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
 button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
 input { font: inherit; color: var(--ink); }
 #app { position: fixed; inset: 0; display: grid; grid-template-rows: var(--top) 1fr var(--tl); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 /* top bar */
-#top { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--card); box-shadow: 0 1px 0 var(--line); z-index: 5; min-width: 0; }
+#top { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--navy); box-shadow: 0 2px 0 var(--sky); z-index: 5; min-width: 0; color: #fff; }
+#top .mark { width: 34px; height: 34px; flex: none; display: block; } #top .mark svg, .brandmark svg { width: 100%; height: 100%; display: block; }
+#top #storeBtn { background: rgba(255,255,255,.1); color: #fff; } #top #days { background: rgba(255,255,255,.1); color: #fff; } #top #menuBtn { background: rgba(255,255,255,.1); color: #fff; }
+#top .ring { background: radial-gradient(var(--navy) 62%, transparent 64%), conic-gradient(var(--c, var(--sky)) calc(var(--p) * 1%), rgba(255,255,255,.18) 0); color: #fff; }
+#storeBtn .tt { display: flex; flex-direction: column; min-width: 0; line-height: 1.1; }
+#storeBtn .brandline { font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sky); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brandmark { width: 30px; height: 30px; display: block; } .hsub { display: block; font-size: 11px; color: var(--sub); font-weight: 600; }
+#splash { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: radial-gradient(circle at 50% 40%, #1f5fd1, #16295a 60%, #0b1430); color: #fff; pointer-events: none; transition: opacity .45s; text-align: center; padding: 20px; }
+#splash .mark { width: 112px; height: 112px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.35)); } #splash h1 { margin: 6px 0 0; font-size: 34px; letter-spacing: .02em; } #splash p { margin: 0; font-size: 15px; color: #bfe3ff; font-weight: 700; }
+#splash small { margin-top: 18px; font-size: 10px; color: #8fb3dd; } #splash.out { opacity: 0; }
+@media (max-width: 700px) { #storeBtn .bsub { display: none; } }
+#demoBar b.dt { font-size: 12px; white-space: nowrap; color: var(--acc); }
 #storeBtn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px; border-radius: 12px; background: var(--soft); text-align: left; }
 #storeBtn b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+@media (max-width: 380px) { #top .mark { width: 28px; height: 28px; } #top { gap: 4px; padding: 6px 6px; } }
 #storeBtn .ic { font-size: 20px; }
 @media (max-width: 420px) { .exw { display: none; } #days small { display: none; } }
-.ex { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 9px; background: #fff3d6; color: #8a5a00; white-space: nowrap; }
-body.night .ex { background: #3a2c10; color: #ffcf7a; }
+.ex { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 9px; background: #dcefff; color: #16457f; white-space: nowrap; }
+body.night .ex { background: #12305a; color: #9fd6ff; }
   .ring { --p: 0; width: 42px; height: 42px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 12px;
   background: radial-gradient(var(--card) 62%, transparent 64%), conic-gradient(var(--c, var(--acc)) calc(var(--p) * 1%), var(--line) 0); }
 #days { position: relative; height: 40px; padding: 0 10px; border-radius: 12px; background: var(--soft); display: flex; align-items: center; gap: 4px; flex: none; white-space: nowrap; }
@@ -167,9 +180,11 @@ h3 { margin: 12px 0 6px; font-size: 13px; color: var(--sub); display: flex; alig
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#16295a"/><rect x="14" y="17" width="36" height="6.5" rx="3" fill="#fff"/><path d="M17 24.5h30l-3.4 28.6a3.2 3.2 0 0 1-3.2 2.9H23.6a3.2 3.2 0 0 1-3.2-2.9z" fill="#fff"/><path d="M29.4 52.5 30.8 38h2.4l1.4 14.5z" fill="#1f5fd1"/><g transform="translate(32 37.5) rotate(22)" fill="#7cc4f0" stroke="#1f5fd1" stroke-width=".8"><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(90)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(180)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(270)"/></g><circle cx="32" cy="37.5" r="2.3" fill="#16295a"/></svg></span><h1>Dutch Bros</h1><p>New Shop Opening Tracker</p><small>Pitch concept · unofficial · original artwork</small></div>
 <div id="app">
   <header id="top">
-    <button id="storeBtn" aria-label="Stores"><span class="ic" id="storeIc">🏪</span><b id="storeName">…</b><i class="ex" id="exTag" title="Example data">🧪<span class="exw"> Example</span></i><span>▾</span></button>
+    <span class="mark" role="img" aria-label="Dutch Bros"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#16295a"/><rect x="14" y="17" width="36" height="6.5" rx="3" fill="#fff"/><path d="M17 24.5h30l-3.4 28.6a3.2 3.2 0 0 1-3.2 2.9H23.6a3.2 3.2 0 0 1-3.2-2.9z" fill="#fff"/><path d="M29.4 52.5 30.8 38h2.4l1.4 14.5z" fill="#1f5fd1"/><g transform="translate(32 37.5) rotate(22)" fill="#7cc4f0" stroke="#1f5fd1" stroke-width=".8"><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(90)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(180)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(270)"/></g><circle cx="32" cy="37.5" r="2.3" fill="#16295a"/></svg></span>
+    <button id="storeBtn" aria-label="Stores"><span class="ic" id="storeIc">🏪</span><span class="tt"><small class="brandline" id="brandline">Dutch Bros<span class="bsub"> · New Shop Opening Tracker</span></small><b id="storeName">…</b></span><i class="ex" id="exTag" title="Example data">🧪<span class="exw"> Example</span></i><span>▾</span></button>
     <button id="overall" class="ring" aria-label="All stages"><span id="overallTxt">0%</span></button>
     <label id="days" aria-label="Days to grand opening"><span id="daysIc">🎉</span><b id="daysN">0</b><small>d</small><input id="target" type="date" aria-label="Grand opening date"></label>
     <button id="menuBtn" class="ibtn" aria-label="Menu">⚙</button>
@@ -190,7 +205,7 @@ h3 { margin: 12px 0 6px; font-size: 13px; color: var(--sub); display: flex; alig
       <button id="rot" class="ibtn" aria-label="Rotate">⟳</button>
       <button id="home" class="ibtn" aria-label="Whole lot">⌂</button>
     </div>
-    <div id="demoBar" hidden>🎬 <span class="bar"><i id="demoFill"></i></span><span id="demoPct">0%</span><button id="demoStop" class="ibtn" aria-label="Stop tour">⏹</button></div>
+    <div id="demoBar" hidden>🎬 <b class="dt">Dutch Bros</b> <span class="bar"><i id="demoFill"></i></span><span id="demoPct">0%</span><button id="demoStop" class="ibtn" aria-label="Stop tour">⏹</button></div>
     <div id="toast" hidden></div>
     <section id="sheet" hidden><div class="grab"></div><div class="hd" id="sheetHd"></div><div class="bd" id="sheetBd"></div></section>
   </main>

@@ -1,8 +1,9 @@
-/* Coffee Opening: the plan model (stages, example stores, progress, status, save/load).
-   No DOM, no Three.js, so it also runs in node for tests. All plan data here is GENERIC EXAMPLE DATA. */
+/* Dutch Bros · New Shop Opening Tracker (pitch concept): the plan model (stages, example shops, progress, status, save/load).
+   No DOM, no Three.js, so it also runs in node for tests. The example shops are MADE-UP EXAMPLE DATA, not real plans. */
 (function (root) {
   'use strict';
-  const KEY = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1 saves are migrated (and left in place as a backup)
+  const KEY = 'coffee-opening-v3', KEY_V2 = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1/v2 saves are migrated (and left in place as a backup)
+  const BRAND = 'Dutch Bros', SUB = 'New Shop Opening Tracker';
   const STAGES = [
     { id: 'scout', icon: '🔍', name: 'Site scouting', short: 'Scout', owner: 'Real estate' },
     { id: 'loi', icon: '✍️', name: 'LOI signed', short: 'LOI', owner: 'Real estate' },
@@ -11,25 +12,25 @@
     { id: 'precon', icon: '📝', name: 'Pre-construction', short: 'Pre-con', owner: 'Development' },
     { id: 'build', icon: '🏗', name: 'Construction', short: 'Build', owner: 'Construction PM' },
     { id: 'equip', icon: '☕', name: 'Equipment', short: 'Equip', owner: 'Ops' },
-    { id: 'hire', icon: '👥', name: 'Hire & train', short: 'Hire', owner: 'Store manager' },
+    { id: 'hire', icon: '👥', name: 'Hire & train', short: 'Hire', owner: 'Shop operator' },
     { id: 'ready', icon: '📅', name: 'One month out', short: '1 month', owner: 'Area manager', rollup: ['equip', 'hire'] },
-    { id: 'soft', icon: '🧪', name: 'Soft open', short: 'Soft', owner: 'Store manager' },
+    { id: 'soft', icon: '🧪', name: 'Soft open', short: 'Soft', owner: 'Shop operator' },
     { id: 'grand', icon: '🎉', name: 'Grand opening', short: 'Grand', owner: 'Marketing' },
   ];
   const IDX = {}; STAGES.forEach((s, i) => { IDX[s.id] = i; });
-  // generic example tasks (no real company, no real people)
+  // example tasks with Dutch Bros flavour (double drive-thru stands, Broistas, line-busters); made-up plan, no real people
   const TASKS = {
-    scout: ['Trade area & demographics', 'Traffic counts (AM peak)', 'Shortlist 3 sites', 'Site visits & photos', 'Drive-thru stacking check (12+ cars)', 'Zoning check', 'Pick preferred site'],
-    loi: ['Draft LOI terms (rent, TI, term)', 'Send LOI to landlord', 'Negotiate rent & free-rent months', 'Exclusive-use clause (coffee)', 'LOI signed by both sides'],
-    rec: ['Site plan & concept design', 'Capex budget', 'Pro forma (sales, P&L, payback)', 'Legal review (title, zoning, easements)', 'Lease draft from landlord', 'Trade area map & photos', 'Package sent to REC'],
+    scout: ['Trade area & commuter routes', 'Traffic counts (AM peak)', 'Double drive-thru car stacking (20+ cars, both lanes)', 'Shortlist 3 pad sites', 'Site visits & photos', 'Zoning: drive-thru allowed', 'Pick preferred site'],
+    loi: ['Draft LOI terms (rent, TI, term)', 'Send LOI to landlord', 'Negotiate rent & free-rent months', 'Exclusive-use clause (coffee & energy drinks)', 'LOI signed by both sides'],
+    rec: ['Stand concept (double drive-thru + walk-up)', 'Capex budget', 'Pro forma (sales, P&L, payback)', 'Legal review (title, zoning, easements)', 'Lease draft from landlord', 'Trade area map & photos', 'Package sent to REC'],
     vote: ['Pre-read sent to committee', 'Book REC meeting slot', 'Present site to committee', 'Answer follow-up questions', 'Conditions of approval logged'],
     precon: ['Lease executed', 'Building permit submitted', 'Building permit approved', 'Health permit plan review', 'GC contract signed', 'Construction drawings final', 'Utilities ordered (power, water, gas, net)', 'Construction schedule set'],
-    build: ['Groundbreak', 'Foundation poured', 'Framing & walls', 'Roof on', 'MEP rough-in (plumbing, electric, HVAC)', 'Inspections passed', 'Drive-thru lane & parking paved', 'Signage installed'],
-    equip: ['Espresso machines (2)', 'Grinders', 'Refrigeration & ice machine', 'Brewers & blenders', 'POS & menu boards', 'Water filtration', 'Equipment tested & calibrated'],
-    hire: ['Hire store manager', 'Post barista jobs', 'Interviews & offers', 'Hire 12–15 baristas', 'Food-safety certificates', 'Barista training (drinks, bar flow)', 'POS & drive-thru training'],
-    ready: ['Vendors & supply set (milk, beans, cups)', 'First inventory delivered', 'Local marketing plan', 'Opening-week staff schedule', 'Health inspection passed', 'Opening walkthrough'],
-    soft: ['Friends & family day', 'Soft-open menu test', 'Drive-thru dry runs (timed)', 'Fix issues from dry runs', 'Ticket times on target'],
-    grand: ['Grand-open marketing live', 'Ribbon cutting booked', 'Opening-day promos ready', 'Extra staff scheduled', 'Doors open 🎉'],
+    build: ['Groundbreak', 'Stand foundation poured', 'Stand set & walls up', 'Roof, canopy & windmill on', 'MEP rough-in (plumbing, electric, HVAC)', 'Inspections passed', 'Dual drive-thru lanes & walk-up paved', 'Signage installed'],
+    equip: ['Espresso machines (one bar per lane)', 'Grinders', 'Refrigeration & ice machines', 'Blenders (smoothies & frosts)', 'Rebel energy drink cooler', 'Cold brew system', 'POS, menu boards & lane tablets', 'Equipment tested & calibrated'],
+    hire: ['Hire shop operator', 'Hire shift leads', 'Post Broista jobs', 'Interviews & offers', 'Hire 20–25 Broistas', 'Food-safety certificates', 'Broista training (drinks, culture, bar flow)', 'Line-buster tablet ordering training'],
+    ready: ['Supply set (milk, cold brew, Rebel, cups)', 'First inventory delivered', 'Dutch Rewards app: shop live for orders', 'Local marketing & community plan', 'Opening-week Broista schedule', 'Health inspection passed', 'Opening walkthrough'],
+    soft: ['Friends & family day', 'Menu test (Golden Eagle, Rebel, cold brew)', 'Double drive-thru dry runs (timed)', 'Line-busters on tablets in both lanes', 'Fix issues from dry runs', 'Ticket times on target'],
+    grand: ['Grand-opening event plan live', 'Opening-day giveaways & stickers ready', 'Local charity partner booked', 'Ribbon cutting booked', 'Extra Broistas (both lanes + line-busters)', 'Doors open 🎉'],
   };
   // each stage's due date, in days before the grand opening target
   const OFF = [-250, -230, -205, -190, -150, -52, -38, -30, -9, -2, 0];
@@ -37,9 +38,10 @@
   // ---- open stores: issue presets (icon, title, default priority) + routine checks
   const PRIO = ['low', 'high', 'urgent'];
   const ISSUES = [['🧊', 'Walk-in cooler down', 'urgent'], ['☕', 'Espresso machine service', 'high'], ['👥', 'Staffing short', 'high'], ['🧾', 'Health inspection due', 'high'],
-    ['📦', 'Low inventory', 'low'], ['🧹', 'Deep clean', 'low'], ['🔧', 'HVAC repair', 'high'], ['📄', 'Permit renewal', 'low'], ['⭐', 'Bad review follow-up', 'low']];
-  const CHECKS = [['daily', '🌡', 'Fridge & cooler temps'], ['daily', '🧼', 'Sanitize bar & steam wands'], ['daily', '💵', 'Cash count & close'], ['daily', '🧹', 'Floor & lobby clean'],
-    ['weekly', '☕', 'Backflush & grinder clean'], ['weekly', '📦', 'Inventory count & order'], ['weekly', '🗓', 'Staff schedule posted'],
+    ['📦', 'Low inventory', 'low'], ['🧹', 'Deep clean', 'low'], ['🔧', 'HVAC repair', 'high'], ['📄', 'Permit renewal', 'low'], ['⭐', 'Bad review follow-up', 'low'],
+    ['🚗', 'Drive-thru wait time high', 'high'], ['📱', 'App ordering down', 'urgent'], ['🥤', 'Rebel stock low', 'high']];
+  const CHECKS = [['daily', '🌡', 'Fridge & cooler temps'], ['daily', '🧼', 'Sanitize bar & steam wands'], ['daily', '📱', 'Line-buster tablets charged & synced'], ['daily', '💵', 'Cash count & close'],
+    ['weekly', '☕', 'Backflush & grinder clean'], ['weekly', '📦', 'Inventory & order (milk, cold brew, Rebel)'], ['weekly', '🗓', 'Broista schedule posted'],
     ['monthly', '🔧', 'HVAC filter check'], ['monthly', '💧', 'Water filter check'], ['monthly', '🧯', 'Fire extinguisher & safety walk']];
   const EVERY = ['daily', 'weekly', 'monthly'];
 
@@ -69,7 +71,7 @@
   // tick every task of the first k stages (+ the vote)
   function doneUpTo(s, k) { s.stages.forEach((st, i) => { if (i < k) { st.tasks.forEach(t => { t.done = true; }); if (STAGES[i].vote) st.vote = 'approved'; } }); return s; }
   function tick(s, id, m) { s.stages[IDX[id]].tasks.forEach((t, k) => { if (k < m) t.done = true; }); return s; }
-  function issue(icon, t, prio, due, owner = 'Store manager') { return { id: uid(), icon, t, prio, due: due || '', owner, done: false, at: '' }; }
+  function issue(icon, t, prio, due, owner = 'Shop operator') { return { id: uid(), icon, t, prio, due: due || '', owner, done: false, at: '' }; }
   function preset(k, d, dueIn) { const [icon, t, prio] = ISSUES[k]; return issue(icon, t, prio, addDays(d, dueIn ?? (prio === 'urgent' ? 0 : prio === 'high' ? 3 : 7))); }
   function newOps(opened, d = today()) {
     return { status: 'auto', opened, issues: [], checks: CHECKS.map(([every, icon, t]) => ({ id: uid(), every, icon, t, last: '', since: opened || d })) };
@@ -77,28 +79,44 @@
   function openStore(s, d = today()) { s.phase = 'open'; if (!s.ops) s.ops = newOps(d, d); return s; }
   function examples() {
     const d = today();
-    const a = tick(doneUpTo(newStore({ id: 'ex-elm', icon: '🌳', name: 'Elm St drive-thru', example: true, target: addDays(d, 125) }), 5), 'build', 3);
-    const b = newStore({ id: 'ex-river', icon: '🌊', name: 'Riverside kiosk', example: true, target: addDays(d, 260) });
+    const a = tick(doneUpTo(newStore({ id: 'ex-elm', icon: '🌴', name: 'Tempe · Rural Rd', example: true, target: addDays(d, 125) }), 5), 'build', 3);
+    const b = newStore({ id: 'ex-river', icon: '🏜', name: 'Mesa · Main St', example: true, target: addDays(d, 260) });
     doneUpTo(b, 3); tick(b, 'vote', 4); b.stages[3].vote = 'deferred';
-    const c = tick(doneUpTo(newStore({ id: 'ex-airport', icon: '✈️', name: 'Airport Rd café', example: true, target: addDays(d, 32) }), 8), 'ready', 3);
-    const e = newStore({ id: 'ex-hill', icon: '⛰', name: 'Hilltop corner', example: true, target: addDays(d, 300) });
+    const c = tick(doneUpTo(newStore({ id: 'ex-airport', icon: '✈️', name: 'Phoenix · Sky Harbor', example: true, target: addDays(d, 32) }), 8), 'ready', 3);
+    const e = newStore({ id: 'ex-hill', icon: '⛰', name: 'Fountain Hills · Saguaro', example: true, target: addDays(d, 300) });
     doneUpTo(e, 3); tick(e, 'vote', 4); e.stages[3].vote = 'rejected';
-    const f = tick(newStore({ id: 'ex-desert', icon: '🌵', name: 'Desert Ridge', example: true, target: addDays(d, 330) }), 'scout', 4);
-    const g = tick(doneUpTo(newStore({ id: 'ex-sun', icon: '🌻', name: 'Sunflower Plaza', example: true, target: addDays(d, 170) }), 4), 'precon', 5);
+    const f = tick(newStore({ id: 'ex-desert', icon: '🌵', name: 'Peoria · Lake Pleasant', example: true, target: addDays(d, 330) }), 'scout', 4);
+    const g = tick(doneUpTo(newStore({ id: 'ex-sun', icon: '🌻', name: 'Gilbert · Val Vista', example: true, target: addDays(d, 170) }), 4), 'precon', 5);
     // open stores: built long ago, with their routine checks and issues
     const open = (id, icon, name, ago) => { const s = doneUpTo(newStore({ id, icon, name, example: true, target: addDays(d, -ago) }), 11); openStore(s, addDays(d, -ago));
       s.ops.checks.forEach((c) => { c.last = d; }); return s; };
-    const h = open('ex-down', '🏙', 'Downtown Main', 420);
-    const i = open('ex-hwy', '🚗', 'Highway 9 drive-thru', 160);
-    const j = open('ex-lake', '🏖', 'Lakeside', 240);
-    j.ops.issues.push(preset(1, d, 2), preset(4, d, 1)); j.ops.checks.find((c) => c.every === 'weekly').last = addDays(d, -16);
-    const k = open('ex-pine', '🌲', 'Pinecrest', 75);
-    k.ops.issues.push(preset(6, d, 4), preset(8, d, 5), preset(5, d, 9));
-    const l = open('ex-college', '🎓', 'College Ave', 300);
+    const h = open('ex-down', '🏙', 'Scottsdale · Old Town', 420);
+    const i = open('ex-hwy', '🚗', 'Chandler · Loop 202', 160);
+    const j = open('ex-lake', '⛳', 'Goodyear · Estrella', 240);
+    j.ops.issues.push(preset(9, d, 2), preset(4, d, 1)); j.ops.checks.find((c) => c.every === 'weekly').last = addDays(d, -16);
+    const k = open('ex-pine', '🏟', 'Glendale · Westgate', 75);
+    k.ops.issues.push(preset(11, d, 4), preset(8, d, 5), preset(5, d, 9));
+    const l = open('ex-college', '🎓', 'Surprise · Bell Rd', 300);
     l.ops.issues.push(preset(0, d, 0), preset(2, d, 1), preset(3, d, 6)); l.ops.checks.filter((c) => c.every === 'daily').forEach((c) => { c.last = addDays(d, -3); });
     return [a, b, c, e, f, g, h, i, j, k, l];
   }
-  function fresh() { const stores = examples(); return { v: 2, cur: stores[0].id, theme: 'day', stores }; }
+  function fresh() { const stores = examples(); return { v: 3, cur: stores[0].id, theme: 'day', stores }; }
+  // ---- v1/v2 → v3: an example store that is still exactly as shipped (same ticks, texts, owners, votes, issues, relative dates) is swapped
+  // for its Dutch Bros v3 example (same id); anything the user touched, and every user store, is kept as is.
+  function rel(a, b) { return isDate(a) && isDate(b) ? diffDays(a, b) : ''; }
+  function sig(s) {
+    const o = s.ops;
+    const j = JSON.stringify([s.id, s.icon, s.name, !!s.example, s.phase || 'opening', s.stages.map((st) => [st.id, st.owner, st.status, st.vote || '', rel(s.target, st.due), st.tasks.map((t) => [t.t, !!t.done, rel(s.target, t.due)])]),
+      o ? [o.status, rel(s.target, o.opened), o.issues.map((x) => [x.icon, x.t, x.prio, !!x.done, x.owner, rel(o.opened, x.due)]), o.checks.map((c) => [c.every, c.icon, c.t, rel(o.opened, c.last)])] : null]);
+    let h = 2166136261; for (let i = 0; i < j.length; i++) { h ^= j.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36);
+  }
+  // fingerprints of the shipped v1 (4) and v2 (11) example stores, made with sig() above
+  const PRISTINE = new Set(['1kdyte9', '1h7t8fb', '1oeuayx', '342n0u', 'h0ygqw', 'lymqmz', '1k2n0v6', '3zhqhk', '1ro43y4', '1ba1bjh', '15py0q4']);
+  function migrate(o) {
+    const ex = examples(); let swapped = 0;
+    o.stores = o.stores.map((s) => { if (!s.example || !PRISTINE.has(sig(s))) return s; const n = ex.find((x) => x.id === s.id); if (!n) return s; swapped++; return n; });
+    o.migrated = { from: o.v || 1, swapped }; return o;
+  }
   function clearExamples(o) { o.stores = o.stores.filter((x) => !x.example); if (!o.stores.length) o.stores.push(newStore({ name: 'My first store' })); if (!o.stores.some((x) => x.id === o.cur)) o.cur = o.stores[0].id; return o; }
 
   // ---- progress & status
@@ -169,21 +187,23 @@
           checks: Array.isArray(p.checks) ? p.checks.filter((c) => c && typeof c.t === 'string').map((c) => ({ id: c.id || uid(), every: EVERY.includes(c.every) ? c.every : 'daily', icon: String(c.icon || '✔').slice(0, 8), t: c.t.slice(0, 120), last: isDate(c.last) ? c.last : '', since: isDate(c.since) ? c.since : '' })) : newOps(s.target).checks };
       }
     }
+    if (!(o.v >= 3) && !o.noMigrate) migrate(o);
+    delete o.noMigrate;
     if (!o.stores.some(s => s.id === o.cur)) o.cur = o.stores[0].id;
-    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 2;
+    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 3;
     return o;
   }
   function load(storage) {
-    for (const k of [KEY, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
+    for (const k of [KEY, KEY_V2, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
     return fresh();
   }
   function importJSON(text) {
     const o = JSON.parse(text);
     if (valid(o)) return clean(o);
     if (o && valid({ stores: [o] })) return clean({ stores: [o], cur: o.id });   // a single exported store
-    throw new Error('not a Coffee Opening plan');
+    throw new Error('not an opening plan');
   }
 
-  const API = { KEY, KEY_V1, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
+  const API = { KEY, KEY_V2, KEY_V1, BRAND, SUB, sig, migrate, PRISTINE, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CO = API;
 })(typeof window !== 'undefined' ? window : globalThis);

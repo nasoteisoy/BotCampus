@@ -1,4 +1,4 @@
-/* Coffee Opening: isometric Three.js project tracker for opening a new coffee shop.
+/* Dutch Bros · New Shop Opening Tracker (pitch concept; name used for identification only, original artwork): isometric Three.js tracker for opening a new double drive-thru stand.
    The 3D lot builds up from the real checklist (data.js). Drag/pinch only with ✋ on. */
 import * as THREE from './three.module.min.js';
 
@@ -11,6 +11,10 @@ const DEMO_S = 60;
 
 // ---------------------------------------------------------------- state
 let state = CO.load(localStorage);
+// original windmill-on-a-cup mark (not the brand's logo)
+const MARK = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#16295a"/><rect x="14" y="17" width="36" height="6.5" rx="3" fill="#fff"/><path d="M17 24.5h30l-3.4 28.6a3.2 3.2 0 0 1-3.2 2.9H23.6a3.2 3.2 0 0 1-3.2-2.9z" fill="#fff"/><path d="M29.4 52.5 30.8 38h2.4l1.4 14.5z" fill="#1f5fd1"/><g transform="translate(32 37.5) rotate(22)" fill="#7cc4f0" stroke="#1f5fd1" stroke-width=".8"><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(90)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(180)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(270)"/></g><circle cx="32" cy="37.5" r="2.3" fill="#16295a"/></svg>`;
+document.querySelectorAll('.mark').forEach((e) => { e.innerHTML = MARK; });
+{ const sp = document.getElementById('splash'); if (sp) { setTimeout(() => sp.classList.add('out'), 900); setTimeout(() => sp.remove(), 1400); } }
 const ui = { sel: -1, sheet: null, drag: false, demo: null, dtour: null, mode: 'lot', filter: 'all', sort: 'urgency', editing: null, confirm: null, hiIssue: null, today: CO.today() };
 const store = () => state.stores.find((s) => s.id === state.cur) || state.stores[0];
 let saveT = 0;
@@ -49,18 +53,18 @@ Object.assign(sun.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, n
 scene.add(sun); scene.add(sun.target);
 
 // ---------------------------------------------------------------- palettes + materials by role
-const PAL = {
-  day: { bg: 0xeef0f3, ground: 0xe4e7eb, grid: 0xc9ced6, dirt: 0xdccbaa, asphalt: 0x8d949e, road: 0x9ca3ad, paint: 0xffffff, wall: 0xf7f3ec, roof: 0x4a5160, trim: 0xff6b5b,
-    glass: 0x9fd3e6, concrete: 0xc4c6ca, wood: 0xc9a27a, crane: 0xf2b134, truck: 0xf2a03d, van: 0xffffff, staff: 0xff6b5b, skin: 0xf1c7a6, pad: 0xffffff, ringBase: 0xd7dbe1,
-    route: 0xff6b5b, todo: 0xbfc5ce, leaf: 0x86c89f, trunk: 0x9b7653, paper: 0xffffff, dark: 0x3b4250, flag: 0xff7a3d, metal: 0xaab2bd, sign: 0xffffff, lampOff: 0x9aa3ae,
-    car0: 0x5b8def, car1: 0x2fb171, car2: 0xffffff, car3: 0x9b6bff, bal0: 0xff6b5b, bal1: 0xffc23d, bal2: 0x5b8def },
-  night: { bg: 0x0b0f17, ground: 0x151c28, grid: 0x26344a, dirt: 0x4a3f30, asphalt: 0x262d38, road: 0x20262f, paint: 0x6a7484, wall: 0x46516a, roof: 0x232a36, trim: 0xff8c1a,
-    glass: 0xffc861, concrete: 0x3a404a, wood: 0x5e4c3b, crane: 0xc98a1d, truck: 0xcf7a1c, van: 0xb8c0cc, staff: 0xff8c1a, skin: 0xcfa486, pad: 0x1b2230, ringBase: 0x263142,
-    route: 0xff8c1a, todo: 0x2e3a4c, leaf: 0x2f5a44, trunk: 0x4a3a2c, paper: 0xc9d0da, dark: 0x0e1117, flag: 0xff8c1a, metal: 0x5c6573, sign: 0x232a36, lampOff: 0x3b4452,
-    car0: 0x3d6bc4, car1: 0x23875a, car2: 0xaab3c0, car3: 0x7350c4, bal0: 0xff6b5b, bal1: 0xffc23d, bal2: 0x5b8def },
+const PAL = {   // Dutch Bros-inspired: navy, royal blue, white, light-blue accent
+  day: { bg: 0xeef3fa, ground: 0xe5ebf3, grid: 0xc6d1e0, dirt: 0xdccbaa, asphalt: 0x8b94a3, road: 0x9aa4b3, paint: 0xffffff, wall: 0xffffff, roof: 0x16295a, trim: 0x1f5fd1,
+    glass: 0x9fd3f0, concrete: 0xc4c8cf, wood: 0xc9a27a, crane: 0xf2b134, truck: 0xf2a03d, van: 0xffffff, staff: 0x5db8f0, skin: 0xf1c7a6, pad: 0xffffff, ringBase: 0xd3dbe6,
+    route: 0x1f5fd1, todo: 0xbcc6d4, leaf: 0x86c89f, trunk: 0x9b7653, paper: 0xffffff, dark: 0x22304d, flag: 0xff7a3d, metal: 0xa9b3c2, sign: 0xffffff, lampOff: 0x9aa3ae,
+    car0: 0x5b8def, car1: 0x2fb171, car2: 0xffffff, car3: 0x9b6bff, bal0: 0x1f5fd1, bal1: 0xffffff, bal2: 0x7cc4f0, navy: 0x16295a, sky: 0x7cc4f0 },
+  night: { bg: 0x060d1c, ground: 0x0e1930, grid: 0x1f3152, dirt: 0x4a3f30, asphalt: 0x232c3d, road: 0x1d2536, paint: 0x6a7a94, wall: 0x3c4c70, roof: 0x0d1733, trim: 0x2f7bff,
+    glass: 0xffc861, concrete: 0x343c4c, wood: 0x5e4c3b, crane: 0xc98a1d, truck: 0xcf7a1c, van: 0xb8c0cc, staff: 0x4fb3ff, skin: 0xcfa486, pad: 0x13203a, ringBase: 0x1f2d4a,
+    route: 0x4fb3ff, todo: 0x26344f, leaf: 0x2f5a44, trunk: 0x4a3a2c, paper: 0xc9d0da, dark: 0x0b1120, flag: 0xff8c1a, metal: 0x56627a, sign: 0x0d1733, lampOff: 0x3b4452,
+    car0: 0x3d6bc4, car1: 0x23875a, car2: 0xaab3c0, car3: 0x7350c4, bal0: 0x2f7bff, bal1: 0xdfe8f5, bal2: 0x4fb3ff, navy: 0x0d1733, sky: 0x4fb3ff },
 };
 const GLOW = { day: { glass: 0x000000, sign: 0x000000 }, night: { glass: 0x6b4a10, sign: 0x40250a } };
-const ST_COL = { day: { ok: 0xff6b5b, risk: 0xf5a524, blocked: 0xe5484d, done: 0x2fb171, todo: 0xc4cad3 }, night: { ok: 0xff8c1a, risk: 0xffb020, blocked: 0xff4d55, done: 0x34d17f, todo: 0x324056 } };
+const ST_COL = { day: { ok: 0x1f5fd1, risk: 0xf5a524, blocked: 0xe5484d, done: 0x2fb171, todo: 0xc4cad3 }, night: { ok: 0x4fb3ff, risk: 0xffb020, blocked: 0xff4d55, done: 0x34d17f, todo: 0x324056 } };
 const mats = {};
 function mat(role, basic) {
   const k = role + (basic ? '#b' : '');
@@ -96,7 +100,7 @@ function textTex(lines, bg, fg, w = 256, h = 96) {
 const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.45)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
-const glowMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xff6b5b, transparent: true, depthWrite: false, opacity: 0.55 });
+const glowMat = new THREE.SpriteMaterial({ map: glowTex, color: 0x1f5fd1, transparent: true, depthWrite: false, opacity: 0.55 });
 const lampGlowMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xffc861, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.9 });
 
 // ---------------------------------------------------------------- ground, roads, lot
@@ -104,56 +108,63 @@ const ground = add(new THREE.PlaneGeometry(160, 160), 'ground', 0, 0, 0, scene, 
 const grid = new THREE.GridHelper(160, 160, 0xffffff, 0xffffff); grid.material.transparent = true; grid.material.opacity = 0.35; grid.position.y = 0.005; scene.add(grid);
 flat(70, 3.2, 'road', 0, 14.5, 0.01);
 for (let x = -33; x < 34; x += 3) flat(1.4, 0.12, 'paint', x, 14.5, 0.03);
-const LANE = [[5.6, 12.9, 5.6, -4.9], [5.6, -4.9, -5.6, -4.9], [-5.6, -4.9, -5.6, 4.9], [-5.6, 4.9, -1.6, 4.9], [-1.6, 4.9, -1.6, 12.9]];
+const LANE = [[6.6, 12.9, 6.6, -6.2], [6.6, -6.2, -3.6, -6.2], [-3.6, -6.2, -3.6, 12.9], [3.6, -6.2, 3.6, 12.9]];   // entry lane → back → two drive-thru lanes past both windows
 const laneMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
 for (const [x1, z1, x2, z2] of LANE) { const w = Math.abs(x2 - x1) + 1.6, d = Math.abs(z2 - z1) + 1.6; flat(w, d, laneMat, (x1 + x2) / 2, (z1 + z2) / 2, 0.015); }
-flat(8.6, 6.2, laneMat, -7.4, 9.7, 0.015);                                       // parking lot
-const stalls = group(); for (let k = 0; k < 6; k++) flat(0.1, 2.2, 'paint', -11.2 + k * 1.4, 8.1, 0.04, stalls);
-for (let k = 0; k < 6; k++) flat(0.1, 2.2, 'paint', -11.2 + k * 1.4, 11.3, 0.04, stalls);
-const arrows = group(); for (const [x, z] of [[5.6, 8], [5.6, 0], [0, -4.9], [-5.6, 0]]) flat(0.5, 0.5, 'paint', x, z, 0.04, arrows);
+flat(7, 6.2, laneMat, -8.8, 9.7, 0.015);                                          // parking lot
+const stalls = group(); for (let k = 0; k < 5; k++) flat(0.1, 2.2, 'paint', -11.6 + k * 1.4, 8.1, 0.04, stalls);
+for (let k = 0; k < 5; k++) flat(0.1, 2.2, 'paint', -11.6 + k * 1.4, 11.3, 0.04, stalls);
+const arrows = group(); for (const [x, z] of [[6.6, 8], [6.6, 0], [1.5, -6.2], [-3.6, 6], [3.6, 6], [-3.6, -3], [3.6, -3]]) flat(0.5, 0.5, 'paint', x, z, 0.04, arrows);
 // trees + street lamps (lamps glow at night)
 for (const [x, z, s] of [[-20, -14, 1.2], [-18, 6, 1], [-19, -2, 0.9], [18, -14, 1.1], [19, 2, 0.9], [-6, -16, 1], [4, -16, 1.2], [14, -16, 0.8], [19, 9, 1], [-20, 12, 0.9], [-16, -12, 0.8], [16, 11.5, 0.7]]) {
   const g = group(x, z); cyl(0.12 * s, 0.16 * s, 1 * s, 'trunk', 0, 0, 0, g, 6); add(new THREE.ConeGeometry(0.9 * s, 2.2 * s, 7), 'leaf', 0, 2 * s, 0, g);
 }
 const lamps = [];
-for (const [x, z] of [[-12, 12.6], [-4, 12.6], [3.6, 12.6], [11, 12.6], [-12, 6.3], [7.6, 6]]) {
+for (const [x, z] of [[-12, 12.6], [-5.2, 12.6], [2.2, 12.6], [11, 12.6], [-12, 6.3], [8.4, 4]]) {
   const g = group(x, z); cyl(0.06, 0.08, 3, 'metal', 0, 0, 0, g, 6); box(0.5, 0.12, 0.25, 'metal', 0.15, 3, 0, g);
   const b = ball(0.14, 'lampOff', 0.3, 2.95, 0, g, 6); const s = new THREE.Sprite(lampGlowMat); s.scale.setScalar(2.4); s.position.set(0.3, 2.9, 0); g.add(s); lamps.push({ b, s });
 }
 
-// ---------------------------------------------------------------- the coffee shop (builds up with Pre-con + Construction + later stages)
+// ---------------------------------------------------------------- the stand: a small blue-and-white double drive-thru with a walk-up window + canopy
 const shop = group(0, 0);
-const slab = box(7.6, 0.35, 5.6, 'concrete', 0, 0, 0, shop);
+const slab = box(5.4, 0.35, 4.4, 'concrete', 0, 0, 0, shop);
 const walls = group(0, 0, shop);
 const WH = 2.8;
-box(7, WH, 0.25, 'wall', 0, 0.35, -2.4, walls); box(0.25, WH, 4.8, 'wall', -3.4, 0.35, 0, walls); box(0.25, WH, 4.8, 'wall', 3.4, 0.35, 0, walls);
-box(2.2, WH, 0.25, 'wall', -2.4, 0.35, 2.4, walls); box(1.2, WH, 0.25, 'wall', 2.9, 0.35, 2.4, walls); box(3.6, 0.7, 0.25, 'wall', 0.5, 0.35 + WH - 0.7, 2.4, walls);
-const finish = group(0, 0, shop);   // glass front, door, drive-thru window, trim band
-const glass = box(3.4, WH - 0.7, 0.08, 'glass', 0.3, 0.35, 2.42, finish); glass.material.transparent = true; glass.material.opacity = 0.55;
-box(0.9, 2.1, 0.1, 'dark', 1.9, 0.35, 2.45, finish);                                // door
-box(0.1, 1.1, 1.3, 'glass', -3.55, 1.3, 0.2, finish); box(0.6, 0.12, 1.8, 'trim', -3.75, 2.5, 0.2, finish);   // drive-thru window + awning
-box(7.3, 0.35, 0.3, 'trim', 0, 0.35 + WH - 0.35, 2.55, finish);
-const interior = group(0, 0, shop);   // counter + espresso machines (seen through the glass)
-box(4.2, 1, 0.8, 'wood', 0, 0.35, 0.6, interior);
+box(5, WH, 0.22, 'wall', 0, 0.35, -2, walls); box(0.22, WH, 4, 'wall', -2.5, 0.35, 0, walls); box(0.22, WH, 4, 'wall', 2.5, 0.35, 0, walls);
+box(1.6, WH, 0.22, 'wall', -1.7, 0.35, 2, walls); box(1.6, WH, 0.22, 'wall', 1.7, 0.35, 2, walls); box(1.8, 0.75, 0.22, 'wall', 0, 0.35 + WH - 0.75, 2, walls); box(1.8, 0.85, 0.22, 'wall', 0, 0.35, 2, walls);
+for (const [w, d, x, z] of [[5.08, 0.28, 0, -2], [0.28, 4.08, -2.5, 0], [0.28, 4.08, 2.5, 0], [1.68, 0.28, -1.7, 2], [1.68, 0.28, 1.7, 2]]) { box(w, 0.7, d, 'trim', x, 0.35, z, walls); box(w, 0.16, d, 'sky', x, 1.05, z, walls); }   // royal-blue base band + light-blue pinstripe
+const finish = group(0, 0, shop);   // walk-up window, two drive-thru windows with awnings, canopy over the walk-up
+const glass = box(1.8, 1.05, 0.06, 'glass', 0, 1.2, 2.04, finish); glass.material.transparent = true; glass.material.opacity = 0.6;
+for (const sx of [-1, 1]) { box(0.06, 1.0, 1.5, 'glass', sx * 2.55, 1.3, 0, finish); box(0.6, 0.12, 1.9, 'trim', sx * 2.78, 2.45, 0, finish); box(0.4, 0.06, 0.9, 'metal', sx * 2.7, 1.25, 0, finish); }
+const canopy = group(0, 0, finish); box(5.6, 0.2, 1.7, 'trim', 0, 2.65, 2.85, canopy); box(5.64, 0.08, 1.74, 'paper', 0, 2.62, 2.85, canopy);
+for (const sx of [-2.5, 2.5]) cyl(0.07, 0.07, 2.65, 'metal', sx, 0, 3.55, canopy, 6);
+box(0.9, 1.1, 0.08, 'navy', -2.0, 0.35, 3.45, canopy);                             // walk-up menu board
+const interior = group(0, 0, shop);   // bar + espresso machines (seen through the glass)
+box(3.6, 1, 0.7, 'wood', 0, 0.35, 0.8, interior);
 const machines = [];
-for (let k = 0; k < 4; k++) { const g = group(-1.5 + k * 1, 0.6, interior); g.position.y = 1.35; box(0.6, 0.45, 0.45, 'metal', 0, 0, 0, g); box(0.62, 0.08, 0.47, 'trim', 0, 0.45, 0, g); cyl(0.05, 0.05, 0.2, 'dark', 0, 0.05, 0.2, g, 6); machines.push(g); }
+for (let k = 0; k < 4; k++) { const g = group(-1.5 + k * 1, 0.8, interior); g.position.y = 1.35; box(0.6, 0.45, 0.45, 'metal', 0, 0, 0, g); box(0.62, 0.08, 0.47, 'trim', 0, 0.45, 0, g); cyl(0.05, 0.05, 0.2, 'dark', 0, 0.05, 0.2, g, 6); machines.push(g); }
 const roof = group(0, 0, shop); roof.position.y = 0.35 + WH;
-box(7.9, 0.22, 5.9, 'trim', 0, 0, 0, roof); box(7.6, 0.32, 5.6, 'roof', 0, 0.12, 0, roof);
-const hvac = []; for (let k = 0; k < 2; k++) hvac.push(box(0.9, 0.6, 0.9, 'metal', -2 + k * 1.6, 0.47, -1, roof));
-const signTex = { day: textTex(['☕ COFFEE', 'OPENING SOON'], '#ffffff', '#ff6b5b'), night: textTex(['☕ COFFEE', 'OPENING SOON'], '#1b1f29', '#ff8c1a'),
-  dayOpen: textTex(['☕ COFFEE', 'NOW OPEN'], '#ffffff', '#ff6b5b'), nightOpen: textTex(['☕ COFFEE', 'NOW OPEN'], '#1b1f29', '#ff8c1a') };
+box(5.7, 0.22, 4.7, 'trim', 0, 0, 0, roof); box(5.4, 0.32, 4.4, 'roof', 0, 0.12, 0, roof);
+const hvac = []; for (let k = 0; k < 2; k++) hvac.push(box(0.8, 0.55, 0.8, 'metal', -1.8 + k * 1.1, 0.44, -1.2, roof));
+// an original little windmill on the roof (spins once the stand is open)
+const mill = group(1.4, -0.9, roof); mill.position.y = 0.44; cyl(0.32, 0.5, 1.7, 'wall', 0, 0, 0, mill, 8); add(new THREE.ConeGeometry(0.45, 0.6, 8), 'navy', 0, 1.95, 0, mill);
+const blades = group(0, 0.9, mill); blades.position.set(0, 1.45, 0.52);
+for (let k = 0; k < 4; k++) { const b = group(0, 0, blades); b.rotation.z = k * Math.PI / 2; box(0.26, 1.25, 0.05, 'sky', 0, 0.12, 0, b); box(0.08, 1.25, 0.06, 'trim', -0.1, 0.12, 0, b); }
+ball(0.12, 'navy', 0, 0, 0.04, blades, 8);
+const signTex = { day: textTex(['DUTCH BROS', 'OPENING SOON'], '#16295a', '#ffffff'), night: textTex(['DUTCH BROS', 'OPENING SOON'], '#0d1733', '#7cc4f0'),
+  dayOpen: textTex(['DUTCH BROS', 'NOW OPEN'], '#16295a', '#ffffff'), nightOpen: textTex(['DUTCH BROS', 'NOW OPEN'], '#0d1733', '#7cc4f0') };
 const signMat = new THREE.MeshBasicMaterial({ map: signTex.day });
-const sign = group(0, 0, roof); sign.position.set(0.5, 0.45, 2.3);
-box(3.6, 1.3, 0.2, 'trim', 0, 0, 0, sign); add(new THREE.PlaneGeometry(3.4, 1.15), signMat, 0, 0.65, 0.11, sign, false);
-const pylon = group(9.5 - 2.4, 11.6);   // road sign by the entrance
+const sign = group(0, 0, roof); sign.position.set(-0.4, 0.45, 2.15);
+box(3.0, 1.1, 0.2, 'trim', 0, 0, 0, sign); add(new THREE.PlaneGeometry(2.8, 0.95), signMat, 0, 0.55, 0.11, sign, false);
+const pylon = group(0, 11.4);   // road sign between the two exit lanes
 box(0.25, 3.2, 0.25, 'metal', 0, 0, 0, pylon); box(2, 1.1, 0.3, 'trim', 0, 3, 0, pylon); add(new THREE.PlaneGeometry(1.85, 0.95), signMat, 0, 3.55, 0.16, pylon, false);
 const stakes = group(0, 0);   // survey stakes for the footprint (pre-construction)
-for (const [x, z] of [[-3.8, -2.8], [3.8, -2.8], [-3.8, 2.8], [3.8, 2.8]]) { cyl(0.05, 0.05, 0.8, 'wood', x, 0, z, stakes, 5); box(0.25, 0.15, 0.02, 'flag', x + 0.12, 0.65, z, stakes); }
+for (const [x, z] of [[-2.9, -2.4], [2.9, -2.4], [-2.9, 2.4], [2.9, 2.4]]) { cyl(0.05, 0.05, 0.8, 'wood', x, 0, z, stakes, 5); box(0.25, 0.15, 0.02, 'flag', x + 0.12, 0.65, z, stakes); }
 const fence = group(0, 0);    // construction fence while building
-for (let k = 0; k < 4; k++) { const L = k % 2 ? 8 : 10.4, x = [0, 5.1, 0, -5.1][k], z = [-4, 0, 4, 0][k]; const f = box(k % 2 ? 0.06 : L, 1, k % 2 ? L : 0.06, 'flag', x, 0, z, fence); f.material = mat('fence'); }
+for (let k = 0; k < 4; k++) { const L = k % 2 ? 7.4 : 7.8, x = [0, 3.9, 0, -3.9][k], z = [-3.7, 0, 3.7, 0][k]; const f = box(k % 2 ? 0.06 : L, 1, k % 2 ? L : 0.06, 'flag', x, 0, z, fence); f.material = mat('fence'); }
 mat('fence').transparent = true; mat('fence').opacity = 0.55;
 const patioLights = group(0, 0);
-for (let k = 0; k < 9; k++) { const b = ball(0.08, 'glassLamp', -3.4 + k * 0.85, 3.05 + Math.sin(k / 8 * Math.PI) * -0.25, 2.75, patioLights, 5); b.castShadow = false; }
+for (let k = 0; k < 9; k++) { const b = ball(0.08, 'glassLamp', -2.6 + k * 0.65, 2.55 + Math.sin(k / 8 * Math.PI) * -0.2, 3.72, patioLights, 5); b.castShadow = false; }
 
 // ---------------------------------------------------------------- stations: pad + progress ring + props per stage
 const POS = [[-14.5, 9], [-14.5, 3], [-14.5, -3], [-10, -9.5], [-4.5, -11.2], [1.5, -9], [7.5, -11.2], [12.5, -8], [14, -1.5], [12.5, 6], [9.5, 11]];
@@ -162,7 +173,7 @@ const stations = POS.map(([x, z], i) => {
   const g = group(x, z);
   const pad = add(cgeo(1.85, 1.85, 0.06, 36), 'pad', 0, 0, 0, g, false); pad.castShadow = false;
   const base = new THREE.Mesh(new THREE.RingGeometry(RIN, ROUT, 48), new THREE.MeshBasicMaterial({ color: 0xd7dbe1 })); base.rotation.x = -Math.PI / 2; base.position.y = 0.075; g.add(base);
-  const fillMat = new THREE.MeshBasicMaterial({ color: 0xff6b5b });
+  const fillMat = new THREE.MeshBasicMaterial({ color: 0x1f5fd1 });
   const fill = new THREE.Mesh(new THREE.BufferGeometry(), fillMat); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.085; g.add(fill);
   const dot = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), fillMat); dot.rotation.x = -Math.PI / 2; dot.position.set(0, 0.09, -(RIN + ROUT) / 2); g.add(dot);
   const hit = new THREE.Mesh(cgeo(1.9, 1.9, 1.4, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })); hit.userData.stage = i; g.add(hit);
@@ -218,7 +229,7 @@ function person(parent, role = 'staff') { const g = group(0, 0, parent); cyl(0.1
 { const g = st(10); P.arch = group(0, 0, g); for (let k = 0; k <= 12; k++) { const a = Math.PI * k / 12; ball(0.2, ['bal0', 'bal1', 'bal2'][k % 3], Math.cos(a) * 1.3, Math.sin(a) * 1.9 + 0.2, 0, P.arch, 7); }
   P.ribbon = box(2.6, 0.12, 0.04, 'trim', 0, 0.8, 0, g); }
 const CONF = 90, conf = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.02, 0.08), new THREE.MeshBasicMaterial({ color: 0xffffff }), CONF);
-const confD = []; { const cols = [0xff6b5b, 0xffc23d, 0x5b8def, 0x2fb171, 0xff8c1a, 0xffffff]; for (let k = 0; k < CONF; k++) { conf.setColorAt(k, new THREE.Color(cols[k % cols.length])); confD.push({ x: 0, y: -1, z: 0, vy: 0, r: Math.random() * 6, life: 0 }); } }
+const confD = []; { const cols = [0x1f5fd1, 0x7cc4f0, 0xffffff, 0x16295a, 0xffc23d, 0x5db8f0]; for (let k = 0; k < CONF; k++) { conf.setColorAt(k, new THREE.Color(cols[k % cols.length])); confD.push({ x: 0, y: -1, z: 0, vy: 0, r: Math.random() * 6, life: 0 }); } }
 conf.visible = false; conf.frustumCulled = false; lot.add(conf);
 
 // ---------------------------------------------------------------- routes: dotted paths + glowing pulses + movers
@@ -248,8 +259,9 @@ function route(id, pts, o = {}) {
 route('scout', [[-30, 13.8], [-12, 13.8], [-12, -6]]);
 route('truck', [[30, 15.2], [6.6, 15.2], [6.6, -6.7], [3, -6.7]]);
 route('van', [[30, 15.2], [6.9, 15.2], [6.9, -8.6], [9.4, -8.6]], { r: 0.8 });
-route('staff', [[-7, 10], [-7, 6.3], [0.6, 6.3], [0.6, 3]], { pulses: 2, speed: 1.6 });
-route('drive', [[30, 13.8], [5.6, 13.8], [5.6, -4.9], [-5.6, -4.9], [-5.6, 4.9], [-1.6, 4.9], [-1.6, 13.8], [-30, 13.8]], { pulses: 5 });
+route('staff', [[-7, 10], [-7, 5.6], [0.2, 5.6], [0.2, 3.3]], { pulses: 2, speed: 1.6 });
+route('drive', [[30, 13.8], [6.6, 13.8], [6.6, -6.2], [-3.6, -6.2], [-3.6, 13.8], [-30, 13.8]], { pulses: 3 });   // left lane
+route('drive2', [[30, 13.8], [6.6, 13.8], [6.6, -6.2], [3.6, -6.2], [3.6, 13.8], [-30, 13.8]], { pulses: 3 });   // right lane
 const roadA = polyPath([[-34, 15.2], [34, 15.2]]), roadB = polyPath([[34, 13.8], [-34, 13.8]]);
 // the journey: a dotted path linking the 11 stations in order (done part lit, pulses run up to the current stage)
 const journey = (() => {
@@ -277,13 +289,34 @@ const movers = [
   mover(truck(), routes.truck.curve, { mode: 'ping', speed: 3.4, r: 'truck', u: 0.5 }),
   mover(van(), routes.van.curve, { mode: 'ping', speed: 3.6, r: 'van' }),
   ...[0, 1, 2].map((k) => mover(person(lot), routes.staff.curve, { mode: 'ping', speed: 1.2, r: 'staff', u: k / 3, dir: k % 2 ? -1 : 1 })),
-  ...[0, 1, 2, 3, 4].map((k) => mover(car(k), routes.drive.curve, { speed: 3, r: 'drive', u: k / 5, need: k })),
   ...[0, 1, 2].map((k) => mover(car(k + 1), k % 2 ? roadB : roadA, { speed: 5 + k, r: 'road', u: k / 3, need: k })),
   ...[0, 1, 2, 3].map((k) => mover(person(lot, 'car' + k), routes.staff.curve, { mode: 'ping', speed: 1.1, r: 'cust', u: 0.15 + k * 0.22, dir: k % 2 ? 1 : -1 })),   // 🏪 customers walking in
 ];
 for (const m of movers) m.obj.position.y = 0;
+// 🚗 double drive-thru: a stop-and-go queue in each lane (front car pulls away, the rest inch up, a new car joins at the back)
+const QN = 4, QSP = 2.4;
+const queues = ['drive', 'drive2'].map((id, li) => {
+  const r = routes[id], tgt = new THREE.Vector3(li ? 3.6 : -3.6, 0.1, 0.2); let best = 0, bd = 1e9;
+  for (let k = 0; k <= 600; k++) { const d = r.curve.getPointAt(k / 600).distanceTo(tgt); if (d < bd) { bd = d; best = k / 600; } }
+  return { id, r, dWin: best * r.len, cars: Array.from({ length: QN + 1 }, (_, k) => car(k + li * 2)), n: 0, t: li * 1.3 };
+});
+// 📱 line-buster Broistas: walk the lanes taking orders on tablets
+const busters = [-1, 1].map((sx, k) => { const p = person(lot); const tab = box(0.3, 0.22, 0.03, 'lampOn', 0, 0.5, 0.25, p, false); tab.rotation.x = -0.6; p.position.set(sx * (sx < 0 ? 4.95 : 5.1), 0, -3); p.rotation.y = sx < 0 ? Math.PI / 2 : -Math.PI / 2; p.userData.z0 = -3 + k * 0.6; return p; });
 const tan = new THREE.Vector3();
+function moveQueues(dt) {
+  for (const q of queues) {
+    q.cars.forEach((c) => { c.visible = false; }); const n = q.n; if (!n) continue;
+    q.t += dt; const T = 3.4, ph = (q.t / T) % 1, step = Math.floor(q.t / T), e = ph < 0.4 ? (1 - Math.cos(ph / 0.4 * Math.PI)) / 2 : 1;
+    for (let s = 1; s <= n + 1; s++) {
+      const c = q.cars[(step + s) % (n + 1)]; let d, sc = 1;
+      if (s === 1) { if (ph > 0.85) continue; d = q.dWin + ph * 16; } else { d = q.dWin - (s - 1 - e) * QSP; if (s === n + 1) sc = Math.max(0.01, e); }
+      const u = clamp(d / q.r.len, 0.0001, 0.9999), pt = q.r.curve.getPointAt(u); q.r.curve.getTangentAt(u, tan);
+      c.visible = true; c.position.set(pt.x, 0, pt.z); c.rotation.y = Math.atan2(tan.x, tan.z); c.scale.setScalar(sc);
+    }
+  }
+}
 function moveAll(dt) {
+  moveQueues(dt);
   for (const m of movers) {
     m.obj.visible = m.on; if (!m.on) continue;
     if (m.wait > 0) { m.wait -= dt; } else {
@@ -343,10 +376,13 @@ function apply(dt, now) {
   lamps.forEach((L) => { L.s.visible = night; L.b.material = night ? mat('lampOn') : mat('lampOff'); });
   // routes on/off by stage
   const R = { scout: M.cur <= 2 && !M.demo || (M.demo && M.cur <= 2), truck: !M.stopped[5] && (p6 > 0 && p6 < 1 || M.cur === 5 || (M.cur === 4 && p5 > 0.5)),
-    van: !M.stopped[6] && (M.cur >= 6 && M.cur <= 8 && p9 < 1), staff: p8 >= 0.5, drive: p10 > 0.2 || p11 > 0 };
+    van: !M.stopped[6] && (M.cur >= 6 && M.cur <= 8 && p9 < 1), staff: p8 >= 0.5, drive: p10 > 0.2 || p11 > 0 || !!M.open }; R.drive2 = R.drive;
   for (const id in routes) { const r = routes[id]; r.on = !!R[id]; r.fade = lerp(r.fade, r.on ? 1 : 0, k); r.mesh.visible = r.fade > 0.05; r.pulses.forEach((p) => { p.b.visible = r.on; }); }
-  const busy = M.open ? 5 : (p10 > 0.2 ? 2 : 0) + (p11 > 0 ? 1 : 0) + (p11 >= 1 ? 2 : 0), roadCars = M.open ? 3 : 1 + (p10 > 0 ? 1 : 0) + (p11 >= 1 ? 1 : 0);
-  for (const m of movers) m.on = m.r === 'road' ? m.need < roadCars : m.r === 'drive' ? routes.drive.on && m.need < busy : m.r === 'cust' ? (M.open || p11 >= 0.999) && !M.demo : routes[m.r].on;
+  const roadCars = M.open ? 3 : 1 + (p10 > 0 ? 1 : 0) + (p11 >= 1 ? 1 : 0);
+  const qn = !routes.drive.on ? 0 : M.open ? QN : p11 >= 1 ? QN : p11 > 0 ? 3 : 2; queues.forEach((q) => { q.n = qn; });
+  const bOn = (M.open || p10 > 0.5) && qn > 0; busters.forEach((b, j) => { b.visible = bOn; b.position.z = b.userData.z0 + Math.sin(now / 1400 + j * 2) * 1.6; b.position.y = Math.abs(Math.sin(now / 260 + j)) * 0.05; });
+  blades.rotation.z += (M.open || p11 >= 1 ? 1.4 : p6 >= 0.999 ? 0.35 : 0) * dt;
+  for (const m of movers) m.on = m.r === 'road' ? m.need < roadCars : m.r === 'cust' ? (M.open || p11 >= 0.999) && !M.demo : routes[m.r].on;
   applyOpen(now, night);
   // confetti at the grand opening
   conf.visible = p11 >= 0.999 && !M.open;
@@ -384,7 +420,7 @@ function applyOpen(now, night) {
     const col = it.prio === 'ok' ? '#2fb171' : PRI[it.prio][2], key = it.icon + col + night;
     if (b.key !== key) { b.key = key; b.sp.material.map = bubTex(it.icon, col, night); b.sp.material.needsUpdate = true; }
     b.id = it.id; b.prio = it.prio; b.sp.userData.issue = it.id;
-    const off = (k - (n - 1) / 2) * gap, y = 5.6 + Math.sin(now / 520 + k * 1.3) * 0.18 + (it.id === ui.hiIssue ? 0.5 : 0);
+    const off = (k - (n - 1) / 2) * gap, y = 6.7 + Math.sin(now / 520 + k * 1.3) * 0.18 + (it.id === ui.hiIssue ? 0.5 : 0);
     b.sp.position.set(rx * off, y, rz * off); const sc = it.id === ui.hiIssue ? 2.5 : 2; b.sp.scale.set(sc, sc, 1);
     if (it.prio === 'urgent') { const ph = (now / 1100 + k * 0.3) % 1; b.pu.visible = true; b.pu.position.set(rx * off, y + 0.9 * sc / 1.5, rz * off); b.pu.scale.setScalar(1.8 + ph * 2.2); b.pu.material.opacity = 0.95 * (1 - ph); }
   });
@@ -392,7 +428,7 @@ function applyOpen(now, night) {
 
 // ---------------------------------------------------------------- 🗺 district map: every store as a mini 3D building with a status ring
 const DCELL = 11, dHits = [], dPulse = []; let distSig = '', distPos = [], distPts = [];
-const HCOL = { ok: 0xff6b5b, risk: 0xf5a524, blocked: 0xe5484d, attn: 0xf5a524, urgent: 0xe5484d, open: 0x2fb171 };
+const HCOL = { ok: 0x1f5fd1, risk: 0xf5a524, blocked: 0xe5484d, attn: 0xf5a524, urgent: 0xe5484d, open: 0x2fb171 };
 const dHitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 function dLayout(n) {
   const cols = Math.max(1, Math.min(n, isPortrait() ? 3 : Math.min(6, Math.max(4, Math.ceil(n / 2))))), rows = Math.ceil(n / cols), az = Math.PI / 4;
@@ -412,23 +448,24 @@ function buildDistrict(force) {
     const g = group(x, z, dist); g.userData.store = s.id;
     const open = CO.isOpen(s), h = CO.health(s, ui.today), b = open ? 1 : CO.stopped(s, 5) ? 0 : CO.eff(s, 5), p = open ? 1 : CO.overall(s), rej = CO.rejected(s);
     const pad = add(cgeo(4.3, 4.3, 0.06, 32), 'pad', 0, 0, 0, g, false); pad.castShadow = false;
-    flat(5.6, 1.1, open || b >= 0.86 ? 'asphalt' : 'dirt2', 0, 2.9, 0.07, g);
     const base = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, 48), mat('ringBase', true)); base.userData.own = true; base.rotation.x = -Math.PI / 2; base.position.y = 0.08; g.add(base);
     const col = open ? (h === 'ok' ? HCOL.open : HCOL[h]) : HCOL[h] || HCOL.ok, fm = new THREE.MeshBasicMaterial({ color: col });
     if (p > 0.002) { const f = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, Math.max(3, Math.ceil(48 * p)), 1, Math.PI / 2 - p * Math.PI * 2, p * Math.PI * 2), fm); f.userData.own = true; f.rotation.x = -Math.PI / 2; f.position.y = 0.09; g.add(f); }
     if (rej) { const f = new THREE.Mesh(new THREE.RingGeometry(3.55, 4.1, 48), fm); f.userData.own = true; f.rotation.x = -Math.PI / 2; f.position.y = 0.09; g.add(f); }
-    // the mini shop grows like the big one: slab → walls → roof → glass → sign
-    const wl = clamp((b - 0.2) / 0.3);
-    if (b > 0.001) box(4.4, 0.2, 3.2, 'concrete', 0, 0, 0, g);
-    if (wl > 0.01) { const w = box(4, 1.7, 2.8, 'wall', 0, 0.2, 0, g); w.scale.y = Math.max(0.05, wl); }
-    if (b >= 0.62) { box(4.6, 0.14, 3.4, 'trim', 0, 1.9, 0, g); box(4.4, 0.22, 3.2, 'roof', 0, 1.98, 0, g); }
-    if (b >= 0.74) box(2.4, 1.0, 0.06, open ? 'lampOn' : 'glass', 0.2, 0.5, 1.42, g, false);
-    if (b >= 0.93) { box(2.2, 0.7, 0.16, 'trim', 0.2, 2.2, 1.3, g); box(1.9, 0.42, 0.04, open ? 'lampOn' : 'sign', 0.2, 2.34, 1.39, g, false); }
-    if (b > 0.001 && b < 0.999) { box(0.22, 5, 0.22, 'crane', 1.7, 0, -1.1, g); box(3.6, 0.22, 0.22, 'crane', 0.6, 4.9, -1.1, g); }
-    if (b <= 0.001) { for (const [sx, sz] of [[-1.8, -1.2], [1.8, -1.2], [-1.8, 1.2], [1.8, 1.2]]) cyl(0.06, 0.06, 0.8, rej ? 'dark' : 'wood', sx, 0, sz, g, 5);
-      const sg = group(-2.4, 1.8, g); cyl(0.06, 0.06, 1.3, 'metal', 0, 0, 0, sg, 5); box(1.1, 0.6, 0.08, rej ? 'dark' : 'paper', 0, 1.0, 0, sg); }
-    if (open) { for (let c = 0; c < 2; c++) { const cg = group(-1.2 + c * 1.9, 2.9, g); cg.rotation.y = Math.PI / 2; box(0.6, 0.3, 1.1, 'car' + ((k + c) % 4), 0, 0.08, 0, cg); }
-      for (let c = 0; c < 2; c++) { cyl(0.13, 0.15, 0.42, 'car' + ((k + c + 1) % 4), 1.6 + c * 0.5, 0, 1.9, g, 6); ball(0.11, 'skin', 1.6 + c * 0.5, 0.53, 1.9, g, 6); } }
+    // the mini stand grows like the big one: slab → walls → roof → canopy + windows → sign + windmill; two drive-thru lanes hug it
+    const wl = clamp((b - 0.2) / 0.3), paved = open || b >= 0.86;
+    for (const sx of [-1, 1]) flat(0.95, 5.2, paved ? 'asphalt' : 'dirt2', sx * 2.15, 0.1, 0.07, g);
+    if (b > 0.001) box(3.2, 0.2, 2.6, 'concrete', 0, 0, 0, g);
+    if (wl > 0.01) { const w = box(2.9, 1.6, 2.3, 'wall', 0, 0.2, 0, g); w.scale.y = Math.max(0.05, wl); const bd = box(2.96, 0.45, 2.36, 'trim', 0, 0.2, 0, g); bd.scale.y = Math.max(0.05, Math.min(1, wl * 3)); }
+    if (b >= 0.62) { box(3.3, 0.14, 2.7, 'trim', 0, 1.8, 0, g); box(3.1, 0.2, 2.5, 'roof', 0, 1.88, 0, g); }
+    if (b >= 0.74) { box(3.3, 0.1, 1.0, 'trim', 0, 1.5, 1.6, g); for (const sx of [-1, 1]) box(0.05, 0.6, 0.9, open ? 'lampOn' : 'glass', sx * 1.47, 0.8, 0, g, false); box(1.1, 0.6, 0.05, open ? 'lampOn' : 'glass', 0, 0.75, 1.17, g, false); }
+    if (b >= 0.93) { box(1.7, 0.5, 0.12, 'navy', -0.3, 2.0, 1.15, g); box(1.5, 0.3, 0.04, open ? 'lampOn' : 'sign', -0.3, 2.1, 1.22, g, false);
+      cyl(0.18, 0.28, 0.9, 'wall', 0.9, 2.08, -0.5, g, 6); const bl = group(0.9, -0.2, g); bl.position.y = 2.85; for (let q = 0; q < 2; q++) { const x = box(0.12, 1.1, 0.04, 'sky', 0, -0.55, 0, bl); x.rotation.z = q * Math.PI / 2 + Math.PI / 4; x.position.set(0, 0, 0); } }
+    if (b > 0.001 && b < 0.999) { box(0.22, 5, 0.22, 'crane', 1.7, 0, -1.6, g); box(3.6, 0.22, 0.22, 'crane', 0.6, 4.9, -1.6, g); }
+    if (b <= 0.001) { for (const [sx, sz] of [[-1.5, -1.1], [1.5, -1.1], [-1.5, 1.1], [1.5, 1.1]]) cyl(0.06, 0.06, 0.8, rej ? 'dark' : 'wood', sx, 0, sz, g, 5);
+      const sg = group(-0.2, 2.2, g); cyl(0.06, 0.06, 1.3, 'metal', 0, 0, 0, sg, 5); box(1.1, 0.6, 0.08, rej ? 'dark' : 'paper', 0, 1.0, 0, sg); }
+    if (open) { for (const sx of [-1, 1]) for (let c = 0; c < 2; c++) { box(0.55, 0.32, 0.95, 'car' + ((k + c + (sx > 0 ? 2 : 0)) % 4), sx * 2.15, 0.08, -0.2 + c * 1.25 * (c ? 1 : 0) - (c ? 0 : 1.1), g); }
+      cyl(0.11, 0.13, 0.36, 'staff', -2.95, 0, -0.6, g, 6); ball(0.1, 'skin', -2.95, 0.45, -0.6, g, 6); cyl(0.11, 0.13, 0.36, 'staff', 2.95, 0, -0.6, g, 6); ball(0.1, 'skin', 2.95, 0.45, -0.6, g, 6); }
     for (const [tx, tz] of [[-3.4, -3.0], [3.5, -2.6]]) { const t = group(tx, tz, g); cyl(0.08, 0.1, 0.6, 'trunk', 0, 0, 0, t, 5); add(new THREE.ConeGeometry(0.55, 1.4, 6), 'leaf', 0, 1.2, 0, t); }
     if (h === 'urgent' || h === 'blocked') { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: pulseTex, transparent: true, depthWrite: false })); sp.position.set(0, 3.2, 0); g.add(sp); dPulse.push(sp); }
     const hit = new THREE.Mesh(cgeo(4.3, 4.3, 3.2, 12), dHitMat); hit.userData.store = s.id; g.add(hit); dHits.push(hit);
@@ -480,13 +517,13 @@ function animate(dt, now) {
 function applyTheme() {
   const night = state.theme === 'night', Pp = pal();
   document.body.classList.toggle('night', night); $('themeBtn').textContent = night ? '☀️' : '🌙';
-  document.querySelector('meta[name=theme-color]').content = night ? '#0b0f17' : '#eef0f3';
+  document.querySelector('meta[name=theme-color]').content = night ? '#060d1c' : '#16295a';
   scene.background = new THREE.Color(Pp.bg);
   for (const k in mats) { const m = mats[k], r = m.userData.role; if (Pp[r] != null) m.color.setHex(Pp[r]); }
-  mat('pulse', true).color.setHex(night ? 0xffb04a : 0xff6b5b); mat('route', true).color.setHex(Pp.route); mat('todo', true).color.setHex(Pp.todo);
+  mat('pulse', true).color.setHex(night ? 0x7cc4f0 : 0x1f5fd1); mat('route', true).color.setHex(Pp.route); mat('todo', true).color.setHex(Pp.todo);
   mat('lampOn').color.setHex(0xffd27a); mat('lampOn').emissive.setHex(0xffb030); mat('glassLamp').color.setHex(0xffd27a);
   mat('dirt2').color.setHex(Pp.dirt); mat('fence').color.setHex(night ? 0xff8c1a : 0xff7a3d);
-  glowMat.color.setHex(night ? 0xff8c1a : 0xff6b5b); glowMat.blending = night ? THREE.AdditiveBlending : THREE.NormalBlending; glowMat.opacity = night ? 0.9 : 0.45; glowMat.needsUpdate = true;
+  glowMat.color.setHex(night ? 0x4fb3ff : 0x5db8f0); glowMat.blending = night ? THREE.AdditiveBlending : THREE.NormalBlending; glowMat.opacity = night ? 0.9 : 0.45; glowMat.needsUpdate = true;
   grid.material.color.setHex(Pp.grid); grid.material.opacity = night ? 0.5 : 0.35;
   hemi.intensity = night ? 1.0 : 1.7; hemi.color.setHex(night ? 0x8090c0 : 0xffffff); hemi.groundColor.setHex(night ? 0x101420 : 0xb0b8c4);
   sun.intensity = night ? 1.1 : 2.1; sun.color.setHex(night ? 0x9fb4ff : 0xffffff);
@@ -513,7 +550,7 @@ function fitView(pts = FITPTS) {
   const cu = (x0 + x1) / 2 + padR / 2 / ppu, cv2 = (y0 + y1) / 2;   // centre in (right, up) units; ground point shift along F moves up by sin(EL)
   return { tx: R[0] * cu + F[0] * cv2 / Math.sin(EL), tz: R[2] * cu + F[2] * cv2 / Math.sin(EL), h: stageEl.clientHeight / ppu };
 }
-const FITOPEN = [[-12.5, 0, 6.5], [-12.5, 0, 13], [-2, 0, 16], [10, 0, 15.5], [14.5, 0, 6], [7, 0, -6.5], [-7, 0, -6.5], [0, 7.5, 0], [7, 4.5, 11.6]];
+const FITOPEN = [[-12.5, 0, 6.5], [-12.5, 0, 13], [-2, 0, 15.5], [9, 0, 15.5], [14.5, 0, 6], [7.5, 0, -7.2], [-4.5, 0, -7.2], [0, 7.5, 0], [0, 4.5, 11.4]];
 function home() { const f = fitView(ui.mode === 'district' && distPts.length ? distPts : M && M.open && !ui.demo ? FITOPEN : FITPTS); dst.tx = f.tx; dst.tz = f.tz; dst.h = f.h; }
 function focusShop() { dst.tx = 0; dst.tz = 0.5; dst.h = focusH(13, 12); }
 function focus(i) { if (i < 0) return home(); const s = stations[i]; dst.tx = i === 5 ? 0.6 : s.x; dst.tz = i === 5 ? -3.2 : s.z; dst.h = i === 5 ? focusH(15, 13) : focusH(); }
@@ -746,7 +783,7 @@ function renderSheet() {
     const ed = bd.querySelector('[data-f="ititle"]'); if (ed && ui.focusEdit) { ui.focusEdit = false; ed.focus(); ed.select(); }
     if (ui.scrollTo) { const t = bd.querySelector(ui.scrollTo); ui.scrollTo = null; if (t) { bd.scrollTop = t.offsetTop - 8; return; } }
   } else if (ui.sheet === 'menu') {
-    hd.innerHTML = `<span class="big">⚙</span><h2>Coffee Opening</h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
+    hd.innerHTML = `<span class="big brandmark" aria-hidden="true">${MARK}</span><h2>Dutch Bros<small class="hsub">New Shop Opening Tracker</small></h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
     const nEx = state.stores.filter((x) => x.example).length;
     bd.innerHTML = `${nEx ? `<div class="banner gray">🧪 Example data: ${nEx} generic stores, not a real company. Edit, 🧹 clear or ↺ reset.</div>` : ''}<div class="menu">
       <button class="li" data-act="map"><span class="ic">🗺</span><span class="grow nm">District map</span></button>
@@ -758,7 +795,7 @@ function renderSheet() {
       <button class="li" data-act="demo"><span class="ic">🏗</span><span class="grow nm">Build tour (60 s)</span></button>
       <button class="li ${ui.confirm === 'reset' ? 'on' : ''}" data-act="reset"><span class="ic">↺</span><span class="grow nm">${ui.confirm === 'reset' ? 'Tap again: reset ALL to example data' : 'Reset to example data'}</span></button>
       <button class="li ${ui.confirm === 'clearEx' ? 'on' : ''}" data-act="clearEx" ${nEx ? '' : 'disabled'}><span class="ic">🧹</span><span class="grow nm">${ui.confirm === 'clearEx' ? `Tap again: remove ${nEx} 🧪 stores` : `Clear examples (${nEx})`}</span></button></div>
-      <div class="sub" style="color:var(--sub);font-size:11px;margin-top:8px">Saved on this device. 3D: three.js (MIT).</div>`;
+      <div class="sub" style="color:var(--sub);font-size:11px;margin-top:8px">Saved on this device. 3D: three.js (MIT).<br>Pitch concept: unofficial, not affiliated with or endorsed by Dutch Bros. The name is used to identify the brand only; the windmill-cup mark and all art are original.</div>`;
   }
   bd.scrollTop = keep;
 }
@@ -832,7 +869,7 @@ $('dbar').addEventListener('click', (e) => { const b = e.target.closest('button'
 $('menuBtn').onclick = () => { if (ui.demo) stopDemo(); ui.sel = -1; ui.sheet === 'menu' ? closeSheet() : (openSheet('menu'), refresh()); };
 function exportJSON() {
   saveNow(); const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }), a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `coffee-opening-${ui.today}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('⬇ JSON');
+  a.href = URL.createObjectURL(blob); a.download = `dutch-bros-opening-${ui.today}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('⬇ JSON');
 }
 $('importFile').addEventListener('change', async (e) => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -849,7 +886,7 @@ function burst(i) { const s = stations[i]; s.burst = performance.now(); }
 function startDemo() {
   if (ui.dtour) stopDTour(true); if (ui.mode !== 'lot') setMode('lot');
   if (ui.sheet) closeSheet(); ui.demo = { t0: performance.now(), lastCur: -1 }; $('demoBar').hidden = false; $('demoBtn').classList.add('on');
-  stations.forEach((x) => { x.shown = -1; }); for (let i = 0; i < N; i++) shown[i] = 0; paved = 0; toast('🎬 0 → 🎉');
+  stations.forEach((x) => { x.shown = -1; }); for (let i = 0; i < N; i++) shown[i] = 0; paved = 0; toast('🎬 Dutch Bros · 0 → 🎉');
 }
 function stopDemo() { ui.demo = null; $('demoBar').hidden = true; $('demoBtn').classList.remove('on'); M = model(); home(); refresh(); }
 $('demoBtn').onclick = () => (ui.dtour ? stopDTour() : ui.mode === 'district' ? startDTour() : ui.demo ? stopDemo() : startDemo());
@@ -858,13 +895,14 @@ $('demoStop').onclick = () => (ui.dtour ? stopDTour() : stopDemo());
 function startDTour() {
   if (ui.demo) stopDemo(); if (ui.mode !== 'district') setMode('district'); if (ui.sheet) hideSheet();
   let ids = CO.sorted(state.stores.filter((x) => CO.FILTERS[ui.filter](x, ui.today)), ui.sort, ui.today).map((x) => x.id); if (!ids.length) ids = state.stores.map((x) => x.id);
-  ui.dtour = { t0: performance.now(), ids, i: -1 }; $('demoBar').hidden = false; $('demoBtn').classList.add('on'); toast('🎬 🗺');
+  ui.dtour = { t0: performance.now(), ids, i: -1 }; $('demoBar').hidden = false; $('demoBtn').classList.add('on'); toast('🎬 Dutch Bros · district tour');
 }
 function stopDTour(quiet) { ui.dtour = null; ui.tourId = null; $('demoBar').hidden = true; $('demoBtn').classList.remove('on'); if (!quiet) { home(); refresh(); } }
 function dtourTick(now) {
-  const d = ui.dtour, el = (now - d.t0) / 1000, k = Math.floor(el / 2.4), n = d.ids.length;
+  const d = ui.dtour, el = (now - d.t0) / 1000 - 1, k = Math.floor(Math.max(0, el) / 2.4), n = d.ids.length;   // 1 s branded intro first
+  if (el < 0) { $('demoPct').textContent = `0/${n}`; return; }
   $('demoFill').style.width = Math.round(Math.min(1, el / (2.4 * n)) * 100) + '%'; $('demoPct').textContent = `${Math.min(n, k + 1)}/${n}`;
-  if (k >= n) { if (!d.end) { d.end = el; ui.tourId = null; home(); renderDistLabels(); toast('🗺 ✅'); } if (el - d.end > 1.6) stopDTour(); return; }
+  if (k >= n) { if (!d.end) { d.end = el; ui.tourId = null; home(); renderDistLabels(); toast('🗺 ✅ Dutch Bros district'); } if (el - d.end > 1.6) stopDTour(); return; }
   if (k !== d.i) { d.i = k; const id = d.ids[k], j = state.stores.findIndex((x) => x.id === id), s = state.stores[j]; if (!s) return;
     const [x, z] = distPos[j]; dst.tx = x; dst.tz = z; dst.h = focusH(17, 14); ui.tourId = id; renderDistLabels();
     const h = CO.health(s, ui.today); toast(`${s.icon} ${s.name} ${CO.isOpen(s) ? OPS[h][0] : CO.rejected(s) ? '❌' : Math.round(CO.overall(s) * 100) + '%'}`, 2200); }
@@ -875,7 +913,7 @@ function demoTick() {
   $('demoFill').style.width = Math.round(M.x * 100) + '%'; $('demoPct').textContent = Math.round(M.x * 100) + '%';
   if (M.x < 1 && M.cur !== d.lastCur) { d.lastCur = M.cur; focus(M.cur); dst.tx *= 0.6; dst.tz = dst.tz * 0.6 - 1;   // frame the stage + the shop together
     dst.h = M.cur === 5 ? focusH(24, 20) : focusH(26, 21); scrollTL(M.cur); }
-  if (M.x >= 1 && !d.end) { d.end = el; home(); toast('🎉 100%'); }
+  if (M.x >= 1 && !d.end) { d.end = el; home(); toast('🎉 Dutch Bros · grand opening!'); }
   if (d.end && el - d.end > 4) stopDemo();
 }
 
@@ -920,8 +958,9 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 applyTheme(); resize(); home(); Object.assign(view, dst); refresh(); for (let i = 0; i < N; i++) shown[i] = M.p[i]; paved = M.p[5] >= 0.86 ? 1 : 0;
+if (state.migrated) { const m = state.migrated; delete state.migrated; saveNow(); setTimeout(() => toast(`☕ Dutch Bros v3 · ${m.swapped ? m.swapped + ' 🧪 refreshed · ' : ''}your data kept`, 2600), 1500); }
 requestAnimationFrame(loop);
 
 // test hooks (read-only views + helpers used by the headless checks)
-window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines }, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, openOps, startDTour, stopDTour, select, startDemo, stopDemo, focus, home, pick,
+window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines, canopy, blades }, queues, busters, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, openOps, startDTour, stopDTour, select, startDemo, stopDemo, focus, home, pick,
   project: (x, y, z) => { pv.set(x, y, z).project(cam); const r = cv.getBoundingClientRect(); return { x: r.left + (pv.x + 1) / 2 * r.width, y: r.top + (1 - pv.y) / 2 * r.height }; }, saveNow };
