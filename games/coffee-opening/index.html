@@ -230,6 +230,69 @@ body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) 
 .sc .bar { margin: 2px 0 2px 28px; height: 4px; }
 #updToast { position: fixed; right: 10px; top: calc(env(safe-area-inset-top) + 60px); z-index: 60; padding: 6px 12px; border-radius: 999px; background: var(--ok); color: #fff; font-weight: 800; font-size: 13px; box-shadow: var(--shadow); pointer-events: none; transition: opacity .4s; }
 
+/* v5 ⚖ compare sites, 🎯 pick mode, 🆕 map hint */
+#metroBtn.lbl, #pickBtn { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; gap: 1px; }
+#metroBtn.lbl small, #pickBtn small { font-size: 9px; font-weight: 800; letter-spacing: .02em; }
+#metroBtn.lbl { font-size: 17px; }
+#pickBtn.wide { width: auto; padding: 0 8px; font-size: 16px; } #pickBtn.on { background: var(--acc); color: #fff; }
+#stage.picking::after { content: ''; position: absolute; inset: 0; border: 3px dashed var(--acc); pointer-events: none; border-radius: 4px; z-index: 2; }
+#stage.picking #mapEl { cursor: crosshair; }
+#pickHint { position: absolute; z-index: 4; left: 50%; bottom: calc(var(--cardH, 0px) + 40px); transform: translateX(-50%); padding: 7px 12px; border-radius: 999px; background: var(--acc); color: #fff; font-weight: 800; font-size: 12px; white-space: nowrap; pointer-events: none; box-shadow: var(--shadow); }
+#pickHint[hidden], #cmpTray[hidden], #cmpView[hidden], #shareView[hidden], #mapHint[hidden] { display: none; }
+#mapHint { position: absolute; z-index: 8; transform: translateY(-50%); padding: 8px 12px; border-radius: 12px; background: #ff7a1a; color: #fff; font-weight: 900; font-size: 14px; white-space: nowrap; box-shadow: var(--shadow); pointer-events: none; animation: nudge 1s ease-in-out infinite alternate; }
+#mapHint .ar { display: inline-block; margin-left: 4px; }
+@keyframes nudge { from { margin-right: 0; } to { margin-right: -6px; } }
+.cpin { position: relative; width: 38px; height: 46px; display: flex; flex-direction: column; align-items: center; --hc: var(--acc); }
+.cpin .pi { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--card); border: 3px dashed var(--hc); box-shadow: 0 3px 8px rgba(18, 32, 63, .35); position: relative; z-index: 1; }
+.cpin.inc .pi { border-style: solid; } .cpin.sel .pi { transform: scale(1.2); box-shadow: 0 0 0 5px color-mix(in srgb, var(--hc) 35%, transparent), 0 4px 10px rgba(18, 32, 63, .4); }
+.cpin .pl { margin-top: 3px; font-size: 10px; font-weight: 800; color: var(--acc); white-space: nowrap; text-shadow: 0 0 3px var(--card), 0 0 3px var(--card), 0 0 2px var(--card); }
+#stage.drag .cpin .pi { cursor: grab; outline: 2px dashed var(--acc); outline-offset: 3px; }
+.mpin .cn, .cpin .cn { position: absolute; z-index: 2; right: -10px; top: -6px; font-size: 9px; font-weight: 900; padding: 1px 4px; border-radius: 8px; background: var(--navy); color: #fff; box-shadow: 0 0 0 2px var(--card); }
+.pc-hd input { flex: 1; min-width: 0; height: 34px; border-radius: 10px; border: 2px solid var(--acc); padding: 0 8px; background: var(--soft); font-weight: 700; }
+.pc-act .chip.in { background: color-mix(in srgb, var(--acc) 18%, var(--soft)); }
+#cmpTray { position: absolute; z-index: 5; right: 56px; top: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: calc(100% - 120px); }
+#cmpTray .tpill { height: 40px; padding: 0 12px; border-radius: 999px; background: var(--navy); color: #fff; font-weight: 800; box-shadow: var(--shadow); white-space: nowrap; }
+#cmpTray .tbody { width: min(270px, calc(100vw - 130px)); background: var(--card); border-radius: 14px; box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+#cmpTray .ti { display: flex; align-items: center; gap: 4px; } #cmpTray .tgo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; height: 40px; border-radius: 10px; background: var(--soft); padding: 0 6px; text-align: left; }
+#cmpTray .tn { font-size: 10px; font-weight: 900; color: var(--sub); } #cmpTray .tic { font-size: 16px; } #cmpTray .tnm { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cmpTray .tsc { font-size: 13px; color: var(--c); } #cmpTray .tx { width: 34px; height: 40px; border-radius: 10px; background: var(--soft); font-size: 13px; }
+#cmpTray .tcmp { height: 42px; border-radius: 12px; background: var(--acc); color: #fff; font-weight: 800; } #cmpTray .tcmp:disabled { background: var(--todo); color: var(--sub); }
+#cmpTray .tempty { font-size: 12px; color: var(--sub); padding: 6px; }
+@media (orientation: landscape) and (max-height: 500px) { #cmpTray.open { flex-direction: row; align-items: flex-start; } #cmpTray .tbody { flex-direction: row; flex-wrap: nowrap; width: auto; max-width: calc(100vw - 330px); overflow-x: auto; } #cmpTray .ti { flex: 0 0 auto; } #cmpTray .tgo { max-width: 150px; } #cmpTray .tcmp { flex: 0 0 auto; padding: 0 10px; } }
+#cmpView { position: absolute; inset: 0; z-index: 7; background: var(--bg); overflow-y: auto; padding: 8px 8px 16px; touch-action: pan-x pan-y; }
+.cv-hd { display: flex; align-items: center; gap: 8px; position: sticky; left: 0; } .cv-hd .big { font-size: 24px; } .cv-hd h2 { flex: 1; margin: 0; font-size: 18px; } .cv-hd h2 small { font-size: 12px; color: var(--sub); font-weight: 700; margin-left: 4px; } .cv-hd .chip { height: 40px; }
+.cv-empty { text-align: center; padding: 40px 16px; font-size: 26px; font-weight: 800; } .cv-empty small { font-size: 13px; color: var(--sub); font-weight: 600; }
+.cv-win { margin: 8px 0; padding: 10px 12px; border-radius: 14px; background: linear-gradient(90deg, #16295a, #1f5fd1); color: #fff; font-size: 15px; } .cv-win b { font-size: 16px; } .cv-win small { display: block; margin-top: 3px; font-size: 13px; color: #cfe6ff; font-weight: 700; }
+.cv-win.tie { background: var(--soft); color: var(--ink); } .cv-win.tie small { color: var(--sub); }
+.cv-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(176px, 1fr)); gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 6px; }
+.cv-col { scroll-snap-align: start; background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 8px; display: flex; flex-direction: column; gap: 4px; border-top: 4px solid var(--line); min-width: 0; }
+.cv-col.win { border-top-color: #f5b301; }
+.cv-top { display: flex; align-items: center; gap: 4px; min-height: 36px; } .cv-ic { font-size: 18px; } .cv-nm { flex: 1; min-width: 0; font-size: 13px; line-height: 1.15; } .cv-nm input { width: 100%; height: 30px; border-radius: 8px; border: 2px solid var(--acc); padding: 0 6px; }
+.cv-kind { font-size: 11px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-ring { position: relative; display: flex; justify-content: center; padding: 4px 0; } .ring.big { width: 72px; height: 72px; font-size: 24px; } .cv-cup { position: absolute; right: calc(50% - 52px); top: -2px; font-size: 22px; }
+canvas.mini { display: block; margin: 0 auto; border-radius: 12px; }
+.cv-row { padding: 4px 2px; border-radius: 8px; } .cv-row.best { background: color-mix(in srgb, #f5b301 16%, transparent); }
+.cv-rh { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; } .cv-rh .ri { font-size: 15px; } .cv-rh .rn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .cv-rh .rp { font-size: 13px; } .cv-rh .rp small { color: var(--sub); font-size: 10px; }
+.cv-row .bar { height: 5px; margin: 3px 0; } .cv-raw { font-size: 11px; font-weight: 700; } .cv-raw small { display: block; font-size: 9.5px; color: var(--sub); font-weight: 600; }
+.cv-act { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; } .cv-act .chip { height: 38px; font-size: 12px; } .cv-act .chip.on { background: var(--acc); color: #fff; }
+.cv-src { font-size: 10px; color: var(--sub); margin-top: 6px; }
+#shareView { position: fixed; inset: 0; z-index: 45; background: rgba(6, 13, 28, .72); display: grid; place-items: center; padding: 12px; }
+.sh-x { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 10px; background: var(--card); }
+.sh-card { width: min(370px, 100%); max-height: calc(100% - 50px); overflow: hidden; background: #fff; color: #12203f; border-radius: 22px; padding: 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, .4); }
+.sh-hd { display: flex; align-items: center; gap: 10px; } .sh-hd .brandmark { width: 38px; height: 38px; } .sh-hd b { font-size: 18px; display: block; } .sh-hd small { font-size: 10.5px; color: #5d6b85; font-weight: 700; }
+.sh-win { margin: 10px 0; padding: 10px 12px; border-radius: 14px; background: linear-gradient(90deg, #16295a, #1f5fd1); color: #fff; font-size: 16px; } .sh-win small { display: block; font-size: 12.5px; color: #cfe6ff; font-weight: 700; margin-top: 2px; } .sh-win.tie { background: #eef3fa; color: #12203f; }
+.sh-grid { display: grid; grid-template-columns: 58px repeat(var(--n), 1fr); gap: 5px; align-items: stretch; }
+.sh-site { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 12px; background: #f1f5fb; } .sh-site.win { background: #fff4d1; box-shadow: inset 0 0 0 2px #f5b301; }
+.sh-site .ring { width: 50px; height: 50px; font-size: 17px; background: radial-gradient(#fff 62%, transparent 64%), conic-gradient(var(--c) calc(var(--p) * 1%), #e0e6ef 0); } .sh-site b { font-size: 11.5px; line-height: 1.1; } .sh-site small { font-size: 9.5px; color: #5d6b85; }
+.sh-l { display: flex; flex-direction: column; align-items: center; justify-content: center; } .sh-l span { font-size: 22px; } .sh-l small { font-size: 8.5px; color: #5d6b85; font-weight: 700; text-align: center; line-height: 1.1; }
+.sh-c { position: relative; text-align: center; border-radius: 10px; background: #f1f5fb; padding: 6px 2px; display: flex; flex-direction: column; justify-content: center; } .sh-c b { font-size: 15px; } .sh-c small { font-size: 9.5px; color: #5d6b85; font-weight: 700; }
+.sh-c.best { background: #fff4d1; } .sh-c i { position: absolute; top: -4px; right: -2px; font-style: normal; font-size: 13px; }
+.sh-src { margin-top: 10px; font-size: 9.5px; color: #5d6b85; text-align: center; }
+.sh-card { overflow-y: auto; }
+@media (orientation: landscape) and (max-height: 500px) { .sh-card { width: min(780px, calc(100% - 60px)); max-height: calc(100% - 8px); display: grid; grid-template-columns: 240px 1fr; grid-template-rows: auto auto 1fr; column-gap: 12px; padding: 12px; }
+  .sh-hd { grid-column: 1; } .sh-win { grid-column: 1; margin: 8px 0 0; } .sh-src { grid-column: 1; align-self: end; text-align: left; } .sh-grid { grid-column: 2; grid-row: 1 / span 3; gap: 4px; }
+  .sh-site { padding: 3px 2px; } .sh-site .ring { width: 40px; height: 40px; font-size: 14px; } .sh-c { padding: 3px 2px; } .sh-c b { font-size: 14px; } .sh-l span { font-size: 18px; } }
+
 </style>
 </head>
 <body>
@@ -246,13 +309,17 @@ body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) 
     <canvas id="scene"></canvas>
     <div id="labels"></div>
     <div id="mapEl" hidden></div>
-    <div id="mtools" hidden><button id="layBtn" class="ibtn" aria-label="Map layers">🗂</button><button id="legBtn" class="ibtn" aria-label="Map legend">🔑</button></div>
+    <div id="mtools" hidden><button id="layBtn" class="ibtn" aria-label="Map layers">🗂</button><button id="legBtn" class="ibtn" aria-label="Map legend">🔑</button><button id="pickBtn" class="ibtn wide" aria-label="Pick site" aria-pressed="false">🎯<small>Pick site</small></button></div>
+    <div id="pickHint" hidden>🎯 Tap the map to place a site</div>
+    <div id="cmpTray" hidden></div>
+    <div id="mapHint" hidden role="status">🆕 Real map <span class="ar">➜</span></div>
     <div id="mpanel" hidden></div>
     <div id="moff" hidden>🗺 Tiles offline · pins OK</div>
     <section id="pcard" hidden aria-label="Shop card"></section>
+    <section id="cmpView" hidden aria-label="Compare sites"></section>
     <div id="side">
       <button id="mapBtn" class="ibtn" aria-label="District map">🗺</button>
-      <button id="metroBtn" class="ibtn" aria-label="Phoenix metro map">📍</button>
+      <button id="metroBtn" class="ibtn lbl" aria-label="Phoenix metro map" title="Map">📍<small>Map</small></button>
       <button id="demoBtn" class="ibtn" aria-label="Auto tour">🎬</button>
       <button id="themeBtn" class="ibtn" aria-label="Day or night">🌙</button>
       <button id="dragBtn" class="ibtn" aria-label="Drag to move the camera">✋</button>
@@ -273,14 +340,15 @@ body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) 
   <nav id="dbar" aria-label="District filters" hidden></nav>
 </div>
 <input id="importFile" type="file" accept="application/json,.json" hidden>
-<script src="data.js"></script>
-<script type="module" src="app.js"></script>
+<script src="data.js?v=5"></script>
+<script type="module" src="app.js?v=5"></script>
 <div id="updToast" hidden>⬆ Updated</div>
+<section id="shareView" hidden aria-label="Share card"></section>
 <script>
 /* v4 update path: the service worker is network-first and bypasses the HTTP cache. When a new version takes over (controllerchange)
    or the live sw.js names a newer cache than this page, reload ONCE and show a small '⬆ Updated' toast. */
 (function () {
-  const APPV = 'coffee-opening-v4';
+  const APPV = 'coffee-opening-v5';
   try { if (sessionStorage.getItem('co-updated')) { sessionStorage.removeItem('co-updated'); const t = document.getElementById('updToast'); t.hidden = false; setTimeout(() => { t.style.opacity = 0; }, 2600); setTimeout(() => { t.hidden = true; }, 3100); } } catch (e) { /* private mode */ }
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   const sw = navigator.serviceWorker, had = !!sw.controller;
@@ -292,6 +360,7 @@ body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) 
   }
   window.coUpdate = { APPV, reloadOnce, get had() { return had; } };
   sw.addEventListener('controllerchange', () => { if (had) reloadOnce('sw'); });
+  sw.onmessage = (e) => { if (e.data && e.data.t === 'co-ver?' && e.ports && e.ports[0]) e.ports[0].postMessage({ v: APPV }); };   // v5 sw: 'this page updates itself'
   addEventListener('load', () => sw.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
     const check = () => reg.update().catch(() => {});
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { check(); probe(); } });

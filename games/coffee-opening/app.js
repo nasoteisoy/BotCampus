@@ -16,7 +16,7 @@ let state = CO.load(localStorage);
 const MARK = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#16295a"/><rect x="14" y="17" width="36" height="6.5" rx="3" fill="#fff"/><path d="M17 24.5h30l-3.4 28.6a3.2 3.2 0 0 1-3.2 2.9H23.6a3.2 3.2 0 0 1-3.2-2.9z" fill="#fff"/><path d="M29.4 52.5 30.8 38h2.4l1.4 14.5z" fill="#1f5fd1"/><g transform="translate(32 37.5) rotate(22)" fill="#7cc4f0" stroke="#1f5fd1" stroke-width=".8"><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(90)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(180)"/><rect x="-1.7" y="-12" width="3.4" height="10.5" rx="1" transform="rotate(270)"/></g><circle cx="32" cy="37.5" r="2.3" fill="#16295a"/></svg>`;
 document.querySelectorAll('.mark').forEach((e) => { e.innerHTML = MARK; });
 { const sp = document.getElementById('splash'); if (sp) { setTimeout(() => sp.classList.add('out'), 900); setTimeout(() => sp.remove(), 1400); } }
-const ui = { sel: -1, sheet: null, drag: false, demo: null, dtour: null, mode: 'lot', filter: 'all', sort: 'urgency', editing: null, confirm: null, hiIssue: null, today: CO.today() };
+const ui = { pick: false, cmpOpen: false, view: null, renaming: null, sel: -1, sheet: null, drag: false, demo: null, dtour: null, mode: 'lot', filter: 'all', sort: 'urgency', editing: null, confirm: null, hiIssue: null, today: CO.today() };
 const store = () => state.stores.find((s) => s.id === state.cur) || state.stores[0];
 let saveT = 0;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => localStorage.setItem(CO.KEY, JSON.stringify(state)), 150); }
@@ -785,10 +785,11 @@ function renderSheet() {
     if (ui.scrollTo) { const t = bd.querySelector(ui.scrollTo); ui.scrollTo = null; if (t) { bd.scrollTop = t.offsetTop - 8; return; } }
   } else if (ui.sheet === 'menu') {
     hd.innerHTML = `<span class="big brandmark" aria-hidden="true">${MARK}</span><h2>Dutch Bros<small class="hsub">New Shop Opening Tracker</small></h2><button class="ibtn" data-act="close" aria-label="Close">✕</button>`;
-    const nEx = state.stores.filter((x) => x.example).length;
+    const nEx = state.stores.filter((x) => x.example).length, nExC = (state.cands || []).filter((c) => c.example).length;
     bd.innerHTML = `${nEx ? `<div class="banner gray">🧪 Example data: ${nEx} generic stores, not a real company. Edit, 🧹 clear or ↺ reset.</div>` : ''}<div class="menu">
       <button class="li" data-act="map"><span class="ic">🗺</span><span class="grow nm">District map</span></button>
       <button class="li" data-act="metro"><span class="ic">📍</span><span class="grow nm">Phoenix metro map</span></button>
+      <button class="li" data-act="compare"><span class="ic">⚖</span><span class="grow nm">Compare sites (${(state.cmp || []).length}/${CO.MAXCMP})</span></button>
       <button class="li" data-act="dtour"><span class="ic">🎬</span><span class="grow nm">District tour</span></button>
       <label class="li"><span class="ic">🎉</span><span class="grow"><div class="nm">Grand opening</div><div class="sub">${esc(s.name)}</div></span><input type="date" data-f="starget" value="${s.target}" aria-label="Grand opening date"></label>
       <button class="li" data-act="export"><span class="ic">⬇</span><span class="grow nm">Export JSON</span></button>
@@ -796,7 +797,7 @@ function renderSheet() {
       <button class="li" data-act="theme"><span class="ic">${state.theme === 'night' ? '☀️' : '🌙'}</span><span class="grow nm">${state.theme === 'night' ? 'Day' : 'Night'}</span></button>
       <button class="li" data-act="demo"><span class="ic">🏗</span><span class="grow nm">Build tour (60 s)</span></button>
       <button class="li ${ui.confirm === 'reset' ? 'on' : ''}" data-act="reset"><span class="ic">↺</span><span class="grow nm">${ui.confirm === 'reset' ? 'Tap again: reset ALL to example data' : 'Reset to example data'}</span></button>
-      <button class="li ${ui.confirm === 'clearEx' ? 'on' : ''}" data-act="clearEx" ${nEx ? '' : 'disabled'}><span class="ic">🧹</span><span class="grow nm">${ui.confirm === 'clearEx' ? `Tap again: remove ${nEx} 🧪 stores` : `Clear examples (${nEx})`}</span></button></div>
+      <button class="li ${ui.confirm === 'clearEx' ? 'on' : ''}" data-act="clearEx" ${nEx ? '' : 'disabled'}><span class="ic">🧹</span><span class="grow nm">${ui.confirm === 'clearEx' ? `Tap again: remove ${nEx} 🧪 stores${nExC ? ` + ${nExC} 🧪 sites` : ''}` : `Clear examples (${nEx}${nExC ? ` + ${nExC} 🎯` : ''})`}</span></button></div>
       <div class="sub" style="color:var(--sub);font-size:11px;margin-top:8px">Saved on this device. 3D: three.js (MIT). Map: Leaflet (BSD-2), tiles © OpenStreetMap contributors; traffic: ADOT 2024 AADT; shop data © OpenStreetMap contributors (ODbL).<br>Pitch concept: unofficial, not affiliated with or endorsed by Dutch Bros. The name is used to identify the brand only; the windmill-cup mark and all art are original.</div>`;
   }
   bd.scrollTop = keep;
@@ -811,6 +812,7 @@ $('sheet').addEventListener('click', (e) => {
   if (b.dataset.goto != null) return select(+b.dataset.goto);
   if (act === 'map') { hideSheet(); return setMode(ui.mode === 'district' ? 'lot' : 'district'); }
   if (act === 'metro') { hideSheet(); return setMode(ui.mode === 'metro' ? 'lot' : 'metro'); }
+  if (act === 'compare') { hideSheet(); if (ui.mode !== 'metro') setMode('metro'); return openCompare(); }
   if (act === 'dtour') { hideSheet(); return startDTour(); }
   if (b.dataset.filter) { ui.filter = b.dataset.filter; refresh(); return renderSheet(); }
   if (b.dataset.sort) { ui.sort = b.dataset.sort; return renderSheet(); }
@@ -928,7 +930,7 @@ function setMode(m) {
   ui.mode = m; lot.visible = m === 'lot'; dist.visible = m === 'district'; ui.sel = -1; ui.hiIssue = null;
   stageEl.classList.toggle('district', m === 'district'); $('mapBtn').classList.toggle('on', m === 'district');
   stageEl.classList.toggle('metro', m === 'metro'); $('metroBtn').classList.toggle('on', m === 'metro'); $('mapEl').hidden = $('mtools').hidden = m !== 'metro';
-  if (m !== 'metro') { closeCard(); MM.panel = ''; $('mpanel').hidden = true; $('moff').hidden = true; }
+  if (m !== 'metro') { closeCard(); MM.panel = ''; $('mpanel').hidden = true; $('moff').hidden = true; if (ui.pick) setPick(false); ui.cmpOpen = false; if (ui.view) closeCompare(); $('mapHint').hidden = true; }
   if (m === 'district') { if (ui.sheet && ui.sheet !== 'stores' && ui.sheet !== 'menu') hideSheet(); buildDistrict(true); }
   if (m === 'metro') { if (ui.sheet && ui.sheet !== 'stores' && ui.sheet !== 'menu') hideSheet(); renderPanel(); openMetro(); }
   refresh(); resize(); home();
@@ -991,20 +993,20 @@ function siteScore(ll, site = {}, selfId = null) {
       const w = s.v * (s.hw ? 0.4 : 1); if (w <= best) continue;
       for (let i = 0; i + 1 < s.pts.length; i++) if (segDist(ll, s.pts[i], s.pts[i + 1]) <= R) { best = w; raw = s.v; hw = s.hw; break; } }
     const pts = Math.round(SC.traffic * clamp(Math.log(Math.max(1, best) / 5000) / Math.log(12)));
-    parts.push({ k: 'traffic', icon: '🚦', name: 'Traffic', detail: best ? `${Math.round(raw / 1000)}k cars/day within ¼ mi${hw ? ' (freeway ×0.4)' : ''} · ADOT 2024` : 'No counted road (8k+/day) within ¼ mi · ADOT 2024', pts, max: SC.traffic });
+    parts.push({ k: 'traffic', icon: '🚦', name: 'Traffic', detail: best ? `${Math.round(raw / 1000)}k cars/day within ¼ mi${hw ? ' (freeway ×0.4)' : ''} · ADOT 2024` : 'No counted road (8k+/day) within ¼ mi · ADOT 2024', pts, max: SC.traffic, raw, hw });
   } else parts.push({ k: 'traffic', icon: '🚦', name: 'Traffic', detail: 'Traffic data not loaded · counted as neutral', pts: SC.traffic / 2, max: SC.traffic, na: true });
   // 🏁 competitors within 1 mile (OSM snapshot)
   const C = MM.data.comp, cOk = C && C.fetched && C.items;
   if (cOk) {   // a drive-thru competitor weighs 1, a walk-in coffee brand ½; 6 weighted competitors inside a mile → 0 pts
     const L1 = C.items.filter((x) => meters(ll, [x.lat, x.lng]) <= MI), n = L1.length, ndt = L1.filter((x) => x.dt).length, w = ndt + (n - ndt) / 2;
-    parts.push({ k: 'comp', icon: '🏁', name: 'Competitors', detail: `${n} coffee competitors within 1 mi (${ndt} drive-thru) · OSM ${C.fetched}`, pts: Math.round(SC.comp * clamp(1 - w / 6)), max: SC.comp, n }); }
+    parts.push({ k: 'comp', icon: '🏁', name: 'Competitors', detail: `${n} coffee competitors within 1 mi (${ndt} drive-thru) · OSM ${C.fetched}`, pts: Math.round(SC.comp * clamp(1 - w / 6)), max: SC.comp, n, ndt, src: C.fetched }); }
   else parts.push({ k: 'comp', icon: '🏁', name: 'Competitors', detail: 'No OSM snapshot yet · counted as neutral', pts: SC.comp / 2, max: SC.comp, na: true });
   // ☕ cannibalization: nearest existing Dutch Bros (OSM snapshot) or another shop in this tracker (REC-rejected ones skipped)
   const E = MM.data.existing, eOk = E && E.fetched && E.items, near = [];
   if (eOk) for (const x of E.items) near.push({ d: meters(ll, [x.lat, x.lng]), nm: x.name || 'Dutch Bros', src: 'OSM' });
   for (const s of state.stores) if (s.id !== selfId && CO.isLL(s.ll) && !CO.rejected(s)) near.push({ d: meters(ll, s.ll), nm: s.name, src: 'tracker' });
   near.sort((a, b) => a.d - b.d); const nb = near[0];
-  if (nb) { const mi = nb.d / MI; parts.push({ k: 'cann', icon: '☕', name: 'Nearest Dutch Bros', detail: `${mi.toFixed(1)} mi · ${nb.nm}${nb.src === 'tracker' ? ' (tracker)' : ' (OSM)'}${eOk ? '' : ' · no OSM snapshot'}`, pts: Math.round(SC.cann * clamp((mi - 1) / 2)), max: SC.cann, mi }); }
+  if (nb) { const mi = nb.d / MI; parts.push({ k: 'cann', icon: '☕', name: 'Nearest Dutch Bros', detail: `${mi.toFixed(1)} mi · ${nb.nm}${nb.src === 'tracker' ? ' (tracker)' : ' (OSM)'}${eOk ? '' : ' · no OSM snapshot'}`, pts: Math.round(SC.cann * clamp((mi - 1) / 2)), max: SC.cann, mi, nm: nb.nm, src: nb.src }); }
   else parts.push({ k: 'cann', icon: '☕', name: 'Nearest Dutch Bros', detail: 'None known nearby', pts: SC.cann, max: SC.cann });
   parts.push({ k: 'corner', icon: '🛣', name: 'Corner lot', detail: 'Hard corner, access from 2 roads', pts: site.corner ? SC.corner : 0, max: SC.corner, check: true, on: !!site.corner });
   parts.push({ k: 'stack', icon: '🚗', name: 'Stacking room', detail: '20+ cars in the 2 drive-thru lanes', pts: site.stack ? SC.stack : 0, max: SC.stack, check: true, on: !!site.stack });
@@ -1013,7 +1015,7 @@ function siteScore(ll, site = {}, selfId = null) {
 const scoreCol = (t) => (t >= 70 ? 'var(--ok)' : t >= 45 ? 'var(--risk)' : 'var(--block)');
 // ---- map setup
 function openMetro() {
-  loadLeaflet().then((L) => { MM.L = L; initMap(); return loadData(); }).then(() => { drawLayers(); renderPins(); if (MM.sel || MM.cand) renderCard(); renderPanel(); })
+  loadLeaflet().then((L) => { MM.L = L; initMap(); return loadData(); }).then(() => { drawLayers(); renderPins(); if (MM.sel || MM.cand) renderCard(); renderPanel(); renderTray(); if (ui.view === 'cmp') renderCompare(); })
     .catch(() => { toast('📍 ❌ map library not loaded'); });
 }
 function initMap() {
@@ -1024,7 +1026,7 @@ function initMap() {
   MM.tiles.on('tileload', () => { MM.tileOk++; MM.tileErr = 0; $('moff').hidden = true; });
   MM.tiles.on('tileerror', () => { MM.tileErr++; if (MM.tileErr >= 2 && ui.mode === 'metro') $('moff').hidden = false; });
   m.on('zoomend moveend', declutter);
-  m.on('click', (e) => { if (ui.mode !== 'metro') return; if (ui.drag) return dropCand([e.latlng.lat, e.latlng.lng]); if (MM.sel || MM.cand) closeCard(); });
+  m.on('click', (e) => { if (ui.mode !== 'metro') return; if (ui.pick || ui.drag) { const was = ui.pick; if (was) setPick(false); return dropCand([e.latlng.lat, e.latlng.lng]); } if (MM.sel || MM.cand) closeCard(); else if (ui.cmpOpen) { ui.cmpOpen = false; renderTray(); } });
   MM.renderer = L.canvas({ padding: 0.3 });
   mapHome(true);
 }
@@ -1036,7 +1038,7 @@ function mapHome(now) {
 }
 function pinHtml(s) {
   const h = CO.health(s, ui.today), open = CO.isOpen(s), ic = open ? '☕' : CO.rejected(s) ? '❌' : S[CO.current(s)].icon, dim = !CO.FILTERS[ui.filter](s, ui.today);
-  return { cls: `mpin h-${PINC[h] || 'g'}${dim ? ' dim' : ''}${MM.sel === s.id ? ' sel' : ''}`, html: `<span class="pi">${ic}</span><span class="pl">${esc(city(s))}</span>`, dim };
+  return { cls: `mpin h-${PINC[h] || 'g'}${dim ? ' dim' : ''}${MM.sel === s.id ? ' sel' : ''}`, html: `<span class="pi">${ic}</span>${cmpBadge(s.id)}<span class="pl">${esc(city(s))}</span>`, dim };
 }
 function renderPins() {
   const m = MM.map; if (!m) return; const L = MM.L, seen = new Set();
@@ -1056,7 +1058,7 @@ function renderPins() {
     if (ui.drag) mk.dragging.enable(); else mk.dragging.disable();
   }
   for (const [id, mk] of MM.pins) if (!seen.has(id)) { mk.remove(); MM.pins.delete(id); }
-  if (MM.candM) { if (ui.drag) MM.candM.dragging.enable(); else MM.candM.dragging.disable(); }
+  renderCandPins();
   declutter();
 }
 function selectPin(id, pan = true) {
@@ -1082,18 +1084,54 @@ function declutter() {   // (pin box = the round icon only)   // pin names: hide
     const own = [o.p.x - 14, o.p.y - 42, o.p.x + 14, o.p.y - 14], show = !boxes.some((b) => b.join() !== own.join() && hit(b, lb));
     if (pl) pl.style.visibility = show ? '' : 'hidden'; if (show) boxes.push(lb); }
 }
-function dropCand(ll) {
-  const L = MM.L; MM.sel = null; MM.cand = { ll: ll.map((v) => Math.round(v * 1e5) / 1e5), corner: false, stack: false };
-  if (!MM.candM) {
-    MM.candM = L.marker(MM.cand.ll, { icon: L.divIcon({ className: 'mpin-wrap', html: '<div class="mpin cand sel" data-pin="cand"><span class="pi">🎯</span><span class="pl">Candidate</span></div>', iconSize: [38, 46], iconAnchor: [19, 42] }), draggable: true, keyboard: false, zIndexOffset: 2000 }).addTo(MM.map);
-    MM.candM.on('dragend', () => { if (!MM.cand) return; const p = MM.candM.getLatLng(); MM.cand.ll = [Math.round(p.lat * 1e5) / 1e5, Math.round(p.lng * 1e5) / 1e5]; renderCard(); });
-    MM.candM.on('click', () => renderCard());
-  } else MM.candM.setLatLng(MM.cand.ll);
-  if (ui.drag) MM.candM.dragging.enable(); else MM.candM.dragging.disable();
-  MM.open.score = true; renderPins(); renderCard(); toast('🎯 📊'); requestAnimationFrame(() => panToFree(MM.cand.ll));
+// ---- v5 🎯 candidate sites (saved in state.cands) + ⚖ compare (state.cmp: up to 3 shop or candidate ids)
+const cmpIdx = (id) => (state.cmp || []).indexOf(id);
+const cmpBadge = (id) => { const i = cmpIdx(id); return i < 0 ? '' : `<span class="cn" aria-label="In compare">⚖${i + 1}</span>`; };
+const candOf = (id) => (state.cands || []).find((c) => c.id === id);
+const siteOf = (id) => { const s = state.stores.find((x) => x.id === id); if (s) return { id, kind: 'shop', name: s.name, icon: s.icon, ll: s.ll, site: s.site, example: s.example, s };
+  const c = candOf(id); return c ? { id, kind: 'cand', name: c.name, icon: '🎯', ll: c.ll, site: c.site, example: c.example, c } : null; };
+function renderCandPins() {
+  const m = MM.map; if (!m) return; const L = MM.L, seen = new Set(); MM.cpins = MM.cpins || new Map();
+  for (const c of state.cands || []) {
+    seen.add(c.id); const sel = MM.cand && MM.cand.id === c.id, cls = `cpin${sel ? ' sel' : ''}${cmpIdx(c.id) >= 0 ? ' inc' : ''}`, html = `<span class="pi">🎯</span>${cmpBadge(c.id)}<span class="pl">${esc(c.name.split(' · ').pop())}</span>`, key = cls + html;
+    let mk = MM.cpins.get(c.id);
+    if (!mk) {
+      mk = L.marker(c.ll, { icon: L.divIcon({ className: 'mpin-wrap', html: `<div class="${cls}" data-pin="cand" data-cand="${c.id}">${html}</div>`, iconSize: [38, 46], iconAnchor: [19, 42] }), draggable: true, keyboard: false, zIndexOffset: 1500, title: c.name }).addTo(m);
+      mk._id = c.id; mk._key = key; mk.dragging.disable();
+      mk.on('click', () => selectCand(mk._id));
+      mk.on('dragend', () => { const cc = candOf(mk._id); if (!cc || !ui.drag) return mk.setLatLng(cc ? cc.ll : mk.getLatLng()); const p = mk.getLatLng(); cc.ll = [Math.round(p.lat * 1e5) / 1e5, Math.round(p.lng * 1e5) / 1e5]; save(); if (MM.cand === cc) renderCard(); renderTray(); });
+      MM.cpins.set(c.id, mk);
+    } else {
+      const p = mk.getLatLng(); if (p.lat !== c.ll[0] || p.lng !== c.ll[1]) mk.setLatLng(c.ll);
+      if (mk._key !== key) { mk._key = key; const el = mk.getElement() && mk.getElement().firstElementChild; if (el) { el.className = cls; el.innerHTML = html; } }
+    }
+    mk.setZIndexOffset(sel ? 2000 : 1500); if (ui.drag) mk.dragging.enable(); else mk.dragging.disable();
+  }
+  for (const [id, mk] of MM.cpins) if (!seen.has(id)) { mk.remove(); MM.cpins.delete(id); }
 }
-function clearCand() { MM.cand = null; if (MM.candM) { MM.candM.remove(); MM.candM = null; } }
+function dropCand(ll) {
+  state.cands = state.cands || []; let k = state.cands.length + 1; while (state.cands.some((c) => c.name === `New site ${k}`)) k++;
+  const c = { id: 'c-' + CO.uid(), name: `New site ${k}`, ll: ll.map((v) => Math.round(v * 1e5) / 1e5), site: { corner: false, stack: false }, example: false };
+  state.cands.push(c); saveNow(); MM.sel = null; MM.cand = c; MM.open.score = true; renderPins(); renderCard(); toast('🎯 📊 ' + c.name); requestAnimationFrame(() => panToFree(c.ll));
+}
+function selectCand(id, pan = true) { const c = candOf(id); if (!c) return; MM.sel = null; MM.cand = c; MM.open.score = true; ui.renaming = null; renderPins(); renderCard(); if (pan && MM.map) requestAnimationFrame(() => panToFree(c.ll)); }
+function clearCand() { MM.cand = null; ui.renaming = null; }
 function closeCard() { MM.sel = null; clearCand(); $('pcard').hidden = true; MM.cardH = MM.cardW = 0; stageEl.style.setProperty('--cardH', '0px'); stageEl.classList.remove('carded'); renderPins(); }
+function setPick(on) { ui.pick = on; $('pickBtn').classList.toggle('on', on); $('pickBtn').setAttribute('aria-pressed', String(on)); stageEl.classList.toggle('picking', on); $('pickHint').hidden = !on || ui.mode !== 'metro'; }
+function toggleCmp(id) {
+  state.cmp = state.cmp || []; const i = state.cmp.indexOf(id);
+  if (i >= 0) { state.cmp.splice(i, 1); toast(`➖ ⚖ ${state.cmp.length}/${CO.MAXCMP}`); }
+  else if (state.cmp.length >= CO.MAXCMP) { toast(`⚖ ${CO.MAXCMP}/${CO.MAXCMP} full · remove one first`, 2200); ui.cmpOpen = true; renderTray(); return false; }
+  else { state.cmp.push(id); toast(`➕ ⚖ ${state.cmp.length}/${CO.MAXCMP}`); }
+  saveNow(); renderPins(); renderTray(); if (MM.sel || MM.cand) renderCard(); if (ui.view === 'cmp') renderCompare(); return true;
+}
+function startShop(id) {   // 🎯 candidate → a new shop at 🔍 Site scouting (same spot, same site checks, keeps its ⚖ slot)
+  const c = candOf(id); if (!c) return null;
+  const n = CO.newStore({ name: c.name, ll: c.ll }); n.site = { corner: !!c.site.corner, stack: !!c.site.stack };
+  state.stores.push(n); state.cands = state.cands.filter((x) => x !== c); state.cmp = (state.cmp || []).map((x) => (x === id ? n.id : x)); state.cur = n.id;
+  if (MM.cand === c) MM.cand = null; saveNow(); toast(`🏪 ${n.name} · 🔍 Site scouting`, 2200); return n;
+}
+function delCand(id) { state.cands = (state.cands || []).filter((c) => c.id !== id); state.cmp = (state.cmp || []).filter((x) => x !== id); if (MM.cand && MM.cand.id === id) MM.cand = null; saveNow(); }
 function topIssue(s) {
   if (CO.isOpen(s)) { const iss = CO.openIssues(s).slice().sort(byPrio)[0]; return iss ? `${iss.icon} ${iss.t}` : '✅ No open issues'; }
   if (CO.rejected(s)) return '❌ REC rejected · stages 5–11 stopped';
@@ -1109,10 +1147,11 @@ function scoreHtml(sc, open) {
 function renderCard() {
   const el = $('pcard');
   if (MM.cand) {
-    const c = MM.cand, sc = siteScore(c.ll, c);
-    el.className = ''; el.innerHTML = `<div class="pc-hd"><span class="pc-ic">🎯</span><b>Candidate spot</b><button class="ibtn" data-pc="close" aria-label="Close">✕</button></div>
-      <div class="pc-iss">${c.ll[0].toFixed(4)}, ${c.ll[1].toFixed(4)} · ✋ drag to move</div>
-      <div class="pc-act"><button class="chip on" data-pc="newHere" aria-label="New shop here">＋ 🏪 New shop here</button></div>${scoreHtml(sc, true)}`;
+    const c = MM.cand, sc = siteScore(c.ll, c.site), inC = cmpIdx(c.id) >= 0;
+    el.className = 'cand'; el.innerHTML = `<div class="pc-hd"><span class="pc-ic">🎯</span>${ui.renaming === c.id ? `<input id="candName" maxlength="60" value="${esc(c.name)}" aria-label="Site name">` : `<b>${esc(c.name)}</b>`}${c.example ? '<i class="ex">🧪</i>' : ''}<button class="ibtn" data-pc="rename" aria-label="Rename">${ui.renaming === c.id ? '✔' : '✏️'}</button><button class="ibtn" data-pc="close" aria-label="Close">✕</button></div>
+      <div class="pc-iss">🎯 Candidate spot · ${c.ll[0].toFixed(4)}, ${c.ll[1].toFixed(4)}${ui.drag ? ' · ✋ drag to move' : ''}</div>
+      <div class="pc-act"><button class="chip on" data-pc="newHere" aria-label="Start shop here">🏪 Start shop here</button><button class="chip ${inC ? 'in' : ''}" data-pc="cmp" aria-label="${inC ? 'Remove from compare' : 'Add to compare'}">${inC ? `➖ Compare ⚖${cmpIdx(c.id) + 1}` : '➕ Compare'}</button><button class="chip ${ui.confirm === 'dc' + c.id ? 'on warn' : ''}" data-pc="delCand" aria-label="Delete site">${ui.confirm === 'dc' + c.id ? '🗑 Sure?' : '🗑'}</button></div>${scoreHtml(sc, true)}`;
+    if (ui.renaming === c.id) { const inp = $('candName'); requestAnimationFrame(() => { inp.focus(); inp.select(); }); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); renameCand(c, inp.value); } }; }
   } else {
     const s = state.stores.find((x) => x.id === MM.sel); if (!s) { el.hidden = true; return; }
     const open = CO.isOpen(s), h = CO.health(s, ui.today), c = CO.current(s), rej = CO.rejected(s), pc = Math.round(CO.overall(s) * 100), sc = siteScore(s.ll, s.site, s.id);
@@ -1122,7 +1161,7 @@ function renderCard() {
       <div class="pc-st"><span class="grow" id="pcStage">${line}</span><span class="pcp" id="pcPct">${open ? '✅' : rej ? '❌' : pc + '%'}</span></div>
       <div class="bar" style="--c:${open ? 'var(--ok)' : rej || h === 'blocked' ? 'var(--block)' : h === 'risk' ? 'var(--risk)' : 'var(--acc)'}"><i style="width:${open ? 100 : pc}%"></i></div>
       <div class="pc-iss" id="pcIssue">${esc(topIssue(s))}</div>
-      <div class="pc-act"><button class="chip on" data-pc="fly" aria-label="Fly to 3D">🧊 3D</button><button class="chip" data-pc="score" aria-label="Site score">📊 <b>${sc.total}</b> ${MM.open.score ? '▴' : '▾'}</button></div>${MM.open.score ? scoreHtml(sc, true) : ''}`;
+      <div class="pc-act"><button class="chip on" data-pc="fly" aria-label="Fly to 3D">🧊 3D</button><button class="chip" data-pc="score" aria-label="Site score">📊 <b>${sc.total}</b> ${MM.open.score ? '▴' : '▾'}</button><button class="chip ${cmpIdx(s.id) >= 0 ? 'in' : ''}" data-pc="cmp" aria-label="${cmpIdx(s.id) >= 0 ? 'Remove from compare' : 'Add to compare'}">${cmpIdx(s.id) >= 0 ? `➖ ⚖${cmpIdx(s.id) + 1}` : '➕ Compare'}</button></div>${MM.open.score ? scoreHtml(sc, true) : ''}`;
   }
   const was = el.hidden; el.hidden = false; if (was) MM.cardAt = performance.now();
   const at = document.querySelector('#mapEl .leaflet-control-attribution'), bot = at ? at.offsetHeight + 6 : 28; el.style.bottom = bot + 'px';   // never over the attribution
@@ -1137,12 +1176,13 @@ $('pcard').addEventListener('click', (e) => {
   if (k === 'close') return closeCard();
   if (k === 'score') { MM.open.score = !MM.open.score; renderCard(); const s = state.stores.find((x) => x.id === MM.sel); if (s) panToFree(s.ll); return; }
   if (k === 'fly') return flyTo3D(MM.sel);
-  if (k === 'corner' || k === 'stack') { if (MM.cand) MM.cand[k] = !MM.cand[k]; else { const s = state.stores.find((x) => x.id === MM.sel); if (!s) return; s.site[k] = !s.site[k]; save(); } return renderCard(); }
-  if (k === 'newHere' && MM.cand) {
-    const n = CO.newStore({ name: `New shop ${state.stores.length + 1}`, ll: MM.cand.ll }); n.site = { corner: MM.cand.corner, stack: MM.cand.stack };
-    state.stores.push(n); state.cur = n.id; clearCand(); saveNow(); toast('＋ 🏪 📍'); refresh(); selectPin(n.id); return;
-  }
+  if (k === 'corner' || k === 'stack') { const t = MM.cand ? MM.cand.site : (state.stores.find((x) => x.id === MM.sel) || {}).site; if (!t) return; t[k] = !t[k]; save(); renderTray(); return renderCard(); }
+  if (k === 'newHere' && MM.cand) { const n = startShop(MM.cand.id); if (!n) return; refresh(); renderTray(); selectPin(n.id); return; }
+  if (k === 'cmp') { const id = MM.cand ? MM.cand.id : MM.sel; if (id) toggleCmp(id); return; }
+  if (k === 'rename' && MM.cand) { if (ui.renaming === MM.cand.id) return renameCand(MM.cand, $('candName').value); ui.renaming = MM.cand.id; return renderCard(); }
+  if (k === 'delCand' && MM.cand) { const id = MM.cand.id; if (ui.confirm !== 'dc' + id) { arm('dc' + id); return renderCard(); } ui.confirm = null; delCand(id); closeCard(); renderTray(); toast('🗑 🎯'); return; }
 });
+function renameCand(c, v) { v = String(v || '').trim().slice(0, 60); if (v) { c.name = v; saveNow(); toast('✏️ ' + v); } ui.renaming = null; renderPins(); renderCard(); renderTray(); if (ui.view === 'cmp') renderCompare(); }
 function flyTo3D(id) {
   const s = state.stores.find((x) => x.id === id); if (!s || ui.flying) return;
   ui.flying = id; if (MM.map) MM.map.flyTo(s.ll, 15, { duration: 0.55 });
@@ -1163,6 +1203,7 @@ function drawLayers() {
 }
 function renderPanel() {
   const el = $('mpanel'), D = MM.data, on = state.layers; $('layBtn').classList.toggle('on', MM.panel === 'layers'); $('legBtn').classList.toggle('on', MM.panel === 'legend');
+  renderTray();
   if (!MM.panel) { el.hidden = true; return; }
   const snap = (d) => (d && d.fetched ? `<i class="tag real">OSM ${d.fetched}</i> ${d.items.length}` : '<i class="tag">no snapshot yet</i> 0');
   el.innerHTML = MM.panel === 'layers' ? `<h4>🗂 Layers</h4>
@@ -1178,14 +1219,136 @@ function renderPanel() {
     <div class="lsrc">Dashed = freeway. 📊 site score = 🚦 40 + 🏁 20 + ☕ 20 + 🛣 10 + 🚗 10.</div>`;
   el.hidden = false;
 }
-$('mtools').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const k = b.id === 'layBtn' ? 'layers' : 'legend'; MM.panel = MM.panel === k ? '' : k; renderPanel(); });
+$('mtools').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b.id === 'pickBtn') return; const k = b.id === 'layBtn' ? 'layers' : 'legend'; MM.panel = MM.panel === k ? '' : k; if (MM.panel && ui.cmpOpen) { ui.cmpOpen = false; renderTray(); } renderPanel(); });
 $('mpanel').addEventListener('click', (e) => { const b = e.target.closest('[data-layer]'); if (!b) return; const k = b.dataset.layer; state.layers[k] = !state.layers[k]; save(); drawLayers(); renderPanel();
   toast(`${{ traffic: '🚦', existing: '☕', comp: '🏁' }[k]} ${state.layers[k] ? 'on' : 'off'}`); if (MM.sel || MM.cand) renderCard(); });
 
+// ---------------------------------------------------------------- ⚖ v5 compare: tray on the map, side-by-side view, 📸 share card
+function renderTray() {
+  const el = $('cmpTray'), ids = (state.cmp || []).filter((id) => siteOf(id)), n = ids.length;
+  if (ui.mode !== 'metro' || MM.panel || ui.view || (!n && !ui.cmpOpen)) { el.hidden = true; return; }   // hidden while 🗂/🔑 or the compare view is open
+  const list = ids.map((id) => { const x = siteOf(id), sc = siteScore(x.ll, x.site, x.kind === 'shop' ? id : null);
+    return `<div class="ti" data-tsite="${id}"><button class="tgo" data-tray="go" aria-label="Show ${esc(x.name)}"><span class="tn">⚖${cmpIdx(id) + 1}</span><span class="tic">${x.icon}</span><span class="tnm">${esc(x.name)}</span><b class="tsc" style="--c:${scoreCol(sc.total)}">${sc.total}</b></button><button class="tx" data-tray="rm" aria-label="Remove from compare">✕</button></div>`; }).join('');
+  el.className = ui.cmpOpen ? 'open' : '';
+  el.innerHTML = `<button id="trayBtn" class="tpill" data-tray="toggle" aria-expanded="${ui.cmpOpen}" aria-label="Compare tray">⚖ <b>${n}/${CO.MAXCMP}</b> ${ui.cmpOpen ? '▴' : '▾'}</button>${ui.cmpOpen ? `<div class="tbody">${list || '<div class="tempty">➕ Compare on a pin card</div>'}
+    <button class="tcmp" data-tray="compare" ${n < 2 ? 'disabled' : ''} aria-label="Compare">${n < 2 ? `➕ ${2 - n} more to compare` : `⚖ Compare ${n}`}</button></div>` : ''}`;
+  el.hidden = false;
+}
+$('cmpTray').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tray]'); if (!b) return; const k = b.dataset.tray, id = b.closest('[data-tsite]') && b.closest('[data-tsite]').dataset.tsite;
+  if (k === 'toggle') { ui.cmpOpen = !ui.cmpOpen; if (ui.cmpOpen && MM.panel) { MM.panel = ''; renderPanel(); } return renderTray(); }
+  if (k === 'rm' && id) return toggleCmp(id);
+  if (k === 'go' && id) { const x = siteOf(id); if (!x) return; ui.cmpOpen = false; renderTray(); if (x.kind === 'shop') selectPin(id); else selectCand(id); return; }
+  if (k === 'compare') return openCompare();
+});
+// winner + 🏆 per row (best points; no 🏆 when every site is equal)
+const ROWS = ['traffic', 'comp', 'cann', 'corner', 'stack'];
+function compareData() {
+  const sites = (state.cmp || []).map(siteOf).filter(Boolean).map((x) => { const sc = siteScore(x.ll, x.site, x.kind === 'shop' ? x.id : null), P = {}; sc.parts.forEach((p) => { P[p.k] = p; }); return Object.assign(x, { sc, P }); });
+  const best = {}; for (const k of ROWS) { const v = sites.map((x) => x.P[k].pts), mx = Math.max(...v), mn = Math.min(...v); best[k] = sites.length > 1 && mx > mn ? sites.filter((x) => x.P[k].pts === mx).map((x) => x.id) : []; }
+  const tops = sites.slice().sort((a, b) => b.sc.total - a.sc.total), win = tops[0], tie = sites.length > 1 && tops[1].sc.total === win.sc.total;
+  let reason = '';
+  if (win && sites.length > 1 && !tie) {
+    const ph = []; const P = win.P, mine = (k) => best[k].includes(win.id), only = (k) => mine(k) && best[k].length === 1;
+    for (const k of ['traffic', 'cann', 'comp', 'corner', 'stack'].sort((a, b) => only(b) - only(a))) { if (!mine(k)) continue;
+      if (k === 'traffic') ph.push(`best traffic (${Math.round(P.traffic.raw / 1000)}k cars/day)`);
+      if (k === 'cann') ph.push(P.cann.mi >= 2 ? 'no Dutch Bros within 2 mi' : `farthest from a Dutch Bros (${P.cann.mi.toFixed(1)} mi)`);
+      if (k === 'comp') ph.push(P.comp.n ? `fewest competitors (${P.comp.n} within 1 mi)` : 'no coffee competitors within 1 mi');
+      if (k === 'corner') ph.push('a hard corner lot'); if (k === 'stack') ph.push('room to stack 20+ cars'); }
+    const two = ph.slice(0, 2); reason = two.length ? two.join(' and ') : `best all-round score (${win.sc.total} vs ${tops[1].sc.total})`;
+    reason = reason[0].toUpperCase() + reason.slice(1);
+  }
+  return { sites, best, win: tie ? null : win, tie, tops, reason };
+}
+const rowVal = (k, p, x) => k === 'traffic' ? (p.na ? 'no data' : p.raw ? `${Math.round(p.raw / 1000)}k cars/day${p.hw ? ' · freeway' : ''}` : 'under 8k/day')
+  : k === 'comp' ? (p.na ? 'no data' : `${p.n} within 1 mi · ${p.ndt} 🚗 drive-thru`) : k === 'cann' ? (p.mi != null ? `${p.mi.toFixed(1)} mi to ${p.src === 'tracker' ? esc(p.nm) : 'Dutch Bros'}` : 'none known')
+  : k === 'corner' ? (x.site.corner ? '✔ hard corner' : '✖ no corner') : (x.site.stack ? '✔ 20+ cars' : '✖ under 20 cars');
+const rowSrc = (k, p) => k === 'traffic' ? 'ADOT 2024 AADT' : k === 'comp' ? `OSM ${p.src || ''}`.trim() : k === 'cann' ? (p.src === 'tracker' ? 'this tracker' : 'OSM snapshot') : 'your check';
+function openCompare() { $('mapHint').hidden = true; ui.view = 'cmp'; ui.cmpOpen = false; renderTray(); if (MM.panel) { MM.panel = ''; renderPanel(); } loadData().then(() => { if (ui.view === 'cmp') renderCompare(); }); renderCompare(); $('cmpView').hidden = false; }
+function closeCompare() { ui.view = null; $('cmpView').hidden = true; $('shareView').hidden = true; renderTray(); }
+function renderCompare() {
+  const el = $('cmpView'), D = compareData(), n = D.sites.length;
+  const head = `<div class="cv-hd"><span class="big">⚖</span><h2>Compare <small>${n}/${CO.MAXCMP} sites</small></h2><button class="chip" data-cv="share" ${n < 2 ? 'disabled' : ''} aria-label="Share">📸 Share</button><button class="ibtn" data-cv="close" aria-label="Close">✕</button></div>`;
+  if (n < 2) { el.innerHTML = head + `<div class="cv-empty">⚖ ${n}/${CO.MAXCMP}<br><small>Tap a pin → ➕ Compare (or 🎯 Pick site) to add ${2 - n} more.</small></div>`; return; }
+  const banner = D.win ? `<div class="cv-win" id="cvWin">🏆 <b>${esc(D.win.name)}</b> wins · ${D.win.sc.total}<small>${esc(D.reason)}</small></div>` : `<div class="cv-win tie" id="cvWin">🤝 Tie at ${D.tops[0].sc.total}<small>${D.tops.filter((x) => x.sc.total === D.tops[0].sc.total).map((x) => esc(x.name)).join(' · ')}</small></div>`;
+  const col = (x) => { const win = D.win && D.win.id === x.id;
+    return `<div class="cv-col${win ? ' win' : ''}" data-site="${x.id}">
+      <div class="cv-top"><span class="cv-ic">${x.icon}</span><b class="cv-nm">${ui.renaming === 'cv' + x.id ? `<input id="cvName" maxlength="60" value="${esc(x.name)}" aria-label="Site name">` : esc(x.name)}</b>${x.example ? '<i class="ex">🧪</i>' : ''}</div>
+      <div class="cv-kind">${x.kind === 'cand' ? '🎯 Candidate' : `${x.s.icon} Shop · ${CO.isOpen(x.s) ? '☕ open' : S[CO.current(x.s)].icon + ' ' + esc(S[CO.current(x.s)].name)}`}</div>
+      <div class="cv-ring"><span class="ring big" style="--p:${x.sc.total};--c:${scoreCol(x.sc.total)}" data-total="${x.sc.total}">${x.sc.total}</span>${win ? '<span class="cv-cup">🏆</span>' : ''}</div>
+      <canvas class="mini" data-mini="${x.id}" width="10" height="10" aria-label="1 mile around ${esc(x.name)}"></canvas>
+      ${ROWS.map((k) => { const p = x.P[k], cup = D.best[k].includes(x.id);
+        return `<div class="cv-row${cup ? ' best' : ''}" data-row="${k}"><div class="cv-rh"><span class="ri">${p.icon}</span><span class="rn">${{ cann: 'Dutch Bros', stack: 'Stacking' }[k] || p.name}</span>${cup ? '<span class="cup" aria-label="Best">🏆</span>' : ''}<b class="rp">${p.pts}<small>/${p.max}</small></b></div>
+          <div class="bar" style="--c:${p.na ? 'var(--todo)' : scoreCol(p.pts / p.max * 100)}"><i style="width:${Math.round(p.pts / p.max * 100)}%"></i></div>
+          <div class="cv-raw">${rowVal(k, p, x)}<small>${rowSrc(k, p)}</small></div></div>`; }).join('')}
+      <div class="cv-act">${x.kind === 'cand' ? `<button class="chip on" data-cv="start" aria-label="Start shop here">🏪 Start shop here</button><button class="chip" data-cv="rename" aria-label="Rename">${ui.renaming === 'cv' + x.id ? '✔' : '✏️'}</button>` : `<button class="chip on" data-cv="fly" aria-label="Open in 3D">🧊 3D</button>`}<button class="chip" data-cv="rm" aria-label="Remove from compare">➖</button></div>
+    </div>`; };
+  el.innerHTML = head + banner + `<div class="cv-grid" style="--n:${n}">${D.sites.map(col).join('')}</div><div class="cv-src">🚦 ADOT 2024 AADT · ☕🏁 © OpenStreetMap contributors (ODbL) ${MM.data.comp && MM.data.comp.fetched ? MM.data.comp.fetched : ''} · 🛣🚗 your checks</div>`;
+  el.querySelectorAll('canvas[data-mini]').forEach((cv) => drawMini(cv, siteOf(cv.dataset.mini)));
+  const inp = $('cvName'); if (inp) { requestAnimationFrame(() => { inp.focus(); inp.select(); }); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); renameCand(candOf(ui.renaming.slice(2)), inp.value); } }; }
+}
+$('cmpView').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cv]'); if (!b) return; const k = b.dataset.cv, id = b.closest('[data-site]') && b.closest('[data-site]').dataset.site;
+  if (k === 'close') return closeCompare();
+  if (k === 'share') return openShare();
+  if (k === 'rm' && id) { toggleCmp(id); return renderCompare(); }
+  if (k === 'start' && id) { const nn = startShop(id); if (nn) { refresh(); renderCompare(); } return; }
+  if (k === 'rename' && id) { if (ui.renaming === 'cv' + id) return renameCand(candOf(id), $('cvName').value); ui.renaming = 'cv' + id; return renderCompare(); }
+  if (k === 'fly' && id) { closeCompare(); return flyTo3D(id); }
+});
+// 1-mile locator: canvas only (offline-safe): roads with ADOT counts, competitors, existing Dutch Bros, the 1 mi ring, the site
+function drawMini(cv, x) {
+  if (!x) return; const css = 132, dpr = Math.min(3, devicePixelRatio || 1); cv.width = cv.height = Math.round(css * dpr); cv.style.width = cv.style.height = css + 'px';
+  const g = cv.getContext('2d'), night = state.theme === 'night', R = css * 0.4, mPerPx = MI / R, k = Math.cos(x.ll[0] * Math.PI / 180);
+  const P = (lat, lng) => [css / 2 + (lng - x.ll[1]) * 111320 * k / mPerPx, css / 2 - (lat - x.ll[0]) * 110574 / mPerPx];
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = night ? '#0b1530' : '#e7eef8'; g.fillRect(0, 0, css, css);
+  const T = MM.data.traffic, span = (css / 2) * mPerPx, dLat = span / 110574, dLng = span / (111320 * k);
+  if (T) for (const s of T.list) { if (s.bb[0] > x.ll[0] + dLat || s.bb[2] < x.ll[0] - dLat || s.bb[1] > x.ll[1] + dLng || s.bb[3] < x.ll[1] - dLng) continue;
+    g.strokeStyle = s.v >= 50000 ? '#ff5a4f' : s.v >= 30000 ? '#ffb020' : s.v >= 15000 ? '#4f9bff' : '#9fd3ff'; g.lineWidth = s.v >= 30000 ? 3 : 2; g.setLineDash(s.hw ? [4, 3] : []); g.beginPath();
+    s.pts.forEach((q, i) => { const [px, py] = P(q[0], q[1]); if (i) g.lineTo(px, py); else g.moveTo(px, py); }); g.stroke(); }
+  g.setLineDash([5, 4]); g.lineWidth = 2; g.strokeStyle = night ? '#4fb3ff' : '#1f5fd1'; g.beginPath(); g.arc(css / 2, css / 2, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+  const dot = (items, fill, r, ring) => { for (const it of items || []) { const [px, py] = P(it.lat, it.lng); if (px < -6 || py < -6 || px > css + 6 || py > css + 6) continue; g.beginPath(); g.arc(px, py, r, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); g.lineWidth = ring && it.dt ? 2 : 1.2; g.strokeStyle = ring && it.dt ? '#ffb020' : '#fff'; g.stroke(); } };
+  dot(MM.data.comp && MM.data.comp.items, '#8a5a2b', 3.6, true); dot(MM.data.existing && MM.data.existing.items, '#16295a', 5, false);
+  for (const s of state.stores) if (s.id !== x.id && CO.isLL(s.ll)) { const [px, py] = P(s.ll[0], s.ll[1]); if (px > 0 && py > 0 && px < css && py < css) { g.font = '13px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s.icon, px, py); } }
+  g.font = '18px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(x.kind === 'cand' ? '🎯' : x.icon, css / 2, css / 2);
+  g.font = '700 9px system-ui'; g.fillStyle = night ? '#9fb3d6' : '#5d6b85'; g.textAlign = 'left'; g.fillText('1 mi', css / 2 + R * 0.72 + 2, css / 2 - R * 0.72);
+  cv.dataset.drawn = '1';
+}
+// 📸 share: one clean, screenshot-ready card (icons over text)
+function openShare() {
+  const D = compareData(); if (D.sites.length < 2) return; const el = $('shareView');
+  const cell = (x, k) => { const p = x.P[k], cup = D.best[k].includes(x.id), v = k === 'traffic' ? (p.raw ? Math.round(p.raw / 1000) + 'k' : '–') : k === 'comp' ? `${p.n ?? '–'}` : k === 'cann' ? (p.mi != null ? p.mi.toFixed(1) + ' mi' : '–') : x.site[k] ? '✔' : '✖';
+    return `<div class="sh-c${cup ? ' best' : ''}" data-row="${k}">${cup ? '<i>🏆</i>' : ''}<b>${v}</b><small>${p.pts}/${p.max}</small></div>`; };
+  el.innerHTML = `<div class="sh-card" id="shareCard" style="--n:${D.sites.length}">
+    <div class="sh-hd"><span class="brandmark" aria-hidden="true">${MARK}</span><div><b>Site compare</b><small>Dutch Bros · New Shop Opening Tracker · ${ui.today}</small></div></div>
+    ${D.win ? `<div class="sh-win">🏆 <b>${esc(D.win.name)}</b><small>${esc(D.reason)}</small></div>` : `<div class="sh-win tie">🤝 Tie at ${D.tops[0].sc.total}</div>`}
+    <div class="sh-grid"><div class="sh-l"></div>${D.sites.map((x) => `<div class="sh-site${D.win && D.win.id === x.id ? ' win' : ''}"><span class="ring" style="--p:${x.sc.total};--c:${scoreCol(x.sc.total)}">${x.sc.total}</span><b>${esc(x.name.split(' · ').pop())}</b><small>${esc(x.name.split(' · ')[0])}${x.example ? ' 🧪' : ''}</small></div>`).join('')}
+      ${[['traffic', '🚦', 'cars/day'], ['comp', '🏁', 'rivals 1 mi'], ['cann', '☕', 'to Dutch Bros'], ['corner', '🛣', 'corner'], ['stack', '🚗', '20+ stack']].map(([k, ic, lb]) => `<div class="sh-l"><span>${ic}</span><small>${lb}</small></div>${D.sites.map((x) => cell(x, k)).join('')}`).join('')}</div>
+    <div class="sh-src">🚦 ADOT 2024 AADT · ☕🏁 © OpenStreetMap contributors (ODbL)${D.sites.some((x) => x.example) ? ' · 🧪 example sites' : ''} · unofficial pitch</div>
+  </div><button class="ibtn sh-x" data-sh="close" aria-label="Close">✕</button>`;
+  el.hidden = false;
+}
+$('shareView').addEventListener('click', (e) => { if (e.target.closest('[data-sh="close"]')) $('shareView').hidden = true; });
+$('pickBtn').onclick = () => { setPick(!ui.pick); if (ui.pick && ui.drag) { /* ✋ stays as it is */ } toast(ui.pick ? '🎯 Tap the map to place a site' : '🎯 off'); };
+// 🆕 first run after the update: open straight into the real map + a one-time hint at 📍 (key kept apart from the save so a reset does not replay it)
+const INTRO = 'coffee-opening-intro';
+function firstRun() {
+  let seen = '0', again = false;
+  try { seen = localStorage.getItem(INTRO) || '0'; localStorage.setItem(INTRO, '5'); const t = +sessionStorage.getItem('co-intro-at') || 0;
+    const r = JSON.parse(sessionStorage.getItem('co-reloaded') || '{}');   // the one automatic update reload right after the first v5 load still counts as the first run
+    again = seen === '5' && t > 0 && Date.now() - t < 20000 && r.t > t; sessionStorage.removeItem('co-intro-at');
+    if (seen !== '5') sessionStorage.setItem('co-intro-at', String(Date.now())); } catch (e) { return; }
+  if (seen === '5' && !again) return;
+  setMode('metro'); const h = $('mapHint');
+  const place = () => { const b = $('metroBtn').getBoundingClientRect(), st = stageEl.getBoundingClientRect(); h.style.top = (b.top - st.top + b.height / 2) + 'px'; h.style.right = (st.right - b.left + 8) + 'px'; };
+  h.hidden = false; place(); const EV = ['pointerdown', 'touchstart', 'mousedown'], done = () => { h.hidden = true; EV.forEach((k) => removeEventListener(k, done, true)); };
+  setTimeout(() => EV.forEach((k) => addEventListener(k, done, { capture: true, passive: true })), 400); setTimeout(done, 9000);
+}
 // ---------------------------------------------------------------- misc
 let toastT = 0; function toast(t, ms = 1600) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, ms); }
 function refresh() { M = model(); if (ui.mode === 'district') buildDistrict(); renderTop(); renderTL(); renderBars(); refreshLabels();
-  if (ui.mode === 'metro' && MM.map) { renderPins(); if (MM.sel && !state.stores.some((x) => x.id === MM.sel)) closeCard(); else if (MM.sel || MM.cand) renderCard(); } }
+  if (ui.mode === 'metro' && MM.map) { if (MM.cand && !candOf(MM.cand.id)) MM.cand = null; renderPins(); if (MM.sel && !state.stores.some((x) => x.id === MM.sel)) closeCard(); else if (MM.sel || MM.cand) renderCard(); else $('pcard').hidden = true; }
+  renderTray(); if (ui.view === 'cmp') renderCompare(); }
 new ResizeObserver(() => { resize(); if (ui.mode === 'metro') { if (MM.map) { MM.map.invalidateSize(); if (MM.sel || MM.cand) renderCard(); else mapHome(); } return; } if (ui.mode === 'district') buildDistrict(); if (ui.sel >= 0) focus(ui.sel); else if (ui.sheet === 'ops' || ui.sheet === 'open') focusShop(); else if (!ui.demo && !ui.dtour) home(); }).observe(stageEl);
 new ResizeObserver(() => resize()).observe($('sheet'));
 setInterval(() => { const d = CO.today(); if (d !== ui.today) { ui.today = d; refresh(); } }, 30000);
@@ -1202,10 +1365,11 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 applyTheme(); resize(); home(); Object.assign(view, dst); refresh(); for (let i = 0; i < N; i++) shown[i] = M.p[i]; paved = M.p[5] >= 0.86 ? 1 : 0;
-if (state.migrated) { const m = state.migrated; delete state.migrated; saveNow(); setTimeout(() => toast(`☕ Dutch Bros v4 · ${m.swapped ? m.swapped + ' 🧪 refreshed · ' : ''}${m.placed ? '📍 ' + m.placed + ' pinned · ' : ''}your data kept`, 2600), 1500); }
+if (state.migrated) { const m = state.migrated; delete state.migrated; saveNow(); setTimeout(() => toast(`☕ Dutch Bros v5 · ${m.swapped ? m.swapped + ' 🧪 refreshed · ' : ''}${m.placed ? '📍 ' + m.placed + ' pinned · ' : ''}${m.cands ? '🎯 ' + m.cands + ' 🧪 sites · ' : ''}your data kept`, 2600), 1500); }
+firstRun();
 requestAnimationFrame(loop);
 
 // test hooks (read-only views + helpers used by the headless checks)
-window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines, canopy, blades }, queues, busters, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, MM, siteScore, selectPin, mapHome, flyTo3D, closeCard, exportJSON,
+window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines, canopy, blades }, queues, busters, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, MM, siteScore, selectPin, selectCand, compareData, openCompare, openShare, toggleCmp, startShop, drawMini, setPick, mapHome, flyTo3D, closeCard, exportJSON,
   loadSnapshot: (k, j) => { MM.data[k] = prepData(k, JSON.parse(JSON.stringify(j))); if (MM.layers[k]) { MM.layers[k].remove(); MM.layers[k] = null; } drawLayers(); renderPanel(); if (MM.sel || MM.cand) renderCard(); }, openOps, startDTour, stopDTour, select, startDemo, stopDemo, focus, home, pick,
   project: (x, y, z) => { pv.set(x, y, z).project(cam); const r = cv.getBoundingClientRect(); return { x: r.left + (pv.x + 1) / 2 * r.width, y: r.top + (1 - pv.y) / 2 * r.height }; }, saveNow };

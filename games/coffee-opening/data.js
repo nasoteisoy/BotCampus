@@ -2,7 +2,7 @@
    No DOM, no Three.js, so it also runs in node for tests. The example shops are MADE-UP EXAMPLE DATA, not real plans. */
 (function (root) {
   'use strict';
-  const KEY = 'coffee-opening-v4', KEY_V3 = 'coffee-opening-v3', KEY_V2 = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1–v3 saves are migrated (and left in place as a backup)
+  const KEY = 'coffee-opening-v5', KEY_V4 = 'coffee-opening-v4', KEY_V3 = 'coffee-opening-v3', KEY_V2 = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1–v4 saves are migrated (and left in place as a backup)
   const BRAND = 'Dutch Bros', SUB = 'New Shop Opening Tracker';
   const STAGES = [
     { id: 'scout', icon: '🔍', name: 'Site scouting', short: 'Scout', owner: 'Real estate' },
@@ -49,6 +49,13 @@
   const EXLL = { 'ex-elm': [33.40735, -111.92647], 'ex-river': [33.41481, -111.87548], 'ex-airport': [33.44005, -111.98605], 'ex-hill': [33.60521, -111.72354],
     'ex-desert': [33.71158, -112.26873], 'ex-sun': [33.33478, -111.75561], 'ex-down': [33.49452, -111.92617], 'ex-hwy': [33.28497, -111.84176],
     'ex-lake': [33.46403, -112.39581], 'ex-pine': [33.53352, -112.26102], 'ex-college': [33.63887, -112.35795] };
+  // ---- v5 ⚖ compare: 🧪 example candidate sites (made-up picks at real intersections), so the compare view demos at once
+  const EXCANDS = [
+    { id: 'cx-gilbert', name: 'Gilbert · Higley & Ray', ll: [33.32073, -111.72035], site: { corner: true, stack: true } },
+    { id: 'cx-phx', name: 'Phoenix · 7th St & Camelback', ll: [33.50934, -112.06542], site: { corner: true, stack: false } },
+    { id: 'cx-dunlap', name: 'Phoenix · 35th Ave & Dunlap', ll: [33.5677, -112.1338], site: { corner: false, stack: true } }];
+  const exCands = () => EXCANDS.map((c) => ({ id: c.id, name: c.name, ll: c.ll.slice(), site: Object.assign({}, c.site), example: true }));
+  const MAXCMP = 3;
   const isLL = (a) => Array.isArray(a) && a.length === 2 && a.every((v) => typeof v === 'number' && isFinite(v)) && Math.abs(a[0]) <= 85 && Math.abs(a[1]) <= 180;
   const r5 = (v) => Math.round(v * 1e5) / 1e5;
   // default spots for shops without a pin: a golden-angle spiral around the metro centre, about 3–9 km out, never on top of each other
@@ -109,7 +116,7 @@
     l.ops.issues.push(preset(0, d, 0), preset(2, d, 1), preset(3, d, 6)); l.ops.checks.filter((c) => c.every === 'daily').forEach((c) => { c.last = addDays(d, -3); });
     return [a, b, c, e, f, g, h, i, j, k, l];
   }
-  function fresh() { const stores = examples(); return { v: 4, cur: stores[0].id, theme: 'day', stores, layers: { traffic: false, existing: true, comp: false } }; }
+  function fresh() { const stores = examples(), cands = exCands(); return { v: 5, cur: stores[0].id, theme: 'day', stores, layers: { traffic: false, existing: true, comp: false }, cands, cmp: cands.map((c) => c.id) }; }
   // ---- v1/v2 → v3: an example store that is still exactly as shipped (same ticks, texts, owners, votes, issues, relative dates) is swapped
   // for its Dutch Bros v3 example (same id); anything the user touched, and every user store, is kept as is.
   function rel(a, b) { return isDate(a) && isDate(b) ? diffDays(a, b) : ''; }
@@ -138,7 +145,7 @@
     }
     return placed;
   }
-  function clearExamples(o) { o.stores = o.stores.filter((x) => !x.example); if (!o.stores.length) o.stores.push(newStore({ name: 'My first store' })); place(o); if (!o.stores.some((x) => x.id === o.cur)) o.cur = o.stores[0].id; return o; }
+  function clearExamples(o) { o.stores = o.stores.filter((x) => !x.example); o.cands = (o.cands || []).filter((c) => !c.example); o.cmp = (o.cmp || []).filter((id) => o.stores.some((s) => s.id === id) || o.cands.some((c) => c.id === id)); if (!o.stores.length) o.stores.push(newStore({ name: 'My first store' })); place(o); if (!o.stores.some((x) => x.id === o.cur)) o.cur = o.stores[0].id; return o; }
 
   // ---- progress & status
   function raw(s, i) {
@@ -215,11 +222,18 @@
     delete o.noMigrate;
     if (!o.stores.some(s => s.id === o.cur)) o.cur = o.stores[0].id;
     const L = o.layers || {}; o.layers = { traffic: !!L.traffic, existing: L.existing !== false, comp: !!L.comp };
-    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 4;
+    // v5: candidate sites + the ⚖ compare list (ids of shops or candidates, max 3). A v1–v4 save that still has its 🧪 examples gets the 🧪 example candidates.
+    const hadC = Array.isArray(o.cands);
+    o.cands = (hadC ? o.cands : []).filter((c) => c && isLL(c.ll)).map((c) => ({ id: String(c.id || 'c-' + uid()), name: String(c.name || 'Site').slice(0, 60), ll: [r5(c.ll[0]), r5(c.ll[1])], site: { corner: !!(c.site && c.site.corner), stack: !!(c.site && c.site.stack) }, example: !!c.example }));
+    if (!hadC && o.stores.some((s) => s.example)) { o.cands = exCands(); if (!Array.isArray(o.cmp)) o.cmp = o.cands.map((c) => c.id); }
+    const ids = new Set(o.stores.map((s) => s.id).concat(o.cands.map((c) => c.id)));
+    o.cmp = (Array.isArray(o.cmp) ? o.cmp : []).filter((id, i, a) => ids.has(id) && a.indexOf(id) === i).slice(0, MAXCMP);
+    if (from < 5 && !hadC) o.migrated = Object.assign(o.migrated || { from, swapped: 0, placed: 0 }, { cands: o.cands.length });
+    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 5;
     return o;
   }
   function load(storage) {
-    for (const k of [KEY, KEY_V3, KEY_V2, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
+    for (const k of [KEY, KEY_V4, KEY_V3, KEY_V2, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
     return fresh();
   }
   function importJSON(text) {
@@ -229,6 +243,6 @@
     throw new Error('not an opening plan');
   }
 
-  const API = { KEY, KEY_V3, KEY_V2, KEY_V1, BRAND, SUB, sig, migrate, PRISTINE, CENTER, EXLL, isLL, spot, place, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
+  const API = { KEY, KEY_V4, EXCANDS, exCands, MAXCMP, KEY_V3, KEY_V2, KEY_V1, BRAND, SUB, sig, migrate, PRISTINE, CENTER, EXLL, isLL, spot, place, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CO = API;
 })(typeof window !== 'undefined' ? window : globalThis);
