@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<title>Field Marshal Topics</title>
+<title>Bot Topics</title>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%;background:#111;color:#eee;
@@ -38,11 +38,12 @@
   .how{margin-top:1.25rem;padding-top:1rem;border-top:1px solid #333;color:#888;font-size:.8rem;line-height:1.45}
   .err{color:#f88;font-size:.9rem}
   li.sec{border:0;margin:1rem 0 .4rem;color:#8ab;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  li.sec{font-size:1.15rem!important;font-weight:800!important;text-transform:none!important;letter-spacing:0!important;color:#fff!important;margin:1.4rem 0 .5rem!important;padding:.55rem .8rem!important;border-radius:10px!important;background:#2a3b55!important;border-left:5px solid #7fb3ff!important}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Field Marshal Topics</h1>
+  <h1>Bot Topics</h1>
   <p class="sub">Pick a topic → <strong>Open &amp; copy context</strong> copies What / Summary / Left off, then opens Field Marshal. Paste once in chat (the app cannot auto-send a message).</p>
   <ul id="list"><li class="err">Loading…</li></ul>
   <div id="panel" class="panel" hidden></div>
@@ -180,7 +181,7 @@
       if (!groups[g]) return;
       var h = document.createElement("li");
       h.className = "sec";
-      h.textContent = g;
+      h.textContent = "🤖 " + g + " (" + groups[g].length + ")";
       list.appendChild(h);
       groups[g].forEach(addTopic);
     });
