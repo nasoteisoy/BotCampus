@@ -2,7 +2,7 @@
    No DOM, no Three.js, so it also runs in node for tests. The example shops are MADE-UP EXAMPLE DATA, not real plans. */
 (function (root) {
   'use strict';
-  const KEY = 'coffee-opening-v3', KEY_V2 = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1/v2 saves are migrated (and left in place as a backup)
+  const KEY = 'coffee-opening-v4', KEY_V3 = 'coffee-opening-v3', KEY_V2 = 'coffee-opening-v2', KEY_V1 = 'coffee-opening-v1';   // v1–v3 saves are migrated (and left in place as a backup)
   const BRAND = 'Dutch Bros', SUB = 'New Shop Opening Tracker';
   const STAGES = [
     { id: 'scout', icon: '🔍', name: 'Site scouting', short: 'Scout', owner: 'Real estate' },
@@ -44,6 +44,15 @@
     ['weekly', '☕', 'Backflush & grinder clean'], ['weekly', '📦', 'Inventory & order (milk, cold brew, Rebel)'], ['weekly', '🗓', 'Broista schedule posted'],
     ['monthly', '🔧', 'HVAC filter check'], ['monthly', '💧', 'Water filter check'], ['monthly', '🧯', 'Fire extinguisher & safety walk']];
   const EVERY = ['daily', 'weekly', 'monthly'];
+  // ---- v4 📍 metro map: every shop has a lat/lng. Example shops sit at real Phoenix-area intersections that match their names.
+  const CENTER = [33.4484, -112.074];   // downtown Phoenix
+  const EXLL = { 'ex-elm': [33.40735, -111.92647], 'ex-river': [33.41481, -111.87548], 'ex-airport': [33.44005, -111.98605], 'ex-hill': [33.60521, -111.72354],
+    'ex-desert': [33.71158, -112.26873], 'ex-sun': [33.33478, -111.75561], 'ex-down': [33.49452, -111.92617], 'ex-hwy': [33.28497, -111.84176],
+    'ex-lake': [33.46403, -112.39581], 'ex-pine': [33.53352, -112.26102], 'ex-college': [33.63887, -112.35795] };
+  const isLL = (a) => Array.isArray(a) && a.length === 2 && a.every((v) => typeof v === 'number' && isFinite(v)) && Math.abs(a[0]) <= 85 && Math.abs(a[1]) <= 180;
+  const r5 = (v) => Math.round(v * 1e5) / 1e5;
+  // default spots for shops without a pin: a golden-angle spiral around the metro centre, about 3–9 km out, never on top of each other
+  function spot(k) { const a = k * 2.39996, r = 0.03 + 0.012 * Math.sqrt(k); return [r5(CENTER[0] + r * Math.sin(a) * 0.84), r5(CENTER[1] + r * Math.cos(a))]; }
 
   // ---- dates (local YYYY-MM-DD strings)
   const pad = (n) => String(n).padStart(2, '0');
@@ -66,7 +75,7 @@
   }
   function newStore(o) {
     const target = o.target || addDays(today(), 240);
-    return { id: o.id || uid(), icon: o.icon || '🏪', name: o.name || 'New store', example: !!o.example, phase: 'opening', target, stages: plan(target) };
+    return { id: o.id || uid(), icon: o.icon || '🏪', name: o.name || 'New store', example: !!o.example, phase: 'opening', target, stages: plan(target), ll: isLL(o.ll) ? [r5(o.ll[0]), r5(o.ll[1])] : (EXLL[o.id] ? EXLL[o.id].slice() : null), site: { corner: false, stack: false } };
   }
   // tick every task of the first k stages (+ the vote)
   function doneUpTo(s, k) { s.stages.forEach((st, i) => { if (i < k) { st.tasks.forEach(t => { t.done = true; }); if (STAGES[i].vote) st.vote = 'approved'; } }); return s; }
@@ -100,7 +109,7 @@
     l.ops.issues.push(preset(0, d, 0), preset(2, d, 1), preset(3, d, 6)); l.ops.checks.filter((c) => c.every === 'daily').forEach((c) => { c.last = addDays(d, -3); });
     return [a, b, c, e, f, g, h, i, j, k, l];
   }
-  function fresh() { const stores = examples(); return { v: 3, cur: stores[0].id, theme: 'day', stores }; }
+  function fresh() { const stores = examples(); return { v: 4, cur: stores[0].id, theme: 'day', stores, layers: { traffic: false, existing: true, comp: false } }; }
   // ---- v1/v2 → v3: an example store that is still exactly as shipped (same ticks, texts, owners, votes, issues, relative dates) is swapped
   // for its Dutch Bros v3 example (same id); anything the user touched, and every user store, is kept as is.
   function rel(a, b) { return isDate(a) && isDate(b) ? diffDays(a, b) : ''; }
@@ -117,7 +126,19 @@
     o.stores = o.stores.map((s) => { if (!s.example || !PRISTINE.has(sig(s))) return s; const n = ex.find((x) => x.id === s.id); if (!n) return s; swapped++; return n; });
     o.migrated = { from: o.v || 1, swapped }; return o;
   }
-  function clearExamples(o) { o.stores = o.stores.filter((x) => !x.example); if (!o.stores.length) o.stores.push(newStore({ name: 'My first store' })); if (!o.stores.some((x) => x.id === o.cur)) o.cur = o.stores[0].id; return o; }
+  // v4: every shop gets a pin. Kept: any valid lat/lng. Examples (also touched ones) go to their own intersection; other shops get a spread-out default spot.
+  function place(o) {
+    let k = 0, placed = 0; const used = new Set(o.stores.filter((s) => isLL(s.ll)).map((s) => s.ll.join()));
+    for (const s of o.stores) {
+      const si = s.site || {}; s.site = { corner: !!si.corner, stack: !!si.stack };
+      if (isLL(s.ll)) { s.ll = [r5(s.ll[0]), r5(s.ll[1])]; continue; }
+      let ll = s.example && EXLL[s.id] && !used.has(EXLL[s.id].join()) ? EXLL[s.id] : null;
+      while (!ll) { const c = spot(k++); if (!used.has(c.join())) ll = c; }
+      s.ll = ll.slice(); used.add(ll.join()); placed++;
+    }
+    return placed;
+  }
+  function clearExamples(o) { o.stores = o.stores.filter((x) => !x.example); if (!o.stores.length) o.stores.push(newStore({ name: 'My first store' })); place(o); if (!o.stores.some((x) => x.id === o.cur)) o.cur = o.stores[0].id; return o; }
 
   // ---- progress & status
   function raw(s, i) {
@@ -187,14 +208,18 @@
           checks: Array.isArray(p.checks) ? p.checks.filter((c) => c && typeof c.t === 'string').map((c) => ({ id: c.id || uid(), every: EVERY.includes(c.every) ? c.every : 'daily', icon: String(c.icon || '✔').slice(0, 8), t: c.t.slice(0, 120), last: isDate(c.last) ? c.last : '', since: isDate(c.since) ? c.since : '' })) : newOps(s.target).checks };
       }
     }
-    if (!(o.v >= 3) && !o.noMigrate) migrate(o);
+    const from = o.v || 1;
+    if (from < 3 && !o.noMigrate) migrate(o);
+    const placed = place(o);   // v4: pins for shops without a lat/lng
+    if (from < 4 && !o.noMigrate) o.migrated = { from, swapped: o.migrated ? o.migrated.swapped : 0, placed };
     delete o.noMigrate;
     if (!o.stores.some(s => s.id === o.cur)) o.cur = o.stores[0].id;
-    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 3;
+    const L = o.layers || {}; o.layers = { traffic: !!L.traffic, existing: L.existing !== false, comp: !!L.comp };
+    o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 4;
     return o;
   }
   function load(storage) {
-    for (const k of [KEY, KEY_V2, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
+    for (const k of [KEY, KEY_V3, KEY_V2, KEY_V1]) { try { const o = JSON.parse(storage.getItem(k)); if (valid(o)) return clean(o); } catch (e) { /* try the next */ } }
     return fresh();
   }
   function importJSON(text) {
@@ -204,6 +229,6 @@
     throw new Error('not an opening plan');
   }
 
-  const API = { KEY, KEY_V2, KEY_V1, BRAND, SUB, sig, migrate, PRISTINE, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
+  const API = { KEY, KEY_V3, KEY_V2, KEY_V1, BRAND, SUB, sig, migrate, PRISTINE, CENTER, EXLL, isLL, spot, place, PRIO, ISSUES, CHECKS, EVERY, issue, preset, newOps, openStore, clearExamples, ready, pStart, checkState, openIssues, opsAuto, opsStatus, isOpen, health, needsAttention, sorted, FILTERS, URG, STAGES, IDX, TASKS, OFF, VOTES, today, addDays, diffDays, isDate, uid, plan, newStore, examples, fresh, raw, eff, stopped, rejected, status, overall, current, daysTo, valid, clean, load, importJSON };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CO = API;
 })(typeof window !== 'undefined' ? window : globalThis);

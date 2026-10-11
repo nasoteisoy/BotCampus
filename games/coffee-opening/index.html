@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Dutch Bros · New Shop Opening Tracker</title>
-<meta name="description" content="Dutch Bros · New Shop Opening Tracker: a 3D double drive-thru stand that builds itself up as the opening plan moves. Pitch concept, unofficial.">
+<meta name="description" content="Dutch Bros · New Shop Opening Tracker: a 3D double drive-thru stand that builds itself up as the opening plan moves, plus a Phoenix-metro map with site scouting. Pitch concept, unofficial.">
 <meta name="theme-color" content="#16295a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -177,6 +177,59 @@ h3 { margin: 12px 0 6px; font-size: 13px; color: var(--sub); display: flex; alig
 .chips.filt, .chips.sortc { margin: 2px 0 6px; align-items: center; } .chips.filt .chip b { margin-left: 2px; }
 #tl .opennode.ready .ring { animation: pulse 1.6s infinite; --block: var(--ok); }
 
+/* v4 📍 metro map (Leaflet + OpenStreetMap tiles tinted navy/blue; plain background + pins when tiles fail) */
+#mapEl { position: absolute; inset: 0; z-index: 1; background: var(--mapbg); }
+#mapEl[hidden] { display: none; }
+:root { --mapbg: #dde6f2; } body.night { --mapbg: #0b1530; }
+#mapEl.leaflet-container { background: var(--mapbg); font: inherit; }
+#mapEl .leaflet-tile-pane { filter: grayscale(1) sepia(.25) hue-rotate(178deg) saturate(1.7) brightness(1.07) contrast(.92); }
+body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) hue-rotate(180deg) saturate(2.4) brightness(.8) contrast(1.05); }
+#mapEl .leaflet-control-attribution { font-size: 10px; line-height: 1.35; padding: 1px 6px; background: color-mix(in srgb, var(--card) 82%, transparent); color: var(--sub); border-radius: 0 8px 0 0; max-width: calc(100vw - 170px); white-space: normal; }
+#mapEl .leaflet-control-attribution a { color: var(--acc); }
+#stage.metro #scene, #stage.metro #labels { visibility: hidden; }
+#stage.metro #zoom #rot { display: none; }
+#stage.metro #zoom { bottom: calc(var(--cardH, 0px) + 8px); }
+@media (orientation: portrait), (max-width: 599px) { #stage.metro.carded #zoom { display: none; } }
+#stage.metro.drag::after { z-index: 2; }
+.mpin { position: relative; width: 38px; height: 46px; display: flex; flex-direction: column; align-items: center; transition: opacity .2s; }
+.mpin .pi { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; background: var(--card); border: 3.5px solid var(--hc); box-shadow: 0 3px 8px rgba(18, 32, 63, .35); position: relative; z-index: 1; }
+.mpin .pi::after { content: ''; position: absolute; left: 50%; bottom: -8px; width: 10px; height: 10px; background: var(--hc); transform: translateX(-50%) rotate(45deg); z-index: -1; border-radius: 0 0 2px 0; }
+.mpin .pl { margin-top: 5px; font-size: 10px; font-weight: 800; color: var(--ink); white-space: nowrap; text-shadow: 0 0 3px var(--card), 0 0 3px var(--card), 0 0 2px var(--card); }
+.mpin.h-g { --hc: #2fb171; } .mpin.h-o { --hc: #f5a524; } .mpin.h-r { --hc: #e5484d; } .mpin.cand { --hc: var(--acc); } .mpin.cand .pi { border-style: dashed; }
+.mpin.h-r .pi { animation: pulse 1.1s infinite; }
+.mpin.dim { opacity: .3; } .mpin.sel .pi { transform: scale(1.22); box-shadow: 0 0 0 5px color-mix(in srgb, var(--hc) 35%, transparent), 0 4px 10px rgba(18, 32, 63, .4); }
+.mpin.sel .pl { font-size: 12px; }
+.mpin-wrap { background: none; border: 0; }
+#stage.drag .mpin .pi { cursor: grab; outline: 2px dashed var(--acc); outline-offset: 3px; }
+#mtools { position: absolute; left: 8px; top: 8px; z-index: 4; display: flex; gap: 6px; }
+#mtools[hidden], #mpanel[hidden], #moff[hidden], #pcard[hidden], #updToast[hidden] { display: none; }
+#mtools .ibtn { background: var(--card); box-shadow: var(--shadow); } #mtools .ibtn.on { background: var(--acc); color: #fff; }
+#mpanel { position: absolute; z-index: 4; left: 8px; top: 56px; width: min(270px, calc(100% - 70px)); max-height: calc(50% - 96px); overflow-y: auto; background: var(--card); border-radius: 14px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px; touch-action: pan-y; }
+#mpanel h4 { margin: 2px 0 6px; font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 6px; }
+.lay { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 2px; border-bottom: 1px solid var(--line); min-height: 44px; }
+.lay .lk { font-size: 18px; width: 22px; text-align: center; flex: none; } .lay .lt { flex: 1; min-width: 0; } .lay .lt b { display: block; font-size: 13px; } .lay .lt small { display: block; font-size: 10px; color: var(--sub); }
+.lay .lc { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--todo); display: grid; place-items: center; flex: none; font-size: 14px; } .lay.on .lc { background: var(--acc); border-color: var(--acc); color: #fff; }
+.tag { font-style: normal; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 6px; background: #dcefff; color: #16457f; } .tag.real { background: color-mix(in srgb, var(--ok) 20%, transparent); color: #1d7a4c; } body.night .tag.real { color: var(--ok); } body.night .tag { background: #12305a; color: #9fd6ff; }
+.lg { display: flex; align-items: center; gap: 6px; padding: 3px 0; } .lg i { font-style: normal; }
+.lg .sw { width: 22px; height: 5px; border-radius: 3px; flex: none; } .lg .rg { width: 14px; height: 14px; border-radius: 50%; border: 3px solid; flex: none; background: var(--card); } .lg .dt2 { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
+.lsrc { font-size: 10px; color: var(--sub); margin-top: 6px; line-height: 1.35; }
+#moff { position: absolute; z-index: 4; left: 50%; top: 56px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: 12px; font-weight: 800; color: var(--sub); white-space: nowrap; pointer-events: none; }
+#pcard { position: absolute; z-index: 5; left: 8px; right: 8px; bottom: 28px; max-height: 38%; overflow-y: auto; background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 8px 10px 10px; touch-action: pan-y; border-top: 4px solid var(--hc, var(--acc)); }
+#pcard.h-g { --hc: #2fb171; } #pcard.h-o { --hc: #f5a524; } #pcard.h-r { --hc: #e5484d; }
+@media (orientation: landscape) and (min-width: 600px) { #pcard { right: auto; width: 290px; max-height: calc(100% - 84px); } #mpanel { left: auto; right: 54px; top: 8px; width: 250px; max-height: calc(100% - 16px); } #zoom { right: calc(var(--panelW) + 54px); } }
+.pc-hd { display: flex; align-items: center; gap: 6px; } .pc-hd .pc-ic { font-size: 22px; } .pc-hd b { flex: 1; min-width: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pc-hd .ibtn { width: 34px; height: 34px; font-size: 15px; }
+.pc-st { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin-top: 4px; } .pc-st .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pc-st .pcp { font-weight: 800; }
+.pc-iss { font-size: 12px; color: var(--sub); margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-act { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; } .pc-act .chip { height: 38px; } .pc-act .chip.on { background: var(--acc); }
+.sc { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.sc-tot { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; } .sc-tot .ring { width: 40px; height: 40px; font-size: 13px; }
+.sc-row { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; padding: 4px 0 0; min-height: 34px; } .sc-row .si { font-size: 16px; width: 22px; text-align: center; flex: none; }
+.sc-row .st2 { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; } .sc-row .st2 small { display: block; font-weight: 500; color: var(--sub); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-row .sp { font-weight: 800; font-size: 13px; white-space: nowrap; } .sc-row .sp small { color: var(--sub); font-weight: 600; font-size: 10px; } .sc-row.na .sp { color: var(--sub); }
+.sc-row .cb { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--todo); display: grid; place-items: center; flex: none; font-size: 14px; } .sc-row.on .cb { background: var(--ok); border-color: var(--ok); color: #fff; }
+.sc .bar { margin: 2px 0 2px 28px; height: 4px; }
+#updToast { position: fixed; right: 10px; top: calc(env(safe-area-inset-top) + 60px); z-index: 60; padding: 6px 12px; border-radius: 999px; background: var(--ok); color: #fff; font-weight: 800; font-size: 13px; box-shadow: var(--shadow); pointer-events: none; transition: opacity .4s; }
+
 </style>
 </head>
 <body>
@@ -192,8 +245,14 @@ h3 { margin: 12px 0 6px; font-size: 13px; color: var(--sub); display: flex; alig
   <main id="stage">
     <canvas id="scene"></canvas>
     <div id="labels"></div>
+    <div id="mapEl" hidden></div>
+    <div id="mtools" hidden><button id="layBtn" class="ibtn" aria-label="Map layers">🗂</button><button id="legBtn" class="ibtn" aria-label="Map legend">🔑</button></div>
+    <div id="mpanel" hidden></div>
+    <div id="moff" hidden>🗺 Tiles offline · pins OK</div>
+    <section id="pcard" hidden aria-label="Shop card"></section>
     <div id="side">
       <button id="mapBtn" class="ibtn" aria-label="District map">🗺</button>
+      <button id="metroBtn" class="ibtn" aria-label="Phoenix metro map">📍</button>
       <button id="demoBtn" class="ibtn" aria-label="Auto tour">🎬</button>
       <button id="themeBtn" class="ibtn" aria-label="Day or night">🌙</button>
       <button id="dragBtn" class="ibtn" aria-label="Drag to move the camera">✋</button>
@@ -216,6 +275,31 @@ h3 { margin: 12px 0 6px; font-size: 13px; color: var(--sub); display: flex; alig
 <input id="importFile" type="file" accept="application/json,.json" hidden>
 <script src="data.js"></script>
 <script type="module" src="app.js"></script>
-<script>if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<div id="updToast" hidden>⬆ Updated</div>
+<script>
+/* v4 update path: the service worker is network-first and bypasses the HTTP cache. When a new version takes over (controllerchange)
+   or the live sw.js names a newer cache than this page, reload ONCE and show a small '⬆ Updated' toast. */
+(function () {
+  const APPV = 'coffee-opening-v4';
+  try { if (sessionStorage.getItem('co-updated')) { sessionStorage.removeItem('co-updated'); const t = document.getElementById('updToast'); t.hidden = false; setTimeout(() => { t.style.opacity = 0; }, 2600); setTimeout(() => { t.hidden = true; }, 3100); } } catch (e) { /* private mode */ }
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  const sw = navigator.serviceWorker, had = !!sw.controller;
+  function reloadOnce(why, v) {
+    try { const k = JSON.parse(sessionStorage.getItem('co-reloaded') || '{}'); if (Date.now() - (k.t || 0) < 20000 || (v && k.v === v)) return false;
+      sessionStorage.setItem('co-reloaded', JSON.stringify({ t: Date.now(), v: v || '', why })); sessionStorage.setItem('co-updated', why); } catch (e) { return false; }
+    try { window.COG && window.COG.saveNow(); } catch (e) { /* keep going */ }
+    location.reload(); return true;
+  }
+  window.coUpdate = { APPV, reloadOnce, get had() { return had; } };
+  sw.addEventListener('controllerchange', () => { if (had) reloadOnce('sw'); });
+  addEventListener('load', () => sw.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { check(); probe(); } });
+    function probe() { fetch('sw.js', { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((t) => { const m = /const CACHE = '([^']+)'/.exec(t);
+      if (m && m[1] !== APPV) { check(); setTimeout(() => reloadOnce('version', m[1]), 3000); } }).catch(() => {}); }
+    probe();
+  }).catch(() => {}));
+})();
+</script>
 </body>
 </html>
