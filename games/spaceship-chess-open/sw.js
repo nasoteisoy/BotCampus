@@ -1,4 +1,4 @@
-const PREFIX = 'spaceship-chess-open-';
+const PREFIX = 'sc-open-space-';
 const CACHE = PREFIX + 'v1';
 /* Offline cache. The origin is shared with other apps (incl. games/spaceship-chess): activate deletes ONLY old caches
    that start with PREFIX. RELEASE RULE: bump the version in CACHE on every release. */
