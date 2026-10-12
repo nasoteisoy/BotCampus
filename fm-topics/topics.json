@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-10-11T16:26:00-07:00",
-  "updatedBy": "Dev B",
+  "updatedAt": "2026-10-11T18:25:00-07:00",
+  "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
     {
@@ -137,10 +137,20 @@
       "id": "deva-coffee-opening",
       "title": "Coffee Opening: pitch and business plan",
       "what": "Growing the Coffee Opening tracker into a pitch app with real business detail.",
-      "summary": "1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. Plan: a process map with owners and approvals, a workflow designer, and more site detail (all fake data).\n4. Drafted a handoff kit so other coding agents can rebuild it on real data.",
-      "leftOff": "Oct 11, 4:03 PM PT: v4 is live; v5 'Compare sites' is saved locally, not pushed. Business-detail update and workflow designer are next.",
-      "updatedAt": "2026-10-11T16:09:00-07:00",
-      "note": "What: Growing the Coffee Opening tracker into a pitch app with real business detail.\n\nSummary: 1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. Plan: a process map with owners and approvals, a workflow designer, and more site detail (all fake data).\n4. Drafted a handoff kit so other coding agents can rebuild it on real data.\n\nLeft off: Oct 11, 4:03 PM PT: v4 is live; v5 'Compare sites' is saved locally, not pushed. Business-detail update and workflow designer are next.\n\nBot: Dev A (with Dev B)",
+      "summary": "1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 WIP locally: workflow designer and admin tools, not pushed yet.",
+      "leftOff": "Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is saved locally, not pushed. Waiting on your feedback.",
+      "updatedAt": "2026-10-11T18:25:00-07:00",
+      "note": "What: Growing the Coffee Opening tracker into a pitch app with real business detail.\n\nSummary: 1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 WIP locally: workflow designer and admin tools, not pushed yet.\n\nLeft off: Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is saved locally, not pushed. Waiting on your feedback.\n\nBot: Dev A (with Dev B)",
+      "bot": "Dev A"
+    },
+    {
+      "id": "deva-spaceship-chess",
+      "title": "Spaceship Chess",
+      "what": "Phone 3D chess in space on an 8x8x8 board, plus a board-free open-space variant.",
+      "summary": "1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.",
+      "leftOff": "Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.",
+      "updatedAt": "2026-10-11T18:25:00-07:00",
+      "note": "What: Phone 3D chess in space on an 8x8x8 board, plus a board-free open-space variant.\n\nSummary: 1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.\n\nLeft off: Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.\n\nBot: Dev A\n\nBot: Dev A",
       "bot": "Dev A"
     },
     {
@@ -177,10 +187,10 @@
       "id": "devb-coffee-opening",
       "title": "Coffee Opening tracker",
       "what": "A 3D phone app that tracks opening new coffee shops, built from a reel you liked.",
-      "summary": "1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.",
-      "leftOff": "Oct 11, 4:09 PM PT: v5 is saved locally (not pushed). Next: business detail and a workflow designer.",
-      "updatedAt": "2026-10-11T16:09:00-07:00",
-      "note": "What: A 3D phone app that tracks opening new coffee shops, built from a reel you liked.\n\nSummary: 1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.\n\nLeft off: Oct 11, 4:09 PM PT: v5 is saved locally (not pushed). Next: business detail and a workflow designer.\n\nBot: Dev B (with Dev A)",
+      "summary": "1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.\n5. v6 (Oct 11): US portfolio over about 1,900 fake example sites.\n6. v7 WIP locally: workflow designer, not pushed.",
+      "leftOff": "Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is local only. Next: finish and push v7 when ready.",
+      "updatedAt": "2026-10-11T18:25:00-07:00",
+      "note": "What: A 3D phone app that tracks opening new coffee shops, built from a reel you liked.\n\nSummary: 1. v1 (Oct 10): 11 stages, editable checklists, 3D build-up, offline app.\n2. v2 (Oct 10): store picker, district map, open stores with issues and routine checks.\n3. v3-v4 (Oct 11): pitch branding and a real metro map.\n4. v5 (Oct 11): compare candidate sites side by side.\n5. v6 (Oct 11): US portfolio over about 1,900 fake example sites.\n6. v7 WIP locally: workflow designer, not pushed.\n\nLeft off: Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is local only. Next: finish and push v7 when ready.\n\nBot: Dev B (with Dev A)",
       "bot": "Dev B"
     },
     {
