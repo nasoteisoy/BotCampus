@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Spaceship Chess: Open Space</title>
+<meta name="description" content="Board-free 3D chess in open space: every ship always shows where it can move and attack. Play the computer or pass and play.">
+<meta name="theme-color" content="#050814">
+<meta name="apple-mobile-web-app-title" content="Open Space">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <button id="modeBtn" class="ibtn" aria-label="Mode: vs computer (tap for pass and play)">🤖</button>
+    <div id="turn" aria-live="polite"><i class="dot"></i><span id="turnTxt">Your move</span></div>
+    <button id="undoBtn" class="ibtn" aria-label="Undo">↶</button>
+    <button id="newBtn" class="ibtn" aria-label="New game">🆕</button>
+    <button id="helpBtn" class="ibtn" aria-label="How to play">❓</button>
+  </header>
+  <main id="stage">
+    <canvas id="scene"></canvas>
+    <nav id="levels" aria-label="Levels"></nav>
+    <div id="reach" role="group" aria-label="Show reach">
+      <button class="ibtn rb" data-show="b" aria-label="Show Blue reach only (mine)">🔵<i hidden></i></button>
+      <button class="ibtn rb" data-show="o" aria-label="Show Orange reach only (enemy)">🟠<i hidden></i></button>
+      <button class="ibtn rb wide" data-show="both" aria-label="Show both sides' reach">🔵🟠</button>
+    </div>
+    <div id="cam">
+      <button id="rotL" class="ibtn" aria-label="Rotate left">⟲</button>
+      <button id="rotR" class="ibtn" aria-label="Rotate right">⟳</button>
+      <button id="zIn" class="ibtn" aria-label="Zoom in">➕</button>
+      <button id="zOut" class="ibtn" aria-label="Zoom out">➖</button>
+      <button id="home" class="ibtn" aria-label="Show whole space">⌂</button>
+    </div>
+    <div id="toast" hidden></div>
+    <div id="over" hidden><b id="overTxt"></b><div class="row"><button id="overUndo" class="ibtn" aria-label="Undo">↶</button><button id="overNew" class="ibtn wide" aria-label="New game">🆕</button></div></div>
+  </main>
+  <footer id="bar"><div id="log" aria-label="Move log"><span class="empty">🚀 → 🛰️</span></div></footer>
+</div>
+<div id="help" hidden role="dialog" aria-label="How to play">
+  <div class="card">
+    <div class="hd"><b>❓ How to play</b><button id="helpClose" class="ibtn" aria-label="Close">✖</button></div>
+    <div class="bd">
+      <p>🎯 Trap the enemy <b>🛰️ Command station</b> (checkmate).</p>
+      <p>🌌 No boards: ships float in open space. The space is still 8 levels of 8×8 (tiny dim dots mark the spots). <span class="cb">🔵 Blue</span> starts on levels 1–2 (rows 1–2), <span class="co">🟠 Orange</span> on levels 7–8 (rows 7–8). Blue moves first.</p>
+      <p>👀 Always on, no tap needed:</p>
+      <ul>
+        <li><span class="cb">●</span> blue dot = a 🔵 ship can fly there</li>
+        <li><span class="co">◆</span> orange diamond = a 🟠 ship can fly there</li>
+        <li><span class="pr">━▶</span> red beam + 🔵/🟠 arrow = attack (a legal capture)</li>
+        <li><span class="pr">◯</span> pulsing red ring = ship under attack</li>
+        <li>⚠️ big red cage + beams = Command station in check</li>
+      </ul>
+      <p>🔵 / 🟠 / 🔵🟠 (top right) = show mine, enemy or both. The red number = attacks ready.</p>
+      <p>👆 Tap your ship → its moves light up bright, the rest dims → tap a pad. <span class="pg">●</span> move <span class="pr">●</span> capture.</p>
+      <p>1️⃣–8️⃣ focus one level (others fade) · ▦ all levels · red badge = attacks on that level · 👉 drag to rotate · 🤏 pinch to zoom.</p>
+      <table>
+        <tr><td>🛰️</td><td>Command station</td><td>1 step, any of 26 ways</td></tr>
+        <tr><td>🛸</td><td>Mothership</td><td>🚢 + 🛩️ + 🦄 lines</td></tr>
+        <tr><td>🚢</td><td>Battleship</td><td>straight ↔ ↕ ⤒ (6 ways)</td></tr>
+        <tr><td>🛩️</td><td>Interceptor</td><td>flat diagonal ⤢ in any plane (12)</td></tr>
+        <tr><td>🦄</td><td>Scout</td><td>3D corner diagonal (8)</td></tr>
+        <tr><td>🚀</td><td>Fighter</td><td>jump 2 + 1 on any two axes (24)</td></tr>
+        <tr><td>🤖</td><td>Drone</td><td>1 forward: next row or next level. Captures 1 diagonal-forward. Row 8 / level 8 → 🛸</td></tr>
+      </table>
+      <p>🚫 No moving into check · no castling · no en passant.</p>
+      <p>🤝 No legal move + not in check = draw. Only stations left = draw.</p>
+      <p>🤖 You are 🔵 vs the computer · 👥 pass &amp; play turns the view · ↶ undo · 🆕 new game (tap twice). Auto-saved.</p>
+    </div>
+  </div>
+</div>
+<script src="rules.js"></script>
+<script type="module" src="app.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
