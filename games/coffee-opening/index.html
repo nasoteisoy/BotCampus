@@ -67,6 +67,7 @@ body.night .ex { background: #12305a; color: #9fd6ff; }
 #zoom { position: absolute; right: calc(var(--panelW) + 8px); bottom: calc(var(--sheetH) + 8px); display: flex; gap: 6px; z-index: 4; transition: bottom .25s, right .25s; }
 #side .ibtn, #zoom .ibtn { background: var(--card); box-shadow: var(--shadow); }
 #side .ibtn.on { background: var(--acc); }
+@media (max-height: 460px) { #side { gap: 3px; } #side .ibtn { width: 40px; height: 32px; font-size: 16px; } #side .ibtn.lbl { font-size: 13px; line-height: 1; } #side .ibtn.lbl small { font-size: 8px; } }   /* v6: 7 side buttons fit one column in landscape */
 #demoBar { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-weight: 800; }
 #demoBar[hidden] { display: none; }
 #demoBar .bar { width: 90px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; } #demoBar .bar i { display: block; height: 100%; background: var(--acc); width: 0; }
@@ -231,9 +232,9 @@ body.night #mapEl .leaflet-tile-pane { filter: grayscale(1) invert(1) sepia(.4) 
 #updToast { position: fixed; right: 10px; top: calc(env(safe-area-inset-top) + 60px); z-index: 60; padding: 6px 12px; border-radius: 999px; background: var(--ok); color: #fff; font-weight: 800; font-size: 13px; box-shadow: var(--shadow); pointer-events: none; transition: opacity .4s; }
 
 /* v5 ⚖ compare sites, 🎯 pick mode, 🆕 map hint */
-#metroBtn.lbl, #pickBtn { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; gap: 1px; }
-#metroBtn.lbl small, #pickBtn small { font-size: 9px; font-weight: 800; letter-spacing: .02em; }
-#metroBtn.lbl { font-size: 17px; }
+#metroBtn.lbl, #usBtn.lbl, #pickBtn { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; gap: 1px; }
+#metroBtn.lbl small, #usBtn.lbl small, #pickBtn small { font-size: 9px; font-weight: 800; letter-spacing: .02em; }
+#metroBtn.lbl, #usBtn.lbl { font-size: 17px; }
 #pickBtn.wide { width: auto; padding: 0 8px; font-size: 16px; } #pickBtn.on { background: var(--acc); color: #fff; }
 #stage.picking::after { content: ''; position: absolute; inset: 0; border: 3px dashed var(--acc); pointer-events: none; border-radius: 4px; z-index: 2; }
 #stage.picking #mapEl { cursor: crosshair; }
@@ -293,6 +294,9 @@ canvas.mini { display: block; margin: 0 auto; border-radius: 12px; }
   .sh-hd { grid-column: 1; } .sh-win { grid-column: 1; margin: 8px 0 0; } .sh-src { grid-column: 1; align-self: end; text-align: left; } .sh-grid { grid-column: 2; grid-row: 1 / span 3; gap: 4px; }
   .sh-site { padding: 3px 2px; } .sh-site .ring { width: 40px; height: 40px; font-size: 14px; } .sh-c { padding: 3px 2px; } .sh-c b { font-size: 14px; } .sh-l span { font-size: 18px; } }
 
+.cv-fh { margin: 8px 0 2px; font-weight: 800; font-size: 12px; color: var(--sub); } .cv-fh small { font-weight: 600; }
+.cv-row.fin .cv-rh { min-height: 26px; } .cv-row.fin .rn { font-size: 12px; }
+.cv-fin { margin: 0 10px 6px; padding: 6px 10px; border-radius: 12px; background: color-mix(in srgb, var(--ok) 14%, var(--card)); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -318,6 +322,7 @@ canvas.mini { display: block; margin: 0 auto; border-radius: 12px; }
     <section id="pcard" hidden aria-label="Shop card"></section>
     <section id="cmpView" hidden aria-label="Compare sites"></section>
     <div id="side">
+      <button id="usBtn" class="ibtn lbl" aria-label="US portfolio" title="US portfolio">🇺🇸<small>US</small></button>
       <button id="mapBtn" class="ibtn" aria-label="District map">🗺</button>
       <button id="metroBtn" class="ibtn lbl" aria-label="Phoenix metro map" title="Map">📍<small>Map</small></button>
       <button id="demoBtn" class="ibtn" aria-label="Auto tour">🎬</button>
@@ -340,15 +345,15 @@ canvas.mini { display: block; margin: 0 auto; border-radius: 12px; }
   <nav id="dbar" aria-label="District filters" hidden></nav>
 </div>
 <input id="importFile" type="file" accept="application/json,.json" hidden>
-<script src="data.js?v=5"></script>
-<script type="module" src="app.js?v=5"></script>
+<script src="data.js?v=6"></script>
+<script type="module" src="app.js?v=6"></script>
 <div id="updToast" hidden>⬆ Updated</div>
 <section id="shareView" hidden aria-label="Share card"></section>
 <script>
 /* v4 update path: the service worker is network-first and bypasses the HTTP cache. When a new version takes over (controllerchange)
    or the live sw.js names a newer cache than this page, reload ONCE and show a small '⬆ Updated' toast. */
 (function () {
-  const APPV = 'coffee-opening-v5';
+  const APPV = 'coffee-opening-v6';
   try { if (sessionStorage.getItem('co-updated')) { sessionStorage.removeItem('co-updated'); const t = document.getElementById('updToast'); t.hidden = false; setTimeout(() => { t.style.opacity = 0; }, 2600); setTimeout(() => { t.hidden = true; }, 3100); } } catch (e) { /* private mode */ }
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   const sw = navigator.serviceWorker, had = !!sw.controller;

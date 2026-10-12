@@ -227,7 +227,7 @@
     o.cands = (hadC ? o.cands : []).filter((c) => c && isLL(c.ll)).map((c) => ({ id: String(c.id || 'c-' + uid()), name: String(c.name || 'Site').slice(0, 60), ll: [r5(c.ll[0]), r5(c.ll[1])], site: { corner: !!(c.site && c.site.corner), stack: !!(c.site && c.site.stack) }, example: !!c.example }));
     if (!hadC && o.stores.some((s) => s.example)) { o.cands = exCands(); if (!Array.isArray(o.cmp)) o.cmp = o.cands.map((c) => c.id); }
     const ids = new Set(o.stores.map((s) => s.id).concat(o.cands.map((c) => c.id)));
-    o.cmp = (Array.isArray(o.cmp) ? o.cmp : []).filter((id, i, a) => ids.has(id) && a.indexOf(id) === i).slice(0, MAXCMP);
+    o.cmp = (Array.isArray(o.cmp) ? o.cmp : []).filter((id, i, a) => (ids.has(id) || /^pf:[A-Z]{2}\d{4}$/.test(id)) && a.indexOf(id) === i).slice(0, MAXCMP);   // v6: 'pf:CODE' = a 🇺🇸 portfolio site
     if (from < 5 && !hadC) o.migrated = Object.assign(o.migrated || { from, swapped: 0, placed: 0 }, { cands: o.cands.length });
     o.theme = o.theme === 'night' ? 'night' : 'day'; o.v = 5;
     return o;

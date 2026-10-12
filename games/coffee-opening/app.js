@@ -869,6 +869,8 @@ $('overall').onclick = $('listBtn').onclick = () => { if (ui.demo) stopDemo(); u
   if (M.open) return ui.sheet === 'ops' ? closeSheet() : openOps();
   ui.sheet === 'list' ? closeSheet() : (openSheet('list'), home(), refresh()); };
 $('mapBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); setMode(ui.mode === 'district' ? 'lot' : 'district'); };
+// ---- v6 🇺🇸 portfolio: the US > metro > site > 3D top zoom level (lazy module + data)
+$('usBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); import('./portfolio.js?v=6').then((m) => m.open()).catch(() => toast('🇺🇸 ❌ portfolio not loaded')); };
 $('metroBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); setMode(ui.mode === 'metro' ? 'lot' : 'metro'); };
 $('ops').addEventListener('click', (e) => { const b = e.target.closest('[data-ops]'); if (!b) return; const k = b.dataset.ops; ui.scrollTo = k === 'checks' ? '#routineHd' : k === 'add' ? '.presets' : null; openOps(); });
 $('dbar').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.act === 'dtour') return ui.dtour ? stopDTour() : startDTour();
@@ -1088,7 +1090,14 @@ function declutter() {   // (pin box = the round icon only)   // pin names: hide
 const cmpIdx = (id) => (state.cmp || []).indexOf(id);
 const cmpBadge = (id) => { const i = cmpIdx(id); return i < 0 ? '' : `<span class="cn" aria-label="In compare">⚖${i + 1}</span>`; };
 const candOf = (id) => (state.cands || []).find((c) => c.id === id);
-const siteOf = (id) => { const s = state.stores.find((x) => x.id === id); if (s) return { id, kind: 'shop', name: s.name, icon: s.icon, ll: s.ll, site: s.site, example: s.example, s };
+// v6: portfolio sites join ⚖ compare as 'pf:CODE' (lazy-loads the portfolio module when needed)
+let pfLoading = null;
+function pfMod() { return pfLoading || (pfLoading = import('./portfolio.js?v=6').then((m) => m.load().then(() => m))); }
+const pfSite = (code) => (window.PFV && PFV.PF.sites.length ? PFV.PF.sites.find((x) => x.code === code) : null);
+const pfFor = (x) => (x.kind === 'pf' ? x.pf : window.PFV && PFV.PF.sites.length ? PFV.PF.sites.find((p) => p.link === x.id) || null : null);   // linked Phoenix examples carry financials too
+const siteOf = (id) => { if (String(id).startsWith('pf:')) { const p = pfSite(id.slice(3)); if (!p) { pfMod().then(() => { renderTray(); if (ui.view === 'cmp') renderCompare(); }).catch(() => {}); return null; }
+    return { id, kind: 'pf', name: `${p.code} · ${p.city}, ${p.st}`, icon: { O: '🟢', A: '🔵', L: '🟡', F: '🟣', R: '⚫' }[p.type], ll: p.ll, site: { corner: false, stack: false }, example: true, pf: p }; }
+  const s = state.stores.find((x) => x.id === id); if (s) return { id, kind: 'shop', name: s.name, icon: s.icon, ll: s.ll, site: s.site, example: s.example, s };
   const c = candOf(id); return c ? { id, kind: 'cand', name: c.name, icon: '🎯', ll: c.ll, site: c.site, example: c.example, c } : null; };
 function renderCandPins() {
   const m = MM.map; if (!m) return; const L = MM.L, seen = new Set(); MM.cpins = MM.cpins || new Map();
@@ -1243,9 +1252,29 @@ $('cmpTray').addEventListener('click', (e) => {
 });
 // winner + 🏆 per row (best points; no 🏆 when every site is equal)
 const ROWS = ['traffic', 'comp', 'cann', 'corner', 'stack'];
+// v6 💵 financial rows: [key, label, higher-is-better, format]
+const FROWS = [['rev', '💵 Projected revenue', true, (v) => `$${(v / 1000).toFixed(2)}M`], ['coc', '🎯 Cash on cash', true, (v) => v + '%'], ['spread', '📐 Spread over WACC', true, (v) => v + '%'], ['rentPct', '🏠 Rent % of revenue', false, (v) => v + '%'], ['capex', '🧱 CapEx', false, (v) => `$${(v / 1000).toFixed(2)}M`], ['xfer', '↔ Sales transfer (max)', false, (v) => v + '%']];
+const finOf = (p) => (p ? { rev: p.fin.rev, coc: p.fin.coc, spread: p.fin.spread, rentPct: p.fin.rentPct, capex: Math.round(p.capex.reduce((a, b) => a + b, 0)), xfer: p.fin.xferMax, code: p.code } : null);
+function pfScore(p) {   // same 5 parts + weights as siteScore, from the portfolio site's own (🧪 made-up) numbers, so a Texas site compares fairly
+  const c = (v) => Math.max(0, Math.min(1, v)), n5 = p.comp.reduce((a, r) => a + r[0], 0), dt5 = p.comp.reduce((a, r, k) => a + (PFV.PF.data.comps[k][1] ? r[0] : 0), 0), mi = p.mk.dOpen;
+  const parts = [{ k: 'traffic', icon: '🚦', name: 'Traffic', raw: p.deal.aadt, pts: Math.round(SC.traffic * c((p.deal.aadt - 8000) / 32000)), max: SC.traffic, src: 'portfolio 🧪' },
+    { k: 'comp', icon: '⚔', name: 'Competitors', n: n5, ndt: dt5, pts: Math.round(SC.comp * c(1 - n5 / 24)), max: SC.comp, src: 'portfolio 🧪 · 5 min' },
+    { k: 'cann', icon: '☕', name: 'Nearest Dutch Bros', mi, nm: 'nearest open shop', src: 'portfolio', pts: Math.round(SC.cann * c((mi - 1) / 2)), max: SC.cann },
+    { k: 'corner', icon: '🛣', name: 'Corner lot', pts: 0, max: SC.corner, check: true, on: false }, { k: 'stack', icon: '🚗', name: 'Stacking room', pts: 0, max: SC.stack, check: true, on: false }];
+  return { total: parts.reduce((a, x) => a + x.pts, 0), parts }; }
+// v6: open the 3D stand of ANY Approved/Open portfolio site (creates a 🧪 shop at its rolled-up stage the first time)
+function pfStand(code) { const p = pfSite(code); if (!p || !(p.stage === 'Approved' || p.stage === 'Open')) return null;
+  let s = state.stores.find((x) => x.id === p.link || x.id === 'pf-' + code);
+  if (!s) { const tgt = CO.addDays(CO.today(), Math.max(1, (PFV.schedule(p)[23].fE - PFV.PF.data.today)));
+    s = CO.newStore({ id: 'pf-' + code, icon: p.type === 'F' ? '🟣' : '🏪', name: `${p.city} · ${code}`, example: true, ll: p.ll, target: p.stage === 'Open' ? CO.today() : tgt });
+    const R = PFV.rollup(p); s.stages.forEach((st, i) => { const pct = p.stage === 'Open' ? 100 : R[i] ? R[i].pct : 0, m = Math.round(st.tasks.length * pct / 100); st.tasks.forEach((t, k) => { t.done = k < m; }); if (CO.STAGES[i].vote && pct >= 100) st.vote = 'approved'; });
+    if (p.stage === 'Open') CO.openStore(s, CO.today()); state.stores.push(s); saveNow(); }
+  state.cur = s.id; save(); snapStore(); setMode('lot'); view.h = 9; toast(`${s.icon} ${s.name} · ${CO.isOpen(s) ? '☕ open' : S[CO.current(s)].icon + ' ' + S[CO.current(s)].name}`, 2200); return s; }
 function compareData() {
-  const sites = (state.cmp || []).map(siteOf).filter(Boolean).map((x) => { const sc = siteScore(x.ll, x.site, x.kind === 'shop' ? x.id : null), P = {}; sc.parts.forEach((p) => { P[p.k] = p; }); return Object.assign(x, { sc, P }); });
+  const sites = (state.cmp || []).map(siteOf).filter(Boolean).map((x) => { const sc = x.kind === 'pf' ? pfScore(x.pf) : siteScore(x.ll, x.site, x.kind === 'shop' ? x.id : null), P = {}; sc.parts.forEach((p) => { P[p.k] = p; }); return Object.assign(x, { sc, P, F: finOf(pfFor(x)) }); });
   const best = {}; for (const k of ROWS) { const v = sites.map((x) => x.P[k].pts), mx = Math.max(...v), mn = Math.min(...v); best[k] = sites.length > 1 && mx > mn ? sites.filter((x) => x.P[k].pts === mx).map((x) => x.id) : []; }
+  for (const [k, , hi] of FROWS) { const w = sites.filter((x) => x.F), v = w.map((x) => x.F[k]), mx = hi ? Math.max(...v) : Math.min(...v); best['f-' + k] = w.length > 1 && Math.max(...v) > Math.min(...v) ? w.filter((x) => x.F[k] === mx).map((x) => x.id) : []; }
+  const fw = sites.filter((x) => x.F).sort((a, b) => b.F.coc - a.F.coc)[0], finBest = sites.filter((x) => x.F).length > 1 ? fw : null;
   const tops = sites.slice().sort((a, b) => b.sc.total - a.sc.total), win = tops[0], tie = sites.length > 1 && tops[1].sc.total === win.sc.total;
   let reason = '';
   if (win && sites.length > 1 && !tie) {
@@ -1258,12 +1287,12 @@ function compareData() {
     const two = ph.slice(0, 2); reason = two.length ? two.join(' and ') : `best all-round score (${win.sc.total} vs ${tops[1].sc.total})`;
     reason = reason[0].toUpperCase() + reason.slice(1);
   }
-  return { sites, best, win: tie ? null : win, tie, tops, reason };
+  return { sites, best, win: tie ? null : win, tie, tops, reason, finBest };
 }
 const rowVal = (k, p, x) => k === 'traffic' ? (p.na ? 'no data' : p.raw ? `${Math.round(p.raw / 1000)}k cars/day${p.hw ? ' · freeway' : ''}` : 'under 8k/day')
-  : k === 'comp' ? (p.na ? 'no data' : `${p.n} within 1 mi · ${p.ndt} 🚗 drive-thru`) : k === 'cann' ? (p.mi != null ? `${p.mi.toFixed(1)} mi to ${p.src === 'tracker' ? esc(p.nm) : 'Dutch Bros'}` : 'none known')
+  : k === 'comp' ? (p.na ? 'no data' : `${p.n} within ${p.src && String(p.src).startsWith('portfolio') ? '5 min' : '1 mi'} · ${p.ndt} 🚗 drive-thru`) : k === 'cann' ? (p.mi != null ? `${p.mi.toFixed(1)} mi to ${p.src === 'tracker' ? esc(p.nm) : 'Dutch Bros'}` : 'none known')
   : k === 'corner' ? (x.site.corner ? '✔ hard corner' : '✖ no corner') : (x.site.stack ? '✔ 20+ cars' : '✖ under 20 cars');
-const rowSrc = (k, p) => k === 'traffic' ? 'ADOT 2024 AADT' : k === 'comp' ? `OSM ${p.src || ''}`.trim() : k === 'cann' ? (p.src === 'tracker' ? 'this tracker' : 'OSM snapshot') : 'your check';
+const rowSrc = (k, p) => p.src && String(p.src).startsWith('portfolio') ? p.src : k === 'traffic' ? 'ADOT 2024 AADT' : k === 'comp' ? `OSM ${p.src || ''}`.trim() : k === 'cann' ? (p.src === 'tracker' ? 'this tracker' : 'OSM snapshot') : 'your check';
 function openCompare() { $('mapHint').hidden = true; ui.view = 'cmp'; ui.cmpOpen = false; renderTray(); if (MM.panel) { MM.panel = ''; renderPanel(); } loadData().then(() => { if (ui.view === 'cmp') renderCompare(); }); renderCompare(); $('cmpView').hidden = false; }
 function closeCompare() { ui.view = null; $('cmpView').hidden = true; $('shareView').hidden = true; renderTray(); }
 function renderCompare() {
@@ -1274,16 +1303,19 @@ function renderCompare() {
   const col = (x) => { const win = D.win && D.win.id === x.id;
     return `<div class="cv-col${win ? ' win' : ''}" data-site="${x.id}">
       <div class="cv-top"><span class="cv-ic">${x.icon}</span><b class="cv-nm">${ui.renaming === 'cv' + x.id ? `<input id="cvName" maxlength="60" value="${esc(x.name)}" aria-label="Site name">` : esc(x.name)}</b>${x.example ? '<i class="ex">🧪</i>' : ''}</div>
-      <div class="cv-kind">${x.kind === 'cand' ? '🎯 Candidate' : `${x.s.icon} Shop · ${CO.isOpen(x.s) ? '☕ open' : S[CO.current(x.s)].icon + ' ' + esc(S[CO.current(x.s)].name)}`}</div>
+      <div class="cv-kind">${x.kind === 'pf' ? `🇺🇸 ${esc(x.pf.st_.badge)} · ${esc(x.pf.st_.rec)}` : x.kind === 'cand' ? '🎯 Candidate' : `${x.s.icon} Shop · ${CO.isOpen(x.s) ? '☕ open' : S[CO.current(x.s)].icon + ' ' + esc(S[CO.current(x.s)].name)}`}</div>
       <div class="cv-ring"><span class="ring big" style="--p:${x.sc.total};--c:${scoreCol(x.sc.total)}" data-total="${x.sc.total}">${x.sc.total}</span>${win ? '<span class="cv-cup">🏆</span>' : ''}</div>
       <canvas class="mini" data-mini="${x.id}" width="10" height="10" aria-label="1 mile around ${esc(x.name)}"></canvas>
       ${ROWS.map((k) => { const p = x.P[k], cup = D.best[k].includes(x.id);
         return `<div class="cv-row${cup ? ' best' : ''}" data-row="${k}"><div class="cv-rh"><span class="ri">${p.icon}</span><span class="rn">${{ cann: 'Dutch Bros', stack: 'Stacking' }[k] || p.name}</span>${cup ? '<span class="cup" aria-label="Best">🏆</span>' : ''}<b class="rp">${p.pts}<small>/${p.max}</small></b></div>
           <div class="bar" style="--c:${p.na ? 'var(--todo)' : scoreCol(p.pts / p.max * 100)}"><i style="width:${Math.round(p.pts / p.max * 100)}%"></i></div>
           <div class="cv-raw">${rowVal(k, p, x)}<small>${rowSrc(k, p)}</small></div></div>`; }).join('')}
-      <div class="cv-act">${x.kind === 'cand' ? `<button class="chip on" data-cv="start" aria-label="Start shop here">🏪 Start shop here</button><button class="chip" data-cv="rename" aria-label="Rename">${ui.renaming === 'cv' + x.id ? '✔' : '✏️'}</button>` : `<button class="chip on" data-cv="fly" aria-label="Open in 3D">🧊 3D</button>`}<button class="chip" data-cv="rm" aria-label="Remove from compare">➖</button></div>
+      <div class="cv-fh">💵 Financials${x.F ? ` <small>🧪 ${x.F.code}</small>` : ''}</div>${FROWS.map(([k, label, , fmt]) => { const cup = D.best['f-' + k].includes(x.id);
+        return `<div class="cv-row fin${cup ? ' best' : ''}" data-frow="${k}"><div class="cv-rh"><span class="rn">${label}</span>${cup ? '<span class="cup" aria-label="Best">🏆</span>' : ''}<b class="rp">${x.F ? fmt(x.F[k]) : '—'}</b></div></div>`; }).join('')}
+      <div class="cv-act">${x.kind === 'cand' ? `<button class="chip on" data-cv="start" aria-label="Start shop here">🏪 Start shop here</button><button class="chip" data-cv="rename" aria-label="Rename">${ui.renaming === 'cv' + x.id ? '✔' : '✏️'}</button>` : `${x.kind !== 'pf' || x.pf.stage === 'Approved' || x.pf.stage === 'Open' ? '<button class="chip on" data-cv="fly" aria-label="Open in 3D">🧊 3D</button>' : ''}`}<button class="chip" data-cv="rm" aria-label="Remove from compare">➖</button></div>
     </div>`; };
-  el.innerHTML = head + banner + `<div class="cv-grid" style="--n:${n}">${D.sites.map(col).join('')}</div><div class="cv-src">🚦 ADOT 2024 AADT · ☕🏁 © OpenStreetMap contributors (ODbL) ${MM.data.comp && MM.data.comp.fetched ? MM.data.comp.fetched : ''} · 🛣🚗 your checks</div>`;
+  const fb = D.finBest ? `<div class="cv-fin" id="cvFin">💵 Best returns: <b>${esc(D.finBest.name)}</b> · CoC ${D.finBest.F.coc}% · spread ${D.finBest.F.spread}%</div>` : '';
+  el.innerHTML = head + banner + fb + `<div class="cv-grid" style="--n:${n}">${D.sites.map(col).join('')}</div><div class="cv-src">🚦 ADOT 2024 AADT · ☕🏁 © OpenStreetMap contributors (ODbL) ${MM.data.comp && MM.data.comp.fetched ? MM.data.comp.fetched : ''} · 🛣🚗 your checks</div>`;
   el.querySelectorAll('canvas[data-mini]').forEach((cv) => drawMini(cv, siteOf(cv.dataset.mini)));
   const inp = $('cvName'); if (inp) { requestAnimationFrame(() => { inp.focus(); inp.select(); }); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); renameCand(candOf(ui.renaming.slice(2)), inp.value); } }; }
 }
@@ -1294,7 +1326,7 @@ $('cmpView').addEventListener('click', (e) => {
   if (k === 'rm' && id) { toggleCmp(id); return renderCompare(); }
   if (k === 'start' && id) { const nn = startShop(id); if (nn) { refresh(); renderCompare(); } return; }
   if (k === 'rename' && id) { if (ui.renaming === 'cv' + id) return renameCand(candOf(id), $('cvName').value); ui.renaming = 'cv' + id; return renderCompare(); }
-  if (k === 'fly' && id) { closeCompare(); return flyTo3D(id); }
+  if (k === 'fly' && id) { closeCompare(); return id.startsWith('pf:') ? pfStand(id.slice(3)) : flyTo3D(id); }
 });
 // 1-mile locator: canvas only (offline-safe): roads with ADOT counts, competitors, existing Dutch Bros, the 1 mi ring, the site
 function drawMini(cv, x) {
@@ -1370,6 +1402,6 @@ firstRun();
 requestAnimationFrame(loop);
 
 // test hooks (read-only views + helpers used by the headless checks)
-window.COG = { get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines, canopy, blades }, queues, busters, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, MM, siteScore, selectPin, selectCand, compareData, openCompare, openShare, toggleCmp, startShop, drawMini, setPick, mapHome, flyTo3D, closeCard, exportJSON,
+window.COG = { pfStand, loadLeaflet, TILE, ATTR_BASE, toast, get state() { return state; }, get model() { return M; }, get ui() { return ui; }, view, dst, shown, cam, stations, routes, movers, P, shop: { slab, walls, roof, sign, finish, machines, canopy, blades }, queues, busters, bubbles, dHits, get distPos() { return distPos; }, lot, dist, flyTo, setMode, MM, siteScore, selectPin, selectCand, compareData, openCompare, openShare, toggleCmp, startShop, drawMini, setPick, mapHome, flyTo3D, closeCard, exportJSON,
   loadSnapshot: (k, j) => { MM.data[k] = prepData(k, JSON.parse(JSON.stringify(j))); if (MM.layers[k]) { MM.layers[k].remove(); MM.layers[k] = null; } drawLayers(); renderPanel(); if (MM.sel || MM.cand) renderCard(); }, openOps, startDTour, stopDTour, select, startDemo, stopDemo, focus, home, pick,
   project: (x, y, z) => { pv.set(x, y, z).project(cam); const r = cv.getBoundingClientRect(); return { x: r.left + (pv.x + 1) / 2 * r.width, y: r.top + (1 - pv.y) / 2 * r.height }; }, saveNow };

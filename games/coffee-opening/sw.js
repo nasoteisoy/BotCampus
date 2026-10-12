@@ -3,9 +3,9 @@
    v4/v5: network-first that really goes to the network. GitHub Pages sends max-age=600, so a plain fetch() could be answered from the
    browser's HTTP cache with the OLD app after a deploy. Navigations and app files (html/js/json/manifest) are fetched with
    cache:'no-cache' (always revalidated), and install bypasses the HTTP cache too. Map tiles are third-party and are never cached here. */
-const CACHE = 'coffee-opening-v5';
+const CACHE = 'coffee-opening-v6';
 const ASSETS = ['./', 'index.html', 'data.js', 'app.js', 'three.module.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
-  'leaflet/leaflet.js', 'leaflet/leaflet.css', 'traffic-aadt-2024.json', 'existing-dutch-bros.json', 'competitors.json'];
+  'leaflet/leaflet.js', 'leaflet/leaflet.css', 'portfolio.js', 'portfolio.css', 'portfolio.json', 'traffic-aadt-2024.json', 'existing-dutch-bros.json', 'competitors.json'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 // v5: a page still on v1–v3 has no update code of its own, and its old sw may have served it stale files from the HTTP cache.
 // If an old v0–v3 cache is found, the windows that the OLD worker controlled (listed before claim) are asked for their version;
