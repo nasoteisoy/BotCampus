@@ -870,7 +870,7 @@ $('overall').onclick = $('listBtn').onclick = () => { if (ui.demo) stopDemo(); u
   ui.sheet === 'list' ? closeSheet() : (openSheet('list'), home(), refresh()); };
 $('mapBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); setMode(ui.mode === 'district' ? 'lot' : 'district'); };
 // ---- v6 🇺🇸 portfolio: the US > metro > site > 3D top zoom level (lazy module + data)
-$('usBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); import('./portfolio.js?v=6').then((m) => m.open()).catch(() => toast('🇺🇸 ❌ portfolio not loaded')); };
+$('usBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); import('./portfolio.js?v=7').then((m) => m.open()).catch(() => toast('🇺🇸 ❌ portfolio not loaded')); };
 $('metroBtn').onclick = () => { if (ui.dtour) stopDTour(); hideSheet(); setMode(ui.mode === 'metro' ? 'lot' : 'metro'); };
 $('ops').addEventListener('click', (e) => { const b = e.target.closest('[data-ops]'); if (!b) return; const k = b.dataset.ops; ui.scrollTo = k === 'checks' ? '#routineHd' : k === 'add' ? '.presets' : null; openOps(); });
 $('dbar').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.act === 'dtour') return ui.dtour ? stopDTour() : startDTour();
@@ -1092,7 +1092,7 @@ const cmpBadge = (id) => { const i = cmpIdx(id); return i < 0 ? '' : `<span clas
 const candOf = (id) => (state.cands || []).find((c) => c.id === id);
 // v6: portfolio sites join ⚖ compare as 'pf:CODE' (lazy-loads the portfolio module when needed)
 let pfLoading = null;
-function pfMod() { return pfLoading || (pfLoading = import('./portfolio.js?v=6').then((m) => m.load().then(() => m))); }
+function pfMod() { return pfLoading || (pfLoading = import('./portfolio.js?v=7').then((m) => m.load().then(() => m))); }
 const pfSite = (code) => (window.PFV && PFV.PF.sites.length ? PFV.PF.sites.find((x) => x.code === code) : null);
 const pfFor = (x) => (x.kind === 'pf' ? x.pf : window.PFV && PFV.PF.sites.length ? PFV.PF.sites.find((p) => p.link === x.id) || null : null);   // linked Phoenix examples carry financials too
 const siteOf = (id) => { if (String(id).startsWith('pf:')) { const p = pfSite(id.slice(3)); if (!p) { pfMod().then(() => { renderTray(); if (ui.view === 'cmp') renderCompare(); }).catch(() => {}); return null; }
@@ -1265,7 +1265,7 @@ function pfScore(p) {   // same 5 parts + weights as siteScore, from the portfol
 // v6: open the 3D stand of ANY Approved/Open portfolio site (creates a 🧪 shop at its rolled-up stage the first time)
 function pfStand(code) { const p = pfSite(code); if (!p || !(p.stage === 'Approved' || p.stage === 'Open')) return null;
   let s = state.stores.find((x) => x.id === p.link || x.id === 'pf-' + code);
-  if (!s) { const tgt = CO.addDays(CO.today(), Math.max(1, (PFV.schedule(p)[23].fE - PFV.PF.data.today)));
+  if (!s) { const tgt = CO.addDays(CO.today(), Math.max(1, (PFV.schedule(p).slice(-1)[0].fE - PFV.PF.data.today)));
     s = CO.newStore({ id: 'pf-' + code, icon: p.type === 'F' ? '🟣' : '🏪', name: `${p.city} · ${code}`, example: true, ll: p.ll, target: p.stage === 'Open' ? CO.today() : tgt });
     const R = PFV.rollup(p); s.stages.forEach((st, i) => { const pct = p.stage === 'Open' ? 100 : R[i] ? R[i].pct : 0, m = Math.round(st.tasks.length * pct / 100); st.tasks.forEach((t, k) => { t.done = k < m; }); if (CO.STAGES[i].vote && pct >= 100) st.vote = 'approved'; });
     if (p.stage === 'Open') CO.openStore(s, CO.today()); state.stores.push(s); saveNow(); }

@@ -345,15 +345,15 @@ canvas.mini { display: block; margin: 0 auto; border-radius: 12px; }
   <nav id="dbar" aria-label="District filters" hidden></nav>
 </div>
 <input id="importFile" type="file" accept="application/json,.json" hidden>
-<script src="data.js?v=6"></script>
-<script type="module" src="app.js?v=6"></script>
+<script src="data.js?v=7"></script>
+<script type="module" src="app.js?v=7"></script>
 <div id="updToast" hidden>⬆ Updated</div>
 <section id="shareView" hidden aria-label="Share card"></section>
 <script>
 /* v4 update path: the service worker is network-first and bypasses the HTTP cache. When a new version takes over (controllerchange)
    or the live sw.js names a newer cache than this page, reload ONCE and show a small '⬆ Updated' toast. */
 (function () {
-  const APPV = 'coffee-opening-v6';
+  const APPV = 'coffee-opening-v7';
   try { if (sessionStorage.getItem('co-updated')) { sessionStorage.removeItem('co-updated'); const t = document.getElementById('updToast'); t.hidden = false; setTimeout(() => { t.style.opacity = 0; }, 2600); setTimeout(() => { t.hidden = true; }, 3100); } } catch (e) { /* private mode */ }
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   const sw = navigator.serviceWorker, had = !!sw.controller;

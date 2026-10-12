@@ -8,12 +8,28 @@ Live once pushed: https://nasoteisoy.github.io/BotCampus/games/coffee-opening/ (
 
 **🧪 Example data.** The 11 example shops (Tempe, Mesa, Phoenix, Fountain Hills, Peoria, Gilbert, Scottsdale, Chandler, Goodyear, Glendale, Surprise) are made-up Phoenix-area examples in mixed states, not real plans. ⚙ → 🧹 Clear examples (tap twice) removes only the 🧪 stores and keeps yours. ⚙ → ↺ resets everything back to the examples.
 
-## v6: 🇺🇸 Portfolio (work in progress)
+## v7: 🛠 Workflow Designer (admin)
+Workflows, milestones and schedules are now **templates**. One model (`lx-model.js`) drives everything: the 1,900 sites' Workflows, Schedule, Summary, ⏳ Waits and 📉 Slipping all render through the **live template set**. Turn on **🛠 Admin mode** (the 🛠 button in the portfolio header) to open the **🛠 Designer**. Turn it off and the designer is hidden again.
+- **Two preloaded sets (🧪 fake people and numbers):**
+  - **As-is (current LX)**: three duplicated Budget chains (Baseline / REC / Committed) with usually-canceled Rework and Re-review steps, a sequential REC chain (COO → CFO → President of Ops → SVP Field Ops → Market Planning), and a Release of Contingencies that drags on for months.
+  - **Proposed**: the execs approve in parallel, one Budget Approval template with a stage param (Baseline / REC / Committed), parallel sign-offs, and tighter SLAs.
+- **✅ Workflows:**
+  - Create, rename, duplicate and delete workflows; reorder steps with ▲▼ (no free dragging).
+  - Each step has a type, role, SLA, escalation, parallel group, "if rejected go back to" (a rework loop) and "usually canceled".
+  - A **live flow diagram** shows lanes, parallel boxes, red ↩ rework loops and dashed canceled steps.
+- **🏁 Milestones**: one canonical list, auto-derived from tasks and workflows (owner, gate, what completes it).
+- **📅 Schedule**: tasks with "after id+lag" dependencies, the critical path and loop warnings. **▶ Apply to a site** creates its baseline.
+- **● Use for the 1,900 sites** switches the live set. **↺ Presets** (tap twice) resets. Edits are saved on this device (`coffee-opening-lx`).
+- **📊 Reports**: presets for slipping sites, approval bottlenecks by role, turnover moves, cycle time by stage, and stale tasks / missing owners / escalated steps. Each has filters (state, stage, search, minimum days), column picker, tap-to-sort, tap a row to open the site, ⬇ CSV, and 💾 saved custom reports (`coffee-opening-reports`).
+- **▶ Simulate**: runs all 1,900 sites through an old and a new set with the same seeds. It shows days to open, approval days, touches, canceled and rework steps, a before/after chart of cycle time by stage, days per approver role, and a pitch summary card (📋 Copy pitch).
+- **⬇ JSON / ⬇ Steps CSV / ⬆ Import**: export every set (or one row per step) and import a JSON file (validated, added as a new set, never overwriting).
+
+## v6: 🇺🇸 Portfolio
 A new top zoom level: **US > metro > site > 3D stand**. Tap **🇺🇸 US** in the side bar.
 - **🧪 Example data only.** `portfolio.json` holds ~1,900 made-up sites (codes like TX3417, fake people, money and comments) from the seeded generator `tools/gen-portfolio.mjs` (`node tools/gen-portfolio.mjs` rebuilds it byte-for-byte). Only the city centres are real public geography. The Phoenix example shops are linked into it.
 - **Portfolio home:** clustered US map coloured by type (🟢 Open, 🔵 Approved, 🟡 Looking, 🟣 Franchise, ⚫ Rejected), filter chips, state/stage/tier/deal filters, search by code or city, KPI tiles, a virtualized sortable table, **⏳ Waits** (pending approval steps per approver, days per step, longest waits) and **📉 Slipping** (days behind baseline, turnover moves).
 - **Site panel:** one status source drives the badge and the recommendation. Tabs: Overview (key numbers next to their targets, upside/risks, deal), Financials (snapshot, two sensitivity heat grids with the base case outlined, CapEx tree), Market, Risk (crime vs analogs), Summary (general info, site data, key dates, milestones, members, the 11-stage tracker rolled up from tasks + workflows), Workflows (visual approval chains), Schedule (Gantt: baseline vs forecast, slack, today line, late tasks), Docs (generated SVG placeholders in a viewer), Comments (REM, Ops, AVP decision).
-- Lazy: `portfolio.js`, `portfolio.css` and `portfolio.json` load only when 🇺🇸 opens; the service worker `coffee-opening-v6` precaches them for offline.
+- Lazy: `portfolio.js`, `portfolio.css` and `portfolio.json` load only when 🇺🇸 opens; the service worker precaches them for offline.
 
 ## v5: ⚖ Compare sites
 - **Finding the map**: the first time you open v5 (also right after an update) the app opens straight into the 📍 metro map and shows a one-time orange "🆕 Real map ➜" hint pointing at the 📍 button. The 📍 button now has a small "Map" label (and tooltip). The first-run flag is kept apart from the save (`coffee-opening-intro`), so a reset does not replay it; the update reload right after the first v5 load still counts as the first run.
@@ -92,5 +108,6 @@ A new top zoom level: **US > metro > site > 3D stand**. Tap **🇺🇸 US** in t
 - `data.js`: stages, the example plan, progress, status, load and import. It has no DOM, so it also runs in node.
 - `app.js`: the Three.js scene (one `lot` group for the store and one `dist` group for the 🗺 map; the issue bubbles are emoji canvas sprites) (OrthographicCamera, flat-shaded low-poly boxes and cylinders, ground progress rings, dotted routes with glowing pulses, movers), the HTML labels, the panel, the timeline, the tour, and input.
 - Phones: the pixel ratio is capped at 2, there is one shadow-casting light (1024 map), and geometry stays low (about 17k triangles). The dots on each route are a single instanced mesh.
-- `sw.js`: cache `coffee-opening-v5`, network first that really goes to the network (see the update fix), with a cache fallback. On activate it deletes only keys starting with `coffee-opening-` (the origin is shared with the other games). Map tiles are cross-origin and never cached.
+- `lx-model.js` (template model: plan/topological schedule, derived milestones, seeded chain runs), `designer.js` (🛠 designer UI), `reports.js` (📊 reports, ▶ simulate, export/import): ES modules, loaded with the portfolio.
+- `sw.js`: cache `coffee-opening-v7`, network first that really goes to the network (see the update fix), with a cache fallback. On activate it deletes only keys starting with `coffee-opening-` (the origin is shared with the other games). Map tiles are cross-origin and never cached.
 - `leaflet/`: Leaflet 1.9.4 (`leaflet.js`, `leaflet.css`, BSD-2 `LICENSE`), loaded only when 📍 opens. `traffic-aadt-2024.json` (ADOT), `existing-dutch-bros.json` + `competitors.json` (OSM snapshot, ODbL), `osm-snapshot.mjs` (the small snapshot tool: refreshes the two OSM files with one Overpass request; not loaded by the app or cached). `window.CO_TILES` can override the tile URL (self-hosting or tests).

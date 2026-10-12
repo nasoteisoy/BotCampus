@@ -1,3 +1,4 @@
+import * as LX from './lx-model.js?v=7';
 // Coffee Opening v6 · 🇺🇸 Portfolio: the top zoom level (US > metro > site > 3D stand) over ~1,900 🧪 made-up sites.
 // Lazy: this module, portfolio.css and portfolio.json load only when 🇺🇸 is opened. Data: tools/gen-portfolio.mjs (seeded, fake).
 // ONE status source: status(s) drives the badge, the colour, the recommendation and the filters.
@@ -61,7 +62,7 @@ export function load() {
     PF.bytes = txt.length; const D = PF.data = JSON.parse(txt); PF.sites = D.sites.map((a, i) => decode(D, a, i)); PF.byType = {}; Object.keys(TYPES).forEach((k) => { PF.byType[k] = PF.sites.filter((s) => s.type === k); }); PF.loadMs = Math.round(performance.now() - t0); return PF; });
   return loading;
 }
-function css() { if ($('pfCss')) return; const l = document.createElement('link'); l.id = 'pfCss'; l.rel = 'stylesheet'; l.href = 'portfolio.css?v=6'; document.head.appendChild(l); }
+function css() { if ($('pfCss')) return; const l = document.createElement('link'); l.id = 'pfCss'; l.rel = 'stylesheet'; l.href = 'portfolio.css?v=7'; document.head.appendChild(l); }
 // ---- filters
 export function filtered() { const f = PF.f, q = f.q.trim().toLowerCase();
   if (!q && !f.stage && !f.state && !f.tier && f.deal === '') { const out = []; for (const k of Object.keys(TYPES)) if (f.types.has(k)) out.push(...PF.byType[k]); return out; }
@@ -78,7 +79,7 @@ function build(root) {
   root.innerHTML = `<header class="pf-top"><button class="pf-ib" data-pf="close" aria-label="Back to the shops" title="Back">⬅</button><b class="pf-title">🇺🇸 <span>Portfolio</span> <small id="pfCount"></small></b>
   <span class="pf-ex" title="Every site, number, person and comment is made up">🧪 Example data</span>
   <input id="pfQ" type="search" placeholder="🔎 Code or city" aria-label="Search by code or city" autocomplete="off">
-  <div class="pf-seg" role="group" aria-label="View"><button data-view="map" class="on" aria-label="Map view">🗺<small>Map</small></button><button data-view="table" aria-label="Table view">📋<small>Table</small></button><button data-view="bott" aria-label="Bottlenecks">⏳<small>Waits</small></button><button data-view="slip" aria-label="Slipping sites">📉<small>Slipping</small></button></div></header>
+  <div class="pf-seg" role="group" aria-label="View"><button data-view="map" class="on" aria-label="Map view">🗺<small>Map</small></button><button data-view="table" aria-label="Table view">📋<small>Table</small></button><button data-view="bott" aria-label="Bottlenecks">⏳<small>Waits</small></button><button data-view="slip" aria-label="Slipping sites">📉<small>Slipping</small></button><button data-view="design" aria-label="Workflow designer" class="adm-only">🛠<small>Designer</small></button></div><button class="pf-ib pf-adm" data-pf="admin" aria-pressed="false" aria-label="Admin mode" title="Admin mode: 🛠 Workflow Designer">🛠</button></header>
   <div class="pf-kpis" id="pfKpis"></div>
   <div class="pf-chips" id="pfChips">${Object.entries(TYPES).map(([k, t]) => `<button class="pf-chip on" data-type="${k}" style="--c:${t.col}" aria-pressed="true"><i></i>${esc(t.name.split(' (')[0])} <b data-n="${k}"></b></button>`).join('')}
    <select id="pfStage" aria-label="Stage"><option value="">All stages</option>${['Pre-REC', 'REC', 'Approved', 'Open', 'Rejected'].map((x) => `<option>${x}</option>`).join('')}</select>
@@ -93,6 +94,8 @@ function build(root) {
   let qt = 0; $('pfQ').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { PF.f.q = $('pfQ').value; refresh(); const L = PF.list; if (PF.f.q.trim() && L.length && L.length <= 40 && PF.map) PF.map.fitBounds(L.map((s) => s.ll), { maxZoom: 12, padding: [40, 40] }); }, 120); });
   $('pfQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && PF.list.length) { const ex = PF.list.find((s) => s.code.toLowerCase() === $('pfQ').value.trim().toLowerCase()) || (PF.list.length === 1 ? PF.list[0] : null); if (ex) openSite(ex.code, true); } });
   $('pfScroll').addEventListener('scroll', drawRows, { passive: true });
+  let on = false; try { on = localStorage.getItem(ADM) === '1'; } catch (e) { /* */ } PF.admin = on; root.classList.toggle('admin', on); const ab = root.querySelector('[data-pf="admin"]'); ab.setAttribute('aria-pressed', on); ab.classList.toggle('on', on);
+  LX.onChange(() => { if (PF.sel) renderSite(); if (PF.view === 'bott' || PF.view === 'slip') renderAlt(); });
 }
 function fillSelects() { const sel = $('pfState'); if (sel.options.length > 1) return; const st = [...new Set(PF.sites.map((s) => s.st))].sort(); sel.insertAdjacentHTML('beforeend', st.map((x) => `<option>${x}</option>`).join('')); }
 function onChange(e) { const id = e.target.id; const k = { pfStage: 'stage', pfState: 'state', pfTier: 'tier', pfDeal: 'deal' }[id]; if (!k) return; PF.f[k] = e.target.value; refresh(true); }
@@ -107,6 +110,7 @@ function onClick(e) {
   if (b.dataset.tab) { PF.tab = b.dataset.tab; return renderSite(); }
   const a = b.dataset.pf;
   if (a === 'close') return close();
+  if (a === 'admin') { setAdmin(!PF.admin); if (PF.admin) setView('design'); return; }
   if (a === 'docClose') { $('pfDocV').hidden = true; return; }
   if (a === 'reset') { PF.f = { types: new Set(Object.keys(TYPES)), stage: '', state: '', tier: '', deal: '', q: '' }; ['pfStage', 'pfState', 'pfTier', 'pfDeal', 'pfQ'].forEach((id) => { $(id).value = ''; }); refresh(true); return; }
   if (a === 'siteClose') { PF.sel = null; $('pfSite').hidden = true; drawMarkers(); return; }
@@ -117,7 +121,7 @@ function onClick(e) {
   if (a === 'cmpOpen') { const g = G(); close(); if (g) g.openCompare(); return; }
   if (a === 'zoomTo' && PF.sel && PF.map) { PF.map.setView(PF.sel.ll, 13); if (PF.view !== 'map') setView('map'); }
 }
-function setView(v) { PF.view = v; renderAlt(); $('pfBody').className = 'pf-body view-' + v; document.querySelectorAll('#pf .pf-seg button').forEach((x) => x.classList.toggle('on', x.dataset.view === v)); if (PF.map) setTimeout(() => { PF.map.invalidateSize(); drawMarkers(); }, 0); drawRows(); }
+function setView(v) { PF.view = v; renderAlt(); $('pfBody').className = 'pf-body view-' + v; $('pf').classList.toggle('vdesign', v === 'design'); document.querySelectorAll('#pf .pf-seg button').forEach((x) => x.classList.toggle('on', x.dataset.view === v)); if (PF.map) setTimeout(() => { PF.map.invalidateSize(); drawMarkers(); }, 0); drawRows(); }
 // ---- KPIs (follow the filters)
 function kpis(L) { const n = L.length || 1, by = {}; Object.keys(TYPES).forEach((k) => { by[k] = 0; }); const pipe = {}; let rev = 0, coc = 0, nl = 0, slip = 0;
   for (const s of L) { by[s.type]++; if (s.type !== 'R') { rev += s.fin.rev; coc += s.fin.coc; nl++; } if (s.type === 'A' || s.type === 'L') pipe[s.st] = (pipe[s.st] || 0) + 1; if (s.type === 'A' && s.lx.moved) slip++; }
@@ -139,7 +143,11 @@ function refreshNow(fit) {
   $('pfSpacer').style.height = L.length * ROWH + 'px'; drawRows(); drawMarkers(); renderAlt();
   if (fit && PF.map && L.length) { const b = PF.map.options; PF.map.fitBounds(L.map((s) => s.ll), { maxZoom: 11, padding: [30, 30] }); }
 }
-function renderAlt() { const el = $('pfAlt'); if (!el) return; el.innerHTML = PF.view === 'bott' ? renderBott() : PF.view === 'slip' ? renderSlip() : ''; }
+function renderAlt() { const el = $('pfAlt'); if (!el) return; if (PF.view === 'design') { import('./designer.js?v=7').then((m) => m.render(el)); return; } el.innerHTML = PF.view === 'bott' ? renderBott() : PF.view === 'slip' ? renderSlip() : ''; }
+// 🛠 admin mode: a clear toggle that reveals the designer (remembered on this device)
+const ADM = 'coffee-opening-admin';
+export function setAdmin(on) { PF.admin = !!on; try { localStorage.setItem(ADM, on ? '1' : '0'); } catch (e) { /* private mode */ } const r = $('pf'); if (!r) return; r.classList.toggle('admin', PF.admin); const b = r.querySelector('[data-pf="admin"]'); b.setAttribute('aria-pressed', PF.admin); b.classList.toggle('on', PF.admin);
+  if (!PF.admin && PF.view === 'design') setView('map'); else if (PF.admin && G()) G().toast('🛠 Admin mode on · Designer unlocked'); }
 // ---- virtualized table: only the rows in view are in the DOM
 const ROWH = 36;
 function drawRows() { const sc = $('pfScroll'); if (!sc || PF.view === 'map' && innerWidth < 1100) { if ($('pfRows')) $('pfRows').innerHTML = ''; return; }
@@ -218,13 +226,10 @@ function tabRisk(s) { const r = risks(s), C = s.crime, mx = Math.max(...C);
 // ================= v6 Phase 2 · Lucernex-style project depth (all derived from the seeded fake data) =================
 export const TODAY = () => (PF.data ? PF.data.today : 0);
 // schedule template: [group, task, baseline offset (days from project start), duration, opening-stage index it rolls up into, role]
-export const TASK = [['🏠 Real estate', 'Test fit requested', 0, 12, 0, 'rem'], ['🏠 Real estate', 'Test fit approved', 12, 10, 0, 'rem'], ['🏠 Real estate', 'LOI signed', 22, 14, 1, 'rem'], ['🏠 Real estate', 'Early access', 36, 20, 1, 'rem'],
-  ['🔬 Site investigation', 'SIR (site investigation report)', 40, 30, 2, 'pdm'], ['🏠 Real estate', 'RE committee', 80, 15, 3, 'rem'], ['🏠 Real estate', 'Lease / PSA executed', 95, 30, 4, 'rem'],
-  ['🏛 Planning', 'Pre-app meeting', 100, 14, 4, 'pdm'], ['🏛 Planning', 'Submit application', 114, 10, 4, 'pdm'], ['🏛 Planning', 'Planning hearing', 124, 45, 4, 'pdm'], ['🏛 Planning', 'COA received', 169, 12, 4, 'pdm'],
-  ['📜 GL lease deadlines', 'Due diligence period', 95, 60, 4, 'rem'], ['📜 GL lease deadlines', 'Tenant plans to landlord', 140, 20, 4, 'arch'], ['📜 GL lease deadlines', 'Permit & approvals contingency', 160, 45, 4, 'pdm'],
-  ['📐 Design', 'CD kick-off', 150, 10, 4, 'arch'], ['📐 Design', 'Construction documents', 160, 40, 4, 'arch'], ['📐 Design', 'Bid & award GC', 200, 20, 4, 'cm'],
-  ['🧾 Permits', 'Permits applied', 205, 10, 4, 'pdm'], ['🧾 Permits', 'Permits issued', 215, 40, 4, 'pdm'],
-  ['🏗 Construction', 'Site work', 255, 35, 5, 'cm'], ['🏗 Construction', 'Building set + finish', 290, 50, 5, 'gc'], ['☕ Turnover', 'Equipment & hiring', 340, 40, 6, 'ops'], ['☕ Turnover', 'Turnover to Ops', 380, 10, 8, 'cm'], ['🎉 Open', 'Soft + grand open', 390, 14, 9, 'ops']];
+// v7: tasks come from the ACTIVE template set (lx-model.js): [group, task, baseline offset, duration, stage, role, id]
+let TK = null, TKrev = -1;
+export function TASKS() { if (TKrev !== LX.rev() || !TK) { TK = LX.plan(LX.active()).tasks.map((t) => [t.g, t.name, t.off, t.dur, t.stage, t.role, t.id]); TKrev = LX.rev(); } return TK; }
+const fresh = (s) => s._rev === LX.rev() || ((s._rev = LX.rev()), (s._sch = s._wf = null), false);
 const ROLE = { rem: 'Real Estate Manager', pdm: 'Pre-Development Manager', cm: 'Construction Manager', cred: 'CRED coordinator', arch: 'Architect', civil: 'Civil engineering', sign: 'Signage vendor', gc: 'General contractor', sup: 'Site superintendent', llm: 'Landlord · main', llc: 'Landlord · construction', ops: 'Ops · business coach' };
 const MBR = ['rem', 'pdm', 'cm', 'cred', 'sup', 'llm', 'llc', 'ops', 'avp'];
 export function person(s, role) { const P = PF.data.people, i = MBR.indexOf(role); if (i >= 0 && i < s.lx.mb.length) return P[s.lx.mb[i]]; const F = PF.data.firms, f = s.lx.firms;
@@ -235,8 +240,8 @@ const hue = (n) => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charC
 const av = (n, cls = '') => `<i class="pf-av ${cls}" style="--h:${hue(n)}" title="${esc(n)}">${esc(ini(n))}</i>`;
 // how far along the project is: Open → everything done; Looking → up to the REC; Rejected → stopped at the REC
 function horizon(s) { const T = TODAY(); return s.stage === 'Open' ? Infinity : s.stage === 'Rejected' ? s.lx.pStart + 95 : s.stage === 'Approved' ? T : Math.min(T, s.lx.pStart + (s.stage === 'REC' ? 95 : 60)); }
-export function schedule(s) { if (s._sch) return s._sch; const T = TODAY(), p0 = s.lx.pStart, hz = horizon(s); let slip = 0; const out = [];
-  TASK.forEach(([g, n, off, dur, st, role], i) => { const bS = p0 + off, bE = bS + dur, sl = s.lx.slips[i] || 0; let fS = bS + slip; slip += sl; let fE = fS + dur + sl;
+export function schedule(s) { fresh(s); if (s._sch) return s._sch; const TASK = TASKS(); const T = TODAY(), p0 = s.lx.pStart, hz = horizon(s); let slip = 0; const out = [];
+  TASK.forEach(([g, n, off, dur, st, role, tid], i) => { const bS = p0 + off, bE = bS + dur, sl = s.lx.slips[i % s.lx.slips.length] || 0; let fS = bS + slip; slip += sl; let fE = fS + dur + sl;
     let state, pct; const stopped = s.stage === 'Rejected' && off > 95, gated = (s.stage === 'Pre-REC' || s.stage === 'REC') && off >= 80;
     if (s.stage === 'Approved') {   // one source: the opening stage (os) decides what is done; dates follow it
       if (st < s.os) { state = 'done'; pct = 100; if (fE > T) { fE = T - (s.os - st) * 3; fS = Math.min(fS, fE - dur); } }
@@ -245,38 +250,35 @@ export function schedule(s) { if (s._sch) return s._sch; const T = TODAY(), p0 =
     } else if (stopped) { state = 'canceled'; pct = 0; } else if (fE <= hz && !gated) { state = 'done'; pct = 100; } else if (fS <= T && !gated && s.stage !== 'Rejected') { state = 'active'; pct = Math.round(clamp((T - fS) / (fE - fS), 0, 0.95) * 100); }
     else { state = 'todo'; pct = 0; if (gated) { const sh = Math.max(0, T - bS + 10); fS = Math.max(fS, bS + sh); fE = fS + dur + sl; } }
     const deadline = bE + 7, slack = deadline - fE, late = state !== 'canceled' && state !== 'done' ? fE > bE + 2 && (state === 'active' || fE > T) : fE > bE + 2;
-    out.push({ i, g, n, role, who: person(s, role), st, bS, bE, fS, fE, dur: fE - fS, slack, late: late && sl > 0 || fE - bE > 6 && state !== 'done', state, pct }); });
+    out.push({ i, id: tid, g, n, role, who: person(s, role), st, bS, bE, fS, fE, dur: fE - fS, slack, late: late && sl > 0 || fE - bE > 6 && state !== 'done', state, pct }); });
   return (s._sch = out); }
 export function behind(s) { const L = schedule(s), last = L[L.length - 1]; return last.fE - last.bE; }
 // approval workflows (statuses follow the ONE stage source + dates)
-const WF = [['🗳', 'Real Estate Committee', [['REC package', 'rem', 'dir'], ['COO approval', 'coo'], ['CFO approval', 'cfo'], ['President of Ops approval', 'pres'], ['SVP Field Ops approval', 'svp'], ['Market Planning approval', 'mp'], ['Close-out', 'cred']], 75],
-  ['💰', 'Budget · Baseline', [['Prepare', 'pdm'], ['Director review', 'dir'], ['Rework', 'pdm', 0, 1], ['REM review', 'rem'], ['Re-review', 'dir'], ['Approve', 'cfo']], 45],
-  ['💰', 'Budget · Committed', [['Prepare', 'cm'], ['Director review', 'dir'], ['Rework', 'cm', 0, 1], ['REM review', 'rem'], ['Re-review', 'dir'], ['Approve', 'cfo']], 230],
-  ['🤝', 'GC Agreement', [['Draft agreement', 'cm'], ['Legal review', 'legal'], ['GC signature', 'gc'], ['Countersign', 'dir']], 205],
-  ['🔓', 'Release of Contingencies', [['Set up', 'cred'], ['Construction sign-off', 'cm'], ['Legal sign-off', 'legal'], ['Final approval', 'cfo']], 175],
-  ['👥', 'Assign project members', [['Assign team', 'cred'], ['Confirm roles', 'rem']], 20]];
-export function workflows(s) { if (s._wf) return s._wf; const T = TODAY(), hz = horizon(s), p0 = s.lx.pStart, out = [];
-  // which approval is live now follows the opening stage (os): committed budget at pre-con, GC at build start, contingencies near the end
-  const gate = [3, 0, 4, 4, 9, 0], live = s.stage === 'REC' ? 0 : s.stage === 'Approved' ? (s.os === 4 ? 2 : s.os === 5 ? 3 : s.os >= 9 ? 4 : -1) : -1;
-  WF.forEach(([icon, name, steps, off], w) => { const seed = s.lx.wf[w % s.lx.wf.length]; let begun = p0 + off + (seed % 4) * 3; const hzW = w === live ? T : hz;
-    if (w === live) begun = T - 6 - seed * 5;
-    if (s.stage === 'Approved' && w > 1 && w !== live && s.os < gate[w] + (w === 4 ? 0 : 1)) { out.push({ icon, name, status: 'NOT STARTED', steps: [], begun: null }); return; }
-    if (begun > T || (s.stage === 'Rejected' && off > 95) || ((s.stage === 'Pre-REC') && off > 60) || (s.stage === 'REC' && off > 80)) { out.push({ icon, name, status: 'NOT STARTED', steps: [], begun: null }); return; }
-    let d = begun, waiting = null; const st = [];
-    steps.forEach(([sn, role, , rework], k) => { if (rework && seed % 3 !== 0) return; const due = d + 5 + (k % 3) * 2, take = 2 + ((seed + k * 3) % 7) + (role === 'cfo' || role === 'coo' ? 3 : 0), end = d + take;
-      const who = person(s, role); let status;
-      if (waiting) status = 'Upcoming'; else if (rework && seed % 2) status = 'Canceled'; else if (end <= (w === live ? T - 1 - seed : hzW) && !(w === live && k >= 1 + seed % (st.length + 2))) status = /approv/i.test(sn) || k > 0 ? 'Approved' : 'Complete'; else { status = 'Pending'; waiting = { sn, who, role, days: T - d, over: T > due }; }
-      if (s.stage === 'Rejected' && w === 0 && k === 1 && status !== 'Pending') status = 'Rejected';
-      st.push({ sn, role, who, status, start: d, due, done: status === 'Pending' || status === 'Upcoming' ? null : Math.min(end, hzW), rework: !!rework, notify: k === steps.length - 1 ? person(s, 'rem') : null }); if (status !== 'Pending' && status !== 'Upcoming' && status !== 'Canceled') d = end + 1; });
-    if (s.stage === 'Rejected' && w === 0) { const ri = st.findIndex((x) => x.status === 'Rejected'); st.forEach((x, k) => { if (k > ri && ri >= 0) { x.status = 'Canceled'; x.done = null; } }); waiting = null; }
-    if (w === live && !waiting) { const k = st.findIndex((x) => x.status !== 'Canceled' && x.rework === false && x === st[st.length - 1]); const L2 = st[st.length - 1]; L2.status = 'Pending'; L2.done = null; waiting = { sn: L2.sn, who: L2.who, role: L2.role, days: T - L2.start, over: T > L2.due }; }
+// v7: every chain renders through the active template set (parallel groups, conditional rework loops, usually-canceled steps)
+export function workflows(s) { fresh(s); if (s._wf) return s._wf; const T = TODAY(), hz0 = horizon(s), p0 = s.lx.pStart, set = LX.active(), P = LX.plan(set), out = [];
+  // Approved: the most recently started chain in or before the site's current stage is the live one
+  let live = null; if (s.stage === 'Approved') { let best = -Infinity; for (const w of LX.instances(set)) { const t = P.byId.get(w.start[0]); if (t && t.stage <= s.os) { const o = t.off + (w.start[1] || 0); if (o >= best && p0 + o + 6 <= T) { best = o; live = w.iid; } } } }
+  LX.instances(set).forEach((w, n) => { const t = P.byId.get(w.start[0]), off = (t ? t.off : 0) + (w.start[1] || 0), tst = t ? t.stage : 0, seed = s.lx.wf[n % s.lx.wf.length];
+    const rnd = LX.seeded((parseInt(s.code.slice(2), 10) * 977 + n * 131 + seed) >>> 0), begun = p0 + off + (seed % 4) * 2;
+    const isRec = w.id === 'rec', ns = () => out.push({ icon: w.icon, name: w.name, id: w.iid, status: 'NOT STARTED', steps: [], begun: null, lanes: LX.lanes(w) });
+    if (s.stage === 'Approved' && tst > s.os) return ns(); if ((s.stage === 'Pre-REC' && off > 60) || (s.stage === 'REC' && off > 80 && !isRec) || (s.stage === 'Rejected' && off > 95) || begun > T) return ns();
+    const hz = s.stage === 'Approved' ? (tst < s.os && w.iid !== live ? Infinity : T) : s.stage === 'REC' && isRec ? T : hz0;
+    const R = LX.runChain(w, begun, rnd), st = []; let waiting = null;
+    for (const r of R.steps) { const who = person(s, r.s.role), due = r.start + r.s.sla; let status = r.status;
+      if (waiting) status = 'Upcoming'; else if (status !== 'Canceled' && status !== 'Rejected' && r.end > hz) { status = 'Pending'; waiting = { sn: r.s.name, who, role: r.s.role, days: T - r.start, over: T > due, esc: T > r.start + r.s.esc }; }
+      st.push({ sn: r.s.name, id: r.s.id, role: r.s.role, who, status, start: r.start, due, esc: r.start + r.s.esc, group: r.s.group || null, loop: r.loop || null, done: status === 'Pending' || status === 'Upcoming' ? null : Math.min(r.end, hz), rework: !!r.s.usuallyCanceled || !!r.loop }); }
+    // parallel lanes: everyone in a waiting lane is pending together
+    if (waiting) { const k = st.findIndex((x) => x.status === 'Pending'), g = st[k].group; if (g) st.forEach((x, j) => { if (j > k && x.group === g && x.status === 'Upcoming' && !st.slice(k, j).some((y) => y.group !== g)) x.status = 'Pending'; }); }
+    if (s.stage === 'Rejected' && isRec) { const k = st.findIndex((x) => x.role !== 'rem' && x.status !== 'Canceled'); if (k >= 0) { st[k].status = 'Rejected'; st[k].loop = null; st.forEach((x, j) => { if (j > k) { x.status = 'Canceled'; x.done = null; } }); } waiting = null; }
+    if (!waiting && ((s.stage === 'REC' && isRec) || (s.stage === 'Approved' && (w.iid === live || tst === s.os) && seed % 3 !== 1))) { const L2 = [...st].reverse().find((x) => x.status !== 'Canceled'); if (L2) { L2.status = 'Pending'; L2.done = null; waiting = { sn: L2.sn, who: L2.who, role: L2.role, days: Math.max(0, T - L2.start), over: T > L2.due, esc: T > L2.esc }; } }
+    if (waiting) { const pend = st.filter((x) => x.status === 'Pending'); waiting.who = pend.map((x) => x.who).join(', '); waiting.sn = pend.map((x) => x.sn).join(' + '); }
     const closed = !waiting, end = closed ? Math.max(...st.map((x) => x.done || 0)) : null;
-    out.push({ icon, name, status: closed ? 'CLOSED' : 'OPEN', begun, completed: end, days: (closed ? end : T) - begun, steps: st, waiting }); });
+    out.push({ icon: w.icon, name: w.name, id: w.iid, status: closed ? 'CLOSED' : 'OPEN', begun, completed: end, days: (closed ? end : T) - begun, steps: st, waiting, rework: R.rework, lanes: LX.lanes(w) }); });
   return (s._wf = out); }
 // opening-stage rollups (our 11 stages) from the tasks + the REC workflow
-export function rollup(s) { const C = window.CO, ST = C ? C.STAGES : [], sch = schedule(s), wf = workflows(s)[0];
+export function rollup(s) { const C = window.CO, ST = C ? C.STAGES : [], sch = schedule(s), wf = workflows(s).find((w) => w.id === 'rec') || workflows(s)[0];
   return ST.map((x, i) => { const t = sch.filter((k) => k.st === i); let pct = t.length ? Math.round(t.reduce((a, k) => a + k.pct, 0) / t.length) : null;
-    if (x.id === 'vote') pct = s.stage === 'Approved' || s.stage === 'Open' ? 100 : s.stage === 'Rejected' ? 0 : wf.status === 'OPEN' ? Math.round(wf.steps.filter((k) => k.status === 'Approved' || k.status === 'Complete').length / 7 * 100) : 0;
+    if (x.id === 'vote') pct = s.stage === 'Approved' || s.stage === 'Open' ? 100 : s.stage === 'Rejected' ? 0 : wf.status === 'OPEN' ? Math.round(wf.steps.filter((k) => k.status === 'Approved' || k.status === 'Complete').length / Math.max(1, wf.steps.length) * 100) : 0;
     if (pct == null) pct = s.stage === 'Open' ? 100 : s.os > i ? 100 : s.os === i ? 50 : 0;
     if (s.stage === 'Open') pct = 100; return { ...x, pct, late: t.some((k) => k.late && k.state !== 'done'), rejected: x.id === 'vote' && s.stage === 'Rejected' }; }); }
 export function overallPct(s) { const R = rollup(s); return R.length ? Math.round(R.reduce((a, r) => a + r.pct, 0) / R.length) : 0; }
@@ -284,19 +286,21 @@ export function overallPct(s) { const R = rollup(s); return R.length ? Math.roun
 const KS = ['Key status', 'LOI signed', 'RE Committee approved', 'RE contract executed', 'In planning review', 'Permits applied', 'Under construction', 'Turnover to Ops', 'Open'];
 function keyStatus(s) { const ms = s.lx.ms; let k = 0; ms.forEach((d, i) => { if (d != null) k = i + 1; }); return s.stage === 'Rejected' ? 'Rejected' : s.stage === 'Pre-REC' ? 'Pre-REC · scouting' : s.stage === 'REC' ? 'REC · package in review' : KS[k] || 'Started'; }
 function riskFactor(s) { const b = behind(s), n = s.nr; const lvl = b > 30 || n >= 5 ? 'High' : b > 10 || n >= 3 ? 'Medium' : 'Low'; const d = new Date(Date.UTC(2020, 0, 1) + TODAY() * 864e5); return `Q${Math.floor(d.getUTCMonth() / 3) + 1} ${d.getUTCFullYear()} · ${lvl}`; }
-export function tabSum(s) { const lx = s.lx, R = rollup(s), ms = lx.ms, turnBase = s.lx.baseOpen - 10, sch = schedule(s), turn = sch[22];
+export function tabSum(s) { const lx = s.lx, R = rollup(s), ms = lx.ms, turnBase = s.lx.baseOpen - 10, sch = schedule(s), turn = sch.find((t) => t.id === 'tov') || sch[sch.length - 2] || sch[0], opn = sch.find((t) => t.id === 'open') || sch[sch.length - 1];
   const fact = (i, k, v, cls = '') => `<span class="${cls}"><small>${i} ${k}</small><b>${esc(v)}</b></span>`;
-  return `<h4>🛤 Opening tracker <small>· rolled up from ${TASK.length} schedule tasks + workflows · ${overallPct(s)}%</small></h4>
+  return `<h4>🛤 Opening tracker <small>· rolled up from ${TASKS().length} schedule tasks + workflows · ${overallPct(s)}%</small></h4>
    <div class="pf-roll">${R.map((r) => `<div class="${r.pct >= 100 ? 'done' : r.pct > 0 ? 'go' : ''} ${r.late ? 'late' : ''} ${r.rejected ? 'rej' : ''}" title="${esc(r.name)} · ${r.pct}%"><b>${r.rejected ? '⛔' : r.icon}</b><i style="--p:${r.pct}"></i><small>${esc(r.short)}</small></div>`).join('')}</div>
    <h4>🏷 General info</h4><div class="pf-facts">${fact('📛', 'Project', `${s.code} · ${s.addr} · ${s.city} · ${s.stage}`, 'w2')}${fact('🗂', 'Portfolio', lx.fr ? 'Franchise' : 'Company shops')}${fact('🔁', 'Relocation', lx.reloc ? 'Yes' : 'No')}${fact('🤝', 'Franchisee / operator', lx.fr && lx.frIdx >= 0 ? PF.data.firms.fr[lx.frIdx] : 'Company operated')}${fact('🧑‍🏫', 'Business coach', person(s, 'ops'))}${fact('🧭', 'AVP', person(s, 'avp'))}</div>
    <h4>📍 Site data</h4><div class="pf-facts">${fact('🗺', 'ROA / region', 'ROA ' + lx.roa)}${fact('#️⃣', 'Shop # in ROA', lx.shopNo)}${fact('📄', 'Deal type', lx.fr ? 'Franchise' : 'Company owned')}${fact('🏗', 'Project type', s.deal.type ? 'BTS' : 'Ground lease')}${fact('🏠', 'Building type', lx.btype)}${fact('📏', 'Building', s.deal.bsf.toLocaleString() + ' sf')}${fact('🗺', 'Property', s.deal.psf.toLocaleString() + ' sf')}${fact('🏛', 'County', s.county)}${fact('🌐', 'Lat / lng', s.ll.join(', '))}</div>
-   <h4>📅 Key dates & status</h4><div class="pf-facts">${fact('🚦', 'Key status', keyStatus(s))}${fact('⚠', 'Risk factor', riskFactor(s), /High/.test(riskFactor(s)) ? 'bad' : '')}${fact('🎯', 'Original turnover to Ops', dayStr(turnBase))}${fact('🔁', 'Times turnover moved', lx.moved, lx.moved ? 'bad' : '')}${fact('📆', 'Turnover (forecast)', dayStr(turn.fE))}${fact('🎉', 'Open date', dayStr(s.stage === 'Open' ? ms[7] : sch[23].fE) + (s.stage === 'Open' ? '' : ' (fcst)'))}${fact('⏱', 'Vs baseline', behind(s) > 0 ? `${behind(s)} days behind` : 'on time ✓', behind(s) > 0 ? 'bad' : '')}</div>
+   <h4>📅 Key dates & status</h4><div class="pf-facts">${fact('🚦', 'Key status', keyStatus(s))}${fact('⚠', 'Risk factor', riskFactor(s), /High/.test(riskFactor(s)) ? 'bad' : '')}${fact('🎯', 'Original turnover to Ops', dayStr(turnBase))}${fact('🔁', 'Times turnover moved', lx.moved, lx.moved ? 'bad' : '')}${fact('📆', 'Turnover (forecast)', dayStr(turn.fE))}${fact('🎉', 'Open date', dayStr(s.stage === 'Open' ? ms[7] : opn.fE) + (s.stage === 'Open' ? '' : ' (fcst)'))}${fact('⏱', 'Vs baseline', behind(s) > 0 ? `${behind(s)} days behind` : 'on time ✓', behind(s) > 0 ? 'bad' : '')}</div>
    <h4>🏁 Milestone actuals</h4><div class="pf-ms">${KS.slice(1).map((k, i) => `<div class="${ms[i] != null ? 'done' : ''}"><b>${ms[i] != null ? '✓' : i + 1}</b><span>${k}</span><small>${ms[i] != null ? dayStr(ms[i]) : '—'}</small></div>`).join('')}</div>
    <h4>👥 Project members</h4><div class="pf-mem">${Object.entries(ROLE).map(([k, r]) => { const n = k === 'llm' || k === 'llc' ? person(s, k) : person(s, k); return `<div>${av(n)}<span><b>${esc(n)}</b><small>${esc(r)}</small></span></div>`; }).join('')}</div>`; }
 export function tabWf(s) { const W = workflows(s), T = TODAY();
   return W.map((w) => `<div class="pf-wf ${w.status === 'OPEN' ? 'open' : w.status === 'CLOSED' ? 'closed' : 'ns'}"><header><b>${w.icon} ${esc(w.name)}</b><span class="pf-pill">${w.status}</span>${w.begun != null ? `<small>begun ${dayStr(w.begun)}${w.completed ? ` · done ${dayStr(w.completed)}` : ''} · ${w.days} days ${w.status === 'OPEN' ? 'open' : ''}</small>` : '<small>not started yet</small>'}</header>
    ${w.waiting ? `<p class="pf-wait ${w.waiting.over ? 'over' : ''}">⏳ Waiting on <b>${esc(w.waiting.who)}</b> (${esc(w.waiting.sn)}) for <b>${w.waiting.days} days</b>${w.waiting.over ? ' · overdue' : ''}</p>` : ''}
-   ${w.steps.length ? `<div class="pf-chain">${w.steps.map((k) => { const over = k.status === 'Pending' && T > k.due; return `<div class="st ${k.status.toLowerCase()} ${over ? 'over' : ''} ${k.rework ? 'rw' : ''}">${av(k.who)}<b class="ck">${k.status === 'Upcoming' ? '○' : k.status === 'Pending' ? (over ? '!' : '…') : k.status === 'Canceled' ? '✕' : k.status === 'Rejected' ? '⛔' : '✓'}</b><span>${k.rework ? '↩ ' : ''}${esc(k.sn)}</span><small>${esc(k.who)}</small><small>${k.status}${k.done ? ' ' + dayStr(k.done).slice(5) : ` · due ${dayStr(k.due).slice(5)}`}</small></div>`; }).join('<em class="ar">➜</em>')}</div>` : ''}</div>`).join(''); }
+   ${w.steps.length ? `<div class="pf-chain">${cols(w.steps).map((c) => `<div class="col ${c.length > 1 ? 'par' : ''}">${c.map((k) => { const over = k.status === 'Pending' && T > k.due; return `<div class="st ${k.status.toLowerCase()} ${over ? 'over' : ''} ${k.rework ? 'rw' : ''}" data-step="${esc(k.id || '')}">${av(k.who)}<b class="ck">${k.status === 'Upcoming' ? '○' : k.status === 'Pending' ? (over ? '!' : '…') : k.status === 'Canceled' ? '✕' : k.status === 'Rejected' ? '⛔' : '✓'}</b><span>${esc(k.sn)}</span><small>${esc(k.who)}</small><small>${k.loop ? `↩ back to ${esc((w.steps.find((x) => x.id === k.loop) || {}).sn || k.loop)}` : k.status + (k.done ? ' ' + dayStr(k.done).slice(5) : ` · due ${dayStr(k.due).slice(5)}`)}</small>${k.status === 'Pending' && T > k.esc ? '<em class="escl">⏫ escalated</em>' : ''}</div>`; }).join('')}</div>`).join('<em class="ar">➜</em>')}</div>` : ''}${w.rework ? `<p class="pf-loop">↩ ${w.rework} rework loop${w.rework > 1 ? 's' : ''} in this run</p>` : ''}</div>`).join(''); }
+// consecutive steps of one parallel group share a column (a Rejected-with-loop step stays on its own)
+function cols(steps) { const C = []; for (const k of steps) { const l = C[C.length - 1]; if (k.group && !k.loop && l && l[0].group === k.group && !l[0].loop) l.push(k); else C.push([k]); } return C; }
 export function tabSch(s) { const L = schedule(s), T = TODAY(), lo0 = Math.min(...L.map((t) => Math.min(t.bS, t.fS))) - 10, hi = Math.max(...L.map((t) => Math.max(t.bE, t.fE, t.bE + 7))) + 10;
   // zoom the axis to the active window: long-running pipeline sites start ~5 months before today; earlier (finished) work is clipped with a ◀ marker
   const lo = s.stage !== 'Open' && hi - lo0 > 360 ? Math.max(lo0, Math.min(T - 150, hi - 300)) : lo0, span = hi - lo, cl = (d) => Math.max(lo, Math.min(hi, d));
@@ -343,4 +347,4 @@ export function slipping() { return PF.list.filter((s) => s.stage === 'Approved'
 export function renderSlip() { const L = slipping(), mx = Math.max(1, ...L.map((x) => x.b));
   return `<div class="pf-alt"><h3>📉 Slipping sites <small>· ${L.length} pipeline sites behind baseline or with a moved turnover</small></h3><div class="pf-list">${L.slice(0, 60).map(({ s, b, late }) => `<button class="pf-li ${b > 30 ? 'over' : ''}" data-code="${s.code}"><b>${s.code}</b><span>${esc(s.city)}, ${s.st}</span><span class="sb"><i style="width:${b / mx * 100}%"></i></span><b class="d">+${b} d</b><span>🔁 ${s.lx.moved}× moved</span><span>⚠ ${late} late tasks</span></button>`).join('')}</div></div>`; }
 
-window.PFV = { PF, open, close, openSite, status, risks, upsides, sens, filtered, refresh, clusters, load, schedule, workflows, rollup, overallPct, behind, bottlenecks, slipping, docSvg, openDoc };
+window.PFV = { TODAY, dayStr, behind, toast: (m) => G() && G().toast(m), LX, setAdmin, setView: (v) => setView(v), TASKS, PF, open, close, openSite, status, risks, upsides, sens, filtered, refresh, clusters, load, schedule, workflows, rollup, overallPct, behind, bottlenecks, slipping, docSvg, openDoc };
