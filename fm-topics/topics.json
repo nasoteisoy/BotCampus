@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-11T18:25:00-07:00",
+  "updatedAt": "2026-10-12T19:20:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -84,6 +84,16 @@
       "bot": "Field Marshal"
     },
     {
+      "id": "lucernex-kit",
+      "title": "Lucernex learning kit",
+      "what": "Starter kit for learning Lucernex, a real estate and store-opening software, and working with it safely through its API.",
+      "summary": "1. Plain-words explainer of what Lucernex is and its main modules.\n2. Discovery playbook with questions and inventory sheets.\n3. Read-only API and maintenance guides, with every fact sourced or marked to confirm.\n4. Cursor rules and a small tested Python starter, all free tools.",
+      "leftOff": "Oct 11, 7:49 PM PT: zip delivered. Nothing open.",
+      "updatedAt": "2026-10-11T19:49:00-07:00",
+      "bot": "Field Marshal",
+      "note": "What: Starter kit for learning Lucernex, a real estate and store-opening software, and working with it safely through its API.\n\nSummary: 1. Plain-words explainer of what Lucernex is and its main modules.\n2. Discovery playbook with questions and inventory sheets.\n3. Read-only API and maintenance guides, with every fact sourced or marked to confirm.\n4. Cursor rules and a small tested Python starter, all free tools.\n\nLeft off: Oct 11, 7:49 PM PT: zip delivered. Nothing open.\n\nBot: Field Marshal"
+    },
+    {
       "id": "thermostat",
       "title": "Thermostat",
       "what": "Nest thermostat not cooling; restore Cool and optional Grok Bot control.",
@@ -137,10 +147,10 @@
       "id": "deva-coffee-opening",
       "title": "Coffee Opening: pitch and business plan",
       "what": "Growing the Coffee Opening tracker into a pitch app with real business detail.",
-      "summary": "1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 WIP locally: workflow designer and admin tools, not pushed yet.",
-      "leftOff": "Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is saved locally, not pushed. Waiting on your feedback.",
-      "updatedAt": "2026-10-11T18:25:00-07:00",
-      "note": "What: Growing the Coffee Opening tracker into a pitch app with real business detail.\n\nSummary: 1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 WIP locally: workflow designer and admin tools, not pushed yet.\n\nLeft off: Oct 11, 6:17 PM PT: v6 is live. v7 workflow designer is saved locally, not pushed. Waiting on your feedback.\n\nBot: Dev A (with Dev B)",
+      "summary": "1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 (Oct 11): workflow designer in an admin mode, a report builder with saved reports, a simulate-old-vs-new view across the fake example sites, and JSON/CSV export and import.",
+      "leftOff": "Oct 11, 7:09 PM PT: v7 is live. Waiting on your feedback.",
+      "updatedAt": "2026-10-11T19:09:00-07:00",
+      "note": "What: Growing the Coffee Opening tracker into a pitch app with real business detail.\n\nSummary: 1. v3 (Oct 11): coffee-chain pitch branding with drive-thru stands.\n2. v4 (Oct 11): real metro map, shop pins, traffic layer, 0-100 site score.\n3. v5 (Oct 11): compare up to 3 candidate sites side by side.\n4. v6 (Oct 11): US portfolio over about 1,900 fake example sites (map, filters, site panel, waits and slipping views).\n5. v7 (Oct 11): workflow designer in an admin mode, a report builder with saved reports, a simulate-old-vs-new view across the fake example sites, and JSON/CSV export and import.\n\nLeft off: Oct 11, 7:09 PM PT: v7 is live. Waiting on your feedback.\n\nBot: Dev A (with Dev B)",
       "bot": "Dev A"
     },
     {
@@ -150,7 +160,7 @@
       "summary": "1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.",
       "leftOff": "Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.",
       "updatedAt": "2026-10-11T18:25:00-07:00",
-      "note": "What: Phone 3D chess in space on an 8x8x8 board, plus a board-free open-space variant.\n\nSummary: 1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.\n\nLeft off: Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.\n\nBot: Dev A\n\nBot: Dev A",
+      "note": "What: Phone 3D chess in space on an 8x8x8 board, plus a board-free open-space variant.\n\nSummary: 1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.\n\nLeft off: Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.\n\nBot: Dev A",
       "bot": "Dev A"
     },
     {
