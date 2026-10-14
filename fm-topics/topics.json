@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-12T19:20:00-07:00",
+  "updatedAt": "2026-10-13T18:25:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -397,11 +397,21 @@
       "id": "si-reels",
       "title": "Reel and screenshot investigations",
       "what": "Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.",
-      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.",
-      "leftOff": "Oct 11, 10:44 AM PT: #112 logged (rated MED for Campus). Waiting on the next link.",
-      "updatedAt": "2026-10-11T10:44:00-07:00",
-      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n\nLeft off: Oct 11, 10:44 AM PT: #112 logged (rated MED for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
+      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: #113 'mini freezer' reel judged staged, not a real freezer (LOW); #114 'prompting tricks' reel traced to a Karpathy post, with a plain-English style tip for the bots (MED).",
+      "leftOff": "Oct 12, 7:35 PM PT: #114 logged (rated MED for Campus). Waiting on the next link.",
+      "updatedAt": "2026-10-12T19:35:00-07:00",
+      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: #113 'mini freezer' reel judged staged, not a real freezer (LOW); #114 'prompting tricks' reel traced to a Karpathy post, with a plain-English style tip for the bots (MED).\n\nLeft off: Oct 12, 7:35 PM PT: #114 logged (rated MED for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
       "bot": "Screenshot Investigator"
+    },
+    {
+      "id": "fun-pyramid-copper",
+      "title": "Copper in the Great Pyramid",
+      "what": "Casual curiosity chat about copper pieces found inside the Great Pyramid of Giza.",
+      "summary": "1. Oct 12: you shared a search about copper 'wire' found in the pyramids.\n2. The search said it was small copper fittings and pins in the narrow air shafts, near the little stone doors.",
+      "leftOff": "Oct 12, about 9:55 PM PT: screenshot shared in Fun Topics. Nothing open.",
+      "updatedAt": "2026-10-12T21:55:00-07:00",
+      "bot": "Fun Topics",
+      "note": "What: Casual curiosity chat about copper pieces found inside the Great Pyramid of Giza.\n\nSummary: 1. Oct 12: you shared a search about copper 'wire' found in the pyramids.\n2. The search said it was small copper fittings and pins in the narrow air shafts, near the little stone doors.\n\nLeft off: Oct 12, about 9:55 PM PT: screenshot shared in Fun Topics. Nothing open.\n\nBot: Fun Topics"
     }
   ]
 }
