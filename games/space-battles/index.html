@@ -22,18 +22,21 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:syste
 .card p{margin:8px 0}
 button{font-size:20px;padding:14px 28px;border-radius:10px;border:0;background:#2c6;color:#000;font-weight:700;margin-top:12px}
 .hide{display:none!important}
+#toast{position:fixed;left:50%;top:56px;transform:translateX(-50%);background:rgba(40,20,10,.92);border:1px solid #fc4;color:#fd6;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;z-index:6;pointer-events:none;white-space:nowrap;max-width:92vw;transition:opacity .25s}
+#toast.off{opacity:0}
 </style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 </head><body>
 <canvas id="c"></canvas>
 <div id="hud"><span class="g" id="ps">You: 0</span><span class="y" id="cr">⚙ 0</span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
 <div id="msg">Tap one of your green planets</div>
-<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div>
+<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div><div id="toast" class="off" role="status" aria-live="polite"></div>
 <div class="card" id="how"><div><h2>Space Battles 3D</h2>
 <p>Your planets build ships — watch them orbit. More ships circling = stronger planet.</p>
-<p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet.</p>
+<p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet (needs an admiral ⭐).</p>
 <p>Spend ⚙ resources to build: <b>Factory</b> (faster ships) or <b>Defense</b> (turrets). Tap your selected planet again to build a factory.</p>
 <p><b style="color:#fc4">Admirals</b> ⭐ lead the next fleet sent from their planet as a glowing flagship. If that fleet loses, the admiral escapes to your nearest free planet (lost only if none). <b style="color:#c9f">Generals</b> 🎖 build a bunker and guard their planet — lost if it falls. Tap a portrait chip to see its perk.</p>
+<p><b style="color:#fd6">⚓ No admiral, no movement.</b> Ships can only leave a planet that has an admiral, and the admiral flies with the fleet. Planets marked ⚓ are stranded: their ships still build up and defend, but can't move until you hire (⭐) or bring an admiral there. You start with one.</p>
 <p>Conquer every <b style="color:#f55">red-glow</b> planet. Drag to orbit, pinch to zoom.</p><button id="go">Play</button></div></div>
 <div class="card hide" id="end"><div><h2 id="et"></h2><p id="ed"></p><button id="rs">Restart</button></div></div>
 <script type="module">
@@ -127,6 +130,10 @@ function mkBunker(own){const g=new THREE.Group();const b=new THREE.Mesh(GB.base,
  const t=new THREE.Mesh(GB.dome,MB.dark);t.scale.setScalar(1.1);t.position.y=.14;const p=new THREE.Mesh(GB.tower,MB.wall);p.scale.set(.4,1.6,.4);p.position.set(.15,.35,0);
  const fl=new THREE.Mesh(banG,new THREE.MeshBasicMaterial({color:own==='p'?0xcc99ff:0xff3333,side:THREE.DoubleSide}));fl.scale.setScalar(.6);fl.position.set(.15,.55,0);g.add(b,t,p,fl);g.userData.fl=fl;return g;}
 let adms=[];
+const anchorT=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='rgba(20,20,30,.85)';x.beginPath();x.arc(32,32,29,0,7);x.fill();x.lineWidth=4;x.strokeStyle='#fd6';x.setLineDash([7,5]);x.stroke();x.font='34px serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fd6';x.fillText('⚓',32,35);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+function stranded(s){return s.own!=='n'&&!s.adm&&s.ships>=1;}
+function anchor(s){const on=stranded(s);if(on&&!s.bN){s.bN=new THREE.Sprite(new THREE.SpriteMaterial({map:anchorT,depthWrite:false,transparent:true}));s.bN.scale.setScalar(.95);s.g.add(s.bN);}
+ if(s.bN){s.bN.visible=on;if(on){s.bN.position.set(0,s.r+(s.gen?1.6:.85),0);s.bN.material.opacity=.65+.35*Math.sin(clock*3+s.i);}}}
 function badges(s){[s.bA,s.bG].forEach(b=>b&&s.g.remove(b));s.bA=s.bG=null;
  const mk=(d,own,x)=>{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:portrait(d,own).t,depthWrite:false}));sp.scale.setScalar(.75);sp.position.set(x,s.r+.85,0);s.g.add(sp);return sp;};
  const two=s.adm&&s.gen;if(s.gen)s.bG=mk(s.gen.d,s.gen.own,two?-.42:0);if(s.adm)s.bA=mk(s.adm.d,s.adm.own,two?.42:0);}
@@ -165,6 +172,7 @@ function build(){clear();
  setOwn(sys[0],'p');sys[0].ships=20;setOwn(sys[10],'e');sys[10].ships=20;
  // a few neutral planets start with an outpost so the galaxy feels inhabited
  [5,8].forEach(k=>addB(sys[k],'def',true));
+ hire(sys[0],'adm',null,true);hire(sys[10],'adm',null,true);
  cred={p:10,e:10};sel=null;ring.visible=false;panel();t0=performance.now();clock=0;aiT=0;over=false;}
 function rate(s){return s.base*(1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
 function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
@@ -175,10 +183,10 @@ function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)retu
  s.blds.push({m,born:clock,kind});if(kind==='fac')s.fac++;else s.def++;
  if(s.blds.length>=3&&!s.station){s.station=mkStation(s.r,s.own);s.station.scale.setScalar(.001);s.station.userData.born=clock;s.g.add(s.station);}
  return true;}
-function launch(a,b){const n=Math.floor(a.ships/2);if(n<1)return;a.ships-=n;const d=a.g.position.distanceTo(b.g.position);
+function launch(a,b){if(!a.adm)return false;const n=Math.floor(a.ships/2);if(n<1)return false;a.ships-=n;const d=a.g.position.distanceTo(b.g.position);
  const k=Math.min(n,60),offs=[];for(let j=0;j<k;j++){const row=Math.floor(Math.sqrt(j)),col=j-row*row;offs.push(new THREE.Vector3((col-row)*.28,(j%2?.1:-.1)*row*.5,-row*.32));}
  const A=a.adm;if(A){a.adm=null;A.at=null;badges(a);offs.forEach(o=>o.z-=.6);}
- const f={a,b,n,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);}
+ const f={a,b,n,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);return true;}
 function arrive(f){const b=f.b,pos=b.g.position.clone(),A=f.adm;
  if(b.own===f.own){b.ships+=f.n;if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
  const id=A&&A.d.id,atkM=id==='vega'?1.3:id==='kade'?1.15:1,lossM=id==='nova'?.6:id==='kade'?.8:1;
@@ -203,6 +211,8 @@ bad.onclick=()=>{const d=sel&&hire(sel,'adm');msg.textContent=d?d.n+' takes comm
 bgn.onclick=()=>{const d=sel&&hire(sel,'gen');msg.textContent=d?d.n+' digs in to defend!':'Need ⚙'+HC;panel();};
 bf.onclick=()=>{if(sel&&addB(sel,'fac'))msg.textContent='Factory built — faster ships!';panel();};
 bdB.onclick=()=>{if(sel&&addB(sel,'def'))msg.textContent='Defense turret built!';panel();};
+let toastT=0;const toastEl=document.getElementById('toast');
+function toast(t){toastEl.textContent=t;toastEl.classList.remove('off');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.add('off'),1800);}
 let down=null;
 cv.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
 cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>10)return;
@@ -210,17 +220,19 @@ cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.client
  sys.forEach(s=>{v.copy(s.g.position).project(cam);const x=(v.x+1)/2*innerWidth,y=(1-v.y)/2*innerHeight,d=Math.hypot(x-e.clientX,y-e.clientY);if(d<bd){bd=d;best=s;}});
  if(!best){sel=null;ring.visible=false;panel();msg.textContent='Tap one of your green planets';return;}
  if(sel&&sel===best&&best.own==='p'){msg.textContent=addB(best,'fac')?'Factory built — faster ships!':'Need ⚙'+COST+' to build';panel();return;}
- if(sel&&sel!==best&&sel.nb.includes(best.i)){launch(sel,best);msg.textContent='Fleet launched!';return;}
- if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent='Tap a linked planet to attack, or build below';panel();}
+ if(sel&&sel!==best&&sel.nb.includes(best.i)){if(!sel.adm){toast('⚓ Needs an admiral to move');msg.textContent='Hire an admiral ⭐ here, or bring one with a fleet';return;}if(launch(sel,best))msg.textContent='Fleet launched!';else toast('Not enough ships to send');return;}
+ if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent=best.adm?'Tap a linked planet to attack, or build below':'⚓ No admiral here — ships can\'t move. Hire one ⭐ below';panel();}
  else msg.textContent=sel?'Not linked — pick a neighbor':'Select your green planet first';});
 function ai(){const mine=sys.filter(s=>s.own==='e');
+ // stranded ships: hire an admiral where the most ships are stuck (prefer the front line)
+ if(cred.e>=HC&&used('e',ADM,'adm').length){const w=x=>x.ships+(x.nb.some(j=>sys[j].own!=='e')?20:0);const st=mine.filter(x=>!x.adm&&x.ships>=8).sort((x,y)=>w(y)-w(x))[0];if(st)hire(st,'adm');}
  if(cred.e>=HC+5&&mine.length&&Math.random()<.3){const front=mine.filter(a=>a.nb.some(j=>sys[j].own!=='e'));
   if(Math.random()<.5){const t=front.filter(x=>!x.gen)[0];if(t)hire(t,'gen');}else{const t=mine.filter(x=>!x.adm).sort((x,y)=>y.ships-x.ships)[0];if(t)hire(t,'adm');}}
  if(cred.e>=COST&&mine.length){const front=mine.filter(a=>a.nb.some(j=>sys[j].own==='p'));const tgt=(front.length&&Math.random()<.5?front:mine).sort((x,y)=>x.blds.length-y.blds.length)[0];addB(tgt,front.includes(tgt)?'def':'fac');}
  let best=null,sc=-1e9;
- mine.forEach(a=>a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2);const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}}));
+ mine.forEach(a=>{if(!a.adm)return;a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2);const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}})});
  if(best&&sc>1)launch(best[0],best[1]);
- else{const a=mine.sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
+ else{const a=mine.filter(x=>x.adm).sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
 function end(win){over=true;panel();document.getElementById('et').textContent=win?'Victory!':'Defeat';document.getElementById('ed').textContent=(win?'The galaxy is yours in ':'You lasted ')+Math.round(clock)+'s';document.getElementById('end').classList.remove('hide');}
 document.getElementById('go').onclick=()=>{document.getElementById('how').classList.add('hide');build();};
 document.getElementById('rs').onclick=()=>{document.getElementById('end').classList.add('hide');build();};
@@ -267,11 +279,11 @@ function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/
   m.userData.ban.rotation.x=Math.sin(clock*6)*.25;});
  sys.forEach(s=>{s.spin.rotation.y+=s.spd*rdt;s.blds.forEach(b=>{const t=(clock-b.born)/.5;b.m.scale.setScalar(b.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));if(b.kind==='def')b.m.children[2].rotation.y=0;});
   if(s.station){const t=(clock-s.station.userData.born)/.8;s.station.scale.setScalar(Math.max(.001,pop(Math.min(1,t))));s.station.rotation.y+=.3*rdt;}
-  s.halo.material.opacity=.75+.25*Math.sin(clock*2+s.i);
+  s.halo.material.opacity=(stranded(s)?.45:.75)+.25*Math.sin(clock*2+s.i);anchor(s);
   if(s.gen){const t=(clock-s.gen.born)/.5;s.gen.m.scale.setScalar(s.gen.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));s.gen.m.userData.fl.rotation.y=Math.sin(clock*5)*.4;}});
  if(sel)ring.position.copy(sel.g.position);ring.lookAt(cam.position);
  drawShips();ctl.update();R.render(S,cam);}
 requestAnimationFrame(loop);
 window.__sb={cam,ctl,get sys(){return sys},get fleets(){return fleets},get battles(){return battles},get cred(){return cred},
- launch:(a,b)=>launch(sys[a],sys[b]),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
+ launch:(a,b)=>launch(sys[a],sys[b]),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},stranded:i=>stranded(sys[i]),hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
 </script></body></html>
