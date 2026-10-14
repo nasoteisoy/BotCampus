@@ -6,9 +6,15 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:syste
 #c{position:fixed;inset:0}
 #hud{position:fixed;top:0;left:0;right:0;padding:10px;display:flex;justify-content:space-between;font-weight:700;pointer-events:none;text-shadow:0 0 4px #000}
 #hud .g{color:#4f8}#hud .r{color:#f55}#hud .y{color:#fd6}
-#msg{position:fixed;bottom:84px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
-#panel{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:3}
-#panel button{margin:0;font-size:16px;padding:0 16px;height:52px;min-width:140px}
+#msg{position:fixed;bottom:118px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
+#panel{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:3;width:min(96vw,460px)}
+#btns{display:flex;gap:6px;width:100%}
+#panel button{margin:0;font-size:13px;padding:0 4px;height:50px;flex:1;min-width:0;line-height:1.15}
+#bad{background:#fc4}#bgn{background:#c9f}
+#chips{display:flex;gap:8px;min-height:0}
+.chip{display:flex;align-items:center;gap:5px;background:rgba(10,15,40,.85);border:2px solid #fc4;border-radius:24px;padding:2px 10px 2px 2px;height:44px;font-size:13px;font-weight:700;cursor:pointer}
+.chip.g{border-color:#c9f}.chip img{width:40px;height:40px;border-radius:50%}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;background:#112;border:1px solid #fc4;border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;text-align:center;z-index:4;pointer-events:none}
 #panel button:disabled{background:#444;color:#999}
 #bd{background:#58f}
 .card{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,10,.75);z-index:5}
@@ -22,11 +28,12 @@ button{font-size:20px;padding:14px 28px;border-radius:10px;border:0;background:#
 <canvas id="c"></canvas>
 <div id="hud"><span class="g" id="ps">You: 0</span><span class="y" id="cr">⚙ 0</span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
 <div id="msg">Tap one of your green planets</div>
-<div id="panel" class="hide"><button id="bf">Factory ⚙20</button><button id="bd">Defense ⚙20</button></div>
+<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div>
 <div class="card" id="how"><div><h2>Space Battles 3D</h2>
 <p>Your planets build ships — watch them orbit. More ships circling = stronger planet.</p>
 <p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet.</p>
 <p>Spend ⚙ resources to build: <b>Factory</b> (faster ships) or <b>Defense</b> (turrets). Tap your selected planet again to build a factory.</p>
+<p><b style="color:#fc4">Admirals</b> ⭐ lead the next fleet sent from their planet as a glowing flagship. If that fleet loses, the admiral escapes to your nearest free planet (lost only if none). <b style="color:#c9f">Generals</b> 🎖 build a bunker and guard their planet — lost if it falls. Tap a portrait chip to see its perk.</p>
 <p>Conquer every <b style="color:#f55">red-glow</b> planet. Drag to orbit, pinch to zoom.</p><button id="go">Play</button></div></div>
 <div class="card hide" id="end"><div><h2 id="et"></h2><p id="ed"></p><button id="rs">Restart</button></div></div>
 <script type="module">
@@ -96,6 +103,45 @@ const lasers=new THREE.LineSegments(laserG,new THREE.LineBasicMaterial({vertexCo
 const flashG=new THREE.BufferGeometry();flashG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(400*3),3));flashG.setAttribute('color',new THREE.BufferAttribute(new Float32Array(400*3),3));
 const flashT=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),g=x.createRadialGradient(16,16,0,16,16,16);g.addColorStop(0,'#fff');g.addColorStop(.3,'rgba(255,220,120,.9)');g.addColorStop(1,'rgba(255,100,0,0)');x.fillStyle=g;x.fillRect(0,0,32,32);return new THREE.CanvasTexture(c);})();
 const flashes=new THREE.Points(flashG,new THREE.PointsMaterial({size:.7,map:flashT,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));flashes.frustumCulled=false;S.add(flashes);
+// ---- commanders ----
+const ADM=[{id:'vega',n:'Adm. Vega',e:'🔥',perk:'Aggressive: fleet hits 30% harder',c:'#ff8a3c'},{id:'orion',n:'Adm. Orion',e:'⚡',perk:'Swift: fleet flies 50% faster',c:'#4cf'},{id:'nova',n:'Adm. Nova',e:'💠',perk:'Shield: fleet loses fewer ships',c:'#b8f'},{id:'kade',n:'Adm. Kade',e:'🎯',perk:'Hunter: hits harder & loses fewer',c:'#6e6'}];
+const GEN=[{id:'rook',n:'Gen. Rook',e:'🏰',perk:'Fortress: turrets twice as strong',c:'#9ab'},{id:'ash',n:'Gen. Ash',e:'🔱',perk:'Militia: defenders rise when attacked',c:'#e75'},{id:'sol',n:'Gen. Sol',e:'☀',perk:'Rally: planet builds ships faster',c:'#fd4'}];
+const HC=30,PT={};
+function portrait(d,own){const k=d.id+own;if(PT[k])return PT[k];const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d');
+ const g=x.createRadialGradient(48,36,6,48,48,48);g.addColorStop(0,d.c);g.addColorStop(1,'#101830');x.fillStyle=g;x.beginPath();x.arc(48,48,44,0,7);x.fill();
+ x.save();x.beginPath();x.arc(48,48,44,0,7);x.clip();x.fillStyle='#0b1022';x.beginPath();x.arc(48,40,15,0,7);x.fill();x.beginPath();x.ellipse(48,92,32,30,0,0,7);x.fill();
+ x.fillStyle=own==='p'?'#fc4':'#f44';x.fillRect(30,24,36,6);x.restore();
+ x.font='26px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(d.e,48,74);
+ x.lineWidth=6;x.strokeStyle=own==='p'?'#fc4':'#f33';x.beginPath();x.arc(48,48,44,0,7);x.stroke();
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;PT[k]={c,t,url:c.toDataURL()};return PT[k];}
+const banG=new THREE.PlaneGeometry(.45,.26);banG.translate(.22,0,0);
+const hullG=new THREE.ConeGeometry(.2,.75,6);hullG.rotateX(Math.PI/2);const wingG=new THREE.BoxGeometry(.7,.05,.22);
+function mkFlag(A){const g=new THREE.Group(),gc=A.own==='p'?0xffcc44:0xff3333;
+ const h=new THREE.Mesh(hullG,new THREE.MeshStandardMaterial({color:0xe8ecf4,metalness:.6,roughness:.3,emissive:COL[A.own],emissiveIntensity:.25}));
+ const w=new THREE.Mesh(wingG,MB.dark);w.position.z=-.15;const pole=new THREE.Mesh(GB.tower,MB.wall);pole.position.set(0,.2,-.2);
+ const ban=new THREE.Mesh(banG,new THREE.MeshBasicMaterial({color:gc,side:THREE.DoubleSide}));ban.position.set(0,.3,-.2);ban.rotation.y=Math.PI/2;
+ const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:flashT,color:gc,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));gl.scale.setScalar(1.5);
+ const bd=new THREE.Sprite(new THREE.SpriteMaterial({map:portrait(A.d,A.own).t,depthWrite:false}));bd.position.y=.75;bd.scale.setScalar(.6);
+ g.add(gl,h,w,pole,ban,bd);g.userData.ban=ban;S.add(g);return g;}
+function mkBunker(own){const g=new THREE.Group();const b=new THREE.Mesh(GB.base,MB.wall);b.scale.set(1.5,2.5,1.5);b.position.y=.07;
+ const t=new THREE.Mesh(GB.dome,MB.dark);t.scale.setScalar(1.1);t.position.y=.14;const p=new THREE.Mesh(GB.tower,MB.wall);p.scale.set(.4,1.6,.4);p.position.set(.15,.35,0);
+ const fl=new THREE.Mesh(banG,new THREE.MeshBasicMaterial({color:own==='p'?0xcc99ff:0xff3333,side:THREE.DoubleSide}));fl.scale.setScalar(.6);fl.position.set(.15,.55,0);g.add(b,t,p,fl);g.userData.fl=fl;return g;}
+let adms=[];
+function badges(s){[s.bA,s.bG].forEach(b=>b&&s.g.remove(b));s.bA=s.bG=null;
+ const mk=(d,own,x)=>{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:portrait(d,own).t,depthWrite:false}));sp.scale.setScalar(.75);sp.position.set(x,s.r+.85,0);s.g.add(sp);return sp;};
+ const two=s.adm&&s.gen;if(s.gen)s.bG=mk(s.gen.d,s.gen.own,two?-.42:0);if(s.adm)s.bA=mk(s.adm.d,s.adm.own,two?.42:0);}
+function used(own,list,key){return list.filter(d=>!sys.some(s=>s[key]&&s[key].d===d&&s[key].own===own)&&!(key==='adm'&&adms.some(A=>A.d===d&&A.own===own)));}
+function hire(s,kind,id,free){const key=kind==='adm'?'adm':'gen',list=kind==='adm'?ADM:GEN;if(s[key]||s.own==='n')return false;
+ const av=used(s.own,list,key);const d=id?av.find(x=>x.id===id):av[Math.floor(Math.random()*av.length)];if(!d)return false;
+ if(!free){if(cred[s.own]<HC)return false;cred[s.own]-=HC;}
+ if(key==='adm'){const A={d,own:s.own,at:s,f:null};A.m=mkFlag(A);adms.push(A);s.adm=A;}
+ else{const G={d,own:s.own,born:clock};G.m=mkBunker(s.own);const dir=new THREE.Vector3(.35,.9,.25).normalize();G.m.position.copy(dir).multiplyScalar(s.r*.97);G.m.quaternion.setFromUnitVectors(UP0,dir);G.m.userData.sc=.9+s.r*.5;G.m.scale.setScalar(.001);s.spin.add(G.m);s.gen=G;}
+ badges(s);return d;}
+const UP0=new THREE.Vector3(0,1,0);
+function dropAdm(A){S.remove(A.m);adms=adms.filter(x=>x!==A);}
+function retreat(A,from){A.f=null;let best=null,bd=1e9;sys.forEach(s=>{if(s.own===A.own&&!s.adm){const d=s.g.position.distanceTo(from.g.position);if(d<bd){bd=d;best=s;}}});
+ if(best){best.adm=A;A.at=best;badges(best);}else dropAdm(A);}
+function loseGen(s){if(!s.gen)return;s.spin.remove(s.gen.m);s.gen=null;badges(s);}
 let sys=[],fleets=[],battles=[],sel=null,t0,over=true,aiT=0,lines=[],cred={p:10,e:10},clock=0,speed=1;
 const COST=20;
 const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.05,6,40),new THREE.MeshBasicMaterial({color:0xffff66}));ring.visible=false;S.add(ring);
@@ -103,7 +149,7 @@ function setOwn(s,o){s.own=o;s.halo.material.color.setHex(COL[o]);s.atm.material
  // conquered: buildings flip lights; keep structures (spoils of war) but recolor glows
  s.blds.forEach(b=>b.m.traverse(x=>{if(x.material===MB.glowP||x.material===MB.glowE)x.material=o==='p'?MB.glowP:MB.glowE;}));
  if(s.station)s.station.traverse(x=>{if(x.material===MB.glowP||x.material===MB.glowE)x.material=o==='p'?MB.glowP:MB.glowE;});}
-function clear(){sys.forEach(s=>{S.remove(s.g,s.halo);s.geo.dispose();});lines.forEach(l=>S.remove(l));sys=[];fleets=[];battles=[];lines=[];}
+function clear(){adms.forEach(A=>S.remove(A.m));adms=[];sys.forEach(s=>{S.remove(s.g,s.halo);s.geo.dispose();});lines.forEach(l=>S.remove(l));sys=[];fleets=[];battles=[];lines=[];}
 function build(){clear();
  POS.forEach((p,i)=>{const big=i===0||i===10;const r=big?1.25:.6+Math.random()*.55;const type=TYPES[(i*3+1)%TYPES.length],seed=i*7.3;
   const geo=planetGeo(type,seed);const g=new THREE.Group();g.position.set(...p);
@@ -113,14 +159,14 @@ function build(){clear();
   if(type.gas||i%5===2){const rg=new THREE.Mesh(new THREE.RingGeometry(r*1.4,r*2.1,48),new THREE.MeshStandardMaterial({color:type.c[1][1],side:THREE.DoubleSide,transparent:true,opacity:.55,roughness:1}));rg.rotation.x=Math.PI/2.3;rg.rotation.y=.3;g.add(rg);}
   const h=new THREE.Sprite(new THREE.SpriteMaterial({map:haloT,color:0x999999,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));h.scale.setScalar(r*2.9);h.position.copy(g.position);
   S.add(g,h);
-  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),base:big?1.1:.5,fac:0,def:0,blds:[],station:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
+  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),base:big?1.1:.5,fac:0,def:0,blds:[],station:null,adm:null,gen:null,bA:null,bG:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
   sys.push(s);setOwn(s,'n');});
  LN.forEach(([a,b])=>{sys[a].nb.push(b);sys[b].nb.push(a);const gg=new THREE.BufferGeometry().setFromPoints([sys[a].g.position,sys[b].g.position]);const l=new THREE.Line(gg,new THREE.LineBasicMaterial({color:0x3355aa,transparent:true,opacity:.45}));lines.push(l);S.add(l);});
  setOwn(sys[0],'p');sys[0].ships=20;setOwn(sys[10],'e');sys[10].ships=20;
  // a few neutral planets start with an outpost so the galaxy feels inhabited
  [5,8].forEach(k=>addB(sys[k],'def',true));
  cred={p:10,e:10};sel=null;ring.visible=false;panel();t0=performance.now();clock=0;aiT=0;over=false;}
-function rate(s){return s.base*(1+.5*s.fac);}
+function rate(s){return s.base*(1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
 function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
  const m=kind==='fac'?mkFactory(s.own):mkDefense(s.own);
  // place on surface, spaced from others (golden spiral slot)
@@ -131,17 +177,30 @@ function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)retu
  return true;}
 function launch(a,b){const n=Math.floor(a.ships/2);if(n<1)return;a.ships-=n;const d=a.g.position.distanceTo(b.g.position);
  const k=Math.min(n,60),offs=[];for(let j=0;j<k;j++){const row=Math.floor(Math.sqrt(j)),col=j-row*row;offs.push(new THREE.Vector3((col-row)*.28,(j%2?.1:-.1)*row*.5,-row*.32));}
- fleets.push({a,b,n,own:a.own,t:0,dur:d/4,offs,scale:n>60?Math.min(2,Math.sqrt(n/60)):1});}
-function arrive(f){const b=f.b,pos=b.g.position.clone();
- if(b.own===f.own){b.ships+=f.n;return;}
- const defN=b.ships+b.def*3,att=f.n,lossA=Math.min(att,defN),lossD=Math.min(defN,att);
- battles.push({pos,r:b.r,t:0,ca:COL[f.own],cd:COL[b.own],na:Math.min(att,40),nd:Math.min(Math.floor(b.ships),30),win:att>defN,dir:f.b.g.position.clone().sub(f.a.g.position).normalize(),scale:f.scale});
- b.ships-=Math.max(0,att-b.def*3);
- if(att>defN){b.ships=att-defN;setOwn(b,f.own);if(sel===b&&f.own!=='p'){sel=null;ring.visible=false;panel();}}else b.ships=Math.max(0,defN-att-b.def*3)+Math.min(b.ships,0)*0;
- if(b.own!==f.own&&b.ships<0)b.ships=0;}
+ const A=a.adm;if(A){a.adm=null;A.at=null;badges(a);offs.forEach(o=>o.z-=.6);}
+ const f={a,b,n,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);}
+function arrive(f){const b=f.b,pos=b.g.position.clone(),A=f.adm;
+ if(b.own===f.own){b.ships+=f.n;if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
+ const id=A&&A.d.id,atkM=id==='vega'?1.3:id==='kade'?1.15:1,lossM=id==='nova'?.6:id==='kade'?.8:1;
+ const G=b.gen&&b.gen.d.id,tur=b.def*3*(G==='rook'?2:1),mil=G==='ash'?Math.ceil(3+b.r*5):0,defN=b.ships+tur+mil,att=f.n*atkM,win=att>defN;
+ battles.push({pos,r:b.r,t:0,ca:COL[f.own],cd:COL[b.own],na:Math.min(f.n,40),nd:Math.min(Math.floor(b.ships)+mil,30),win,dir:f.b.g.position.clone().sub(f.a.g.position).normalize(),scale:f.scale,
+  shield:(b.gen||b.def)&&b.own!=='n'?mkShield(b):null,flak:!!b.gen||b.def>0,adm:!!A,gold:A?(A.own==='p'?0xffcc44:0xff3333):0});
+ if(win){b.ships=Math.max(1,f.n-defN/atkM*lossM);loseGen(b);if(b.adm){const D=b.adm;b.adm=null;badges(b);retreat(D,b);}setOwn(b,f.own);
+  if(A){b.adm=A;A.at=b;A.f=null;badges(b);}
+  if(sel===b&&f.own!=='p'){sel=null;ring.visible=false;panel();}}
+ else{b.ships=Math.max(0,b.ships-Math.max(0,att-tur-mil));if(A)retreat(A,f.a);}}
+const shG=new THREE.SphereGeometry(1,24,16);
+function mkShield(b){const m=new THREE.Mesh(shG,new THREE.MeshBasicMaterial({color:b.gen?(b.own==='p'?0xcc99ff:0xff5555):0x88ccff,transparent:true,opacity:.0,blending:THREE.AdditiveBlending,depthWrite:false}));m.scale.setScalar(b.r*1.35);m.position.copy(b.g.position);S.add(m);return m;}
 // ---- UI ----
 const msg=document.getElementById('msg'),pn=document.getElementById('panel'),bf=document.getElementById('bf'),bdB=document.getElementById('bd');
-function panel(){pn.classList.toggle('hide',!(sel&&sel.own==='p'&&!over));const ok=cred.p>=COST&&sel&&sel.blds.length<10;bf.disabled=bdB.disabled=!ok;}
+const bad=document.getElementById('bad'),bgn=document.getElementById('bgn'),chips=document.getElementById('chips'),tip=document.getElementById('tip');let chipSig='',tipT=0;
+function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('hide',!show);const ok=cred.p>=COST&&sel&&sel.blds.length<10;bf.disabled=bdB.disabled=!ok;
+ bad.disabled=!(sel&&!sel.adm&&cred.p>=HC&&used('p',ADM,'adm').length);bgn.disabled=!(sel&&!sel.gen&&cred.p>=HC&&used('p',GEN,'gen').length);
+ const sig=show?(sel.i+'|'+(sel.adm?sel.adm.d.id:'')+'|'+(sel.gen?sel.gen.d.id:'')):'';if(sig===chipSig)return;chipSig=sig;chips.innerHTML='';if(!show){tip.classList.add('hide');return;}
+ [[sel.gen,'g',' Stationed here — lost if the planet falls.'],[sel.adm,'',' Leads the next fleet sent from here; escapes to the nearest free planet if it loses.']].forEach(([c,cl,ex])=>{if(!c)return;const el=document.createElement('div');el.className='chip '+cl;
+  el.innerHTML='<img src="'+portrait(c.d,'p').url+'">'+c.d.n.split(' ')[1];el.onclick=()=>{tip.innerHTML='<b>'+c.d.n+'</b> — '+c.d.perk+'<br><span style="opacity:.7">'+ex+'</span>';tip.style.borderColor=cl?'#c9f':'#fc4';tip.classList.remove('hide');clearTimeout(tipT);tipT=setTimeout(()=>tip.classList.add('hide'),3000);};chips.appendChild(el);});}
+bad.onclick=()=>{const d=sel&&hire(sel,'adm');msg.textContent=d?d.n+' takes command! Send a fleet to fly with them.':'Need ⚙'+HC;panel();};
+bgn.onclick=()=>{const d=sel&&hire(sel,'gen');msg.textContent=d?d.n+' digs in to defend!':'Need ⚙'+HC;panel();};
 bf.onclick=()=>{if(sel&&addB(sel,'fac'))msg.textContent='Factory built — faster ships!';panel();};
 bdB.onclick=()=>{if(sel&&addB(sel,'def'))msg.textContent='Defense turret built!';panel();};
 let down=null;
@@ -155,6 +214,8 @@ cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.client
  if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent='Tap a linked planet to attack, or build below';panel();}
  else msg.textContent=sel?'Not linked — pick a neighbor':'Select your green planet first';});
 function ai(){const mine=sys.filter(s=>s.own==='e');
+ if(cred.e>=HC+5&&mine.length&&Math.random()<.3){const front=mine.filter(a=>a.nb.some(j=>sys[j].own!=='e'));
+  if(Math.random()<.5){const t=front.filter(x=>!x.gen)[0];if(t)hire(t,'gen');}else{const t=mine.filter(x=>!x.adm).sort((x,y)=>y.ships-x.ships)[0];if(t)hire(t,'adm');}}
  if(cred.e>=COST&&mine.length){const front=mine.filter(a=>a.nb.some(j=>sys[j].own==='p'));const tgt=(front.length&&Math.random()<.5?front:mine).sort((x,y)=>x.blds.length-y.blds.length)[0];addB(tgt,front.includes(tgt)?'def':'fac');}
  let best=null,sc=-1e9;
  mine.forEach(a=>a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2);const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}}));
@@ -185,6 +246,8 @@ function drawShips(){let di=0;
   for(let j=0;j<ap.length&&li<598;j++){if(Math.random()<.5)continue;const tg=dp[(j*7+Math.floor(b.t*10))%dp.length];const from=Math.random()<.5;const A=from?ap[j]:tg,B=from?tg:ap[j];C.setHex(from?b.ca:b.cd);
    lp.set([A.x,A.y,A.z,B.x,B.y,B.z],li*3);lc.set([C.r,C.g,C.b,C.r*.3,C.g*.3,C.b*.3],li*3);li+=2;
    if(pi<398){pp.set([B.x+(Math.random()-.5)*.2,B.y,B.z+(Math.random()-.5)*.2],pi*3);pc.set([1,.8,.5],pi*3);pi++;}}
+  if(b.flak)for(let k=0;k<8&&pi<398;k++){V.randomDirection().multiplyScalar(b.r+1.2+Math.random()*.8).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([.7,.8,1],pi*3);pi++;}
+  if(b.adm&&pi<398){C.setHex(b.gold);V.set(0,b.r+1.6,0).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([C.r*2,C.g*2,C.b*2],pi*3);pi++;}
   for(let k=0;k<6&&pi<398;k++){V.randomDirection().multiplyScalar(b.r+.4+Math.random()*1.4).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([1,.6+Math.random()*.4,.3],pi*3);pi++;}});
  fltIM.count=fi;fltIM.instanceMatrix.needsUpdate=true;if(fltIM.instanceColor)fltIM.instanceColor.needsUpdate=true;
  laserG.setDrawRange(0,li);laserG.attributes.position.needsUpdate=laserG.attributes.color.needsUpdate=true;
@@ -198,13 +261,17 @@ function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/
   const p=sys.filter(s=>s.own==='p').length,e=sys.filter(s=>s.own==='e').length;
   document.getElementById('ps').textContent='You: '+p;document.getElementById('es').textContent='Enemy: '+e;document.getElementById('tm').textContent=Math.round(clock)+'s';document.getElementById('cr').textContent='⚙ '+Math.floor(cred.p);
   panel();const pf=fleets.some(f=>f.own==='p'),ef=fleets.some(f=>f.own==='e');if(!e&&!ef)end(true);else if(!p&&!pf)end(false);}
- for(let k=battles.length-1;k>=0;k--){battles[k].t+=rdt;if(battles[k].t>1.6)battles.splice(k,1);}
+ for(let k=battles.length-1;k>=0;k--){const B=battles[k];B.t+=rdt;if(B.shield)B.shield.material.opacity=.35*Math.abs(Math.sin(B.t*9))*(1-B.t/1.6);if(B.t>1.6){if(B.shield){S.remove(B.shield);B.shield.material.dispose();}battles.splice(k,1);}}
+ adms.forEach(A=>{const m=A.m;if(A.f){const f=A.f;V.lerpVectors(f.a.g.position,f.b.g.position,f.t);m.position.copy(V);m.lookAt(f.b.g.position);m.scale.setScalar(Math.max(1,f.scale));}
+  else if(A.at){const s=A.at,a=clock*.4+s.i;m.position.set(Math.cos(a)*(s.r+1.5),.35,Math.sin(a)*(s.r+1.5)).add(s.g.position);V.set(-Math.sin(a),0,Math.cos(a)).add(m.position);m.lookAt(V);m.scale.setScalar(.85);}
+  m.userData.ban.rotation.x=Math.sin(clock*6)*.25;});
  sys.forEach(s=>{s.spin.rotation.y+=s.spd*rdt;s.blds.forEach(b=>{const t=(clock-b.born)/.5;b.m.scale.setScalar(b.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));if(b.kind==='def')b.m.children[2].rotation.y=0;});
   if(s.station){const t=(clock-s.station.userData.born)/.8;s.station.scale.setScalar(Math.max(.001,pop(Math.min(1,t))));s.station.rotation.y+=.3*rdt;}
-  s.halo.material.opacity=.75+.25*Math.sin(clock*2+s.i);});
+  s.halo.material.opacity=.75+.25*Math.sin(clock*2+s.i);
+  if(s.gen){const t=(clock-s.gen.born)/.5;s.gen.m.scale.setScalar(s.gen.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));s.gen.m.userData.fl.rotation.y=Math.sin(clock*5)*.4;}});
  if(sel)ring.position.copy(sel.g.position);ring.lookAt(cam.position);
  drawShips();ctl.update();R.render(S,cam);}
 requestAnimationFrame(loop);
 window.__sb={cam,ctl,get sys(){return sys},get fleets(){return fleets},get battles(){return battles},get cred(){return cred},
- launch:(a,b)=>launch(sys[a],sys[b]),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
+ launch:(a,b)=>launch(sys[a],sys[b]),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
 </script></body></html>
