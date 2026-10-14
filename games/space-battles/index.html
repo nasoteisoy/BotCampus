@@ -1,813 +1,91 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Space Battles</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="icon" href="data:,"><title>Space Battles 3D</title>
 <style>
-  :root {
-    --bg: #050814;
-    --panel: rgba(12, 18, 40, 0.92);
-    --accent: #4fd1ff;
-    --accent2: #a78bfa;
-    --enemy: #ff5c7a;
-    --player: #3ee6a0;
-    --neutral: #6b7a99;
-    --text: #e8eefc;
-    --muted: #8b9bb8;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    overflow: hidden;
-    touch-action: none;
-  }
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-height: 100dvh;
-  }
-  header {
-    flex: 0 0 auto;
-    padding: 10px 12px 8px;
-    background: linear-gradient(180deg, #0c1430 0%, transparent 100%);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    z-index: 5;
-  }
-  h1 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .stats {
-    display: flex;
-    gap: 10px;
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-  .stats b { color: var(--text); }
-  #stage-wrap {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-  }
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(ellipse at 50% 40%, #0a1230 0%, #050814 70%);
-  }
-  #hud {
-    flex: 0 0 auto;
-    background: var(--panel);
-    border-top: 1px solid rgba(79, 209, 255, 0.25);
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    min-height: 120px;
-  }
-  #hud .title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  #hud .meta {
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-bottom: 8px;
-    line-height: 1.35;
-  }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  button {
-    appearance: none;
-    border: 1px solid rgba(79, 209, 255, 0.4);
-    background: rgba(79, 209, 255, 0.12);
-    color: var(--text);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    min-height: 44px;
-    cursor: pointer;
-    flex: 1 1 auto;
-  }
-  button:active { background: rgba(79, 209, 255, 0.28); }
-  button:disabled {
-    opacity: 0.35;
-    pointer-events: none;
-  }
-  button.danger {
-    border-color: rgba(255, 92, 122, 0.5);
-    background: rgba(255, 92, 122, 0.12);
-  }
-  button.primary {
-    border-color: rgba(62, 230, 160, 0.5);
-    background: rgba(62, 230, 160, 0.15);
-  }
-  #toast {
-    position: absolute;
-    left: 50%;
-    top: 12px;
-    transform: translateX(-50%);
-    background: rgba(8, 14, 32, 0.95);
-    border: 1px solid rgba(79, 209, 255, 0.35);
-    color: var(--text);
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-    z-index: 10;
-    max-width: 90%;
-    text-align: center;
-  }
-  #toast.show { opacity: 1; }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(2, 4, 12, 0.82);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    padding: 20px;
-  }
-  #overlay.hidden { display: none; }
-  .modal {
-    background: var(--panel);
-    border: 1px solid rgba(79, 209, 255, 0.35);
-    border-radius: 16px;
-    padding: 22px 18px;
-    max-width: 340px;
-    width: 100%;
-    text-align: center;
-  }
-  .modal h2 {
-    font-size: 1.35rem;
-    margin-bottom: 8px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .modal p {
-    font-size: 0.85rem;
-    color: var(--muted);
-    line-height: 1.45;
-    margin-bottom: 16px;
-  }
-  .legend {
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-bottom: 14px;
-  }
-  .legend span::before {
-    content: "";
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 4px;
-    vertical-align: middle;
-  }
-  .legend .you::before { background: var(--player); }
-  .legend .enemy::before { background: var(--enemy); }
-  .legend .neutral::before { background: var(--neutral); }
+html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,sans-serif;color:#fff;touch-action:none}
+#c{position:fixed;inset:0}
+#hud{position:fixed;top:0;left:0;right:0;padding:10px;display:flex;justify-content:space-between;font-weight:700;pointer-events:none;text-shadow:0 0 4px #000}
+#hud .g{color:#4f8}#hud .r{color:#f55}
+#msg{position:fixed;bottom:14px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
+.card{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,10,.75);z-index:5}
+.card div{background:#112;border:1px solid #4f8;border-radius:14px;padding:22px;max-width:320px;text-align:center}
+button{font-size:20px;padding:14px 28px;border-radius:10px;border:0;background:#2c6;color:#000;font-weight:700;margin-top:12px}
+.hide{display:none!important}
 </style>
-</head>
-<body>
-<div id="app">
-  <header>
-    <h1>SPACE BATTLES</h1>
-    <div class="stats">
-      <span>Turn <b id="turn">1</b></span>
-      <span>You <b id="you-sys">0</b></span>
-      <span>Enemy <b id="en-sys">0</b></span>
-    </div>
-  </header>
-  <div id="stage-wrap">
-    <canvas id="c"></canvas>
-    <div id="toast"></div>
-    <div id="overlay">
-      <div class="modal">
-        <h2>Space Battles</h2>
-        <p>Capture star systems across the map. Tap a friendly system, then tap a neighbor to move fleets. Combat auto-resolves when fleets collide. Control the map before the enemy does.</p>
-        <div class="legend">
-          <span class="you">You</span>
-          <span class="enemy">Enemy</span>
-          <span class="neutral">Neutral</span>
-        </div>
-        <button class="primary" id="btn-start">Start Campaign</button>
-      </div>
-    </div>
-  </div>
-  <div id="hud">
-    <div class="title" id="hud-title">Select a system</div>
-    <div class="meta" id="hud-meta">Tap a green system you control, then a connected system to move ships.</div>
-    <div class="actions" id="hud-actions"></div>
-  </div>
-</div>
-<script>
-(function () {
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
-  const toastEl = document.getElementById('toast');
-  const overlay = document.getElementById('overlay');
-  const hudTitle = document.getElementById('hud-title');
-  const hudMeta = document.getElementById('hud-meta');
-  const hudActions = document.getElementById('hud-actions');
-
-  const OWNER = { NEUTRAL: 0, PLAYER: 1, ENEMY: 2 };
-  const COLORS = {
-    [OWNER.NEUTRAL]: '#6b7a99',
-    [OWNER.PLAYER]: '#3ee6a0',
-    [OWNER.ENEMY]: '#ff5c7a'
-  };
-
-  // Map layout in normalized 0-1 space (nodes = star systems)
-  const SYSTEMS = [
-    { id: 0, name: 'Sol Gate', x: 0.18, y: 0.72, prod: 2 },
-    { id: 1, name: 'Kepler Reach', x: 0.38, y: 0.82, prod: 1 },
-    { id: 2, name: 'Nova Hub', x: 0.55, y: 0.65, prod: 3 },
-    { id: 3, name: 'Orion Spur', x: 0.28, y: 0.48, prod: 2 },
-    { id: 4, name: 'Vega Node', x: 0.48, y: 0.42, prod: 2 },
-    { id: 5, name: 'Rigel Arm', x: 0.72, y: 0.52, prod: 2 },
-    { id: 6, name: 'Cygnus Deep', x: 0.22, y: 0.25, prod: 1 },
-    { id: 7, name: 'Andromeda Edge', x: 0.42, y: 0.18, prod: 2 },
-    { id: 8, name: 'Sirius Core', x: 0.62, y: 0.28, prod: 3 },
-    { id: 9, name: 'Pleiades', x: 0.82, y: 0.28, prod: 2 },
-    { id: 10, name: 'Helix Outpost', x: 0.78, y: 0.72, prod: 1 },
-    { id: 11, name: 'Nebula Cross', x: 0.58, y: 0.88, prod: 1 }
-  ];
-
-  const EDGES = [
-    [0,1],[0,3],[1,2],[1,11],[2,4],[2,5],[2,10],[2,11],
-    [3,4],[3,6],[4,5],[4,7],[4,8],[5,8],[5,9],[5,10],
-    [6,7],[7,8],[8,9]
-  ];
-
-  let state = null;
-  let selected = null;
-  let moveHalf = false;
-  let stars = [];
-  let anim = 0;
-  let toastTimer = null;
-  let dpr = 1;
-  let W = 0, H = 0;
-
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
-  }
-
-  function neighbors(id) {
-    const n = [];
-    for (const [a, b] of EDGES) {
-      if (a === id) n.push(b);
-      if (b === id) n.push(a);
-    }
-    return n;
-  }
-
-  function initStars() {
-    stars = [];
-    for (let i = 0; i < 80; i++) {
-      stars.push({
-        x: Math.random(),
-        y: Math.random(),
-        r: Math.random() * 1.4 + 0.3,
-        a: Math.random() * 0.6 + 0.2
-      });
-    }
-  }
-
-  function newGame() {
-    const fleets = SYSTEMS.map(() => 0);
-    const owner = SYSTEMS.map(() => OWNER.NEUTRAL);
-
-    // Player starts bottom-left cluster
-    owner[0] = OWNER.PLAYER; fleets[0] = 12;
-    owner[1] = OWNER.PLAYER; fleets[1] = 6;
-
-    // Enemy starts top-right
-    owner[9] = OWNER.ENEMY; fleets[9] = 12;
-    owner[8] = OWNER.ENEMY; fleets[8] = 8;
-    owner[5] = OWNER.ENEMY; fleets[5] = 5;
-
-    // A few neutrals with garrisons
-    [2, 3, 4, 6, 7, 10, 11].forEach(i => {
-      fleets[i] = 3 + Math.floor(Math.random() * 4);
-    });
-
-    state = {
-      owner,
-      fleets,
-      turn: 1,
-      phase: 'player', // player | enemy | end
-      winner: null
-    };
-    selected = null;
-    moveHalf = false;
-    updateStats();
-    updateHud();
-  }
-
-  function countSystems(who) {
-    return state.owner.filter(o => o === who).length;
-  }
-
-  function updateStats() {
-    document.getElementById('turn').textContent = state.turn;
-    document.getElementById('you-sys').textContent = countSystems(OWNER.PLAYER);
-    document.getElementById('en-sys').textContent = countSystems(OWNER.ENEMY);
-  }
-
-  function clearActions() {
-    hudActions.innerHTML = '';
-  }
-
-  function addBtn(label, cls, fn, disabled) {
-    const b = document.createElement('button');
-    b.textContent = label;
-    if (cls) b.className = cls;
-    if (disabled) b.disabled = true;
-    b.addEventListener('click', fn);
-    hudActions.appendChild(b);
-    return b;
-  }
-
-  function updateHud() {
-    clearActions();
-    if (!state || state.winner) {
-      hudTitle.textContent = state && state.winner === OWNER.PLAYER ? 'Victory!' : state && state.winner === OWNER.ENEMY ? 'Defeat' : 'Select a system';
-      hudMeta.textContent = state && state.winner ? 'Campaign over. Start a new one when ready.' : 'Tap a green system you control, then a connected system to move ships.';
-      if (state && state.winner) {
-        addBtn('New Game', 'primary', () => {
-          newGame();
-          overlay.classList.add('hidden');
-        });
-      }
-      return;
-    }
-
-    if (state.phase !== 'player') {
-      hudTitle.textContent = 'Enemy turn…';
-      hudMeta.textContent = 'Hostile fleets are maneuvering.';
-      return;
-    }
-
-    if (selected == null) {
-      hudTitle.textContent = 'Select a system';
-      hudMeta.textContent = 'Tap a green system you control. Ships grow each turn on systems you own.';
-      addBtn('End Turn', 'danger', endPlayerTurn);
-      return;
-    }
-
-    const s = SYSTEMS[selected];
-    const own = state.owner[selected];
-    const ships = state.fleets[selected];
-    const ownLabel = own === OWNER.PLAYER ? 'Yours' : own === OWNER.ENEMY ? 'Enemy' : 'Neutral';
-    hudTitle.textContent = s.name;
-    hudMeta.textContent = `${ownLabel} · ${ships} ships · +${s.prod}/turn if owned · Tap a linked system to move`;
-
-    if (own === OWNER.PLAYER && ships > 0) {
-      addBtn(moveHalf ? 'Move: Half' : 'Move: All', '', () => {
-        moveHalf = !moveHalf;
-        updateHud();
-      });
-    }
-    addBtn('Deselect', '', () => {
-      selected = null;
-      updateHud();
-    });
-    addBtn('End Turn', 'danger', endPlayerTurn);
-  }
-
-  function produce(who) {
-    for (let i = 0; i < SYSTEMS.length; i++) {
-      if (state.owner[i] === who) {
-        state.fleets[i] += SYSTEMS[i].prod;
-      }
-    }
-  }
-
-  function resolveCombat(from, to, moving, attacker) {
-    const defOwner = state.owner[to];
-    const defShips = state.fleets[to];
-
-    if (defOwner === attacker || (defOwner === OWNER.NEUTRAL && defShips === 0)) {
-      // Reinforcing or empty neutral
-      state.fleets[to] = defShips + moving;
-      state.owner[to] = attacker;
-      return { result: 'move', lost: 0, killed: 0 };
-    }
-
-    // Combat: attacker ships vs defender
-    let a = moving;
-    let d = defShips;
-    // Simple dice-ish auto-resolve: each side rolls ~0.55*ships damage
-    while (a > 0 && d > 0) {
-      const aHit = Math.max(1, Math.floor(a * (0.4 + Math.random() * 0.35)));
-      const dHit = Math.max(1, Math.floor(d * (0.4 + Math.random() * 0.35)));
-      d -= aHit;
-      a -= dHit;
-    }
-    if (a > d) {
-      const survivors = Math.max(1, a);
-      state.fleets[to] = survivors;
-      state.owner[to] = attacker;
-      return { result: 'win', lost: moving - survivors, killed: defShips };
-    } else if (d > a) {
-      state.fleets[to] = Math.max(1, d);
-      return { result: 'lose', lost: moving, killed: defShips - Math.max(1, d) };
-    } else {
-      // Mutual wipe — defender holds with 1 garrison if they had any, else attacker claims empty
-      if (defOwner !== OWNER.NEUTRAL) {
-        state.fleets[to] = 1;
-        return { result: 'lose', lost: moving, killed: defShips - 1 };
-      }
-      state.fleets[to] = 0;
-      state.owner[to] = OWNER.NEUTRAL;
-      return { result: 'draw', lost: moving, killed: defShips };
-    }
-  }
-
-  function moveFleet(from, to, who) {
-    if (!neighbors(from).includes(to)) return false;
-    if (state.owner[from] !== who) return false;
-    const total = state.fleets[from];
-    if (total <= 0) return false;
-
-    let moving;
-    if (who === OWNER.PLAYER) {
-      moving = moveHalf ? Math.max(1, Math.floor(total / 2)) : total;
-    } else {
-      // AI: leave at least 1 if possible when reinforcing; otherwise all-in attack
-      if (state.owner[to] === who) {
-        moving = Math.max(1, total - 1);
-      } else {
-        moving = total >= 4 ? total - 1 : total;
-      }
-      if (moving <= 0) moving = total;
-    }
-
-    moving = Math.min(moving, total);
-    state.fleets[from] -= moving;
-    if (state.fleets[from] === 0 && who === OWNER.PLAYER) {
-      // Keep ownership even if empty (player can reinforce later)
-    }
-
-    const combat = resolveCombat(from, to, moving, who);
-    return combat;
-  }
-
-  function tryPlayerMove(toId) {
-    if (selected == null || state.phase !== 'player') return;
-    if (selected === toId) return;
-    if (state.owner[selected] !== OWNER.PLAYER) {
-      toast('Select one of your systems first');
-      return;
-    }
-    if (!neighbors(selected).includes(toId)) {
-      toast('Not connected — pick a linked system');
-      return;
-    }
-    if (state.fleets[selected] <= 0) {
-      toast('No ships here');
-      return;
-    }
-
-    const fromName = SYSTEMS[selected].name;
-    const toName = SYSTEMS[toId].name;
-    const combat = moveFleet(selected, toId, OWNER.PLAYER);
-    if (!combat) return;
-
-    if (combat.result === 'move') {
-      toast(`Fleet arrived at ${toName}`);
-    } else if (combat.result === 'win') {
-      toast(`Victory at ${toName}! Captured.`);
-    } else if (combat.result === 'lose') {
-      toast(`Defeated at ${toName}`);
-    } else {
-      toast(`Battle at ${toName} — stalemate`);
-    }
-
-    selected = toId;
-    checkWin();
-    updateStats();
-    updateHud();
-  }
-
-  function checkWin() {
-    const p = countSystems(OWNER.PLAYER);
-    const e = countSystems(OWNER.ENEMY);
-    if (e === 0) {
-      state.winner = OWNER.PLAYER;
-      state.phase = 'end';
-      toast('You dominate the sector!');
-      showEnd(true);
-    } else if (p === 0) {
-      state.winner = OWNER.ENEMY;
-      state.phase = 'end';
-      toast('Your fleets are wiped out…');
-      showEnd(false);
-    }
-  }
-
-  function showEnd(won) {
-    overlay.classList.remove('hidden');
-    overlay.querySelector('.modal').innerHTML = `
-      <h2>${won ? 'Victory' : 'Defeat'}</h2>
-      <p>${won
-        ? 'Your fleets control every contested star. The sector is yours.'
-        : 'Enemy fleets overran your last systems. Rally and try again.'}</p>
-      <button class="primary" id="btn-restart">Play Again</button>
-    `;
-    document.getElementById('btn-restart').addEventListener('click', () => {
-      newGame();
-      overlay.classList.add('hidden');
-      overlay.querySelector('.modal').innerHTML = `
-        <h2>Space Battles</h2>
-        <p>Capture star systems across the map. Tap a friendly system, then tap a neighbor to move fleets. Combat auto-resolves when fleets collide. Control the map before the enemy does.</p>
-        <div class="legend">
-          <span class="you">You</span>
-          <span class="enemy">Enemy</span>
-          <span class="neutral">Neutral</span>
-        </div>
-        <button class="primary" id="btn-start">Start Campaign</button>
-      `;
-      // rebind start if shown again — not needed after play again
-    });
-    updateHud();
-  }
-
-  function endPlayerTurn() {
-    if (!state || state.phase !== 'player' || state.winner) return;
-    selected = null;
-    state.phase = 'enemy';
-    updateHud();
-    toast('Enemy maneuvering…');
-    setTimeout(runEnemyTurn, 450);
-  }
-
-  function runEnemyTurn() {
-    if (!state || state.winner) return;
-    produce(OWNER.ENEMY);
-
-    // Simple AI: for each enemy system with ships, consider moves
-    const enemyIds = SYSTEMS.map((_, i) => i).filter(i => state.owner[i] === OWNER.ENEMY);
-    // Shuffle
-    for (let i = enemyIds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [enemyIds[i], enemyIds[j]] = [enemyIds[j], enemyIds[i]];
-    }
-
-    let moves = 0;
-    for (const id of enemyIds) {
-      if (moves >= 4) break;
-      if (state.fleets[id] < 2) continue;
-      const nbs = neighbors(id);
-      // Prefer attacking player, then weak neutrals, then reinforce
-      const scored = nbs.map(n => {
-        let score = Math.random();
-        if (state.owner[n] === OWNER.PLAYER) score += 5 + (state.fleets[id] - state.fleets[n]);
-        else if (state.owner[n] === OWNER.NEUTRAL) score += 2 + (state.fleets[id] > state.fleets[n] ? 2 : 0);
-        else if (state.owner[n] === OWNER.ENEMY) score += 0.5;
-        return { n, score };
-      }).sort((a, b) => b.score - a.score);
-
-      const best = scored[0];
-      if (!best) continue;
-      if (state.owner[best.n] === OWNER.ENEMY && state.fleets[id] < 4) continue;
-      if (state.owner[best.n] !== OWNER.ENEMY && state.fleets[id] <= state.fleets[best.n] && Math.random() > 0.35) continue;
-
-      moveFleet(id, best.n, OWNER.ENEMY);
-      moves++;
-    }
-
-    checkWin();
-    if (state.winner) {
-      updateStats();
-      updateHud();
-      return;
-    }
-
-    // Player production at start of their turn
-    produce(OWNER.PLAYER);
-    state.turn++;
-    state.phase = 'player';
-    updateStats();
-    updateHud();
-    toast('Your turn — fleets reinforced');
-  }
-
-  function sysPos(i) {
-    const s = SYSTEMS[i];
-    // Leave room for header/hud visually via padding
-    const padX = 28;
-    const padY = 24;
-    return {
-      x: padX + s.x * (W - padX * 2),
-      y: padY + s.y * (H - padY * 2)
-    };
-  }
-
-  function hitTest(px, py) {
-    for (let i = 0; i < SYSTEMS.length; i++) {
-      const p = sysPos(i);
-      const dx = px - p.x, dy = py - p.y;
-      if (dx * dx + dy * dy < 28 * 28) return i;
-    }
-    return null;
-  }
-
-  function resize() {
-    const wrap = document.getElementById('stage-wrap');
-    const rect = wrap.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = rect.width;
-    H = rect.height;
-    canvas.width = Math.floor(W * dpr);
-    canvas.height = Math.floor(H * dpr);
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  function draw() {
-    anim++;
-    ctx.clearRect(0, 0, W, H);
-
-    // Stars
-    for (const st of stars) {
-      ctx.globalAlpha = st.a * (0.7 + 0.3 * Math.sin(anim * 0.02 + st.x * 10));
-      ctx.fillStyle = '#cfe8ff';
-      ctx.beginPath();
-      ctx.arc(st.x * W, st.y * H, st.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    // Edges
-    ctx.lineWidth = 1.5;
-    for (const [a, b] of EDGES) {
-      const pa = sysPos(a), pb = sysPos(b);
-      const highlight = selected != null && (
-        (selected === a && neighbors(a).includes(b)) ||
-        (selected === b && neighbors(b).includes(a))
-      );
-      ctx.strokeStyle = highlight ? 'rgba(79, 209, 255, 0.55)' : 'rgba(100, 130, 180, 0.22)';
-      ctx.beginPath();
-      ctx.moveTo(pa.x, pa.y);
-      ctx.lineTo(pb.x, pb.y);
-      ctx.stroke();
-    }
-
-    // Systems
-    for (let i = 0; i < SYSTEMS.length; i++) {
-      const p = sysPos(i);
-      const own = state ? state.owner[i] : OWNER.NEUTRAL;
-      const col = COLORS[own];
-      const ships = state ? state.fleets[i] : 0;
-      const isSel = selected === i;
-      const isNb = selected != null && neighbors(selected).includes(i);
-
-      // Glow
-      if (isSel || isNb) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, isSel ? 26 : 22, 0, Math.PI * 2);
-        ctx.fillStyle = isSel ? 'rgba(79, 209, 255, 0.2)' : 'rgba(167, 139, 250, 0.15)';
-        ctx.fill();
-      }
-
-      // Node
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, isSel ? 16 : 13, 0, Math.PI * 2);
-      ctx.fillStyle = col;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = isSel ? '#fff' : 'rgba(255,255,255,0.35)';
-      ctx.stroke();
-
-      // Inner core
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fill();
-
-      // Ship count badge
-      if (state) {
-        const label = String(ships);
-        ctx.font = 'bold 11px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const bw = Math.max(18, ctx.measureText(label).width + 10);
-        const bx = p.x;
-        const by = p.y + 22;
-        ctx.fillStyle = 'rgba(8, 12, 28, 0.85)';
-        roundRect(ctx, bx - bw / 2, by - 9, bw, 18, 9);
-        ctx.fill();
-        ctx.fillStyle = '#e8eefc';
-        ctx.fillText(label, bx, by + 0.5);
-      }
-
-      // Name
-      ctx.font = '10px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = 'rgba(200, 215, 240, 0.75)';
-      ctx.fillText(SYSTEMS[i].name, p.x, p.y - 18);
-    }
-
-    requestAnimationFrame(draw);
-  }
-
-  function roundRect(c, x, y, w, h, r) {
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
-  }
-
-  function canvasCoords(e) {
-    const rect = canvas.getBoundingClientRect();
-    const t = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
-    return {
-      x: (t.clientX - rect.left),
-      y: (t.clientY - rect.top)
-    };
-  }
-
-  function onPointer(e) {
-    if (!state || state.winner || state.phase !== 'player') return;
-    if (e.cancelable) e.preventDefault();
-    const { x, y } = canvasCoords(e);
-    const id = hitTest(x, y);
-    if (id == null) {
-      selected = null;
-      updateHud();
-      return;
-    }
-
-    if (selected == null) {
-      selected = id;
-      updateHud();
-      return;
-    }
-
-    if (id === selected) {
-      selected = null;
-      updateHud();
-      return;
-    }
-
-    if (state.owner[selected] === OWNER.PLAYER && neighbors(selected).includes(id)) {
-      tryPlayerMove(id);
-    } else {
-      selected = id;
-      updateHud();
-    }
-  }
-
-  canvas.addEventListener('touchstart', onPointer, { passive: false });
-  canvas.addEventListener('mousedown', onPointer);
-
-  document.getElementById('btn-start').addEventListener('click', () => {
-    newGame();
-    overlay.classList.add('hidden');
-  });
-
-  window.addEventListener('resize', () => { resize(); });
-  initStars();
-  resize();
-  newGame();
-  // Keep overlay until start
-  state.phase = 'player';
-  updateHud();
-  draw();
-})();
-</script>
-</body>
-</html>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head><body>
+<canvas id="c"></canvas>
+<div id="hud"><span class="g" id="ps">You: 0</span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
+<div id="msg">Tap one of your green systems</div>
+<div class="card" id="how"><div><h2>Space Battles 3D</h2>
+<p>Real-time! Systems build ships constantly.</p>
+<p>Tap your <b style="color:#4f8">green</b> system, then tap a linked system to send half its ships.</p>
+<p>Bigger fleet wins. Capture every <b style="color:#f55">red</b> system.</p>
+<p>Drag to orbit, pinch to zoom.</p><button id="go">Play</button></div></div>
+<div class="card hide" id="end"><div><h2 id="et"></h2><p id="ed"></p><button id="rs">Restart</button></div></div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const cv=document.getElementById('c');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:false});
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,1,.1,500);
+cam.position.set(0,14,30);
+const ctl=new OrbitControls(cam,cv);ctl.enableDamping=true;ctl.enablePan=false;ctl.minDistance=12;ctl.maxDistance=80;
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.position.setLength(innerWidth<innerHeight?52:30);cam.updateProjectionMatrix();}
+addEventListener('resize',rs);rs();
+S.add(new THREE.AmbientLight(0xffffff,.5));
+// starfield
+{const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<1500;i++){const v=new THREE.Vector3().randomDirection().multiplyScalar(120+Math.random()*80);p.push(v.x,v.y,v.z);}
+g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));S.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:.6})));}
+const COL={p:0x44ff88,e:0xff5555,n:0x999999};
+const POS=[[-10,-3,6],[-6,2,9],[-11,3,-1],[-4,-2,2],[-5,4,-6],[0,0,-1],[1,-4,6],[5,3,3],[4,-2,-6],[10,2,-3],[7,5,-9],[11,-3,4]];
+const LN=[[0,1],[0,2],[0,3],[1,3],[1,6],[2,4],[3,4],[3,5],[3,6],[4,5],[4,8],[5,7],[5,8],[6,7],[6,11],[7,9],[7,11],[8,9],[8,10],[9,10],[9,11]];
+const sphG=new THREE.SphereGeometry(1,16,12),haloT=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+const shipG=new THREE.ConeGeometry(.25,.7,4);shipG.rotateX(Math.PI/2);
+let sys=[],fleets=[],sel=null,t0,over=true,aiT=0,lines=[];
+const ring=new THREE.Mesh(new THREE.TorusGeometry(1.8,.08,6,32),new THREE.MeshBasicMaterial({color:0xffff66}));ring.visible=false;S.add(ring);
+function label(){const c=document.createElement('canvas');c.width=128;c.height=64;const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false}));s.scale.set(3,1.5,1);s.renderOrder=9;s.userData={c,t,last:-1};return s;}
+function drawL(s){const n=Math.floor(s.ships),L=s.lab.userData;if(n===L.last&&L.o===s.own)return;L.last=n;L.o=s.own;const x=L.c.getContext('2d');x.clearRect(0,0,128,64);x.font='bold 40px sans-serif';x.textAlign='center';x.lineWidth=6;x.strokeStyle='#000';x.strokeText(n,64,46);x.fillStyle='#'+COL[s.own].toString(16).padStart(6,'0');x.fillText(n,64,46);L.t.needsUpdate=true;}
+function setOwn(s,o){s.own=o;s.mesh.material.color.setHex(COL[o]);s.halo.material.color.setHex(COL[o]);}
+function build(){sys.forEach(s=>{S.remove(s.mesh,s.halo,s.lab)});lines.forEach(l=>S.remove(l));fleets.forEach(f=>S.remove(f.m));sys=[];fleets=[];lines=[];
+ POS.forEach((p,i)=>{const big=i===0||i===10;const m=new THREE.Mesh(sphG,new THREE.MeshBasicMaterial({color:0x999999}));const r=big?1.3:.9;m.scale.setScalar(r);m.position.set(...p);m.userData.i=i;
+ const h=new THREE.Sprite(new THREE.SpriteMaterial({map:haloT,color:0x999999,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));h.scale.setScalar(r*5);h.position.copy(m.position);
+ const lb=label();lb.position.copy(m.position).add(new THREE.Vector3(0,r+1.2,0));S.add(m,h,lb);
+ const s={i,mesh:m,halo:h,lab:lb,own:'n',ships:5+Math.floor(Math.random()*8),rate:big?1.2:.6,nb:[]};sys.push(s);setOwn(s,'n');});
+ LN.forEach(([a,b])=>{sys[a].nb.push(b);sys[b].nb.push(a);const g=new THREE.BufferGeometry().setFromPoints([sys[a].mesh.position,sys[b].mesh.position]);const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x3355aa,transparent:true,opacity:.6}));lines.push(l);S.add(l);});
+ setOwn(sys[0],'p');sys[0].ships=20;setOwn(sys[10],'e');sys[10].ships=20;sel=null;ring.visible=false;t0=performance.now();aiT=0;over=false;}
+function launch(a,b){const n=Math.floor(a.ships/2);if(n<1)return;a.ships-=n;const m=new THREE.Group();const k=Math.min(6,1+Math.floor(n/5));const mat=new THREE.MeshBasicMaterial({color:COL[a.own]});
+ for(let j=0;j<k;j++){const sm=new THREE.Mesh(shipG,mat);sm.position.set((Math.random()-.5)*.8,(Math.random()-.5)*.8,(Math.random()-.5)*.8);m.add(sm);}
+ m.position.copy(a.mesh.position);m.lookAt(b.mesh.position);S.add(m);const d=a.mesh.position.distanceTo(b.mesh.position);fleets.push({m,a,b,n,own:a.own,t:0,dur:d/4});}
+function arrive(f){const b=f.b;if(b.own===f.own)b.ships+=f.n;else{b.ships-=f.n;if(b.ships<0){b.ships=-b.ships;setOwn(b,f.own);if(sel===b&&f.own!=='p'){sel=null;ring.visible=false;}}}}
+// input with generous radius: pick nearest system in screen space
+const msg=document.getElementById('msg');let down=null;
+cv.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
+cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>10)return;
+ let best=null,bd=Math.max(44,innerWidth*.09);const v=new THREE.Vector3();
+ sys.forEach(s=>{v.copy(s.mesh.position).project(cam);const x=(v.x+1)/2*innerWidth,y=(1-v.y)/2*innerHeight,d=Math.hypot(x-e.clientX,y-e.clientY);if(d<bd){bd=d;best=s;}});
+ if(!best){sel=null;ring.visible=false;msg.textContent='Tap one of your green systems';return;}
+ if(sel&&sel!==best&&sel.nb.includes(best.i)){launch(sel,best);msg.textContent='Fleet launched!';return;}
+ if(best.own==='p'){sel=best;ring.visible=true;ring.position.copy(best.mesh.position);msg.textContent='Now tap a linked system';}
+ else msg.textContent=sel?'Not linked — pick a neighbor':'Select your green system first';});
+function ai(){const mine=sys.filter(s=>s.own==='e');let best=null,sc=-1e9;
+ mine.forEach(a=>a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2);const v=n-b.ships+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}}));
+ if(best&&sc>1)launch(best[0],best[1]);
+ else{const a=mine.sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
+function end(win){over=true;document.getElementById('et').textContent=win?'Victory!':'Defeat';document.getElementById('ed').textContent=(win?'The galaxy is yours in ':'You lasted ')+Math.round((performance.now()-t0)/1000)+'s';document.getElementById('end').classList.remove('hide');}
+document.getElementById('go').onclick=()=>{document.getElementById('how').classList.add('hide');build();};
+document.getElementById('rs').onclick=()=>{document.getElementById('end').classList.add('hide');build();};
+build();over=true;
+let last=performance.now();
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.1,(now-last)/1000);last=now;
+ if(!over){sys.forEach(s=>{if(s.own!=='n'&&s.ships<200)s.ships+=s.rate*dt;});
+  for(let k=fleets.length-1;k>=0;k--){const f=fleets[k];f.t+=dt/f.dur;if(f.t>=1){arrive(f);S.remove(f.m);fleets.splice(k,1);}else f.m.position.lerpVectors(f.a.mesh.position,f.b.mesh.position,f.t);}
+  aiT+=dt;if(aiT>2.5){aiT=0;ai();}
+  const p=sys.filter(s=>s.own==='p').length,e=sys.filter(s=>s.own==='e').length;
+  document.getElementById('ps').textContent='You: '+p;document.getElementById('es').textContent='Enemy: '+e;document.getElementById('tm').textContent=Math.round((now-t0)/1000)+'s';
+  const pf=fleets.some(f=>f.own==='p'),ef=fleets.some(f=>f.own==='e');if(!e&&!ef)end(true);else if(!p&&!pf)end(false);}
+ sys.forEach(drawL);ring.rotation.y+=dt;ring.lookAt(cam.position);ctl.update();R.render(S,cam);}
+requestAnimationFrame(loop);
+window.__sb={cam,get sys(){return sys},launch:(a,b)=>launch(sys[a],sys[b])};
+</script></body></html>
