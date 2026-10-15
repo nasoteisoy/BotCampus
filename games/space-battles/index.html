@@ -6,17 +6,17 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:syste
 #c{position:fixed;inset:0}
 #hud{position:fixed;top:0;left:0;right:0;padding:10px;display:flex;justify-content:space-between;font-weight:700;pointer-events:none;text-shadow:0 0 4px #000}
 #hud .g{color:#4f8}#hud .r{color:#f55}#hud .y{color:#fd6}
-#msg{position:fixed;bottom:118px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
+#msg{position:fixed;bottom:172px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
 #panel{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:3;width:min(96vw,460px)}
-#btns{display:flex;gap:6px;width:100%}
-#panel button{margin:0;font-size:13px;padding:0 4px;height:50px;flex:1;min-width:0;line-height:1.15}
+#btns{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+#panel button{margin:0;font-size:13px;padding:0 4px;height:46px;flex:1 1 30%;min-width:0;line-height:1.15}
 #bad{background:#fc4}#bgn{background:#c9f}
 #chips{display:flex;gap:8px;min-height:0}
 .chip{display:flex;align-items:center;gap:5px;background:rgba(10,15,40,.85);border:2px solid #fc4;border-radius:24px;padding:2px 10px 2px 2px;height:44px;font-size:13px;font-weight:700;cursor:pointer}
 .chip.g{border-color:#c9f}.chip img{width:40px;height:40px;border-radius:50%}
-#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;background:#112;border:1px solid #fc4;border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;text-align:center;z-index:4;pointer-events:none}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:200px;background:#112;border:1px solid #fc4;border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;text-align:center;z-index:4;pointer-events:none}
 #panel button:disabled{background:#444;color:#999}
-#bd{background:#58f}
+#bd{background:#58f}#by{background:#4cd}#bb{background:#e96}
 .card{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,10,.75);z-index:5}
 .card div{background:#112;border:1px solid #4f8;border-radius:14px;padding:22px;max-width:320px;text-align:center}
 .card p{margin:8px 0}
@@ -30,13 +30,14 @@ button{font-size:20px;padding:14px 28px;border-radius:10px;border:0;background:#
 <canvas id="c"></canvas>
 <div id="hud"><span class="g" id="ps">You: 0</span><span class="y" id="cr">⚙ 0</span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
 <div id="msg">Tap one of your green planets</div>
-<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div><div id="toast" class="off" role="status" aria-live="polite"></div>
+<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="by">🚀 Shipyard<br>⚙20</button><button id="bb">🪖 Barracks<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div><div id="toast" class="off" role="status" aria-live="polite"></div>
 <div class="card" id="how"><div><h2>Space Battles 3D</h2>
-<p>Your planets build ships — watch them orbit. More ships circling = stronger planet.</p>
-<p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet (needs an admiral ⭐).</p>
-<p>Spend ⚙ resources to build: <b>Factory</b> (faster ships) or <b>Defense</b> (turrets). Tap your selected planet again to build a factory.</p>
+<p>Owning a planet builds nothing by itself. A <b>🚀 Shipyard</b> builds spaceships (watch them orbit). A <b>🪖 Barracks</b> trains land troops (little tanks on the ground).</p>
+<p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet — it carries half the troops too (needs an admiral ⭐).</p>
+<p>Ships win the fight in space, then the landed troops fight the troops on the ground. <b>No troops, no capture.</b> Neutral planets have troops guarding them.</p>
+<p>Spend ⚙ resources to build: <b>Shipyard</b>, <b>Barracks</b>, <b>Factory</b> (shipyards and barracks work faster) or <b>Defense</b> (turrets). Tap your selected planet again to build a shipyard.</p>
 <p><b style="color:#fc4">Admirals</b> ⭐ lead the next fleet sent from their planet as a glowing flagship. If that fleet loses, the admiral escapes to your nearest free planet (lost only if none). <b style="color:#c9f">Generals</b> 🎖 build a bunker and guard their planet — lost if it falls. Tap a portrait chip to see its perk.</p>
-<p><b style="color:#fd6">⚓ No admiral, no movement.</b> Ships can only leave a planet that has an admiral, and the admiral flies with the fleet. Planets marked ⚓ are stranded: their ships still build up and defend, but can't move until you hire (⭐) or bring an admiral there. You start with one.</p>
+<p><b style="color:#fd6">⚓ No admiral, no movement.</b> Ships can only leave a planet that has an admiral, and the admiral flies with the fleet. Planets marked ⚓ are stranded: their ships still defend, but can't move until you hire (⭐) or bring an admiral there. You start with one.</p>
 <p>Conquer every <b style="color:#f55">red-glow</b> planet. Drag to orbit, pinch to zoom.</p><button id="go">Play</button></div></div>
 <div class="card hide" id="end"><div><h2 id="et"></h2><p id="ed"></p><button id="rs">Restart</button></div></div>
 <script type="module">
@@ -91,6 +92,16 @@ function mkFactory(own){const g=new THREE.Group();const b=new THREE.Mesh(GB.box,
  const ch=new THREE.Mesh(GB.chim,MB.dark);ch.position.set(-.06,.24,-.05);const l=new THREE.Mesh(GB.light,own==='p'?MB.glowP:MB.glowE);l.position.set(.07,.39,.06);g.add(b,t,ch,l);return g;}
 function mkDefense(own){const g=new THREE.Group();const b=new THREE.Mesh(GB.base,MB.dark);b.position.y=.03;const d=new THREE.Mesh(GB.dome,MB.dome);d.position.y=.05;
  const br=new THREE.Mesh(GB.barrel,own==='p'?MB.glowP:MB.glowE);br.position.set(.1,.17,0);g.add(b,d,br);g.userData.turret=1;return g;}
+function mkYard(own){const g=new THREE.Group(),gl=own==='p'?MB.glowP:MB.glowE;const pad=new THREE.Mesh(GB.base,MB.dark);pad.scale.set(1.4,1,1.4);pad.position.y=.03;g.add(pad);
+ [-.11,.11].forEach(x=>{const t=new THREE.Mesh(GB.tower,MB.wall);t.scale.set(.7,1.4,.7);t.position.set(x,.24,0);g.add(t);});
+ const beam=new THREE.Mesh(GB.light,MB.wall);beam.scale.set(5.2,.8,.8);beam.position.y=.47;g.add(beam);
+ const hull=new THREE.Mesh(shipG,MB.wall);hull.scale.setScalar(.9);hull.rotation.x=-Math.PI/2;hull.position.y=.2;g.add(hull);
+ const l=new THREE.Mesh(GB.light,gl);l.position.set(0,.51,0);g.add(l);g.userData.yard=hull;return g;}
+function mkBarracks(own){const g=new THREE.Group(),gl=own==='p'?MB.glowP:MB.glowE;const b=new THREE.Mesh(GB.box,MB.dark);b.scale.set(1.5,.6,.8);b.position.y=.05;g.add(b);
+ const r=new THREE.Mesh(GB.box,MB.wall);r.scale.set(1.5,.15,.9);r.position.y=.11;g.add(r);
+ const pole=new THREE.Mesh(GB.tower,MB.wall);pole.scale.set(.3,1,.3);pole.position.set(-.13,.25,0);g.add(pole);
+ const fl=new THREE.Mesh(GB.light,gl);fl.scale.set(2,1.2,.3);fl.position.set(-.08,.38,0);g.add(fl);
+ for(let k=0;k<3;k++){const l=new THREE.Mesh(GB.light,gl);l.scale.setScalar(.5);l.position.set(-.1+k*.1,.06,.09);g.add(l);}return g;}
 function mkStation(r,own){const g=new THREE.Group();const tor=new THREE.Mesh(new THREE.TorusGeometry(r+1.1,.06,6,40),MB.wall);tor.rotation.x=Math.PI/2;
  for(let k=0;k<6;k++){const a=k/6*Math.PI*2,m=new THREE.Mesh(GB.box,MB.dark);m.position.set(Math.cos(a)*(r+1.1),0,Math.sin(a)*(r+1.1));m.scale.setScalar(.7);g.add(m);
   const l=new THREE.Mesh(GB.light,own==='p'?MB.glowP:MB.glowE);l.position.copy(m.position).y=.1;g.add(l);}g.add(tor);g.rotation.z=.25;return g;}
@@ -100,6 +111,10 @@ const DOCKCAP=30,MAXD=12*DOCKCAP,MAXF=600;
 const shipMat=new THREE.MeshBasicMaterial({color:0xffffff});
 const dockIM=new THREE.InstancedMesh(shipG,shipMat,MAXD),fltIM=new THREE.InstancedMesh(shipG,shipMat,MAXF);
 [dockIM,fltIM].forEach(m=>{m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;m.setColorAt(0,new THREE.Color());S.add(m);});
+// land army: small instanced tanks on the surface
+const tankG=new THREE.BoxGeometry(.1,.05,.14);tankG.translate(0,.025,0);const turG=new THREE.BoxGeometry(.06,.035,.06);turG.translate(0,.065,0);const gunG=new THREE.BoxGeometry(.015,.015,.1);gunG.translate(0,.065,.07);
+const TROOPCAP=14,MAXT=12*TROOPCAP;const troopMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.7,metalness:.2});
+const tankIM=[tankG,turG,gunG].map(g=>{const m=new THREE.InstancedMesh(g,troopMat,MAXT);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;m.setColorAt(0,new THREE.Color());S.add(m);return m;});
 // battle FX
 const laserG=new THREE.BufferGeometry();laserG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(600*3),3));laserG.setAttribute('color',new THREE.BufferAttribute(new Float32Array(600*3),3));
 const lasers=new THREE.LineSegments(laserG,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));lasers.frustumCulled=false;S.add(lasers);
@@ -108,7 +123,7 @@ const flashT=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
 const flashes=new THREE.Points(flashG,new THREE.PointsMaterial({size:.7,map:flashT,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));flashes.frustumCulled=false;S.add(flashes);
 // ---- commanders ----
 const ADM=[{id:'vega',n:'Adm. Vega',e:'🔥',perk:'Aggressive: fleet hits 30% harder',c:'#ff8a3c'},{id:'orion',n:'Adm. Orion',e:'⚡',perk:'Swift: fleet flies 50% faster',c:'#4cf'},{id:'nova',n:'Adm. Nova',e:'💠',perk:'Shield: fleet loses fewer ships',c:'#b8f'},{id:'kade',n:'Adm. Kade',e:'🎯',perk:'Hunter: hits harder & loses fewer',c:'#6e6'}];
-const GEN=[{id:'rook',n:'Gen. Rook',e:'🏰',perk:'Fortress: turrets twice as strong',c:'#9ab'},{id:'ash',n:'Gen. Ash',e:'🔱',perk:'Militia: defenders rise when attacked',c:'#e75'},{id:'sol',n:'Gen. Sol',e:'☀',perk:'Rally: planet builds ships faster',c:'#fd4'}];
+const GEN=[{id:'rook',n:'Gen. Rook',e:'🏰',perk:'Fortress: turrets twice as strong',c:'#9ab'},{id:'ash',n:'Gen. Ash',e:'🔱',perk:'Militia: defenders rise when attacked',c:'#e75'},{id:'sol',n:'Gen. Sol',e:'☀',perk:'Rally: shipyards & barracks work faster',c:'#fd4'}];
 const HC=30,PT={};
 function portrait(d,own){const k=d.id+own;if(PT[k])return PT[k];const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d');
  const g=x.createRadialGradient(48,36,6,48,48,48);g.addColorStop(0,d.c);g.addColorStop(1,'#101830');x.fillStyle=g;x.beginPath();x.arc(48,48,44,0,7);x.fill();
@@ -166,43 +181,53 @@ function build(){clear();
   if(type.gas||i%5===2){const rg=new THREE.Mesh(new THREE.RingGeometry(r*1.4,r*2.1,48),new THREE.MeshStandardMaterial({color:type.c[1][1],side:THREE.DoubleSide,transparent:true,opacity:.55,roughness:1}));rg.rotation.x=Math.PI/2.3;rg.rotation.y=.3;g.add(rg);}
   const h=new THREE.Sprite(new THREE.SpriteMaterial({map:haloT,color:0x999999,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));h.scale.setScalar(r*2.9);h.position.copy(g.position);
   S.add(g,h);
-  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),base:big?1.1:.5,fac:0,def:0,blds:[],station:null,adm:null,gen:null,bA:null,bG:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
+  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),troops:3+Math.floor(Math.random()*5)+(big?3:0),base:big?1.1:.5,fac:0,def:0,yard:0,bar:0,blds:[],station:null,adm:null,gen:null,bA:null,bG:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
   sys.push(s);setOwn(s,'n');});
  LN.forEach(([a,b])=>{sys[a].nb.push(b);sys[b].nb.push(a);const gg=new THREE.BufferGeometry().setFromPoints([sys[a].g.position,sys[b].g.position]);const l=new THREE.Line(gg,new THREE.LineBasicMaterial({color:0x3355aa,transparent:true,opacity:.45}));lines.push(l);S.add(l);});
- setOwn(sys[0],'p');sys[0].ships=20;setOwn(sys[10],'e');sys[10].ships=20;
+ setOwn(sys[0],'p');sys[0].ships=20;sys[0].troops=8;setOwn(sys[10],'e');sys[10].ships=20;sys[10].troops=8;
+ // each side starts with one shipyard + one barracks at home; everything else must be built
+ [0,10].forEach(k=>{addB(sys[k],'yard',true);addB(sys[k],'bar',true);});
  // a few neutral planets start with an outpost so the galaxy feels inhabited
  [5,8].forEach(k=>addB(sys[k],'def',true));
  hire(sys[0],'adm',null,true);hire(sys[10],'adm',null,true);
  cred={p:10,e:10};sel=null;ring.visible=false;panel();t0=performance.now();clock=0;aiT=0;over=false;}
-function rate(s){return s.base*(1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
+// no passive growth: only Shipyards make ships, only Barracks make troops; Factories speed both up
+function boost(s){return (1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
+function rate(s){return s.yard*.55*boost(s);}
+function trate(s){return s.bar*.3*boost(s);}
 function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
- const m=kind==='fac'?mkFactory(s.own):mkDefense(s.own);
+ const m=kind==='fac'?mkFactory(s.own):kind==='yard'?mkYard(s.own):kind==='bar'?mkBarracks(s.own):mkDefense(s.own);
  // place on surface, spaced from others (golden spiral slot)
  const k=s.blds.length,y=1-(k+.5)/10*2*.8-.1,rad=Math.sqrt(1-y*y),a=k*2.39996+s.i;const dir=new THREE.Vector3(Math.cos(a)*rad,y,Math.sin(a)*rad).normalize();
  m.position.copy(dir).multiplyScalar(s.r*.98);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);const sc=.9+s.r*.5;m.userData.sc=sc;m.scale.setScalar(.001);s.spin.add(m);
- s.blds.push({m,born:clock,kind});if(kind==='fac')s.fac++;else s.def++;
+ s.blds.push({m,born:clock,kind});s[kind]++;
  if(s.blds.length>=3&&!s.station){s.station=mkStation(s.r,s.own);s.station.scale.setScalar(.001);s.station.userData.born=clock;s.g.add(s.station);}
  return true;}
-function launch(a,b){if(!a.adm)return false;const n=Math.floor(a.ships/2);if(n<1)return false;a.ships-=n;const d=a.g.position.distanceTo(b.g.position);
+function launch(a,b){if(!a.adm)return false;const n=Math.floor(a.ships/2);if(n<1)return false;a.ships-=n;const tr=Math.floor(a.troops/2);a.troops-=tr;const d=a.g.position.distanceTo(b.g.position);
  const k=Math.min(n,60),offs=[];for(let j=0;j<k;j++){const row=Math.floor(Math.sqrt(j)),col=j-row*row;offs.push(new THREE.Vector3((col-row)*.28,(j%2?.1:-.1)*row*.5,-row*.32));}
  const A=a.adm;if(A){a.adm=null;A.at=null;badges(a);offs.forEach(o=>o.z-=.6);}
- const f={a,b,n,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);return true;}
+ const f={a,b,n,tr,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);return true;}
 function arrive(f){const b=f.b,pos=b.g.position.clone(),A=f.adm;
- if(b.own===f.own){b.ships+=f.n;if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
+ if(b.own===f.own){b.ships+=f.n;b.troops+=f.tr;if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
  const id=A&&A.d.id,atkM=id==='vega'?1.3:id==='kade'?1.15:1,lossM=id==='nova'?.6:id==='kade'?.8:1;
- const G=b.gen&&b.gen.d.id,tur=b.def*3*(G==='rook'?2:1),mil=G==='ash'?Math.ceil(3+b.r*5):0,defN=b.ships+tur+mil,att=f.n*atkM,win=att>defN;
- battles.push({pos,r:b.r,t:0,ca:COL[f.own],cd:COL[b.own],na:Math.min(f.n,40),nd:Math.min(Math.floor(b.ships)+mil,30),win,dir:f.b.g.position.clone().sub(f.a.g.position).normalize(),scale:f.scale,
+ const G=b.gen&&b.gen.d.id,tur=b.def*3*(G==='rook'?2:1),mil=G==='ash'?Math.ceil(3+b.r*5):0,defN=b.ships+tur+mil,att=f.n*atkM,space=att>defN;
+ // ground war: landed troops vs garrison (Ash's militia joins the ground fight too)
+ const gDef=b.troops+mil*.5+(G==='rook'?1:0),win=space&&f.tr>gDef;
+ battles.push({pos,r:b.r,t:0,ca:COL[f.own],cd:COL[b.own],na:Math.min(f.n,40),nd:Math.min(Math.floor(b.ships)+mil,30),win:space,ground:space?{n:Math.min(f.tr,TROOPCAP),m:Math.min(Math.ceil(b.troops),TROOPCAP),win,ca:COL[f.own],cd:b.own==='n'?0xaab4c0:COL[b.own],s:b}:null,dir:f.b.g.position.clone().sub(f.a.g.position).normalize(),scale:f.scale,
   shield:(b.gen||b.def)&&b.own!=='n'?mkShield(b):null,flak:!!b.gen||b.def>0,adm:!!A,gold:A?(A.own==='p'?0xffcc44:0xff3333):0});
- if(win){b.ships=Math.max(1,f.n-defN/atkM*lossM);loseGen(b);if(b.adm){const D=b.adm;b.adm=null;badges(b);retreat(D,b);}setOwn(b,f.own);
+ if(win){b.ships=Math.max(1,f.n-defN/atkM*lossM);b.troops=Math.max(1,f.tr-gDef);loseGen(b);if(b.adm){const D=b.adm;b.adm=null;badges(b);retreat(D,b);}setOwn(b,f.own);
   if(A){b.adm=A;A.at=b;A.f=null;badges(b);}
   if(sel===b&&f.own!=='p'){sel=null;ring.visible=false;panel();}}
+ else if(space){// orbit won but the ground held: defenders' ships are gone, garrison is worn down, survivors fly home
+  const left=Math.max(0,f.n-defN/atkM*lossM);b.ships=0;b.troops=Math.max(.5,b.troops-f.tr);
+  if(f.a.own===f.own)f.a.ships+=left;if(A)retreat(A,f.a);if(f.own==='p')toast(f.tr?'🪖 Not enough troops to take it':'🪖 No troops — can\'t capture');}
  else{b.ships=Math.max(0,b.ships-Math.max(0,att-tur-mil));if(A)retreat(A,f.a);}}
 const shG=new THREE.SphereGeometry(1,24,16);
 function mkShield(b){const m=new THREE.Mesh(shG,new THREE.MeshBasicMaterial({color:b.gen?(b.own==='p'?0xcc99ff:0xff5555):0x88ccff,transparent:true,opacity:.0,blending:THREE.AdditiveBlending,depthWrite:false}));m.scale.setScalar(b.r*1.35);m.position.copy(b.g.position);S.add(m);return m;}
 // ---- UI ----
-const msg=document.getElementById('msg'),pn=document.getElementById('panel'),bf=document.getElementById('bf'),bdB=document.getElementById('bd');
+const msg=document.getElementById('msg'),pn=document.getElementById('panel'),bf=document.getElementById('bf'),bdB=document.getElementById('bd'),byB=document.getElementById('by'),bbB=document.getElementById('bb');
 const bad=document.getElementById('bad'),bgn=document.getElementById('bgn'),chips=document.getElementById('chips'),tip=document.getElementById('tip');let chipSig='',tipT=0;
-function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('hide',!show);const ok=cred.p>=COST&&sel&&sel.blds.length<10;bf.disabled=bdB.disabled=!ok;
+function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('hide',!show);const ok=cred.p>=COST&&sel&&sel.blds.length<10;bf.disabled=bdB.disabled=byB.disabled=bbB.disabled=!ok;
  bad.disabled=!(sel&&!sel.adm&&cred.p>=HC&&used('p',ADM,'adm').length);bgn.disabled=!(sel&&!sel.gen&&cred.p>=HC&&used('p',GEN,'gen').length);
  const sig=show?(sel.i+'|'+(sel.adm?sel.adm.d.id:'')+'|'+(sel.gen?sel.gen.d.id:'')):'';if(sig===chipSig)return;chipSig=sig;chips.innerHTML='';if(!show){tip.classList.add('hide');return;}
  [[sel.gen,'g',' Stationed here — lost if the planet falls.'],[sel.adm,'',' Leads the next fleet sent from here; escapes to the nearest free planet if it loses.']].forEach(([c,cl,ex])=>{if(!c)return;const el=document.createElement('div');el.className='chip '+cl;
@@ -210,6 +235,8 @@ function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('h
 bad.onclick=()=>{const d=sel&&hire(sel,'adm');msg.textContent=d?d.n+' takes command! Send a fleet to fly with them.':'Need ⚙'+HC;panel();};
 bgn.onclick=()=>{const d=sel&&hire(sel,'gen');msg.textContent=d?d.n+' digs in to defend!':'Need ⚙'+HC;panel();};
 bf.onclick=()=>{if(sel&&addB(sel,'fac'))msg.textContent='Factory built — faster ships!';panel();};
+byB.onclick=()=>{if(sel&&addB(sel,'yard'))msg.textContent='Shipyard built — new ships will join the orbit!';panel();};
+bbB.onclick=()=>{if(sel&&addB(sel,'bar'))msg.textContent='Barracks built — troops will gather on the ground!';panel();};
 bdB.onclick=()=>{if(sel&&addB(sel,'def'))msg.textContent='Defense turret built!';panel();};
 let toastT=0;const toastEl=document.getElementById('toast');
 function toast(t){toastEl.textContent=t;toastEl.classList.remove('off');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.add('off'),1800);}
@@ -219,7 +246,7 @@ cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.client
  let best=null,bd=Math.max(44,innerWidth*.09);const v=new THREE.Vector3();
  sys.forEach(s=>{v.copy(s.g.position).project(cam);const x=(v.x+1)/2*innerWidth,y=(1-v.y)/2*innerHeight,d=Math.hypot(x-e.clientX,y-e.clientY);if(d<bd){bd=d;best=s;}});
  if(!best){sel=null;ring.visible=false;panel();msg.textContent='Tap one of your green planets';return;}
- if(sel&&sel===best&&best.own==='p'){msg.textContent=addB(best,'fac')?'Factory built — faster ships!':'Need ⚙'+COST+' to build';panel();return;}
+ if(sel&&sel===best&&best.own==='p'){msg.textContent=addB(best,'yard')?'Shipyard built — new ships will join the orbit!':'Need ⚙'+COST+' to build';panel();return;}
  if(sel&&sel!==best&&sel.nb.includes(best.i)){if(!sel.adm){toast('⚓ Needs an admiral to move');msg.textContent='Hire an admiral ⭐ here, or bring one with a fleet';return;}if(launch(sel,best))msg.textContent='Fleet launched!';else toast('Not enough ships to send');return;}
  if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent=best.adm?'Tap a linked planet to attack, or build below':'⚓ No admiral here — ships can\'t move. Hire one ⭐ below';panel();}
  else msg.textContent=sel?'Not linked — pick a neighbor':'Select your green planet first';});
@@ -228,11 +255,15 @@ function ai(){const mine=sys.filter(s=>s.own==='e');
  if(cred.e>=HC&&used('e',ADM,'adm').length){const w=x=>x.ships+(x.nb.some(j=>sys[j].own!=='e')?20:0);const st=mine.filter(x=>!x.adm&&x.ships>=8).sort((x,y)=>w(y)-w(x))[0];if(st)hire(st,'adm');}
  if(cred.e>=HC+5&&mine.length&&Math.random()<.3){const front=mine.filter(a=>a.nb.some(j=>sys[j].own!=='e'));
   if(Math.random()<.5){const t=front.filter(x=>!x.gen)[0];if(t)hire(t,'gen');}else{const t=mine.filter(x=>!x.adm).sort((x,y)=>y.ships-x.ships)[0];if(t)hire(t,'adm');}}
- if(cred.e>=COST&&mine.length){const front=mine.filter(a=>a.nb.some(j=>sys[j].own==='p'));const tgt=(front.length&&Math.random()<.5?front:mine).sort((x,y)=>x.blds.length-y.blds.length)[0];addB(tgt,front.includes(tgt)?'def':'fac');}
+ if(cred.e>=COST&&mine.length){const ny=mine.filter(x=>x.yard).length,nb=mine.filter(x=>x.bar).length,bySh=(x,y)=>y.ships-x.ships;
+  const needY=ny<Math.ceil(mine.length/2)&&mine.find(x=>!x.yard&&x.adm)||(!ny&&mine.find(x=>!x.yard))||(ny<Math.ceil(mine.length/2)&&mine.filter(x=>!x.yard)[0]);
+  const needB=nb<Math.ceil(mine.length/2)&&(mine.filter(x=>!x.bar&&x.adm)[0]||mine.filter(x=>!x.bar).sort(bySh)[0]);
+  if(nb<ny&&needB)addB(needB,'bar');else if(needY)addB(needY,'yard');else if(needB)addB(needB,'bar');
+  else{const front=mine.filter(a=>a.nb.some(j=>sys[j].own==='p'));const tgt=(front.length&&Math.random()<.5?front:mine).sort((x,y)=>x.blds.length-y.blds.length)[0];addB(tgt,front.includes(tgt)?(Math.random()<.5?'def':'bar'):(Math.random()<.5?'fac':'yard'));}}
  let best=null,sc=-1e9;
- mine.forEach(a=>{if(!a.adm)return;a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2);const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}})});
+ mine.forEach(a=>{if(!a.adm)return;a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2),tr=Math.floor(a.troops/2);if(tr<=b.troops+1)return;const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}})});
  if(best&&sc>1)launch(best[0],best[1]);
- else{const a=mine.filter(x=>x.adm).sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
+ else{const a=mine.filter(x=>x.adm).sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30&&a.troops>6){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
 function end(win){over=true;panel();document.getElementById('et').textContent=win?'Victory!':'Defeat';document.getElementById('ed').textContent=(win?'The galaxy is yours in ':'You lasted ')+Math.round(clock)+'s';document.getElementById('end').classList.remove('hide');}
 document.getElementById('go').onclick=()=>{document.getElementById('how').classList.add('hide');build();};
 document.getElementById('rs').onclick=()=>{document.getElementById('end').classList.add('hide');build();};
@@ -240,12 +271,22 @@ build();over=true;
 // ---- render helpers ----
 const D=new THREE.Object3D(),C=new THREE.Color(),V=new THREE.Vector3(),V2=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0);
 function pop(t){if(t>=1)return 1;return 1+Math.sin(t*Math.PI)*.35*(1-t)+(t<.3?(t/.3)-1:0);}
+const TQ=new THREE.Quaternion(),TM=new THREE.Matrix4(),TD=new THREE.Vector3(),TS=new THREE.Vector3(),TP=new THREE.Vector3();
+function drawTroops(){let ti=0;
+ sys.forEach(s=>{let n=Math.ceil(s.troops-.01);const gb=battles.find(b=>b.ground&&b.ground.s===s);if(n<=0&&!gb)return;s.spin.updateMatrixWorld();
+  const vis=Math.min(TROOPCAP,n),sc=n>TROOPCAP?Math.min(1.8,Math.sqrt(n/TROOPCAP)):1;C.setHex(s.own==='n'?0x9aa4b0:COL[s.own]).multiplyScalar(.75);
+  const put=(j,col,k,march)=>{if(ti>=MAXT)return;const a=j*2.39996+s.i*1.3+(march||0),y=.55-((j*.37+s.i*.11)%1)*.9;const rad=Math.sqrt(1-y*y);
+   TD.set(Math.cos(a)*rad,y,Math.sin(a)*rad).normalize();TP.copy(TD).multiplyScalar(s.r*1.0);TQ.setFromUnitVectors(UP0,TD);TS.setScalar(k*(.9+s.r*.4));
+   TM.compose(TP,TQ,TS).premultiply(s.spin.matrixWorld);tankIM.forEach(m=>{m.setMatrixAt(ti,TM);m.setColorAt(ti,col);});ti++;};
+  for(let j=0;j<vis;j++)put(j,C,sc);
+  if(gb){const T=gb.t/1.6,g=gb.ground,c2=new THREE.Color(g.ca);const alive=Math.ceil(g.n*(g.win?1-T*.4:1-T));for(let j=0;j<alive;j++)put(j+.5,c2,1,T*.3);}});
+ tankIM.forEach(m=>{m.count=ti;m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;});}
 function drawShips(){let di=0;
  sys.forEach(s=>{const n=Math.floor(s.ships);if(s.own==='n'&&n<=0)return;const vis=Math.min(DOCKCAP,n),sc=n>DOCKCAP?Math.min(2.2,Math.sqrt(n/DOCKCAP)):1;C.setHex(s.own==='n'?0xaab4c0:COL[s.own]);
   for(let j=0;j<vis;j++){const tilt=(j%5)*.5-1,rad=s.r+.45+(j%3)*.22+(s.station?.15:0),a=s.ph+clock*(.8-(j%3)*.15)+j*2.39996;
    V.set(Math.cos(a)*rad,0,Math.sin(a)*rad);V.applyAxisAngle(new THREE.Vector3(1,0,0),tilt*.6);V2.set(-Math.sin(a),0,Math.cos(a)).applyAxisAngle(new THREE.Vector3(1,0,0),tilt*.6);
    D.position.copy(s.g.position).add(V);D.lookAt(V2.add(D.position));D.scale.setScalar(sc);D.updateMatrix();dockIM.setMatrixAt(di,D.matrix);dockIM.setColorAt(di,C);di++;}});
- dockIM.count=di;dockIM.instanceMatrix.needsUpdate=true;if(dockIM.instanceColor)dockIM.instanceColor.needsUpdate=true;
+ dockIM.count=di;drawTroops();dockIM.instanceMatrix.needsUpdate=true;if(dockIM.instanceColor)dockIM.instanceColor.needsUpdate=true;
  let fi=0;
  fleets.forEach(f=>{C.setHex(COL[f.own]);V.lerpVectors(f.a.g.position,f.b.g.position,f.t);D.position.copy(V);D.lookAt(f.b.g.position);D.updateMatrix();const q=D.quaternion.clone();
   f.offs.forEach((o,j)=>{if(fi>=MAXF)return;D.position.copy(o).applyQuaternion(q).add(V);D.position.y+=Math.sin(clock*4+j)*.04;D.quaternion.copy(q);D.scale.setScalar(f.scale);D.updateMatrix();fltIM.setMatrixAt(fi,D.matrix);fltIM.setColorAt(fi,C);fi++;});});
@@ -260,13 +301,14 @@ function drawShips(){let di=0;
    if(pi<398){pp.set([B.x+(Math.random()-.5)*.2,B.y,B.z+(Math.random()-.5)*.2],pi*3);pc.set([1,.8,.5],pi*3);pi++;}}
   if(b.flak)for(let k=0;k<8&&pi<398;k++){V.randomDirection().multiplyScalar(b.r+1.2+Math.random()*.8).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([.7,.8,1],pi*3);pi++;}
   if(b.adm&&pi<398){C.setHex(b.gold);V.set(0,b.r+1.6,0).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([C.r*2,C.g*2,C.b*2],pi*3);pi++;}
+  if(b.ground&&b.t>.4)for(let k=0;k<6&&pi<398;k++){V.randomDirection().multiplyScalar(b.r*1.03).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([1,.9,.4],pi*3);pi++;}
   for(let k=0;k<6&&pi<398;k++){V.randomDirection().multiplyScalar(b.r+.4+Math.random()*1.4).add(b.pos);pp.set([V.x,V.y,V.z],pi*3);pc.set([1,.6+Math.random()*.4,.3],pi*3);pi++;}});
  fltIM.count=fi;fltIM.instanceMatrix.needsUpdate=true;if(fltIM.instanceColor)fltIM.instanceColor.needsUpdate=true;
  laserG.setDrawRange(0,li);laserG.attributes.position.needsUpdate=laserG.attributes.color.needsUpdate=true;
  flashG.setDrawRange(0,pi);flashG.attributes.position.needsUpdate=flashG.attributes.color.needsUpdate=true;}
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/1000);last=now;const dt=over?rdt:rdt*speed;clock+=dt;
- if(!over){sys.forEach(s=>{if(s.own!=='n'&&s.ships<300)s.ships+=rate(s)*dt;});
+ if(!over){sys.forEach(s=>{if(s.own==='n')return;if(s.ships<300)s.ships+=rate(s)*dt;if(s.troops<60)s.troops+=trate(s)*dt;});
   ['p','e'].forEach(o=>{cred[o]+=dt*(.6+.4*sys.filter(s=>s.own===o).length);});
   for(let k=fleets.length-1;k>=0;k--){const f=fleets[k];f.t+=dt/f.dur;if(f.t>=1){arrive(f);fleets.splice(k,1);}}
   aiT+=dt;if(aiT>2.5){aiT=0;ai();}
@@ -277,7 +319,7 @@ function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/
  adms.forEach(A=>{const m=A.m;if(A.f){const f=A.f;V.lerpVectors(f.a.g.position,f.b.g.position,f.t);m.position.copy(V);m.lookAt(f.b.g.position);m.scale.setScalar(Math.max(1,f.scale));}
   else if(A.at){const s=A.at,a=clock*.4+s.i;m.position.set(Math.cos(a)*(s.r+1.5),.35,Math.sin(a)*(s.r+1.5)).add(s.g.position);V.set(-Math.sin(a),0,Math.cos(a)).add(m.position);m.lookAt(V);m.scale.setScalar(.85);}
   m.userData.ban.rotation.x=Math.sin(clock*6)*.25;});
- sys.forEach(s=>{s.spin.rotation.y+=s.spd*rdt;s.blds.forEach(b=>{const t=(clock-b.born)/.5;b.m.scale.setScalar(b.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));if(b.kind==='def')b.m.children[2].rotation.y=0;});
+ sys.forEach(s=>{s.spin.rotation.y+=s.spd*rdt;s.blds.forEach(b=>{const t=(clock-b.born)/.5;b.m.scale.setScalar(b.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));if(b.kind==='yard'){const h=b.m.userData.yard;h.position.y=.2+Math.sin(clock*1.5+s.i)*.05;}});
   if(s.station){const t=(clock-s.station.userData.born)/.8;s.station.scale.setScalar(Math.max(.001,pop(Math.min(1,t))));s.station.rotation.y+=.3*rdt;}
   s.halo.material.opacity=(stranded(s)?.45:.75)+.25*Math.sin(clock*2+s.i);anchor(s);
   if(s.gen){const t=(clock-s.gen.born)/.5;s.gen.m.scale.setScalar(s.gen.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));s.gen.m.userData.fl.rotation.y=Math.sin(clock*5)*.4;}});
@@ -285,5 +327,5 @@ function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/
  drawShips();ctl.update();R.render(S,cam);}
 requestAnimationFrame(loop);
 window.__sb={cam,ctl,get sys(){return sys},get fleets(){return fleets},get battles(){return battles},get cred(){return cred},
- launch:(a,b)=>launch(sys[a],sys[b]),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},stranded:i=>stranded(sys[i]),hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
+ launch:(a,b)=>launch(sys[a],sys[b]),troops:i=>sys[i].troops,setTroops:(i,v)=>sys[i].troops=v,setOwner:(i,o)=>setOwn(sys[i],o),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},stranded:i=>stranded(sys[i]),hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
 </script></body></html>
