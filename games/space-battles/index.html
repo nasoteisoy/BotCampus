@@ -193,7 +193,7 @@ function build(){clear();
  cred={p:10,e:10};sel=null;ring.visible=false;panel();t0=performance.now();clock=0;aiT=0;over=false;}
 // no passive growth: only Shipyards make ships, only Barracks make troops; Factories speed both up
 function boost(s){return (1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
-function rate(s){return s.yard*.55*boost(s);}
+function rate(s){return s.yard*.25*boost(s);}
 function trate(s){return s.bar*.3*boost(s);}
 function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
  const m=kind==='fac'?mkFactory(s.own):kind==='yard'?mkYard(s.own):kind==='bar'?mkBarracks(s.own):mkDefense(s.own);
