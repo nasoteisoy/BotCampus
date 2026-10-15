@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-13T18:25:00-07:00",
+  "updatedAt": "2026-10-14T18:30:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -7,10 +7,10 @@
       "id": "job-offer",
       "title": "Job offer",
       "what": "Negotiating a full-time job offer.",
-      "summary": "1. Got the offer and countered.\n2. Got an improved offer and accepted it.\n3. Asked for a one-time sign-on bonus.\n4. Start date confirmed.",
-      "leftOff": "Waiting on the final answer about the sign-on bonus, expected Mon Oct 12.",
-      "updatedAt": "2026-10-11T16:26:00-07:00",
-      "note": "What: Negotiating a full-time job offer.\n\nSummary: 1. Got the offer and countered.\n2. Got an improved offer and accepted it.\n3. Asked for a one-time sign-on bonus.\n4. Start date confirmed.\n\nLeft off: Waiting on the final answer about the sign-on bonus, expected Mon Oct 12.",
+      "summary": "1. Got the offer and countered.\n2. Got an improved offer and accepted it.\n3. Asked for a one-time sign-on bonus.\n4. Start date confirmed.\n5. Sign-on bonus approved.\n6. Offer letter signed by all parties; hire is official.",
+      "leftOff": "Oct 14 PT: hire official; starts Oct 19. Nothing open on the offer.",
+      "updatedAt": "2026-10-14T18:30:00-07:00",
+      "note": "What: Negotiating a full-time job offer.\n\nSummary: 1. Got the offer and countered.\n2. Got an improved offer and accepted it.\n3. Asked for a one-time sign-on bonus.\n4. Start date confirmed.\n5. Sign-on bonus approved.\n6. Offer letter signed by all parties; hire is official.\n\nLeft off: Oct 14 PT: hire official; starts Oct 19. Nothing open on the offer.",
       "bot": "Field Marshal"
     },
     {
@@ -102,6 +102,16 @@
       "updatedAt": "2026-10-11T16:15:00-07:00",
       "note": "What: Nest thermostat not cooling; restore Cool and optional Grok Bot control.\n\nSummary: Nest wasn't cooling; likely a Google energy-saving event. Set back to Cool at 75. Controlling Nest from Grok Bot would need Google Device Access (one-time fee), not set up.\n\nLeft off: Confirm the AC is actually blowing cold (Oct 11).",
       "bot": "Field Marshal"
+    },
+    {
+      "id": "fm-space-battles",
+      "title": "Space Battles",
+      "what": "Phone 3D real-time strategy game with star systems you can spin and zoom, and fleets that fly between planets.",
+      "summary": "1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.",
+      "leftOff": "Oct 14, about 3:11 PM PT: latest build live (ships need an admiral to move). Older flat-map build may still cache; hard-refresh if the page looks old. Waiting on play feedback.",
+      "updatedAt": "2026-10-14T18:30:00-07:00",
+      "bot": "Field Marshal",
+      "note": "What: Phone 3D real-time strategy game with star systems you can spin and zoom, and fleets that fly between planets.\n\nSummary: 1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.\n\nLeft off: Oct 14, about 3:11 PM PT: latest build live (ships need an admiral to move). Older flat-map build may still cache; hard-refresh if the page looks old. Waiting on play feedback.\n\nBot: Field Marshal (Dev A publishes)"
     },
     {
       "id": "leader-render-school",
