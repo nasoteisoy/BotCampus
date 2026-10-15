@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Toy Computer</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at 50% 0,#1d1b4a,#0a0a1a 70%);color:#eef;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+#app{max-width:560px;margin:0 auto;padding:10px 10px 40px}
+h1{font-size:22px;margin:4px 0 8px;text-align:center;background:linear-gradient(90deg,#ff5bd7,#5bd7ff,#9bff5b);-webkit-background-clip:text;color:transparent}
+.shelf{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;background:#ffffff0d;border-radius:12px;padding:6px;margin-bottom:8px}
+.shelf div{font-size:11px;padding:4px 6px;border-radius:8px;background:#ffffff10;color:#667;border:1px dashed #445}
+.shelf div.got{background:linear-gradient(135deg,#2bd47a,#1aa0ff);color:#fff;border:1px solid #9ff;box-shadow:0 0 8px #3ff8}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-size:15px;font-weight:700;color:#fff;background:#3a3a7a;cursor:pointer}
+.btn:active{transform:scale(.95)}
+.go{background:linear-gradient(135deg,#ff4fd8,#ff9a3c)}
+.hint{background:#2a6ad8}.sm{padding:6px 10px;font-size:13px}
+.lvls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.lv{padding:14px 10px;border-radius:14px;background:#24245a;text-align:left;font-size:15px}
+.lv.done{background:linear-gradient(135deg,#1c8a5a,#1a5aa8)}.lv.lock{opacity:.35}
+.goal{font-size:17px;font-weight:700;margin:6px 0}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.pal button{background:#2d2d66;border:2px solid transparent}
+.pal button.sel{border-color:#ff5bd7;box-shadow:0 0 10px #ff5bd7}
+canvas#board{width:100%;touch-action:none;background:#0d0d24;border-radius:14px;border:1px solid #334;display:block}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:8px}
+td,th{padding:3px;text-align:center;border-bottom:1px solid #ffffff14}
+.l{display:inline-block;width:14px;height:14px;border-radius:50%;background:#333}
+.l.ok{background:#2f6;box-shadow:0 0 8px #2f6}.l.bad{background:#f33;box-shadow:0 0 8px #f33}
+.hintbox{background:#1a2a55;border-radius:12px;padding:6px 12px;margin:6px 0;font-size:14px}
+.hintbox ul{margin:4px 0;padding-left:18px}
+#toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#ff4fd8,#5bd7ff);padding:20px 26px;border-radius:20px;font-size:24px;font-weight:800;transition:.3s;z-index:9;text-align:center}
+#toast.show{transform:translate(-50%,-50%) scale(1)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:8}
+.sock{display:flex;justify-content:space-between;align-items:center;padding:12px;margin:6px 0;border-radius:12px;background:#22224f;border:2px dashed #557}
+.sock.on{border:2px solid #5bd7ff;box-shadow:0 0 10px #5bd7ff}.sock.fill{background:linear-gradient(135deg,#1c8a5a,#1a5aa8);border-style:solid}
+.screen{background:#031;border:6px solid #444;border-radius:14px;padding:8px;box-shadow:0 0 20px #0f86,inset 0 0 20px #0f83}
+#term{font-family:monospace;color:#6f6;font-size:13px;height:130px;overflow:auto;white-space:pre-wrap;text-shadow:0 0 6px #0f0}
+#pix{width:100%;image-rendering:pixelated;background:#010;border-radius:6px;display:block}
+textarea{width:100%;height:120px;background:#011;color:#6f6;font-family:monospace;font-size:13px;border-radius:8px;border:1px solid #264}
+.small{font-size:12px;color:#aac}
+</style></head><body>
+<canvas id="fx"></canvas><div id="toast"></div>
+<div id="app"></div>
+<script>
+(()=>{
+// ---------- parts library ----------
+const LIB={
+ NAND:{i:['a','b'],o:['out'],f:(x)=>[+!(x[0]&&x[1])],c:'#ff5bd7'},
+ NOT:{i:['in'],o:['out'],f:x=>[+!x[0]],c:'#ff9a3c'},
+ AND:{i:['a','b'],o:['out'],f:x=>[x[0]&x[1]],c:'#ffd83c'},
+ OR:{i:['a','b'],o:['out'],f:x=>[x[0]|x[1]],c:'#5bff9a'},
+ XOR:{i:['a','b'],o:['out'],f:x=>[x[0]^x[1]],c:'#5bd7ff'},
+ HA:{i:['a','b'],o:['sum','carry'],f:x=>[x[0]^x[1],x[0]&x[1]],c:'#9b7bff'},
+ FA:{i:['a','b','c'],o:['sum','carry'],f:x=>{const s=x[0]+x[1]+x[2];return[s&1,s>>1]},c:'#c77bff'},
+ ADD4:{i:['a0','a1','a2','a3','b0','b1','b2','b3'],o:['s0','s1','s2','s3','c'],w:3,f:x=>{const a=x[0]+2*x[1]+4*x[2]+8*x[3],b=x[4]+2*x[5]+4*x[6]+8*x[7],s=a+b;return[s&1,s>>1&1,s>>2&1,s>>3&1,s>>4&1]},c:'#ff7b7b'},
+ DFF:{i:['d'],o:['q'],st:1,init:()=>[0],f:(x,s)=>[s[0]],tick:(x,s)=>[x[0]],c:'#7bffea'},
+ BIT:{i:['in','load'],o:['out'],st:1,init:()=>[0],f:(x,s)=>[s[0]],tick:(x,s)=>x[1]?[x[0]]:s,c:'#7bffb0'},
+ REG4:{i:['d0','d1','d2','d3','load'],o:['q0','q1','q2','q3'],st:1,init:()=>[0,0,0,0],f:(x,s)=>s.slice(),tick:(x,s)=>x[4]?x.slice(0,4):s,c:'#ffb07b'}
+};
+const tt=(n,f)=>{const r=[];for(let k=0;k<1<<n;k++){const v=[];for(let j=n-1;j>=0;j--)v.push(k>>j&1);r.push([v,f(v)])}return r};
+const tt4=()=>{const r=[];for(let k=0;k<256;k++){const v=[];for(let j=0;j<8;j++)v.push(k>>j&1);r.push([v,LIB.ADD4.f(v)])}return r};
+const LV=[
+ {id:'NOT',n:'NOT',goal:'Flip it: 1 → 0, 0 → 1',ins:['in'],outs:['out'],parts:['NAND'],rows:tt(1,x=>LIB.NOT.f(x)),hint:['Use 1 NAND','Wire "in" into BOTH NAND inputs']},
+ {id:'AND',n:'AND',goal:'Out is 1 only if a AND b are 1',ins:['a','b'],outs:['out'],parts:['NAND','NOT'],rows:tt(2,x=>LIB.AND.f(x)),hint:['NAND = NOT AND','So put a NOT after a NAND']},
+ {id:'OR',n:'OR',goal:'Out is 1 if a OR b is 1',ins:['a','b'],outs:['out'],parts:['NAND','NOT','AND'],rows:tt(2,x=>LIB.OR.f(x)),hint:['NOT a → NAND','NOT b → NAND','(2 NOTs + 1 NAND)']},
+ {id:'XOR',n:'XOR',goal:'Out is 1 if a and b are DIFFERENT',ins:['a','b'],outs:['out'],parts:['NAND','NOT','AND','OR'],rows:tt(2,x=>LIB.XOR.f(x)),hint:['a OR b','a NAND b','AND those two']},
+ {id:'HA',n:'Half Adder',goal:'Add 2 bits: sum + carry',ins:['a','b'],outs:['sum','carry'],parts:['NAND','NOT','AND','OR','XOR'],rows:tt(2,x=>LIB.HA.f(x)),hint:['sum = XOR','carry = AND']},
+ {id:'FA',n:'Full Adder',goal:'Add 3 bits: sum + carry',ins:['a','b','c'],outs:['sum','carry'],parts:['NAND','NOT','AND','OR','XOR','HA'],rows:tt(3,x=>LIB.FA.f(x)),hint:['HA(a,b)','HA(sum, c) → sum','carry = OR of both carries']},
+ {id:'ADD4',n:'4-bit Adder',goal:'Add two 4-bit numbers',ins:['a0','a1','a2','a3','b0','b1','b2','b3'],outs:['s0','s1','s2','s3','c'],parts:['HA','FA','XOR','AND','OR'],rows:tt4(),R:15,hint:['Chain 4 Full Adders','carry → next adder c','last carry → c','(bit 0 can be a Half Adder)']},
+ {id:'BIT',n:'1-bit Memory',goal:'Remember "in" when load=1',ins:['in','load'],outs:['out'],parts:['DFF','NOT','AND','OR','NAND'],seq:[[[1,1],[0]],[[0,0],[1]],[[0,1],[1]],[[1,0],[0]],[[1,1],[0]],[[0,0],[1]],[[0,0],[1]]],hint:['DFF keeps a bit 1 tick','out = DFF output','DFF input = load ? in : out','= (in AND load) OR (out AND NOT load)']},
+ {id:'REG4',n:'4-bit Register',goal:'Remember 4 bits when load=1',ins:['d0','d1','d2','d3','load'],outs:['q0','q1','q2','q3'],parts:['BIT'],seq:[[[1,0,1,0,1],[0,0,0,0]],[[0,0,0,0,0],[1,0,1,0]],[[1,1,1,1,0],[1,0,1,0]],[[0,1,1,0,1],[1,0,1,0]],[[0,0,0,0,0],[0,1,1,0]]],R:11,hint:['4 BIT blocks','all share "load"','d0→BIT→q0 ...']},
+ {id:'CPU',n:'Tiny CPU',cpu:1,goal:'Plug your parts into the CPU'},
+ {id:'PC',n:'Toy Computer',os:1,goal:'Boot Chumi OS!'}
+];
+// ---------- save ----------
+const SK='toycomp_v1';let S=JSON.parse(localStorage.getItem(SK)||'null')||{done:{},circ:{}};
+const save=()=>localStorage.setItem(SK,JSON.stringify(S));
+const unlocked=i=>i==0||S.done[LV[i-1].id];
+const app=document.getElementById('app');
+const shelf=()=>'<div class="shelf">'+LV.map(l=>`<div class="${S.done[l.id]?'got':''}">${S.done[l.id]?'✅':'⬜'} ${l.n}</div>`).join('')+'</div>';
+// ---------- fx ----------
+const fx=document.getElementById('fx'),fc=fx.getContext('2d');let parts=[];
+function boom(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
+ fx.width=innerWidth;fx.height=innerHeight;for(let i=0;i<120;i++)parts.push({x:innerWidth/2,y:innerHeight*.4,vx:(Math.random()-.5)*12,vy:Math.random()*-12,c:`hsl(${Math.random()*360},100%,60%)`,l:80});
+ if(parts.length==120)requestAnimationFrame(fxl)}
+function fxl(){fc.clearRect(0,0,fx.width,fx.height);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.4;p.l--;fc.fillStyle=p.c;fc.fillRect(p.x,p.y,7,7)});parts=parts.filter(p=>p.l>0);if(parts.length)requestAnimationFrame(fxl);else fc.clearRect(0,0,fx.width,fx.height)}
+// ---------- menu ----------
+let cur=null;
+function menu(){cur=null;stopOS();app.innerHTML=`<h1>🖥️ Toy Computer</h1>${shelf()}<div class="small" style="text-align:center;margin-bottom:8px">Build every part. Then boot it!</div><div class="lvls">`+
+ LV.map((l,i)=>`<button class="btn lv ${S.done[l.id]?'done':''} ${unlocked(i)?'':'lock'}" data-i="${i}">${unlocked(i)?(S.done[l.id]?'✅':'▶️'):'🔒'} ${i+1}. ${l.n}</button>`).join('')+
+ `</div><div style="text-align:center;margin-top:14px"><button class="btn sm" id="rst">Reset progress</button></div>`;
+ app.querySelectorAll('.lv').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(unlocked(i))open(i)});
+ document.getElementById('rst').onclick=()=>{if(confirm('Erase progress?')){S={done:{},circ:{}};save();menu()}}}
+function win(L){const first=!S.done[L.id];S.done[L.id]=1;save();boom(`🎉 ${L.n} built!<br><span style="font-size:15px">${first?'New part on your shelf':'Still works!'}</span>`);
+ const sh=document.querySelector('.shelf');if(sh)sh.outerHTML=shelf();const nx=document.getElementById('next');if(nx)nx.style.display=''}
+function head(i){const L=LV[i];return `<div class="bar" style="justify-content:space-between"><button class="btn sm" id="back">◀ Levels</button><b style="align-self:center">${i+1}. ${L.n}</b><button class="btn sm go" id="next" style="${S.done[L.id]&&i<LV.length-1?'':'display:none'}">Next ▶</button></div>${shelf()}<div class="goal">🎯 ${L.goal}</div>`}
+function wireHead(i){document.getElementById('back').onclick=menu;document.getElementById('next').onclick=()=>open(i+1)}
+function open(i){stopOS();const L=LV[i];cur={i,L};if(L.cpu)return cpuLvl(i);if(L.os)return osLvl(i);circLvl(i)}
+// ---------- circuit editor ----------
+const CELL=36;let C,cv,ctx,tool=null,pend=null,selP=null,W,H,cols,rows,anim=0;
+function circLvl(i){const L=LV[i];
+ app.innerHTML=head(i)+`<div class="bar pal">${L.parts.map(p=>`<button class="btn sm" data-p="${p}">+ ${p}</button>`).join('')}</div>
+ <canvas id="board"></canvas><div class="small" id="help">Tap a part, then tap the board. Tap ● output, then ● input to wire.</div>
+ <div class="bar"><button class="btn go" id="test">▶ Test</button><button class="btn hint" id="hintb">💡 Hint</button>${L.seq?'<button class="btn" id="tick">⏱ Tick</button>':''}<button class="btn sm" id="del">🗑 Delete</button><button class="btn sm" id="clr">Clear</button></div>
+ <div id="hintbox"></div><div id="tbl"></div>`;
+ wireHead(i);cv=document.getElementById('board');ctx=cv.getContext('2d');
+ rows=L.R||Math.max(8,L.ins.length*1+2,L.outs.length+2);
+ const saved=S.circ[L.id];C={parts:[],wires:[],nid:1};
+ L.ins.forEach((n,k)=>C.parts.push({id:'in'+k,t:'IN',x:0,y:k*Math.floor((rows)/L.ins.length),v:0,name:n}));
+ if(saved){C.parts=C.parts.concat(saved.parts);C.wires=saved.wires;C.nid=saved.nid;C.parts.forEach(p=>{if(LIB[p.t]&&LIB[p.t].st)p.s=LIB[p.t].init()})}
+ tool=null;pend=null;selP=null;layout();
+ app.querySelectorAll('.pal button').forEach(b=>b.onclick=()=>{tool=tool==b.dataset.p?null:b.dataset.p;app.querySelectorAll('.pal button').forEach(x=>x.classList.toggle('sel',x.dataset.p==tool))});
+ document.getElementById('test').onclick=()=>runTest(true);
+ document.getElementById('hintb').onclick=()=>{const h=document.getElementById('hintbox');h.innerHTML=h.innerHTML?'':'<div class="hintbox">💡<ul>'+L.hint.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'};
+ if(L.seq)document.getElementById('tick').onclick=()=>{tick();draw()};
+ document.getElementById('del').onclick=()=>{if(selP){C.wires=C.wires.filter(w=>w.f!=selP.id&&w.t!=selP.id);C.parts=C.parts.filter(p=>p!=selP);selP=null;store();draw()}};
+ document.getElementById('clr').onclick=()=>{C.parts=C.parts.filter(p=>p.t=='IN');C.wires=[];store();draw()};
+ cv.onpointerdown=tap;renderTable();cancelAnimationFrame(anim);loop()}
+function loop(){if(!cv||!document.body.contains(cv))return;draw();anim=requestAnimationFrame(loop)}
+function layout(){const L=cur.L;W=cv.clientWidth||360;cols=Math.floor(W/CELL);H=rows*CELL+8;const d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;cv.style.height=H+'px';ctx.setTransform(d,0,0,d,0,0);
+ // outputs as virtual
+ C.outs=L.outs.map((n,k)=>({id:'out'+k,name:n,x:cols-1,y:k*Math.floor(rows/L.outs.length)}))}
+addEventListener('resize',()=>{if(cv&&document.body.contains(cv)){layout();draw()}});
+const pw=p=>p.t=='IN'?1:(LIB[p.t].w||2),ph=p=>p.t=='IN'?1:Math.max(LIB[p.t].i.length,LIB[p.t].o.length,1);
+function inPorts(p){const n=LIB[p.t].i.length,h=ph(p)*CELL;return LIB[p.t].i.map((_,k)=>({x:p.x*CELL+4,y:p.y*CELL+4+(k+.5)*h/n}))}
+function outPorts(p){if(p.t=='IN')return[{x:p.x*CELL+CELL-2,y:p.y*CELL+4+CELL/2}];const n=LIB[p.t].o.length,h=ph(p)*CELL;return LIB[p.t].o.map((_,k)=>({x:(p.x+pw(p))*CELL-4,y:p.y*CELL+4+(k+.5)*h/n}))}
+const outIn=o=>({x:o.x*CELL+6,y:o.y*CELL+4+CELL/2});
+function store(){S.circ[cur.L.id]={parts:C.parts.filter(p=>p.t!='IN').map(p=>({id:p.id,t:p.t,x:p.x,y:p.y})),wires:C.wires,nid:C.nid};save()}
+function addPart(t,x,y){if(x<1||x+(LIB[t].w||2)>cols-1||y<0)return null;const p={id:'p'+C.nid++,t,x,y};if(LIB[t].st)p.s=LIB[t].init();C.parts.push(p);store();return p.id}
+function addWire(f,fo,t,ti){C.wires=C.wires.filter(w=>!(w.t==t&&w.ti==ti));if(f==t)return;C.wires.push({f,fo,t,ti});store()}
+// sim
+function sim(){const V={};C.parts.forEach(p=>V[p.id]=p.t=='IN'?[p.v]:LIB[p.t].o.map(()=>0));
+ const inp=(id,n)=>{const r=[];for(let k=0;k<n;k++){const w=C.wires.find(w=>w.t==id&&w.ti==k);r.push(w&&V[w.f]?V[w.f][w.fo]|0:0)}return r};
+ for(let it=0;it<40;it++)C.parts.forEach(p=>{if(p.t!='IN'){const L=LIB[p.t];V[p.id]=L.f(inp(p.id,L.i.length),p.s)}});
+ C.V=V;C.outV=C.outs.map(o=>inp(o.id,1)[0]);C.inp=inp;return C.outV}
+function tick(){sim();C.parts.forEach(p=>{if(p.t!='IN'&&LIB[p.t].st){p.s=LIB[p.t].tick(C.inp(p.id,LIB[p.t].i.length),p.s)}});sim()}
+function setIns(v){C.parts.filter(p=>p.t=='IN').forEach((p,k)=>p.v=v[k])}
+function runTest(show){const L=cur.L;let ok=true;const res=[];const keep=C.parts.filter(p=>p.t=='IN').map(p=>p.v);
+ if(L.seq){C.parts.forEach(p=>{if(p.s)p.s=LIB[p.t].init()});L.seq.forEach(([i,o])=>{setIns(i);const g=sim();const r=o.every((x,k)=>x==g[k]);res.push(r);ok=ok&&r;tick()});C.parts.forEach(p=>{if(p.s)p.s=LIB[p.t].init()})}
+ else L.rows.forEach(([i,o])=>{setIns(i);const g=sim();const r=o.every((x,k)=>x==g[k]);res.push(r);ok=ok&&r});
+ setIns(keep);sim();if(show){renderTable(res);if(ok)win(L);else boom('❌ Not yet!<br><span style="font-size:15px">Check the red lights</span>')}return ok}
+function renderTable(res){const L=cur.L,rows=L.seq?L.seq:L.rows;let lim=rows.length>16;
+ let h='<table><tr>'+(L.seq?'<th>step</th>':'')+L.ins.map(n=>`<th>${n}</th>`).join('')+'<th>→</th>'+L.outs.map(n=>`<th>${n}</th>`).join('')+'<th>✓</th></tr>';
+ if(lim){const bad=res?res.filter(x=>!x).length:null;h+=`<tr><td colspan="99">${rows.length} tests ${res?(bad?`· <span class="l bad"></span> ${bad} wrong`:'· <span class="l ok"></span> all pass'):'(tap Test)'}</td></tr>`;
+  rows.slice(0,6).forEach(([i,o],k)=>h+=`<tr>${i.map(x=>`<td>${x}</td>`).join('')}<td>→</td>${o.map(x=>`<td>${x}</td>`).join('')}<td><span class="l ${res?(res[k]?'ok':'bad'):''}"></span></td></tr>`);h+='<tr><td colspan="99">…</td></tr>'}
+ else rows.forEach(([i,o],k)=>h+=`<tr>${L.seq?`<td>${k+1}</td>`:''}${i.map(x=>`<td>${x}</td>`).join('')}<td>→</td>${o.map(x=>`<td>${x}</td>`).join('')}<td><span class="l ${res?(res[k]?'ok':'bad'):''}"></span></td></tr>`);
+ document.getElementById('tbl').innerHTML=h+'</table>'+(L.seq?'<div class="small">Memory: out shows what was saved BEFORE each tick.</div>':'')}
+function tap(e){const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const near=(p)=>Math.hypot(p.x-x,p.y-y)<16;
+ for(const p of C.parts){const op=outPorts(p);for(let k=0;k<op.length;k++)if(near(op[k])){pend={f:p.id,fo:k};return}}
+ for(const p of C.parts)if(p.t!='IN'){const ip=inPorts(p);for(let k=0;k<ip.length;k++)if(near(ip[k])){if(pend){addWire(pend.f,pend.fo,p.id,k);pend=null}else C.wires=C.wires.filter(w=>!(w.t==p.id&&w.ti==k)),store();return}}
+ for(const o of C.outs)if(near(outIn(o))){if(pend){addWire(pend.f,pend.fo,o.id,0);pend=null}else C.wires=C.wires.filter(w=>w.t!=o.id),store();return}
+ const gx=Math.floor(x/CELL),gy=Math.floor(y/CELL);pend=null;
+ for(const p of C.parts)if(gx>=p.x&&gx<p.x+pw(p)&&gy>=p.y&&gy<p.y+ph(p)){if(p.t=='IN')p.v^=1;else selP=selP==p?null:p;return}
+ if(tool){addPart(tool,gx,gy)}selP=null}
+function wirePath(a,b){ctx.beginPath();ctx.moveTo(a.x,a.y);const mx=(a.x+b.x)/2;ctx.bezierCurveTo(mx,a.y,mx,b.y,b.x,b.y)}
+function draw(){sim();const t=performance.now()/40;ctx.clearRect(0,0,W,H);
+ ctx.strokeStyle='#ffffff08';for(let i=0;i<=cols;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,H);ctx.stroke()}
+ const portOf=(id,k,isIn)=>{const o=C.outs.find(o=>o.id==id);if(o)return outIn(o);const p=C.parts.find(p=>p.id==id);return p?(isIn?inPorts(p)[k]:outPorts(p)[k]):null};
+ C.wires.forEach(w=>{const a=portOf(w.f,w.fo,0),b=portOf(w.t,w.ti,1);if(!a||!b)return;const on=C.V[w.f]&&C.V[w.f][w.fo];
+  wirePath(a,b);ctx.lineWidth=on?5:3;ctx.strokeStyle=on?'#3fffd0':'#3a4a7a';ctx.shadowBlur=on?14:0;ctx.shadowColor='#3fffd0';ctx.setLineDash([]);ctx.stroke();
+  if(on){wirePath(a,b);ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.setLineDash([4,10]);ctx.lineDashOffset=-t;ctx.stroke();ctx.setLineDash([])}ctx.shadowBlur=0});
+ if(pend){const a=portOf(pend.f,pend.fo,0);ctx.beginPath();ctx.arc(a.x,a.y,12,0,7);ctx.strokeStyle='#ff5bd7';ctx.lineWidth=3;ctx.stroke()}
+ ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+ C.parts.forEach(p=>{const X=p.x*CELL+4,Y=p.y*CELL+4,w=pw(p)*CELL-8,h=ph(p)*CELL-8;
+  if(p.t=='IN'){ctx.fillStyle=p.v?'#ffe03c':'#333';ctx.shadowBlur=p.v?16:0;ctx.shadowColor='#ffe03c';ctx.beginPath();ctx.arc(X+12,Y+14,13,0,7);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle=p.v?'#000':'#aaa';ctx.fillText(p.v,X+12,Y+14);ctx.fillStyle='#ccd';ctx.font='10px system-ui';ctx.fillText(p.name,X+12,Y+33);ctx.font='bold 12px system-ui'}
+  else{const L=LIB[p.t];ctx.fillStyle=L.c+'33';ctx.strokeStyle=selP==p?'#fff':L.c;ctx.lineWidth=selP==p?3:2;ctx.beginPath();ctx.roundRect(X,Y+(CELL-8>h?0:0),w,Math.max(h,CELL-8),8);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(p.t,X+w/2,Y+Math.max(h,CELL-8)/2);
+   if(L.st){ctx.fillStyle=p.s.some(x=>x)?'#3fffd0':'#556';ctx.fillText(p.s.join(''),X+w/2,Y+Math.max(h,CELL-8)/2+13)}}
+  if(p.t!='IN')inPorts(p).forEach((q,k)=>dot(q,C.inp(p.id,LIB[p.t].i.length)[k]));
+  outPorts(p).forEach((q,k)=>dot(q,C.V[p.id][k]))});
+ C.outs.forEach((o,k)=>{const q=outIn(o),v=C.outV[k];ctx.fillStyle=v?'#2f6':'#311';ctx.shadowBlur=v?18:0;ctx.shadowColor='#2f6';ctx.beginPath();ctx.arc(q.x+16,q.y,11,0,7);ctx.fill();ctx.shadowBlur=0;dot(q,v);ctx.fillStyle='#ccd';ctx.font='10px system-ui';ctx.fillText(o.name,q.x+16,q.y+19);ctx.font='bold 12px system-ui'})}
+function dot(q,v){ctx.fillStyle=v?'#3fffd0':'#99a';ctx.beginPath();ctx.arc(q.x,q.y,5,0,7);ctx.fill()}
+// ---------- CPU level ----------
+const SOCK=[['ALU','adds numbers','ADD4'],['A register','holds a number','REG4'],['PC register','holds step #','REG4'],['PC +1','counts up','ADD4']];
+let cpu={fill:[null,null,null,null],sel:0};
+function cpuLvl(i){app.innerHTML=head(i)+`<div class="small">Tap a socket, then tap the right part.</div><div id="socks"></div><div class="bar" id="cpal">${['NOT','XOR','FA','ADD4','BIT','REG4'].map(p=>`<button class="btn sm" data-p="${p}">${p}</button>`).join('')}</div>
+ <div class="bar"><button class="btn go" id="test">▶ Run CPU</button><button class="btn hint" id="hintb">💡 Hint</button></div><div id="hintbox"></div><div id="cpuout" style="font-family:monospace;font-size:18px;text-align:center"></div>`;
+ wireHead(i);const rs=()=>{document.getElementById('socks').innerHTML=SOCK.map((s,k)=>`<div class="sock ${cpu.fill[k]?'fill':''} ${cpu.sel==k?'on':''}" data-k="${k}"><span><b>${s[0]}</b><br><span class="small">${s[1]}</span></span><b>${cpu.fill[k]||'＋'}</b></div>`).join('');
+  document.querySelectorAll('.sock').forEach(d=>d.onclick=()=>{cpu.sel=+d.dataset.k;rs()})};rs();
+ document.querySelectorAll('#cpal button').forEach(b=>b.onclick=()=>{cpu.fill[cpu.sel]=b.dataset.p;cpu.sel=Math.min(3,cpu.sel+1);rs()});
+ document.getElementById('hintb').onclick=()=>{document.getElementById('hintbox').innerHTML='<div class="hintbox">💡<ul><li>Adding → 4-bit Adder</li><li>Holding → Register</li><li>Counting = Adder + Register</li></ul></div>'};
+ document.getElementById('test').onclick=()=>cpuRun(true);window.__rs=rs}
+function cpuRun(show){const ok=SOCK.every((s,k)=>cpu.fill[k]==s[2]);const out=document.getElementById('cpuout');
+ if(!ok){if(show)boom('❌ Wrong part somewhere');out.innerHTML='💥 CPU crashed';return false}
+ let pc=0,a=0,n=0;const iv=setInterval(()=>{a=(a+3)&15;pc=(pc+1)&15;out.innerHTML=`PC=${pc.toString(2).padStart(4,'0')}  A=${a.toString(2).padStart(4,'0')} (${a})<br><span class="small">program: A = A + 3</span>`;if(++n>=6){clearInterval(iv);if(show)win(cur.L)}},250);
+ if(!show){S.done.CPU=1;save()}return true}
+// ---------- OS level ----------
+let osT=[],pong=null,prog=null;const PW=32,PH=20;let pix,pc2,term,scr=new Uint8Array(PW*PH);
+function stopOS(){osT.forEach(clearInterval);osT=[];pong=null;prog=null}
+function osLvl(i){app.innerHTML=head(i)+`<div class="screen"><canvas id="pix" width="${PW}" height="${PH}"></canvas><div id="term"></div></div>
+ <div class="bar" id="cmds">${['help','hello','blink','pong','count','clear','code'].map(c=>`<button class="btn sm" data-c="${c}">${c}</button>`).join('')}</div>
+ <div class="bar" id="pong" style="display:none"><button class="btn" id="pu" style="flex:1">▲</button><button class="btn" id="pd" style="flex:1">▼</button></div>
+ <div id="code" style="display:none"><textarea id="src">SET A 0
+SET B 9
+PIX A B
+ADD A 1
+WAIT
+JNZ A 3
+PRINT done!</textarea><div class="bar"><button class="btn go sm" id="run">▶ Run</button><button class="btn sm" id="stop">■ Stop</button></div>
+ <div class="hintbox small"><b>Chumi CPU</b><ul><li>SET r n · ADD r n (r = A,B)</li><li>PIX x y · CLR · WAIT</li><li>JMP line · JNZ r line</li><li>OUT r · PRINT text</li></ul>Lines start at 1. Numbers wrap at 32.</div></div>`;
+ wireHead(i);pix=document.getElementById('pix');pc2=pix.getContext('2d');term=document.getElementById('term');
+ document.querySelectorAll('#cmds button').forEach(b=>b.onclick=()=>cmd(b.dataset.c));
+ document.getElementById('run').onclick=()=>runProg(document.getElementById('src').value);document.getElementById('stop').onclick=()=>{prog=null};
+ document.getElementById('pu').onclick=()=>pong&&(pong.p=Math.max(0,pong.p-3));document.getElementById('pd').onclick=()=>pong&&(pong.p=Math.min(PH-5,pong.p+3));
+ osT.push(setInterval(paint,50));boot()}
+function say(s){term.textContent+=s+'\n';term.scrollTop=1e9}
+function paint(){if(!pc2)return;const d=pc2.createImageData(PW,PH);for(let k=0;k<PW*PH;k++){d.data[k*4]=scr[k]?80:0;d.data[k*4+1]=scr[k]?255:20;d.data[k*4+2]=scr[k]?120:10;d.data[k*4+3]=255}pc2.putImageData(d,0,0)}
+const px=(x,y,v=1)=>{x=((x%PW)+PW)%PW;y=((y%PH)+PH)%PH;scr[y*PW+x]=v};
+function boot(){scr.fill(0);term.textContent='';const lines=['CHUMI OS v1.0','RAM ......... OK','NAND gates .. OK','CPU ......... OK','','Hello Chumi! 👋','Tap a command ▼'];let k=0;
+ // smiley
+ [[12,6],[19,6],[11,11],[12,12],[13,13],[14,13],[15,13],[16,13],[17,13],[18,13],[19,12],[20,11]].forEach(([x,y])=>px(x,y));
+ const iv=setInterval(()=>{if(k<lines.length)say(lines[k++]);else{clearInterval(iv);if(!S.done.PC)win(cur.L)}},200);osT.push(iv)}
+function cmd(c){pong=null;prog=null;document.getElementById('pong').style.display='none';document.getElementById('code').style.display='none';
+ if(c=='help')say('> help\nhello blink pong count clear code');
+ if(c=='hello')say('> hello\nHello Chumi! You built me 🛠️');
+ if(c=='clear'){scr.fill(0);term.textContent=''}
+ if(c=='blink'){say('> blink');scr.fill(0);let on=0,n=0;const iv=setInterval(()=>{on^=1;px(15,9,on);px(16,9,on);px(15,10,on);px(16,10,on);if(++n>12)clearInterval(iv)},250);osT.push(iv)}
+ if(c=='count'){say('> count');scr.fill(0);let n=0;const iv=setInterval(()=>{for(let b=0;b<8;b++)for(let y=8;y<12;y++){px(4+b*3,y,n>>(7-b)&1);px(5+b*3,y,n>>(7-b)&1)}n++;if(n>40)clearInterval(iv)},150);osT.push(iv)}
+ if(c=='code'){say('> code');document.getElementById('code').style.display=''}
+ if(c=='pong'){say('> pong  (▲▼ to move)');document.getElementById('pong').style.display='';pong={p:7,x:16,y:10,dx:1,dy:1,s:0};const iv=setInterval(()=>{if(!pong){clearInterval(iv);return}const g=pong;g.x+=g.dx;g.y+=g.dy;if(g.y<=0||g.y>=PH-1)g.dy*=-1;if(g.x>=PW-1)g.dx=-1;
+  if(g.x<=1){if(g.y>=g.p&&g.y<g.p+5){g.dx=1;g.s++;say('score '+g.s)}else{say('miss! score '+g.s);g.x=16;g.s=0}}
+  scr.fill(0);for(let k=0;k<5;k++)px(0,g.p+k);for(let y=0;y<PH;y++)px(PW-1,y);px(g.x,g.y)},90);osT.push(iv)}}
+function runProg(src){const L=src.split('\n').map(l=>l.trim().split(/\s+/));const R={A:0,B:0};let ip=0,steps=0;scr.fill(0);say('> run');prog={};const me=prog;
+ const val=t=>t in R?R[t]:(+t|0);
+ const iv=setInterval(()=>{if(prog!==me){clearInterval(iv);return}for(let s=0;s<50;s++){if(ip>=L.length||++steps>5000){say('[end]');clearInterval(iv);prog=null;return}const [op,a,b]=L[ip];const rest=L[ip].slice(1).join(' ');ip++;
+  switch((op||'').toUpperCase()){case'SET':R[a]=val(b)&31;break;case'ADD':R[a]=(R[a]+val(b))&31;break;case'PIX':px(val(a),val(b));break;case'CLR':scr.fill(0);break;
+  case'OUT':say(a+'='+R[a]);break;case'PRINT':say(rest);break;case'JMP':ip=val(a)-1;break;case'JNZ':if(R[a])ip=val(b)-1;break;case'WAIT':return;case'':break;default:say('?? '+op);}}},60);osT.push(iv)}
+// ---------- test hook ----------
+window.__tc={LV,LIB,open,menu,get C(){return C},addPart,addWire,test:()=>runTest(true),check:()=>runTest(false),setIns:v=>{setIns(v);return sim()},tick,clear:()=>{C.parts=C.parts.filter(p=>p.t=='IN');C.wires=[];store()},
+ cpuFill:a=>{cpu.fill=a.slice();window.__rs&&__rs()},cpuRun,cmd,runProg,screen:()=>Array.from(scr),term:()=>term&&term.textContent,state:()=>S,
+ unlockAll:()=>{LV.forEach(l=>S.done[l.id]=1);save()}};
+menu();
+})();
+</script></body></html>
