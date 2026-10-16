@@ -127,7 +127,7 @@ export class Game {
       if (d < bd && (hasEnemy || !combatMove)) { bd = d; best = loc; }
     }
     if (best) return best;
-    const id = `fs_${++this._fsSeq}_${fac}`;
+    const id = `fs_${this._fsSeq + 1}_${fac}`;
     return { newId: id, pos: p };
   }
   isZone(id) { return !!this.zones[id]; }
@@ -234,24 +234,30 @@ export class Game {
   }
 
   /** BFS up to maxMove steps. Ships/air use deep+zone graph; ground only zones (and bridges). */
-  reachable(from, maxMove, kind, fac) {
+  /**
+   * BFS up to maxMove steps over adjacency.
+   * Ground: land only; movement stops on entering a zone with enemy units or enemy-held territory,
+   * except tanks may blitz THROUGH empty enemy territory during combat move.
+   */
+  reachable(from, maxMove, kind, fac, opts = {}) {
     const dist = { [from]: 0 };
     const q = [from];
+    const side = fac ? FACTIONS[fac].side : null;
     while (q.length) {
       const cur = q.shift();
       if (dist[cur] >= maxMove) continue;
       for (const n of this.neighbors(cur)) {
         if (dist[n] !== undefined) continue;
-        // Ground: land only (never sea or deep)
-        if (kind === 'ground') {
-          if (!this.isLandZone(n)) continue;
-        }
-        // Ships: sea zones + deep space only (never land)
-        if (kind === 'ship') {
-          if (!this.isSeaZone(n)) continue;
-        }
-        // Air: can enter land, sea, or deep
+        if (kind === 'ground' && !this.isLandZone(n)) continue;
+        if (kind === 'ship' && !this.isSeaZone(n)) continue;
         dist[n] = dist[cur] + 1;
+        if (kind === 'ground' && fac) {
+          const z = this.zones[n];
+          const hostile = z && z.owner && FACTIONS[z.owner].side !== side;
+          const enemyUnits = this.enemiesAt(n, fac).length > 0;
+          if (enemyUnits) continue;                       // stop: battle here
+          if (hostile && !(opts.combat && opts.blitz)) continue; // stop unless blitzing tanks
+        }
         q.push(n);
       }
     }
@@ -293,7 +299,7 @@ export class Game {
    * Combat move: move into enemy territory / contested deep space.
    * Non-combat: only friendly / empty / own orbital.
    */
-  tryMove(from, to, take, combatMove) {
+  tryMove(from, to, take, combatMove, dryRun = false) {
     const fac = this.currentFaction;
     const phase = this.currentPhase;
     if (combatMove && phase !== 'combatMove') return { ok: false, err: 'Not combat-move phase' };
@@ -367,7 +373,8 @@ export class Game {
       } else if (!this.isLandZone(to)) {
         return { ok: false, err: 'Ground units stay on land zones' };
       } else {
-        reach = this.reachable(from, minMove, 'ground', fac);
+        const blitz = Object.entries(take).every(([t, n]) => n <= 0 || t === 'tank');
+        reach = this.reachable(from, minMove, 'ground', fac, { combat: combatMove, blitz });
       }
       if (reach[to] === undefined) return { ok: false, err: 'Out of range / illegal path' };
     }
@@ -390,9 +397,16 @@ export class Game {
       }
     }
 
+    const have = this.getStack(from, fac);
+    for (const [t, n] of Object.entries(take)) if (n > 0 && (have[t] || 0) < n) return { ok: false, err: 'Insufficient units' };
+    if (dryRun) {
+      const zt = this.zones[to];
+      const attack = enemies.length > 0 || !!(zt && zt.terrain !== 'sea' && zt.owner && FACTIONS[zt.owner].side !== FACTIONS[fac].side);
+      return { ok: true, dry: true, to, attack };
+    }
     const fromName = this.locationName(from);
     if (!this.removeUnits(from, fac, take)) return { ok: false, err: 'Insufficient units' };
-    if (newFree) this.freePos[newFree.newId] = newFree.pos;
+    if (newFree) { this.freePos[newFree.newId] = newFree.pos; this._fsSeq++; }
     this.addUnits(to, fac, take);
 
     const label = Object.entries(take).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${UNITS[t].abbrev}`).join(', ');
@@ -418,6 +432,35 @@ export class Game {
 
     this.emit();
     return { ok: true, to };
+  }
+
+  /**
+   * Every legal destination for a selection, via the same rules as tryMove (dry run).
+   * Returns { locId: { type: 'move'|'attack'|'unload', dist } }.
+   */
+  legalTargets(from, take, combatMove) {
+    const out = {};
+    const a = this.locPos(from);
+    const cands = new Set([...Object.keys(this.zones), ...Object.keys(this.freePos)]);
+    cands.delete(from);
+    const groundOnly = Object.fromEntries(Object.entries(take).filter(([t, n]) => n > 0 && UNITS[t].kind === 'ground'));
+    const hasGround = Object.keys(groundOnly).length > 0;
+    const hasShip = Object.entries(take).some(([t, n]) => n > 0 && UNITS[t].kind === 'ship');
+    for (const id of cands) {
+      const b = this.locPos(id);
+      const dist = a && b ? len(sub(b, a)) : null;
+      const r = this.tryMove(from, id, take, combatMove, true);
+      if (r.ok) { out[id] = { type: r.attack ? 'attack' : 'move', dist }; continue; }
+      // Transport stacks: ground can also unload into adjacent land
+      if (hasShip && hasGround && this.isSeaZone(from) && this.isLandZone(id)) {
+        const u = this.tryMove(from, id, groundOnly, combatMove, true);
+        if (u.ok) out[id] = { type: 'unload', attack: u.attack, dist };
+      } else if (!hasShip && hasGround && this.isSeaZone(from) && this.isLandZone(id) && out[id] === undefined) {
+        // (ground already aboard, selected alone) — tryMove result above covers it; mark as unload
+      }
+    }
+    if (!hasShip && hasGround && this.isSeaZone(from)) for (const v of Object.values(out)) v.type = 'unload';
+    return out;
   }
 
   /** Load ground onto transport at same loc (zone orbital / deep). */

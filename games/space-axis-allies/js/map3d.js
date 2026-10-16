@@ -844,6 +844,7 @@ export class Map3D {
       const q = this.camera.quaternion;
       for (const p of Object.values(this.shipPins)) for (const c of p.children) if (c.userData.faceCam) c.quaternion.copy(q);
       if (this.moveSphere) for (const c of this.moveSphere.group.children) if (c.userData.faceCam) c.quaternion.copy(q);
+      if (this._targetGroup) for (const c of this._targetGroup.children) if (c.userData.faceCam) c.quaternion.copy(q);
       // Bodies are ALWAYS visible (no far-side hiding)
       for (const sg of Object.values(this.systemMeshes)) sg.visible = true;
     }
@@ -1229,6 +1230,7 @@ export class Map3D {
   _onHover(e) {
     const sel = this._pickFromEvent(e);
     this._hoverZone = sel && sel.type === 'zone' ? sel.id : (sel && sel.type === 'units' && ZONES[sel.id] ? sel.id : null);
+    if (this.moveTargets) this.previewPath(sel && sel.id && this.moveTargets.targets[sel.id] ? sel.id : null);
     if (this.moveSphere) {
       let pt = null;
       if (sel?.type === 'space') pt = new THREE.Vector3(...sel.pos);
@@ -1322,6 +1324,106 @@ export class Map3D {
       this.camera.position.copy(target).add(new THREE.Vector3(near * 0.7, near * 0.45, near));
       this.focusSystem = null;
     }
+  }
+
+  // ——— Legal-move highlights ———
+  /** Cached low-res zone-index map per body (same pixel→uv mapping as the Voronoi texture). */
+  _zoneIndexMap(sysId) {
+    this._zim = this._zim || {};
+    if (this._zim[sysId]) return this._zim[sysId];
+    const sys = SYSTEMS[sysId];
+    const W = sys.kind === 'planet' ? 384 : 160, H = W / 2;
+    const info = this.systemTextures[sysId];
+    const ids = info.seeds.map(sd => sd.id);
+    const idx = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dir = uvToDir((x + 0.5) / W, (y + 0.5) / H);
+      let best = 0, bd = Infinity;
+      for (let k = 0; k < info.seeds.length; k++) { const d = this._seedDist(dir, info.seeds[k]); if (d < bd) { bd = d; best = k; } }
+      idx[y * W + x] = best;
+    }
+    return (this._zim[sysId] = { W, H, ids, idx });
+  }
+
+  _overlayFor(sysId) {
+    this._overlays = this._overlays || {};
+    if (this._overlays[sysId]) return this._overlays[sysId];
+    const { W, H } = this._zoneIndexMap(sysId);
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sphere = this.systemSpheres[sysId];
+    const r = SYSTEMS[sysId].radius;
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(r * 1.006, 64, 48),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    mesh.raycast = () => {}; mesh.renderOrder = 3; mesh.visible = false;
+    sphere.add(mesh);
+    return (this._overlays[sysId] = { canvas, ctx: canvas.getContext('2d'), tex, mesh });
+  }
+
+  /** targets: { locId: {type, dist} } from game.legalTargets. */
+  setMoveTargets(from, targets) {
+    this.clearMoveTargets();
+    this.moveTargets = { from, targets };
+    const COL = { move: [70, 230, 120, 120], attack: [245, 60, 50, 140], unload: [250, 195, 40, 140], origin: [60, 235, 235, 120], dim: [0, 0, 0, 80] };
+    for (const sysId of Object.keys(this.systemMeshes)) {
+      const { W, H, ids, idx } = this._zoneIndexMap(sysId);
+      const ov = this._overlayFor(sysId);
+      const cols = ids.map(id => id === from ? COL.origin : targets[id] ? COL[targets[id].type] : COL.dim);
+      const img = ov.ctx.createImageData(W, H);
+      for (let i = 0; i < W * H; i++) { const c = cols[idx[i]]; img.data.set(c, i * 4); }
+      ov.ctx.putImageData(img, 0, 0);
+      ov.tex.needsUpdate = true;
+      ov.mesh.visible = true;
+    }
+    // Rings + range numbers for sea / open-space / air targets
+    const g = new THREE.Group();
+    const HEX = { move: 0x46e678, attack: 0xf53c32, unload: 0xfac328 };
+    for (const [id, t] of Object.entries(targets)) {
+      const isLand = this.game.isLandZone(id);
+      if (isLand && t.type !== 'attack' && !this.moveSphere) continue; // land moves: tint only
+      const p = this.game.locPos(id); if (!p) continue;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.42, 28),
+        new THREE.MeshBasicMaterial({ color: HEX[t.type], transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+      ring.position.set(...p); ring.userData.faceCam = true; ring.renderOrder = 21; ring.raycast = () => {};
+      g.add(ring);
+      if (this.moveSphere && t.dist != null) {
+        const spr = this._makeTextSprite(t.dist.toFixed(1), { fontSize: 22, worldHeight: 0.32, pad: 4, outline: 4, fill: t.type === 'attack' ? '#ffb0a8' : '#c8ffd8' });
+        spr.position.set(p[0], p[1] + 0.55, p[2]); spr.renderOrder = 22;
+        g.add(spr);
+      }
+    }
+    this.root.add(g);
+    this._targetGroup = g;
+  }
+
+  clearMoveTargets() {
+    this.moveTargets = null;
+    for (const ov of Object.values(this._overlays || {})) ov.mesh.visible = false;
+    if (this._targetGroup) { this.root.remove(this._targetGroup); this._targetGroup.traverse(o => { o.geometry?.dispose(); o.material?.map?.dispose?.(); o.material?.dispose?.(); }); this._targetGroup = null; }
+    this.previewPath(null);
+  }
+
+  /** Path preview from the selected stack to a legal target: arc over the surface on one body, straight otherwise. */
+  previewPath(toId) {
+    if (this._pathLine) { this.root.remove(this._pathLine); this._pathLine.geometry.dispose(); this._pathLine.material.dispose(); this._pathLine = null; }
+    const mt = this.moveTargets;
+    if (!toId || !mt || !mt.targets[toId]) return;
+    const a = this.game.locPos(mt.from), b = this.game.locPos(toId);
+    if (!a || !b) return;
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), pts = [];
+    const sa = this.game.zones[mt.from]?.system, sb = this.game.zones[toId]?.system;
+    if (sa && sa === sb) {
+      const c = this.systemMeshes[sa].position, r = SYSTEMS[sa].radius * 1.06;
+      const ua = A.clone().sub(c).normalize(), ub = B.clone().sub(c).normalize();
+      for (let i = 0; i <= 32; i++) { const t = i / 32; pts.push(c.clone().add(ua.clone().lerp(ub, t).normalize().multiplyScalar(r + Math.sin(Math.PI * t) * r * 0.08))); }
+    } else for (let i = 0; i <= 1; i++) pts.push(A.clone().lerp(B, i));
+    const col = { move: 0x9dffc0, attack: 0xff8a80, unload: 0xffe08a }[mt.targets[toId].type];
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineDashedMaterial({ color: col, dashSize: 0.25, gapSize: 0.15, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false }));
+    line.computeLineDistances(); line.renderOrder = 23; line.raycast = () => {};
+    this.root.add(line);
+    this._pathLine = line;
   }
 
   // ——— Free movement sphere ———

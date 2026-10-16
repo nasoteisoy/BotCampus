@@ -63,7 +63,10 @@ export class UI {
   }
 
   onMapSelect(sel) {
-    if (!sel) return;
+    if (!sel) {
+      if (this.moveFrom) { this.moveFrom = null; this.moveTo = null; this._updateMoveSphere(); this._renderRoute(); }
+      return;
+    }
     const phase = this.game.currentPhase;
     if (sel.type === 'space') {
       // Free-space destination inside the movement sphere
@@ -77,8 +80,19 @@ export class UI {
     const loc = sel.id;
     this.game.selectedLoc = loc;
 
+    // Clicking another of your own stacks that is not a legal target switches the selection
+    const ownStack = sel.type === 'units' && sel.fac === this.game.currentFaction;
+    if (this.moveFrom && this.moveFrom !== loc && ownStack && !(this.map.moveTargets?.targets || {})[loc]) {
+      this.moveFrom = null; this.moveTo = null;
+    }
     if ((phase === 'combatMove' || phase === 'nonCombatMove') && this.moveFrom && this.moveFrom !== loc) {
-      // destination chosen
+      // destination chosen — must be a highlighted legal target
+      const tg = this.map.moveTargets?.targets || {};
+      if (!tg[loc]) {
+        const chk = this.game.tryMove(this.moveFrom, loc, this._take(), phase === 'combatMove', true);
+        this.toast(chk.ok ? 'Not a legal destination for this selection' : chk.err);
+        return;
+      }
       this.moveTo = loc;
       this._renderRoute();
       this.renderSelection();
@@ -128,12 +142,19 @@ export class UI {
   }
 
   /** Movement sphere for the selected stack: slowest chosen ship/air unit (or whole stack if none chosen). */
-  _updateMoveSphere() {
-    if (!this.moveFrom) { this.map.hideMoveSphere(); return; }
+  /** Chosen counts, or the whole stack if none chosen yet. */
+  _take() {
     const chosen = Object.fromEntries(Object.entries(this.moveTake || {}).filter(([, n]) => n > 0));
-    const take = Object.keys(chosen).length ? chosen : this.game.getStack(this.moveFrom, this.game.currentFaction);
+    return Object.keys(chosen).length ? chosen : { ...this.game.getStack(this.moveFrom, this.game.currentFaction) };
+  }
+
+  _updateMoveSphere() {
+    if (!this.moveFrom) { this.map.hideMoveSphere(); this.map.clearMoveTargets(); return; }
+    const take = this._take();
     const r = this.game.moveRadius(take);
     if (r > 0) this.map.showMoveSphere(this.moveFrom, r); else this.map.hideMoveSphere();
+    const targets = this.game.legalTargets(this.moveFrom, take, this.game.currentPhase === 'combatMove');
+    this.map.setMoveTargets(this.moveFrom, targets);
   }
 
   doMove() {
@@ -145,7 +166,7 @@ export class UI {
       const n = parseInt(inp.value, 10) || 0;
       if (n > 0) take[inp.dataset.type] = n;
     }
-    if (!Object.keys(take).length) { this.toast('Select unit counts'); return; }
+    if (!Object.keys(take).length) Object.assign(take, this._take()); // no counts chosen → whole stack
     const combat = this.game.currentPhase === 'combatMove';
     const res = this.game.tryMove(from, to, take, combat);
     if (!res.ok) this.toast(res.err);
@@ -154,6 +175,7 @@ export class UI {
       this.moveTo = null;
       this._renderRoute();
       this.map.hideMoveSphere();
+      this.map.clearMoveTargets();
       // Selection follows the moved stack (old origin may no longer exist)
       this.game.selectedLoc = res.to || null;
       this.$('move-units').innerHTML = '';
@@ -211,7 +233,7 @@ export class UI {
 
   render() {
     const g = this.game;
-    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.moveTo = null; this.map?.hideMoveSphere?.(); }
+    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.moveTo = null; this.map?.hideMoveSphere?.(); this.map?.clearMoveTargets?.(); }
     if (g.selectedLoc && !g.zones[g.selectedLoc] && !g.isFree(g.selectedLoc)) g.selectedLoc = null; // stale (fleet merged/destroyed)
     this.$('round-label').textContent = `Round ${g.round}`;
     this.$('turn-label').textContent = g.faction.name;
