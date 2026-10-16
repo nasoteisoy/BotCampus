@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Axis & Allies 1942 in Space</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Import map for three.js CDN ESM -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <h1>Axis &amp; Allies <span>1942 in Space</span></h1>
+      <div class="pill"><span class="dot" id="turn-dot"></span> <span id="turn-label">—</span></div>
+      <div class="pill" id="round-label">Round 1</div>
+      <div class="pill" id="ipc-label">0 IPC</div>
+      <div class="vc-bar">
+        <span id="vc-allies">Allies VC 7/10</span>
+        <span id="vc-axis">Axis VC 6/9</span>
+      </div>
+      <div id="phase-pills"></div>
+      <div style="margin-left:auto" class="row">
+        <button id="btn-focus">Focus</button>
+        <button class="primary" id="btn-end-phase">End Phase</button>
+      </div>
+    </header>
+
+    <aside id="left">
+      <h2>Factions</h2>
+      <div id="faction-list"></div>
+
+      <div id="buy-panel">
+        <h2>Purchase</h2>
+        <p class="hint">Every faction can build every unit. Spend IPC, then mobilize later.</p>
+        <div class="buy-grid" id="buy-grid"></div>
+        <p id="purchased-list" class="hint"></p>
+      </div>
+
+      <div id="move-panel" style="display:none">
+        <h2>Movement</h2>
+        <p class="hint">Click your stack, set counts, click destination (or type ids). Fleets move 2 zones/turn. Ships hover above zones.</p>
+        <label>From <input id="move-from" style="width:100%" placeholder="zone or deep id" /></label>
+        <label>To <input id="move-to" style="width:100%;margin-top:4px" placeholder="destination id" /></label>
+        <div id="move-units" style="margin-top:6px"></div>
+        <div class="row">
+          <button class="primary" id="btn-move">Move</button>
+          <button id="btn-sbr">Strat. Bomb</button>
+          <input type="number" id="sbr-count" min="1" value="1" title="Bombers" />
+        </div>
+      </div>
+
+      <div id="mobilize-panel" style="display:none">
+        <h2>Mobilize</h2>
+        <p class="hint">Click an owned factory zone (or planet zone for AA/fighters).</p>
+        <div id="mobilize-box"></div>
+      </div>
+
+      <p id="collect-hint" class="hint" style="display:none"></p>
+    </aside>
+
+    <main id="viewport">
+      <div id="toast"></div>
+    </main>
+
+    <aside id="right">
+      <h2>Selection</h2>
+      <div id="selection-box"></div>
+
+      <div id="combat-panel">
+        <h2 id="combat-title">Combat</h2>
+        <div id="combat-atk"></div>
+        <div id="combat-def"></div>
+        <div id="combat-log"></div>
+        <div class="row">
+          <button id="btn-resolve-combat">Start / Next Battle</button>
+          <button class="primary" id="btn-combat-round">Fire Round</button>
+          <button id="btn-retreat">Retreat</button>
+          <button id="btn-submerge">Submerge Subs</button>
+        </div>
+      </div>
+
+      <h2>Log</h2>
+      <div id="log"></div>
+
+      <h2>Help</h2>
+      <p class="hint">
+        Hot-seat 5 factions · Turn order: Iron Khanate → Void Regency → Helix Imperium → Crimson Forge → Terran Concord.
+        Orbit/zoom the camera. Planets do not rotate or orbit. Conquest is per-zone. Victory cities: Allies 10 / Axis 9.
+      </p>
+    </aside>
+  </div>
+
+  <div id="win-overlay"><h1 id="win-text">Victory</h1><p>Reload to play again.</p></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
