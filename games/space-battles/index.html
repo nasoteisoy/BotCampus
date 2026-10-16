@@ -6,15 +6,15 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:syste
 #c{position:fixed;inset:0}
 #hud{position:fixed;top:0;left:0;right:0;padding:10px;display:flex;justify-content:space-between;font-weight:700;pointer-events:none;text-shadow:0 0 4px #000}
 #hud .g{color:#4f8}#hud .r{color:#f55}#hud .y{color:#fd6}
-#msg{position:fixed;bottom:172px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
+#msg{position:fixed;bottom:262px;left:0;right:0;text-align:center;font-size:15px;pointer-events:none;text-shadow:0 0 4px #000}
 #panel{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:3;width:min(96vw,460px)}
 #btns{display:flex;flex-wrap:wrap;gap:6px;width:100%}
-#panel button{margin:0;font-size:13px;padding:0 4px;height:46px;flex:1 1 30%;min-width:0;line-height:1.15}
+#panel button{margin:0;font-size:12px;padding:0 3px;height:44px;flex:1 1 22%;min-width:0;line-height:1.15}
 #bad{background:#fc4}#bgn{background:#c9f}
 #chips{display:flex;gap:8px;min-height:0}
 .chip{display:flex;align-items:center;gap:5px;background:rgba(10,15,40,.85);border:2px solid #fc4;border-radius:24px;padding:2px 10px 2px 2px;height:44px;font-size:13px;font-weight:700;cursor:pointer}
 .chip.g{border-color:#c9f}.chip img{width:40px;height:40px;border-radius:50%}
-#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:200px;background:#112;border:1px solid #fc4;border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;text-align:center;z-index:4;pointer-events:none}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:270px;background:#112;border:1px solid #fc4;border-radius:10px;padding:8px 12px;font-size:13px;max-width:300px;text-align:center;z-index:4;pointer-events:none}
 #panel button:disabled{background:#444;color:#999}
 #bd{background:#58f}#by{background:#4cd}#bb{background:#e96}
 .card{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,10,.75);z-index:5}
@@ -24,21 +24,30 @@ button{font-size:20px;padding:14px 28px;border-radius:10px;border:0;background:#
 .hide{display:none!important}
 #toast{position:fixed;left:50%;top:56px;transform:translateX(-50%);background:rgba(40,20,10,.92);border:1px solid #fc4;color:#fd6;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;z-index:6;pointer-events:none;white-space:nowrap;max-width:92vw;transition:opacity .25s}
 #toast.off{opacity:0}
+#bsc{background:#9d6}#bgv{background:#fb7}
+#st{width:100%;box-sizing:border-box;background:rgba(10,15,40,.88);border:1px solid #345;border-radius:10px;padding:5px 8px;font-size:12px;line-height:1.35}
+#st .bar{height:6px;background:#333;border-radius:3px;margin:2px 0 3px;overflow:hidden}#st .bar i{display:block;height:100%;background:#4f8}
+#st .bar.o i{background:#fb7}#st .bar.s i{background:#58f}
+.card ol{text-align:left;padding-left:20px;margin:8px 0;font-size:14px}.card ol li{margin:4px 0}
+#how>div{max-height:88vh;overflow-y:auto;touch-action:pan-y}
 </style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 </head><body>
 <canvas id="c"></canvas>
-<div id="hud"><span class="g" id="ps">You: 0</span><span class="y" id="cr">⚙ 0</span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
+<div id="hud"><span class="g" id="ps">You: 0</span><span class="y" id="cr">⚙ 0</span><span class="y" id="inc"></span><span id="tm">0s</span><span class="r" id="es">Enemy: 0</span></div>
 <div id="msg">Tap one of your green planets</div>
-<div id="panel" class="hide"><div id="chips"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="by">🚀 Shipyard<br>⚙20</button><button id="bb">🪖 Barracks<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button></div></div><div id="tip" class="hide"></div><div id="toast" class="off" role="status" aria-live="polite"></div>
+<div id="panel" class="hide"><div id="chips"></div><div id="st"></div><div id="btns"><button id="bf">🏭 Factory<br>⚙20</button><button id="bd">🛡 Defense<br>⚙20</button><button id="by">🚀 Shipyard<br>⚙20</button><button id="bb">🪖 Barracks<br>⚙20</button><button id="bad">⭐ Admiral<br>⚙30</button><button id="bgn">🎖 General<br>⚙30</button><button id="bsc">🔭 Scouts<br>⚙15 · 5s</button><button id="bgv">🏛 Governor<br>⚙25 · 8s</button></div></div><div id="tip" class="hide"></div><div id="toast" class="off" role="status" aria-live="polite"></div>
 <div class="card" id="how"><div><h2>Space Battles 3D</h2>
-<p>Owning a planet builds nothing by itself. A <b>🚀 Shipyard</b> builds spaceships (watch them orbit). A <b>🪖 Barracks</b> trains land troops (little tanks on the ground).</p>
-<p>Tap your <b style="color:#4f8">green-glow</b> planet, then a linked planet to send half its fleet — it carries half the troops too (needs an admiral ⭐).</p>
-<p>Ships win the fight in space, then the landed troops fight the troops on the ground. <b>No troops, no capture.</b> Neutral planets have troops guarding them.</p>
-<p>Spend ⚙ resources to build: <b>Shipyard</b>, <b>Barracks</b>, <b>Factory</b> (shipyards and barracks work faster) or <b>Defense</b> (turrets). Tap your selected planet again to build a shipyard.</p>
-<p><b style="color:#fc4">Admirals</b> ⭐ lead the next fleet sent from their planet as a glowing flagship. If that fleet loses, the admiral escapes to your nearest free planet (lost only if none). <b style="color:#c9f">Generals</b> 🎖 build a bunker and guard their planet — lost if it falls. Tap a portrait chip to see its perk.</p>
-<p><b style="color:#fd6">⚓ No admiral, no movement.</b> Ships can only leave a planet that has an admiral, and the admiral flies with the fleet. Planets marked ⚓ are stranded: their ships still defend, but can't move until you hire (⭐) or bring an admiral there. You start with one.</p>
-<p>Conquer every <b style="color:#f55">red-glow</b> planet. Drag to orbit, pinch to zoom.</p><button id="go">Play</button></div></div>
+<p>Tap your <b style="color:#4f8">green</b> planet, then a linked planet to send half its ships + troops. Drag to orbit, pinch to zoom.</p>
+<ol>
+<li><b>⭐ Admiral</b> (⚙30): ships only move with one ⚓ — it flies with the fleet. You start with one.</li>
+<li><b>🔭 Scouts</b> (⚙15, 5s, needs 🪖 Barracks): ❓ unscouted planets can't be attacked until a fleet brings a scout team to reveal them.</li>
+<li><b>Take it:</b> ships win in space, troops 🪖 win the ground. A captured planet becomes a <b>🚩 Foothold</b>.</li>
+<li><b>🏛 Governor + villagers</b> (⚙25, 8s, trained in a town): fly them to the foothold with a fleet (or along with the attack). They build a <b>🏘 Town</b> in 20s — watch the bar.</li>
+<li>Each town's governor gathers <b>+0.5⚙/s</b>. Only towns can build 🚀 Shipyards (1 ship / 4s), 🪖 Barracks, 🏭 Factories, 🛡 Defense (⚙20 each).</li>
+</ol>
+<p>🎖 Generals (⚙30) guard a planet. Losing a planet loses its town. The red AI plays by the same rules.</p>
+<p>Win: conquer every <b style="color:#f55">red</b> planet.</p><button id="go">Play</button></div></div>
 <div class="card hide" id="end"><div><h2 id="et"></h2><p id="ed"></p><button id="rs">Restart</button></div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -48,8 +57,8 @@ const R=new THREE.WebGLRenderer({canvas:cv,antialias:false});
 R.setPixelRatio(Math.min(devicePixelRatio,2));
 const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,1,.1,500);
 cam.position.set(0,14,30);
-const ctl=new OrbitControls(cam,cv);ctl.enableDamping=true;ctl.enablePan=false;ctl.minDistance=4;ctl.maxDistance=80;
-function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.position.setLength(innerWidth<innerHeight?52:30);cam.updateProjectionMatrix();}
+const ctl=new OrbitControls(cam,cv);ctl.enableDamping=true;ctl.enablePan=false;ctl.minDistance=4;ctl.maxDistance=120;
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.position.setLength(innerWidth<innerHeight?58:36);cam.updateProjectionMatrix();}
 addEventListener('resize',rs);rs();
 S.add(new THREE.AmbientLight(0xffffff,.35));const sun=new THREE.DirectionalLight(0xfff4e0,2.2);sun.position.set(20,15,25);S.add(sun);
 {const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<1500;i++){const v=new THREE.Vector3().randomDirection().multiplyScalar(120+Math.random()*80);p.push(v.x,v.y,v.z);}
@@ -167,21 +176,21 @@ function loseGen(s){if(!s.gen)return;s.spin.remove(s.gen.m);s.gen=null;badges(s)
 let sys=[],fleets=[],battles=[],sel=null,t0,over=true,aiT=0,lines=[],cred={p:10,e:10},clock=0,speed=1;
 const COST=20;
 const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.05,6,40),new THREE.MeshBasicMaterial({color:0xffff66}));ring.visible=false;S.add(ring);
-function setOwn(s,o){s.own=o;s.halo.material.color.setHex(COL[o]);s.atm.material.color.setHex(COL[o]);
+function setOwn(s,o){if(s.own!==o){if(s.town){s.spin.remove(s.town.m);s.town=null;}s.settle=null;s.q=[];s.gv=0;s.sc=0;}s.own=o;s.halo.material.color.setHex(COL[o]);s.atm.material.color.setHex(COL[o]);
  // conquered: buildings flip lights; keep structures (spoils of war) but recolor glows
  s.blds.forEach(b=>b.m.traverse(x=>{if(x.material===MB.glowP||x.material===MB.glowE)x.material=o==='p'?MB.glowP:MB.glowE;}));
  if(s.station)s.station.traverse(x=>{if(x.material===MB.glowP||x.material===MB.glowE)x.material=o==='p'?MB.glowP:MB.glowE;});}
-function clear(){adms.forEach(A=>S.remove(A.m));adms=[];sys.forEach(s=>{S.remove(s.g,s.halo);s.geo.dispose();});lines.forEach(l=>S.remove(l));sys=[];fleets=[];battles=[];lines=[];}
+function clear(){fleets.forEach(f=>f.cg&&S.remove(f.cg));adms.forEach(A=>S.remove(A.m));adms=[];sys.forEach(s=>{S.remove(s.g,s.halo);s.geo.dispose();});lines.forEach(l=>S.remove(l));sys=[];fleets=[];battles=[];lines=[];}
 function build(){clear();
- POS.forEach((p,i)=>{const big=i===0||i===10;const r=big?1.25:.6+Math.random()*.55;const type=TYPES[(i*3+1)%TYPES.length],seed=i*7.3;
-  const geo=planetGeo(type,seed);const g=new THREE.Group();g.position.set(...p);
+ POS.forEach((p,i)=>{const big=i===0||i===10;const r=big?2:1.1+Math.random()*.6;const type=TYPES[(i*3+1)%TYPES.length],seed=i*7.3;
+  const geo=planetGeo(type,seed);const g=new THREE.Group();g.position.set(p[0]*1.3,p[1]*1.3,p[2]*1.3);
   const spin=new THREE.Group();g.add(spin);spin.rotation.z=(Math.random()-.5)*.6;
   const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85,metalness:0,emissive:type.n==='lava'?0x401000:0}));m.scale.setScalar(r);spin.add(m);
   const atm=new THREE.Mesh(new THREE.SphereGeometry(r*1.08,24,16),new THREE.MeshBasicMaterial({color:0x999999,transparent:true,opacity:.18,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending}));g.add(atm);
-  if(type.gas||i%5===2){const rg=new THREE.Mesh(new THREE.RingGeometry(r*1.4,r*2.1,48),new THREE.MeshStandardMaterial({color:type.c[1][1],side:THREE.DoubleSide,transparent:true,opacity:.55,roughness:1}));rg.rotation.x=Math.PI/2.3;rg.rotation.y=.3;g.add(rg);}
+  if(type.gas||i%5===2){const rg=new THREE.Mesh(new THREE.RingGeometry(r*1.35,r*1.8,48),new THREE.MeshStandardMaterial({color:type.c[1][1],side:THREE.DoubleSide,transparent:true,opacity:.55,roughness:1}));rg.rotation.x=Math.PI/2.3;rg.rotation.y=.3;g.add(rg);}
   const h=new THREE.Sprite(new THREE.SpriteMaterial({map:haloT,color:0x999999,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));h.scale.setScalar(r*2.9);h.position.copy(g.position);
   S.add(g,h);
-  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),troops:3+Math.floor(Math.random()*5)+(big?3:0),base:big?1.1:.5,fac:0,def:0,yard:0,bar:0,blds:[],station:null,adm:null,gen:null,bA:null,bG:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
+  const s={i,g,spin,r,geo,halo:h,atm,own:'n',ships:4+Math.floor(Math.random()*8),troops:3+Math.floor(Math.random()*5)+(big?3:0),base:big?1.1:.5,fac:0,def:0,yard:0,bar:0,blds:[],station:null,town:null,settle:null,q:[],sc:0,gv:0,seen:{p:false,e:false},st:null,stK:'',adm:null,gen:null,bA:null,bG:null,nb:[],ph:Math.random()*6,spd:.15+Math.random()*.2};
   sys.push(s);setOwn(s,'n');});
  LN.forEach(([a,b])=>{sys[a].nb.push(b);sys[b].nb.push(a);const gg=new THREE.BufferGeometry().setFromPoints([sys[a].g.position,sys[b].g.position]);const l=new THREE.Line(gg,new THREE.LineBasicMaterial({color:0x3355aa,transparent:true,opacity:.45}));lines.push(l);S.add(l);});
  setOwn(sys[0],'p');sys[0].ships=20;sys[0].troops=8;setOwn(sys[10],'e');sys[10].ships=20;sys[10].troops=8;
@@ -189,13 +198,13 @@ function build(){clear();
  [0,10].forEach(k=>{addB(sys[k],'yard',true);addB(sys[k],'bar',true);});
  // a few neutral planets start with an outpost so the galaxy feels inhabited
  [5,8].forEach(k=>addB(sys[k],'def',true));
- hire(sys[0],'adm',null,true);hire(sys[10],'adm',null,true);
+ hire(sys[0],'adm',null,true);hire(sys[10],'adm',null,true);mkTown(sys[0]);mkTown(sys[10]);sys[0].sc=1;sys[10].sc=1;
  cred={p:10,e:10};sel=null;ring.visible=false;panel();t0=performance.now();clock=0;aiT=0;over=false;}
 // no passive growth: only Shipyards make ships, only Barracks make troops; Factories speed both up
 function boost(s){return (1+.5*s.fac)*(s.gen&&s.gen.d.id==='sol'?1.6:1);}
 function rate(s){return s.yard*.25*boost(s);}
 function trate(s){return s.bar*.3*boost(s);}
-function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
+function addB(s,kind,free){if(!free){if(!s.town||cred[s.own]<COST||s.blds.length>=10)return false;cred[s.own]-=COST;}
  const m=kind==='fac'?mkFactory(s.own):kind==='yard'?mkYard(s.own):kind==='bar'?mkBarracks(s.own):mkDefense(s.own);
  // place on surface, spaced from others (golden spiral slot)
  const k=s.blds.length,y=1-(k+.5)/10*2*.8-.1,rad=Math.sqrt(1-y*y),a=k*2.39996+s.i;const dir=new THREE.Vector3(Math.cos(a)*rad,y,Math.sin(a)*rad).normalize();
@@ -206,38 +215,89 @@ function addB(s,kind,free){if(!free){if(cred[s.own]<COST||s.blds.length>=10)retu
 function launch(a,b){if(!a.adm)return false;const n=Math.floor(a.ships/2);if(n<1)return false;a.ships-=n;const tr=Math.floor(a.troops/2);a.troops-=tr;const d=a.g.position.distanceTo(b.g.position);
  const k=Math.min(n,60),offs=[];for(let j=0;j<k;j++){const row=Math.floor(Math.sqrt(j)),col=j-row*row;offs.push(new THREE.Vector3((col-row)*.28,(j%2?.1:-.1)*row*.5,-row*.32));}
  const A=a.adm;if(A){a.adm=null;A.at=null;badges(a);offs.forEach(o=>o.z-=.6);}
- const f={a,b,n,tr,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;fleets.push(f);return true;}
-function arrive(f){const b=f.b,pos=b.g.position.clone(),A=f.adm;
- if(b.own===f.own){b.ships+=f.n;b.troops+=f.tr;if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
+ const sc=Math.min(1,a.sc),gv=Math.min(1,a.gv);a.sc-=sc;a.gv-=gv;
+ const f={a,b,n,tr,sc,gv,own:a.own,t:0,dur:d/4/(A&&A.d.id==='orion'?1.5:1),offs,adm:A,scale:n>60?Math.min(2,Math.sqrt(n/60)):1};if(A)A.f=f;if(sc||gv){f.cg=txtSpr(128,48);drawCargo(f);S.add(f.cg);}fleets.push(f);return true;}
+function arrive(f){const b=f.b,pos=b.g.position.clone(),A=f.adm;if(f.cg){S.remove(f.cg);f.cg=null;}
+ const home=f.a.own===f.own?f.a:null,back=()=>{if(home){home.sc+=f.sc;home.gv+=f.gv;}};
+ if(b.own==='n'&&!b.seen[f.own]){if(f.sc>0){f.sc--;b.seen[f.own]=true;if(f.own==='p')toast('🔭 Scouts revealed it: '+Math.floor(b.ships)+' ships, '+Math.ceil(b.troops)+' troops');}
+  else{if(home){home.ships+=f.n;home.troops+=f.tr;}back();if(A)retreat(A,f.a);if(f.own==='p')toast('❓ Unscouted — fleet turned back. Bring 🔭 scouts');return;}}
+ if(b.own===f.own){b.ships+=f.n;b.troops+=f.tr;b.sc+=f.sc;govArrive(b,f.gv,f.own);if(A){if(!b.adm){b.adm=A;A.at=b;A.f=null;badges(b);}else retreat(A,b);}return;}
  const id=A&&A.d.id,atkM=id==='vega'?1.3:id==='kade'?1.15:1,lossM=id==='nova'?.6:id==='kade'?.8:1;
  const G=b.gen&&b.gen.d.id,tur=b.def*3*(G==='rook'?2:1),mil=G==='ash'?Math.ceil(3+b.r*5):0,defN=b.ships+tur+mil,att=f.n*atkM,space=att>defN;
  // ground war: landed troops vs garrison (Ash's militia joins the ground fight too)
  const gDef=b.troops+mil*.5+(G==='rook'?1:0),win=space&&f.tr>gDef;
  battles.push({pos,r:b.r,t:0,ca:COL[f.own],cd:COL[b.own],na:Math.min(f.n,40),nd:Math.min(Math.floor(b.ships)+mil,30),win:space,ground:space?{n:Math.min(f.tr,TROOPCAP),m:Math.min(Math.ceil(b.troops),TROOPCAP),win,ca:COL[f.own],cd:b.own==='n'?0xaab4c0:COL[b.own],s:b}:null,dir:f.b.g.position.clone().sub(f.a.g.position).normalize(),scale:f.scale,
   shield:(b.gen||b.def)&&b.own!=='n'?mkShield(b):null,flak:!!b.gen||b.def>0,adm:!!A,gold:A?(A.own==='p'?0xffcc44:0xff3333):0});
- if(win){b.ships=Math.max(1,f.n-defN/atkM*lossM);b.troops=Math.max(1,f.tr-gDef);loseGen(b);if(b.adm){const D=b.adm;b.adm=null;badges(b);retreat(D,b);}setOwn(b,f.own);
+ if(win){b.ships=Math.max(1,f.n-defN/atkM*lossM);b.troops=Math.max(1,f.tr-gDef);loseGen(b);if(b.adm){const D=b.adm;b.adm=null;badges(b);retreat(D,b);}const hadTown=!!b.town;setOwn(b,f.own);b.seen.p=b.seen.e=true;b.sc+=f.sc;
+  if(hadTown&&f.own==='e')toast('🔥 The enemy burned one of your towns!');
+  if(f.gv)govArrive(b,f.gv,f.own);else if(f.own==='p')toast('🚩 Foothold planted! Send a 🏛 governor to build a town');
   if(A){b.adm=A;A.at=b;A.f=null;badges(b);}
   if(sel===b&&f.own!=='p'){sel=null;ring.visible=false;panel();}}
  else if(space){// orbit won but the ground held: defenders' ships are gone, garrison is worn down, survivors fly home
   const left=Math.max(0,f.n-defN/atkM*lossM);b.ships=0;b.troops=Math.max(.5,b.troops-f.tr);
-  if(f.a.own===f.own)f.a.ships+=left;if(A)retreat(A,f.a);if(f.own==='p')toast(f.tr?'🪖 Not enough troops to take it':'🪖 No troops — can\'t capture');}
- else{b.ships=Math.max(0,b.ships-Math.max(0,att-tur-mil));if(A)retreat(A,f.a);}}
+  if(f.a.own===f.own)f.a.ships+=left;back();if(A)retreat(A,f.a);if(f.own==='p')toast(f.tr?'🪖 Not enough troops to take it':'🪖 No troops — can\'t capture');}
+ else{b.ships=Math.max(0,b.ships-Math.max(0,att-tur-mil));if(home)home.gv+=f.gv;if(A)retreat(A,f.a);if(f.own==='p'&&f.gv)toast('🏛 Governor escaped home');}}
+// ---- expansion: scouts, governors, towns ----
+const SCC=15,SCT=5,GVC=25,GVT=8,SETT=20,TINC=.5,BASEINC=.6;
+const GOVN=['Mira','Tal','Oren','Juno','Pax','Ilse','Rafe','Sana','Teo','Wren','Cole','Nia'];
+const TBG=new THREE.BoxGeometry(.09,.08,.09),TRG=new THREE.ConeGeometry(.075,.07,4),TLG=new THREE.BoxGeometry(.03,.03,.03);
+const TWM=new THREE.MeshStandardMaterial({color:0xd8c8a8,roughness:.8}),TRM=new THREE.MeshStandardMaterial({color:0x9a4a3a,roughness:.8}),TLM=new THREE.MeshBasicMaterial({color:0xffd27a});
+function mkTown(s){if(s.town)return;const g=new THREE.Group();
+ for(let k=0;k<10;k++){const a=k*2.39996,rr=.05+.045*Math.sqrt(k)*2.2,h=1+(k%3)*.5;const b=new THREE.Mesh(TBG,TWM);b.scale.y=h;b.position.set(Math.cos(a)*rr,.04*h,Math.sin(a)*rr);
+  const rf=new THREE.Mesh(TRG,TRM);rf.position.set(b.position.x,.08*h+.035,b.position.z);rf.rotation.y=.785;const l=new THREE.Mesh(TLG,TLM);l.position.set(b.position.x+.046,.04*h,b.position.z);g.add(b,rf,l);}
+ const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:flashT,color:0xffc860,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));gl.scale.setScalar(.9);gl.position.y=.12;g.add(gl);g.userData.gl=gl;
+ const dir=new THREE.Vector3(-.35,.8,-.45).normalize();g.position.copy(dir).multiplyScalar(s.r*.97);g.quaternion.setFromUnitVectors(UP0,dir);g.userData.sc=.9+s.r*.5;g.scale.setScalar(.001);s.spin.add(g);
+ s.town={m:g,born:clock,gov:'Gov. '+GOVN[(s.i*5+Math.floor(clock))%GOVN.length]};s.settle=null;return s.town;}
+function govArrive(b,n,own){if(!n)return;if(!b.town&&!b.settle){b.settle={t:0,dur:SETT};n--;if(own==='p')toast('🏗 Governor landed — villagers building a town ('+SETT+'s)');else toast('🔴 Enemy villagers are building a town');}b.gv+=n;}
+function train(s,k,free){if(s.own==='n'||s.q.length>=3)return false;if(k==='sc'&&!s.bar)return false;if(k==='gv'&&!s.town)return false;const c=k==='sc'?SCC:GVC;
+ if(!free){if(cred[s.own]<c)return false;cred[s.own]-=c;}s.q.push({k,t:0,dur:k==='sc'?SCT:GVT});return true;}
+function income(o){return BASEINC+TINC*sys.filter(s=>s.own===o&&s.town).length;}
+function txtSpr(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,depthTest:false,transparent:true}));sp.renderOrder=5;sp.userData.c=c;sp.scale.set(w/40,h/40,1);return sp;}
+function drawCargo(f){const c=f.cg.userData.c,x=c.getContext('2d');x.clearRect(0,0,128,48);x.fillStyle='rgba(10,15,40,.85)';x.beginPath();x.roundRect(4,4,120,40,18);x.fill();
+ x.font='26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText((f.sc?'🔭':'')+(f.gv?'🏛':''),64,26);f.cg.material.map.needsUpdate=true;}
+// floating planet status: unscouted / foothold / town-building countdown
+function stat(s){let key='',txt='',pr=-1,col='#fb7';
+ if(s.settle){const rem=Math.ceil(s.settle.dur-s.settle.t);pr=s.settle.t/s.settle.dur;txt='🏗 Town '+rem+'s';key='b'+rem+'|'+Math.floor(pr*50)+s.own;col=s.own==='p'?'#4f8':'#f66';}
+ else if(s.own!=='n'&&!s.town){txt='🚩 Foothold';key='f'+s.own;col=s.own==='p'?'#4f8':'#f66';}
+ else if(s.own==='n'&&!s.seen.p){txt='❓ Unscouted';key='u';col='#9ab';}
+ if(!key){if(s.st)s.st.visible=false;return;}
+ if(!s.st){s.st=txtSpr(192,56);s.g.add(s.st);}s.st.visible=true;s.st.position.set(0,-(s.r+1),0);if(key===s.stK)return;s.stK=key;
+ const c=s.st.userData.c,x=c.getContext('2d');x.clearRect(0,0,192,56);x.fillStyle='rgba(10,15,40,.85)';x.beginPath();x.roundRect(2,2,188,52,14);x.fill();x.strokeStyle=col;x.lineWidth=3;x.stroke();
+ x.font='bold 22px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText(txt,96,pr>=0?20:29);
+ if(pr>=0){x.fillStyle='#333';x.fillRect(14,36,164,10);x.fillStyle=col;x.fillRect(14,36,164*pr,10);}s.st.material.map.needsUpdate=true;}
+function tickExpand(dt){sys.forEach(s=>{if(s.own==='n')return;if(!s.town&&!s.settle&&s.gv>0){s.gv--;govArrive(s,1,s.own);}
+ if(s.q.length){const j=s.q[0];j.t+=dt;if(j.t>=j.dur){s.q.shift();if(j.k==='sc')s.sc++;else s.gv++;if(s.own==='p')toast(j.k==='sc'?'🔭 Scout team ready — it rides with the next fleet':'🏛 Governor + villagers ready — send a fleet to a 🚩 foothold');}}
+ if(s.settle){s.settle.t+=dt;if(s.settle.t>=s.settle.dur){mkTown(s);if(s.own==='p')toast('🏘 New town founded! '+s.town.gov+' gathers +'+TINC+'⚙/s');else toast('🔴 Enemy founded a new town');}}});}
 const shG=new THREE.SphereGeometry(1,24,16);
 function mkShield(b){const m=new THREE.Mesh(shG,new THREE.MeshBasicMaterial({color:b.gen?(b.own==='p'?0xcc99ff:0xff5555):0x88ccff,transparent:true,opacity:.0,blending:THREE.AdditiveBlending,depthWrite:false}));m.scale.setScalar(b.r*1.35);m.position.copy(b.g.position);S.add(m);return m;}
 // ---- UI ----
 const msg=document.getElementById('msg'),pn=document.getElementById('panel'),bf=document.getElementById('bf'),bdB=document.getElementById('bd'),byB=document.getElementById('by'),bbB=document.getElementById('bb');
+const bsc=document.getElementById('bsc'),bgv=document.getElementById('bgv'),stEl=document.getElementById('st');let stH='';
 const bad=document.getElementById('bad'),bgn=document.getElementById('bgn'),chips=document.getElementById('chips'),tip=document.getElementById('tip');let chipSig='',tipT=0;
-function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('hide',!show);const ok=cred.p>=COST&&sel&&sel.blds.length<10;bf.disabled=bdB.disabled=byB.disabled=bbB.disabled=!ok;
+function panel(){const show=!!(sel&&sel.own==='p'&&!over);pn.classList.toggle('hide',!show);const ok=cred.p>=COST&&sel&&sel.town&&sel.blds.length<10;
+ bsc.disabled=!(sel&&sel.bar&&sel.q.length<3&&cred.p>=SCC);bgv.disabled=!(sel&&sel.town&&sel.q.length<3&&cred.p>=GVC);if(show)status();bf.disabled=bdB.disabled=byB.disabled=bbB.disabled=!ok;
  bad.disabled=!(sel&&!sel.adm&&cred.p>=HC&&used('p',ADM,'adm').length);bgn.disabled=!(sel&&!sel.gen&&cred.p>=HC&&used('p',GEN,'gen').length);
  const sig=show?(sel.i+'|'+(sel.adm?sel.adm.d.id:'')+'|'+(sel.gen?sel.gen.d.id:'')):'';if(sig===chipSig)return;chipSig=sig;chips.innerHTML='';if(!show){tip.classList.add('hide');return;}
  [[sel.gen,'g',' Stationed here — lost if the planet falls.'],[sel.adm,'',' Leads the next fleet sent from here; escapes to the nearest free planet if it loses.']].forEach(([c,cl,ex])=>{if(!c)return;const el=document.createElement('div');el.className='chip '+cl;
   el.innerHTML='<img src="'+portrait(c.d,'p').url+'">'+c.d.n.split(' ')[1];el.onclick=()=>{tip.innerHTML='<b>'+c.d.n+'</b> — '+c.d.perk+'<br><span style="opacity:.7">'+ex+'</span>';tip.style.borderColor=cl?'#c9f':'#fc4';tip.classList.remove('hide');clearTimeout(tipT);tipT=setTimeout(()=>tip.classList.add('hide'),3000);};chips.appendChild(el);});}
+function bar(p,c){return '<div class="bar '+(c||'')+'"><i style="width:'+Math.round(Math.min(1,p)*100)+'%"></i></div>';}
+function status(){const s=sel;let h='';
+ if(s.town)h+='🏘 <b>Town</b> · 🏛 '+s.town.gov+' gathers <b style="color:#fd6">+'+TINC+'⚙/s</b><br>';
+ else if(s.settle)h+='🏗 <b>Villagers building town</b> — '+Math.ceil(s.settle.dur-s.settle.t)+'s'+bar(s.settle.t/s.settle.dur,'o');
+ else h+='🚩 <b>Foothold</b> — no town, no income, can\'t build. Fly a 🏛 governor here.<br>';
+ h+='🔭 Scouts: '+s.sc+' · 🏛 Governors ready: '+s.gv+(s.adm?' · ⭐ ready':' · ⚓ no admiral')+'<br>';
+ if(s.q.length){const j=s.q[0];h+='⏳ Training '+(j.k==='sc'?'🔭 scouts':'🏛 governor')+' '+Math.ceil(j.dur-j.t)+'s'+(s.q.length>1?' (+'+(s.q.length-1)+' queued)':'')+bar(j.t/j.dur,'s');}
+ const r=rate(s);if(r>0&&s.ships<300){const fr=s.ships%1;h+='🚀 Next ship '+((1-fr)/r).toFixed(1)+'s ('+(1/r).toFixed(1)+'s each)'+bar(fr);}else if(!r)h+='🚀 No shipyard — no new ships';
+ if(h!==stH){stH=h;stEl.innerHTML=h;}}
+bsc.onclick=()=>{if(sel&&train(sel,'sc')){toast('🔭 Training scouts ('+SCT+'s)');msg.textContent='Scouts ride with the next fleet and reveal ❓ planets';}else toast(sel&&!sel.bar?'🔭 Scouts need a 🪖 Barracks here':'Need ⚙'+SCC+' (max 3 queued)');panel();};
+bgv.onclick=()=>{if(sel&&train(sel,'gv')){toast('🏛 Training governor + villagers ('+GVT+'s)');msg.textContent='Then send a fleet from here to a 🚩 foothold';}else toast(sel&&!sel.town?'🏛 Governors are trained in a 🏘 town':'Need ⚙'+GVC+' (max 3 queued)');panel();};
 bad.onclick=()=>{const d=sel&&hire(sel,'adm');msg.textContent=d?d.n+' takes command! Send a fleet to fly with them.':'Need ⚙'+HC;panel();};
 bgn.onclick=()=>{const d=sel&&hire(sel,'gen');msg.textContent=d?d.n+' digs in to defend!':'Need ⚙'+HC;panel();};
-bf.onclick=()=>{if(sel&&addB(sel,'fac'))msg.textContent='Factory built — faster ships!';panel();};
-byB.onclick=()=>{if(sel&&addB(sel,'yard'))msg.textContent='Shipyard built — new ships will join the orbit!';panel();};
-bbB.onclick=()=>{if(sel&&addB(sel,'bar'))msg.textContent='Barracks built — troops will gather on the ground!';panel();};
-bdB.onclick=()=>{if(sel&&addB(sel,'def'))msg.textContent='Defense turret built!';panel();};
+bf.onclick=()=>{if(sel&&addB(sel,'fac'))msg.textContent='Factory built — faster ships!';else if(sel&&!sel.town)toast('🏘 Needs a town to build');panel();};
+byB.onclick=()=>{if(sel&&addB(sel,'yard'))msg.textContent='Shipyard built — new ships will join the orbit!';else if(sel&&!sel.town)toast('🏘 Needs a town to build');panel();};
+bbB.onclick=()=>{if(sel&&addB(sel,'bar'))msg.textContent='Barracks built — troops will gather on the ground!';else if(sel&&!sel.town)toast('🏘 Needs a town to build');panel();};
+bdB.onclick=()=>{if(sel&&addB(sel,'def'))msg.textContent='Defense turret built!';else if(sel&&!sel.town)toast('🏘 Needs a town to build');panel();};
 let toastT=0;const toastEl=document.getElementById('toast');
 function toast(t){toastEl.textContent=t;toastEl.classList.remove('off');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.add('off'),1800);}
 let down=null;
@@ -246,22 +306,28 @@ cv.addEventListener('pointerup',e=>{if(over||!down)return;if(Math.hypot(e.client
  let best=null,bd=Math.max(44,innerWidth*.09);const v=new THREE.Vector3();
  sys.forEach(s=>{v.copy(s.g.position).project(cam);const x=(v.x+1)/2*innerWidth,y=(1-v.y)/2*innerHeight,d=Math.hypot(x-e.clientX,y-e.clientY);if(d<bd){bd=d;best=s;}});
  if(!best){sel=null;ring.visible=false;panel();msg.textContent='Tap one of your green planets';return;}
- if(sel&&sel===best&&best.own==='p'){msg.textContent=addB(best,'yard')?'Shipyard built — new ships will join the orbit!':'Need ⚙'+COST+' to build';panel();return;}
- if(sel&&sel!==best&&sel.nb.includes(best.i)){if(!sel.adm){toast('⚓ Needs an admiral to move');msg.textContent='Hire an admiral ⭐ here, or bring one with a fleet';return;}if(launch(sel,best))msg.textContent='Fleet launched!';else toast('Not enough ships to send');return;}
- if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent=best.adm?'Tap a linked planet to attack, or build below':'⚓ No admiral here — ships can\'t move. Hire one ⭐ below';panel();}
+ if(sel&&sel===best&&best.own==='p'){msg.textContent=addB(best,'yard')?'Shipyard built — new ships will join the orbit!':!best.town?'🏘 Needs a town to build':'Need ⚙'+COST+' to build';panel();return;}
+ if(sel&&sel!==best&&sel.nb.includes(best.i)){if(!sel.adm){toast('⚓ Needs an admiral to move');msg.textContent='Hire an admiral ⭐ here, or bring one with a fleet';return;}if(best.own==='n'&&!best.seen.p&&sel.sc<1){toast('❓ Unscouted — train 🔭 scouts here first');msg.textContent='Scouts (⚙'+SCC+') must fly with the fleet to reveal ❓ planets';return;}const c=(sel.sc?'🔭':'')+(sel.gv?'🏛':'');if(launch(sel,best)){msg.textContent='Fleet launched!';if(c)toast('🚀 Fleet launched carrying '+c);}else toast('Not enough ships to send');return;}
+ if(best.own==='p'){sel=best;ring.visible=true;ring.scale.setScalar(best.r*1.6);msg.textContent=!best.town&&!best.settle?'🚩 Foothold — fly a 🏛 governor here to build a town':best.adm?'Tap a linked planet to attack, or build below':'⚓ No admiral here — ships can\'t move. Hire one ⭐ below';panel();}
  else msg.textContent=sel?'Not linked — pick a neighbor':'Select your green planet first';});
 function ai(){const mine=sys.filter(s=>s.own==='e');
+ // expansion: deliver governors to footholds, train governors & scouts
+ const foot=mine.filter(x=>!x.town&&!x.settle);
+ foot.forEach(fh=>{const src=fh.nb.map(j=>sys[j]).find(x=>x.own==='e'&&x.gv>0&&x.adm&&x.ships>=2);if(src)launch(src,fh);});
+ if(foot.length&&cred.e>=GVC){const nd=foot.length-mine.reduce((a,x)=>a+x.gv+x.q.filter(q=>q.k==='gv').length,0);if(nd>0){const t=mine.filter(x=>x.town&&x.adm&&x.q.length<2).sort((x,y)=>(y.nb.some(j=>foot.includes(sys[j]))?1:0)-(x.nb.some(j=>foot.includes(sys[j]))?1:0))[0];if(t)train(t,'gv');}}
+ else if(!foot.length&&cred.e>=GVC+COST&&mine.filter(x=>x.town).length<6){const t=mine.find(x=>x.town&&x.adm&&!x.gv&&!x.q.some(q=>q.k==='gv'));if(t&&Math.random()<.5)train(t,'gv');}
+ if(cred.e>=SCC){const t=mine.find(x=>x.adm&&x.bar&&!x.sc&&!x.q.some(q=>q.k==='sc')&&x.nb.some(j=>sys[j].own==='n'&&!sys[j].seen.e));if(t)train(t,'sc');}
  // stranded ships: hire an admiral where the most ships are stuck (prefer the front line)
  if(cred.e>=HC&&used('e',ADM,'adm').length){const w=x=>x.ships+(x.nb.some(j=>sys[j].own!=='e')?20:0);const st=mine.filter(x=>!x.adm&&x.ships>=8).sort((x,y)=>w(y)-w(x))[0];if(st)hire(st,'adm');}
  if(cred.e>=HC+5&&mine.length&&Math.random()<.3){const front=mine.filter(a=>a.nb.some(j=>sys[j].own!=='e'));
   if(Math.random()<.5){const t=front.filter(x=>!x.gen)[0];if(t)hire(t,'gen');}else{const t=mine.filter(x=>!x.adm).sort((x,y)=>y.ships-x.ships)[0];if(t)hire(t,'adm');}}
- if(cred.e>=COST&&mine.length){const ny=mine.filter(x=>x.yard).length,nb=mine.filter(x=>x.bar).length,bySh=(x,y)=>y.ships-x.ships;
+ const tw=mine.filter(x=>x.town);if(cred.e>=COST&&tw.length){const mine=tw;const ny=mine.filter(x=>x.yard).length,nb=mine.filter(x=>x.bar).length,bySh=(x,y)=>y.ships-x.ships;
   const needY=ny<Math.ceil(mine.length/2)&&mine.find(x=>!x.yard&&x.adm)||(!ny&&mine.find(x=>!x.yard))||(ny<Math.ceil(mine.length/2)&&mine.filter(x=>!x.yard)[0]);
   const needB=nb<Math.ceil(mine.length/2)&&(mine.filter(x=>!x.bar&&x.adm)[0]||mine.filter(x=>!x.bar).sort(bySh)[0]);
   if(nb<ny&&needB)addB(needB,'bar');else if(needY)addB(needY,'yard');else if(needB)addB(needB,'bar');
   else{const front=mine.filter(a=>a.nb.some(j=>sys[j].own==='p'));const tgt=(front.length&&Math.random()<.5?front:mine).sort((x,y)=>x.blds.length-y.blds.length)[0];addB(tgt,front.includes(tgt)?(Math.random()<.5?'def':'bar'):(Math.random()<.5?'fac':'yard'));}}
  let best=null,sc=-1e9;
- mine.forEach(a=>{if(!a.adm)return;a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;const n=Math.floor(a.ships/2),tr=Math.floor(a.troops/2);if(tr<=b.troops+1)return;const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}})});
+ mine.forEach(a=>{if(!a.adm)return;a.nb.forEach(j=>{const b=sys[j];if(b.own==='e')return;if(b.own==='n'&&!b.seen.e&&a.sc<1)return;const n=Math.floor(a.ships/2),tr=Math.floor(a.troops/2);if(tr<=b.troops+1)return;const v=n-b.ships-b.def*3+(b.own==='p'?3:0);if(v>sc){sc=v;best=[a,b];}})});
  if(best&&sc>1)launch(best[0],best[1]);
  else{const a=mine.filter(x=>x.adm).sort((x,y)=>y.ships-x.ships)[0];if(a&&a.ships>30&&a.troops>6){const fr=a.nb.map(j=>sys[j]).find(b=>b.own==='e');if(fr)launch(a,fr);}}}
 function end(win){over=true;panel();document.getElementById('et').textContent=win?'Victory!':'Defeat';document.getElementById('ed').textContent=(win?'The galaxy is yours in ':'You lasted ')+Math.round(clock)+'s';document.getElementById('end').classList.remove('hide');}
@@ -273,7 +339,7 @@ const D=new THREE.Object3D(),C=new THREE.Color(),V=new THREE.Vector3(),V2=new TH
 function pop(t){if(t>=1)return 1;return 1+Math.sin(t*Math.PI)*.35*(1-t)+(t<.3?(t/.3)-1:0);}
 const TQ=new THREE.Quaternion(),TM=new THREE.Matrix4(),TD=new THREE.Vector3(),TS=new THREE.Vector3(),TP=new THREE.Vector3();
 function drawTroops(){let ti=0;
- sys.forEach(s=>{let n=Math.ceil(s.troops-.01);const gb=battles.find(b=>b.ground&&b.ground.s===s);if(n<=0&&!gb)return;s.spin.updateMatrixWorld();
+ sys.forEach(s=>{if(s.own==='n'&&!s.seen.p)return;let n=Math.ceil(s.troops-.01);const gb=battles.find(b=>b.ground&&b.ground.s===s);if(n<=0&&!gb)return;s.spin.updateMatrixWorld();
   const vis=Math.min(TROOPCAP,n),sc=n>TROOPCAP?Math.min(1.8,Math.sqrt(n/TROOPCAP)):1;C.setHex(s.own==='n'?0x9aa4b0:COL[s.own]).multiplyScalar(.75);
   const put=(j,col,k,march)=>{if(ti>=MAXT)return;const a=j*2.39996+s.i*1.3+(march||0),y=.55-((j*.37+s.i*.11)%1)*.9;const rad=Math.sqrt(1-y*y);
    TD.set(Math.cos(a)*rad,y,Math.sin(a)*rad).normalize();TP.copy(TD).multiplyScalar(s.r*1.0);TQ.setFromUnitVectors(UP0,TD);TS.setScalar(k*(.9+s.r*.4));
@@ -282,7 +348,7 @@ function drawTroops(){let ti=0;
   if(gb){const T=gb.t/1.6,g=gb.ground,c2=new THREE.Color(g.ca);const alive=Math.ceil(g.n*(g.win?1-T*.4:1-T));for(let j=0;j<alive;j++)put(j+.5,c2,1,T*.3);}});
  tankIM.forEach(m=>{m.count=ti;m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;});}
 function drawShips(){let di=0;
- sys.forEach(s=>{const n=Math.floor(s.ships);if(s.own==='n'&&n<=0)return;const vis=Math.min(DOCKCAP,n),sc=n>DOCKCAP?Math.min(2.2,Math.sqrt(n/DOCKCAP)):1;C.setHex(s.own==='n'?0xaab4c0:COL[s.own]);
+ sys.forEach(s=>{const n=Math.floor(s.ships);if(s.own==='n'&&(n<=0||!s.seen.p))return;const vis=Math.min(DOCKCAP,n),sc=n>DOCKCAP?Math.min(2.2,Math.sqrt(n/DOCKCAP)):1;C.setHex(s.own==='n'?0xaab4c0:COL[s.own]);
   for(let j=0;j<vis;j++){const tilt=(j%5)*.5-1,rad=s.r+.45+(j%3)*.22+(s.station?.15:0),a=s.ph+clock*(.8-(j%3)*.15)+j*2.39996;
    V.set(Math.cos(a)*rad,0,Math.sin(a)*rad);V.applyAxisAngle(new THREE.Vector3(1,0,0),tilt*.6);V2.set(-Math.sin(a),0,Math.cos(a)).applyAxisAngle(new THREE.Vector3(1,0,0),tilt*.6);
    D.position.copy(s.g.position).add(V);D.lookAt(V2.add(D.position));D.scale.setScalar(sc);D.updateMatrix();dockIM.setMatrixAt(di,D.matrix);dockIM.setColorAt(di,C);di++;}});
@@ -309,23 +375,26 @@ function drawShips(){let di=0;
 let last=performance.now();
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.1,(now-last)/1000);last=now;const dt=over?rdt:rdt*speed;clock+=dt;
  if(!over){sys.forEach(s=>{if(s.own==='n')return;if(s.ships<300)s.ships+=rate(s)*dt;if(s.troops<60)s.troops+=trate(s)*dt;});
-  ['p','e'].forEach(o=>{cred[o]+=dt*(.6+.4*sys.filter(s=>s.own===o).length);});
+  ['p','e'].forEach(o=>{cred[o]+=dt*income(o);});tickExpand(dt);
   for(let k=fleets.length-1;k>=0;k--){const f=fleets[k];f.t+=dt/f.dur;if(f.t>=1){arrive(f);fleets.splice(k,1);}}
   aiT+=dt;if(aiT>2.5){aiT=0;ai();}
   const p=sys.filter(s=>s.own==='p').length,e=sys.filter(s=>s.own==='e').length;
-  document.getElementById('ps').textContent='You: '+p;document.getElementById('es').textContent='Enemy: '+e;document.getElementById('tm').textContent=Math.round(clock)+'s';document.getElementById('cr').textContent='⚙ '+Math.floor(cred.p);
+  document.getElementById('ps').textContent='You: '+p;document.getElementById('es').textContent='Enemy: '+e;document.getElementById('tm').textContent=Math.round(clock)+'s';document.getElementById('cr').textContent='⚙ '+Math.floor(cred.p);document.getElementById('inc').textContent='+'+income('p').toFixed(1)+'/s';
   panel();const pf=fleets.some(f=>f.own==='p'),ef=fleets.some(f=>f.own==='e');if(!e&&!ef)end(true);else if(!p&&!pf)end(false);}
  for(let k=battles.length-1;k>=0;k--){const B=battles[k];B.t+=rdt;if(B.shield)B.shield.material.opacity=.35*Math.abs(Math.sin(B.t*9))*(1-B.t/1.6);if(B.t>1.6){if(B.shield){S.remove(B.shield);B.shield.material.dispose();}battles.splice(k,1);}}
+ fleets.forEach(f=>{if(f.cg){V.lerpVectors(f.a.g.position,f.b.g.position,f.t);f.cg.position.copy(V).y+=1.4;}});
  adms.forEach(A=>{const m=A.m;if(A.f){const f=A.f;V.lerpVectors(f.a.g.position,f.b.g.position,f.t);m.position.copy(V);m.lookAt(f.b.g.position);m.scale.setScalar(Math.max(1,f.scale));}
   else if(A.at){const s=A.at,a=clock*.4+s.i;m.position.set(Math.cos(a)*(s.r+1.5),.35,Math.sin(a)*(s.r+1.5)).add(s.g.position);V.set(-Math.sin(a),0,Math.cos(a)).add(m.position);m.lookAt(V);m.scale.setScalar(.85);}
   m.userData.ban.rotation.x=Math.sin(clock*6)*.25;});
  sys.forEach(s=>{s.spin.rotation.y+=s.spd*rdt;s.blds.forEach(b=>{const t=(clock-b.born)/.5;b.m.scale.setScalar(b.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));if(b.kind==='yard'){const h=b.m.userData.yard;h.position.y=.2+Math.sin(clock*1.5+s.i)*.05;}});
   if(s.station){const t=(clock-s.station.userData.born)/.8;s.station.scale.setScalar(Math.max(.001,pop(Math.min(1,t))));s.station.rotation.y+=.3*rdt;}
-  s.halo.material.opacity=(stranded(s)?.45:.75)+.25*Math.sin(clock*2+s.i);anchor(s);
+  s.halo.material.opacity=(stranded(s)?.45:.75)+.25*Math.sin(clock*2+s.i);anchor(s);stat(s);if(s.town){const t=(clock-s.town.born)/.6;s.town.m.scale.setScalar(s.town.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));s.town.m.userData.gl.material.opacity=.6+.4*Math.sin(clock*2.5+s.i);}
   if(s.gen){const t=(clock-s.gen.born)/.5;s.gen.m.scale.setScalar(s.gen.m.userData.sc*Math.max(.001,pop(Math.min(1,t))));s.gen.m.userData.fl.rotation.y=Math.sin(clock*5)*.4;}});
  if(sel)ring.position.copy(sel.g.position);ring.lookAt(cam.position);
  drawShips();ctl.update();R.render(S,cam);}
 requestAnimationFrame(loop);
 window.__sb={cam,ctl,get sys(){return sys},get fleets(){return fleets},get battles(){return battles},get cred(){return cred},
- launch:(a,b)=>launch(sys[a],sys[b]),troops:i=>sys[i].troops,setTroops:(i,v)=>sys[i].troops=v,setOwner:(i,o)=>setOwn(sys[i],o),build:(i,k)=>{cred[sys[i].own]+=COST;return addB(sys[i],k||'fac')},setSpeed:v=>speed=v,get adms(){return adms},stranded:i=>stranded(sys[i]),hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
+ launch:(a,b)=>launch(sys[a],sys[b]),troops:i=>sys[i].troops,setTroops:(i,v)=>sys[i].troops=v,setOwner:(i,o)=>setOwn(sys[i],o),build:(i,k)=>addB(sys[i],k||'fac',true),setSpeed:v=>speed=v,get adms(){return adms},stranded:i=>stranded(sys[i]),hireAdmiral:(i,id)=>{const s=sys[i];return !!hire(s,'adm',id,true)},hireGeneral:(i,id)=>{const s=sys[i];return !!hire(s,'gen',id,true)},train:(i,k,instant)=>{const s=sys[i];if(instant){if(k==='sc')s.sc++;else s.gv++;return true;}return train(s,k,true)},reveal:(i,o)=>sys[i].seen[o||'p']=true,town:i=>!!sys[i].town,mkTown:i=>!!mkTown(sys[i]),income,setCred:(o,v)=>cred[o]=v,get clock(){return clock},
+ info:i=>{const s=sys[i];return {own:s.own,town:s.town&&s.town.gov,settle:s.settle&&+(s.settle.dur-s.settle.t).toFixed(1),foothold:s.own!=='n'&&!s.town&&!s.settle,sc:s.sc,gv:s.gv,q:s.q.map(j=>j.k),seen:{...s.seen},ships:Math.floor(s.ships),troops:+s.troops.toFixed(1),adm:!!s.adm,nb:s.nb}},COSTS:{scout:[SCC,SCT],governor:[GVC,GVT],settle:SETT,townIncome:TINC,baseIncome:BASEINC,building:COST,hire:HC},
+ select:i=>{sel=sys[i];ring.visible=true;ring.scale.setScalar(sys[i].r*1.6);panel();}};
 </script></body></html>
