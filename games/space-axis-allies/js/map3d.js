@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SYSTEMS, DEEP_SPACE, ZONES, FACTIONS, UNITS } from './data.js';
+import { SYSTEMS, DEEP_SPACE, ZONES, FACTIONS, UNITS, GLOBE_R } from './data.js';
 
 function uvToSphere(u, v, radius) {
   const theta = u * Math.PI * 2;
@@ -77,10 +77,21 @@ export class Map3D {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x04060f);
-    this.scene.fog = new THREE.FogExp2(0x060814, 0.0095);
+    this.scene.fog = new THREE.FogExp2(0x060814, 0.004);
 
     this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
-    this.camera.position.set(0, 18, 42);
+    // Home view fits the ring layout (Pacific in front, Atlantic/Europe behind)
+    {
+      // Globe: frame the whole inflated Earth from the Pacific side (lon 180, ~22N)
+      const vis = this._visibleBand(w);
+      const vf = THREE.MathUtils.degToRad(50) / 2, hf = Math.atan(Math.tan(vf) * (vis.w / h));
+      const rad = GLOBE_R + 3.8;
+      const dist = rad / Math.sin(Math.min(vf, hf)) * 0.9;
+      const dir = new THREE.Vector3(0, Math.sin(0.38), Math.cos(0.38));
+      this.homeView = { pos: dir.multiplyScalar(dist).toArray(), target: [0, 0, 0] };
+    }
+    this.camera.position.set(...this.homeView.pos);
+    this._applyViewOffset(w, h);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(w, h);
@@ -93,7 +104,9 @@ export class Map3D {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 4;
-    this.controls.maxDistance = 90;
+    this.controls.maxDistance = 170;
+    this.controls.target.set(...this.homeView.target);
+    this.controls.update();
 
     this.scene.add(new THREE.AmbientLight(0x7a92b8, 0.45));
     // Soft camera headlight so the viewed face of any body is always readable
@@ -119,6 +132,7 @@ export class Map3D {
     this._buildSystems();
     this._buildDeepSpace();
     this._buildLinkLines();
+    this._buildGhostGlobe();
 
     this.renderer.domElement.addEventListener('pointerdown', (e) => this._onPointer(e));
     this.renderer.domElement.addEventListener('pointermove', (e) => this._onHover(e));
@@ -185,10 +199,26 @@ export class Map3D {
     }
   }
 
+  // Horizontal band of the canvas not covered by the side panels
+  _visibleBand(w) {
+    const cr = this.container.getBoundingClientRect();
+    const l = document.getElementById('left')?.getBoundingClientRect();
+    const r = document.getElementById('right')?.getBoundingClientRect();
+    const L = l && l.width ? Math.max(0, l.right - cr.left) : 0;
+    const R = r && r.width ? Math.max(0, cr.right - r.left) : 0;
+    return { w: Math.max(200, w - L - R), shift: (L - R) / 2 };
+  }
+
+  _applyViewOffset(w, h) {
+    const { shift } = this._visibleBand(w);
+    if (shift) this.camera.setViewOffset(w, h, -shift, 0, w, h); else this.camera.clearViewOffset();
+  }
+
   _resize() {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
     this.camera.aspect = w / h;
+    this._applyViewOffset(w, h);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
   }
@@ -709,10 +739,31 @@ export class Map3D {
   }
 
   /** True if a body other than skipSys blocks the line of sight camera→point. */
+  // True when the ray camera→point passes through the core of the globe (point is on the far side)
+  _behindGlobe(point) {
+    return point.clone().normalize().dot(this._camDir()) < 0.05;
+  }
+
+  _camDir() { return this.camera.position.clone().normalize(); }
+
+  // Discard line fragments on the far hemisphere (relative to the camera direction from globe center)
+  _farCull(mat) {
+    this._camDirU = this._camDirU || { value: new THREE.Vector3(0, 0, 1) };
+    const u = this._camDirU;
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uCamDir = u;
+      sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(position, 1.0)).xyz;');
+      sh.fragmentShader = 'varying vec3 vWP;\nuniform vec3 uCamDir;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n  float fd = dot(normalize(vWP), uCamDir);\n  if (fd < 0.0) discard;');
+    };
+    return mat;
+  }
+
   _occluded(point, skipSys) {
     const cam = this.camera.position;
     const dir = point.clone().sub(cam);
     const len = dir.length(); dir.divideScalar(len);
+    if (skipSys && this.systemMeshes[skipSys] && !this.systemMeshes[skipSys].visible) return true;
+    if (this._behindGlobe(point)) return true;
     for (const [id, sg] of Object.entries(this.systemMeshes)) {
       if (id === skipSys) continue;
       const r = SYSTEMS[id].radius * 1.02;
@@ -807,6 +858,14 @@ export class Map3D {
         if (o.userData?.zoneLabel || o.userData?.ipcBadge) return; // handled above
         if (o.isMesh) o.visible = facing;
       });
+    }
+
+    // Far side of the ghost globe: hide bodies and deep nodes entirely (keep the focused body)
+    {
+      const fz = this._activeFocus();
+      if (this._camDirU) this._camDirU.value.copy(this._camDir());
+      for (const [id, sg] of Object.entries(this.systemMeshes)) sg.visible = id === fz || !this._behindGlobe(sg.position);
+      for (const g of Object.values(this.deepMeshes)) g.visible = !this._behindGlobe(g.position);
     }
 
     // Unit stack pins: hide back-facing on planets; scale badges by distance
@@ -954,29 +1013,60 @@ export class Map3D {
         else if (SYSTEMS[link]) b = new THREE.Vector3(...SYSTEMS[link].pos);
         else continue;
 
+        this._laneLine(a, b);
+      }
+    }
+  }
+
+  _buildGhostGlobe() {
+    const r = GLOBE_R - 4.2;
+
+    const pts = [];
+    const P = (la, lo) => { const p = THREE.MathUtils.degToRad(la), t = THREE.MathUtils.degToRad(lo - 180);
+      return new THREE.Vector3(r * Math.cos(p) * Math.sin(t), r * Math.sin(p), r * Math.cos(p) * Math.cos(t)); };
+    for (let la = -60; la <= 60; la += 30) for (let lo = 0; lo < 360; lo += 4) pts.push(P(la, lo), P(la, lo + 4));
+    for (let lo = 0; lo < 360; lo += 30) for (let la = -88; la < 88; la += 4) pts.push(P(la, lo), P(la + 4, lo));
+    const grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),
+      this._farCull(new THREE.LineBasicMaterial({ color: 0x3a6aa8, transparent: true, opacity: 0.06, depthWrite: false })));
+    grid.raycast = () => {}; grid.renderOrder = 2;
+    this.root.add(grid);
+  }
+
+  _laneLine(a, b) {
+    {
+      {
         // Core dashed glow
         const pts = [];
         const N = 24;
-        for (let i = 0; i <= N; i++) pts.push(a.clone().lerp(b, i / N));
+        // Gentle great-circle arc along the globe (radius interpolated, lifted slightly mid-way)
+        const ra = a.length(), rb = b.length(), ua = a.clone().normalize(), ub = b.clone().normalize();
+        const ang = ua.angleTo(ub);
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const dir = ang < 1e-4 ? ua.clone() : ua.clone().multiplyScalar(Math.sin((1 - t) * ang) / Math.sin(ang)).add(ub.clone().multiplyScalar(Math.sin(t * ang) / Math.sin(ang)));
+          pts.push(dir.normalize().multiplyScalar(ra + (rb - ra) * t + Math.sin(Math.PI * t) * ang * 1.2));
+        }
         const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const glow = new THREE.Line(geo, new THREE.LineDashedMaterial({
+        const glow = new THREE.Line(geo, this._farCull(new THREE.LineDashedMaterial({
           color: 0x4aa8ff,
           dashSize: 0.55,
           gapSize: 0.4,
           transparent: true,
           opacity: 0.55,
           depthWrite: false,
-        }));
+        })));
         glow.computeLineDistances();
+        glow.renderOrder = 2;
         this.root.add(glow);
 
         // Soft under-glow (wider/fainter solid)
         const soft = new THREE.Line(
           geo.clone(),
-          new THREE.LineBasicMaterial({
+          this._farCull(new THREE.LineBasicMaterial({
             color: 0x1a4068, transparent: true, opacity: 0.22, depthWrite: false,
-          })
+          }))
         );
+        soft.renderOrder = 2;
         this.root.add(soft);
       }
     }
@@ -1200,7 +1290,7 @@ export class Map3D {
     const unitHits = [];
     const deepHits = [];
     const sphereHits = [];
-    this.root.traverse(o => {
+    this.root.traverseVisible(o => {
       if (!o.isMesh || !o.userData?.pick) return;
       if (o.userData.pick === 'units') unitHits.push(o);
       else if (o.userData.pick === 'deep') deepHits.push(o);
