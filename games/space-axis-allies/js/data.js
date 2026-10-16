@@ -75,7 +75,7 @@ export const SYSTEMS = {
 
 // Deep-space zones were removed: fleets move freely inside a range sphere.
 export const DEEP_SPACE = {};
-export const RANGE_PER_MOVE = 7.5; // world units per point of unit move (move-2 ship ≈ Japan→Midway)
+export const RANGE_PER_MOVE = 3.5; // world units per point of move: move-2 ship ≈ Japan→Iwo Jima/Okinawa (not Midway); fighter ≈ neighbouring bodies
 export const ENGAGE_RADIUS = 3.0;  // fleets this close after combat move fight
 // Starting fleets that used to sit in deep space start in open space at the same spot
 export const START_FLEET_POS = {"fs_atl_n": [7.37, 15.32, -10.53], "fs_atl_c": [9.14, 8.13, -15.82], "fs_ind_e": [-19.4, -3.47, 3.42], "fs_pac_s": [-8.98, -5.85, 16.89], "fs_pac_c": [-1.71, 4.16, 19.49], "fs_atl_s": [2.58, -7.49, -18.36]};
@@ -251,8 +251,26 @@ export function buildAdjacency() {
     bySys[z.system].push(z);
   }
 
-  // Same-system: land↔land, sea↔sea, and coastal sea↔land (all pairs on body — playable scale)
-  for (const list of Object.values(bySys)) {
+  // Same-system adjacency.
+  // Planets: zones are spherical Voronoi regions of their uv seeds (exactly as painted) → adjacent only if the regions touch.
+  // Islands/moons (one land zone + surrounding seas): all pairs.
+  const uvDir = (u, v) => { const th = u * Math.PI * 2, ph = v * Math.PI; return [-Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)]; };
+  const N = 20000, samples = [];
+  for (let i = 0; i < N; i++) { const z = 1 - 2 * (i + 0.5) / N, th = i * 2.399963, r = Math.sqrt(1 - z * z); samples.push([Math.cos(th) * r, z, Math.sin(th) * r]); }
+  for (const [sysId, list] of Object.entries(bySys)) {
+    if (SYSTEMS[sysId]?.kind !== 'planet') continue;
+    const dirs = list.map(z => uvDir(z.uv[0], z.uv[1]));
+    for (const p of samples) {
+      let b = -1, bd = Infinity, c = -1, cd = Infinity;
+      for (let k = 0; k < dirs.length; k++) {
+        const d = 1 - (p[0] * dirs[k][0] + p[1] * dirs[k][1] + p[2] * dirs[k][2]);
+        if (d < bd) { c = b; cd = bd; b = k; bd = d; } else if (d < cd) { c = k; cd = d; }
+      }
+      if (c >= 0 && cd - bd < 0.004) add(list[b].id, list[c].id); // point on the shared border
+    }
+  }
+  for (const [sysId, list] of Object.entries(bySys)) {
+    if (SYSTEMS[sysId]?.kind === 'planet') continue;
     const lands = list.filter(isLand);
     const seas = list.filter(isSea);
     for (let i = 0; i < lands.length; i++)
