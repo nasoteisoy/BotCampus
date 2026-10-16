@@ -68,7 +68,8 @@ export class UI {
     if (sel.type === 'space') {
       // Free-space destination inside the movement sphere
       if ((phase === 'combatMove' || phase === 'nonCombatMove') && this.moveFrom) {
-        this.$('move-to').value = '@' + sel.pos.map(v => v.toFixed(2)).join(',');
+        this.moveTo = sel.pos;
+        this._renderRoute();
         this.renderSelection();
       }
       return;
@@ -78,14 +79,16 @@ export class UI {
 
     if ((phase === 'combatMove' || phase === 'nonCombatMove') && this.moveFrom && this.moveFrom !== loc) {
       // destination chosen
-      this.$('move-to').value = loc;
+      this.moveTo = loc;
+      this._renderRoute();
       this.renderSelection();
       return;
     }
 
     if ((phase === 'combatMove' || phase === 'nonCombatMove') && sel.type === 'units' && sel.fac === this.game.currentFaction) {
       this.moveFrom = loc;
-      this.$('move-from').value = loc;
+      this.moveTo = null;
+      this._renderRoute();
       this._fillMoveUnits(loc);
       this._updateMoveSphere();
     }
@@ -115,6 +118,15 @@ export class UI {
     }
   }
 
+  _renderRoute() {
+    const el = this.$('move-route');
+    if (!el) return;
+    if (!this.moveFrom) { el.textContent = 'Select one of your stacks.'; return; }
+    const g = this.game;
+    const to = this.moveTo == null ? 'click a destination' : (Array.isArray(this.moveTo) ? 'Open space point' : g.locationName(this.moveTo));
+    el.innerHTML = `<b>${g.locationName(this.moveFrom)}</b> → ${to}`;
+  }
+
   /** Movement sphere for the selected stack: slowest chosen ship/air unit (or whole stack if none chosen). */
   _updateMoveSphere() {
     if (!this.moveFrom) { this.map.hideMoveSphere(); return; }
@@ -125,9 +137,8 @@ export class UI {
   }
 
   doMove() {
-    const from = this.$('move-from').value.trim();
-    let to = this.$('move-to').value.trim();
-    if (to.startsWith('@')) to = to.slice(1).split(',').map(Number);
+    const from = this.moveFrom;
+    const to = this.moveTo;
     if (!from || !to) { this.toast('Pick from and to'); return; }
     const take = {};
     for (const inp of this.$('move-units').querySelectorAll('input')) {
@@ -140,16 +151,21 @@ export class UI {
     if (!res.ok) this.toast(res.err);
     else {
       this.moveFrom = null;
+      this.moveTo = null;
+      this._renderRoute();
       this.map.hideMoveSphere();
+      // Selection follows the moved stack (old origin may no longer exist)
+      this.game.selectedLoc = res.to || null;
+      this.$('move-units').innerHTML = '';
       this.map.refreshUnits();
-      if (typeof to === 'string') this.map.highlight({ type: ZONES[to] ? 'zone' : 'units', id: to });
+      if (res.to) this.map.highlight({ type: ZONES[res.to] ? 'zone' : 'units', id: res.to });
     }
     this.render();
   }
 
   doSBR() {
-    const from = this.$('move-from').value.trim();
-    const to = this.$('move-to').value.trim();
+    const from = this.moveFrom;
+    const to = this.moveTo;
     const n = parseInt(this.$('sbr-count').value, 10) || 1;
     const res = this.game.strategicBomb(from, to, n);
     if (!res.ok) this.toast(res.err);
@@ -195,7 +211,8 @@ export class UI {
 
   render() {
     const g = this.game;
-    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.map?.hideMoveSphere?.(); }
+    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.moveTo = null; this.map?.hideMoveSphere?.(); }
+    if (g.selectedLoc && !g.zones[g.selectedLoc] && !g.isFree(g.selectedLoc)) g.selectedLoc = null; // stale (fleet merged/destroyed)
     this.$('round-label').textContent = `Round ${g.round}`;
     this.$('turn-label').textContent = g.faction.name;
     this.$('turn-dot').style.background = g.faction.color;
@@ -305,6 +322,8 @@ export class UI {
   }
 
   renderSelection() {
+    const g0 = this.game;
+    if (g0.selectedLoc && !g0.zones[g0.selectedLoc] && !g0.isFree(g0.selectedLoc)) g0.selectedLoc = null;
     const loc = this.game.selectedLoc;
     const box = this.$('selection-box');
     if (!loc) {

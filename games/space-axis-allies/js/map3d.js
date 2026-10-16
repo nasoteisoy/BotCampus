@@ -62,7 +62,6 @@ export class Map3D {
     this.systemSpheres = {}; // systemId -> Mesh (for raycast + texture)
     this.systemTextures = {}; // systemId -> { canvas, ctx, tex, zones, seeds }
     this.shipPins = {};
-    this.deepMeshes = {};
     this.zoneLabelSprites = {};
     this.ipcBadges = {};
     this.raycaster = new THREE.Raycaster();
@@ -77,9 +76,9 @@ export class Map3D {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x04060f);
-    this.scene.fog = new THREE.FogExp2(0x060814, 0.004);
+    this.scene.fog = new THREE.FogExp2(0x060814, 0.0015);
 
-    this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
+    this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 5000);
     // Home view fits the ring layout (Pacific in front, Atlantic/Europe behind)
     {
       // Globe: frame the whole inflated Earth from the Pacific side (lon 180, ~22N)
@@ -737,30 +736,10 @@ export class Map3D {
 
   /** True if a body other than skipSys blocks the line of sight camera→point. */
   // True when the ray camera→point passes through the core of the globe (point is on the far side)
-  _behindGlobe(point) {
-    return point.clone().normalize().dot(this._camDir()) < 0.05;
-  }
-
-  _camDir() { return this.camera.position.clone().normalize(); }
-
-  // Discard line fragments on the far hemisphere (relative to the camera direction from globe center)
-  _farCull(mat) {
-    this._camDirU = this._camDirU || { value: new THREE.Vector3(0, 0, 1) };
-    const u = this._camDirU;
-    mat.onBeforeCompile = sh => {
-      sh.uniforms.uCamDir = u;
-      sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(position, 1.0)).xyz;');
-      sh.fragmentShader = 'varying vec3 vWP;\nuniform vec3 uCamDir;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n  float fd = dot(normalize(vWP), uCamDir);\n  if (fd < 0.0) discard;');
-    };
-    return mat;
-  }
-
   _occluded(point, skipSys) {
     const cam = this.camera.position;
     const dir = point.clone().sub(cam);
     const len = dir.length(); dir.divideScalar(len);
-    if (skipSys && this.systemMeshes[skipSys] && !this.systemMeshes[skipSys].visible) return true;
-    if (this._behindGlobe(point)) return true;
     for (const [id, sg] of Object.entries(this.systemMeshes)) {
       if (id === skipSys) continue;
       const r = SYSTEMS[id].radius * 1.02;
@@ -865,8 +844,8 @@ export class Map3D {
       const q = this.camera.quaternion;
       for (const p of Object.values(this.shipPins)) for (const c of p.children) if (c.userData.faceCam) c.quaternion.copy(q);
       if (this.moveSphere) for (const c of this.moveSphere.group.children) if (c.userData.faceCam) c.quaternion.copy(q);
-      for (const [id, sg] of Object.entries(this.systemMeshes)) sg.visible = id === fz || !this._behindGlobe(sg.position);
-      for (const g of Object.values(this.deepMeshes)) g.visible = !this._behindGlobe(g.position);
+      // Bodies are ALWAYS visible (no far-side hiding)
+      for (const sg of Object.values(this.systemMeshes)) sg.visible = true;
     }
 
     // Unit stack pins: hide back-facing on planets; scale badges by distance
@@ -884,7 +863,7 @@ export class Map3D {
         const facing = outward.dot(cam.clone().sub(world).normalize()) > (sys.kind === 'planet' ? 0.3 : -0.02);
         pin.visible = facing && !this._occluded(pin.position, z.system) && (!focus || focus === z.system);
       } else {
-        pin.visible = !focus && !this._occluded(pin.position, null);
+        pin.visible = true; // open-space fleet markers are always visible
       }
       // Scale count badge / icon slightly with distance
       pin.traverse(o => {
@@ -914,26 +893,6 @@ export class Map3D {
       }
     }
 
-    // Deep-space labels: only in mid-range overview; hide when zoomed onto a planet
-    let nearPlanet = false;
-    for (const sg of Object.values(this.systemMeshes)) {
-      if (cam.distanceTo(sg.position) < 12) { nearPlanet = true; break; }
-    }
-    for (const [id, g] of Object.entries(this.deepMeshes)) {
-      const dist = cam.distanceTo(g.position);
-      g.traverse(o => {
-        if (o.isSprite) {
-          o.visible = !nearPlanet && !this._activeFocus() && dist > 8 && dist < 48 && !this._occluded(g.position, null);
-          if (o.visible && o.material?.map?.image) {
-            const img = o.material.map.image;
-            const a = img.width / img.height;
-            const [sx, sy] = this._spriteScaleForDist(0.34, dist, a);
-            o.scale.set(sx, sy, 1);
-          }
-        }
-      });
-    }
-
     // Planet name sprites: shrink when very close so they don't dominate
     for (const [sysId, sg] of Object.entries(this.systemMeshes)) {
       const dist = cam.distanceTo(sg.position);
@@ -945,7 +904,8 @@ export class Map3D {
         const hideClose = dist < 5.5;
         const wp = new THREE.Vector3(); o.getWorldPosition(wp);
         const fz = this._activeFocus();
-        o.visible = !hideClose && dist < 60 && !this._occluded(wp, sysId) && (!fz || fz === sysId);
+        o.visible = !hideClose && !this._occluded(wp, sysId) && (!fz || fz === sysId);
+        if (o.material) o.material.opacity = THREE.MathUtils.clamp(1.25 - dist / 140, 0.5, 1); // fade with distance
         if (o.visible && o.material?.map?.image) {
           const img = o.material.map.image;
           const a = img.width / img.height;

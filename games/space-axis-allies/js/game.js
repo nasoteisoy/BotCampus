@@ -417,7 +417,7 @@ export class Game {
     }
 
     this.emit();
-    return { ok: true };
+    return { ok: true, to };
   }
 
   /** Load ground onto transport at same loc (zone orbital / deep). */
