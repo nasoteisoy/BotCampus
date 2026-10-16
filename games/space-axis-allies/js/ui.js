@@ -48,11 +48,54 @@ export class UI {
       this.render();
     };
     this.$('btn-move').onclick = () => this.doMove();
+    // "Show moves" toggle (persists) + M shortcut
+    this.showMoves = localStorage.getItem('saa.showMoves') === '1';
+    this.$('btn-moves').onclick = () => this.setShowMoves(!this.showMoves);
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'm' || e.key === 'M') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) this.setShowMoves(!this.showMoves);
+    });
+    this._syncMovesBtn();
     this.$('btn-focus').onclick = () => {
       if (this.game.selectedLoc) this.map.focusOn(this.game.selectedLoc);
     };
     this.$('btn-sbr').onclick = () => this.doSBR();
   }
+
+  setShowMoves(on) {
+    this.showMoves = !!on;
+    localStorage.setItem('saa.showMoves', on ? '1' : '0');
+    this._syncMovesBtn();
+    if (!on) this._clearPreview();
+    this.toast(on ? 'Show moves: ON — click any stack to preview' : 'Show moves: OFF');
+  }
+
+  _syncMovesBtn() {
+    const b = this.$('btn-moves');
+    if (!b) return;
+    b.classList.toggle('on', this.showMoves);
+    b.setAttribute('aria-pressed', this.showMoves ? 'true' : 'false');
+    b.textContent = 'Moves';
+  }
+
+  /** Inspect-only preview for any stack (any faction / phase). Never moves anything. */
+  _showPreview(loc, fac) {
+    const g = this.game;
+    if (!Object.keys(g.getStack(loc, fac)).length) return this._clearPreview();
+    this.preview = { loc, fac };
+    // Own stack in a non-combat phase previews non-combat; everything else previews as combat move for its owner
+    // Inspect preview: red attacks (combat move) + green repositioning (non-combat) for the stack's owner
+    const pv = g.previewTargets(loc, fac, true, true);
+    if (pv.radius > 0) this.map.showMoveSphere(loc, pv.radius); else this.map.hideMoveSphere();
+    this.map.setMoveTargets(loc, pv.targets);
+  }
+
+  _clearPreview() {
+    if (!this.preview) return;
+    this.preview = null;
+    if (!this.moveFrom) { this.map.hideMoveSphere(); this.map.clearMoveTargets(); }
+  }
+
+  hideToast() { const t = this.$('toast'); if (t) t.style.display = 'none'; clearTimeout(this._tt); }
 
   toast(msg) {
     const t = this.$('toast');
@@ -63,6 +106,18 @@ export class UI {
   }
 
   onMapSelect(sel) {
+    this.hideToast();
+    const phase0 = this.game.currentPhase;
+    const ownMovePhase = phase0 === 'combatMove' || phase0 === 'nonCombatMove';
+    // Preview mode: any stack that isn't being moved by its owner right now
+    if (sel && sel.type === 'units' && this.showMoves && !(ownMovePhase && sel.fac === this.game.currentFaction) && !(this.moveFrom && (this.map.moveTargets?.targets || {})[sel.id])) {
+      this.moveFrom = null; this.moveTo = null;
+      this.game.selectedLoc = sel.id;
+      this._showPreview(sel.id, sel.fac);
+      this.renderSelection();
+      return;
+    }
+    if (this.preview) this._clearPreview();
     if (!sel) {
       if (this.moveFrom) { this.moveFrom = null; this.moveTo = null; this._updateMoveSphere(); this._renderRoute(); }
       return;
@@ -233,7 +288,7 @@ export class UI {
 
   render() {
     const g = this.game;
-    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.moveTo = null; this.map?.hideMoveSphere?.(); this.map?.clearMoveTargets?.(); }
+    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.moveTo = null; if (!this.preview) { this.map?.hideMoveSphere?.(); this.map?.clearMoveTargets?.(); } }
     if (g.selectedLoc && !g.zones[g.selectedLoc] && !g.isFree(g.selectedLoc)) g.selectedLoc = null; // stale (fleet merged/destroyed)
     this.$('round-label').textContent = `Round ${g.round}`;
     this.$('turn-label').textContent = g.faction.name;
@@ -355,6 +410,10 @@ export class UI {
     const name = this.game.locationName(loc);
     const z = this.game.zones[loc];
     let html = `<strong>${name}</strong>`;
+    if (this.preview && this.preview.loc === loc) {
+      const pf = FACTIONS[this.preview.fac];
+      html += `<span class="preview-tag">Preview</span><div class="hint">Showing where <span style="color:${pf.color}">${pf.name}</span>'s stack could move (inspect only).</div>`;
+    }
     if (z) {
       if (z.terrain === 'sea') {
         html += `<div class="hint">SEA zone · no income · ships hover here · unload/bombard adjacent land</div>`;

@@ -844,7 +844,13 @@ export class Map3D {
       const q = this.camera.quaternion;
       for (const p of Object.values(this.shipPins)) for (const c of p.children) if (c.userData.faceCam) c.quaternion.copy(q);
       if (this.moveSphere) for (const c of this.moveSphere.group.children) if (c.userData.faceCam) c.quaternion.copy(q);
-      if (this._targetGroup) for (const c of this._targetGroup.children) if (c.userData.faceCam) c.quaternion.copy(q);
+      if (this._targetGroup) for (const c of this._targetGroup.children) {
+        if (c.userData.faceCam) c.quaternion.copy(q);
+        // keep rings/numbers roughly constant on screen (small in close-ups)
+        if (!c.userData.base) c.userData.base = c.scale.clone();
+        const k = THREE.MathUtils.clamp(this.camera.position.distanceTo(c.position) / 45, 0.22, 1.3);
+        c.scale.copy(c.userData.base).multiplyScalar(k);
+      }
       // Bodies are ALWAYS visible (no far-side hiding)
       for (const sg of Object.values(this.systemMeshes)) sg.visible = true;
     }

@@ -150,3 +150,7 @@ select {
 #left::-webkit-scrollbar-thumb, #right::-webkit-scrollbar-thumb, #log::-webkit-scrollbar-thumb {
   background: #2a3a55; border-radius: 4px;
 }
+
+#btn-moves.on { background: #1f6f5c; border-color: #4ff0c8; color: #eafff8; box-shadow: 0 0 0 1px #4ff0c8, 0 0 10px rgba(79,240,200,.45); }
+#btn-moves.on::before { content: '● '; color: #7fffe0; }
+.preview-tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:8px; background:#24485a; color:#9fe8ff; margin-left:6px; vertical-align:middle; }

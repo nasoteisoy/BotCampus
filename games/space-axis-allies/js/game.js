@@ -299,11 +299,13 @@ export class Game {
    * Combat move: move into enemy territory / contested deep space.
    * Non-combat: only friendly / empty / own orbital.
    */
-  tryMove(from, to, take, combatMove, dryRun = false) {
-    const fac = this.currentFaction;
+  tryMove(from, to, take, combatMove, dryRun = false, previewFac = null) {
+    // previewFac: inspect-only dry run for any faction in any phase (never mutates)
+    const preview = dryRun && !!previewFac;
+    const fac = preview ? previewFac : this.currentFaction;
     const phase = this.currentPhase;
-    if (combatMove && phase !== 'combatMove') return { ok: false, err: 'Not combat-move phase' };
-    if (!combatMove && phase !== 'nonCombatMove') return { ok: false, err: 'Not non-combat phase' };
+    if (!preview && combatMove && phase !== 'combatMove') return { ok: false, err: 'Not combat-move phase' };
+    if (!preview && !combatMove && phase !== 'nonCombatMove') return { ok: false, err: 'Not non-combat phase' };
 
     // Determine slowest move among selected
     let maxNeed = 1;
@@ -438,7 +440,7 @@ export class Game {
    * Every legal destination for a selection, via the same rules as tryMove (dry run).
    * Returns { locId: { type: 'move'|'attack'|'unload', dist } }.
    */
-  legalTargets(from, take, combatMove) {
+  legalTargets(from, take, combatMove, previewFac = null) {
     const out = {};
     const a = this.locPos(from);
     const cands = new Set([...Object.keys(this.zones), ...Object.keys(this.freePos)]);
@@ -449,11 +451,11 @@ export class Game {
     for (const id of cands) {
       const b = this.locPos(id);
       const dist = a && b ? len(sub(b, a)) : null;
-      const r = this.tryMove(from, id, take, combatMove, true);
+      const r = this.tryMove(from, id, take, combatMove, true, previewFac);
       if (r.ok) { out[id] = { type: r.attack ? 'attack' : 'move', dist }; continue; }
       // Transport stacks: ground can also unload into adjacent land
       if (hasShip && hasGround && this.isSeaZone(from) && this.isLandZone(id)) {
-        const u = this.tryMove(from, id, groundOnly, combatMove, true);
+        const u = this.tryMove(from, id, groundOnly, combatMove, true, previewFac);
         if (u.ok) out[id] = { type: 'unload', attack: u.attack, dist };
       } else if (!hasShip && hasGround && this.isSeaZone(from) && this.isLandZone(id) && out[id] === undefined) {
         // (ground already aboard, selected alone) — tryMove result above covers it; mark as unload
@@ -461,6 +463,26 @@ export class Game {
     }
     if (!hasShip && hasGround && this.isSeaZone(from)) for (const v of Object.values(out)) v.type = 'unload';
     return out;
+  }
+
+  /** Preview a whole stack: ground, ships(+cargo) and air groups previewed separately and merged. */
+  previewTargets(loc, fac, combatMove, both = false) {
+    const stack = this.getStack(loc, fac);
+    const groups = { ground: {}, ship: {}, air: {} };
+    for (const [t, n] of Object.entries(stack)) if (n > 0) groups[UNITS[t].kind][t] = n;
+    if (Object.keys(groups.ship).length) { Object.assign(groups.ship, groups.ground); groups.ground = {}; } // ground rides along
+    const rank = { attack: 3, unload: 2, move: 1 };
+    const out = {}; let radius = 0;
+    for (const take of Object.values(groups)) {
+      if (!Object.keys(take).length) continue;
+      radius = Math.max(radius, this.moveRadius(take));
+      for (const cm of both ? [true, false] : [combatMove]) {
+        for (const [id, t] of Object.entries(this.legalTargets(loc, take, cm, fac))) {
+          if (!out[id] || rank[t.type] > rank[out[id].type]) out[id] = t;
+        }
+      }
+    }
+    return { targets: out, radius, groups };
   }
 
   /** Load ground onto transport at same loc (zone orbital / deep). */
