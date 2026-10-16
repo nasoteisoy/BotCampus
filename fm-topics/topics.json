@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T18:30:00-07:00",
+  "updatedAt": "2026-10-15T18:27:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -107,11 +107,21 @@
       "id": "fm-space-battles",
       "title": "Space Battles",
       "what": "Phone 3D real-time strategy game with star systems you can spin and zoom, and fleets that fly between planets.",
-      "summary": "1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.",
-      "leftOff": "Oct 14, about 3:11 PM PT: latest build live (ships need an admiral to move). Older flat-map build may still cache; hard-refresh if the page looks old. Waiting on play feedback.",
-      "updatedAt": "2026-10-14T18:30:00-07:00",
+      "summary": "1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.\n5. Oct 14 evening: ships come only from a Shipyard and ground troops only from a Barracks; owning a planet alone produces nothing.\n6. Ship build time slowed (about twice as long).\n7. Oct 15 evening: bigger planets, lit towns with governors gathering resources, and expansion that needs an admiral, scouts, and a foothold before settling.",
+      "leftOff": "Oct 15, about 5:50 PM PT: expansion build live at nasoteisoy.github.io/BotCampus/games/space-battles/. Waiting on play feedback.",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
       "bot": "Field Marshal",
-      "note": "What: Phone 3D real-time strategy game with star systems you can spin and zoom, and fleets that fly between planets.\n\nSummary: 1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.\n\nLeft off: Oct 14, about 3:11 PM PT: latest build live (ships need an admiral to move). Older flat-map build may still cache; hard-refresh if the page looks old. Waiting on play feedback.\n\nBot: Field Marshal (Dev A publishes)"
+      "note": "What: Phone 3D real-time strategy game with star systems you can spin and zoom, and fleets that fly between planets.\n\nSummary: 1. Oct 14 morning: started from a voice ask for a space battles strategy map (not chess) with a live phone preview.\n2. Built a 3D real-time version: spin and zoom star systems, fleets visibly flying between planets.\n3. Planets show buildings; ships orbit and fly with no numbers on screen.\n4. Admirals lead fleets from a flagship; generals defend planets from a command bunker; each has perks. Ships need an admiral to move.\n5. Oct 14 evening: ships come only from a Shipyard and ground troops only from a Barracks; owning a planet alone produces nothing.\n6. Ship build time slowed (about twice as long).\n7. Oct 15 evening: bigger planets, lit towns with governors gathering resources, and expansion that needs an admiral, scouts, and a foothold before settling.\n\nLeft off: Oct 15, about 5:50 PM PT: expansion build live at nasoteisoy.github.io/BotCampus/games/space-battles/. Waiting on play feedback.\n\nBot: Field Marshal"
+    },
+    {
+      "id": "fm-toy-computer",
+      "title": "Toy computer and hobby OS",
+      "what": "Phone game that builds a tiny computer from logic gates up, plus a side hobby of running your own OS in a virtual machine while keeping Windows for everyday use.",
+      "summary": "1. Oct 14 evening: asked about making your own OS; settled on keeping Windows for daily use and a hobby OS in a VM (for example QEMU or VirtualBox).\n2. Wanted to build each component of a toy computer yourself, from gates to CPU to a little OS.\n3. Field Marshal built a phone-friendly Toy Computer game (11 levels: gates, adders, memory, CPU, then a tiny OS).\n4. Live at nasoteisoy.github.io/BotCampus/games/toy-computer/.",
+      "leftOff": "Oct 14, about 8:50 PM PT: Toy Computer live. Hobby OS path still open whenever you want to start a VM build.",
+      "bot": "Field Marshal",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Phone game that builds a tiny computer from logic gates up, plus a side hobby of running your own OS in a virtual machine while keeping Windows for everyday use.\n\nSummary: 1. Oct 14 evening: asked about making your own OS; settled on keeping Windows for daily use and a hobby OS in a VM (for example QEMU or VirtualBox).\n2. Wanted to build each component of a toy computer yourself, from gates to CPU to a little OS.\n3. Field Marshal built a phone-friendly Toy Computer game (11 levels: gates, adders, memory, CPU, then a tiny OS).\n4. Live at nasoteisoy.github.io/BotCampus/games/toy-computer/.\n\nLeft off: Oct 14, about 8:50 PM PT: Toy Computer live. Hobby OS path still open whenever you want to start a VM build.\n\nBot: Field Marshal"
     },
     {
       "id": "leader-render-school",
@@ -132,6 +142,16 @@
       "updatedAt": "2026-10-03T09:04:00-07:00",
       "note": "What: How the bot crew is set up: who does what, and the schools that train each role.\n\nSummary: 1. Roles: Leader, Dev A/B/C, Render A/B/C, Researcher A/B, Profile A/B, Game Art Director.\n2. Rules: only Dev A pushes the site; makers never grade their own work; free tools only.\n3. Schools: Game Rendering, Game Dev, Website Dev, Bot Leadership, Research Craft, Profile Craft.\n4. Sep 26: roles redefined with free-only 'levers' (skills, memory, tools, practice, checks).\n5. A weekly usage hard stop pauses overnight work.\n\nLeft off: Sep 26 PT: free-only role definitions done. Oct 3: advised keeping check bots separate with one bot sending the morning summary.\n\nBot: Leader (with Researcher A, Researcher B, Profile A, Profile B)",
       "bot": "Leader"
+    },
+    {
+      "id": "leader-axis-allies-space",
+      "title": "Axis and Allies 1942 space game",
+      "what": "Official Axis and Allies 1942 rules as a space game: continents as major planets, islands as dwarf planets, moons for places like England and Japan.",
+      "summary": "1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build done on Leader's computer: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Rough first pass (zones as pins, not painted areas). Name options still open.",
+      "leftOff": "Oct 15, about 6:08 PM PT: first playable build on Leader's computer. Waiting on a name pick and next polish (painted zones, public link).",
+      "bot": "Leader",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Official Axis and Allies 1942 rules as a space game: continents as major planets, islands as dwarf planets, moons for places like England and Japan.\n\nSummary: 1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build done on Leader's computer: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Rough first pass (zones as pins, not painted areas). Name options still open.\n\nLeft off: Oct 15, about 6:08 PM PT: first playable build on Leader's computer. Waiting on a name pick and next polish (painted zones, public link).\n\nBot: Leader"
     },
     {
       "id": "deva-tactics-games",
@@ -172,6 +192,16 @@
       "updatedAt": "2026-10-11T18:25:00-07:00",
       "note": "What: Phone 3D chess in space on an 8x8x8 board, plus a board-free open-space variant.\n\nSummary: 1. Spaceship Chess (Oct 11): 8 stacked levels, spaceship pieces, 3D chess rules, vs computer and pass-and-play, undo and save.\n2. Open Space (Oct 11): same rules with no boards; ships float in a starfield; every ship's reach is always drawn.\n\nLeft off: Oct 11, 6:15 PM PT: both games are live. Waiting on your play feedback.\n\nBot: Dev A",
       "bot": "Dev A"
+    },
+    {
+      "id": "deva-space-battles",
+      "title": "Space Battles (publish and expansion)",
+      "what": "Engineering and publish work on the Space Battles phone game.",
+      "summary": "1. Oct 14 evening: pushed shipyards and barracks so planets do not auto-produce units.\n2. Slowed ship build rate at your ask.\n3. Oct 15 evening: shipped bigger planets, towns with governors, and scout/foothold/settle expansion (with admirals still required to move fleets).",
+      "leftOff": "Oct 15, about 5:50 PM PT: expansion update live. Waiting on play feedback.",
+      "bot": "Dev A",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Engineering and publish work on the Space Battles phone game.\n\nSummary: 1. Oct 14 evening: pushed shipyards and barracks so planets do not auto-produce units.\n2. Slowed ship build rate at your ask.\n3. Oct 15 evening: shipped bigger planets, towns with governors, and scout/foothold/settle expansion (with admirals still required to move fleets).\n\nLeft off: Oct 15, about 5:50 PM PT: expansion update live. Waiting on play feedback.\n\nBot: Dev A"
     },
     {
       "id": "deva-bot-campus",
@@ -367,10 +397,10 @@
       "id": "story-letters",
       "title": "Letters of the Two Worlds",
       "what": "Tolkien-style planning letters for the fantasy comic world.",
-      "summary": "1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.",
-      "leftOff": "Sep 20 PT: a 'where we left off' summary was saved. No Letter VI yet; the Ashavar fall is still open.",
-      "updatedAt": "2026-09-20T20:06:00-07:00",
-      "note": "What: Tolkien-style planning letters for the fantasy comic world.\n\nSummary: 1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.\n\nLeft off: Sep 20 PT: a 'where we left off' summary was saved. No Letter VI yet; the Ashavar fall is still open.\n\nBot: Story",
+      "summary": "1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.\n4. Oct 15: returned from game-art detour to the lore; Ashara are spirit-side peoples (offices as races). Path to a real book still needs the open myth question settled.",
+      "leftOff": "Oct 15, about 5:38 PM PT: back on lore. Ashavar fall and Letter VI still open; book checklist started.",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Tolkien-style planning letters for the fantasy comic world.\n\nSummary: 1. Letters I-V: two worlds, virtues and sins as traits, the Breath, the Ashara offices, the First Fall.\n2. Each letter has an audio version.\n3. Picture plates of the Ashara offices, with titles.\n4. Oct 15: returned from game-art detour to the lore; Ashara are spirit-side peoples (offices as races). Path to a real book still needs the open myth question settled.\n\nLeft off: Oct 15, about 5:38 PM PT: back on lore. Ashavar fall and Letter VI still open; book checklist started.\n\nBot: Story",
       "bot": "Story"
     },
     {
@@ -407,10 +437,10 @@
       "id": "si-reels",
       "title": "Reel and screenshot investigations",
       "what": "Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.",
-      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: #113 'mini freezer' reel judged staged, not a real freezer (LOW); #114 'prompting tricks' reel traced to a Karpathy post, with a plain-English style tip for the bots (MED).",
-      "leftOff": "Oct 12, 7:35 PM PT: #114 logged (rated MED for Campus). Waiting on the next link.",
-      "updatedAt": "2026-10-12T19:35:00-07:00",
-      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: #113 'mini freezer' reel judged staged, not a real freezer (LOW); #114 'prompting tricks' reel traced to a Karpathy post, with a plain-English style tip for the bots (MED).\n\nLeft off: Oct 12, 7:35 PM PT: #114 logged (rated MED for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
+      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).",
+      "leftOff": "Oct 15, about 1:39 PM PT: #129 logged (HIGH for Campus). Waiting on the next link.",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).\n\nLeft off: Oct 15, about 1:39 PM PT: #129 logged (HIGH for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
       "bot": "Screenshot Investigator"
     },
     {
@@ -422,6 +452,16 @@
       "updatedAt": "2026-10-12T21:55:00-07:00",
       "bot": "Fun Topics",
       "note": "What: Casual curiosity chat about copper pieces found inside the Great Pyramid of Giza.\n\nSummary: 1. Oct 12: you shared a search about copper 'wire' found in the pyramids.\n2. The search said it was small copper fittings and pins in the narrow air shafts, near the little stone doors.\n\nLeft off: Oct 12, about 9:55 PM PT: screenshot shared in Fun Topics. Nothing open.\n\nBot: Fun Topics"
+    },
+    {
+      "id": "fun-early-jewish-groups",
+      "title": "Early Jewish groups and old books",
+      "what": "Casual deep-dive into early Jewish groups, related books outside the usual Bible set, and the oldest physical manuscripts.",
+      "summary": "1. Oct 15: long voice and chat thread on the Book of Peter, Enoch, Jubilees, and related writings.\n2. Covered Pharisees, Sadducees, Essenes/Qumran, and other early groups: one God, different views on angels and added books.\n3. Mapped where groups lived and who their neighbors were.\n4. Furthest reliable dates: Enoch writings about 300–200 BCE; named groups around 150 BCE.\n5. Oldest physical biblical text discussed: Ketef Hinnom silver scrolls (~600 BCE), then Dead Sea Scrolls from ~250 BCE.",
+      "leftOff": "Oct 15, about 5:29 PM PT: manuscript timeline answered. Nothing open.",
+      "bot": "Fun Topics",
+      "updatedAt": "2026-10-15T18:27:00-07:00",
+      "note": "What: Casual deep-dive into early Jewish groups, related books outside the usual Bible set, and the oldest physical manuscripts.\n\nSummary: 1. Oct 15: long voice and chat thread on the Book of Peter, Enoch, Jubilees, and related writings.\n2. Covered Pharisees, Sadducees, Essenes/Qumran, and other early groups: one God, different views on angels and added books.\n3. Mapped where groups lived and who their neighbors were.\n4. Furthest reliable dates: Enoch writings about 300–200 BCE; named groups around 150 BCE.\n5. Oldest physical biblical text discussed: Ketef Hinnom silver scrolls (~600 BCE), then Dead Sea Scrolls from ~250 BCE.\n\nLeft off: Oct 15, about 5:29 PM PT: manuscript timeline answered. Nothing open.\n\nBot: Fun Topics"
     }
   ]
 }
