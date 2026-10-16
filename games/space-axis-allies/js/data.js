@@ -73,37 +73,12 @@ export const SYSTEMS = {
   solomons: { id: 'solomons', name: 'Solomons', kind: 'dwarf', pos: [-6.76, -3.13, 18.56], radius: 0.4 },
 };
 
-export const DEEP_SPACE = {
-  ds_atl_n: { id: 'ds_atl_n', name: 'North Atlantic Deep', kind: 'deep', pos: [7.37, 15.32, -10.53], links: ['england', 'greenland', 'europe', 'ds_atl_w', 'ds_atl_c', 'ds_natl'] },
-  ds_natl: { id: 'ds_natl', name: 'Norwegian Deep', kind: 'deep', pos: [1.69, 18.27, -7.96], links: ['england', 'greenland', 'europe', 'ds_atl_n', 'ds_arctic'] },
-  ds_atl_w: { id: 'ds_atl_w', name: 'Western Atlantic Deep', kind: 'deep', pos: [14.47, 11.47, -7.69], links: ['northAmerica', 'ds_atl_n', 'ds_atl_c', 'ds_gulf'] },
-  ds_gulf: { id: 'ds_gulf', name: 'Caribbean Deep', kind: 'deep', pos: [18.61, 6.84, -2.62], links: ['northAmerica', 'southAmerica', 'ds_atl_w', 'ds_epac'] },
-  ds_atl_c: { id: 'ds_atl_c', name: 'Central Atlantic Deep', kind: 'deep', pos: [9.14, 8.13, -15.82], links: ['europe', 'africa', 'ds_atl_n', 'ds_atl_w', 'ds_med', 'ds_atl_eq'] },
-  ds_med: { id: 'ds_med', name: 'Mediterranean Deep', kind: 'deep', pos: [-4.06, 10.89, -16.28], links: ['europe', 'africa', 'asia', 'england', 'ds_atl_c', 'ds_red'] },
-  ds_atl_eq: { id: 'ds_atl_eq', name: 'Equatorial Atlantic Deep', kind: 'deep', pos: [8.45, 0.00, -18.13], links: ['southAmerica', 'africa', 'ds_atl_c', 'ds_atl_s'] },
-  ds_atl_s: { id: 'ds_atl_s', name: 'South Atlantic Deep', kind: 'deep', pos: [2.58, -7.49, -18.36], links: ['southAmerica', 'africa', 'ds_atl_eq', 'ds_cape', 'ds_satl'] },
-  ds_satl: { id: 'ds_satl', name: 'Argentine Deep', kind: 'deep', pos: [8.60, -14.86, -10.25], links: ['southAmerica', 'ds_atl_s', 'ds_south', 'ds_drake'] },
-  ds_drake: { id: 'ds_drake', name: 'Drake Deep', kind: 'deep', pos: [9.66, -17.32, -2.59], links: ['southAmerica', 'ds_satl', 'ds_spac'] },
-  ds_cape: { id: 'ds_cape', name: 'Cape Deep', kind: 'deep', pos: [-5.90, -12.31, -14.61], links: ['africa', 'ds_atl_s', 'ds_ind_w', 'ds_south'] },
-  ds_south: { id: 'ds_south', name: 'Southern Ocean Deep', kind: 'deep', pos: [-6.81, -16.96, -8.12], links: ['ds_satl', 'ds_cape', 'ds_sind'] },
-  ds_red: { id: 'ds_red', name: 'Arabian Deep', kind: 'deep', pos: [-17.06, 5.18, -9.07], links: ['asia', 'africa', 'ds_med', 'ds_ind_w', 'ds_bay'] },
-  ds_ind_w: { id: 'ds_ind_w', name: 'West Indian Deep', kind: 'deep', pos: [-17.27, -4.16, -9.18], links: ['africa', 'madagascar', 'ds_cape', 'ds_red', 'ds_ind_e', 'ds_bay'] },
-  ds_bay: { id: 'ds_bay', name: 'Bengal Deep', kind: 'deep', pos: [-19.68, 3.47, -0.69], links: ['asia', 'ds_red', 'ds_ind_w', 'ds_ind_e'] },
-  ds_ind_e: { id: 'ds_ind_e', name: 'East Indian Deep', kind: 'deep', pos: [-19.40, -3.47, 3.42], links: ['australia', 'eastIndies', 'borneo', 'ds_ind_w', 'ds_bay', 'ds_sind', 'ds_timor'] },
-  ds_sind: { id: 'ds_sind', name: 'Great Southern Deep', kind: 'deep', pos: [-13.66, -14.14, 3.66], links: ['australia', 'ds_south', 'ds_ind_e', 'ds_tasman'] },
-  ds_timor: { id: 'ds_timor', name: 'Timor Deep', kind: 'deep', pos: [-15.90, -4.84, 11.13], links: ['australia', 'eastIndies', 'newGuinea', 'ds_ind_e', 'ds_pac_s', 'ds_phil'] },
-  ds_phil: { id: 'ds_phil', name: 'Philippine Deep', kind: 'deep', pos: [-13.83, 5.51, 13.35], links: ['philippines', 'okinawa', 'borneo', 'carolines', 'japan', 'iwoJima', 'ds_timor', 'ds_pac_c', 'ds_pac_n'] },
-  ds_pac_n: { id: 'ds_pac_n', name: 'North Pacific Deep', kind: 'deep', pos: [-3.85, 13.38, 14.36], links: ['asia', 'japan', 'iwoJima', 'midway', 'ds_phil', 'ds_pac_c', 'ds_bering'] },
-  ds_bering: { id: 'ds_bering', name: 'Bering Deep', kind: 'deep', pos: [0.37, 16.96, 10.59], links: ['asia', 'northAmerica', 'ds_pac_n', 'ds_arctic', 'ds_pac_e'] },
-  ds_arctic: { id: 'ds_arctic', name: 'Arctic Deep', kind: 'deep', pos: [2.62, 19.81, 0.95], links: ['asia', 'northAmerica', 'greenland', 'ds_natl', 'ds_bering'] },
-  ds_pac_c: { id: 'ds_pac_c', name: 'Central Pacific Deep', kind: 'deep', pos: [-1.71, 4.16, 19.49], links: ['midway', 'wake', 'carolines', 'ds_phil', 'ds_pac_n', 'ds_pac_s', 'ds_pac_e'] },
-  ds_pac_s: { id: 'ds_pac_s', name: 'South Pacific Deep', kind: 'deep', pos: [-8.98, -5.85, 16.89], links: ['australia', 'solomons', 'newGuinea', 'newZealand', 'ds_timor', 'ds_pac_c', 'ds_tasman', 'ds_spac_w'] },
-  ds_tasman: { id: 'ds_tasman', name: 'Tasman Deep', kind: 'deep', pos: [-5.57, -13.38, 13.78], links: ['newZealand', 'australia', 'ds_sind', 'ds_pac_s', 'ds_spac_w'] },
-  ds_pac_e: { id: 'ds_pac_e', name: 'East Pacific Deep', kind: 'deep', pos: [10.13, 9.39, 14.47], links: ['northAmerica', 'hawaii', 'midway', 'ds_bering', 'ds_pac_c', 'ds_epac'] },
-  ds_epac: { id: 'ds_epac', name: 'Panama Deep', kind: 'deep', pos: [19.12, 2.09, 5.48], links: ['southAmerica', 'northAmerica', 'ds_gulf', 'ds_pac_e', 'ds_spac'] },
-  ds_spac: { id: 'ds_spac', name: 'Southeast Pacific Deep', kind: 'deep', pos: [14.98, -10.60, 7.96], links: ['southAmerica', 'ds_drake', 'ds_epac', 'ds_spac_w'] },
-  ds_spac_w: { id: 'ds_spac_w', name: 'Polynesian Deep', kind: 'deep', pos: [3.67, -9.39, 17.27], links: ['newZealand', 'ds_pac_s', 'ds_tasman', 'ds_spac'] },
-};
+// Deep-space zones were removed: fleets move freely inside a range sphere.
+export const DEEP_SPACE = {};
+export const RANGE_PER_MOVE = 7.5; // world units per point of unit move (move-2 ship ≈ Japan→Midway)
+export const ENGAGE_RADIUS = 3.0;  // fleets this close after combat move fight
+// Starting fleets that used to sit in deep space start in open space at the same spot
+export const START_FLEET_POS = {"fs_atl_n": [7.37, 15.32, -10.53], "fs_atl_c": [9.14, 8.13, -15.82], "fs_ind_e": [-19.4, -3.47, 3.42], "fs_pac_s": [-8.98, -5.85, 16.89], "fs_pac_c": [-1.71, 4.16, 19.49], "fs_atl_s": [2.58, -7.49, -18.36]};
 
 /**
  * Surface zones (A&A 1942 territories) on planets/moons/dwarfs.
@@ -349,7 +324,7 @@ export function startingUnits() {
   put('yakut', 'iron', { infantry: 1 });
   put('buryatia', 'iron', { infantry: 2 });
   put('sfe', 'iron', { infantry: 2 });
-  put('ds_atl_n', 'iron', { submarine: 1 });
+  put('fs_atl_n', 'iron', { submarine: 1 });
 
   // Void Regency (Germany)
   put('germany', 'void', { infantry: 3, aa: 1, tank: 2, fighter: 1, bomber: 1 });
@@ -369,9 +344,9 @@ export function startingUnits() {
   put('algeria', 'void', { infantry: 1, artillery: 1 });
   put('libya', 'void', { infantry: 1, tank: 1 });
   put('eu_atlantic', 'void', { cruiser: 1, submarine: 1, transport: 1 });
-  put('ds_atl_n', 'void', { submarine: 1 });
+  put('fs_atl_n', 'void', { submarine: 1 });
   put('eu_medwest', 'void', { battleship: 1, transport: 1 });
-  put('ds_atl_c', 'void', { submarine: 2 });
+  put('fs_atl_c', 'void', { submarine: 2 });
 
   // Helix Imperium (UK)
   put('england_z', 'helix', { infantry: 2, artillery: 1, aa: 1, tank: 1, fighter: 2, bomber: 1 });
@@ -394,8 +369,8 @@ export function startingUnits() {
   put('na_atlantic', 'helix', { destroyer: 1, transport: 1 });
   put('eu_medeast', 'helix', { cruiser: 1 });
   put('af_indian', 'helix', { destroyer: 1 });
-  put('ds_ind_e', 'helix', { carrier: 1, fighter: 1, cruiser: 1, transport: 1 });
-  put('ds_pac_s', 'helix', { cruiser: 1, transport: 1, submarine: 1 });
+  put('fs_ind_e', 'helix', { carrier: 1, fighter: 1, cruiser: 1, transport: 1 });
+  put('fs_pac_s', 'helix', { cruiser: 1, transport: 1, submarine: 1 });
 
   // Crimson Forge (Japan)
   put('japan_z', 'crimson', { infantry: 4, artillery: 1, aa: 1, tank: 1, fighter: 1, bomber: 1 });
@@ -415,9 +390,9 @@ export function startingUnits() {
   put('philippines_z', 'crimson', { infantry: 1, artillery: 1 });
   put('japan_sea', 'crimson', { carrier: 1, fighter: 2, battleship: 1 });
   put('philippines_sea', 'crimson', { carrier: 1, fighter: 1, cruiser: 1 });
-  put('ds_pac_s', 'crimson', { battleship: 1, transport: 1, destroyer: 1 });
-  put('ds_ind_e', 'crimson', { transport: 1, destroyer: 1 });
-  put('ds_pac_c', 'crimson', { submarine: 1 });
+  put('fs_pac_s', 'crimson', { battleship: 1, transport: 1, destroyer: 1 });
+  put('fs_ind_e', 'crimson', { transport: 1, destroyer: 1 });
+  put('fs_pac_c', 'crimson', { submarine: 1 });
 
   // Terran Concord (USA)
   put('eus', 'terran', { infantry: 2, artillery: 1, aa: 1, tank: 1, fighter: 1, bomber: 1 });
@@ -432,7 +407,7 @@ export function startingUnits() {
   put('brazil', 'terran', { infantry: 1 });
   put('mexico', 'terran', { infantry: 1 });
   put('na_atlantic', 'terran', { destroyer: 1, transport: 2 });
-  put('ds_atl_s', 'terran', { cruiser: 1 });
+  put('fs_atl_s', 'terran', { cruiser: 1 });
   put('hawaii_sea', 'terran', { carrier: 1, fighter: 1, destroyer: 1, submarine: 1 });
   put('na_pacific', 'terran', { battleship: 1, destroyer: 1, transport: 1 });
 

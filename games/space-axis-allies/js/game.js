@@ -1,9 +1,17 @@
 /* Game state, turn phases, combat, movement legality */
 
 import {
-  FACTIONS, TURN_ORDER, UNITS, ZONES, DEEP_SPACE, SYSTEMS,
-  buildAdjacency, startingUnits, VICTORY,
+  FACTIONS, TURN_ORDER, UNITS, ZONES, SYSTEMS,
+  buildAdjacency, startingUnits, VICTORY, RANGE_PER_MOVE, ENGAGE_RADIUS, START_FLEET_POS,
 } from './data.js';
+
+// Same convention as map3d uvToSphere (THREE.SphereGeometry UVs)
+function uvDir(u, v) {
+  const th = u * Math.PI * 2, ph = v * Math.PI;
+  return [-Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)];
+}
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const len = a => Math.hypot(a[0], a[1], a[2]);
 
 export const PHASES = [
   'purchase',
@@ -41,6 +49,10 @@ export class Game {
     this.adj = buildAdjacency();
     this.winner = null;
     this.stratBombs = []; // {from, to, bombers}
+    // Free-space fleets: loc id -> [x,y,z]
+    this.freePos = {};
+    for (const id of Object.keys(this.units)) if (START_FLEET_POS[id]) this.freePos[id] = [...START_FLEET_POS[id]];
+    this._fsSeq = 0;
     this._listeners = [];
   }
 
@@ -56,7 +68,68 @@ export class Game {
     if (this.log.length > 80) this.log.length = 80;
   }
 
-  isDeep(id) { return !!DEEP_SPACE[id]; }
+  isDeep(id) { return this.isFree(id); }
+  isFree(id) { return !!(this.freePos && this.freePos[id]); }
+
+  /** World position of a location: zone hover point above its body, or a free-space fleet position. */
+  locPos(id) {
+    if (this.isFree(id)) return this.freePos[id];
+    const z = this.zones[id];
+    if (!z) return null;
+    const sys = SYSTEMS[z.system];
+    const d = uvDir(z.uv[0], z.uv[1]);
+    const r = sys.radius + (z.terrain === 'sea' ? 0.5 : 0.1);
+    return [sys.pos[0] + d[0] * r, sys.pos[1] + d[1] * r, sys.pos[2] + d[2] * r];
+  }
+
+  /** Movement-sphere radius for a selection (slowest ship/air unit). */
+  moveRadius(take) {
+    let m = 99;
+    for (const [t, n] of Object.entries(take)) if (n > 0 && UNITS[t].kind !== 'ground') m = Math.min(m, UNITS[t].move);
+    return m === 99 ? 0 : m * RANGE_PER_MOVE;
+  }
+
+  /** Push a point out of any body it sits in. */
+  clampOutsideBodies(p) {
+    p = [...p];
+    for (const s of Object.values(SYSTEMS)) {
+      const d = sub(p, s.pos), L = len(d), min = s.radius + 0.8;
+      if (L < min) { const k = L < 1e-6 ? 1 : min / L; p = L < 1e-6 ? [s.pos[0], s.pos[1] + min, s.pos[2]] : [s.pos[0] + d[0] * k, s.pos[1] + d[1] * k, s.pos[2] + d[2] * k]; }
+    }
+    return p;
+  }
+
+  /** Name of a body the straight path a→b passes through (excluding the endpoints' own bodies), or null. */
+  pathBlocker(a, b, skip = []) {
+    const ab = sub(b, a), L = len(ab);
+    if (L < 1e-6) return null;
+    const dir = ab.map(v => v / L);
+    for (const [id, s] of Object.entries(SYSTEMS)) {
+      if (skip.includes(id)) continue;
+      const oc = sub(s.pos, a);
+      const t = Math.max(0, Math.min(L, oc[0] * dir[0] + oc[1] * dir[1] + oc[2] * dir[2]));
+      const c = [a[0] + dir[0] * t, a[1] + dir[1] * t, a[2] + dir[2] * t];
+      if (len(sub(s.pos, c)) < s.radius * 0.98) return s.name;
+    }
+    return null;
+  }
+
+  _sysOf(id) { return this.zones[id]?.system || null; }
+
+  /** Resolve a free-space point: snap to a nearby fleet / sea zone, or create a new free-space loc. */
+  _resolveSpacePoint(p, fac, combatMove, from) {
+    let best = null, bd = ENGAGE_RADIUS;
+    for (const loc of Object.keys(this.units)) {
+      if (loc === from || !this.isSeaZone(loc)) continue;
+      const lp = this.locPos(loc); if (!lp) continue;
+      const d = len(sub(lp, p));
+      const hasEnemy = this.enemiesAt(loc, fac).length > 0;
+      if (d < bd && (hasEnemy || !combatMove)) { bd = d; best = loc; }
+    }
+    if (best) return best;
+    const id = `fs_${++this._fsSeq}_${fac}`;
+    return { newId: id, pos: p };
+  }
   isZone(id) { return !!this.zones[id]; }
   isSeaZone(id) {
     const z = this.zones[id];
@@ -69,7 +142,7 @@ export class Game {
 
   locationName(id) {
     if (this.zones[id]) return this.zones[id].name;
-    if (DEEP_SPACE[id]) return DEEP_SPACE[id].name;
+    if (this.isFree(id)) return 'Open space';
     return id;
   }
 
@@ -197,7 +270,7 @@ export class Game {
       if (stack[t] <= 0) delete stack[t];
     }
     if (Object.keys(stack).length === 0) delete this.units[loc][fac];
-    if (Object.keys(this.units[loc] || {}).length === 0) delete this.units[loc];
+    if (Object.keys(this.units[loc] || {}).length === 0) { delete this.units[loc]; if (this.isFree(loc)) delete this.freePos[loc]; }
     return true;
   }
 
@@ -244,39 +317,60 @@ export class Game {
       if (UNITS[t].kind === 'ship') kind = 'ship';
       else if (UNITS[t].kind === 'air' && kind === 'ground') kind = 'air';
     }
-    // Mixed ground+ship not allowed in one move bundle
     const kinds = new Set();
     for (const [t, n] of Object.entries(take)) if (n > 0) kinds.add(UNITS[t].kind);
-    if (kinds.has('ground') && (kinds.has('ship') || kinds.has('air'))) {
-      // Allow air with either; ground+ship only via load — simplify: reject ground+ship
-      if (kinds.has('ground') && kinds.has('ship')) {
-        return { ok: false, err: 'Load troops onto transports first (select transport + ground)' };
+    const movingShip = kinds.has('ship'), movingGround = kinds.has('ground'), movingAir = kinds.has('air');
+    let newFree = null;
+
+    if (movingShip || (movingAir && !movingGround)) {
+      // Free 3D movement inside the range sphere
+      if (movingGround) {
+        const cap = (take.transport || 0) * 2;
+        const g = Object.entries(take).reduce((a, [t, n]) => a + (UNITS[t].kind === 'ground' ? n : 0), 0);
+        if (g > cap) return { ok: false, err: 'Not enough transports for the ground units' };
       }
-    }
-
-    // Transport load/unload: if transport + ground moving from zone to deep or deep to zone
-    if (kinds.has('ship') && kinds.has('ground')) {
-      // handled as load — treat as single move if transport present
-    }
-
-    // Land/sea destination checks
-    const movingShip = Object.entries(take).some(([t, n]) => n > 0 && UNITS[t].kind === 'ship');
-    const movingGround = Object.entries(take).some(([t, n]) => n > 0 && UNITS[t].kind === 'ground');
-    if (movingShip && this.isLandZone(to)) {
-      return { ok: false, err: 'Ships hover above SEA zones only (not land)' };
-    }
-
-    let reach;
-    // Amphibious unload: ground from sea → adjacent land
-    if (movingGround && !movingShip && this.isSeaZone(from) && this.isLandZone(to)) {
-      if (!this.neighbors(from).includes(to)) return { ok: false, err: 'Unload only into adjacent coastal land' };
-      reach = { [to]: 1 };
-    } else if (movingGround && !this.isLandZone(to)) {
-      return { ok: false, err: 'Ground units stay on land zones' };
+      const a = this.locPos(from);
+      if (!a) return { ok: false, err: 'Unknown origin' };
+      let b;
+      if (Array.isArray(to)) {
+        b = this.clampOutsideBodies(to);
+        const r = this._resolveSpacePoint(b, fac, combatMove, from);
+        if (typeof r === 'string') { to = r; b = this.locPos(r); }
+        else { newFree = r; to = r.newId; }
+      } else {
+        b = this.locPos(to);
+        if (!b) return { ok: false, err: 'Unknown destination' };
+      }
+      if (movingShip && this.isLandZone(to)) return { ok: false, err: 'Ships move in open space or SEA zones only (not land)' };
+      const radius = this.moveRadius(take);
+      if (len(sub(b, a)) > radius + 1e-6) return { ok: false, err: `Out of range (${len(sub(b, a)).toFixed(1)} > ${radius.toFixed(1)})` };
+      const blk = this.pathBlocker(a, b, [this._sysOf(from), this._sysOf(to)].filter(Boolean));
+      if (blk) return { ok: false, err: `Path blocked by ${blk}` };
+      if (newFree) {
+        // Non-combat may not end next to enemies; combat move into empty space is not an attack
+        const near = Object.keys(this.units).some(l => this.isSeaZone(l) && this.enemiesAt(l, fac).length && len(sub(this.locPos(l), b)) < ENGAGE_RADIUS);
+        if (!combatMove && near) return { ok: false, err: 'Enemy fleet within engagement range — use combat move' };
+        if (combatMove) return { ok: false, err: 'Combat move must end on an enemy fleet / zone' };
+      }
     } else {
-      reach = this.reachable(from, minMove, kind === 'air' ? 'air' : kind, fac);
+      if (movingAir && movingGround) return { ok: false, err: 'Move ground and air separately' };
+      let reach;
+      // Load: ground from land onto own transport in a sea zone of the same body
+      if (this.isLandZone(from) && this.isSeaZone(to) && !this.isFree(to)) {
+        if (this._sysOf(from) !== this._sysOf(to)) return { ok: false, err: 'Load only onto transports orbiting the same body' };
+        if (!(this.getStack(to, fac).transport > 0)) return { ok: false, err: 'No own transport in that sea zone' };
+        reach = { [to]: 1 };
+      } else if (this.isSeaZone(from) && this.isLandZone(to)) {
+        // Amphibious unload: only from a sea zone adjacent to the land (never from open space)
+        if (this.isFree(from) || !this.neighbors(from).includes(to)) return { ok: false, err: 'Unload only from a sea zone adjacent to the land' };
+        reach = { [to]: 1 };
+      } else if (!this.isLandZone(to)) {
+        return { ok: false, err: 'Ground units stay on land zones' };
+      } else {
+        reach = this.reachable(from, minMove, 'ground', fac);
+      }
+      if (reach[to] === undefined) return { ok: false, err: 'Out of range / illegal path' };
     }
-    if (reach[to] === undefined) return { ok: false, err: 'Out of range / illegal path' };
 
     const enemies = this.enemiesAt(to, fac);
     const zone = this.zones[to];
@@ -296,10 +390,13 @@ export class Game {
       }
     }
 
-    if (!this.moveUnits(from, to, fac, take)) return { ok: false, err: 'Insufficient units' };
+    const fromName = this.locationName(from);
+    if (!this.removeUnits(from, fac, take)) return { ok: false, err: 'Insufficient units' };
+    if (newFree) this.freePos[newFree.newId] = newFree.pos;
+    this.addUnits(to, fac, take);
 
     const label = Object.entries(take).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${UNITS[t].abbrev}`).join(', ');
-    this.addLog(`Moved ${label}: ${this.locationName(from)} → ${this.locationName(to)}`);
+    this.addLog(`Moved ${label}: ${fromName} → ${this.locationName(to)}`);
 
     if (combatMove) {
       const stillEnemy = this.enemiesAt(to, fac).length > 0 ||
@@ -678,6 +775,9 @@ export class Game {
     this._writeBackCombat(false);
     cs.done = true;
     this.combatState = null;
+    if (this.isFree(cs.loc) && !Object.keys(this.units[cs.loc] || {}).some(f => this.totalAt(cs.loc, f) > 0)) {
+      delete this.units[cs.loc]; delete this.freePos[cs.loc];
+    }
     this.pendingCombats = this.pendingCombats.filter(c => c.loc !== cs.loc);
     this.emit();
   }
@@ -708,6 +808,9 @@ export class Game {
 
     cs.done = true;
     this.combatState = null;
+    if (this.isFree(cs.loc) && !Object.keys(this.units[cs.loc] || {}).some(f => this.totalAt(cs.loc, f) > 0)) {
+      delete this.units[cs.loc]; delete this.freePos[cs.loc];
+    }
     this.pendingCombats = this.pendingCombats.filter(c => c.loc !== cs.loc);
     this.emit();
   }

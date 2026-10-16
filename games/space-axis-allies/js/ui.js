@@ -1,4 +1,4 @@
-import { FACTIONS, TURN_ORDER, UNITS, ZONES, DEEP_SPACE } from './data.js';
+import { FACTIONS, TURN_ORDER, UNITS, ZONES } from './data.js';
 import { PHASES as GP } from './game.js';
 
 const PHASE_LABELS = {
@@ -64,10 +64,18 @@ export class UI {
 
   onMapSelect(sel) {
     if (!sel) return;
+    const phase = this.game.currentPhase;
+    if (sel.type === 'space') {
+      // Free-space destination inside the movement sphere
+      if ((phase === 'combatMove' || phase === 'nonCombatMove') && this.moveFrom) {
+        this.$('move-to').value = '@' + sel.pos.map(v => v.toFixed(2)).join(',');
+        this.renderSelection();
+      }
+      return;
+    }
     const loc = sel.id;
     this.game.selectedLoc = loc;
 
-    const phase = this.game.currentPhase;
     if ((phase === 'combatMove' || phase === 'nonCombatMove') && this.moveFrom && this.moveFrom !== loc) {
       // destination chosen
       this.$('move-to').value = loc;
@@ -79,6 +87,7 @@ export class UI {
       this.moveFrom = loc;
       this.$('move-from').value = loc;
       this._fillMoveUnits(loc);
+      this._updateMoveSphere();
     }
 
     if (phase === 'mobilize' && ZONES[loc] && this.game.zones[loc].owner === this.game.currentFaction) {
@@ -101,13 +110,24 @@ export class UI {
       box.appendChild(row);
       row.querySelector('input').onchange = (e) => {
         this.moveTake[t] = Math.max(0, Math.min(n, parseInt(e.target.value, 10) || 0));
+        this._updateMoveSphere();
       };
     }
   }
 
+  /** Movement sphere for the selected stack: slowest chosen ship/air unit (or whole stack if none chosen). */
+  _updateMoveSphere() {
+    if (!this.moveFrom) { this.map.hideMoveSphere(); return; }
+    const chosen = Object.fromEntries(Object.entries(this.moveTake || {}).filter(([, n]) => n > 0));
+    const take = Object.keys(chosen).length ? chosen : this.game.getStack(this.moveFrom, this.game.currentFaction);
+    const r = this.game.moveRadius(take);
+    if (r > 0) this.map.showMoveSphere(this.moveFrom, r); else this.map.hideMoveSphere();
+  }
+
   doMove() {
     const from = this.$('move-from').value.trim();
-    const to = this.$('move-to').value.trim();
+    let to = this.$('move-to').value.trim();
+    if (to.startsWith('@')) to = to.slice(1).split(',').map(Number);
     if (!from || !to) { this.toast('Pick from and to'); return; }
     const take = {};
     for (const inp of this.$('move-units').querySelectorAll('input')) {
@@ -120,8 +140,9 @@ export class UI {
     if (!res.ok) this.toast(res.err);
     else {
       this.moveFrom = null;
+      this.map.hideMoveSphere();
       this.map.refreshUnits();
-      this.map.highlight({ type: ZONES[to] ? 'zone' : 'deep', id: to });
+      if (typeof to === 'string') this.map.highlight({ type: ZONES[to] ? 'zone' : 'units', id: to });
     }
     this.render();
   }
@@ -174,6 +195,7 @@ export class UI {
 
   render() {
     const g = this.game;
+    if (g.currentPhase !== 'combatMove' && g.currentPhase !== 'nonCombatMove') { this.moveFrom = null; this.map?.hideMoveSphere?.(); }
     this.$('round-label').textContent = `Round ${g.round}`;
     this.$('turn-label').textContent = g.faction.name;
     this.$('turn-dot').style.background = g.faction.color;
@@ -286,7 +308,7 @@ export class UI {
     const loc = this.game.selectedLoc;
     const box = this.$('selection-box');
     if (!loc) {
-      box.innerHTML = '<div class="hint">Click a zone, deep-space lane, or unit stack.</div>';
+      box.innerHTML = '<div class="hint">Click a zone or unit stack. Fleets move anywhere inside their movement sphere.</div>';
       return;
     }
     const name = this.game.locationName(loc);
@@ -301,7 +323,7 @@ export class UI {
           · IPC ${z.ipc}${z.vc ? ' · VC: ' + z.vc : ''}${z.factory ? ' · Factory' : ''}</div>`;
       }
     } else {
-      html += `<div class="hint">Deep-space lane (no income · fleet movement)</div>`;
+      html += `<div class="hint">Fleet in open space (no income)</div>`;
     }
     const rows = this.game.unitCountSummary(loc);
     if (rows.length) {

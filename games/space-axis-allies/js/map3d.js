@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SYSTEMS, DEEP_SPACE, ZONES, FACTIONS, UNITS, GLOBE_R } from './data.js';
+import { SYSTEMS, ZONES, FACTIONS, UNITS, GLOBE_R } from './data.js';
 
 function uvToSphere(u, v, radius) {
   const theta = u * Math.PI * 2;
@@ -130,9 +130,6 @@ export class Map3D {
     this.scene.add(this.root);
 
     this._buildSystems();
-    this._buildDeepSpace();
-    this._buildLinkLines();
-    this._buildGhostGlobe();
 
     this.renderer.domElement.addEventListener('pointerdown', (e) => this._onPointer(e));
     this.renderer.domElement.addEventListener('pointermove', (e) => this._onHover(e));
@@ -864,6 +861,10 @@ export class Map3D {
     {
       const fz = this._activeFocus();
       if (this._camDirU) this._camDirU.value.copy(this._camDir());
+      // camera-facing rings (free fleets, movement sphere rim)
+      const q = this.camera.quaternion;
+      for (const p of Object.values(this.shipPins)) for (const c of p.children) if (c.userData.faceCam) c.quaternion.copy(q);
+      if (this.moveSphere) for (const c of this.moveSphere.group.children) if (c.userData.faceCam) c.quaternion.copy(q);
       for (const [id, sg] of Object.entries(this.systemMeshes)) sg.visible = id === fz || !this._behindGlobe(sg.position);
       for (const g of Object.values(this.deepMeshes)) g.visible = !this._behindGlobe(g.position);
     }
@@ -956,122 +957,6 @@ export class Map3D {
     }
   }
 
-  _buildDeepSpace() {
-    for (const ds of Object.values(DEEP_SPACE)) {
-      const g = new THREE.Group();
-      g.position.set(ds.pos[0], ds.pos[1], ds.pos[2]);
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.95, 0.045, 10, 48),
-        new THREE.MeshStandardMaterial({
-          color: 0x4aa0e8, emissive: 0x2266aa, emissiveIntensity: 0.65,
-          roughness: 0.35, metalness: 0.4, transparent: true, opacity: 0.9,
-        })
-      );
-      ring.rotation.x = Math.PI / 2;
-      g.add(ring);
-      const ring2 = new THREE.Mesh(
-        new THREE.TorusGeometry(1.15, 0.02, 8, 48),
-        new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.25 })
-      );
-      ring2.rotation.x = Math.PI / 2;
-      g.add(ring2);
-      const core = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(0.28, 1),
-        new THREE.MeshStandardMaterial({
-          color: 0x1a3860, emissive: 0x0a2040, emissiveIntensity: 0.4,
-          wireframe: true, roughness: 0.5,
-        })
-      );
-      g.add(core);
-      const label = this._makeTextSprite(ds.name.replace(' Deep', ''), {
-        fontSize: 20, worldHeight: 0.4, y: 1.25, outline: 5,
-      });
-      g.add(label);
-      g.userData = { locId: ds.id, pick: 'deep' };
-      const hit = new THREE.Mesh(
-        new THREE.SphereGeometry(1.2, 8, 8),
-        new THREE.MeshBasicMaterial({ visible: false })
-      );
-      hit.userData = g.userData;
-      g.add(hit);
-      this.root.add(g);
-      this.deepMeshes[ds.id] = g;
-    }
-  }
-
-  _buildLinkLines() {
-    // Soft glowing dashed deep-space corridors
-    const seen = new Set();
-    for (const ds of Object.values(DEEP_SPACE)) {
-      const a = new THREE.Vector3(...ds.pos);
-      for (const link of ds.links) {
-        const key = [ds.id, link].sort().join('|');
-        if (seen.has(key)) continue;
-        seen.add(key);
-        let b;
-        if (DEEP_SPACE[link]) b = new THREE.Vector3(...DEEP_SPACE[link].pos);
-        else if (SYSTEMS[link]) b = new THREE.Vector3(...SYSTEMS[link].pos);
-        else continue;
-
-        this._laneLine(a, b);
-      }
-    }
-  }
-
-  _buildGhostGlobe() {
-    const r = GLOBE_R - 4.2;
-
-    const pts = [];
-    const P = (la, lo) => { const p = THREE.MathUtils.degToRad(la), t = THREE.MathUtils.degToRad(lo - 180);
-      return new THREE.Vector3(r * Math.cos(p) * Math.sin(t), r * Math.sin(p), r * Math.cos(p) * Math.cos(t)); };
-    for (let la = -60; la <= 60; la += 30) for (let lo = 0; lo < 360; lo += 4) pts.push(P(la, lo), P(la, lo + 4));
-    for (let lo = 0; lo < 360; lo += 30) for (let la = -88; la < 88; la += 4) pts.push(P(la, lo), P(la + 4, lo));
-    const grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),
-      this._farCull(new THREE.LineBasicMaterial({ color: 0x3a6aa8, transparent: true, opacity: 0.06, depthWrite: false })));
-    grid.raycast = () => {}; grid.renderOrder = 2;
-    this.root.add(grid);
-  }
-
-  _laneLine(a, b) {
-    {
-      {
-        // Core dashed glow
-        const pts = [];
-        const N = 24;
-        // Gentle great-circle arc along the globe (radius interpolated, lifted slightly mid-way)
-        const ra = a.length(), rb = b.length(), ua = a.clone().normalize(), ub = b.clone().normalize();
-        const ang = ua.angleTo(ub);
-        for (let i = 0; i <= N; i++) {
-          const t = i / N;
-          const dir = ang < 1e-4 ? ua.clone() : ua.clone().multiplyScalar(Math.sin((1 - t) * ang) / Math.sin(ang)).add(ub.clone().multiplyScalar(Math.sin(t * ang) / Math.sin(ang)));
-          pts.push(dir.normalize().multiplyScalar(ra + (rb - ra) * t + Math.sin(Math.PI * t) * ang * 1.2));
-        }
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const glow = new THREE.Line(geo, this._farCull(new THREE.LineDashedMaterial({
-          color: 0x4aa8ff,
-          dashSize: 0.55,
-          gapSize: 0.4,
-          transparent: true,
-          opacity: 0.55,
-          depthWrite: false,
-        })));
-        glow.computeLineDistances();
-        glow.renderOrder = 2;
-        this.root.add(glow);
-
-        // Soft under-glow (wider/fainter solid)
-        const soft = new THREE.Line(
-          geo.clone(),
-          this._farCull(new THREE.LineBasicMaterial({
-            color: 0x1a4068, transparent: true, opacity: 0.22, depthWrite: false,
-          }))
-        );
-        soft.renderOrder = 2;
-        this.root.add(soft);
-      }
-    }
-  }
-
   refreshUnits() {
     for (const p of Object.values(this.shipPins)) {
       p.parent && p.parent.remove(p);
@@ -1130,10 +1015,23 @@ export class Map3D {
       group.position.copy(sysGroup.position).add(local).add(outward.clone().multiplyScalar(hover)).add(side);
       group.userData.outward = outward.clone();
       group.userData.systemId = z.system;
-    } else if (DEEP_SPACE[loc]) {
-      const ds = DEEP_SPACE[loc];
+    } else if (this.game.isFree(loc)) {
+      // Free-space fleet: small glowing hull marker with the unit badge above it
+      const p = this.game.freePos[loc];
       const facIdx = Object.keys(FACTIONS).indexOf(fac);
-      group.position.set(ds.pos[0], ds.pos[1] + 0.55 + facIdx * 0.32, ds.pos[2]);
+      // Factions sharing one open-space spot (a fight) sit side by side
+      const out = new THREE.Vector3(...p).normalize();
+      const tan = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), out).normalize();
+      const present = Object.keys(this.game.units[loc] || {}).filter(f => this.game.totalAt(loc, f) > 0);
+      const k = present.indexOf(fac), off = (k - (present.length - 1) / 2) * 1.5;
+      group.position.set(p[0], p[1], p[2]).addScaledVector(tan, present.length > 1 ? off : 0);
+      const hull = new THREE.Mesh(new THREE.OctahedronGeometry(0.32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 }));
+      hull.scale.set(1.6, 0.5, 0.8);
+      group.add(hull);
+      const halo = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
+      halo.userData.faceCam = true;
+      group.add(halo);
+      group.userData.free = true;
     } else return;
 
     const badge = this._unitRowBadge(stack, color);
@@ -1302,10 +1200,6 @@ export class Map3D {
       const ud = hits[0].object.userData;
       return { type: 'units', id: ud.locId, fac: ud.fac, kind: ud.kind };
     }
-    hits = this.raycaster.intersectObjects(deepHits, false);
-    if (hits.length) {
-      return { type: 'deep', id: hits[0].object.userData.locId };
-    }
     hits = this.raycaster.intersectObjects(sphereHits, false);
     if (hits.length) {
       const hit = hits[0];
@@ -1316,6 +1210,8 @@ export class Map3D {
       const zid = this._nearestZone(sysId, u, v);
       if (zid) return { type: 'zone', id: zid };
     }
+    const sp = this._spacePoint();
+    if (sp) return { type: 'space', id: null, pos: sp.toArray() };
     return null;
   }
 
@@ -1373,6 +1269,13 @@ export class Map3D {
   _onHover(e) {
     const sel = this._pickFromEvent(e);
     this._hoverZone = sel && sel.type === 'zone' ? sel.id : (sel && sel.type === 'units' && ZONES[sel.id] ? sel.id : null);
+    if (this.moveSphere) {
+      let pt = null;
+      if (sel?.type === 'space') pt = new THREE.Vector3(...sel.pos);
+      else if (sel?.id && sel.id !== this.moveSphere.from) { const p = this.game.locPos(sel.id); if (p) pt = new THREE.Vector3(...p); }
+      if (pt && pt.distanceTo(this.moveSphere.center) > this.moveSphere.radius) pt = null;
+      this.previewMove(pt);
+    }
   }
 
   highlight(sel) {
@@ -1395,9 +1298,8 @@ export class Map3D {
       const local = uvToSphere(z.uv[0], z.uv[1], sys.radius * 1.12);
       pos = sg.position.clone().add(local);
       // Orient ring roughly tangent — keep simple horizontal
-    } else if (DEEP_SPACE[sel.id]) {
-      pos = new THREE.Vector3(...DEEP_SPACE[sel.id].pos);
-      pos.y += 1.2;
+    } else if (this.game.isFree(sel.id)) {
+      pos = new THREE.Vector3(...this.game.freePos[sel.id]);
     }
     if (pos) {
       ring.position.copy(pos);
@@ -1454,12 +1356,71 @@ export class Map3D {
       this.controls.update();
       return;
     }
-    if (DEEP_SPACE[locId]) {
-      target = new THREE.Vector3(...DEEP_SPACE[locId].pos);
+    if (this.game.isFree(locId)) {
+      target = new THREE.Vector3(...this.game.freePos[locId]);
       this.controls.target.copy(target);
       this.camera.position.copy(target).add(new THREE.Vector3(near * 0.7, near * 0.45, near));
       this.focusSystem = null;
     }
+  }
+
+  // ——— Free movement sphere ———
+  showMoveSphere(locId, radius) {
+    this.hideMoveSphere();
+    const p = this.game.locPos(locId);
+    if (!p || !radius) return;
+    const c = new THREE.Vector3(...p);
+    const g = new THREE.Group();
+    g.position.copy(c);
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 32),
+      new THREE.MeshBasicMaterial({ color: 0x35d6c0, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide }));
+    shell.raycast = () => {};
+    const wire = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(radius, 16, 8)),
+      new THREE.LineBasicMaterial({ color: 0x5ff5dc, transparent: true, opacity: 0.06, depthWrite: false }));
+    wire.raycast = () => {};
+    const rim = new THREE.Mesh(new THREE.RingGeometry(radius * 0.985, radius, 96),
+      new THREE.MeshBasicMaterial({ color: 0x7ffff0, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
+    rim.raycast = () => {}; rim.userData.faceCam = true;
+    g.add(shell, wire, rim);
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const line = new THREE.Line(lineGeo, new THREE.LineDashedMaterial({ color: 0xbfffff, dashSize: 0.4, gapSize: 0.25, transparent: true, opacity: 0.85, depthWrite: false }));
+    line.visible = false; line.raycast = () => {};
+    const ghost = new THREE.Mesh(new THREE.OctahedronGeometry(0.3), new THREE.MeshBasicMaterial({ color: 0xbfffff, transparent: true, opacity: 0.7 }));
+    ghost.visible = false; ghost.raycast = () => {};
+    g.add(line, ghost);
+    g.renderOrder = 5;
+    this.root.add(g);
+    this.moveSphere = { group: g, center: c, radius, line, ghost, from: locId };
+  }
+
+  hideMoveSphere() {
+    if (!this.moveSphere) return;
+    this.root.remove(this.moveSphere.group);
+    this.moveSphere.group.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); });
+    this.moveSphere = null;
+  }
+
+  /** Point in open space under the pointer: ray ∩ camera-facing plane through the sphere center, if inside the sphere. */
+  _spacePoint() {
+    const ms = this.moveSphere;
+    if (!ms) return null;
+    const n = this.camera.getWorldDirection(new THREE.Vector3()).negate();
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(n, ms.center);
+    const hit = this.raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+    if (!hit || hit.distanceTo(ms.center) > ms.radius) return null;
+    return hit;
+  }
+
+  /** Preview line from the fleet to a destination point (world). */
+  previewMove(pt) {
+    const ms = this.moveSphere;
+    if (!ms) return;
+    if (!pt) { ms.line.visible = ms.ghost.visible = false; return; }
+    const local = pt.clone().sub(ms.center);
+    ms.line.geometry.setFromPoints([new THREE.Vector3(), local]);
+    ms.line.computeLineDistances();
+    ms.ghost.position.copy(local);
+    ms.line.visible = ms.ghost.visible = true;
   }
 
   /** Focus is active while the camera stays close to the focused body. */
