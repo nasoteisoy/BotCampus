@@ -51,3 +51,5 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1f24; fon
 #banner button:hover { background: #4b8cf2; }
 #banner button:active { transform: translateY(2px); box-shadow: 0 2px 0 #24508f; }
 @keyframes pop { from { transform: translate(-50%, -50%) scale(.85); opacity: 0; } }
+
+#minimap { position: absolute; top: 12px; right: 12px; width: 200px; height: 200px; border-radius: 10px; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 4px 18px rgba(0,0,0,.35); pointer-events: auto; cursor: crosshair; image-rendering: auto; }
