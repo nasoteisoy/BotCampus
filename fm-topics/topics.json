@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-15T18:27:00-07:00",
+  "updatedAt": "2026-10-16T18:30:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -147,11 +147,11 @@
       "id": "leader-axis-allies-space",
       "title": "Axis and Allies 1942 space game",
       "what": "Official Axis and Allies 1942 rules as a space game: continents as major planets, islands as dwarf planets, moons for places like England and Japan.",
-      "summary": "1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build done on Leader's computer: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Rough first pass (zones as pins, not painted areas). Name options still open.",
-      "leftOff": "Oct 15, about 6:08 PM PT: first playable build on Leader's computer. Waiting on a name pick and next polish (painted zones, public link).",
+      "summary": "1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Oct 15 night: painted land and sea zones with borders, unit icons for all 12 unit types, island fixes for Japan and others, clearer faction colors. Went live on GitHub Pages.\n5. Oct 16 early: planets placed on a globe at their real latitude and longitude instead of a flat board, so Asia and North America sit close across the Pacific.\n6. Oct 16 morning: dropped deep-space zones for free fleet movement inside a range bubble, fixed disappearing planets, added move highlights plus a Moves toggle (M key) to preview any stack's reach, and cut movement ranges way down.",
+      "leftOff": "Oct 16, about 10:37 AM PT: shorter movement ranges live (pass 28) at nasoteisoy.github.io/BotCampus/games/space-axis-allies/. Open: bombers still reach far, and the phone layout hides the map behind the side panel.",
       "bot": "Leader",
-      "updatedAt": "2026-10-15T18:27:00-07:00",
-      "note": "What: Official Axis and Allies 1942 rules as a space game: continents as major planets, islands as dwarf planets, moons for places like England and Japan.\n\nSummary: 1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build done on Leader's computer: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Rough first pass (zones as pins, not painted areas). Name options still open.\n\nLeft off: Oct 15, about 6:08 PM PT: first playable build on Leader's computer. Waiting on a name pick and next polish (painted zones, public link).\n\nBot: Leader"
+      "updatedAt": "2026-10-16T18:30:00-07:00",
+      "note": "What: Official Axis and Allies 1942 rules as a space game: continents as major planets, islands as dwarf planets, moons for places like England and Japan.\n\nSummary: 1. Oct 15 evening voice ask: build Axis and Allies 1942 as a space game, official 1942 rules only, no house rules.\n2. Map mimics Earth (continents as planets, islands as dwarf planets, named moons).\n3. First playable build: five factions played one full round; combat, conquest, income, and victory-city check work.\n4. Oct 15 night: painted land and sea zones with borders, unit icons for all 12 unit types, island fixes for Japan and others, clearer faction colors. Went live on GitHub Pages.\n5. Oct 16 early: planets placed on a globe at their real latitude and longitude instead of a flat board, so Asia and North America sit close across the Pacific.\n6. Oct 16 morning: dropped deep-space zones for free fleet movement inside a range bubble, fixed disappearing planets, added move highlights plus a Moves toggle (M key) to preview any stack's reach, and cut movement ranges way down.\n\nLeft off: Oct 16, about 10:37 AM PT: shorter movement ranges live (pass 28) at nasoteisoy.github.io/BotCampus/games/space-axis-allies/. Open: bombers still reach far, and the phone layout hides the map behind the side panel.\n\nBot: Leader"
     },
     {
       "id": "deva-tactics-games",
@@ -202,6 +202,16 @@
       "bot": "Dev A",
       "updatedAt": "2026-10-15T18:27:00-07:00",
       "note": "What: Engineering and publish work on the Space Battles phone game.\n\nSummary: 1. Oct 14 evening: pushed shipyards and barracks so planets do not auto-produce units.\n2. Slowed ship build rate at your ask.\n3. Oct 15 evening: shipped bigger planets, towns with governors, and scout/foothold/settle expansion (with admirals still required to move fleets).\n\nLeft off: Oct 15, about 5:50 PM PT: expansion update live. Waiting on play feedback.\n\nBot: Dev A"
+    },
+    {
+      "id": "deva-space-axis-allies",
+      "title": "Axis and Allies space game (publishing)",
+      "what": "Publishing Leader's Axis and Allies 1942 space game to GitHub Pages.",
+      "summary": "1. Oct 15 night: first publish to BotCampus Pages; desktop loads with no errors, phone layout needs work.\n2. Oct 16 morning: pushed passes 23 to 28 (globe layout, free fleet movement, planet fix, move highlights, Moves toggle, shorter ranges), each checked live against the build.",
+      "leftOff": "Oct 16, about 10:37 AM PT: pass 28 live and verified. Waiting on the next redeploy from Leader.",
+      "bot": "Dev A",
+      "note": "What: Publishing Leader's Axis and Allies 1942 space game to GitHub Pages.\n\nSummary: 1. Oct 15 night: first publish to BotCampus Pages; desktop loads with no errors, phone layout needs work.\n2. Oct 16 morning: pushed passes 23 to 28 (globe layout, free fleet movement, planet fix, move highlights, Moves toggle, shorter ranges), each checked live against the build.\n\nLeft off: Oct 16, about 10:37 AM PT: pass 28 live and verified. Waiting on the next redeploy from Leader.\n\nBot: Dev A",
+      "updatedAt": "2026-10-16T18:30:00-07:00"
     },
     {
       "id": "deva-bot-campus",
@@ -437,10 +447,10 @@
       "id": "si-reels",
       "title": "Reel and screenshot investigations",
       "what": "Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.",
-      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).",
-      "leftOff": "Oct 15, about 1:39 PM PT: #129 logged (HIGH for Campus). Waiting on the next link.",
-      "updatedAt": "2026-10-15T18:27:00-07:00",
-      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).\n\nLeft off: Oct 15, about 1:39 PM PT: #129 logged (HIGH for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
+      "summary": "1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).\n6. Oct 15 night: #130 Roadside Games collision juice (MED); #131 Krit Gupta dash feel (MED).",
+      "leftOff": "Oct 15, about 11:39 PM PT: #130 and #131 logged (MED for Campus). Waiting on the next link.",
+      "updatedAt": "2026-10-16T18:30:00-07:00",
+      "note": "What: Breaking down reels and screenshots you send: what it is, who made it, and if it's useful.\n\nSummary: 1. Each link gets a number, summary, creator and how easy it is to copy.\n2. Each gets a Bot Campus usefulness rating.\n3. Ideas fed into Bot Campus and the Trainers games.\n4. Oct 12: through #114.\n5. Oct 14–15: #122 ProtoFlow ad (HARD SKIP); #123 spell-juice tutorial (HIGH); #124 copper-coil HVAC claim (LOW); #125 shuffle-bag crits (HIGH); #126 damage numbers (HIGH); #127 Substrate: Emergence (logged); #128 USB vs Wi‑Fi claim (LOW); #129 Set Monsters (HIGH).\n6. Oct 15 night: #130 Roadside Games collision juice (MED); #131 Krit Gupta dash feel (MED).\n\nLeft off: Oct 15, about 11:39 PM PT: #130 and #131 logged (MED for Campus). Waiting on the next link.\n\nBot: Screenshot Investigator",
       "bot": "Screenshot Investigator"
     },
     {
@@ -462,6 +472,36 @@
       "bot": "Fun Topics",
       "updatedAt": "2026-10-15T18:27:00-07:00",
       "note": "What: Casual deep-dive into early Jewish groups, related books outside the usual Bible set, and the oldest physical manuscripts.\n\nSummary: 1. Oct 15: long voice and chat thread on the Book of Peter, Enoch, Jubilees, and related writings.\n2. Covered Pharisees, Sadducees, Essenes/Qumran, and other early groups: one God, different views on angels and added books.\n3. Mapped where groups lived and who their neighbors were.\n4. Furthest reliable dates: Enoch writings about 300–200 BCE; named groups around 150 BCE.\n5. Oldest physical biblical text discussed: Ketef Hinnom silver scrolls (~600 BCE), then Dead Sea Scrolls from ~250 BCE.\n\nLeft off: Oct 15, about 5:29 PM PT: manuscript timeline answered. Nothing open.\n\nBot: Fun Topics"
+    },
+    {
+      "id": "fun-sphinx-depictions",
+      "title": "Full-body sphinx depictions",
+      "what": "Where ancient art shows a sphinx with its whole body, not just a head.",
+      "summary": "1. Oct 16: full-body sphinxes are common in ancient art; the Great Sphinx of Giza (about 2500 BCE) and the Alabaster Sphinx of Memphis are complete.\n2. Two-dimensional examples: Abusir temple reliefs (about 2450 BCE), Dahshur gold pectorals (about 1870 BCE), Queen Tiye as a winged sphinx (about 1370 BCE), and Tutankhamun's painted chest (about 1330 BCE).\n3. Images of the Great Sphinx itself are rarer and mostly small stelae found around Giza.",
+      "leftOff": "Oct 16, about 1:02 PM PT: answered whether full-body sphinx images exist away from Giza. Nothing open.",
+      "bot": "Fun Topics",
+      "note": "What: Where ancient art shows a sphinx with its whole body, not just a head.\n\nSummary: 1. Oct 16: full-body sphinxes are common in ancient art; the Great Sphinx of Giza (about 2500 BCE) and the Alabaster Sphinx of Memphis are complete.\n2. Two-dimensional examples: Abusir temple reliefs (about 2450 BCE), Dahshur gold pectorals (about 1870 BCE), Queen Tiye as a winged sphinx (about 1370 BCE), and Tutankhamun's painted chest (about 1330 BCE).\n3. Images of the Great Sphinx itself are rarer and mostly small stelae found around Giza.\n\nLeft off: Oct 16, about 1:02 PM PT: answered whether full-body sphinx images exist away from Giza. Nothing open.\n\nBot: Fun Topics",
+      "updatedAt": "2026-10-16T18:30:00-07:00"
+    },
+    {
+      "id": "pe-arduino-projects",
+      "title": "Arduino starter kit projects",
+      "what": "Simple, kid-friendly builds with an Arduino starter kit, starting with no-code circuits.",
+      "summary": "1. Oct 16: identified the kit (Uno board, LCD, buttons, buzzers, LEDs, sensors, servo) and pitched small game ideas like a reaction duel and Simon Says.\n2. Switched to no-code starters that just use the board for power, like a button doorbell light.\n3. Numbered every part from the kit photo and wrote projects that call parts by number: Project 1 (meet the board) and Project 29 (breadboard light path).",
+      "leftOff": "Oct 16, about 6:18 PM PT: Project 1 rewritten to call parts by their photo numbers. Next: more numbered projects.",
+      "bot": "Play Engineer",
+      "note": "What: Simple, kid-friendly builds with an Arduino starter kit, starting with no-code circuits.\n\nSummary: 1. Oct 16: identified the kit (Uno board, LCD, buttons, buzzers, LEDs, sensors, servo) and pitched small game ideas like a reaction duel and Simon Says.\n2. Switched to no-code starters that just use the board for power, like a button doorbell light.\n3. Numbered every part from the kit photo and wrote projects that call parts by number: Project 1 (meet the board) and Project 29 (breadboard light path).\n\nLeft off: Oct 16, about 6:18 PM PT: Project 1 rewritten to call parts by their photo numbers. Next: more numbered projects.\n\nBot: Play Engineer",
+      "updatedAt": "2026-10-16T18:30:00-07:00"
+    },
+    {
+      "id": "ws-senior-de-growth",
+      "title": "Senior data engineer growth",
+      "what": "Getting even better as a senior data engineer, with practice on real-world team problems.",
+      "summary": "1. Oct 16: multiple-choice interview to find where help matters most.\n2. Focus areas picked: getting data access from other teams, stopping scope creep, keeping shared standards steady, and growing senior skills.\n3. Built a practice sandbox company, Harbor & Pine Outfitters, with mock teams, clashing standards, a messy mock API, a gatekeeping data owner, and five practice scenarios.",
+      "leftOff": "Oct 16, about 6:05 PM PT: practice company built and its check passed. Waiting on Chumi to try it.",
+      "bot": "Work Support",
+      "note": "What: Getting even better as a senior data engineer, with practice on real-world team problems.\n\nSummary: 1. Oct 16: multiple-choice interview to find where help matters most.\n2. Focus areas picked: getting data access from other teams, stopping scope creep, keeping shared standards steady, and growing senior skills.\n3. Built a practice sandbox company, Harbor & Pine Outfitters, with mock teams, clashing standards, a messy mock API, a gatekeeping data owner, and five practice scenarios.\n\nLeft off: Oct 16, about 6:05 PM PT: practice company built and its check passed. Waiting on Chumi to try it.\n\nBot: Work Support",
+      "updatedAt": "2026-10-16T18:30:00-07:00"
     }
   ]
 }
