@@ -4,7 +4,7 @@ import { MapControls } from 'three/addons/controls/MapControls.js';
 import { buildMap, renderMinimap, obstacles, sdObs, segmentHitT, pushOut, minObsDist, HALF, heightAt, surfaceY, waterClass, inForest, onRoad, terrainSpeed, WATER_Y, CITY, riverZ, BRIDGES as BRIDGES_INFO, FORD } from './map.js';
 import { NavGrid } from './nav.js';
 import { Particles } from './particles.js';
-import { UNITS, BUILDINGS, DMG_MULT, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
+import { UNITS, BUILDINGS, DMG_MULT, LVL_MULT, BODIES, BODY_KEYS, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
 import { TEAM, SHARED, buildVehicle, buildPlane, buildSquad, buildBuilding, supplyPadTexture, buildFlag } from './models.js';
 import { svg } from './icons.js';
 
@@ -159,6 +159,7 @@ let units = [], buildings = [], shells = [], emitters = [], markers = [], mines 
 const teams = { blue: { money: START_MONEY, rate: 0 }, red: { money: START_MONEY, rate: 0 } };
 const game = { state: 'menu', time: 0, endAt: 0, timeScale: 1, result: null, difficulty: 'normal', holdAI: false, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } };
 const selUnits = new Set();
+const exam = { onFrame: null, onClick: null, close: null };   // Unit Examiner hooks (null in normal play)
 let selBld = null;
 let uid = 0;
 const pickMeshes = [];   // unit + building pick volumes
@@ -211,7 +212,7 @@ function createUnit(type, team, x, z, yaw = team === 'blue' ? Math.PI : 0) {
     vel: new THREE.Vector3(), prev: new THREE.Vector3(x, 0, z), stuck: { t: 0, x, z, n: 0 }, repath: 0, dustT: 0,
     dmg: 0, dmgT: 0, sparkT: 1, flash: 0, recoil: 0, deployT: 0, vis: { blue: team === 'blue', red: team === 'red' }, seen: { blue: 0, red: 0 },
     cd: 0, sprintUntil: 0, suppressedUntil: 0, ambush: false, deployed: false, garrison: null, firedAt: -99, satchel: null,
-    men: def.men || 0, ai: null,
+    men: def.men || 0, ai: null, vs: def.vs,   // vs: per-body attack {lvl, rng} (config.js; the examiner may swap in a tuned copy)
   };
   if (u.kind === 'inf') {
     Object.assign(u, buildSquad(type, team, def.men));
@@ -281,7 +282,7 @@ function hasLOS(a, b) {
   return losClear(ea.x, ea.y, ea.z, eb.x, eb.y, eb.z, [a, b], b.isBld ? b.obs : a.isBld ? a.obs : null);
 }
 function rangeOf(u, tg) {
-  let r = u.def.rng || 0;
+  let r = tg ? (vsOf(u, tg)?.rng || 0) : maxRng(u);   // attack range against this target's body type
   if (u.deployed) r += 8; if (u.garrison) r += 5;
   if (tg && !u.def.indirect && !isAir(tg)) r *= 1 + clamp((pos(u).y - (tg.isBld ? surfaceY(tg.x, tg.z) : pos(tg).y)) / 12, 0, .35);
   return r;
@@ -532,8 +533,15 @@ function addMarker(x, z, color, big = false) {
 // =====================================================================================
 // combat
 // =====================================================================================
-const multOf = (wpn, t) => DMG_MULT[wpn][t.isBld ? 'bld' : t.def.armor];
-function canHurt(u, t) { const w = u.def.wpn; return !!w && multOf(w, t) > 0; }
+// body types & attack levels (config.js): the attacker's level vs the target's body sets damage and range
+const bodyOf = (t) => (t.isBld ? 'bld' : t.def.body);
+const vsOf = (u, t) => u.vs?.[bodyOf(t)];
+const HITSCAN = { mg: true, flak: true, aamg: true };   // only hit-scan weapons can reach aircraft (shells fly under them)
+const lvlMult = (u, t) => LVL_MULT[vsOf(u, t)?.lvl || 0] || 0;
+function canHurt(u, t) { const v = vsOf(u, t); return !!u.def.wpn && !!v && v.lvl > 0 && (!isAir(t) || !!HITSCAN[u.def.wpn]); }
+const maxRng = (u) => { let r = 0; if (u.vs) for (const b of BODY_KEYS) if (u.vs[b].lvl > 0) r = Math.max(r, u.vs[b].rng); return r; };
+// unit attacks: multiplier from the attacker's level; ability damage (satchel, mine) keeps its own table
+function dmgMult(wpn, t, attacker) { if (DMG_MULT[wpn]) return DMG_MULT[wpn][t.isBld ? 'bld' : t.def.armor]; return attacker?.vs ? lvlMult(attacker, t) : 1; }
 function concealed(t) { // harder to spot: infantry in cover, vehicles in forest, ambushers
   if (t.isBld || isAir(t)) return 0;
   const p = pos(t);
@@ -546,8 +554,7 @@ function concealed(t) { // harder to spot: infantry in cover, vehicles in forest
 }
 function validTarget(u, t) {
   if (!t.alive || t.team === u.team || !t.vis[u.team]) return false;
-  if (!canHurt(u, t)) return false;
-  if (isAir(t) !== !!(u.def.wpn === 'flak' || u.def.wpn === 'aamg')) return false;
+  if (!canHurt(u, t)) return false;   // lvl 0 vs this body (or a shell weapon vs aircraft): never a target
   if (t.isBld && !t.everSeen[u.team] && t.type !== 'hq') return false;
   const d = distTo(u, t);
   if (d > rangeOf(u, t)) return false;
@@ -559,11 +566,11 @@ function chooseFireTarget(u) {
   if (u.order?.type === 'attack' && validTarget(u, u.order.target)) return u.order.target;
   if (u.fireTarget && validTarget(u, u.fireTarget) && !u.fireTarget.isBld) return u.fireTarget;
   let best = null, bs = Infinity;
-  const R = (u.def.rng || 0) + 14;
+  const R = maxRng(u) + 14;
   for (const t of units) {
     if (!t.alive || t.team === u.team || Math.abs(pos(t).x - pos(u).x) > R || Math.abs(pos(t).z - pos(u).z) > R) continue;
     if (!validTarget(u, t)) continue;
-    const s = distTo(u, t) / rangeOf(u, t) - multOf(u.def.wpn, t) * 1.2 + (u.team === 'red' ? t.hp / t.maxHp * .4 : 0);
+    const s = distTo(u, t) / rangeOf(u, t) - lvlMult(u, t) * 1.2 + (u.team === 'red' ? t.hp / t.maxHp * .4 : 0);
     if (s < bs) { bs = s; best = t; }
   }
   if (!best) for (const b of buildings) {
@@ -575,7 +582,7 @@ function chooseFireTarget(u) {
 }
 function applyDamage(t, amount, wpn, from, attacker) {
   if (!t.alive) return;
-  let d = amount * multOf(wpn, t);
+  let d = amount * dmgMult(wpn, t, attacker);
   if (!t.isBld) {
     const p = pos(t);
     if (isInf(t)) { if (t.garrison) d *= .35; else if (inForest(p.x, p.z) || inCity(p.x, p.z)) d *= .5; }
@@ -587,7 +594,9 @@ function applyDamage(t, amount, wpn, from, attacker) {
   } else if (!t.built) d *= 1.4;
   if (d <= 0) return;
   const menBefore = t.kind === 'inf' ? menAlive(t) : 0;
+  const hpBefore = t.hp;
   t.hp = Math.max(game.invuln === t.team && t.type === 'hq' ? 1 : 0, t.hp - d); t.flash = .12;
+  if (attacker) { attacker.dealt = (attacker.dealt || 0) + (hpBefore - t.hp); attacker.hits = (attacker.hits || 0) + 1; }  // stat counters (Unit Examiner readout)
   if (attacker?.team === 'blue') game.stats.hits++;
   if (t.team === 'red' && attacker && aiState) aiState.attacked(t, attacker);
   if (t.isBld) { updateBldDamageState(t); if (t.hp <= 0) destroyBuilding(t); return; }
@@ -646,7 +655,7 @@ function fireAt(u, t) {
   if (game.time < u.suppressedUntil) rof *= 2;
   if (isInf(u) && u.speed > .5) rof *= 1.6;
   u.reload = rof * rand(.9, 1.1);
-  u.firedAt = game.time;
+  u.firedAt = game.time; u.shots = (u.shots || 0) + 1;
   let dmg = def.dmg * (isInf(u) ? menAlive(u) / def.men * .5 + .5 : 1);
   if (u.ambush) { dmg *= 2; u.ambush = false; u.cd = ABILITIES.ambush.cd; }
   if (u.team === 'blue') game.stats.shots++;
@@ -904,7 +913,7 @@ function updateUnit(u, dt) {
 function combatTick(u, dt) {
   u.reload -= dt;
   u.tgtT -= dt;
-  if (u.tgtT <= 0) { u.tgtT = .35 + Math.random() * .15; u.fireTarget = u.def.wpn ? chooseFireTarget(u) : null; }
+  if (u.tgtT <= 0) { u.tgtT = .35 + Math.random() * .15; u.fireTarget = u.def.wpn && !u.passive ? chooseFireTarget(u) : null; }
   if (u.fireTarget && !u.fireTarget.alive) u.fireTarget = null;
   const t = u.fireTarget;
   const p = pos(u);
@@ -1091,10 +1100,10 @@ function updatePlane(u, dt) {
       u.loiterT -= dt;
       // fighters chase enemy aircraft that come near the patrol point
       let enemy = null;
-      if (def.wpn === 'aamg') { let bd = 70; for (const e of units) if (e.alive && isAir(e) && e.team !== u.team && e.vis[u.team]) { const d = Math.min(dist2d(pos(e), tp), dist2d(pos(e), p)); if (d < bd) { bd = d; enemy = e; } } }
+      if (def.wpn === 'aamg' && u.vs.air.lvl > 0) { let bd = 70; for (const e of units) if (e.alive && isAir(e) && e.team !== u.team && e.vis[u.team]) { const d = Math.min(dist2d(pos(e), tp), dist2d(pos(e), p)); if (d < bd) { bd = d; enemy = e; } } }
       if (enemy) {
         const ep = pos(enemy), err = steerPlane(u, ep.x, ep.z, dt, 1.8); altWant = ep.y;
-        if (dist2d(ep, p) < def.rng && err < .5 && u.reload <= 0) { u.fireTarget = enemy; fireAt(u, enemy); }
+        if (dist2d(ep, p) < u.vs.air.rng && err < .5 && u.reload <= 0) { u.fireTarget = enemy; fireAt(u, enemy); }
       } else orbit(u, tp.x, tp.z, 24, dt);
       if (u.loiterT <= 0) goHome(u);
       break;
@@ -1127,8 +1136,8 @@ function attackRun(u, dt) {
   if (!tgt || !tgt.alive) { // pick a target near the ordered point (fighter-bombers prefer vehicles)
     let best = null, bs = 1e9;
     for (const t of [...units, ...buildings]) {
-      if (!t.alive || t.team === u.team || isAir(t) || !t.vis[u.team]) continue;
-      const d = dist2d(tgtPos(t), u.airPoint); if (d > 35) continue;
+      if (!t.alive || t.team === u.team || isAir(t) || !t.vis[u.team] || !canHurt(u, t)) continue;
+      const d = dist2d(tgtPos(t), u.airPoint); if (d > vsOf(u, t).rng) continue;   // per-body pick radius around the ordered point
       const s = d - (def.wpn === 'rocket' ? (t.def.armor === 'armor' ? 25 : t.kind === 'veh' || t.kind === 'gun' ? 15 : 0) : (t.isBld ? 25 : 0)); if (s < bs) { bs = s; best = t; }
     }
     tgt = best; u.airTarget = best;
@@ -1141,7 +1150,7 @@ function attackRun(u, dt) {
   if (def.wpn === 'rocket') {
     u.diving = d < 70 && err < .5;
     if (d < 38 && d > 14 && err < .18 && u.ammo > 0 && u.reload <= 0 && tgt) {
-      u.reload = 1.2; u.ammo--;
+      u.reload = 1.2; u.ammo--; u.shots = (u.shots || 0) + 1; u.firedAt = game.time;
       for (const s of [-1, 1]) { const m = p.clone().add(new THREE.Vector3(Math.cos(u.yaw) * s * 2.2, -.5, -Math.sin(u.yaw) * s * 2.2)); const aim = tgt.isBld ? eyeOf(tgt, m) : { x: tp.x, y: tp.y + 1, z: tp.z }; const v = new THREE.Vector3(aim.x - m.x, aim.y - m.y, aim.z - m.z).normalize().multiplyScalar(70); spawnShell(u, m, v, { dmg: def.dmg / 2, wpn: 'rocket', target: tgt, g: 0, splash: 4, life: 2 }); }
       u.runT = 2.6; u.diving = false;
     }
@@ -1149,7 +1158,7 @@ function attackRun(u, dt) {
     // lead the drop: bombs carry the plane's forward speed
     const lead = def.speed * Math.sqrt(2 * p.y / (CFG.gravity * 1.4));
     if (d < lead + 4 && err < .3 && u.ammo > 0) {
-      u.ammo--; u.runT = 3.5;
+      u.ammo--; u.runT = 3.5; u.shots = (u.shots || 0) + 1; u.firedAt = game.time;
       for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(bombGeo, SHARED.dark); m.position.copy(p).add(new THREE.Vector3(Math.sin(u.yaw) * (i - 3) * 2.2, -1, Math.cos(u.yaw) * (i - 3) * 2.2)); scene.add(m); bombs.push({ mesh: m, vel: new THREE.Vector3(Math.sin(u.yaw) * def.speed, -1, Math.cos(u.yaw) * def.speed), dmg: def.dmg, splash: def.splash, owner: u, team: u.team }); }
     }
   }
@@ -1164,14 +1173,15 @@ function observersOf(team) {
   for (const b of buildings) if (b.alive && b.team === team) list.push(b);
   return list;
 }
+const visOf = (o) => (o.isBld ? VISION_BLD : o.visR ?? o.def.vis);   // visR: examiner-tuned vision
 function seesTarget(o, t) {
   const op = o.isBld ? { x: o.x, z: o.z } : pos(o), tp = tgtPos(t);
   const d = t.isBld ? Math.hypot(Math.max(Math.abs(op.x - t.x) - t.hx, 0), Math.max(Math.abs(op.z - t.z) - t.hz, 0)) : dist2d(op, tp);
   const conceal = concealed(t);
-  if (isAir(t)) return d < (o.isBld ? VISION_BLD : o.def.vis) * 1.1 + 10;
-  if (!o.isBld && isAir(o)) return d < o.def.vis && conceal < 3;
+  if (isAir(t)) return d < visOf(o) * 1.1 + 10;
+  if (!o.isBld && isAir(o)) return d < visOf(o) && conceal < 3;
   if (d < (conceal >= 3 ? 7 : 12)) return true;
-  let V = o.isBld ? VISION_BLD : o.def.vis;
+  let V = visOf(o);
   if (conceal === 3) V = Math.min(V, 7); else if (conceal === 2) V = Math.min(V, 26); else if (conceal === 1) V = Math.min(V, 30);
   if (d > V) return false;
   if (t.isBld) return true;
@@ -1191,7 +1201,7 @@ function updateSpotting(dt) {
       for (const r of rv) if (Math.hypot(tp.x - r.x, tp.z - r.z) < r.r) { seen = true; break; }
       if (!seen) for (const o of obs) {
         const op = o.isBld ? o : pos(o);
-        const reach = (o.isBld ? VISION_BLD : o.def.vis) + 20;
+        const reach = visOf(o) + 20;
         if (Math.abs(op.x - tp.x) > reach || Math.abs(op.z - tp.z) > reach) continue;
         if (seesTarget(o, t)) { seen = true; break; }
       }
@@ -1255,7 +1265,7 @@ function incomeOf(team) {
 function updateEconomy(dt) { for (const t of ['blue', 'red']) { teams[t].rate = incomeOf(t); teams[t].money += teams[t].rate * dt; } }
 
 function checkEnd() {
-  if (game.state !== 'playing') return;
+  if (game.state !== 'playing' || game.mode === 'examiner') return;
   const bh = hqOf('blue'), rh = hqOf('red');
   const blueDead = !bh?.alive || !aliveBlds('blue').length, redDead = !rh?.alive || !aliveBlds('red').length;
   if (!blueDead && !redDead) return;
@@ -1560,6 +1570,7 @@ let lastClick = { t: 0, ent: null };
 function handleClick(cx, cy, shift, right, when = performance.now()) {
   if (game.state !== 'playing' && game.state !== 'ending') return;
   if (placing) { if (right) cancelPlacing(); else tryPlace(shift); return; }
+  if (exam.onClick && exam.onClick(cx, cy, right)) return;
   const e = pickEntity(cx, cy);
   const now = when;
   if (!right && e && e.team === 'blue') {
@@ -1615,6 +1626,7 @@ const groups = {};
 let lastGroupKey = { k: null, t: 0 };
 window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'BUTTON' && (e.code === 'Space' || e.code === 'Enter')) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   if (game.state === 'menu') return;
   keys.add(e.code);
   const dm = /^Digit([1-5])$/.exec(e.code);
@@ -1824,7 +1836,7 @@ function renderSelPanel() {
   const sp = $('#selpanel');
   if (selBld && selBld.alive) {
     const b = selBld, d = b.def;
-    const prod = d.units.map((t) => { const U = UNITS[t]; return `<button class="pbtn" data-unit="${t}" style="--c:${BRANCHES[U.br].color}" data-tip="${esc(tipFor(U.name, U.cost, U.desc, U.ability ? `<br><span class='uses'>Ability: ${ABILITIES[U.ability].name}</span>` : ''))}">${svg(t, 'blue')}<span class="price">${fmt$(U.cost)}</span><i class="q"></i><i class="bar"></i></button>`; }).join('');
+    const prod = d.units.map((t) => { const U = UNITS[t]; return `<button class="pbtn" data-unit="${t}" style="--c:${BRANCHES[U.br].color}" data-tip="${esc(tipFor(U.name, U.cost, U.desc, `<br><span class='uses'>Body: ${BODIES[U.body].icon} ${BODIES[U.body].name}</span>` + (U.ability ? `<br><span class='uses'>Ability: ${ABILITIES[U.ability].name}</span>` : '')))}">${svg(t, 'blue')}<span class="price">${fmt$(U.cost)}</span><i class="q"></i><i class="bar"></i></button>`; }).join('');
     sp.innerHTML = `<div class="head">${svg(b.type, 'blue')}<div><b>${d.name}</b><div class="sub" id="bstate"></div></div></div>${prod ? `<div class="prod">${prod}</div><div class="hint">${TOUCH.on ? 'Tap: queue · Hold: cancel · <b>⚑ Rally</b> button: set rally point' : 'Click: queue · Right-click: cancel · Right-click ground: rally point'}</div>` : `<div class="hint">${b.type === 'hq' ? 'Your HQ. If it falls, you lose. +$120/min.' : b.type === 'depot' ? 'Supply depot: +$270/min.' : ''}</div>`}`;
     sp.querySelectorAll('[data-unit]').forEach((el) => {
       el.addEventListener('click', () => { if (el._lpDone) { el._lpDone = false; return; } if (!queueUnit(selBld, el.dataset.unit)) toast(!selBld.built ? 'Still under construction' : teams.blue.money < UNITS[el.dataset.unit].cost ? 'Not enough money' : 'Queue full'); updatePanelDynamic(); });
@@ -1835,10 +1847,12 @@ function renderSelPanel() {
   }
   const list = [...selUnits].filter((u) => u.alive);
   if (!list.length) { sp.classList.add('hidden'); sp.innerHTML = ''; return; }
-  const cards = list.slice(0, 24).map((u) => `<div class="ucard" data-id="${u.id}" data-tip="${esc(`<b>${u.def.name}</b><br><span class='desc'>${u.def.desc}</span>`)}">${svg(u.type, 'blue')}<i class="smk"></i><i class="fire"></i></div>`).join('');
+  const cards = list.slice(0, 24).map((u) => `<div class="ucard" data-id="${u.id}" data-tip="${esc(`<b>${u.def.name}</b> <span class='uses'>${BODIES[u.def.body].icon} ${BODIES[u.def.body].name}</span><br><span class='desc'>${u.def.desc}</span>`)}">${svg(u.type, 'blue')}<i class="smk"></i><i class="fire"></i></div>`).join('');
   const abs = [...new Set(list.map((u) => u.def.ability).filter(Boolean))];
   const abHtml = abs.map((a) => { const A = ABILITIES[a]; return `<button class="abtn" data-ab="${a}" data-tip="${esc(tipFor(A.name + ` <span class='key'>${A.label}</span>`, 0, A.desc))}">${svg(a)}<span class="hk">${A.label}</span><i class="cdr"></i></button>`; }).join('');
-  sp.innerHTML = `<div class="ucards">${cards}${list.length > 24 ? `<div class="more">+${list.length - 24}</div>` : ''}</div>${abHtml ? `<div class="abil">${abHtml}</div>` : ''}`;
+  const types = [...new Set(list.map((u) => u.type))];
+  const bodies = `<div class="ubody">${types.slice(0, 3).map((t) => `<span>${BODIES[UNITS[t].body].icon} <b>${UNITS[t].name}</b> · ${BODIES[UNITS[t].body].name}</span>`).join('')}${types.length > 3 ? `<span>+${types.length - 3}</span>` : ''}</div>`;
+  sp.innerHTML = `${bodies}<div class="ucards">${cards}${list.length > 24 ? `<div class="more">+${list.length - 24}</div>` : ''}</div>${abHtml ? `<div class="abil">${abHtml}</div>` : ''}`;
   sp.querySelectorAll('.ucard').forEach((el) => el.addEventListener('click', (e) => { const u = units.find((u) => u.id === el.dataset.id); if (u) { if (e.shiftKey) { selUnits.delete(u); hudDirty = true; } else selectUnits([u]); } }));
   sp.querySelectorAll('[data-ab]').forEach((el) => el.addEventListener('click', () => useAbility([...selUnits], el.dataset.ab)));
   sp.classList.remove('hidden');
@@ -1905,7 +1919,8 @@ function clearWorld() {
 function startGame(diff = game.difficulty) {
   clearWorld();
   game.difficulty = diff;
-  Object.assign(game, { state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
+  exam.close?.();
+  Object.assign(game, { mode: null, state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
   teams.blue.money = START_MONEY; teams.red.money = START_MONEY;
   aiState = makeAI(diff);
   if (TOUCH.on) { const th = $('#touchhelp'); th.classList.add('on'); clearTimeout(th._t); th._t = setTimeout(() => th.classList.remove('on'), 9000); }
@@ -1930,6 +1945,7 @@ function showBanner() {
 $('#restart').addEventListener('click', () => { $('#banner').classList.add('hidden'); game.state = 'menu'; $('#start').classList.remove('hidden'); });
 document.querySelectorAll('#start [data-diff]').forEach((el) => el.addEventListener('click', () => { document.querySelectorAll('#start [data-diff]').forEach((e) => e.classList.toggle('on', e === el)); game.difficulty = el.dataset.diff; }));
 $('#play').addEventListener('click', () => startGame(game.difficulty));
+$('#examiner')?.addEventListener('click', () => openExaminer());
 
 // =====================================================================================
 // per-frame visuals & loop
@@ -1967,7 +1983,7 @@ let cpuMs = 0, fps = 60, fpsAcc = 0, fpsN = 0, simMs = 0;
 function step(dt) {
   if (game.state !== 'over') game.time += dt;
   if (game.state === 'playing' || game.state === 'ending') {
-    updateEconomy(dt);
+    if (game.mode !== 'examiner') updateEconomy(dt);
     if (!game.holdAI && aiState && game.state === 'playing') aiState.tick(dt);
     for (const b of buildings) { updateBuilding(b, dt); bldDamageFx(b, dt); }
   }
@@ -1985,7 +2001,8 @@ function frame() {
   const t0 = performance.now();
   const raw = clock.getDelta(); const dt = Math.min(raw, .05);
   fpsAcc += raw; fpsN++; if (fpsAcc > .5) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; }
-  if (game.state !== 'menu') for (let s = 0; s < game.timeScale; s++) step(dt);
+  if (game.state !== 'menu') { if (game.timeScale >= 1) for (let s = 0; s < game.timeScale; s++) step(dt); else if (game.timeScale > 0) step(dt * game.timeScale); }  // < 1: slow motion (Unit Examiner)
+  if (exam.onFrame) exam.onFrame(dt);
   simMs = simMs * .9 + (performance.now() - t0) * .1;
   updateVisuals(dt, performance.now() / 1000);
   updateCamera(dt);
@@ -2007,7 +2024,7 @@ frame();
 // test / debug hooks
 // =====================================================================================
 const entById = (id) => units.find((u) => u.id === id) || buildings.find((b) => b.id === id);
-const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
+const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
 const bInfo = (b) => ({ id: b.id, type: b.type, team: b.team, hp: b.hp, maxHp: b.maxHp, dmg: b.dmg, alive: b.alive, built: b.built, progress: b.progress, x: b.x, z: b.z, hx: b.hx, hz: b.hz, queue: [...b.queue], rally: { ...b.rally }, visBlue: b.vis.blue, selected: selBld === b });
 window.__game = {
   get state() { return game.state; }, get result() { return game.result; }, get stats() { return { ...game.stats }; }, get fps() { return fps; }, get cpuMs() { return cpuMs; }, get simMs() { return simMs; },
@@ -2028,7 +2045,7 @@ window.__game = {
   ability: (ids, ab) => useAbility(ids.map(entById), ab),
   select: (ids) => selectUnits(ids.map(entById)), selectBuilding: (id) => selectBuilding(entById(id)),
   selection: () => ({ units: [...selUnits].map((u) => u.id), building: selBld?.id || null }),
-  damage: (id, n, wpn = 'cannon') => { const e = entById(id); if (e) applyDamage(e, n / multOf(wpn, e), wpn, null, null); },
+  damage: (id, n, wpn = 'cannon') => { const e = entById(id); if (e) applyDamage(e, n, wpn, null, null); },   // exactly n (no attacker: multiplier 1)
   kill: (id) => { const e = entById(id); if (e?.alive) { if (e.isBld) { e.hp = 0; destroyBuilding(e); } else { e.hp = 0; killUnit(e); } } },
   teleport: (id, x, z) => { const u = entById(id); pos(u).set(x, isAir(u) ? pos(u).y : surfaceY(x, z), z); u.prev.copy(pos(u)); u.safe?.copy(pos(u)); stop(u); u.order = null; if (u.soldiers) for (const s of u.soldiers) { s.x = x + s.ox; s.z = z + s.oz; } },
   face: (id, yaw) => { const u = entById(id); u.yaw = yaw; },
@@ -2069,6 +2086,55 @@ window.__game = {
   cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
   touchUI: () => TOUCH.on, lowProfile: LOW, pixelRatio: () => renderer.getPixelRatio(), shadowMapSize: () => sun.shadow.mapSize.x, particleCaps: () => [fx.cap, smoke.cap],
   boxMode: () => boxMode, rallyMode: () => rallyMode,
+  // body types / attack levels (test hooks)
+  bodyOf: (id) => bodyOf(entById(id)), canHit: (id, tid) => canHurt(entById(id), entById(tid)), validTarget: (id, tid) => validTarget(entById(id), entById(tid)),
+  chooseTarget: (id) => { const u = entById(id); return chooseFireTarget(u)?.id || null; }, rangeVs: (id, tid) => rangeOf(entById(id), entById(tid)),
 };
 
 if (IS_TOUCH) enableTouchUI();
+
+// =====================================================================================
+// Unit Examiner (sandbox): js/examiner.js drives the real game code through this API.
+// It is only loaded when opened (start-screen button or index.html?examiner); normal Play never touches it.
+// =====================================================================================
+function startExaminerWorld() {
+  clearWorld();
+  aiState = null;
+  Object.assign(game, { mode: 'examiner', state: 'playing', time: 0, endAt: 0, result: null, holdAI: true, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
+  teams.blue.money = teams.red.money = 1e9; teams.blue.rate = teams.red.rate = 0;
+  $('#banner').classList.add('hidden'); $('#start').classList.add('hidden'); $('#hud').classList.remove('hidden');
+  hudDirty = true;
+}
+function removeAirHome(u) { if (u.home && !u.home.isBld) u.home = null; }
+const EXAPI = {
+  THREE, scene, camera, controls, canvas, renderer, game, teams, cam, CFG, TOUCH, LOW,
+  get units() { return units; }, get buildings() { return buildings; }, get mines() { return mines; }, get reveals() { return reveals; },
+  get selUnits() { return selUnits; }, houses,
+  startWorld: startExaminerWorld, clearWorld, createUnit, createBuilding, orderMove, orderAttack, orderGarrison, airOrder, goHome, useAbility, stop, killUnit, destroyBuilding,
+  rangeOf, distTo, menAlive, speedOf, tgtPos, pos, isAir, isInf, canHurt, lvlMult, bodyOf, vsOf, maxRng, HITSCAN, validTarget, concealed, homeOf, removeAirHome,
+  selectUnits, clearSelection, groundAt, pickEntity, pickHouse, toScreen, toast, addMarker, surfaceY, inForest, onRoad, inCity, heightAt, waterClass,
+  addReveal: (team) => reveals.push({ team, x: 0, z: 0, r: 999, until: 1e9, exam: true }),
+  removeReveals: () => { reveals = reveals.filter((r) => !r.exam); },
+  hurt: (e, frac) => {  // examiner "Damage it": remove a fraction of max HP through the normal damage-state code
+    if (!e?.alive) return; const menBefore = isInf(e) ? menAlive(e) : 0;
+    e.hp = Math.max(0, e.hp - e.maxHp * frac); e.flash = .12;
+    if (e.isBld) { updateBldDamageState(e); if (e.hp <= 0) destroyBuilding(e); return; }
+    updateDamageState(e);
+    if (isInf(e)) { const m = menAlive(e); if (m < menBefore && e.im.visible) for (let k = m; k < menBefore; k++) { const s = e.soldiers[k]; if (s) for (let i = 0; i < 5; i++) smoke.spawn(s.x, s.y + .4, s.z, rand(-1, 1), rand(.3, 1.2), rand(-1, 1), rand(.6, 1), .8, 1.5, .55, .5, .42, .5, 1.5, 0); } e.im.count = m; }
+    if (e.hp <= 0) killUnit(e);
+  },
+  kill: (e) => { if (!e?.alive) return; e.hp = 0; if (e.isBld) destroyBuilding(e); else killUnit(e); },
+  stopUnit: (u) => { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } else goHome(u); },
+  focusAt: (x, z, d) => window.__game.focus(x, z, d),
+  panTo: (x, z, k = 1) => { const mv = new THREE.Vector3((x - controls.target.x) * k, 0, (z - controls.target.z) * k); controls.target.add(mv); camera.position.add(mv); cam.shift.set(0, 0, 0); },
+  cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
+  backToMenu: () => { exam.close?.(); clearWorld(); Object.assign(game, { mode: null, state: 'menu', timeScale: 1 }); $('#hud').classList.add('hidden'); $('#start').classList.remove('hidden'); setCameraHome(); },
+  enableTouchUI,
+};
+let examLoading = null;
+function openExaminer() {
+  examLoading ||= import('./examiner.js');
+  return examLoading.then((m) => m.openExaminer(EXAPI, exam));
+}
+window.__game.openExaminer = openExaminer;
+if (new URLSearchParams(location.search).has('examiner')) openExaminer();

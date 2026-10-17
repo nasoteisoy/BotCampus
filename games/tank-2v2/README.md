@@ -47,9 +47,31 @@ The files are static: `index.html`, `css/style.css` and `js/*.js`. three.js r169
 - **Lighter renderer** on touch devices and small screens: pixel ratio 1.25, 1024 shadow map, about half the particles.
 - **Mouse and keyboard** controls are unchanged. A touch only switches on the touch UI. While placing on PC, R also rotates the building.
 
+## Body types and attack levels
+Every unit and building has one of six **body types**: 🪖 Infantry (`inf`), 🛡️ Armor (`armor`), ✈️ Air (`air`), 💥 Artillery (`art`, towed guns), 🚙 Truck/Jeep (`truck`), 🏠 Building (`bld`). The body type shows in the production tooltip and the selection panel.
+
+Each unit in `js/config.js` has `vs: { inf, armor, air, art, truck, bld }`, and each entry is `{ lvl, rng }`:
+- `lvl` 0–5 sets the damage multiplier through `LVL_MULT = [0, 0.06, 0.4, 0.75, 1.0, 1.4]`. Level 0 means the unit can't hit that body, so it never targets it.
+- `rng` is the engagement range against that body. Deploy (+8), garrison (+5) and the height bonus still apply on top. For aircraft, `rng` is the radius around the ordered point in which they pick targets.
+- Special cases keep their own rules: the howitzer's minimum range, MG deploy, the AA gun's anti-air only, indirect fire, the fighter-bomber's dive (fires 14–38 m ahead), bomber ammo, and satchel/mine damage (`DMG_MULT.satchel` / `.mine`).
+- Vision is `vis`. The old weapon × armor table is kept as a comment in `config.js`. Levels were seeded from it as the nearest level on a log scale.
+
+## Unit Examiner (sandbox)
+Open it with **🔍 Unit Examiner** on the start screen, or go straight to `index.html?examiner`. It uses the real game code for movement, combat, abilities and models on the real map. There's no economy, AI or win/lose, and money is unlimited. Normal Play is unchanged, and `examiner.js` only loads when you open the Examiner.
+- **Pick tab**: choose a unit (grouped by branch). It spawns as blue. Choose an opponent: any unit, a building, or none. The opponent spawns as red in 😴 Dummy (never fires), 🛡️ Hold (fires, never moves) or ⚔️ Fight back mode. You can also pick the arena (forest edge / town / open field) and turn "see everything" on or off.
+- **Test tab**: Move here (click or tap the ground), Attack, Stop, the unit's ability, −25% HP, Kill and Reset, for both blue and red. Speed is ⏸ / ¼× / ½× / 1× / 2×, with camera follow.
+  - Live stats: HP or men left, state, target, range, reload, speed, ability cooldown, damage dealt, plus the config stats.
+- **Attack matrix & rings**: one row per body type with level pips, range and multiplier. "Can't hit" rows (level 0) have no ring.
+  - Ground rings, each with its own checkbox: one per hittable body, vision, plus min range / deploy / dive / bomb drop / satchel / repair where they apply. Rings with the same radius are nested and labeled with class, level and multiplier.
+  - 🎛 **Tune** edits level and range live (+/− or slider) and vision. Edits are saved in this browser (`localStorage`) and apply only inside the Examiner. Each unit has a Reset to defaults. `config.js` never changes.
+- **Notes tab**: per-unit notes (saved in `localStorage`) with quick chips. **📋 Copy all notes** copies a plain-text report of every note plus each tuned value as `default -> mine`.
+- Desktop shows a side panel. On phones it's a bottom sheet you can collapse; tap a button, then tap the ground.
+
 ## Files
 - `js/main.js`: game loop, economy, placement, production, units, squads, abilities, aircraft, combat, fog, AI, input, HUD, test hooks (`window.__game`)
-- `js/config.js`: economy constants, units, buildings, abilities, damage table, supply spots
+- `js/config.js`: economy constants, units (with per-body attack levels `vs`), body types, level → damage table, buildings, abilities, supply spots
+- `js/examiner.js`: Unit Examiner sandbox (lazy-loaded only when opened)
+- `css/examiner.css`: Examiner panel / bottom sheet styles
 - `js/models.js`: low-poly team-colored vehicles, guns, planes, soldiers and buildings
 - `js/icons.js`: SVG icons for the HUD
 - `js/map.js`: terrain, river, bridges, forest, roads, farm, city
@@ -58,8 +80,11 @@ The files are static: `index.html`, `css/style.css` and `js/*.js`. three.js r169
 
 ## Test (box)
     export PLAYWRIGHT_BROWSERS_PATH=/workspace/pw-runner/browsers
-    node test/playtest.mjs                 # 65 checks; writes screenshots/11-17
+    node test/playtest.mjs                 # 66 checks; writes screenshots/11-17
     node test/stress.mjs 11 normal 1       # AI vs idle player (HQ invulnerable), 11 game minutes, checks for stalls and errors
     VULN=1 node test/stress.mjs 15 easy 1  # same, but the AI can win the match
     node test/mobile.mjs                   # 45 checks; iPhone 13 landscape + portrait emulation (hasTouch); writes screenshots/18-20
+    node test/examiner.mjs                 # 72 checks; every unit: move / fire / ability / damage states / rings, tuning, notes, copy,
+                                           #   normal Play untouched, iPhone 13 by tap; writes screenshots/examiner-*.png + examiner-results.json
+    node test/bodies.mjs                   # every unit has 6 body entries; level-0 bodies are never targeted or damaged; level>0 ones are
 The tests use `__game.simulate(sec)` to fast-forward without rendering, because headless SwiftShader renders at about 1 to 6 fps.

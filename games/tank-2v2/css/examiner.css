@@ -1,0 +1,182 @@
+/* ===== Unit Examiner (only active with body.examiner; the start button is the only thing visible otherwise) ===== */
+.startbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; align-items: center; }
+#examiner { font-size: 16px; font-weight: 800; padding: 12px 22px; border-radius: 10px; border: 1px solid #6fa8ff; cursor: pointer; background: rgba(61,126,230,.16); color: #dfe9ff; box-shadow: 0 4px 0 rgba(36,80,143,.6); }
+#examiner:hover { background: rgba(61,126,230,.3); }
+#examiner:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(36,80,143,.6); }
+@media (max-width: 600px), (max-height: 520px) { #examiner { font-size: 15px; padding: 10px 18px; } }
+
+#ex.hidden, #exlabels.hidden { display: none; }
+body.examiner #topbar, body.examiner #buildbar, body.examiner #selpanel, body.examiner #help, body.examiner #touchbar,
+body.examiner #placebar, body.examiner #touchhelp, body.examiner #minimap { display: none !important; }
+body.examiner #toast { top: 52px; z-index: 12; background: rgba(20, 40, 70, .92); border-color: rgba(120,180,255,.5); }
+
+#ex { position: fixed; inset: 0; pointer-events: none; z-index: 8; color: #e8edf2; font-size: 13px; }
+#ex button { cursor: pointer; font: inherit; color: inherit; touch-action: manipulation; }
+#extop { position: absolute; left: 12px; top: 12px; display: flex; gap: 10px; align-items: center; pointer-events: auto; padding: 5px 10px 5px 5px; border-radius: 10px; background: rgba(16,20,26,.8); border: 1px solid rgba(255,255,255,.12); }
+#extop button { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.07); font-weight: 700; }
+#extop .hint { font-size: 11px; color: #9fb3c8; }
+
+#expanel { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 372px; display: flex; flex-direction: column; pointer-events: auto;
+  background: rgba(14,18,24,.9); border: 1px solid rgba(255,255,255,.13); border-radius: 12px; backdrop-filter: blur(5px); overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+#exhead { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.exgrab { display: none; }
+.excur { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; color: #4aa3ff; }
+.excur svg { width: 40px; height: 32px; flex: none; }
+.excur b { display: block; color: #fff; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.excur small { display: block; color: #ff9a8a; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exspeed { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); flex: none; }
+.exspeed button { min-width: 34px; height: 34px; padding: 0 4px; border: 0; background: rgba(255,255,255,.04); font-weight: 800; font-size: 12.5px; }
+.exspeed button + button { border-left: 1px solid rgba(255,255,255,.12); }
+.exspeed button.on { background: #3d7ee6; }
+.exfollow { width: 36px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); font-size: 16px; flex: none; opacity: .55; }
+.exfollow.on { opacity: 1; border-color: #6ff3ff; background: rgba(40,90,110,.6); }
+#extabs { display: flex; gap: 4px; padding: 6px 8px 0; }
+#extabs button { flex: 1; padding: 8px 4px; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; background: transparent; font-weight: 800; color: #9fb3c8; }
+#extabs button.on { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.12); color: #fff; }
+#extabs small { background: #ffd65a; color: #222; border-radius: 8px; padding: 0 5px; font-size: 10px; }
+#exbody { flex: 1; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 8px 10px 12px; background: rgba(255,255,255,.035); }
+.exsec { display: none; }
+#ex[data-tab="pick"] [data-sec="pick"], #ex[data-tab="test"] [data-sec="test"], #ex[data-tab="notes"] [data-sec="notes"] { display: block; }
+.exlab { margin: 10px 0 5px; font-weight: 800; font-size: 12px; color: #cfd8e1; display: flex; align-items: center; gap: 6px; }
+.exlab:first-child { margin-top: 2px; }
+.exlab small { font-weight: 600; color: #8796a5; }
+.exg { margin-bottom: 6px; padding: 5px; border-radius: 9px; background: color-mix(in srgb, var(--c) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.exgh { font-size: 11.5px; font-weight: 800; color: var(--c); margin: 0 0 4px 2px; }
+.exgh small { color: #8796a5; font-weight: 600; }
+.exgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+.exu { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px 3px; min-height: 58px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #4aa3ff !important; }
+.exu svg { width: 40px; height: 30px; }
+.exu span { font-size: 10px; line-height: 1.1; color: #dfe7ee; text-align: center; }
+.exu:hover { background: rgba(255,255,255,.12); }
+.exu.on { border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset; background: rgba(40,90,110,.5); }
+.exu .nd { position: absolute; top: -3px; right: -2px; font-style: normal; font-size: 11px; }
+.exrow { display: flex; gap: 6px; align-items: center; }
+#exopp { width: 100%; padding: 8px; border-radius: 8px; background: #1e252e; color: #fff; border: 1px solid rgba(255,255,255,.2); font: inherit; font-size: 14px; }
+.exseg { display: flex; margin-top: 6px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); }
+.exseg button { flex: 1; padding: 8px 4px; border: 0; background: rgba(255,255,255,.04); font-weight: 700; font-size: 12px; min-height: 38px; }
+.exseg button + button { border-left: 1px solid rgba(255,255,255,.12); }
+.exseg button.on { background: #b8433a; }
+.exseg[data-seg="arena"] button.on { background: #3d7ee6; }
+.exchk { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #cfd8e1; }
+.exchk.inline { margin: 0 0 0 auto; font-weight: 600; }
+.exchk small { color: #8796a5; }
+.exchk input, .exli input { width: 18px; height: 18px; accent-color: #3d7ee6; flex: none; }
+
+.exacts { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 5px; }
+.exa { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 4px 2px; border-radius: 9px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); font-size: 18px; }
+.exa span { font-size: 10.5px; font-weight: 700; color: #dfe7ee; line-height: 1.1; text-align: center; }
+.exa svg { width: 30px; height: 24px; }
+.exa:hover { background: rgba(255,255,255,.13); }
+.exa:active { transform: scale(.95); }
+.exa.on, .exa.active { border-color: #6ff3ff; box-shadow: 0 0 8px #6ff3ff; }
+.exa.ab { background: radial-gradient(circle at 40% 35%, #4b5a66, #26303a); }
+.exa .cdr { position: absolute; inset: 0; pointer-events: none; border-radius: 9px; }
+.exa.reset { border-color: rgba(255,214,90,.5); }
+.exacts.dead .exa:not(.reset) { opacity: .35; }
+.exred { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 5px 6px; border-radius: 8px; background: rgba(184,67,58,.15); border: 1px solid rgba(255,120,100,.3); font-size: 12px; }
+.exred .rn { flex: 1; font-weight: 700; } .exred .rn small { font-weight: 600; }
+.exred .rhp { color: #ffb0a0; font-variant-numeric: tabular-nums; }
+.exred button { padding: 5px 8px; min-height: 32px; border-radius: 7px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); font-size: 12px; font-weight: 700; }
+
+.exlive { display: grid; gap: 3px; }
+.exr { display: grid; grid-template-columns: 20px 62px 1fr; align-items: start; gap: 4px; padding: 3px 4px; border-radius: 6px; background: rgba(255,255,255,.04); font-size: 12px; line-height: 1.35; }
+.exr > i { font-style: normal; text-align: center; }
+.exr > span { color: #8fa3b6; font-weight: 700; font-size: 11px; padding-top: 1px; }
+.exr b { color: #fff; }
+.exr em { font-style: normal; font-size: 10.5px; padding: 0 4px; border-radius: 4px; background: rgba(255,255,255,.08); }
+.exr em.ok { background: rgba(77,255,136,.18); color: #8fffb5; } .exr em.no { background: rgba(255,120,100,.18); color: #ffb0a0; }
+.exr em.ds.smoking { background: rgba(200,200,200,.2); } .exr em.ds.burning { background: rgba(255,120,30,.3); color: #ffd0a0; }
+.flags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.flags span { font-size: 10.5px; padding: 0 5px; border-radius: 4px; background: rgba(111,243,255,.12); color: #bff8ff; }
+.exbar { display: inline-block; vertical-align: middle; width: 54px; height: 6px; margin-right: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.exbar > i { display: block; height: 100%; background: #6ff3ff; }
+.exbar.clean > i { background: #4dff88; } .exbar.smoking > i { background: #ffd65a; } .exbar.burning > i { background: #ff7a3a; } .exbar.red > i { background: #ff5a4a; } .exbar.cd > i { background: #c58cff; }
+
+.exlegend { display: grid; gap: 2px; }
+.exlegend.off { opacity: .4; }
+.exli { display: grid; grid-template-columns: 20px 26px 1fr auto auto; align-items: center; gap: 5px; padding: 3px 4px; border-radius: 6px; background: rgba(255,255,255,.04); font-size: 12px; }
+.exli .sw { height: 4px; border-radius: 2px; background: var(--c); box-shadow: 0 0 4px var(--c); }
+.exli .sw.dash { background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 10px); box-shadow: none; }
+.exli b { font-variant-numeric: tabular-nums; } .exli em { font-style: normal; color: #ffe08a; font-weight: 700; min-width: 34px; text-align: right; }
+.excant { margin-top: 4px; font-size: 11.5px; color: #ffb0a0; }
+.excfg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.excfg span { display: flex; align-items: center; gap: 3px; padding: 3px 5px; border-radius: 6px; background: rgba(255,255,255,.05); font-size: 11px; color: #8fa3b6; min-width: 0; }
+.excfg i { font-style: normal; }
+.excfg b { margin-left: auto; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exdesc { margin-top: 6px; font-size: 11.5px; color: #9fb3c8; line-height: 1.35; }
+
+.exnh { display: flex; align-items: center; gap: 8px; color: #4aa3ff; margin-bottom: 6px; }
+.exnh svg { width: 44px; height: 34px; }
+.exnh b { display: block; color: #fff; font-size: 14px; } .exnh small { color: #8796a5; font-size: 11px; }
+#exnote, #exreport { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22); background: #1a2028; color: #fff; font: inherit; font-size: 14px; resize: vertical; user-select: text; -webkit-user-select: text; }
+#exreport { margin-top: 6px; font-size: 12px; font-family: ui-monospace, monospace; }
+#exreport.hidden { display: none; }
+.exquick { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.exquick button { padding: 5px 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.05); font-size: 11.5px; }
+.exbig { padding: 10px 16px; border-radius: 9px; border: 0; background: #3d7ee6; font-weight: 800; font-size: 14px; box-shadow: 0 3px 0 #24508f; }
+.exsaved { font-size: 12px; color: #8fffb5; }
+.exnlist { display: grid; gap: 4px; }
+.exnlist button { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 6px; text-align: left; padding: 4px 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: #4aa3ff !important; }
+.exnlist svg { grid-row: span 2; width: 40px; height: 30px; }
+.exnlist b { color: #fff; font-size: 12px; } .exnlist span { color: #9fb3c8; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exempty { color: #8796a5; font-size: 12px; padding: 6px; }
+
+#exlabels { position: fixed; inset: 0; pointer-events: none; z-index: 7; overflow: hidden; }
+.exlbl { position: absolute; left: 0; top: 0; padding: 1px 6px; border-radius: 6px; border: 1.5px solid #fff; background: rgba(10,13,18,.82); color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; will-change: transform; }
+
+/* ---------- phone: bottom sheet ---------- */
+@media (max-width: 699px), (max-height: 519px) and (max-width: 999px) {
+  #extop { left: 6px; top: calc(6px + env(safe-area-inset-top)); padding: 3px 6px 3px 3px; gap: 6px; }
+  #extop .hint { display: none; } #extop button { padding: 6px 8px; }
+  #expanel { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 47%; border-radius: 14px 14px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+  #ex.min #expanel { height: auto; } #ex.min #extabs, #ex.min #exbody { display: none; }
+  .exgrab { display: block; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); width: 110px; height: 30px; z-index: 2; border: 0; background: transparent; padding: 0; }
+  .exgrab i { display: block; margin: 13px auto 0; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.35); }
+  #exhead { padding: 14px 8px 6px; gap: 5px; position: relative; }
+  .excur svg { width: 32px; height: 26px; } .excur b { font-size: 13px; }
+  .exspeed button { min-width: 30px; height: 36px; font-size: 12px; }
+  .exfollow { height: 36px; width: 36px; }
+  #extabs { padding: 4px 6px 0; } #extabs button { padding: 7px 2px; }
+  #exbody { padding: 6px 8px 10px; }
+  .exgrid { grid-template-columns: repeat(4, 1fr); }
+  .exacts { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .exa { min-height: 50px; }
+  .excfg { grid-template-columns: repeat(2, 1fr); }
+  body.examiner #toast { top: 48px; }
+}
+@media (max-height: 519px) and (max-width: 999px) { #expanel { height: 62%; left: auto; width: 360px; } }
+
+/* ---------- attack matrix (6 body types) + ring toggles + tuning ---------- */
+.exm { display: grid; gap: 2px; }
+.exm.off .exm-cb { opacity: .4; }
+.exm-head, .exm-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 70px 34px 38px; align-items: center; gap: 4px; }
+.exm-head { font-size: 10px; color: #8796a5; font-weight: 700; padding: 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+.exm-row { padding: 3px 4px; border-radius: 6px; background: rgba(255,255,255,.04); border-left: 3px solid var(--c); font-size: 12px; }
+.exm-row.cant { border-left-color: rgba(255,255,255,.12); color: #8796a5; }
+.exm-row.chg { background: rgba(255,214,90,.1); box-shadow: inset 0 0 0 1px rgba(255,214,90,.35); }
+.exm-row.xtra { border-left-style: dashed; }
+.exm-cb { display: flex; align-items: center; gap: 2px; }
+.exm-cb input { width: 16px; height: 16px; margin: 0; accent-color: #3d7ee6; flex: none; }
+.exm-cb .sw { display: none; }
+.exm-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exm-rng { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.exm-mult { text-align: right; color: #ffe08a; font-weight: 700; font-variant-numeric: tabular-nums; }
+.exm-no { font-size: 11px; color: #ff9a8a; }
+.exm-warn { grid-column: 2 / -1; font-size: 10.5px; color: #ffb36b; }
+.pips { display: flex; gap: 3px; }
+.pips i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--c); opacity: .9; }
+.pips i.on { background: var(--c); box-shadow: 0 0 4px var(--c); }
+.exm-edit { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 3px 0 2px; }
+.exm-edit .lv, .exm-edit .rg { display: flex; align-items: center; gap: 4px; }
+.exm-edit button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); font-weight: 900; font-size: 16px; padding: 0; }
+.exm-edit .lv b { min-width: 22px; text-align: center; }
+.exm-edit input[type=range] { flex: 1; min-width: 60px; accent-color: var(--c); height: 28px; touch-action: pan-x; }
+.exm-edit .rv { min-width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+.exm-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.exm-tune, .exm-reset { padding: 7px 10px; min-height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.07); font-weight: 800; font-size: 12px; }
+.exm-tune.on { border-color: #ffd65a; background: rgba(255,214,90,.18); }
+.exm-reset { border-color: rgba(255,140,120,.5); }
+.exm-tuned { font-size: 11px; color: #ffe08a; }
+.excur .bd { color: #cfe3ff; }
+.exu .td { position: absolute; top: -3px; left: -2px; font-style: normal; font-size: 10px; }
+@media (max-width: 699px) { .exm-head, .exm-row { grid-template-columns: 24px minmax(0, 1fr) 66px 30px 36px; } }
