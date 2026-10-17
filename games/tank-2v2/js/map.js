@@ -257,7 +257,7 @@ export function buildMap(scene) {
       for (let i = 0; i < Math.floor(w / 2.6); i++) { const wx = x - w / 2 + 1.6 + i * 2.6; if (wx > x + w / 2 - 1) break; for (const s of [-1, 1]) { const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, .1), winMat); win.position.set(wx, y, z + s * (d / 2 + .03)); scene.add(win); } }
       for (let i = 0; i < Math.floor(d / 2.6); i++) { const wz = z - d / 2 + 1.6 + i * 2.6; if (wz > z + d / 2 - 1) break; for (const s of [-1, 1]) { const win = new THREE.Mesh(new THREE.BoxGeometry(.1, 1.3, 1.1), winMat); win.position.set(x + s * (w / 2 + .03), y, wz); scene.add(win); } }
     }
-    obstacles.push({ type: 'box', x, z, hx: w / 2, hz: d / 2, h: h + .5, base: 0 });
+    obstacles.push({ type: 'box', x, z, hx: w / 2, hz: d / 2, h: h + .5, base: 0, house: true });
   }
   const sym = (fn, x, z, ...a) => { fn(CX + x, CZ + z, ...a); fn(CX - x, CZ - z, ...a); };
   building(CX, CZ, 10, 8, 6.5);
@@ -341,7 +341,7 @@ export function buildMap(scene) {
   const gGeo = new THREE.ExtrudeGeometry(gShape, { depth: 10.8, bevelEnabled: false }); gGeo.translate(0, 0, -5.4); gGeo.rotateY(Math.PI / 2);
   const gable = add(new THREE.Mesh(gGeo, new THREE.MeshStandardMaterial({ color: 0x4d4a47, roughness: .9, flatShading: true }))); gable.position.set(60, 5, 66);
   const door = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.6, .1), new THREE.MeshStandardMaterial({ color: 0xf2efe6 })); door.position.set(60, 1.8, 61.96); scene.add(door);
-  obstacles.push({ type: 'box', x: 60, z: 66, hx: 5, hz: 4, h: 7, base: 0 });
+  obstacles.push({ type: 'box', x: 60, z: 66, hx: 5, hz: 4, h: 7, base: 0, house: true });
   const silo = add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 9, 14), new THREE.MeshStandardMaterial({ color: 0xb8bcc0, roughness: .5, metalness: .4, flatShading: true }))); silo.position.set(70, 4.5, 62);
   const dome = add(new THREE.Mesh(new THREE.SphereGeometry(2.4, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), silo.material)); dome.position.set(70, 9, 62);
   obstacles.push({ type: 'circle', x: 70, z: 62, r: 2.4, h: 11, base: 0 });

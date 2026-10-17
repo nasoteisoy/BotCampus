@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tank 2v2</title>
+<title>Front Line: tank RTS</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
@@ -15,25 +15,50 @@
 </head>
 <body>
 <div id="app"></div>
-<div id="bars"></div>
 <div id="selbox"></div>
-<div id="hud">
-  <div id="units"></div>
-  <div id="score"></div>
-  <canvas id="minimap" title="Minimap: click or drag to move the camera"></canvas>
+<div id="hud" class="hidden">
+  <div id="topbar"><span class="coin">$</span><span id="money">$0</span><span id="income">+0/min</span><span class="dot"></span><span id="clock">0:00</span></div>
+  <canvas id="minimap" title="Minimap: click or drag to move the camera, right-click to send selected units"></canvas>
+  <div id="selpanel" class="hidden"></div>
+  <div id="buildbar"></div>
   <div id="help">
     <div class="row"><svg class="mouse l" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M10 1v10M1 11h18"/><path class="hl" d="M2 10V9a8 8 0 0 1 8-8v10z"/></svg><span>select · move · attack</span></div>
-    <div class="row"><svg viewBox="0 0 28 28" class="box"><rect x="3" y="3" width="22" height="22" rx="2" stroke-dasharray="4 3"/></svg><span>drag: select both</span></div>
-    <div class="row"><svg class="mouse r" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M10 1v10M1 11h18"/><path class="hl" d="M18 10V9a8 8 0 0 0-8-8v10z"/></svg><span>drag: rotate</span></div>
+    <div class="row"><svg viewBox="0 0 28 28" class="box"><rect x="3" y="3" width="22" height="22" rx="2" stroke-dasharray="4 3"/></svg><span>drag: box select · dbl-click: all of type</span></div>
+    <div class="row"><svg class="mouse r" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M10 1v10M1 11h18"/><path class="hl" d="M18 10V9a8 8 0 0 0-8-8v10z"/></svg><span>drag: rotate · click: rally / cancel</span></div>
     <div class="row"><svg class="mouse m" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M1 11h18"/><rect class="hl" x="8" y="3" width="4" height="7" rx="2"/></svg><span>drag: pan · wheel: zoom</span></div>
-    <div class="row"><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span><span>pan</span></div>
-    <div class="row"><span class="k">1</span><span class="k">2</span><span class="k">3</span><span>select</span><span class="k wide">␣</span><span>focus</span></div>
+    <div class="row"><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span><span>pan</span><span class="k wide">H</span><span>HQ</span></div>
+    <div class="row"><span class="k">Ctrl</span>+<span class="k">1-5</span><span>group</span><span class="k">Q E R F G T</span><span>abilities</span></div>
   </div>
+  <div id="toast"></div>
 </div>
+<div id="tip"></div>
 <div id="banner" class="hidden">
   <div class="title"></div>
   <div class="sub"></div>
-  <button id="restart">↻ Restart</button>
+  <button id="restart">↻ Play again</button>
+</div>
+<div id="start">
+  <div class="card">
+    <h1>FRONT LINE</h1>
+    <div class="tag">Build your base. Roll out an army. Take their HQ.</div>
+    <div class="how">
+      <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><g><rect x="5" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="15" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="10" y="7" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><text x="31" y="20" font-size="15" font-weight="900" fill="#ffd65a" text-anchor="middle">$</text></g></svg></div><b>1</b><span>Depots on <i class="pad">$</i> spots earn money</span></div>
+      <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="4" y="14" width="32" height="14" fill="#c9bfa6"/><path d="M4 14l6-6v6l6-6v6l6-6v6l6-6v6z" fill="#5d6168"/><rect x="14" y="19" width="12" height="9" fill="#4aa3ff"/></svg></div><b>2</b><span>Place buildings near your base</span></div>
+      <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="3" y="20" width="34" height="8" rx="4" fill="#222"/><rect x="6" y="14" width="28" height="7" rx="2" fill="#4aa3ff"/><rect x="13" y="8" width="13" height="7" rx="3" fill="#4aa3ff"/><rect x="25" y="10" width="12" height="2.4" fill="#ccc"/></svg></div><b>3</b><span>Select a building, queue units</span></div>
+      <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="6" y="12" width="28" height="16" fill="#c9bfa6"/><rect x="16" y="20" width="8" height="8" fill="#ff5a4a"/><path d="M28 12V2" stroke="#333"/><path d="M28 2h8v5h-8z" fill="#ff5a4a"/><path d="M4 4l32 26M36 4L4 30" stroke="#ffd65a" stroke-width="3"/></svg></div><b>4</b><span>Destroy the enemy HQ to win</span></div>
+    </div>
+    <div class="rps">
+      <span class="u"><svg viewBox="0 0 40 32"><circle cx="13" cy="24" r="4.5" fill="#222"/><rect x="10" y="12" width="9" height="11" fill="#4aa3ff"/><rect x="18" y="16" width="18" height="2.6" fill="#ccc"/></svg>AT</span><span class="beats">›</span>
+      <span class="u"><svg viewBox="0 0 40 32"><rect x="3" y="20" width="34" height="8" rx="4" fill="#222"/><rect x="6" y="14" width="28" height="7" rx="2" fill="#4aa3ff"/><rect x="13" y="8" width="13" height="7" rx="3" fill="#4aa3ff"/></svg>Tanks</span><span class="beats">›</span>
+      <span class="u"><svg viewBox="0 0 40 32"><g fill="#4aa3ff"><circle cx="12" cy="9" r="3" fill="#e0b48c"/><rect x="9" y="12" width="6" height="8"/><circle cx="26" cy="9" r="3" fill="#e0b48c"/><rect x="23" y="12" width="6" height="8"/></g><path d="M9 20h6v8H9zM23 20h6v8h-6z" fill="#333"/></svg>Infantry</span><span class="beats">›</span>
+      <span class="u"><svg viewBox="0 0 40 32"><circle cx="13" cy="24" r="4.5" fill="#222"/><rect x="10" y="12" width="9" height="11" fill="#4aa3ff"/><rect x="18" y="16" width="18" height="2.6" fill="#ccc"/></svg>AT</span>
+      <span class="gap"></span>
+      <span class="u"><svg viewBox="0 0 40 32"><rect x="8" y="22" width="24" height="4" fill="#444"/><rect x="14" y="14" width="12" height="8" rx="2" fill="#4aa3ff"/><path d="M18 15l8 -12M22 15l8 -12" stroke="#ccc" stroke-width="2.2"/></svg>AA</span><span class="beats">›</span>
+      <span class="u"><svg viewBox="0 0 40 32"><g transform="translate(20 16)"><rect x="-15" y="-1" width="30" height="4" rx="2" fill="#4aa3ff"/><rect x="-2.5" y="-11" width="5" height="22" rx="2.5" fill="#4aa3ff"/></g></svg>Air</span>
+    </div>
+    <div class="diff"><span>Enemy</span><button data-diff="easy">Easy</button><button data-diff="normal" class="on">Normal</button></div>
+    <button id="play">▶ Play</button>
+  </div>
 </div>
 <script type="module" src="js/main.js"></script>
 </body>

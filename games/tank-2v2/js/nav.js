@@ -21,6 +21,20 @@ export class NavGrid {
       this.blocked[k] = b ? 1 : 0;
       this.cost[k] = navCost(x, z);
     }
+    this.base = this.blocked.slice();
+    this.dyn = [];
+  }
+  // dynamic blockers (buildings): list of {x,z,hx,hz}; re-applied over the static grid in the affected area
+  addRect(r) { this.dyn.push(r); this._apply(r); }
+  removeRect(r) { const i = this.dyn.indexOf(r); if (i >= 0) this.dyn.splice(i, 1); this._apply(r); }
+  _apply(r) {
+    const e = this.inflate, [i0, j0] = this.cellOf(r.x - r.hx - e - 2, r.z - r.hz - e - 2), [i1, j1] = this.cellOf(r.x + r.hx + e + 2, r.z + r.hz + e + 2);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const k = j * this.n + i, [x, z] = this.center(i, j);
+      let b = this.base[k];
+      if (!b) for (const d of this.dyn) if (Math.abs(x - d.x) < d.hx + e && Math.abs(z - d.z) < d.hz + e) { b = 1; break; }
+      this.blocked[k] = b;
+    }
   }
   center(i, j) { return [-HALF + (i + .5) * this.cell, -HALF + (j + .5) * this.cell]; }
   cellOf(x, z) {
