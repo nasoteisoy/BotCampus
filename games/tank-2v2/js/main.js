@@ -15,11 +15,15 @@ const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI)
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const OTHER = { blue: 'red', red: 'blue' };
 
+// ---------- device profile: touch phones/tablets and small screens get a lighter renderer ----------
+const IS_TOUCH = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(pointer: fine)').matches);
+const LOW = IS_TOUCH || Math.min(innerWidth, innerHeight) < 520;
+const TOUCH = { on: false };   // switches on at the first touch (or at load on touch devices)
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW ? 1.25 : 1.75));
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = LOW ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
 $('#app').appendChild(renderer.domElement);
 const canvas = renderer.domElement;
@@ -32,7 +36,7 @@ const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.5, 16
 scene.add(new THREE.HemisphereLight(0xe3f0ff, 0x6b5d45, 1.25));
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.4);
 sun.position.set(-45, 85, 35); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -80, right: 80, top: 80, bottom: -80, near: 10, far: 300 });
 const SUN_OFF = new THREE.Vector3(-45, 85, 35); scene.add(sun.target);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
@@ -41,8 +45,9 @@ scene.add(sun);
 const { terrain: groundMesh, treeCount } = buildMap(scene);
 const nav = new NavGrid(1.75, 2.7);
 
-const fx = new Particles(scene, 1800, true, 1.2);    // fire, sparks, flashes
-const smoke = new Particles(scene, 2200, false, 1.6); // smoke, dust
+const fx = new Particles(scene, LOW ? 900 : 1800, true, 1.2);    // fire, sparks, flashes
+const smoke = new Particles(scene, LOW ? 1100 : 2200, false, 1.6); // smoke, dust
+if (LOW) { fx.thin = .6; smoke.thin = .5; }  // phones: spawn fewer particles
 
 // pooled flash lights (kept in scene permanently so shader programs never change)
 const flashLights = [0, 1, 2].map(() => { const l = new THREE.PointLight(0xffb060, 0, 26, 1.6); scene.add(l); return { l, t: 0, peak: 0 }; });
@@ -58,6 +63,7 @@ controls.enableDamping = true; controls.dampingFactor = 0.12;
 controls.enableZoom = false;            // wheel handled below for smooth, clamped, tilt-aware zoom
 controls.screenSpacePanning = false;
 controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: null, TWO: null };   // touch gestures (tap / pan / pinch / twist) are handled in the touch section
 controls.minPolarAngle = 0.12; controls.maxPolarAngle = 1.36;
 controls.rotateSpeed = 0.6; controls.panSpeed = 1.1;
 const cam = { dist: 70, want: 70, tiltT: 0, tiltWant: 0.9, shift: new THREE.Vector3(), shake: 0, shakeOff: new THREE.Vector3() };
@@ -287,19 +293,20 @@ function distTo(u, t) { const p = pos(u); if (t.isBld) { const dx = Math.max(Mat
 // buildings
 // =====================================================================================
 const facingOf = (team) => (team === 'blue' ? -1 : 1);  // door direction along z
-function createBuilding(type, team, x, z, built = false) {
+function createBuilding(type, team, x, z, built = false, flip = false) {
   const def = BUILDINGS[type];
   const m = buildBuilding(type, team);
   const b = {
     isBld: true, id: `${team[0]}${type}${++uid}`, type, def, team, x, z, hx: def.hx, hz: def.hz, hp: def.hp, maxHp: def.hp, alive: true,
     built, progress: built ? 1 : 0, ...m, queue: [], prodT: 0, dmg: 0, dmgT: 0, vis: { blue: team === 'blue' || type === 'hq', red: team === 'red' || type === 'hq' }, everSeen: { blue: false, red: false }, seen: { blue: 0, red: 0 },
   };
-  const fz = facingOf(team);
+  const fz = facingOf(team) * (flip ? -1 : 1), fx_ = flip ? -1 : 1;
+  b.flip = flip;
   b.door = { x, z: z + fz * (def.hz + 5.5) };
   b.rally = { x: x + rand(-3, 3), z: z + fz * (def.hz + 16) };
-  if (type === 'airfield') b.door = { x: x + 14, z: z + fz * 1.8 };
+  if (type === 'airfield') b.door = { x: x + 14 * fx_, z: z + fz * 1.8 };
   const y = surfaceY(x, z);
-  b.root.position.set(x, y, z); b.root.rotation.y = team === 'blue' ? Math.PI : 0;
+  b.root.position.set(x, y, z); b.root.rotation.y = (team === 'blue' ? Math.PI : 0) + (flip ? Math.PI : 0);
   // foundation slab so the building sits cleanly on uneven ground
   const slab = new THREE.Mesh(new THREE.BoxGeometry(def.hx * 2 + 1.2, 1.6, def.hz * 2 + 1.2), SHARED.concreteDark); slab.position.y = -.65; slab.receiveShadow = true; b.root.add(slab);
   const pick = new THREE.Mesh(new THREE.BoxGeometry(def.hx * 2, def.h, def.hz * 2), new THREE.MeshBasicMaterial({ visible: false })); pick.position.y = def.h / 2; pick.userData.ent = b; b.root.add(pick); b.pick = pick; pickMeshes.push(pick);
@@ -359,11 +366,11 @@ function canPlace(type, team, x, z, ignoreMoney = false) {
   for (const u of units) if (u.alive && !isAir(u) && Math.abs(pos(u).x - x) < def.hx + u.def.r && Math.abs(pos(u).z - z) < def.hz + u.def.r) return { ok: false, reason: 'Units in the way', x, z };
   return { ok: true, x, z };
 }
-function placeBuilding(type, team, x, z) {
+function placeBuilding(type, team, x, z, flip = false) {
   const c = canPlace(type, team, x, z);
   if (!c.ok) return null;
   teams[team].money -= BUILDINGS[type].cost;
-  const b = createBuilding(type, team, c.x, c.z, false);
+  const b = createBuilding(type, team, c.x, c.z, false, flip);
   if (team === 'blue') game.stats.built++;
   for (let i = 0; i < 14; i++) smoke.spawn(c.x + rand(-b.hx, b.hx), surfaceY(c.x, c.z) + .5, c.z + rand(-b.hz, b.hz), rand(-1, 1), rand(.5, 2), rand(-1, 1), rand(2, 3), 1.2, 3, .72, .66, .55, .5, 1.5, -.2);
   return b;
@@ -402,7 +409,7 @@ function spawnFrom(b, type) {
   const def = UNITS[type], fz = facingOf(b.team);
   let u;
   if (def.kind === 'air') {
-    u = createUnit(type, b.team, b.x + 14, b.z + fz * 1.8, Math.PI / 2);
+    u = createUnit(type, b.team, b.door.x, b.door.z, b.flip ? -Math.PI / 2 : Math.PI / 2);
     u.home = b; u.airState = 'idle'; pos(u).y = 2;
     u.climb = true;
   } else {
@@ -1242,7 +1249,7 @@ function incomeOf(team) {
   const hq = hqOf(team);
   let r = hq?.alive ? HQ_INCOME : 0;
   for (const b of buildings) if (b.alive && b.built && b.team === team && b.type === 'depot') r += DEPOT_INCOME;
-  if (team === 'red' && game.difficulty === 'easy') r *= .7;
+  if (team === 'red' && game.difficulty === 'easy') r *= .6;
   return r;
 }
 function updateEconomy(dt) { for (const t of ['blue', 'red']) { teams[t].rate = incomeOf(t); teams[t].money += teams[t].rate * dt; } }
@@ -1265,7 +1272,7 @@ function makeAI(diff) {
   const easy = diff === 'easy';
   const T = 'red', FOE = 'blue';
   const A = {
-    t: 0, period: easy ? 2.4 : 1.4, wave: 0, waveTarget: easy ? 4 : 5, nextWave: easy ? 260 : 170, waveGap: easy ? 150 : 105,
+    t: 0, period: easy ? 3.2 : 1.4, wave: 0, waveTarget: easy ? 4 : 5, nextWave: easy ? 400 : 170, waveGap: easy ? 200 : 105,
     army: new Set(), attackers: new Set(), lastAlarm: -99, alarmAt: null,
     newUnit(u) { u.ai = { role: 'home', idle: 0 }; this.army.add(u); },
     attacked(t, attacker) { if (attacker?.alive !== false && attacker && !isAir(attacker)) { const p = tgtPos(attacker); this.alarmAt = { x: p.x, z: p.z, t: game.time }; } },
@@ -1331,6 +1338,8 @@ function makeAI(diff) {
     const reserve = A.saving || 0;
     const prod = aliveBlds(T).filter((b) => b.built && b.def.units.length).sort((a, b) => PRIO[a.type] - PRIO[b.type]);
     const heavyIdle = prod.some((b) => (b.type === 'factory' || b.type === 'airfield') && !b.queue.length);
+    // Easy: a smaller standing army early on, so a new player has time to build up
+    if (easy && [...A.army].filter((u) => u.alive && !isAir(u)).length >= Math.min(14, 5 + Math.floor(game.time / 90))) return;
     for (const b of prod) {
       if (b.queue.length >= 2) continue;
       const k = pickUnit(b); if (!k) continue;
@@ -1358,9 +1367,17 @@ function makeAI(diff) {
     } else {
       for (const u of homeUnits) if (!u.path.length && !u.fireTarget && Math.hypot(pos(u).x - home.x, pos(u).z - home.z) > 26 && u.type !== 'howitzer' && u.type !== 'aagun') orderMove([u], home.x + rand(-14, 14), home.z + rand(-8, 8));
     }
+    // patrol: every ~70 s a pair of home units walks to the nearest free supply spot on our side and holds it
+    // (lets the AI expand its economy between waves; on Easy this is most of what it does early on)
+    if (!threat && game.time > (A.nextPatrol ?? 120)) {
+      A.nextPatrol = game.time + 70;
+      const sp = spots.filter((p) => !p.bld && Math.sign(p.z) === Math.sign(h.z)).sort((a, b) => Math.hypot(a.x - h.x, a.z - h.z) - Math.hypot(b.x - h.x, b.z - h.z))[0];
+      const pair = homeUnits.filter((u) => !isAir(u) && u.kind !== 'gun' && !u.path.length).slice(0, 2);
+      if (sp && pair.length) orderMove(pair, sp.x + rand(-5, 5), sp.z + rand(-5, 5), 'amove');
+    }
     // waves
     const ready = homeUnits.filter((u) => u.type !== 'aagun' && u.type !== 'howitzer');
-    if (game.time >= A.nextWave && (ready.length >= A.waveTarget || game.time > A.nextWave + 80) && ready.length >= 2) {
+    if (game.time >= A.nextWave && (ready.length >= A.waveTarget || game.time > A.nextWave + (easy ? 140 : 80)) && ready.length >= 2) {
       const tgt = pickWaveTarget();
       if (tgt) {
         for (const u of ready) { u.ai.role = 'wave'; u.ai.idle = 0; }
@@ -1474,8 +1491,17 @@ function pickEntity(cx, cy) {
   raycaster.setFromCamera(ndc, camera);
   const hits = raycaster.intersectObjects(pickMeshes, false);
   for (const h of hits) { const e = h.object.userData.ent; if (e?.alive && e.root.visible && (!isInf(e) || e.im.visible)) return e; }
-  let best = null, bd = 26;
-  for (const u of units) { if (!u.alive || !u.root.visible || (isInf(u) && !u.im.visible)) continue; const s = toScreen(tmpV.copy(pos(u)).setY(pos(u).y + 1.2)); const d = Math.hypot(s.x - cx, s.y - cy); if (d < bd) { bd = d; best = u; } }
+  // nothing hit directly: nearest unit within a screen radius. Planes are small and fast, so they get a much bigger
+  // hit area; fingers get a bigger one too.
+  // (only when nothing or only aircraft is selected, so a passing plane never steals a move/garrison click)
+  const bigAir = !selUnits.size || [...selUnits].every(isAir);
+  let best = null, bd = 1e9; const k = TOUCH.on ? 1.6 : 1;
+  for (const u of units) {
+    if (!u.alive || !u.root.visible || (isInf(u) && !u.im.visible)) continue;
+    const s = toScreen(tmpV.copy(pos(u)).setY(pos(u).y + 1.2)); if (s.z > 1) continue;
+    const d = Math.hypot(s.x - cx, s.y - cy), r = (isAir(u) && bigAir ? 48 : 26) * k, score = d / r;
+    if (d < r && score < bd) { bd = score; best = u; }
+  }
   return best;
 }
 function pickHouse(cx, cy) {
@@ -1500,15 +1526,18 @@ function ghostFor(type) {
 function startPlacing(type) {
   cancelPlacing();
   if (teams.blue.money < BUILDINGS[type].cost) { toast('Not enough money'); return; }
-  placing = { type, ghost: ghostFor(type), ok: false };
+  placing = { type, ghost: ghostFor(type), ok: false, flip: false };
+  placing.ghost.rotation.y = Math.PI;
   clearSelection();
   radiusRings.clear();
   if (type !== 'depot') for (const b of aliveBlds('blue')) if (b.built || b.type === 'hq') {
     const ring = new THREE.Mesh(new THREE.RingGeometry(BUILD_RADIUS - .5, BUILD_RADIUS, 72).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x9fffd0, transparent: true, opacity: .35, depthWrite: false, toneMapped: false }));
     ring.position.set(b.x, Math.max(1, surfaceY(b.x, b.z) + .5), b.z); radiusRings.add(ring);
   }
+  if (TOUCH.on) { updateGhost(innerWidth / 2, innerHeight * .45); toast('Tap the map to move it, then ✓ to build'); }
   hudDirty = true;
 }
+function rotatePlacing() { if (!placing) return; placing.flip = !placing.flip; placing.ghost.rotation.y = Math.PI + (placing.flip ? Math.PI : 0); }
 function cancelPlacing() { if (placing) { placing.ghost.visible = false; placing = null; radiusRings.clear(); hudDirty = true; } }
 function updateGhost(cx, cy) {
   if (!placing) return;
@@ -1522,20 +1551,20 @@ function tryPlace(shift) {
   if (!placing) return;
   if (!placing.ok) { toast(placing.reason || 'Cannot build here'); return; }
   const type = placing.type;
-  const b = placeBuilding(type, 'blue', placing.x, placing.z);
+  const b = placeBuilding(type, 'blue', placing.x, placing.z, placing.flip);
   if (!b) { toast('Cannot build here'); return; }
   if (!shift || teams.blue.money < BUILDINGS[type].cost) cancelPlacing();
 }
 
 let lastClick = { t: 0, ent: null };
-function handleClick(cx, cy, shift, right) {
+function handleClick(cx, cy, shift, right, when = performance.now()) {
   if (game.state !== 'playing' && game.state !== 'ending') return;
   if (placing) { if (right) cancelPlacing(); else tryPlace(shift); return; }
   const e = pickEntity(cx, cy);
-  const now = performance.now();
+  const now = when;
   if (!right && e && e.team === 'blue') {
     if (e.isBld) { selectBuilding(e); return; }
-    if (now - lastClick.t < 380 && lastClick.ent && lastClick.ent.type === e.type) { // double-click: all of this type on screen
+    if (now - lastClick.t < (TOUCH.on ? 450 : 380) && lastClick.ent && lastClick.ent.type === e.type) { // double-click: all of this type on screen
       selectUnits(aliveUnits('blue').filter((u) => u.type === e.type && onScreen(pos(u))), shift);
     } else if (shift) { if (selUnits.has(e)) selUnits.delete(e); else selUnits.add(e); selBld = null; hudDirty = true; }
     else selectUnits([e]);
@@ -1556,8 +1585,9 @@ function onScreen(p) { const s = toScreen(tmpV.copy(p)); return s.z < 1 && s.x >
 const drag = { on: false, active: false, x: 0, y: 0, btn: 0 };
 const selbox = $('#selbox');
 let hovered = null;
-canvas.addEventListener('pointerdown', (e) => { drag.btn = e.button; drag.x = e.clientX; drag.y = e.clientY; drag.on = true; drag.active = false; });
+canvas.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; drag.btn = e.button; drag.x = e.clientX; drag.y = e.clientY; drag.on = true; drag.active = false; });
 window.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch') return;
   if (placing && e.target === canvas) updateGhost(e.clientX, e.clientY);
   if (drag.on && drag.btn === 0 && !placing) {
     if (!drag.active && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) drag.active = true;
@@ -1569,7 +1599,7 @@ window.addEventListener('pointermove', (e) => {
   }
 });
 window.addEventListener('pointerup', (e) => {
-  if (!drag.on) return; drag.on = false;
+  if (e.pointerType === 'touch' || !drag.on) return; drag.on = false;
   const moved = Math.hypot(e.clientX - drag.x, e.clientY - drag.y);
   if (drag.btn === 0 && drag.active) {
     selbox.style.display = 'none';
@@ -1599,6 +1629,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'Escape') { if (placing) cancelPlacing(); else clearSelection(); }
+  if (placing && e.code === 'KeyR') { rotatePlacing(); return; }
   for (const [ab, A] of Object.entries(ABILITIES)) if (e.code === A.key && selUnits.size) useAbility([...selUnits], ab);
   if (e.code === 'KeyX') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
   if (e.code === 'KeyH') { const h = hqOf('blue'); if (h) cam.shift.set(h.x - controls.target.x, 0, h.z - 18 - controls.target.z); }
@@ -1615,6 +1646,148 @@ function focusSelection() {
 }
 
 // =====================================================================================
+// touch: tap = click, 1-finger drag = pan, hold + drag (or Select mode) = box select, pinch = zoom,
+// two-finger twist = rotate, double-tap = all of type. Placement: tap moves the ghost, then Confirm / Rotate / Cancel.
+// Mouse input above is untouched (it ignores pointerType 'touch').
+// =====================================================================================
+function enableTouchUI() {
+  if (TOUCH.on) return; TOUCH.on = true; document.body.classList.add('touch'); hudDirty = true; lastSig = ''; updateTouchBar(); buildBar();
+  const th = $('#touchhelp'); if (th && game.state === 'playing') { th.classList.add('on'); setTimeout(() => th.classList.remove('on'), 9000); }
+}
+// long-press: decided on release from the events' own timestamps (robust to slow frames); a buzz marks the threshold
+function longPress(el, fn, ms = 520) {
+  let t = null, down = -1;
+  el.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; el._lpDone = false; down = e.timeStamp; clearTimeout(t); t = setTimeout(() => navigator.vibrate?.(20), ms); });
+  el.addEventListener('pointerup', (e) => { clearTimeout(t); if (e.pointerType !== 'touch' || down < 0) return; const held = e.timeStamp - down; down = -1; if (held >= ms) { el._lpDone = true; fn(); } });
+  el.addEventListener('pointercancel', () => { clearTimeout(t); down = -1; });
+}
+const tpts = new Map();
+let tg = null;               // current gesture
+let boxMode = false, rallyMode = false;
+const groundPlaneAt = (cx, cy) => { ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); raycaster.setFromCamera(ndc, camera); const p = new THREE.Vector3(); return raycaster.ray.intersectPlane(groundPlane, p) ? p : null; };
+function moveCamBy(dx, dz) {
+  const nt = controls.target.clone().add(new THREE.Vector3(dx, 0, dz));
+  nt.x = clamp(nt.x, -HALF - 10, HALF + 10); nt.z = clamp(nt.z, -HALF - 10, HALF + 10);
+  const mv = nt.sub(controls.target); mv.y = 0; controls.target.add(mv); camera.position.add(mv); cam.shift.set(0, 0, 0);
+}
+function boxSelect(x0, y0, x1, y1, additive) {
+  const inBox = aliveUnits('blue').filter((u) => { if (u.garrison) { const o = u.garrison; const s = toScreen(tmpV.set(o.x, o.h, o.z)); return s.z < 1 && s.x >= x0 && s.x <= x1 && s.y >= y0 && s.y <= y1; } const s = toScreen(tmpV.copy(pos(u)).setY(pos(u).y + 1)); return s.z < 1 && s.x >= x0 - 14 && s.x <= x1 + 14 && s.y >= y0 - 14 && s.y <= y1 + 14; });
+  if (inBox.length) selectUnits(inBox, additive);
+  return inBox.length;
+}
+function twoFinger() { const [a, b] = [...tpts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+function touchTap(x, y, when) {
+  if (game.state !== 'playing' && game.state !== 'ending') return;
+  if (placing) { updateGhost(x, y); updateTouchBar(); return; }   // touch placement: tap positions the ghost; Confirm places
+  if (rallyMode && selBld) { const g = groundAt(x, y); if (g) { setRally(selBld, g.x, g.z); toast('Rally point set'); } rallyMode = false; updateTouchBar(); return; }
+  handleClick(x, y, false, false, when);
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  enableTouchUI(); hideTip(); e.preventDefault();
+  tpts.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: e.timeStamp });
+  if (tpts.size === 1) {
+    tg = { mode: boxMode && !placing ? 'box' : 'tap', id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: e.timeStamp };
+    if (tg.mode === 'tap' && !placing) tg.lp = setTimeout(() => { if (tg && tg.mode === 'tap') { tg.mode = 'box'; tg.fromLP = true; navigator.vibrate?.(15); drawBox(tg.x0, tg.y0, tg.x0, tg.y0); } }, 430);
+  } else if (tpts.size === 2) {
+    clearTimeout(tg?.lp); selbox.style.display = 'none';
+    const f = twoFinger(); tg = { mode: 'pinch', d0: f.d, ang: f.ang, want0: cam.want, mid: groundPlaneAt(f.mx, f.my) };
+  } else tg = { mode: 'none' };
+}, { passive: false });
+function drawBox(x0, y0, x1, y1) { Object.assign(selbox.style, { display: 'block', left: Math.min(x0, x1) + 'px', top: Math.min(y0, y1) + 'px', width: Math.abs(x1 - x0) + 'px', height: Math.abs(y1 - y0) + 'px' }); }
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'touch' || !tpts.has(e.pointerId)) return;
+  const p = tpts.get(e.pointerId), px = p.x, py = p.y; p.x = e.clientX; p.y = e.clientY;
+  if (!tg) return;
+  // the long-press timer can fire late on a slow frame: if the finger was already moving before 430 ms, it is a pan
+  if (tg.mode === 'box' && tg.fromLP && !tg.boxMoved && Math.hypot(p.x - p.x0, p.y - p.y0) > 10) { if (e.timeStamp - tg.t0 < 430) { tg.mode = 'tap'; selbox.style.display = 'none'; } else tg.boxMoved = true; }
+  if (tg.mode === 'tap' && Math.hypot(p.x - p.x0, p.y - p.y0) > 10) {
+    clearTimeout(tg.lp);
+    tg.mode = 'pan';
+    tg.anchor = groundPlaneAt(p.x0, p.y0);
+  }
+  if (tg.mode === 'pan' && tg.anchor) { const g = groundPlaneAt(p.x, p.y); if (g) moveCamBy(tg.anchor.x - g.x, tg.anchor.z - g.z); }
+  else if (tg.mode === 'box') drawBox(tg.x0, tg.y0, p.x, p.y);
+  else if (tg.mode === 'pinch' && tpts.size === 2) {
+    const f = twoFinger();
+    // zoom (pinch)
+    cam.want = clamp(tg.want0 * tg.d0 / Math.max(20, f.d), CFG.minDist, CFG.maxDist); cam.tiltWant = tiltFor(cam.want); cam.tiltT = .4;
+    // rotate (twist) around the camera target
+    const da = wrap(f.ang - tg.ang); tg.ang = f.ang;
+    if (Math.abs(da) > .002) { const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0, 1, 0), -da); camera.position.copy(controls.target).add(off); camera.lookAt(controls.target); }
+    // keep the ground under the two fingers' midpoint (two-finger pan)
+    const g = groundPlaneAt(f.mx, f.my); if (g && tg.mid) moveCamBy(tg.mid.x - g.x, tg.mid.z - g.z);
+  }
+}, { passive: false });
+function touchEnd(e) {
+  if (e.pointerType !== 'touch' || !tpts.has(e.pointerId)) return;
+  const p = tpts.get(e.pointerId); tpts.delete(e.pointerId);
+  if (!tg) return;
+  clearTimeout(tg.lp);
+  if (tg.mode === 'tap' && e.type === 'pointerup' && e.timeStamp - tg.t0 < 600) touchTap(p.x, p.y, e.timeStamp);  // event timestamps: robust to slow frames
+  else if (tg.mode === 'box') {
+    selbox.style.display = 'none';
+    const n = Math.hypot(p.x - tg.x0, p.y - tg.y0) > 12 ? boxSelect(Math.min(tg.x0, p.x), Math.min(tg.y0, p.y), Math.max(tg.x0, p.x), Math.max(tg.y0, p.y), false) : 0;
+    // no drag: a tap in Select mode, or a short press whose long-press timer only fired because a frame was slow
+    if (!n && Math.hypot(p.x - tg.x0, p.y - tg.y0) <= 12 && (boxMode || e.timeStamp - tg.t0 < 430)) touchTap(p.x, p.y, e.timeStamp);
+  }
+  if (tpts.size === 0) tg = null; else tg = { mode: 'none' };   // lifting one finger of a pinch: wait for the other
+}
+canvas.addEventListener('pointerup', touchEnd); canvas.addEventListener('pointercancel', touchEnd);
+for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(ev, (e) => { if (TOUCH.on) e.preventDefault(); }, { passive: false });
+document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') enableTouchUI(); }, true);
+
+// on-screen buttons for what used to be hotkeys
+const groupsT = {};
+function tbtn(id, label, icon) { return `<button class="tb" data-tb="${id}" aria-label="${label}">${icon}<span>${label}</span></button>`; }
+const TB_ICONS = {
+  hq: '<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9H3z" fill="#4aa3ff"/><rect x="10" y="14" width="4" height="6" fill="#1b2430"/></svg>',
+  box: '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="#8ff7ff" stroke-width="2" stroke-dasharray="4 3"/></svg>',
+  desel: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#ff8f80" stroke-width="3" stroke-linecap="round"/></svg>',
+  stop: '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ffd65a"/></svg>',
+  rally: '<svg viewBox="0 0 24 24"><path d="M6 3v18" stroke="#ddd" stroke-width="2"/><path d="M7 4h11l-3 4 3 4H7z" fill="#59f0ff"/></svg>',
+  help: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#ddd" stroke-width="2"/><text x="12" y="16.5" font-size="12" font-weight="900" fill="#ddd" text-anchor="middle">?</text></svg>',
+  ok: '<svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" stroke="#4dff88" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>',
+  rot: '<svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5" stroke="#ddd" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20 3v6h-6" fill="#ddd"/></svg>',
+};
+function updateTouchBar() {
+  const bar = $('#touchbar'), pb = $('#placebar'); if (!bar) return;
+  if (!TOUCH.on) { bar.innerHTML = ''; pb.classList.add('hidden'); return; }
+  const units_ = selUnits.size > 0, bld = !!(selBld && selBld.alive && selBld.def.units.length);
+  const sig = [units_, bld, boxMode, rallyMode, !!placing, Object.keys(groupsT).join('')].join('|');
+  if (bar.dataset.sig !== sig) {
+    bar.dataset.sig = sig;
+    bar.innerHTML = tbtn('hq', 'HQ', TB_ICONS.hq) + tbtn('box', 'Select', TB_ICONS.box) + (units_ || selBld ? tbtn('desel', 'Clear', TB_ICONS.desel) : '') + (units_ ? tbtn('stop', 'Stop', TB_ICONS.stop) : '') + (bld ? tbtn('rally', 'Rally', TB_ICONS.rally) : '') + tbtn('help', 'Help', TB_ICONS.help) +
+      ['1', '2', '3'].map((k) => `<button class="tb grp ${groupsT[k]?.length ? 'set' : ''}" data-grp="${k}" aria-label="Group ${k}"><b>${k}</b><span>${groupsT[k]?.length ? 'Group' : 'Hold'}</span></button>`).join('');
+    bar.querySelector('[data-tb="box"]').classList.toggle('on', boxMode);
+    bar.querySelector('[data-tb="rally"]')?.classList.toggle('on', rallyMode);
+    bar.querySelectorAll('[data-tb]').forEach((el) => el.addEventListener('click', () => touchButton(el.dataset.tb)));
+    bar.querySelectorAll('[data-grp]').forEach((el) => {
+      longPress(el, () => { groupsT[el.dataset.grp] = [...selUnits]; toast(`Group ${el.dataset.grp}: ${selUnits.size} unit${selUnits.size === 1 ? '' : 's'}`); updateTouchBar(); });
+      el.addEventListener('click', () => { if (el._lpDone) { el._lpDone = false; return; } const g = groupsT[el.dataset.grp]; if (!g?.length) { toast('Hold to save the selection as a group'); return; } const live = g.filter((u) => u.alive); if (sameSel(live)) focusSelection(); else selectUnits(live); });
+    });
+  }
+  pb.classList.toggle('hidden', !placing);
+  if (placing) { const ok = $('#placebar [data-pb="ok"]'); ok.classList.toggle('bad', !placing.ok); $('#placebar .why').textContent = placing.ok ? BUILDINGS[placing.type].name + ' ' + fmt$(BUILDINGS[placing.type].cost) : (placing.reason || 'Tap the map to place'); }
+}
+const sameSel = (l) => l.length === selUnits.size && l.every((u) => selUnits.has(u));
+function touchButton(id) {
+  if (id === 'hq') { const h = hqOf('blue'); if (h) cam.shift.set(h.x - controls.target.x, 0, h.z - 18 - controls.target.z); }
+  if (id === 'box') { boxMode = !boxMode; toast(boxMode ? 'Select mode: drag a box around units' : 'Drag to pan'); }
+  if (id === 'desel') { rallyMode = false; clearSelection(); }
+  if (id === 'stop') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
+  if (id === 'rally') { rallyMode = !rallyMode; if (rallyMode) toast('Tap the map to set the rally point'); }
+  if (id === 'help') $('#touchhelp').classList.toggle('on');
+  updateTouchBar();
+}
+$('#placebar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pb]'); if (!b || !placing) return;
+  if (b.dataset.pb === 'ok') tryPlace(false);
+  if (b.dataset.pb === 'rot') rotatePlacing();
+  if (b.dataset.pb === 'no') cancelPlacing();
+  updateTouchBar();
+});
+// =====================================================================================
 // HUD: top bar, build bar (4 branches), selection / production panel, tooltips, toasts
 // =====================================================================================
 let hudDirty = true, hudT = 0, activeTab = 'inf';
@@ -1629,7 +1802,7 @@ function showTip(el, html) {
 }
 function hideTip() { tipEl.classList.remove('on'); }
 canvas.addEventListener('pointerenter', hideTip);
-document.addEventListener('pointerover', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el, el.dataset.tip); });
+document.addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') return; const el = e.target.closest?.('[data-tip]'); if (el) showTip(el, el.dataset.tip); });
 document.addEventListener('pointerout', (e) => { const el = e.target.closest?.('[data-tip]'); if (el && !el.contains(e.relatedTarget)) hideTip(); });
 let toastT = 0;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); toastT = 2.2; }
@@ -1652,10 +1825,11 @@ function renderSelPanel() {
   if (selBld && selBld.alive) {
     const b = selBld, d = b.def;
     const prod = d.units.map((t) => { const U = UNITS[t]; return `<button class="pbtn" data-unit="${t}" style="--c:${BRANCHES[U.br].color}" data-tip="${esc(tipFor(U.name, U.cost, U.desc, U.ability ? `<br><span class='uses'>Ability: ${ABILITIES[U.ability].name}</span>` : ''))}">${svg(t, 'blue')}<span class="price">${fmt$(U.cost)}</span><i class="q"></i><i class="bar"></i></button>`; }).join('');
-    sp.innerHTML = `<div class="head">${svg(b.type, 'blue')}<div><b>${d.name}</b><div class="sub" id="bstate"></div></div></div>${prod ? `<div class="prod">${prod}</div><div class="hint">Click: queue · Right-click: cancel · Right-click ground: rally point</div>` : `<div class="hint">${b.type === 'hq' ? 'Your HQ. If it falls, you lose. +$120/min.' : b.type === 'depot' ? 'Supply depot: +$270/min.' : ''}</div>`}`;
+    sp.innerHTML = `<div class="head">${svg(b.type, 'blue')}<div><b>${d.name}</b><div class="sub" id="bstate"></div></div></div>${prod ? `<div class="prod">${prod}</div><div class="hint">${TOUCH.on ? 'Tap: queue · Hold: cancel · <b>⚑ Rally</b> button: set rally point' : 'Click: queue · Right-click: cancel · Right-click ground: rally point'}</div>` : `<div class="hint">${b.type === 'hq' ? 'Your HQ. If it falls, you lose. +$120/min.' : b.type === 'depot' ? 'Supply depot: +$270/min.' : ''}</div>`}`;
     sp.querySelectorAll('[data-unit]').forEach((el) => {
-      el.addEventListener('click', () => { if (!queueUnit(selBld, el.dataset.unit)) toast(!selBld.built ? 'Still under construction' : teams.blue.money < UNITS[el.dataset.unit].cost ? 'Not enough money' : 'Queue full'); updatePanelDynamic(); });
-      el.addEventListener('contextmenu', (e) => { e.preventDefault(); cancelUnit(selBld, el.dataset.unit); updatePanelDynamic(); });
+      el.addEventListener('click', () => { if (el._lpDone) { el._lpDone = false; return; } if (!queueUnit(selBld, el.dataset.unit)) toast(!selBld.built ? 'Still under construction' : teams.blue.money < UNITS[el.dataset.unit].cost ? 'Not enough money' : 'Queue full'); updatePanelDynamic(); });
+      el.addEventListener('contextmenu', (e) => { e.preventDefault(); if (el._lpDone) return; cancelUnit(selBld, el.dataset.unit); updatePanelDynamic(); });
+      longPress(el, () => { cancelUnit(selBld, el.dataset.unit); updatePanelDynamic(); toast('Cancelled ' + UNITS[el.dataset.unit].name); });
     });
     sp.classList.remove('hidden'); return;
   }
@@ -1698,7 +1872,7 @@ function updateHUD(dt) {
   toastT -= dt; if (toastT <= 0) $('#toast').classList.remove('on');
   hudT -= dt;
   const sig = selSignature();
-  if (sig !== lastSig || hudDirty) { lastSig = sig; hudDirty = false; renderSelPanel(); hudT = 0; }
+  if (sig !== lastSig || hudDirty) { lastSig = sig; hudDirty = false; renderSelPanel(); hudT = 0; if (TOUCH.on) updateTouchBar(); }
   if (hudT > 0) return; hudT = .2;
   const T = teams.blue;
   $('#money').textContent = fmt$(T.money);
@@ -1707,6 +1881,7 @@ function updateHUD(dt) {
   document.querySelectorAll('#buildbar [data-build]').forEach((el) => el.classList.toggle('poor', T.money < BUILDINGS[el.dataset.build].cost));
   document.querySelectorAll('#buildbar [data-build]').forEach((el) => el.classList.toggle('on', placing?.type === el.dataset.build));
   updatePanelDynamic();
+  if (TOUCH.on) updateTouchBar();
 }
 
 // =====================================================================================
@@ -1733,6 +1908,7 @@ function startGame(diff = game.difficulty) {
   Object.assign(game, { state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
   teams.blue.money = START_MONEY; teams.red.money = START_MONEY;
   aiState = makeAI(diff);
+  if (TOUCH.on) { const th = $('#touchhelp'); th.classList.add('on'); clearTimeout(th._t); th._t = setTimeout(() => th.classList.remove('on'), 9000); }
   for (const team of ['blue', 'red']) {
     const p = HQ_POS[team]; createBuilding('hq', team, p.x, p.z, true);
     const j = createUnit('jeep', team, p.x - 12, p.z + facingOf(team) * 14);
@@ -1875,7 +2051,7 @@ window.__game = {
   shellsInFlight: () => shells.length + bombs.length, mines: () => mines.map((m) => ({ team: m.team, x: m.x, z: m.z, visible: m.mesh.visible })),
   reveals: () => reveals.length,
   countHealthBarObjects: () => { let n = 0; scene.traverse((o) => { if (o.isSprite || /hp|health/i.test(o.name || '')) n++; }); return n + document.querySelectorAll('.hpbar, .healthbar, [class*="hp-"]').length; },
-  placing: () => placing && { type: placing.type, ok: placing.ok, reason: placing.reason },
+  placing: () => placing && { type: placing.type, ok: placing.ok, reason: placing.reason, x: placing.x, z: placing.z, flip: placing.flip },
   isWet: (x, z) => wet(x, z), riverZ: (x) => riverZ(x), bridges: () => BRIDGES_INFO,
   ai: () => aiState && { wave: aiState.wave, waveTarget: aiState.waveTarget, nextWave: aiState.nextWave, army: [...aiState.army].filter((u) => u.alive).length },
   findSite: (type, cx = HQ_POS.blue.x, cz = HQ_POS.blue.z, team = 'blue') => {
@@ -1890,4 +2066,9 @@ window.__game = {
   simulate: (sec, dt = 1 / 20) => { const t0 = performance.now(); let n = 0; while (n * dt < sec && (game.state === 'playing' || game.state === 'ending')) { step(dt); n++; } hudDirty = true; return { steps: n, ms: performance.now() - t0 }; },
   invulnerable: (team, on = true) => { game.invuln = on ? team : null; },
   pathLinesVisible: () => units.filter((u) => u.pathLine?.visible).length,
+  cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
+  touchUI: () => TOUCH.on, lowProfile: LOW, pixelRatio: () => renderer.getPixelRatio(), shadowMapSize: () => sun.shadow.mapSize.x, particleCaps: () => [fx.cap, smoke.cap],
+  boxMode: () => boxMode, rallyMode: () => rallyMode,
 };
+
+if (IS_TOUCH) enableTouchUI();

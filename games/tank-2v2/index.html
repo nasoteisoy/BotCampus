@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1f24">
 <title>Front Line: tank RTS</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
@@ -29,6 +32,14 @@
     <div class="row"><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span><span>pan</span><span class="k wide">H</span><span>HQ</span></div>
     <div class="row"><span class="k">Ctrl</span>+<span class="k">1-5</span><span>group</span><span class="k">Q E R F G T</span><span>abilities</span></div>
   </div>
+  <div id="touchbar"></div>
+  <div id="placebar" class="hidden"><div class="why"></div><button data-pb="no" aria-label="Cancel"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#ff8f80" stroke-width="3" stroke-linecap="round"/></svg><span>Cancel</span></button><button data-pb="rot" aria-label="Rotate"><svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5" stroke="#ddd" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20 3v6h-6" fill="#ddd"/></svg><span>Rotate</span></button><button data-pb="ok" class="ok" aria-label="Confirm"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" stroke="#4dff88" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg><span>Build</span></button></div>
+  <div id="touchhelp">
+    <div><b>Tap</b> unit: select · <b>Tap</b> ground: move · <b>Tap</b> enemy: attack</div>
+    <div><b>Drag</b>: pan · <b>Pinch</b>: zoom · <b>Twist</b>: rotate</div>
+    <div><b>Hold + drag</b> (or <b>Select</b>): box select · <b>Double-tap</b>: all of type</div>
+    <div><b>Tap</b> building: open its queue · <b>Hold</b> a queued unit: cancel</div>
+  </div>
   <div id="toast"></div>
 </div>
 <div id="tip"></div>
@@ -41,6 +52,7 @@
   <div class="card">
     <h1>FRONT LINE</h1>
     <div class="tag">Build your base. Roll out an army. Take their HQ.</div>
+    <div class="tag touchonly">Tap to select &amp; move · drag to pan · pinch to zoom</div>
     <div class="how">
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><g><rect x="5" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="15" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="10" y="7" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><text x="31" y="20" font-size="15" font-weight="900" fill="#ffd65a" text-anchor="middle">$</text></g></svg></div><b>1</b><span>Depots on <i class="pad">$</i> spots earn money</span></div>
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="4" y="14" width="32" height="14" fill="#c9bfa6"/><path d="M4 14l6-6v6l6-6v6l6-6v6l6-6v6z" fill="#5d6168"/><rect x="14" y="19" width="12" height="9" fill="#4aa3ff"/></svg></div><b>2</b><span>Place buildings near your base</span></div>

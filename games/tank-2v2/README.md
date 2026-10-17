@@ -36,6 +36,17 @@ The files are static: `index.html`, `css/style.css` and `js/*.js`. three.js r169
 - **Abilities:** buttons with cooldown rings on the selection panel, or hotkeys Q E R F G T.
 - **Camera:** wheel zooms toward the cursor, right-drag rotates, middle-drag or WASD pans, H jumps to the HQ. Click the minimap to jump; right-click the minimap to order units there.
 
+## Phone / tablet (touch)
+- **Tap** to select a unit, move to the ground, attack an enemy, or open a building's queue. **Double-tap** a unit to select all of that type on screen.
+- **Drag** pans. **Pinch** zooms. **Two-finger twist** rotates.
+- **Box select:** hold, then drag, or switch on the **Select** button and drag.
+- **Placing:** tap a build button and the ghost appears mid-screen. Tap the map to move it, then use **Build ✓**, **Rotate** or **Cancel**.
+- **Production:** tap a unit button to queue it. Hold the button to cancel one.
+- **Right-side buttons:** HQ, Select, Clear, Stop, Rally (tap Rally, then tap the map), Help. Groups 1–3: hold to store the current selection, tap to recall it.
+- **Minimap:** tap to jump the camera.
+- **Lighter renderer** on touch devices and small screens: pixel ratio 1.25, 1024 shadow map, about half the particles.
+- **Mouse and keyboard** controls are unchanged. A touch only switches on the touch UI. While placing on PC, R also rotates the building.
+
 ## Files
 - `js/main.js`: game loop, economy, placement, production, units, squads, abilities, aircraft, combat, fog, AI, input, HUD, test hooks (`window.__game`)
 - `js/config.js`: economy constants, units, buildings, abilities, damage table, supply spots
@@ -50,4 +61,5 @@ The files are static: `index.html`, `css/style.css` and `js/*.js`. three.js r169
     node test/playtest.mjs                 # 65 checks; writes screenshots/11-17
     node test/stress.mjs 11 normal 1       # AI vs idle player (HQ invulnerable), 11 game minutes, checks for stalls and errors
     VULN=1 node test/stress.mjs 15 easy 1  # same, but the AI can win the match
+    node test/mobile.mjs                   # 45 checks; iPhone 13 landscape + portrait emulation (hasTouch); writes screenshots/18-20
 The tests use `__game.simulate(sec)` to fast-forward without rendering, because headless SwiftShader renders at about 1 to 6 fps.

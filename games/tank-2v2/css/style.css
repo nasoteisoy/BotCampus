@@ -121,3 +121,82 @@ svg { display: block; }
 .diff button { padding: 6px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.05); cursor: pointer; font-weight: 700; }
 .diff button.on { background: #3d7ee6; border-color: #6fa8ff; }
 #play { font-size: 20px; padding: 12px 46px; }
+
+/* =================== touch & small screens =================== */
+html, body { overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#touchbar, #placebar, #touchhelp, .touchonly { display: none; }
+body.touch #help { display: none; }
+body.touch .touchonly { display: block; }
+body.touch #touchbar { display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 52px); grid-auto-columns: 52px; gap: 6px; direction: rtl; position: absolute; right: calc(8px + env(safe-area-inset-right)); top: 120px; height: calc(100% - 210px); pointer-events: none; }
+body.touch #touchbar > * { direction: ltr; pointer-events: auto; }
+body.touch .abtn .hk { display: none; }
+.tb { width: 52px; height: 52px; padding: 5px 4px 3px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(16, 20, 26, .8); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; }
+.tb svg { width: 26px; height: 26px; }
+.tb span { font-size: 9.5px; font-weight: 700; color: #cfd8e1; }
+.tb.on { border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset; background: rgba(40, 90, 110, .85); }
+.tb.grp b { font-size: 18px; line-height: 22px; color: #8796a5; } .tb.grp.set b { color: #ffe08a; }
+.tb:active, #placebar button:active { transform: scale(.94); }
+body.touch #placebar:not(.hidden) { display: flex; gap: 10px; align-items: center; position: absolute; left: 50%; transform: translateX(-50%); bottom: 112px; padding: 8px 10px; border-radius: 14px; background: rgba(16, 20, 26, .86); border: 1px solid rgba(255,255,255,.18); pointer-events: auto; }
+#placebar .why { font-size: 12px; color: #dfe7ee; max-width: 160px; line-height: 1.25; }
+#placebar button { width: 64px; height: 56px; border-radius: 12px; border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.07); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+#placebar button svg { width: 26px; height: 26px; } #placebar button span { font-size: 11px; font-weight: 800; }
+#placebar button.ok { border-color: #4dff88; background: rgba(40, 140, 80, .35); }
+#placebar button.ok.bad { opacity: .45; border-color: #ff7a6a; background: rgba(140, 40, 30, .3); }
+body.touch #touchhelp.on { display: grid; gap: 3px; position: absolute; left: 50%; top: 52px; transform: translateX(-50%); padding: 8px 12px; border-radius: 10px; background: rgba(16, 20, 26, .86); border: 1px solid rgba(255,255,255,.15); font-size: 12px; color: #cfd8e1; text-align: center; max-width: min(560px, 92vw); pointer-events: none; z-index: 4; }
+#touchhelp b { color: #ffe08a; }
+/* finger-sized controls */
+body.touch .abtn { width: 50px; height: 50px; }
+body.touch .abil { gap: 8px; flex-wrap: wrap; }
+body.touch .ucard { width: 44px; height: 40px; }
+body.touch .bbtn, body.touch .pbtn { min-width: 48px; min-height: 48px; }
+body.touch .tab { min-height: 36px; }
+
+/* phones in landscape (short) */
+@media (max-height: 520px) {
+  #minimap { width: 104px; height: 104px; top: 8px; right: calc(8px + env(safe-area-inset-right)); }
+  #topbar { top: 6px; padding: 3px 10px 3px 6px; gap: 6px; } #money { font-size: 16px; min-width: 56px; } #topbar .coin { width: 20px; height: 20px; font-size: 12px; }
+  body.touch #touchbar { top: 118px; height: calc(100% - 124px); grid-template-rows: repeat(auto-fill, 46px); grid-auto-columns: 46px; }
+  .tb { width: 46px; height: 46px; } .tb span { font-size: 8.5px; } .tb svg { width: 22px; height: 22px; }
+  #buildbar { bottom: 6px; padding: 5px; gap: 5px; left: auto; right: calc(124px + env(safe-area-inset-right)); transform: none; }
+  .bbtn, .pbtn { width: 50px; height: 50px; padding: 3px 3px 13px; } .eco .bbtn { width: 52px; height: 58px; } .price { font-size: 10px; }
+  #buildbar .blds { min-height: 58px; padding: 3px; }
+  .tab span { display: none; } .tab { padding: 3px 6px; } .tab svg { width: 26px; height: 20px; }
+  #selpanel { left: calc(6px + env(safe-area-inset-left)); bottom: 6px; padding: 6px; max-width: calc(100vw - 470px); min-width: 180px; }
+  #selpanel .hint { display: none; } #selpanel .head { margin-bottom: 3px; } #selpanel .head svg { width: 34px; height: 28px; }
+  .ucards { max-height: 88px; overflow: hidden; }
+  body.touch #placebar:not(.hidden) { bottom: 6px; left: calc(6px + env(safe-area-inset-left)); transform: none; }
+  #placebar .why { max-width: 90px; font-size: 11px; } #placebar button { width: 58px; height: 52px; }
+  #toast { top: 40px; }
+  #banner { padding: 16px 28px; } #banner .title { font-size: 34px; }
+}
+/* phones in portrait (narrow) */
+@media (max-width: 600px) {
+  #minimap { width: 96px; height: 96px; top: calc(8px + env(safe-area-inset-top)); right: 8px; }
+  #topbar { top: calc(8px + env(safe-area-inset-top)); left: 8px; transform: none; padding: 3px 8px 3px 5px; gap: 5px; } #money { font-size: 15px; min-width: 50px; } #income { font-size: 11px; } #clock { font-size: 11px; }
+  body.touch #touchbar { top: 112px; right: 8px; height: calc(100% - 340px); }
+  #buildbar { bottom: calc(6px + env(safe-area-inset-bottom)); left: 6px; right: 6px; transform: none; padding: 5px; gap: 5px; justify-content: center; }
+  .bbtn, .pbtn { width: 50px; height: 50px; padding: 3px 3px 13px; } .eco .bbtn { width: 50px; height: 58px; } .price { font-size: 10px; }
+  #buildbar .blds { min-height: 58px; padding: 3px; }
+  .tab span { display: none; } .tab { padding: 3px 7px; } .tab svg { width: 26px; height: 20px; }
+  #selpanel { left: 6px; right: 6px; max-width: none; bottom: calc(112px + env(safe-area-inset-bottom)); padding: 6px; }
+  #selpanel .hint { font-size: 10px; }
+  .ucards { max-width: none; max-height: 90px; overflow: hidden; }
+  body.touch #placebar:not(.hidden) { bottom: auto; top: 112px; left: 8px; transform: none; }
+  #placebar .why { max-width: 90px; }
+  #toast { top: 50px; max-width: 70vw; text-align: center; }
+  #banner { padding: 16px 22px; width: 88vw; } #banner .title { font-size: 34px; }
+}
+/* start screen on phones */
+@media (max-width: 600px), (max-height: 520px) {
+  #start { overflow-y: auto; place-items: start center; padding: 10px 0; }
+  #start .card { padding: 14px 14px 16px; margin: auto; }
+  #start h1 { font-size: 30px; letter-spacing: .12em; }
+  #start .tag { margin: 2px 0 10px; font-size: 13px; }
+  .step { font-size: 11.5px; padding: 8px 6px 6px; } .step .ic svg { width: 44px; height: 34px; margin-bottom: 2px; }
+  .rps { margin: 8px 0 2px; } .rps svg { width: 30px; height: 22px; } .rps .beats { font-size: 18px; margin-bottom: 8px; }
+  .diff { margin: 8px 0 10px; } .diff button { padding: 9px 18px; }
+  #play { font-size: 18px; padding: 11px 40px; }
+}
+@media (max-width: 600px) { .how { grid-template-columns: repeat(2, 1fr); gap: 6px; } }
+@media (max-height: 520px) { #start .card { width: min(760px, 96vw); } #start .tag.touchonly { display: none; } }
+#minimap { touch-action: none; }

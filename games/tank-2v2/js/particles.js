@@ -28,6 +28,7 @@ export class Particles {
     scene.add(this.points);
   }
   spawn(x, y, z, vx, vy, vz, life, s0, s1, r, g, b, a, drag = 0, grav = 0) {
+    if (this.thin && Math.random() > this.thin) return;  // low-end devices: thin out particles
     const i = this.head; this.head = (this.head + 1) % this.cap;
     this.pos.set([x, y, z], i * 3); this.vel.set([vx, vy, vz], i * 3); this.col.set([r, g, b], i * 3);
     this.life[i] = life; this.max[i] = life; this.s0[i] = s0; this.s1[i] = s1; this.a0[i] = a; this.drag[i] = drag; this.grav[i] = grav;
