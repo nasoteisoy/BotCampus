@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tank 2v2</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="bars"></div>
+<div id="selbox"></div>
+<div id="hud">
+  <div id="units"></div>
+  <div id="score"></div>
+  <div id="help">
+    <div class="row"><svg class="mouse l" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M10 1v10M1 11h18"/><path class="hl" d="M2 10V9a8 8 0 0 1 8-8v10z"/></svg><span>select · move · attack</span></div>
+    <div class="row"><svg viewBox="0 0 28 28" class="box"><rect x="3" y="3" width="22" height="22" rx="2" stroke-dasharray="4 3"/></svg><span>drag: select both</span></div>
+    <div class="row"><svg class="mouse r" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M10 1v10M1 11h18"/><path class="hl" d="M18 10V9a8 8 0 0 0-8-8v10z"/></svg><span>drag: rotate</span></div>
+    <div class="row"><svg class="mouse m" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M1 11h18"/><rect class="hl" x="8" y="3" width="4" height="7" rx="2"/></svg><span>drag: pan · wheel: zoom</span></div>
+    <div class="row"><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span><span>pan</span></div>
+    <div class="row"><span class="k">1</span><span class="k">2</span><span class="k">3</span><span>select</span><span class="k wide">␣</span><span>focus</span></div>
+  </div>
+</div>
+<div id="banner" class="hidden">
+  <div class="title"></div>
+  <div class="sub"></div>
+  <button id="restart">↻ Restart</button>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

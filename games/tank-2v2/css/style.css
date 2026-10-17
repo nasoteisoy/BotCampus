@@ -1,0 +1,49 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1f24; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; user-select: none; -webkit-user-select: none; }
+#app canvas { display: block; touch-action: none; }
+#bars, #hud { position: fixed; inset: 0; pointer-events: none; }
+#selbox { position: fixed; display: none; border: 1.5px solid #8ff7ff; background: rgba(120, 240, 255, .12); pointer-events: none; border-radius: 2px; }
+
+.hpbar { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 4px; will-change: transform; }
+.hpbar span { display: block; width: 46px; height: 7px; background: rgba(10, 12, 16, .75); border: 1.5px solid rgba(255,255,255,.55); border-radius: 4px; overflow: hidden; }
+.hpbar i { display: block; height: 100%; width: 100%; background: #5ee06a; transition: width .15s; }
+.hpbar.red span { border-color: #ff7a6b; }
+.hpbar.blue span { border-color: #7cc0ff; }
+.hpbar.sel span { border-color: #b6fbff; box-shadow: 0 0 6px #6ff3ff; }
+.hpbar b { font-size: 11px; color: #fff; background: #2f6fd6; border-radius: 4px; padding: 0 4px; line-height: 14px; text-shadow: none; }
+
+.panel, #units .card, #help, #score { background: rgba(16, 20, 26, .72); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; color: #e8edf2; backdrop-filter: blur(4px); }
+#units { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; pointer-events: auto; }
+#units .card { position: relative; width: 78px; padding: 6px 8px 8px; cursor: pointer; transition: transform .08s, border-color .1s; }
+#units .card:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.35); }
+#units .card.sel { border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset, 0 0 12px rgba(111,243,255,.35); }
+#units .card.dead { opacity: .4; filter: grayscale(1); }
+#units .card svg { width: 100%; height: 34px; display: block; }
+#units .key { position: absolute; top: 4px; left: 6px; font-size: 11px; font-weight: 700; color: #9fb3c8; }
+#units .hp { display: block; height: 6px; background: #0b0d10; border-radius: 3px; overflow: hidden; margin-top: 3px; }
+#units .hp i { display: block; height: 100%; background: #5ee06a; transition: width .15s; }
+
+#score { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 7px 14px; display: flex; align-items: center; gap: 6px; }
+.pip { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); }
+.pip.blue { background: #3d7ee6; } .pip.red { background: #d9483a; }
+.pip.dead { background: #333; border-color: #555; }
+.vs { font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #9fb3c8; margin: 0 8px; }
+
+#help { position: absolute; right: 12px; bottom: 12px; padding: 8px 10px; font-size: 11.5px; color: #c9d4de; display: grid; gap: 5px; }
+#help .row { display: flex; align-items: center; gap: 6px; }
+#help svg { width: 16px; height: 20px; fill: none; stroke: #c9d4de; stroke-width: 1.6; }
+#help svg.box { width: 18px; height: 18px; stroke: #8ff7ff; }
+#help svg .hl { fill: #6ff3ff; stroke: none; }
+#help .k { display: inline-block; min-width: 18px; padding: 1px 4px; text-align: center; border: 1px solid rgba(255,255,255,.35); border-bottom-width: 2px; border-radius: 4px; font-weight: 700; font-size: 10.5px; color: #fff; }
+#help .k.wide { min-width: 28px; margin-left: 6px; }
+
+#banner { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; padding: 26px 46px 24px; border-radius: 16px; background: rgba(12, 15, 20, .82); border: 1px solid rgba(255,255,255,.15); color: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.45); animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
+#banner.hidden { display: none; }
+#banner .title { font-size: 54px; font-weight: 900; letter-spacing: .12em; }
+#banner.win .title { color: #6ff3ff; text-shadow: 0 0 24px rgba(80,200,255,.6); }
+#banner.lose .title { color: #ff6a5a; text-shadow: 0 0 24px rgba(255,80,60,.5); }
+#banner .sub { margin: 6px 0 18px; color: #b8c4d0; font-size: 14px; }
+#banner button { font: inherit; font-size: 16px; font-weight: 700; padding: 10px 26px; border-radius: 10px; border: 0; cursor: pointer; background: #3d7ee6; color: #fff; box-shadow: 0 4px 0 #24508f; }
+#banner button:hover { background: #4b8cf2; }
+#banner button:active { transform: translateY(2px); box-shadow: 0 2px 0 #24508f; }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.85); opacity: 0; } }
