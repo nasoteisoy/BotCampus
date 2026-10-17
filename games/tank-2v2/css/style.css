@@ -4,13 +4,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1f24; fon
 #bars, #hud { position: fixed; inset: 0; pointer-events: none; }
 #selbox { position: fixed; display: none; border: 1.5px solid #8ff7ff; background: rgba(120, 240, 255, .12); pointer-events: none; border-radius: 2px; }
 
-.hpbar { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 4px; will-change: transform; }
-.hpbar span { display: block; width: 46px; height: 7px; background: rgba(10, 12, 16, .75); border: 1.5px solid rgba(255,255,255,.55); border-radius: 4px; overflow: hidden; }
-.hpbar i { display: block; height: 100%; width: 100%; background: #5ee06a; transition: width .15s; }
-.hpbar.red span { border-color: #ff7a6b; }
-.hpbar.blue span { border-color: #7cc0ff; }
-.hpbar.sel span { border-color: #b6fbff; box-shadow: 0 0 6px #6ff3ff; }
-.hpbar b { font-size: 11px; color: #fff; background: #2f6fd6; border-radius: 4px; padding: 0 4px; line-height: 14px; text-shadow: none; }
+.badge { position: absolute; left: 0; top: 0; will-change: transform; font-size: 11px; font-weight: 800; color: #fff; background: rgba(36, 86, 170, .85); border: 1px solid rgba(255,255,255,.55); border-radius: 4px; padding: 0 5px; line-height: 15px; }
+.badge.sel { background: rgba(40, 150, 190, .95); border-color: #b6fbff; box-shadow: 0 0 6px #6ff3ff; }
 
 .panel, #units .card, #help, #score { background: rgba(16, 20, 26, .72); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; color: #e8edf2; backdrop-filter: blur(4px); }
 #units { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; pointer-events: auto; }
@@ -18,10 +13,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1f24; fon
 #units .card:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.35); }
 #units .card.sel { border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset, 0 0 12px rgba(111,243,255,.35); }
 #units .card.dead { opacity: .4; filter: grayscale(1); }
-#units .card svg { width: 100%; height: 34px; display: block; }
+#units .card svg { width: 100%; height: 38px; display: block; overflow: visible; }
 #units .key { position: absolute; top: 4px; left: 6px; font-size: 11px; font-weight: 700; color: #9fb3c8; }
-#units .hp { display: block; height: 6px; background: #0b0d10; border-radius: 3px; overflow: hidden; margin-top: 3px; }
-#units .hp i { display: block; height: 100%; background: #5ee06a; transition: width .15s; }
+#units svg .smk, #units svg .fire { display: none; }
+#units svg .smk circle { fill: #c9ccd0; opacity: .85; }
+#units .card[data-state="damaged"] svg .smk { display: inline; }
+#units .card[data-state="damaged"] svg .hull { filter: brightness(.78); }
+#units .card[data-state="burning"] svg .smk { display: inline; }
+#units .card[data-state="burning"] svg .smk circle { fill: #4a4a4a; stroke: rgba(255,255,255,.35); stroke-width: .6; opacity: 1; }
+#units .card[data-state="burning"] svg .fire { display: inline; fill: #ff8a1f; animation: flick .35s infinite alternate; }
+#units .card[data-state="burning"] svg .hull { filter: brightness(.68) sepia(.35); }
+#units .card[data-state="burning"] { border-color: rgba(255,140,40,.6); box-shadow: 0 0 10px rgba(255,120,30,.35); }
+#units .card[data-state="burning"].sel { border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset, 0 0 12px rgba(255,120,30,.5); }
+@keyframes flick { from { opacity: .75; transform: translateY(.4px); } to { opacity: 1; transform: translateY(-.4px); } }
 
 #score { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 7px 14px; display: flex; align-items: center; gap: 6px; }
 .pip { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); }

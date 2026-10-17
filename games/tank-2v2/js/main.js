@@ -186,10 +186,23 @@ function buildTank(team) {
   return { root, body, turret, barrel, muzzle, ring, pick, mats: { main, trim } };
 }
 
-function makeBar(t) {
-  const el = document.createElement('div'); el.className = 'hpbar ' + t.team;
-  el.innerHTML = `${t.team === 'blue' ? `<b>${t.idx + 1}</b>` : ''}<span><i></i></span>`;
+// R.U.S.E.-style: no health bars. Player tanks get a tiny ID badge only; enemies get nothing.
+function makeBadge(t) {
+  if (t.team !== 'blue') return null;
+  const el = document.createElement('div'); el.className = 'badge'; el.textContent = t.idx + 1;
   $('#bars').appendChild(el); return el;
+}
+// Damage reads on the model: 0 clean, 1 damaged (<70%): grey wisps + darker hull, 2 heavy (<35%): black smoke, flames, sparks, slower.
+const DMG_DAMAGED = 0.7, DMG_HEAVY = 0.35;
+const sootColor = new THREE.Color(0x2a2724);
+function updateDamageState(t) {
+  const f = t.hp / CFG.hp;
+  const st = f < DMG_HEAVY ? 2 : f < DMG_DAMAGED ? 1 : 0;
+  if (st === t.dmg) return;
+  t.dmg = st;
+  const k = [0, 0.4, 0.62][st];
+  t.mats.main.color.copy(t.baseMain).lerp(sootColor, k);
+  t.mats.trim.color.copy(t.baseTrim).lerp(sootColor, k);
 }
 
 function spawnTank(team, idx, x, z, yaw) {
@@ -200,12 +213,13 @@ function spawnTank(team, idx, x, z, yaw) {
     fireTarget: null, vel: new THREE.Vector3(), prev: new THREE.Vector3(x, 0, z), recoil: 0, pitch: 0, flash: 0,
     stuck: { t: 0, x, z, n: 0 }, repath: 0, dustT: 0,
     ai: team === 'red' ? { timer: 0, start: 3.5 + idx * 0.3, next: 0, mode: 'engage', until: 0, coverCd: 0 } : null,
-    pathLine: null,
+    pathLine: null, dmg: 0, dmgT: 0, sparkT: 1,
   };
+  t.baseMain = t.mats.main.color.clone(); t.baseTrim = t.mats.trim.color.clone();
   t.root.position.set(x, 0, z); t.root.rotation.y = yaw;
   t.pick.userData.tank = t; pickMeshes.push(t.pick);
   scene.add(t.root);
-  t.bar = makeBar(t);
+  t.bar = makeBadge(t);
   if (team === 'blue') {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 40), 3));
     t.pathLine = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x8ff7ff, transparent: true, opacity: 0.55, depthWrite: false }));
@@ -277,6 +291,7 @@ function fire(t, tg) {
 }
 function hitTank(tg, dmg, p, shooter) {
   tg.hp = Math.max(0, tg.hp - dmg); tg.flash = 0.12; game.stats.hits++;
+  updateDamageState(tg);
   for (let i = 0; i < 18; i++) fx.spawn(p.x, p.y, p.z, rand(-9, 9), rand(2, 10), rand(-9, 9), rand(.2, .45), rand(.25, .5), .05, 1, rand(.7, .95), .4, 1, 2, 20);
   for (let i = 0; i < 6; i++) fx.spawn(p.x, p.y, p.z, rand(-2, 2), rand(0, 2), rand(-2, 2), rand(.15, .3), rand(1.5, 2.6), 3.5, 1, .55, .15, .9, 3);
   for (let i = 0; i < 5; i++) smoke.spawn(p.x, p.y, p.z, rand(-1.5, 1.5), rand(.5, 2), rand(-1.5, 1.5), rand(1, 1.8), 1.5, 4, .25, .23, .22, .55, 1, -0.6);
@@ -295,7 +310,7 @@ function killTank(t) {
   t.mats.main.color.setHex(0x2d2a27); t.mats.trim.color.setHex(0x1d1b19); t.mats.main.emissive.setHex(0); t.mats.trim.emissive.setHex(0);
   t.turret.rotation.z = rand(-.35, .35); t.turret.position.y += 0.18; t.turretYaw += rand(-.8, .8); t.barrel.rotation.x = 0.18;
   t.body.rotation.z = rand(-.06, .06);
-  t.ring.visible = false; t.bar.style.display = 'none';
+  t.ring.visible = false; if (t.bar) t.bar.style.display = 'none'; if (t.pathLine) t.pathLine.visible = false;
   const sc = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: scorchTex, transparent: true, depthWrite: false }));
   sc.rotation.x = -Math.PI / 2; sc.position.set(p.x, 0.04, p.z); scene.add(sc);
   emitters.push({ t, age: 0, acc: 0, scorch: sc });
@@ -420,7 +435,7 @@ function updateTank(t, dt) {
   const p = pos(t);
   t.vel.set((p.x - t.prev.x) / dt, 0, (p.z - t.prev.z) / dt); t.prev.copy(p);
   if (!t.alive) return;
-  if (t.ai) aiThink(t, dt);
+  if (t.ai && !game.holdAI) aiThink(t, dt);
   // orders
   if (t.order?.type === 'attack') {
     const tg = t.order.target;
@@ -442,7 +457,7 @@ function updateTank(t, dt) {
       const err = wrap(Math.atan2(dx, dz) - t.yaw);
       t.yaw = wrap(t.yaw + clamp(err, -CFG.turn * dt, CFG.turn * dt));
       const align = Math.max(0, Math.cos(err));
-      let want = Math.abs(err) > 1.1 ? 0.6 : CFG.speed * (t.ai ? 0.9 : 1) * align * align;
+      let want = Math.abs(err) > 1.1 ? 0.6 : CFG.speed * (t.ai ? 0.9 : 1) * (t.dmg === 2 ? 0.8 : 1) * align * align;
       if (last) want = Math.min(want, 1.5 + d * 1.6);
       t.speed += (want - t.speed) * Math.min(1, dt * 4);
     }
@@ -478,6 +493,29 @@ function updateTank(t, dt) {
         const bx = p.x - Math.sin(t.yaw) * 2.3 + Math.cos(t.yaw) * 1.5 * s, bz = p.z - Math.cos(t.yaw) * 2.3 - Math.sin(t.yaw) * 1.5 * s;
         smoke.spawn(bx, .3, bz, rand(-.5, .5), rand(.3, 1), rand(-.5, .5), rand(.8, 1.3), .8, 2.6, .72, .64, .48, .32, 1.5, -0.2);
       }
+    }
+  }
+}
+function damageFx(t, dt) {
+  if (!t.alive || !t.dmg) return;
+  const p = pos(t), sy = Math.sin(t.yaw), cy = Math.cos(t.yaw);
+  const ex = p.x - sy * 1.6, ez = p.z - cy * 1.6; // engine deck (rear)
+  t.dmgT -= dt;
+  if (t.dmgT <= 0) {
+    if (t.dmg === 1) {
+      t.dmgT = 0.1;
+      smoke.spawn(ex + rand(-.4, .4), 1.6, ez + rand(-.4, .4), rand(-.2, .2) + .3, rand(1.4, 2.2), rand(-.2, .2), rand(1.8, 2.6), .8, rand(3, 4.2), .86, .86, .84, .5, .4, -0.2);
+    } else {
+      t.dmgT = 0.06;
+      smoke.spawn(ex + rand(-.5, .5), 1.7, ez + rand(-.5, .5), rand(-.3, .3) + .4, rand(1.8, 3), rand(-.3, .3), rand(2.2, 3.2), 1, rand(4, 6), .14, .13, .12, .6, .3, -0.25);
+      for (let i = 0; i < 2; i++) fx.spawn(ex + rand(-.6, .6), 1.7, ez + rand(-.6, .6), rand(-.2, .2), rand(1.2, 2.6), rand(-.2, .2), rand(.3, .55), rand(1.1, 1.7), .25, 1, rand(.45, .65), .12, .95, 1, -1.5);
+    }
+  }
+  if (t.dmg === 2) {
+    t.sparkT -= dt;
+    if (t.sparkT <= 0) {
+      t.sparkT = rand(0.5, 1.4);
+      for (let i = 0; i < 6; i++) fx.spawn(ex, 1.6, ez, rand(-3, 3), rand(2, 5), rand(-3, 3), rand(.25, .5), .3, .05, 1, .85, .45, 1, 1.5, 16);
     }
   }
 }
@@ -584,9 +622,12 @@ function focusSelection() {
 }
 
 // ---------- HUD ----------
-const tankSvg = (c) => `<svg viewBox="0 0 40 28"><rect x="3" y="15" width="34" height="9" rx="4" fill="#222"/><rect x="6" y="10" width="28" height="8" rx="2" fill="${c}"/><rect x="13" y="5" width="13" height="7" rx="3" fill="${c}"/><rect x="25" y="7" width="13" height="2.6" fill="#ccc"/></svg>`;
+// Card icon: tank silhouette + damage overlays (smoke wisps / flames) toggled by CSS state class.
+const tankSvg = (c) => `<svg viewBox="0 0 40 30"><g class="tk"><rect x="3" y="17" width="34" height="9" rx="4" fill="#222"/><rect x="6" y="12" width="28" height="8" rx="2" class="hull" fill="${c}"/><rect x="13" y="7" width="13" height="7" rx="3" class="hull" fill="${c}"/><rect x="25" y="9" width="13" height="2.6" fill="#ccc"/></g>
+  <g class="smk"><circle cx="9" cy="8" r="3" /><circle cx="6" cy="4" r="2.3" /><circle cx="10" cy="1.6" r="1.6" /></g>
+  <g class="fire"><path d="M8 13c-3-3 0-5 0-8 2 2 4 3 2 6 1 0 2-1 2-2 1 2 0 4-1 4z"/><path d="M14 12c-1-2 0-3 1-5 1 2 2 3 0 5z"/></g></svg>`;
 function buildHUD() {
-  $('#units').innerHTML = [0, 1].map((i) => `<div class="card" data-i="${i}"><span class="key">${i + 1}</span>${tankSvg(TEAM.blue.css)}<span class="hp"><i></i></span></div>`).join('');
+  $('#units').innerHTML = [0, 1].map((i) => `<div class="card" data-i="${i}"><span class="key">${i + 1}</span>${tankSvg(TEAM.blue.css)}</div>`).join('');
   document.querySelectorAll('.card').forEach((el) => {
     el.addEventListener('click', (e) => { const t = tanks.filter((t) => t.team === 'blue')[+el.dataset.i]; if (t) { if (e.shiftKey) toggleSel(t); else setSelection([t]); } });
     el.addEventListener('dblclick', () => focusSelection());
@@ -598,24 +639,23 @@ function updateHUD() {
   document.querySelectorAll('.card').forEach((el, i) => {
     const t = blue[i]; if (!t) return;
     el.classList.toggle('sel', selected.has(t)); el.classList.toggle('dead', !t.alive);
-    el.querySelector('.hp i').style.width = (t.hp / CFG.hp * 100) + '%';
+    const st = t.alive ? ['clean', 'damaged', 'burning'][t.dmg] : 'dead';
+    if (el.dataset.state !== st) { el.dataset.state = st; el.title = st; }
   });
   $('#score').innerHTML = ['blue', 'red'].map((tm) => tanks.filter((t) => t.team === tm).map((t) => `<i class="pip ${tm} ${t.alive ? '' : 'dead'}"></i>`).join('')).join('<span class="vs">VS</span>');
   for (const t of tanks) {
-    if (!t.alive) continue;
-    const s = toScreen(tmpV.copy(pos(t)).setY(3.6));
-    if (s.z > 1 || s.x < -50 || s.x > innerWidth + 50 || s.y < -30 || s.y > innerHeight + 30) { t.bar.style.display = 'none'; continue; }
+    if (!t.alive || !t.bar) continue;
+    const s = toScreen(tmpV.copy(pos(t)).setY(3.4));
+    if (s.z > 1 || s.x < -50 || s.x > innerWidth + 50 || s.y < -30 || s.y > innerHeight + 30 || game.state === 'over') { t.bar.style.display = 'none'; continue; }
     t.bar.style.display = '';
     t.bar.style.transform = `translate(${s.x | 0}px, ${s.y | 0}px) translate(-50%, -100%)`;
-    const f = t.hp / CFG.hp; const fill = t.bar.querySelector('i');
-    fill.style.width = (f * 100) + '%'; fill.style.background = f > .6 ? '#5ee06a' : f > .3 ? '#f2c94c' : '#ff5a4a';
     t.bar.classList.toggle('sel', selected.has(t));
   }
 }
 
 // ---------- game lifecycle ----------
 function clearWorld() {
-  for (const t of tanks) { scene.remove(t.root); t.bar.remove(); if (t.pathLine) scene.remove(t.pathLine); t.root.traverse((o) => { if (o.isMesh && o.geometry !== ringGeo) o.geometry.dispose(); }); }
+  for (const t of tanks) { scene.remove(t.root); t.bar?.remove(); if (t.pathLine) scene.remove(t.pathLine); t.root.traverse((o) => { if (o.isMesh && o.geometry !== ringGeo) o.geometry.dispose(); }); }
   for (const s of shells) scene.remove(s.mesh);
   for (const e of emitters) scene.remove(e.scorch);
   for (const m of markers) scene.remove(m.m);
@@ -634,6 +674,7 @@ function startGame() {
 $('#restart').addEventListener('click', () => startGame());
 function showBanner() {
   game.state = 'over';
+  for (const t of tanks) { t.order = null; stop(t); }
   const win = game.result === 'win';
   const b = $('#banner'); b.classList.remove('hidden'); b.classList.toggle('win', win); b.classList.toggle('lose', game.result === 'lose');
   b.querySelector('.title').textContent = win ? 'VICTORY' : game.result === 'lose' ? 'DEFEAT' : 'DRAW';
@@ -644,14 +685,14 @@ function showBanner() {
 // ---------- per-frame visuals ----------
 function updateVisuals(dt, now) {
   for (const t of tanks) {
-    if (!t.alive) continue;
+    if (!t.alive) { if (t.pathLine) t.pathLine.visible = false; continue; }
     const sel = selected.has(t), hov = hovered === t;
     const targeted = t.team === 'red' && [...selected].some((s) => s.order?.type === 'attack' && s.order.target === t);
     t.ring.visible = sel || hov || targeted;
     t.ring.material.opacity = sel ? 0.95 : targeted ? 0.55 + 0.4 * Math.sin(now * 8) : 0.4;
     t.ring.scale.setScalar(sel ? 1 + 0.04 * Math.sin(now * 5) : 1);
     if (t.pathLine) {
-      const show = sel && t.path.length > 0; t.pathLine.visible = show;
+      const show = sel && t.alive && t.path.length > 0 && game.state === 'playing'; t.pathLine.visible = show;
       if (show) {
         const a = t.pathLine.geometry.attributes.position; const pts = [pos(t), ...t.path].slice(0, 40);
         pts.forEach((q, i) => a.setXYZ(i, q.x, 0.18, q.z)); a.needsUpdate = true; t.pathLine.geometry.setDrawRange(0, pts.length);
@@ -676,7 +717,7 @@ function frame() {
   fpsAcc += raw; fpsN++; if (fpsAcc > 0.5) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; }
   for (let s = 0; s < game.timeScale; s++) {
     if (game.state !== 'over') game.time += dt;
-    for (const t of tanks) updateTank(t, dt);
+    for (const t of tanks) { updateTank(t, dt); damageFx(t, dt); }
     separate();
     updateShells(dt);
     updateEmitters(dt);
@@ -701,7 +742,7 @@ frame();
 // ---------- test / debug hooks ----------
 window.__game = {
   get state() { return game.state; }, get result() { return game.result; }, get stats() { return { ...game.stats }; }, get fps() { return fps; }, get cpuMs() { return cpuMs; },
-  tanks: () => tanks.map((t) => ({ id: t.id, team: t.team, hp: t.hp, alive: t.alive, x: pos(t).x, z: pos(t).z, selected: selected.has(t), order: t.order?.type || null, pathLen: t.path.length, turretYaw: t.turretYaw, yaw: t.yaw })),
+  tanks: () => tanks.map((t) => ({ id: t.id, team: t.team, hp: t.hp, dmg: t.dmg, speedMul: t.dmg === 2 ? 0.8 : 1, hullColor: t.mats.main.color.getHexString(), alive: t.alive, x: pos(t).x, z: pos(t).z, selected: selected.has(t), order: t.order?.type || null, pathLen: t.path.length, turretYaw: t.turretYaw, yaw: t.yaw })),
   screenOf: (id) => { const t = tanks.find((t) => t.id === id); const s = toScreen(tmpV.copy(pos(t)).setY(1.2)); return { x: s.x, y: s.y }; },
   worldToScreen: (x, y, z) => { const s = toScreen(new THREE.Vector3(x, y, z)); return { x: s.x, y: s.y }; },
   cameraDistance: () => camera.position.distanceTo(controls.target) ,
@@ -713,5 +754,10 @@ window.__game = {
   restart: startGame,
   gameTime: () => game.time,
   maxHp: CFG.hp,
+  thresholds: { damaged: DMG_DAMAGED, heavy: DMG_HEAVY },
+  debugHit: (id, dmg) => { const t = tanks.find((t) => t.id === id); if (t?.alive) hitTank(t, dmg, pos(t).clone().setY(1.5), null); },
+  holdAI: (v) => { game.holdAI = !!v; },
+  countHealthBarObjects: () => { let n = 0; scene.traverse((o) => { if (o.isSprite || /hp|health/i.test(o.name || '')) n++; }); return n; },
+  pathLinesVisible: () => tanks.filter((t) => t.pathLine?.visible).length,
   debugAttack: (id) => { const t = tanks.find((t) => t.id === id); if (t) orderAttack(alive('blue'), t); },
 };

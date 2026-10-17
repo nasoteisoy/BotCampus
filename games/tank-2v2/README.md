@@ -20,6 +20,6 @@ RTS-style 2 vs 2 tank skirmish. Static files only: `index.html`, `css/style.css`
 
 ## Test (box)
     export PLAYWRIGHT_BROWSERS_PATH=/workspace/pw-runner/browsers
-    node test/playtest.mjs http://127.0.0.1:8792/   # 26 checks, writes screenshots/
+    node test/playtest.mjs http://127.0.0.1:8792/   # 37 checks, writes screenshots/ 01-06
     node test/stress.mjs 6 idle                       # 6 fast AI-vs-idle matches, looks for stalls
     # PW_PATH overrides the playwright module path (default /workspace/pw-runner/node_modules/playwright/index.mjs)
