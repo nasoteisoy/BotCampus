@@ -53,7 +53,11 @@ Every unit and building has one of six **body types**: 🪖 Infantry (`inf`), �
 Each unit in `js/config.js` has `vs: { inf, armor, air, art, truck, bld }`, and each entry is `{ lvl, rng }`:
 - `lvl` 0–5 sets the damage multiplier through `LVL_MULT = [0, 0.06, 0.4, 0.75, 1.0, 1.4]`. Level 0 means the unit can't hit that body, so it never targets it.
 - `rng` is the engagement range against that body. Deploy (+8), garrison (+5) and the height bonus still apply on top. For aircraft, `rng` is the radius around the ordered point in which they pick targets.
-- Special cases keep their own rules: the howitzer's minimum range, MG deploy, the AA gun's anti-air only, indirect fire, the fighter-bomber's dive (fires 14–38 m ahead), bomber ammo, and satchel/mine damage (`DMG_MULT.satchel` / `.mine`).
+- Special cases keep their own rules: the howitzer's minimum range, MG deploy, the AA gun's anti-air only, indirect fire, the fighter-bomber's dive (fires when the target is `rocketWin` = 14–38 m ahead), bomber ammo, and satchel/mine damage (`DMG_MULT.satchel` / `.mine`).
+
+### Attack orders and air runs
+- **Attack on a target that drops out of sight:** units keep the order and head for its *last known position* (where the team last actually saw it, never its live position). They engage again as soon as it's spotted. If it isn't there when they arrive, they stop and a "Target lost" toast plus a grey marker explains why. A target the team has never spotted can't be ordered on.
+- **Fighter-bomber / bomber runs:** if a pass can't reach the fire window (target inside the turning circle, overshot, or badly lined up), the plane extends straight out to a run-in distance of at least 60 m, turns back and lines up again. After 3 failed passes the alignment limit is relaxed; after 6 it flies home, so it never loops. Bombers drop only when the target is about one lead distance ahead, so a close start doesn't waste the stick.
 - Vision is `vis`. The old weapon × armor table is kept as a comment in `config.js`. Levels were seeded from it as the nearest level on a log scale.
 
 ## Unit Examiner (sandbox)
@@ -86,5 +90,6 @@ Open it with **🔍 Unit Examiner** on the start screen, or go straight to `inde
     node test/mobile.mjs                   # 45 checks; iPhone 13 landscape + portrait emulation (hasTouch); writes screenshots/18-20
     node test/examiner.mjs                 # 72 checks; every unit: move / fire / ability / damage states / rings, tuning, notes, copy,
                                            #   normal Play untouched, iPhone 13 by tap; writes screenshots/examiner-*.png + examiner-results.json
+    node test/regress.mjs                  # attack orders on hidden targets (last known position, no fog leak); fighter-bomber + bomber vs targets 10/25/40/80 m ahead
     node test/bodies.mjs                   # every unit has 6 body entries; level-0 bodies are never targeted or damaged; level>0 ones are
 The tests use `__game.simulate(sec)` to fast-forward without rendering, because headless SwiftShader renders at about 1 to 6 fps.

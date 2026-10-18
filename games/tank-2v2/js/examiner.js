@@ -99,8 +99,8 @@ export function rangeModel(u) {
     rows.push(row);
   }
   if (def.minRng) extras.push({ k: 'min', r: def.minRng, note: 'cannot fire at targets closer than this' });
-  if (w === 'rocket') { extras.push({ k: 'min', r: 14, note: 'rockets fire only when the target is more than 14 ahead' }); extras.push({ k: 'dive', r: 38, note: 'dives within 70, fires 2 rocket pairs when the target is 14–38 ahead (splash 4)' }); }
-  if (w === 'bomb') { const lead = def.speed * Math.sqrt(2 * Math.max(4, A.pos(u).y) / (14 * 1.4)); extras.push({ k: 'drop', r: lead + 4, note: `drops 6 bombs ~${f0(lead + 4)} before the target (lead for speed/altitude), splash ${def.splash}` }); }
+  if (w === 'rocket') { const [wn, wx] = def.rocketWin || [14, 38]; extras.push({ k: 'min', r: wn, note: `rockets fire only when the target is more than ${wn} ahead; closer passes extend out and come back around` }); extras.push({ k: 'dive', r: wx, note: `dives within 70, fires 2 rocket pairs when the target is ${wn}–${wx} ahead (splash 4)` }); }
+  if (w === 'bomb') { const lead = def.speed * Math.sqrt(2 * Math.max(4, A.pos(u).y) / (14 * 1.4)); extras.push({ k: 'drop', r: lead + 4, note: `drops 6 bombs ${f0(Math.max(0, lead - 8))}–${f0(lead + 4)} before the target (lead for speed/altitude), splash ${def.splash}; closer starts extend out and come back around` }); }
   if (def.ability === 'deploy' && !u.deployed) extras.push({ k: 'deploy', r: maxR(vs) + 8, note: 'range once deployed (+8)' });
   if (def.ability === 'satchel') extras.push({ k: 'satchel', r: 45, note: 'finds the nearest tank/gun/building within 45' });
   if (def.repair) extras.push({ k: 'repair', r: 10, note: 'repairs damaged friendly vehicles within 10 (buildings within 6 of the wall) while idle' });
@@ -216,9 +216,6 @@ function resetArena() {
       S.red = r;
     } else S.red = A.createBuilding(t, 'red', ar.red.x, ar.red.z, true);
   }
-  // aircraft start further out (95 m from the red spot) so attack runs have room to line up:
-  // a rocket plane ordered onto a target closer than ~2 turn radii (27 m at 30 speed / 1.1 rad/s) can orbit it forever
-  if (A.isAir(u)) { const dx = ar.blue.x - ar.red.x, dz = ar.blue.z - ar.red.z, L = Math.hypot(dx, dz) || 1, p = A.pos(u); p.x = ar.red.x + dx / L * 95; p.z = ar.red.z + dz / L * 95; u.yaw = Math.atan2(-dx, -dz); }
   // with "see everything" on, both sides are spotted right away (instead of after the first 0.25 s spotting tick)
   if (S.reveal) for (const e of [u, S.red]) if (e) { e.vis.blue = e.vis.red = true; if (e.seen) e.seen.blue = e.seen.red = A.game.time + 1.5; if (e.everSeen) e.everSeen.blue = e.everSeen.red = true; }
   applyRedMode();
@@ -265,7 +262,6 @@ function act(name, arg) {
     case 'attack':
       if (!alive) return A.toast('Unit is destroyed: Reset');
       if (!r?.alive) return A.toast('No red target: pick an opponent');
-      if (!r.vis.blue && !r.isBld) return A.toast('Red is not spotted yet (fog of war): move closer or turn on "see everything"');
       if (!u.def.wpn) { A.toast(`${u.def.name} is unarmed: it will fly/move to the target`); }
       else if (!A.canHurt(u, r)) A.toast(`${u.def.name} cannot damage ${r.def.name} (×0): it will just move there`);
       if (A.isAir(u)) A.airOrder(u, r); else A.orderAttack([u], r);

@@ -493,15 +493,30 @@ function orderMove(list, x, z, type = 'move') {
   }
   if (list[0]?.team === 'blue') addMarker(x, z, 0x7dffb0);
 }
+// where a team believes a target is: live position while spotted (buildings stay known), else its last spotted position
+function knownPos(t, team) {
+  if (t.isBld) { const q = tgtPos(t); return { x: q.x, z: q.z }; }
+  if (t.lastSeen?.[team]) return { ...t.lastSeen[team] };
+  // not swept yet (spawned or revealed since the last 0.25 s spotting pass): spotted right now?
+  if (t.vis[team] || spotNow(t, observersOf(team), reveals.filter((r) => r.team === team && r.until > game.time && r.unit?.alive !== false))) { const q = tgtPos(t); return { x: q.x, z: q.z }; }
+  return null;
+}
 function orderAttack(list, target) {
+  const team = list.find((u) => u?.alive)?.team;
+  const known = team && knownPos(target, team);
+  if (!known) { if (team === 'blue') toast('That target has never been spotted'); return; }
   for (const u of list) {
     if (!u.alive) continue;
     if (isAir(u)) { airOrder(u, target); continue; }
     if (!canHurt(u, target)) { prepMove(u, tgtPos(target).x, tgtPos(target).z); setPath(u, tgtPos(target).x, tgtPos(target).z); u.order = { type: 'move' }; continue; }
     if (u.garrison && distTo(u, target) > rangeOf(u, target)) leaveGarrison(u, tgtPos(target));
-    u.ambush = false; u.order = { type: 'attack', target }; u.repath = 0;
+    u.ambush = false; u.order = { type: 'attack', target, lx: known.x, lz: known.z }; u.repath = 0;
   }
-  if (list[0]?.team === 'blue') addMarker(tgtPos(target).x, tgtPos(target).z, 0xff5050, true);
+  if (team === 'blue') addMarker(known.x, known.z, 0xff5050, true);
+}
+function lostTarget(u, o) {
+  if (u.team !== 'blue') return;
+  if ((game.lostToastT || -99) < game.time - 2) { game.lostToastT = game.time; toast(`Target lost: ${u.def.name} reached its last known position and it isn't there`); addMarker(o.lx, o.lz, 0x9aa4b2); }
 }
 function orderGarrison(list, house) {
   const inf = list.filter((u) => u.alive && isInf(u));
@@ -843,8 +858,22 @@ function updateUnit(u, dt) {
   // attack: chase until in range with LOS
   if (o?.type === 'attack') {
     const tg = o.target;
-    if (!tg.alive || (!tg.vis[u.team] && !tg.isBld)) { u.order = null; stop(u); }
+    if (!tg.alive) { u.order = null; stop(u); }
+    else if (!tg.vis[u.team] && !tg.isBld) {
+      // target out of sight: keep the order and head for its last known position; give up only if it isn't there
+      if (o.lx === undefined) { const k = tg.lastSeen?.[u.team]; if (k) { o.lx = k.x; o.lz = k.z; } }
+      u.repath -= dt;
+      if (o.lx === undefined) { u.order = null; stop(u); }
+      else if (u.repath <= 0) {
+        u.repath = .6 + Math.random() * .3;
+        const dk = Math.hypot(p.x - o.lx, p.z - o.lz);
+        const blocked = !u.path.length && (o.miss = (o.miss || 0) + 1) > 4;   // path keeps ending short: as close as it gets
+        if (dk < 7 + u.def.r || blocked) { u.order = null; stop(u); lostTarget(u, o); }
+        else if (!u.goal || Math.hypot(u.goal.x - o.lx, u.goal.z - o.lz) > 5 || !u.path.length) setPath(u, o.lx, o.lz);
+      }
+    }
     else {
+      { const k = knownPos(tg, u.team); o.lx = k.x; o.lz = k.z; o.miss = 0; }
       u.repath -= dt;
       if (u.repath <= 0) {
         u.repath = 1.1 + Math.random() * .4;
@@ -925,7 +954,7 @@ function combatTick(u, dt) {
   const isGun = u.kind === 'gun';
   let want = 0;
   if (t) { const tp = tgtPos(t); want = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); }
-  else if (u.order?.type === 'attack') { const tp = tgtPos(u.order.target); want = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); }
+  else if (u.order?.type === 'attack') { const ot = u.order.target, tp = ot.isBld || ot.vis[u.team] || u.order.lx === undefined ? tgtPos(ot) : { x: u.order.lx, z: u.order.lz }; want = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); }
   if (isGun && !u.def.antiAir) {
     // towed guns: limited traverse; the whole carriage swings toward the target when stopped
     want = clamp(want, -.45, .45);
@@ -1050,7 +1079,7 @@ function airOrder(u, tgt) {
   if (u.airState === 'rearm' || u.falling) return;
   u.airTarget = tgt.isBld || tgt.def ? tgt : null;
   const tp = u.airTarget ? tgtPos(tgt) : tgt; u.airPoint = { x: tp.x, z: tp.z };
-  u.airState = 'out'; u.loiterT = 0; u.runT = 0;
+  u.airState = 'out'; u.loiterT = 0; u.runT = 0; u.run = null;
   if (u.team === 'blue') addMarker(u.airPoint.x, u.airPoint.z, u.airTarget ? 0xff5050 : 0xc58cff, true);
 }
 function steerPlane(u, tx, tz, dt, turnRate = 1.3) {
@@ -1128,7 +1157,7 @@ function updatePlane(u, dt) {
   u.flash = Math.max(0, u.flash - dt); const e = u.flash > 0 ? .9 : 0; u.mats.main.emissive.setScalar(e);
   if (u.dmg && u.root.visible) { u.dmgT -= dt; if (u.dmgT <= 0) { u.dmgT = u.dmg === 2 ? .05 : .1; smoke.spawn(p.x - Math.sin(u.yaw) * 2, p.y, p.z - Math.cos(u.yaw) * 2, 0, .3, 0, u.dmg === 2 ? 1.6 : 1.1, .8, 3, u.dmg === 2 ? .15 : .8, u.dmg === 2 ? .14 : .8, u.dmg === 2 ? .13 : .78, .6, .3, 0); if (u.dmg === 2) fx.spawn(p.x, p.y, p.z, 0, 0, 0, .5, .6, .2, 1, .55, .15, .9); } }
 }
-function goHome(u) { u.airState = 'return'; u.diving = false; u.airTarget = null; }
+function goHome(u) { u.airState = 'return'; u.diving = false; u.airTarget = null; u.run = null; }
 // fighter-bombers dive and fire rockets at a ground target; bombers fly straight over and drop a stick of bombs
 function attackRun(u, dt) {
   const p = pos(u), def = u.def;
@@ -1145,22 +1174,51 @@ function attackRun(u, dt) {
   const tp = tgt ? tgtPos(tgt) : u.airPoint;
   const d = dist2d(p, tp);
   if (u.runT > 0) { u.runT -= dt; steerPlane(u, p.x + Math.sin(u.yaw) * 50, p.z + Math.cos(u.yaw) * 50, dt, .5); if (u.runT <= 0 && u.ammo <= 0) goHome(u); return; }
+  // run-in / racetrack: a pass that can't reach the fire window (target inside the turning circle, overshot, or badly
+  // lined up) turns into an "extend": fly straight out to a run-in distance, then turn back and line up again.
+  // After 3 failed passes the alignment limit is relaxed; after 6 the plane gives up and flies home, so it never loops.
+  const R = def.speed / 1.1;                                                   // turning radius at the run turn rate
+  const rocket = def.wpn === 'rocket';
+  const lead = rocket ? 0 : def.speed * Math.sqrt(2 * p.y / (CFG.gravity * 1.4));
+  // fire window (distance to the target): rockets from config; bombs at the lead distance (from far away this is the old
+  // "drop once inside lead + 4"; a closer start no longer drops a stick that lands past the target)
+  const [wMin, wMax] = rocket ? (def.rocketWin || [14, 38]) : [Math.max(0, lead - 8), lead + 4];
+  const ext = Math.max(60, wMax + 1.2 * R);                                    // run-in distance before turning back
+  const run = u.run && u.run.tgt === tgt ? u.run : (u.run = { tgt, phase: 'in', t: 0, passes: 0 });
+  if (run.phase === 'extend') {
+    u.diving = false; run.t += dt;
+    steerPlane(u, p.x + Math.sin(u.yaw) * 50, p.z + Math.cos(u.yaw) * 50, dt, .5);
+    if ((d >= ext && run.t > 1) || run.t > 2 * ext / def.speed + 2) { run.phase = 'in'; run.t = 0; }
+    return;
+  }
   const err = steerPlane(u, tp.x, tp.z, dt, 1.1);
-  if (!tgt && d < 12 && def.wpn === 'rocket') { goHome(u); return; }
-  if (def.wpn === 'rocket') {
+  if (!tgt && d < 12 && rocket) { goHome(u); return; }
+  const errMax = run.passes >= 3 ? .6 : rocket ? .18 : .3;
+  let fired = false;
+  if (rocket) {
     u.diving = d < 70 && err < .5;
-    if (d < 38 && d > 14 && err < .18 && u.ammo > 0 && u.reload <= 0 && tgt) {
-      u.reload = 1.2; u.ammo--; u.shots = (u.shots || 0) + 1; u.firedAt = game.time;
+    if (d < wMax && d > wMin && err < errMax && u.ammo > 0 && u.reload <= 0 && tgt) {
+      u.reload = 1.2; u.ammo--; u.shots = (u.shots || 0) + 1; u.firedAt = game.time; fired = true;
       for (const s of [-1, 1]) { const m = p.clone().add(new THREE.Vector3(Math.cos(u.yaw) * s * 2.2, -.5, -Math.sin(u.yaw) * s * 2.2)); const aim = tgt.isBld ? eyeOf(tgt, m) : { x: tp.x, y: tp.y + 1, z: tp.z }; const v = new THREE.Vector3(aim.x - m.x, aim.y - m.y, aim.z - m.z).normalize().multiplyScalar(70); spawnShell(u, m, v, { dmg: def.dmg / 2, wpn: 'rocket', target: tgt, g: 0, splash: 4, life: 2 }); }
       u.runT = 2.6; u.diving = false;
     }
   } else if (def.wpn === 'bomb') {
     // lead the drop: bombs carry the plane's forward speed
-    const lead = def.speed * Math.sqrt(2 * p.y / (CFG.gravity * 1.4));
-    if (d < lead + 4 && err < .3 && u.ammo > 0) {
-      u.ammo--; u.runT = 3.5; u.shots = (u.shots || 0) + 1; u.firedAt = game.time;
+    if (d < wMax && err < errMax && u.ammo > 0) {
+      u.ammo--; u.runT = 3.5; u.shots = (u.shots || 0) + 1; u.firedAt = game.time; fired = true;
       for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(bombGeo, SHARED.dark); m.position.copy(p).add(new THREE.Vector3(Math.sin(u.yaw) * (i - 3) * 2.2, -1, Math.cos(u.yaw) * (i - 3) * 2.2)); scene.add(m); bombs.push({ mesh: m, vel: new THREE.Vector3(Math.sin(u.yaw) * def.speed, -1, Math.cos(u.yaw) * def.speed), dmg: def.dmg, splash: def.splash, owner: u, team: u.team }); }
     }
+  }
+  if (fired) { run.passes = 0; run.t = 0; return; }
+  if (d < ext * 1.3) run.t += dt;                                              // time spent near the target on this pass
+  const cantMake = d <= wMin + 1                                               // overshot / inside the minimum distance
+    || (d < wMax && err > (rocket ? .7 : .9))                                  // in the window but pointing the wrong way
+    || (d < 2.2 * R && err > 1.4)                                              // target inside the turning circle
+    || run.t > ext / def.speed + 2 * Math.PI * R / def.speed;                  // timeout: one full circle without a shot
+  if (cantMake && (u.ammo > 0 || !tgt)) {
+    if (rocket && !tgt) { goHome(u); return; }
+    if (++run.passes > 6) { goHome(u); return; }
+    run.phase = 'extend'; run.t = 0; u.diving = false;
   }
 }
 
@@ -1187,6 +1245,17 @@ function seesTarget(o, t) {
   if (t.isBld) return true;
   return hasLOS(o, t);
 }
+function spotNow(t, obs, rv) {
+  const tp = tgtPos(t);
+  for (const r of rv) if (Math.hypot(tp.x - r.x, tp.z - r.z) < r.r) return true;
+  for (const o of obs) {
+    const op = o.isBld ? o : pos(o);
+    const reach = visOf(o) + 20;
+    if (Math.abs(op.x - tp.x) > reach || Math.abs(op.z - tp.z) > reach) continue;
+    if (seesTarget(o, t)) return true;
+  }
+  return false;
+}
 function updateSpotting(dt) {
   game.spotT = (game.spotT || 0) - dt; if (game.spotT > 0) return; game.spotT = .25;
   for (const team of ['blue', 'red']) {
@@ -1196,17 +1265,12 @@ function updateSpotting(dt) {
       if (t.team !== foe) continue;
       if (!t.alive) { t.vis[team] = !isInf(t); continue; }
       if (game.state !== 'playing') { t.vis[team] = true; continue; }
-      let seen = false;
       const tp = tgtPos(t);
-      for (const r of rv) if (Math.hypot(tp.x - r.x, tp.z - r.z) < r.r) { seen = true; break; }
-      if (!seen) for (const o of obs) {
-        const op = o.isBld ? o : pos(o);
-        const reach = visOf(o) + 20;
-        if (Math.abs(op.x - tp.x) > reach || Math.abs(op.z - tp.z) > reach) continue;
-        if (seesTarget(o, t)) { seen = true; break; }
-      }
+      const seen = spotNow(t, obs, rv);
       if (seen) { t.seen[team] = game.time + 1.5; if (t.isBld) t.everSeen[team] = true; }
       t.vis[team] = t.type === 'hq' || (t.isBld && t.everSeen[team]) || game.time < t.seen[team];
+      // last known position: where this team actually saw it last (attack orders chase this, never the live position)
+      if ((seen || t.vis[team] && !t.lastSeen?.[team]) && !t.isBld) { const ls = t.lastSeen || (t.lastSeen = {}); ls[team] = { x: tp.x, z: tp.z }; }
     }
   }
   for (const u of units) {
@@ -2024,7 +2088,7 @@ frame();
 // test / debug hooks
 // =====================================================================================
 const entById = (id) => units.find((u) => u.id === id) || buildings.find((b) => b.id === id);
-const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
+const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, shots: u.shots || 0, goal: u.goal ? { ...u.goal } : null, lastKnown: u.order?.type === 'attack' && u.order.lx !== undefined ? { x: u.order.lx, z: u.order.lz } : null, runPhase: u.run?.phase || null, runPasses: u.run?.passes || 0, yaw: u.yaw, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
 const bInfo = (b) => ({ id: b.id, type: b.type, team: b.team, hp: b.hp, maxHp: b.maxHp, dmg: b.dmg, alive: b.alive, built: b.built, progress: b.progress, x: b.x, z: b.z, hx: b.hx, hz: b.hz, queue: [...b.queue], rally: { ...b.rally }, visBlue: b.vis.blue, selected: selBld === b });
 window.__game = {
   get state() { return game.state; }, get result() { return game.result; }, get stats() { return { ...game.stats }; }, get fps() { return fps; }, get cpuMs() { return cpuMs; }, get simMs() { return simMs; },
@@ -2047,6 +2111,7 @@ window.__game = {
   selection: () => ({ units: [...selUnits].map((u) => u.id), building: selBld?.id || null }),
   damage: (id, n, wpn = 'cannon') => { const e = entById(id); if (e) applyDamage(e, n, wpn, null, null); },   // exactly n (no attacker: multiplier 1)
   kill: (id) => { const e = entById(id); if (e?.alive) { if (e.isBld) { e.hp = 0; destroyBuilding(e); } else { e.hp = 0; killUnit(e); } } },
+  airPose: (id, x, z, yaw) => { const u = entById(id); pos(u).set(x, u.def.alt, z); u.prev.copy(pos(u)); u.yaw = yaw; u.bank = 0; u.airState = 'idle'; u.run = null; u.runT = 0; u.climb = false; },
   teleport: (id, x, z) => { const u = entById(id); pos(u).set(x, isAir(u) ? pos(u).y : surfaceY(x, z), z); u.prev.copy(pos(u)); u.safe?.copy(pos(u)); stop(u); u.order = null; if (u.soldiers) for (const s of u.soldiers) { s.x = x + s.ox; s.z = z + s.oz; } },
   face: (id, yaw) => { const u = entById(id); u.yaw = yaw; },
   revealAll: (on = true) => { game.revealAll = on; if (on) reveals.push({ team: 'blue', x: 0, z: 0, r: 999, until: 1e9 }); else reveals = reveals.filter((r) => r.r !== 999); },

@@ -78,7 +78,7 @@ export const UNITS = {
     vs: { inf:{ lvl:0, rng:0 }, armor:{ lvl:0, rng:0 }, air:{ lvl:0, rng:0 }, art:{ lvl:0, rng:0 }, truck:{ lvl:0, rng:0 }, bld:{ lvl:0, rng:0 } } },
   fighter:  { br: 'air', name: 'Fighter', cost: 350, time: 9, kind: 'air', hp: 90, speed: 34, r: 3, vis: 60, rng: 30, rof: 0.35, dmg: 8, wpn: 'aamg', alt: 30, loiter: 40, desc: 'Shoots down aircraft.',
     vs: { inf:{ lvl:0, rng:0 }, armor:{ lvl:0, rng:0 }, air:{ lvl:4, rng:30 }, art:{ lvl:0, rng:0 }, truck:{ lvl:0, rng:0 }, bld:{ lvl:0, rng:0 } } },
-  fbomber:  { br: 'air', name: 'Fighter-Bomber', cost: 450, time: 11, kind: 'air', hp: 110, speed: 30, r: 3, vis: 55, dmg: 75, wpn: 'rocket', alt: 30, ammo: 2, desc: 'Dives on ground targets. Good vs tanks.',
+  fbomber:  { br: 'air', name: 'Fighter-Bomber', cost: 450, time: 11, kind: 'air', hp: 110, speed: 30, r: 3, vis: 55, dmg: 75, wpn: 'rocket', alt: 30, ammo: 2, rocketWin: [14, 38], desc: 'Dives on ground targets. Good vs tanks.',
     vs: { inf:{ lvl:3, rng:35 }, armor:{ lvl:5, rng:35 }, air:{ lvl:0, rng:0 }, art:{ lvl:4, rng:35 }, truck:{ lvl:5, rng:35 }, bld:{ lvl:3, rng:35 } } },
   bomber:   { br: 'air', name: 'Bomber', cost: 600, time: 14, kind: 'air', hp: 220, speed: 20, r: 4.5, vis: 50, dmg: 70, splash: 9, wpn: 'bomb', alt: 38, ammo: 1, desc: 'Slow. Big area damage, best vs buildings.',
     vs: { inf:{ lvl:4, rng:35 }, armor:{ lvl:3, rng:35 }, air:{ lvl:0, rng:0 }, art:{ lvl:5, rng:35 }, truck:{ lvl:4, rng:35 }, bld:{ lvl:5, rng:35 } } },
