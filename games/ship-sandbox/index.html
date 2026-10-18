@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ship Sandbox">
+<title>Ship Sandbox</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="floats"></div>
+<div id="top">
+  <button class="tb" id="bPause" title="Pause"></button>
+  <button class="tb" id="bSlow" title="Slow-mo"><span>🐢</span><small id="slowV">×1</small></button>
+  <button class="tb" id="bReset" title="Reset ship"></button>
+  <button class="tb on" id="bShield" title="Shield on/off"><span>🫧</span><small id="shieldV">ON</small></button>
+  <button class="tb" id="bBack" title="Ship fires back"><span id="backIc"></span><small id="backV">OFF</small></button>
+  <button class="tb" id="bCount" title="Attackers per tap"><b id="countV">×1</b></button>
+</div>
+<div id="stats">
+  <button id="tgt" title="Target (tap to aim at whole ship)"><span>🎯</span><b id="tgtIc">🚢</b><span id="tgtName">Whole ship</span></button>
+  <span class="st" title="Shield"><i>🫧</i><span class="bar"><i id="shBar"></i></span></span>
+  <span class="st" title="Speed"><i>🚀</i><b id="spdV">14</b></span>
+  <span class="st" title="Power"><i>⚡</i><b id="pwrV">ON</b></span>
+  <span class="st" title="Aim"><i>🎯</i><b id="aimV">100%</b></span>
+  <span class="st" title="Fighters out"><i>🛬</i><b id="fgtV">0</b></span>
+</div>
+<div id="dock">
+  <div id="sheet" class="hidden"><div id="sheetBody"></div></div>
+  <div id="tabs">
+    <button class="tab" data-tab="parts" title="Parts">🧩</button>
+    <button class="tab" data-tab="log" title="Log">📜</button>
+    <button class="tab" data-tab="matrix" title="Damage matrix">🔢</button>
+  </div>
+  <div id="palette"></div>
+</div>
+<div id="banner" class="hidden"><div class="card"><div class="big">💀</div><div id="bannerTxt">Ship lost</div><button id="bAgain">↺</button></div></div>
+<div id="updToast" class="hidden">⬆️ New version <button id="updGo">↻</button></div>
+<script type="module" src="js/main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      window.__swReg = reg;
+      const show = () => document.getElementById('updToast').classList.remove('hidden');
+      if (reg.waiting && navigator.serviceWorker.controller) show();
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing; if (!w) return;
+        w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) show(); });
+      });
+      setInterval(() => reg.update().catch(() => {}), 60000);
+    }).catch(() => {});
+    document.getElementById('updGo').onclick = () => location.reload();
+  });
+}
+</script>
+</body>
+</html>
