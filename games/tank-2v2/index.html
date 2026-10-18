@@ -10,6 +10,7 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/examiner.css">
+<link rel="stylesheet" href="css/sandbox.css">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -21,7 +22,7 @@
 <div id="app"></div>
 <div id="selbox"></div>
 <div id="hud" class="hidden">
-  <div id="topbar"><span class="coin">$</span><span id="money">$0</span><span id="income">+0/min</span><span class="dot"></span><span id="clock">0:00</span></div>
+  <div id="topbar"><span class="coin">$</span><span id="money">$0</span><span id="income">+0/min</span><span class="dot"></span><span id="clock">0:00</span><button id="pausebtn" aria-label="Pause (P / Esc)" title="Pause (P / Esc)">⏸</button></div>
   <canvas id="minimap" title="Minimap: click or drag to move the camera, right-click to send selected units"></canvas>
   <div id="selpanel" class="hidden"></div>
   <div id="buildbar"></div>
@@ -32,7 +33,8 @@
     <div class="row"><svg class="mouse m" viewBox="0 0 20 28"><rect x="1" y="1" width="18" height="26" rx="9"/><path d="M1 11h18"/><rect class="hl" x="8" y="3" width="4" height="7" rx="2"/></svg><span>drag: pan · wheel: zoom</span></div>
     <div class="row"><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span><span>pan</span><span class="k wide">H</span><span>HQ</span></div>
     <div class="row"><span class="k">Ctrl</span>+<span class="k">1-5</span><span>group</span><span class="k">Q E R F G T</span><span>abilities</span></div>
-    <div class="row"><button class="badgetgl" type="button" title="Show a small unit-type icon above every unit"><span class="k">V</span> unit badges: <b>on</b></button></div>
+    <div class="row"><button class="badgetgl" type="button" title="Show a small unit-type icon above every unit"><span class="k">V</span> badges: <b>on</b></button><button class="livetgl" type="button" title="Live stats card for the selected unit"><span class="k">I</span> live stats: <b>off</b></button></div>
+    <div class="row"><button class="guidebtn" type="button" title="Every unit's attack matrix, rings and config (pauses the game)"><span class="k">U</span> 📖 Unit menu</button><button class="pausebtn2" type="button"><span class="k">P</span> ⏸ pause</button></div>
   </div>
   <div id="touchbar"></div>
   <div id="placebar" class="hidden"><div class="why"></div><button data-pb="no" aria-label="Cancel"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#ff8f80" stroke-width="3" stroke-linecap="round"/></svg><span>Cancel</span></button><button data-pb="rot" aria-label="Rotate"><svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5" stroke="#ddd" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20 3v6h-6" fill="#ddd"/></svg><span>Rotate</span></button><button data-pb="ok" class="ok" aria-label="Confirm"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" stroke="#4dff88" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg><span>Build</span></button></div>
@@ -41,8 +43,9 @@
     <div><b>Drag</b>: pan · <b>Pinch</b>: zoom · <b>Twist</b>: rotate</div>
     <div><b>Hold + drag</b> (or <b>Select</b>): box select · <b>Double-tap</b>: all of type</div>
     <div><b>Tap</b> building: open its queue · <b>Hold</b> a queued unit: cancel</div>
-    <div><button class="badgetgl" type="button">🏷️ Unit badges: <b>on</b></button></div>
+    <div class="thbtns"><button class="badgetgl" type="button">🏷️ Badges: <b>on</b></button><button class="livetgl" type="button">📊 Live stats: <b>off</b></button><button class="guidebtn" type="button">📖 Unit menu</button></div>
   </div>
+  <div id="livecard" class="hidden" aria-live="off"></div>
   <div id="toast"></div>
 </div>
 <div id="tip"></div>
@@ -52,16 +55,33 @@
   <button id="restart">↻ Play again</button>
 </div>
 <div id="start">
-  <div class="card">
+  <div class="card menu">
     <h1>FRONT LINE</h1>
     <div class="tag">Build your base. Roll out an army. Take their HQ.</div>
-    <div class="tag touchonly">Tap to select &amp; move · drag to pan · pinch to zoom</div>
+    <div class="menubtns">
+      <button class="mbtn" id="howtobtn" data-menu="howto"><i>📘</i><span>How to Play</span></button>
+      <div class="mplay">
+        <button class="mbtn main" id="play" data-menu="play"><i>▶</i><span>Play 1 v 1</span></button>
+        <div class="diff"><span>Enemy</span><button data-diff="easy">Easy</button><button data-diff="normal" class="on">Normal</button></div>
+      </div>
+      <button class="mbtn" id="sandboxbtn" data-menu="sandbox" title="Place any units and buildings in a paused world, then hit play"><i>🧪</i><span>Play Sandbox</span></button>
+      <button class="mbtn" id="examiner" data-menu="explore" title="Spawn any unit and watch how it behaves; tune its numbers"><i>🔍</i><span>Unit Explore</span></button>
+      <button class="mbtn" id="guide" data-menu="units" title="Every unit and building: attack matrix, rings, accuracy, config, compare"><i>📖</i><span>Unit Menu</span></button>
+    </div>
+  </div>
+</div>
+<div id="howto" class="hidden" role="dialog" aria-label="How to Play">
+  <div class="hwrap">
+    <div class="hhead"><button class="hback" data-ui="howtoback">◀ Back</button><b>📘 How to Play</b></div>
+    <div class="hbody">
+      <h3>🏁 Goal</h3>
     <div class="how">
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><g><rect x="5" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="15" y="17" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><rect x="10" y="7" width="10" height="10" fill="#8b6a3e" stroke="#5a4426"/><text x="31" y="20" font-size="15" font-weight="900" fill="#ffd65a" text-anchor="middle">$</text></g></svg></div><b>1</b><span>Depots on <i class="pad">$</i> spots earn money</span></div>
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="4" y="14" width="32" height="14" fill="#c9bfa6"/><path d="M4 14l6-6v6l6-6v6l6-6v6l6-6v6z" fill="#5d6168"/><rect x="14" y="19" width="12" height="9" fill="#4aa3ff"/></svg></div><b>2</b><span>Place buildings near your base</span></div>
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="3" y="20" width="34" height="8" rx="4" fill="#222"/><rect x="6" y="14" width="28" height="7" rx="2" fill="#4aa3ff"/><rect x="13" y="8" width="13" height="7" rx="3" fill="#4aa3ff"/><rect x="25" y="10" width="12" height="2.4" fill="#ccc"/></svg></div><b>3</b><span>Select a building, queue units</span></div>
       <div class="step"><div class="ic"><svg viewBox="0 0 40 32"><rect x="6" y="12" width="28" height="16" fill="#c9bfa6"/><rect x="16" y="20" width="8" height="8" fill="#ff5a4a"/><path d="M28 12V2" stroke="#333"/><path d="M28 2h8v5h-8z" fill="#ff5a4a"/><path d="M4 4l32 26M36 4L4 30" stroke="#ffd65a" stroke-width="3"/></svg></div><b>4</b><span>Destroy the enemy HQ to win</span></div>
     </div>
+      <h3>⚔️ Who beats who</h3>
     <div class="rps">
       <span class="u"><svg viewBox="0 0 40 32"><circle cx="13" cy="24" r="4.5" fill="#222"/><rect x="10" y="12" width="9" height="11" fill="#4aa3ff"/><rect x="18" y="16" width="18" height="2.6" fill="#ccc"/></svg>AT</span><span class="beats">›</span>
       <span class="u"><svg viewBox="0 0 40 32"><rect x="3" y="20" width="34" height="8" rx="4" fill="#222"/><rect x="6" y="14" width="28" height="7" rx="2" fill="#4aa3ff"/><rect x="13" y="8" width="13" height="7" rx="3" fill="#4aa3ff"/></svg>Tanks</span><span class="beats">›</span>
@@ -71,8 +91,36 @@
       <span class="u"><svg viewBox="0 0 40 32"><rect x="8" y="22" width="24" height="4" fill="#444"/><rect x="14" y="14" width="12" height="8" rx="2" fill="#4aa3ff"/><path d="M18 15l8 -12M22 15l8 -12" stroke="#ccc" stroke-width="2.2"/></svg>AA</span><span class="beats">›</span>
       <span class="u"><svg viewBox="0 0 40 32"><g transform="translate(20 16)"><rect x="-15" y="-1" width="30" height="4" rx="2" fill="#4aa3ff"/><rect x="-2.5" y="-11" width="5" height="22" rx="2.5" fill="#4aa3ff"/></g></svg>Air</span>
     </div>
-    <div class="diff"><span>Enemy</span><button data-diff="easy">Easy</button><button data-diff="normal" class="on">Normal</button></div>
-    <div class="startbtns"><button id="play">▶ Play</button><button id="examiner" title="Sandbox: spawn any unit and watch how it behaves">🔍 Unit Examiner</button></div>
+      <h3>🎮 Controls</h3>
+      <div class="hctl">
+        <div class="hcol"><h4>🖱️ Mouse &amp; ⌨️ keys</h4>
+          <div><span class="k">L-click</span> select · move · attack</div><div><span class="k">drag</span> box select</div><div><span class="k">dbl-click</span> all of type</div>
+          <div><span class="k">R-drag</span> rotate</div><div><span class="k">wheel</span> zoom</div><div><span class="k">W A S D</span> pan · <span class="k">H</span> HQ</div>
+          <div><span class="k">Ctrl+1-5</span> group · <span class="k">1-5</span> recall</div><div><span class="k">Q E R F G T</span> abilities</div>
+          <div><span class="k">V</span> badges · <span class="k">I</span> live stats · <span class="k">U</span> unit menu</div><div><span class="k">P</span> / <span class="k">Esc</span> ⏸ pause</div></div>
+        <div class="hcol"><h4>👆 Touch</h4>
+          <div><b>tap</b> select · move · attack</div><div><b>drag</b> pan · <b>pinch</b> zoom</div><div><b>twist</b> rotate</div>
+          <div><b>hold + drag</b> box select</div><div><b>double-tap</b> all of type</div><div><b>⏸</b> button: pause</div><div><b>?</b> Help: badges · live stats · unit menu</div></div>
+      </div>
+      <h3>🧍 Body types</h3>
+      <div class="hbodies" id="hbodies"></div>
+      <div class="hrules">
+        <div><i>⭐</i><b>Level</b><span id="hlevels"></span></div>
+        <div><i>📏</i><b>Range</b><span>each body has its own range: a tank hits tanks from far, infantry only up close</span></div>
+        <div><i>🎯</i><b>Accuracy</b><span>1–5: hit chance for guns, spread for shells · cover 🌲 makes targets harder · fast movers get missed more</span></div>
+      </div>
+      <h3>⭕ Ring colors</h3>
+      <div class="hrings" id="hrings"></div>
+    </div>
+  </div>
+</div>
+<div id="pause" class="hidden" role="dialog" aria-label="Paused">
+  <div class="pcard">
+    <h2>⏸ Paused</h2>
+    <button class="pbtn2 main" data-ui="resume">▶ Resume</button>
+    <button class="pbtn2" data-ui="punits">📖 Unit Menu</button>
+    <button class="pbtn2" data-ui="phowto">📘 How to Play</button>
+    <button class="pbtn2 quit" data-ui="pquit">🚪 Quit to main menu</button>
   </div>
 </div>
 <script type="module" src="js/main.js"></script>

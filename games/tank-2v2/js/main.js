@@ -4,10 +4,12 @@ import { MapControls } from 'three/addons/controls/MapControls.js';
 import { buildMap, renderMinimap, obstacles, sdObs, segmentHitT, pushOut, minObsDist, HALF, heightAt, surfaceY, waterClass, inForest, onRoad, terrainSpeed, WATER_Y, CITY, riverZ, BRIDGES as BRIDGES_INFO, FORD } from './map.js';
 import { NavGrid } from './nav.js';
 import { Particles } from './particles.js';
+import { ACC_HIT, CONCEAL_HIT, ACC_SPREAD, ACC_RKT, CONCEAL_SPREAD, BLD_SPREAD, SHELL_LEAD } from './config.js';
 import { UNITS, BUILDINGS, DMG_MULT, LVL_MULT, BODIES, BODY_KEYS, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
 import { TEAM, SHARED, buildVehicle, buildPlane, buildSquad, buildBuilding, supplyPadTexture, buildFlag } from './models.js';
 import { svg } from './icons.js';
 import { createBadges } from './badges.js';
+import { readout as liveReadout, f0, f1, bar as liveBar } from './unitinfo.js';
 
 const CFG = { minDist: 8, maxDist: 330, shellSpeed: 72, gravity: 14 };
 const $ = (s) => document.querySelector(s);
@@ -162,6 +164,7 @@ const teams = { blue: { money: START_MONEY, rate: 0 }, red: { money: START_MONEY
 const game = { state: 'menu', time: 0, endAt: 0, timeScale: 1, result: null, difficulty: 'normal', holdAI: false, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } };
 const selUnits = new Set();
 const exam = { onFrame: null, onClick: null, close: null, onBomb: null };   // Unit Examiner hooks (null in normal play)
+const sbx = { onFrame: null, onClick: null, close: null, togglePause: null };   // Play Sandbox hooks (null outside the sandbox)
 let selBld = null;
 let uid = 0;
 const pickMeshes = [];   // unit + building pick volumes
@@ -334,8 +337,9 @@ function freeSpotNear(x, z, r = 8) {
   return best;
 }
 // Placement rules. Returns {ok, reason, x, z} (depots snap to supply spots).
-function canPlace(type, team, x, z, ignoreMoney = false) {
+function canPlace(type, team, x, z, ignoreMoney = false, free = false) {   // free: sandbox setup (no money, no base-radius rule)
   const def = BUILDINGS[type];
+  if (free) ignoreMoney = true;
   if (!ignoreMoney && teams[team].money < def.cost) return { ok: false, reason: 'Not enough money', x, z };
   if (type === 'depot') {
     const sp = freeSpotNear(x, z, 9);
@@ -343,7 +347,7 @@ function canPlace(type, team, x, z, ignoreMoney = false) {
     x = sp.x; z = sp.z;
     const nearBase = aliveBlds(team).some((b) => (b.built || b.type === 'hq') && Math.hypot(b.x - x, b.z - z) < BUILD_RADIUS + 10);
     const nearTroops = aliveUnits(team).some((u) => !isAir(u) && dist2d(pos(u), { x, z }) < 30);
-    if (!nearBase && !nearTroops) return { ok: false, reason: 'Too far: needs your base or troops nearby', x, z };
+    if (!nearBase && !nearTroops && !free) return { ok: false, reason: 'Too far: needs your base or troops nearby', x, z };
     if (aliveUnits(enemyOf(team)).some((u) => !isAir(u) && u.vis[team] && dist2d(pos(u), { x, z }) < 14)) return { ok: false, reason: 'Enemy troops on the spot', x, z };
     return { ok: true, x, z };
   }
@@ -357,7 +361,7 @@ function canPlace(type, team, x, z, ignoreMoney = false) {
     const h = heightAt(px, pz); hmin = Math.min(hmin, h); hmax = Math.max(hmax, h);
   }
   if (hmax - hmin > 3) return { ok: false, reason: 'Ground too steep', x, z };
-  if (!aliveBlds(team).some((b) => (b.built || b.type === 'hq') && Math.hypot(b.x - x, b.z - z) < BUILD_RADIUS)) return { ok: false, reason: 'Too far from your base', x, z };
+  if (!free && !aliveBlds(team).some((b) => (b.built || b.type === 'hq') && Math.hypot(b.x - x, b.z - z) < BUILD_RADIUS)) return { ok: false, reason: 'Too far from your base', x, z };
   for (const o of obstacles) {
     if (o.border) continue;
     const e = o.type === 'circle' ? o.r : Math.max(o.hx, o.hz);
@@ -552,9 +556,13 @@ function addMarker(x, z, color, big = false) {
 // =====================================================================================
 // body types & attack levels (config.js): the attacker's level vs the target's body sets damage and range
 const bodyOf = (t) => (t.isBld ? 'bld' : t.def.body);
-const vsOf = (u, t) => u.vs?.[bodyOf(t)];
+const vsOf = (u, t) => (t ? u.vs?.[bodyOf(t)] : undefined);   // no target (ground-point run) -> undefined (acc 3 = old spread)
 const HITSCAN = { mg: true, flak: true, aamg: true };   // only hit-scan weapons can reach aircraft (shells fly under them)
 const lvlMult = (u, t) => LVL_MULT[vsOf(u, t)?.lvl || 0] || 0;
+// accuracy level per body (vs.<body>.acc, config.js ACC_* tables); 3 when missing (= the old fixed spread)
+const accOf = (u, t) => vsOf(u, t)?.acc || 3;
+const hitChance = (u, t) => (ACC_HIT[accOf(u, t)] ?? .72) * (isInf(t) && concealed(t) >= 2 ? CONCEAL_HIT : 1);
+const spreadMult = (u, t) => ACC_SPREAD[accOf(u, t)] ?? 1;
 function canHurt(u, t) { const v = vsOf(u, t); return !!u.def.wpn && !!v && v.lvl > 0 && (!isAir(t) || !!HITSCAN[u.def.wpn]); }
 const maxRng = (u) => { let r = 0; if (u.vs) for (const b of BODY_KEYS) if (u.vs[b].lvl > 0) r = Math.max(r, u.vs[b].rng); return r; };
 // unit attacks: multiplier from the attacker's level; ability damage (satchel, mine) keeps its own table
@@ -681,7 +689,7 @@ function fireAt(u, t) {
   const tp = tgtPos(t), aimY = t.isBld ? tp.y + t.def.h * .45 : isAir(t) ? tp.y : tp.y + (isInf(t) ? .9 : 1.15);
   if (wpn === 'mg' || wpn === 'flak' || wpn === 'aamg') {
     const tpt = t.isBld ? eyeOf(t, m) : t.garrison ? eyeOf(t, m) : { x: tp.x, y: aimY, z: tp.z };
-    let hit = Math.random() < (isInf(t) ? (concealed(t) >= 2 ? .5 : .72) : wpn === 'flak' ? .5 : .8);
+    let hit = Math.random() < hitChance(u, t);   // seeded acc: 4 = 72% (MG vs inf, 50% in cover), 5 = 80% (vs vehicles / fighter guns), 2 = 50% (flak)
     const end = new THREE.Vector3(tpt.x + rand(-1, 1) * (hit ? .6 : 3), tpt.y + rand(-.5, .5) * (hit ? 1 : 3), tpt.z + rand(-1, 1) * (hit ? .6 : 3));
     if (wpn === 'flak') {
       // flak: tracer + dark puff bursts around the plane
@@ -697,7 +705,7 @@ function fireAt(u, t) {
   }
   if (wpn === 'he') {
     const d = dist2d(m, tp), T = 2.4 + d / 55;
-    const spread = 2 + d * .045;
+    const spread = (2 + d * .045) * spreadMult(u, t);
     const ax = tp.x + rand(-1, 1) * spread, az = tp.z + rand(-1, 1) * spread, ay = surfaceY(ax, az);
     const vel = new THREE.Vector3((ax - m.x) / T, (ay - m.y + .5 * CFG.gravity * T * T) / T, (az - m.z) / T);
     spawnShell(u, m, vel, { dmg, wpn, splash: def.splash, he: true, life: T + 1 });
@@ -705,10 +713,10 @@ function fireAt(u, t) {
   }
   // ballistic direct-fire shell (tank cannon, AT gun, bazooka, plane rockets)
   const d = dist2d(m, tp), speed = wpn === 'rocket' ? 60 : isInf(u) ? 48 : CFG.shellSpeed, flight = d / speed;
-  const lat = (rand(-1, 1) + rand(-1, 1)) * (.6 + d * .05) * (concealed(t) ? 1.6 : 1) * (t.isBld ? .3 : 1);
+  const lat = (rand(-1, 1) + rand(-1, 1)) * (.6 + d * .05) * spreadMult(u, t) * (concealed(t) ? CONCEAL_SPREAD : 1) * (t.isBld ? BLD_SPREAD : 1);
   const px = -(tp.z - m.z) / (d || 1), pz = (tp.x - m.x) / (d || 1);
   const tv = t.vel || { x: 0, z: 0 };
-  const aim = t.isBld ? eyeOf(t, m) : t.garrison ? eyeOf(t, m) : { x: tp.x + tv.x * flight * .9 + px * lat, y: aimY + rand(-.3, .3), z: tp.z + tv.z * flight * .9 + pz * lat };
+  const aim = t.isBld ? eyeOf(t, m) : t.garrison ? eyeOf(t, m) : { x: tp.x + tv.x * flight * SHELL_LEAD + px * lat, y: aimY + rand(-.3, .3), z: tp.z + tv.z * flight * SHELL_LEAD + pz * lat };
   const hd = Math.hypot(aim.x - m.x, aim.z - m.z), tt = Math.max(.05, hd / speed);
   const g = wpn === 'rocket' ? 0 : CFG.gravity;
   const vel = new THREE.Vector3((aim.x - m.x) / tt, (aim.y - m.y) / tt + .5 * g * tt, (aim.z - m.z) / tt);
@@ -1242,7 +1250,7 @@ function attackRun(u, dt) {
     u.diving = d < 70 && err < .5;
     if (d < wMax && d > wMin && err < errMax && u.ammo > 0 && u.reload <= 0 && tgt) {
       u.reload = 1.2; u.ammo--; u.shots = (u.shots || 0) + 1; u.firedAt = game.time; fired = true;
-      for (const s of [-1, 1]) { const m = p.clone().add(new THREE.Vector3(Math.cos(u.yaw) * s * 2.2, -.5, -Math.sin(u.yaw) * s * 2.2)); const aim = tgt.isBld ? eyeOf(tgt, m) : { x: tp.x, y: tp.y + 1, z: tp.z }; const v = new THREE.Vector3(aim.x - m.x, aim.y - m.y, aim.z - m.z).normalize().multiplyScalar(70); spawnShell(u, m, v, { dmg: def.dmg / 2, wpn: 'rocket', target: tgt, g: 0, splash: 4, life: 2 }); }
+      for (const s of [-1, 1]) { const m = p.clone().add(new THREE.Vector3(Math.cos(u.yaw) * s * 2.2, -.5, -Math.sin(u.yaw) * s * 2.2)); const ro = ACC_RKT[accOf(u, tgt)] || 0, aim = tgt.isBld ? eyeOf(tgt, m) : { x: tp.x + (ro ? rand(-ro, ro) : 0), y: tp.y + 1, z: tp.z + (ro ? rand(-ro, ro) : 0) }; const v = new THREE.Vector3(aim.x - m.x, aim.y - m.y, aim.z - m.z).normalize().multiplyScalar(70); spawnShell(u, m, v, { dmg: def.dmg / 2, wpn: 'rocket', target: tgt, g: 0, splash: 4, life: 2 }); }
       u.runT = 2.6; u.diving = false;
     }
   } else if (def.wpn === 'bomb') {
@@ -1251,7 +1259,7 @@ function attackRun(u, dt) {
       u.ammo--; u.runT = 3.5; u.shots = (u.shots || 0) + 1; u.firedAt = game.time; fired = true;
       const dx = (tp.x - p.x) / (d || 1), dz = (tp.z - p.z) / (d || 1);
       for (let i = 0; i < 6; i++) {
-        const o = (i - 2.5) * 2.2, x0 = tp.x - dx * (ball.throw - o), z0 = tp.z - dz * (ball.throw - o);
+        const o = (i - 2.5) * 2.2 * spreadMult(u, tgt), x0 = tp.x - dx * (ball.throw - o), z0 = tp.z - dz * (ball.throw - o);
         const m = new THREE.Mesh(bombGeo, SHARED.dark); m.position.set(x0, p.y - 1, z0); scene.add(m);
         bombs.push({ mesh: m, p0: { x: x0, y: p.y - 1, z: z0 }, dir: { x: dx, z: dz }, v: def.speed, t: 0, center: { x: tp.x, z: tp.z }, tv: tgt?.vel ? { x: tgt.vel.x, z: tgt.vel.z } : null, dmg: def.dmg, splash: def.splash, owner: u, team: u.team, target: tgt, salvo: u.id + ':' + u.shots });
       }
@@ -1377,7 +1385,7 @@ function incomeOf(team) {
 function updateEconomy(dt) { for (const t of ['blue', 'red']) { teams[t].rate = incomeOf(t); teams[t].money += teams[t].rate * dt; } }
 
 function checkEnd() {
-  if (game.state !== 'playing' || game.mode === 'examiner') return;
+  if (game.state !== 'playing' || game.mode === 'examiner' || (game.mode === 'sandbox' && !game.hqRules)) return;
   const bh = hqOf('blue'), rh = hqOf('red');
   const blueDead = !bh?.alive || !aliveBlds('blue').length, redDead = !rh?.alive || !aliveBlds('red').length;
   if (!blueDead && !redDead) return;
@@ -1682,6 +1690,7 @@ let lastClick = { t: 0, ent: null };
 function handleClick(cx, cy, shift, right, when = performance.now()) {
   if (game.state !== 'playing' && game.state !== 'ending') return;
   if (placing) { if (right) cancelPlacing(); else tryPlace(shift); return; }
+  if (sbx.onClick && sbx.onClick(cx, cy, right, shift)) return;
   if (exam.onClick && exam.onClick(cx, cy, right)) return;
   const e = pickEntity(cx, cy);
   const now = when;
@@ -1752,11 +1761,14 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
-  if (e.code === 'Escape') { if (placing) cancelPlacing(); else clearSelection(); }
+  if (e.code === 'KeyP' && !exam.onFrame) { setPaused(!game.paused); return; }
+  if (e.code === 'Escape') { if (game.paused) { if (!$('#howto').classList.contains('hidden')) showHowTo(false); else setPaused(false); } else if (placing) cancelPlacing(); else if (selUnits.size || selBld) clearSelection(); else setPaused(true); }
   if (placing && e.code === 'KeyR') { rotatePlacing(); return; }
   for (const [ab, A] of Object.entries(ABILITIES)) if (e.code === A.key && selUnits.size) useAbility([...selUnits], ab);
   if (e.code === 'KeyX') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey) setBadges(!badges.on);
+  if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey) setLive(!liveOn);
+  if (e.code === 'KeyU' && !e.ctrlKey && !e.metaKey && !exam.onFrame) openGuide('play');
   if (e.code === 'KeyH') { const h = hqOf('blue'); if (h) cam.shift.set(h.x - controls.target.x, 0, h.z - 18 - controls.target.z); }
   if (e.code === 'Space') { e.preventDefault(); focusSelection(); }
   if (e.code.startsWith('Arrow')) e.preventDefault();
@@ -1965,7 +1977,7 @@ function renderSelPanel() {
   const abHtml = abs.map((a) => { const A = ABILITIES[a]; return `<button class="abtn" data-ab="${a}" data-tip="${esc(tipFor(A.name + ` <span class='key'>${A.label}</span>`, 0, A.desc))}">${svg(a)}<span class="hk">${A.label}</span><i class="cdr"></i></button>`; }).join('');
   const types = [...new Set(list.map((u) => u.type))];
   const bodies = `<div class="ubody">${types.slice(0, 3).map((t) => `<span>${BODIES[UNITS[t].body].icon} <b>${UNITS[t].name}</b> · ${BODIES[UNITS[t].body].name}</span>`).join('')}${types.length > 3 ? `<span>+${types.length - 3}</span>` : ''}</div>`;
-  sp.innerHTML = `${bodies}<div class="ucards">${cards}${list.length > 24 ? `<div class="more">+${list.length - 24}</div>` : ''}</div>${abHtml ? `<div class="abil">${abHtml}</div>` : ''}`;
+  sp.innerHTML = `<button class="livetgl sp ${liveOn ? 'on' : ''}" aria-pressed="${liveOn}" title="Live stats for the selected unit (I)" aria-label="Live stats">📊</button>${bodies}<div class="ucards">${cards}${list.length > 24 ? `<div class="more">+${list.length - 24}</div>` : ''}</div>${abHtml ? `<div class="abil">${abHtml}</div>` : ''}`;
   sp.querySelectorAll('.ucard').forEach((el) => el.addEventListener('click', (e) => { const u = units.find((u) => u.id === el.dataset.id); if (u) { if (e.shiftKey) { selUnits.delete(u); hudDirty = true; } else selectUnits([u]); } }));
   sp.querySelectorAll('[data-ab]').forEach((el) => el.addEventListener('click', () => useAbility([...selUnits], el.dataset.ab)));
   sp.classList.remove('hidden');
@@ -1999,7 +2011,7 @@ function updateHUD(dt) {
   toastT -= dt; if (toastT <= 0) $('#toast').classList.remove('on');
   hudT -= dt;
   const sig = selSignature();
-  if (sig !== lastSig || hudDirty) { lastSig = sig; hudDirty = false; renderSelPanel(); hudT = 0; if (TOUCH.on) updateTouchBar(); }
+  if (sig !== lastSig || hudDirty) { lastSig = sig; hudDirty = false; renderSelPanel(); hudT = 0; if (TOUCH.on) updateTouchBar(); syncLiveBtns(); updateLiveCard(); }
   if (hudT > 0) return; hudT = .2;
   const T = teams.blue;
   $('#money').textContent = fmt$(T.money);
@@ -2007,7 +2019,7 @@ function updateHUD(dt) {
   const tm = Math.floor(game.time); $('#clock').textContent = `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, '0')}`;
   document.querySelectorAll('#buildbar [data-build]').forEach((el) => el.classList.toggle('poor', T.money < BUILDINGS[el.dataset.build].cost));
   document.querySelectorAll('#buildbar [data-build]').forEach((el) => el.classList.toggle('on', placing?.type === el.dataset.build));
-  updatePanelDynamic();
+  updatePanelDynamic(); updateLiveCard();
   if (TOUCH.on) updateTouchBar();
 }
 
@@ -2032,7 +2044,8 @@ function clearWorld() {
 function startGame(diff = game.difficulty) {
   clearWorld();
   game.difficulty = diff;
-  exam.close?.();
+  exam.close?.(); sbx.close?.();
+  game.paused = false; $('#pause')?.classList.add('hidden'); $('#howto')?.classList.add('hidden'); syncPauseBtn();
   Object.assign(game, { mode: null, state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
   teams.blue.money = START_MONEY; teams.red.money = START_MONEY;
   aiState = makeAI(diff);
@@ -2059,6 +2072,7 @@ $('#restart').addEventListener('click', () => { $('#banner').classList.add('hidd
 document.querySelectorAll('#start [data-diff]').forEach((el) => el.addEventListener('click', () => { document.querySelectorAll('#start [data-diff]').forEach((e) => e.classList.toggle('on', e === el)); game.difficulty = el.dataset.diff; }));
 $('#play').addEventListener('click', () => startGame(game.difficulty));
 $('#examiner')?.addEventListener('click', () => openExaminer());
+$('#guide')?.addEventListener('click', () => openGuide('menu'));
 
 // =====================================================================================
 // per-frame visuals & loop
@@ -2079,6 +2093,81 @@ function updateBadges() {
 function setBadges(on) { badges.set(on); toast(`Unit badges ${on ? 'on' : 'off'} (V)`); document.querySelectorAll('.badgetgl b').forEach((el) => { el.textContent = on ? 'on' : 'off'; }); }
 document.addEventListener('click', (e) => { if (e.target.closest?.('.badgetgl')) setBadges(!badges.on); });
 document.querySelectorAll('.badgetgl b').forEach((el) => { el.textContent = badges.on ? 'on' : 'off'; });
+// ---------- 📊 live-stats card (normal Play, single selected unit). Off by default, remembered. I / 📊 buttons toggle ----------
+const LIVE_KEY = 'frontline.livestats.v1';
+let liveOn = false; try { liveOn = localStorage.getItem(LIVE_KEY) === '1'; } catch { /* ignore */ }
+function syncLiveBtns() { document.querySelectorAll('.livetgl').forEach((el) => { el.classList.toggle('on', liveOn); el.setAttribute('aria-pressed', liveOn); const b = el.querySelector('b'); if (b) b.textContent = liveOn ? 'on' : 'off'; }); }
+function setLive(on, quiet) { liveOn = !!on; try { localStorage.setItem(LIVE_KEY, liveOn ? '1' : '0'); } catch { /* ignore */ } syncLiveBtns(); updateLiveCard(); if (!quiet) toast(`📊 Live stats ${liveOn ? 'on' : 'off'} (I)`); }
+function liveUnit() { if (!liveOn || selBld || selUnits.size !== 1 || game.state !== 'playing' || exam.onFrame) return null; const u = selUnits.values().next().value; return u?.alive ? u : null; }
+function updateLiveCard() {
+  const el = $('#livecard'); if (!el) return;
+  const u = liveUnit();
+  if (!u) { if (!el.classList.contains('hidden')) { el.classList.add('hidden'); el.innerHTML = ''; el.dataset.id = ''; } return; }
+  const r = liveReadout(EXAPI, u);
+  if (el.dataset.id !== u.id) { el.dataset.id = u.id; el.innerHTML = `<div class="lc-head">${svg(u.type, 'blue')}<b>${u.def.name}</b><span class="lc-body">${BODIES[u.def.body].icon}</span><button class="livetgl lc-x on" aria-label="Hide live stats (I)" title="Hide live stats (I)">✕</button></div><div class="lc-rows"></div>`; }
+  const hp = r.men !== null ? `${r.men}/${r.maxMen} men · ${f0(r.hp)}/${r.maxHp}` : `${f0(r.hp)}/${r.maxHp} hp`;
+  const rows = [['❤️', `${liveBar(r.hp / r.maxHp, r.dmgState)}<span>${hp}</span>`], [r.stateIcon, `<span>${r.state}</span>`]];
+  rows.push(['🎯', r.target ? `<span>${r.target} · ${f0(r.targetDist)} m${r.targetRange ? (r.targetDist <= r.targetRange ? ' <em class="ok">in range</em>' : ` <em class="no">rng ${f0(r.targetRange)}</em>`) : ''}</span>` : '<span class="dim">no target</span>']);
+  if (u.def.rof) rows.push(['⏳', `${liveBar(1 - r.reload / Math.max(.01, r.rof))}<span>${r.reload > 0 ? `reload ${f1(r.reload)} s` : 'ready'} · ${f1(r.rof)} s/shot</span>`]);
+  else if (u.def.ammo) rows.push(['🚀', `<span>ammo ${r.ammo}/${u.def.ammo}</span>`]);
+  if (r.ability) rows.push(['✨', r.ability.cd > 0 ? `${liveBar(1 - r.ability.cd / r.ability.max, 'cd')}<span>${r.ability.name} ${f1(r.ability.cd)} s</span>` : `<span>${r.ability.name} <em class="ok">ready</em></span>`]);
+  rows.push(['💥', `<span>dealt <b>${f0(r.dealt)}</b> · ${r.shots} shots · ${r.hits} hits</span>`]);
+  el.querySelector('.lc-rows').innerHTML = rows.map(([i, v]) => `<div class="lc-r"><i>${i}</i>${v}</div>`).join('');
+  el.classList.remove('hidden');
+}
+// ---------- 📖 Unit Guide (lazy) ----------
+let guideLoading = null;
+function openGuide(from = 'menu', extra = {}) {
+  guideLoading ||= import('./guide.js');
+  let onClose = null;
+  if (from === 'play' && game.state === 'playing' && !exam.onFrame && !game.paused) {   // single player: the game is frozen while reading
+    game.paused = true; game.guidePaused = true; syncPauseBtn();
+    onClose = () => { if (game.guidePaused) { game.guidePaused = false; game.paused = false; syncPauseBtn(); } };
+  }
+  $('#touchhelp')?.classList.remove('on', 'pinned');
+  return guideLoading.then((m) => m.openGuide({ from, bombThrow, bombFall, onClose, ...extra }));
+}
+// ---------- ⏸ pause (Play only): P / Esc / the ⏸ button. Fully frozen: frame() skips step() and particle motion ----------
+function syncPauseBtn() { const b = $('#pausebtn'); if (b) { b.classList.toggle('on', !!game.paused); b.textContent = game.paused ? '▶' : '⏸'; b.setAttribute('aria-label', game.paused ? 'Resume' : 'Pause (P / Esc)'); } }
+function setPaused(on) {
+  if (sbx.togglePause) return sbx.togglePause(on);   // the sandbox has its own pause / edit flow
+  if (on && (game.state !== 'playing' || exam.onFrame)) return false;
+  game.paused = !!on; game.guidePaused = false;
+  $('#pause').classList.toggle('hidden', !game.paused);
+  if (!game.paused) $('#howto').classList.add('hidden');
+  syncPauseBtn(); hideTip();
+  return true;
+}
+function showHowTo(on = true) { $('#howto').classList.toggle('hidden', !on); if (on) $('#howto .hbody').scrollTop = 0; }
+function quitToMenu() {
+  sbx.close?.();
+  setPaused(false); game.paused = false; $('#pause').classList.add('hidden'); $('#howto').classList.add('hidden');
+  exam.close?.(); clearWorld(); Object.assign(game, { mode: null, state: 'menu', timeScale: 1 });
+  $('#banner').classList.add('hidden'); $('#hud').classList.add('hidden'); $('#start').classList.remove('hidden'); setCameraHome();
+}
+$('#pausebtn').addEventListener('click', (e) => { e.stopPropagation(); setPaused(!game.paused); });
+$('#pause').addEventListener('click', (e) => {
+  const ui = e.target.closest('button')?.dataset.ui;
+  if (ui === 'resume') setPaused(false);
+  if (ui === 'punits') openGuide('pause');
+  if (ui === 'phowto') showHowTo(true);
+  if (ui === 'pquit') quitToMenu();
+});
+$('#howto').addEventListener('click', (e) => { if (e.target.closest('[data-ui="howtoback"]')) showHowTo(false); });
+$('#howtobtn').addEventListener('click', () => showHowTo(true));
+for (const id of ['#pause', '#howto']) for (const ev of ['wheel', 'pointerdown', 'mousedown', 'touchstart', 'contextmenu']) $(id).addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+{ // How to Play: body types, levels, ring colors straight from config.js
+  const BC = { inf: '#7ddc5a', armor: '#ff8a3d', air: '#4fd6ff', art: '#ff5ab4', truck: '#ffd23f', bld: '#b48cff' };
+  $('#hbodies').innerHTML = BODY_KEYS.map((b) => `<span style="--c:${BC[b]}"><i>${BODIES[b].icon}</i>${BODIES[b].name}</span>`).join('');
+  $('#hlevels').innerHTML = [1, 2, 3, 4, 5].map((l) => `<em class="hl"><i class="hp">${'▮'.repeat(l)}</i> ×${LVL_MULT[l]}</em>`).join('') + ' <em class="hl no">0 = can\'t hit</em>';
+  $('#hrings').innerHTML = BODY_KEYS.map((b) => `<span><i class="sw" style="--c:${BC[b]}"></i>vs ${BODIES[b].name}</span>`).join('') + '<span><i class="sw thin" style="--c:#f2f6ff"></i>👁 vision</span><span><i class="sw dash" style="--c:#ff3b3b"></i>⛔ min range</span><span><i class="sw dash" style="--c:#fff"></i>🚀💣⚙️ special</span>';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest?.('.pausebtn2')) setPaused(true);
+  if (e.target.closest?.('.livetgl')) setLive(!liveOn);
+  if (e.target.closest?.('.guidebtn')) openGuide(game.state === 'playing' ? 'play' : 'menu');
+});
+syncLiveBtns();
 function updateVisuals(dt, now) {
   updateBadges();
   for (const u of units) {
@@ -2131,10 +2220,12 @@ function frame() {
   const t0 = performance.now();
   const raw = clock.getDelta(); const dt = Math.min(raw, .05);
   fpsAcc += raw; fpsN++; if (fpsAcc > .5) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; }
-  if (game.state !== 'menu') { if (game.timeScale >= 1) for (let s = 0; s < game.timeScale; s++) step(dt); else if (game.timeScale > 0) step(dt * game.timeScale); }  // < 1: slow motion (Unit Examiner)
+  const vdt = game.paused ? 0 : dt;   // ⏸ paused: no sim, AI, production, cooldowns, timers or particle motion
+  if (game.state !== 'menu' && !game.paused) { if (game.timeScale >= 1) for (let s = 0; s < game.timeScale; s++) step(dt); else if (game.timeScale > 0) step(dt * game.timeScale); }  // < 1: slow motion (Unit Examiner)
   if (exam.onFrame) exam.onFrame(dt);
+  if (sbx.onFrame) sbx.onFrame(dt);
   simMs = simMs * .9 + (performance.now() - t0) * .1;
-  updateVisuals(dt, performance.now() / 1000);
+  updateVisuals(vdt, performance.now() / 1000);
   updateCamera(dt);
   if (game.state !== 'menu') { updateHUD(dt); drawMinimap(dt); }
   cpuMs = cpuMs * .9 + (performance.now() - t0) * .1;
@@ -2201,6 +2292,10 @@ window.__game = {
   bombLog: (clear) => { const out = bombLog.map((e) => ({ ...e })); if (clear) bombLog.length = 0; return out; },
   shellsInFlight: () => shells.length + bombs.length, mines: () => mines.map((m) => ({ team: m.team, x: m.x, z: m.z, visible: m.mesh.visible })),
   reveals: () => reveals.length,
+  accuracy: (id, tid) => { const u = entById(id), t = entById(tid); return { acc: accOf(u, t), hit: hitChance(u, t), spread: spreadMult(u, t), concealed: concealed(t) }; },
+  pause: (on = true) => setPaused(on), paused: () => !!game.paused, quitToMenu: () => quitToMenu(),
+  liveStats: () => { const el = $('#livecard'); return { on: liveOn, shown: !!el && !el.classList.contains('hidden'), text: el?.textContent || '' }; }, setLiveStats: (on) => setLive(on, true),
+  openGuide: (from = 'menu') => openGuide(from),
   badges: () => ({ on: badges.on, count: badges.count() }), setBadges: (on) => badges.set(on),
   countHealthBarObjects: () => { let n = 0; scene.traverse((o) => { if (o.isSprite || /hp|health/i.test(o.name || '')) n++; }); return n + document.querySelectorAll('.hpbar, .healthbar, [class*="hp-"]').length; },
   placing: () => placing && { type: placing.type, ok: placing.ok, reason: placing.reason, x: placing.x, z: placing.z, flip: placing.flip },
@@ -2241,12 +2336,20 @@ function startExaminerWorld() {
   $('#banner').classList.add('hidden'); $('#start').classList.add('hidden'); $('#hud').classList.remove('hidden');
   hudDirty = true;
 }
+function startSandboxWorld() {
+  clearWorld(); aiState = null;
+  Object.assign(game, { mode: 'sandbox', state: 'playing', time: 0, endAt: 0, result: null, holdAI: true, invuln: null, hqRules: false, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
+  $('#banner').classList.add('hidden'); $('#start').classList.add('hidden'); $('#pause').classList.add('hidden'); $('#hud').classList.remove('hidden');
+  hudDirty = true;
+}
 function removeAirHome(u) { if (u.home && !u.home.isBld) u.home = null; }
 const EXAPI = {
   THREE, scene, camera, controls, canvas, renderer, game, teams, cam, CFG, TOUCH, LOW, bombFall, bombThrow,
   get units() { return units; }, get buildings() { return buildings; }, get mines() { return mines; }, get reveals() { return reveals; },
   get selUnits() { return selUnits; }, houses,
-  startWorld: startExaminerWorld, clearWorld, createUnit, createBuilding, orderMove, orderAttack, orderGarrison, airOrder, goHome, useAbility, stop, killUnit, destroyBuilding,
+  startWorld: startExaminerWorld, startSandboxWorld, canPlace, selectBuilding, cancelPlacing, entById, hqOf, sbxHooks: sbx,
+  setAI: (diff) => { aiState = diff ? makeAI(diff) : null; }, aiNewUnit: (u) => aiState?.newUnit(u), get aiState() { return aiState; },
+  refreshHUD: () => { hudDirty = true; buildBar(); }, refreshLiveBtns: () => syncLiveBtns(), clearWorld, createUnit, createBuilding, orderMove, orderAttack, orderGarrison, airOrder, goHome, useAbility, stop, killUnit, destroyBuilding,
   rangeOf, distTo, menAlive, speedOf, tgtPos, pos, isAir, isInf, canHurt, lvlMult, bodyOf, vsOf, maxRng, HITSCAN, validTarget, concealed, homeOf, removeAirHome,
   selectUnits, clearSelection, groundAt, pickEntity, pickHouse, toScreen, toast, addMarker, surfaceY, inForest, onRoad, inCity, heightAt, waterClass,
   addReveal: (team) => reveals.push({ team, x: 0, z: 0, r: 999, until: 1e9, exam: true }),
@@ -2264,13 +2367,23 @@ const EXAPI = {
   focusAt: (x, z, d) => window.__game.focus(x, z, d),
   panTo: (x, z, k = 1) => { const mv = new THREE.Vector3((x - controls.target.x) * k, 0, (z - controls.target.z) * k); controls.target.add(mv); camera.position.add(mv); cam.shift.set(0, 0, 0); },
   cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
-  backToMenu: () => { exam.close?.(); clearWorld(); Object.assign(game, { mode: null, state: 'menu', timeScale: 1 }); $('#hud').classList.add('hidden'); $('#start').classList.remove('hidden'); setCameraHome(); },
+  backToMenu: () => { game.paused = false; sbx.close?.(); exam.close?.(); clearWorld(); Object.assign(game, { mode: null, state: 'menu', timeScale: 1 }); $('#hud').classList.add('hidden'); $('#start').classList.remove('hidden'); setCameraHome(); },
   enableTouchUI,
+  openGuide: (o = {}) => openGuide(o.from || 'examiner', o),
 };
 let examLoading = null;
 function openExaminer() {
+  sbx.close?.();
   examLoading ||= import('./examiner.js');
   return examLoading.then((m) => m.openExaminer(EXAPI, exam));
 }
 window.__game.openExaminer = openExaminer;
-if (new URLSearchParams(location.search).has('examiner')) openExaminer();
+let sbxLoading = null;
+function openSandbox() {
+  exam.close?.(); game.paused = false; $('#pause').classList.add('hidden');
+  sbxLoading ||= import('./sandbox.js');
+  return sbxLoading.then((m) => m.openSandbox(EXAPI, sbx));
+}
+window.__game.openSandbox = openSandbox;
+$('#sandboxbtn')?.addEventListener('click', () => openSandbox());
+{ const q = new URLSearchParams(location.search); if (q.has('sandbox')) openSandbox(); else if (q.has('examiner') || q.has('explore')) openExaminer(); else if (q.has('units') || q.has('guide')) openGuide('menu'); else if (q.has('howto')) showHowTo(true); }

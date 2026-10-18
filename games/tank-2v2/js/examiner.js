@@ -4,25 +4,14 @@
 import { UNITS, BUILDINGS, ABILITIES, BRANCHES, BODIES, BODY_KEYS, LVL_MULT } from './config.js';
 import { svg } from './icons.js';
 import { buildFlag } from './models.js';
+import { f1, f0, EXTRA, unitModel, nameOf, readout as liveReadout, bar } from './unitinfo.js';
 
+const RINGS_KEY = 'frontline.rings.v1';   // ⭕ rings / 🔢 ring numbers master toggles (shared with the Unit Guide)
 const NOTES_KEY = 'frontline.examiner.notes.v1', PREF_KEY = 'frontline.examiner.prefs.v1', TUNE_KEY = 'frontline.examiner.tuning.v1';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const f1 = (n) => (Math.round(n * 10) / 10).toFixed(1), f0 = (n) => String(Math.round(n));
 const BR_ORDER = ['inf', 'armor', 'art', 'air'];
 const BR_ICON = { inf: '🪖', armor: '🛡️', art: '💥', air: '✈️' };
-const BODY_COLOR = { inf: '#7ddc5a', armor: '#ff8a3d', air: '#4fd6ff', art: '#ff5ab4', truck: '#ffd23f', bld: '#b48cff' };
-const CLASSES = BODY_KEYS.map((k) => ({ k, label: BODIES[k].name, icon: BODIES[k].icon, color: BODY_COLOR[k] }));   // the 6 body types
-const HITSCAN = { mg: true, flak: true, aamg: true };
-const EXTRA = {
-  vis: { label: 'Vision', icon: '👁', color: '#f2f6ff' },
-  min: { label: 'Min range', icon: '⛔', color: '#ff3b3b' },
-  dive: { label: 'Rocket window', icon: '🚀', color: '#ffffff' },
-  drop: { label: 'Bomb release', icon: '💣', color: '#ffffff' },
-  deploy: { label: 'Deployed range', icon: '⚙️', color: '#ffffff' },
-  satchel: { label: 'Satchel reach', icon: '💣', color: '#ff6060' },
-  repair: { label: 'Repair radius', icon: '🔧', color: '#8ff7ff' },
-};
 // arenas on the real map: open ground with forest, a road and/or houses close by. home = where planes rearm.
 const ARENAS = {
   forest: { name: 'Forest edge', icon: '🌲', blue: { x: -12, z: -22 }, red: { x: -16, z: -60 }, home: { x: 30, z: -18 }, desc: 'Forest to the SW, road between the sides' },
@@ -35,7 +24,7 @@ const QUICK = ['too slow', 'too fast', 'does not fire', 'too strong', 'too weak'
 
 let A = null, H = null, root = null, labelsEl = null;
 const S = {
-  type: 'rifle', opp: 'auto', redMode: 'hold', arena: 'forest', speed: 1, follow: true, reveal: true, rings: true, impacts: true,
+  type: 'rifle', opp: 'auto', redMode: 'hold', arena: 'forest', speed: 1, follow: true, reveal: true, rings: true, impacts: true, live: true,
   ringOn: { vis: true, inf: true, armor: true, air: true, art: true, truck: true, bld: true, min: true, dive: true, drop: true, deploy: true, satchel: true, repair: true }, tuning: false,
   tab: 'pick', open: true, mode: null, blue: null, red: null, home: null, homeFlag: null, extra: [], fightT: 0, uiT: 0, lastReport: '',
 };
@@ -44,11 +33,11 @@ try { tune = JSON.parse(localStorage.getItem(TUNE_KEY) || '{}') || {}; } catch {
 const saveTune = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(tune)); } catch { /* ignore */ } };
 // tuning: per unit type, a full copy of { vs, vis }. Applies only to units spawned in the examiner (never to config.js).
 const defVs = (t) => UNITS[t].vs;
-function effVs(t) { const d = defVs(t), o = tune[t]?.vs || {}; const v = {}; for (const b of BODY_KEYS) v[b] = { lvl: o[b]?.lvl ?? d[b].lvl, rng: o[b]?.rng ?? d[b].rng }; return v; }
+function effVs(t) { const d = defVs(t), o = tune[t]?.vs || {}; const v = {}; for (const b of BODY_KEYS) v[b] = { lvl: o[b]?.lvl ?? d[b].lvl, rng: o[b]?.rng ?? d[b].rng, acc: o[b]?.acc ?? d[b].acc ?? 3 }; return v; }
 const effVis = (t) => tune[t]?.vis ?? UNITS[t].vis;
 function tuneDiff(t) {
   const d = defVs(t), e = effVs(t), out = [];
-  for (const b of BODY_KEYS) { const a = d[b], n = e[b]; if (a.lvl !== n.lvl || a.rng !== n.rng) out.push({ b, from: a, to: n }); }
+  for (const b of BODY_KEYS) { const a = { acc: 3, ...d[b] }, n = e[b]; if (a.lvl !== n.lvl || a.rng !== n.rng || a.acc !== n.acc) out.push({ b, from: a, to: n }); }
   const vis = effVis(t) !== UNITS[t].vis ? { from: UNITS[t].vis, to: effVis(t) } : null;
   return { list: out, vis, any: out.length > 0 || !!vis };
 }
@@ -57,14 +46,16 @@ function applyTune(u) { if (!u || u.isBld) return; u.vs = effVs(u.type); const v
 function setTune(t, b, field, val) {
   const T = (tune[t] ||= {});
   if (b === 'vis') T.vis = Math.max(0, Math.min(200, Math.round(val)));
-  else { T.vs ||= {}; const cur = effVs(t)[b]; T.vs[b] = { ...cur, [field]: field === 'lvl' ? Math.max(0, Math.min(5, Math.round(val))) : Math.max(0, Math.min(150, Math.round(val))) }; }
+  else { T.vs ||= {}; const cur = effVs(t)[b]; T.vs[b] = { ...cur, [field]: field === 'lvl' ? Math.max(0, Math.min(5, Math.round(val))) : field === 'acc' ? Math.max(1, Math.min(5, Math.round(val))) : Math.max(0, Math.min(150, Math.round(val))) }; }
   cleanTune(t); saveTune();
   for (const u of [S.blue, S.red, ...S.extra]) if (u && !u.isBld && u.type === t) applyTune(u);
 }
 try { notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}') || {}; } catch { notes = {}; }
 try { Object.assign(S, JSON.parse(localStorage.getItem(PREF_KEY) || '{}')); } catch { /* ignore */ }
+S.ringNums = true; try { const rk = JSON.parse(localStorage.getItem(RINGS_KEY) || 'null'); if (rk) { S.rings = rk.rings !== false; S.ringNums = rk.nums !== false; } } catch { /* ignore */ }
+const saveRings = () => { try { localStorage.setItem(RINGS_KEY, JSON.stringify({ rings: S.rings, nums: S.ringNums })); } catch { /* ignore */ } };
 S.mode = null; S.blue = S.red = S.home = S.homeFlag = null; S.extra = []; S.tab = 'pick'; S.open = true;
-const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ type: S.type, opp: S.opp, redMode: S.redMode, arena: S.arena, speed: S.speed === 0 ? 1 : S.speed, follow: S.follow, reveal: S.reveal, impacts: S.impacts, rings: S.rings, ringOn: S.ringOn })); } catch { /* ignore */ } };
+const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ type: S.type, opp: S.opp, redMode: S.redMode, arena: S.arena, speed: S.speed === 0 ? 1 : S.speed, follow: S.follow, reveal: S.reveal, impacts: S.impacts, live: S.live, rings: S.rings, ringOn: S.ringOn })); } catch { /* ignore */ } };
 const saveNotes = () => { try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch { /* ignore */ } };
 const phone = () => innerWidth < 700 || (innerHeight < 520 && innerWidth < 1000);
 
@@ -75,38 +66,7 @@ const phone = () => innerWidth < 700 || (innerHeight < 520 && innerWidth < 1000)
 // (not for indirect fire, not vs air). validTarget(): AA weapons (flak, aamg) can only target air, everything else only
 // ground; the class must have a damage multiplier > 0; minRng blocks close targets; buildings measure to the wall.
 // aircraft use their own attack-run rules in updatePlane()/attackRun().
-export function rangeModel(u) {
-  const def = u.def, w = def.wpn, vs = u.vs || def.vs;
-  const rows = [], extras = [];
-  extras.push({ k: 'vis', r: u.visR ?? def.vis, note: 'spotting radius (forest/ambush/cover hide targets closer in)' });
-  const air = u.kind === 'air';
-  const bonus = air ? 0 : (u.deployed ? 8 : 0) + (u.garrison ? 5 : 0);
-  for (const c of CLASSES) {
-    const v = vs[c.k], mult = LVL_MULT[v.lvl] || 0;
-    const row = { ...c, lvl: v.lvl, rng: v.rng, mult, r: 0, can: false, note: '' };
-    if (!w) row.note = 'unarmed';
-    else if (v.lvl <= 0) row.note = "lvl 0: can't hit";
-    else if (c.k === 'air' && !HITSCAN[w]) row.note = `${w} shells can't reach aircraft`;
-    else if (v.rng <= 0) row.note = 'range 0';
-    else {
-      row.can = true; row.r = v.rng + bonus;
-      if (air && (w === 'rocket' || w === 'bomb')) row.note = `picks ${c.label} targets within ${v.rng} of the ordered point`;
-      else if (air) row.note = 'gun range while loitering (chases planes within 70 of the patrol point)';
-      else if (c.k === 'air') row.note = 'no height bonus vs air';
-      else row.note = (def.indirect ? 'indirect: no line of sight, needs spotting' : 'needs line of sight; up to +35% from high ground') + (c.k === 'bld' ? ' · measured to the wall' : '') + (bonus ? ` · +${bonus} (${u.deployed ? 'deployed' : 'garrison'})` : '');
-      if (def.minRng) row.min = def.minRng;
-    }
-    rows.push(row);
-  }
-  if (def.minRng) extras.push({ k: 'min', r: def.minRng, note: 'cannot fire at targets closer than this' });
-  if (w === 'rocket') { const [wn, wx] = def.rocketWin || [14, 38]; extras.push({ k: 'min', r: wn, note: `rockets fire only when the target is more than ${wn} ahead; closer passes extend out and come back around` }); extras.push({ k: 'dive', r: wx, note: `dives within 70, fires 2 rocket pairs when the target is ${wn}–${wx} ahead (splash 4)` }); }
-  if (w === 'bomb') { const thr = A.bombThrow(def.speed, A.bombFall(def.alt - 1)); extras.push({ k: 'drop', r: thr, note: `releases ${f0(thr)} before the (predicted) target position: a stick of 6 bombs 2.2 apart centred on it, splash ${def.splash}; closer starts extend out and come back around` }); }
-  if (def.ability === 'deploy' && !u.deployed) extras.push({ k: 'deploy', r: maxR(vs) + 8, note: 'range once deployed (+8)' });
-  if (def.ability === 'satchel') extras.push({ k: 'satchel', r: 45, note: 'finds the nearest tank/gun/building within 45' });
-  if (def.repair) extras.push({ k: 'repair', r: 10, note: 'repairs damaged friendly vehicles within 10 (buildings within 6 of the wall) while idle' });
-  return { rows, extras };
-}
-const maxR = (vs) => Math.max(0, ...BODY_KEYS.map((b) => (vs[b].lvl > 0 ? vs[b].rng : 0)));
+export function rangeModel(u) { return unitModel(u.def, { vs: u.vs, vis: u.visR, deployed: u.deployed, garrison: u.garrison, bombThrow: A.bombThrow, bombFall: A.bombFall }); }
 
 // =====================================================================================
 // ground rings: terrain-following ribbons + HTML labels
@@ -144,10 +104,9 @@ function ringFor(key, color, dashed) {
 function clearRings() { for (const r of ringPool.values()) { r.ribbon.dispose(A.scene); r.label.remove(); } ringPool.clear(); }
 let ringList = [];   // last drawn rings, for tests
 const labelList = () => [...(labelsEl?.children || [])].filter((l) => l.style.display !== 'none').map((l) => l.textContent);
-function updateRings() {
-  const u = S.blue;
+function updateRings(u = S.blue) {
   const want = [];
-  if (u?.alive && S.rings) {
+  if (u?.alive && (S.rings || S.ringNums)) {   // the per-ring checkboxes decide which rings exist; the two master toggles decide what is drawn
     const m = rangeModel(u);
     for (const e of m.extras) if (S.ringOn[e.k] !== false && !want.some((w) => w.key === e.k)) want.push({ key: e.k, r: e.r, color: EXTRA[e.k].color, dashed: e.k !== 'vis' && e.k !== 'repair', text: `${EXTRA[e.k].icon} ${EXTRA[e.k].label} ${f0(e.r)}` });
     for (const c of m.rows) if (c.can && S.ringOn[c.k] !== false) want.push({ key: c.k, r: c.r, color: c.color, dashed: false, text: `${c.icon} vs ${c.label} ${f0(c.r)} · L${c.lvl} ×${c.mult}` });
@@ -166,7 +125,7 @@ function updateRings() {
     if (Math.abs(w.r - prevR) < .8) stack++; else { stack = 0; group++; groups.push([]); } prevR = w.r;
     w.rr = w.r - stack * .85; groups[group].push(w);
     const R = ringFor(w.key, w.color, w.dashed);
-    R.ribbon.mesh.visible = true; R.ribbon.update(cx, cz, w.rr, .6);
+    R.ribbon.mesh.visible = S.rings; if (S.rings) R.ribbon.update(cx, cz, w.rr, .6);
   });
   // labels: one anchor per radius group (near side of the ring, groups fanned out), lines stacked below it;
   // fall back to the far / side positions when the anchor is off-screen or under the panel
@@ -181,7 +140,7 @@ function updateRings() {
     }
     g.forEach((w, i) => {
       const R = ringPool.get(w.key);
-      if (!anchor) { R.label.style.display = 'none'; return; }
+      if (!anchor || !S.ringNums) { R.label.style.display = 'none'; return; }
       R.label.style.display = ''; R.label.style.transform = `translate(${anchor.x | 0}px, ${(anchor.y + i * LH) | 0}px) translate(-50%, -50%)`;
       R.label.style.borderColor = w.color; R.label.textContent = w.text;
     });
@@ -297,60 +256,7 @@ function setSpeed(v) { S.speed = v; A.game.timeScale = v; savePrefs(); renderHea
 // =====================================================================================
 // live readout
 // =====================================================================================
-function nameOf(e) { return e ? (e.isBld ? BUILDINGS[e.type].name : e.def.name) + (e.team === 'red' ? ' (red)' : '') : '—'; }
-const AIR_STATE = { idle: 'circling home', out: 'flying out', loiter: 'loitering', return: 'returning to rearm', rearm: 'rearming' };
-function stateOf(u) {
-  const t = A.game.time;
-  if (!u.alive) return ['💀', 'destroyed'];
-  if (A.isAir(u)) {
-    let s = AIR_STATE[u.airState] || u.airState;
-    if (u.airState === 'rearm') s += ` ${f1(Math.max(0, u.rearmT))} s`;
-    if (u.diving) s = 'diving · ' + s; if (u.runT > 0) s = 'attack run · ' + s;
-    if (t - (u.firedAt ?? -99) < .5) s = 'firing · ' + s;
-    return ['✈️', s];
-  }
-  if (u.garrison) return ['🏠', 'garrisoned in a house'];
-  if (u.satchel) return ['💣', u.satchel.fuse !== undefined ? `satchel planted, fuse ${f1(Math.max(0, u.satchel.fuse))} s` : 'running to plant satchel'];
-  if (u.wantDeploy) return ['⚙️', 'deploying (stop to set up)'];
-  const moving = u.speed > .4 || u.path.length;
-  if (moving) return ['🏃', (t < u.sprintUntil ? 'sprinting' : 'moving') + (u.order?.type === 'attack' ? ' (closing in on target)' : '')];
-  const pre = u.deployed ? 'deployed · ' : u.ambush ? 'ambush (hidden) · ' : '';
-  if (u.fireTarget) {
-    if (u.def.deploy && u.deployT < u.def.deploy) return ['⚙️', pre + `setting up gun ${f1(u.def.deploy - u.deployT)} s`];
-    if (t - u.firedAt < .35) return ['🔥', pre + 'firing'];
-    if (u.reload > 0) return ['⏳', pre + `reloading ${f1(u.reload)} s`];
-    return ['🎯', pre + 'aiming'];
-  }
-  if (u.order?.type === 'attack') return ['🎯', pre + 'attack order: no shot (range/LOS/visibility)'];
-  if (u.repairing?.alive) return ['🔧', pre + 'repairing'];
-  if (u.deployed) return ['⚙️', 'deployed'];
-  if (u.ambush) return ['🌿', 'ambush (hidden)'];
-  return ['💤', 'idle'];
-}
-function effRof(u) { let r = u.def.rof || 0; if (u.deployed) r *= .4; if (A.game.time < u.suppressedUntil) r *= 2; if (A.isInf(u) && u.speed > .5) r *= 1.6; return r; }
-export function readout(u = S.blue) {
-  if (!u) return null;
-  const def = u.def, t = A.game.time;
-  const tgt = u.fireTarget || (u.order?.type === 'attack' ? u.order.target : null) || u.airTarget || null;
-  const st = stateOf(u);
-  const flags = [];
-  if (t < u.sprintUntil) flags.push('🏃 sprint ' + f1(u.sprintUntil - t) + ' s');
-  if (t < u.suppressedUntil) flags.push('😵 suppressed');
-  if (u.deployed) flags.push('⚙️ deployed');
-  if (u.ambush) flags.push('🌿 ambush');
-  if (!A.isAir(u) && u.alive) { const p = A.pos(u); if (A.inForest(p.x, p.z)) flags.push('🌲 in forest'); else if (A.inCity(p.x, p.z)) flags.push('🏘️ in town'); if (A.onRoad(p.x, p.z)) flags.push('🛣️ on road'); const c = A.concealed(u); if (c) flags.push('🙈 concealed ' + c); }
-  const ab = def.ability ? { key: def.ability, name: ABILITIES[def.ability].name, cd: Math.max(0, u.cd), max: ABILITIES[def.ability].cd } : null;
-  return {
-    name: def.name, type: u.type, body: def.body, alive: u.alive, hp: u.hp, maxHp: u.maxHp, men: A.isInf(u) ? A.menAlive(u) : null, maxMen: def.men || null,
-    dmgState: ['clean', 'smoking', 'burning'][u.dmg] || 'clean', state: st[1], stateIcon: st[0], flags,
-    target: tgt ? nameOf(tgt) : null, targetDist: tgt && u.alive ? A.distTo(u, tgt) : null, targetRange: tgt && u.alive && !A.isAir(u) ? A.rangeOf(u, tgt) : null,
-    range: u.alive && !A.isAir(u) ? A.rangeOf(u, null) : def.rng || 0, minRng: def.minRng || 0,
-    reload: Math.max(0, u.reload), rof: effRof(u), speed: u.speed || 0, maxSpeed: A.isAir(u) ? def.speed : (u.alive ? A.speedOf(u) : 0),
-    ability: ab, dealt: u.dealt || 0, shots: u.shots || 0, hits: u.hits || 0, kills: 0,
-    alt: A.isAir(u) ? A.pos(u).y : null, ammo: A.isAir(u) ? u.ammo : null, airState: u.airState || null,
-    x: A.pos(u).x, z: A.pos(u).z, order: u.order?.type || null,
-  };
-}
+export function readout(u = S.blue) { return liveReadout(A, u); }
 
 // =====================================================================================
 // UI
@@ -387,30 +293,34 @@ function renderActions() {
   const r = S.red;
   $('#exsec-test .exred').innerHTML = r ? `<span class="rn">🔴 ${esc(nameOf(r).replace(' (red)', ''))} <small>${S.redMode === 'dummy' ? '😴' : S.redMode === 'hold' ? '🛡️' : '⚔️'}</small></span><b class="rhp"></b><button data-act="redhurt">💥 −25%</button><button data-act="redkill">☠️</button>` : '<span class="rn">🔴 No opponent <small>(Pick tab)</small></span>';
 }
+const accPips = (a) => `<span class="apips" aria-label="accuracy ${a}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= a ? 'on' : ''}"></i>`).join('')}</span>`;
 const pips = (l) => `<span class="pips" aria-label="level ${l}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= l ? 'on' : ''}"></i>`).join('')}</span>`;
 function matrixHtml(m) {
   const u = S.blue, t = u.type, tuned = tuneDiff(t), ed = S.tuning, d = defVs(t);
   const ring = (k, color, on, dashed, can = true) => can ? `<label class="exm-cb"><input type="checkbox" data-ring="${k}" ${on !== false ? 'checked' : ''} aria-label="ring"><i class="sw ${dashed ? 'dash' : ''}" style="--c:${color}"></i></label>` : '<span class="exm-cb"></span>';
   const vis = m.extras.find((e) => e.k === 'vis');
   const rowsHtml = m.rows.map((c) => {
-    const chg = (d[c.k].lvl !== c.lvl || d[c.k].rng !== c.rng);
+    const chg = (d[c.k].lvl !== c.lvl || d[c.k].rng !== c.rng || (d[c.k].acc ?? 3) !== c.acc);
     return `<div class="exm-row ${c.can ? '' : 'cant'} ${chg ? 'chg' : ''}" data-b="${c.k}" style="--c:${c.color}" title="${esc(c.note)}">
       ${ring(c.k, c.color, S.ringOn[c.k], false, c.can)}
       <span class="exm-name">${c.icon} ${c.label}</span>
       ${c.lvl > 0 ? pips(c.lvl) : '<span class="exm-no">can\'t hit</span>'}
       <span class="exm-rng">${c.lvl > 0 ? f0(c.r || c.rng) : '—'}</span>
       <span class="exm-mult">${c.lvl > 0 ? '×' + c.mult : ''}</span>
+      <span class="exm-accp" title="accuracy level ${c.acc}">${c.lvl > 0 && c.accInfo.kind !== 'none' ? accPips(c.acc) : ''}</span>
+      ${c.accInfo.text ? `<span class="exm-acc">🎯 acc ${c.acc}: ${esc(c.accInfo.text)}</span>` : ''}
       ${c.lvl > 0 && !c.can ? `<span class="exm-warn">⚠ ${esc(c.note)}</span>` : ''}
       ${ed ? `<div class="exm-edit"><span class="lv"><button data-tune="lvl" data-b="${c.k}" data-d="-1" aria-label="level down">−</button><b>L${c.lvl}</b><button data-tune="lvl" data-b="${c.k}" data-d="1" aria-label="level up">+</button></span>
+        <span class="lv ac"><button data-tune="acc" data-b="${c.k}" data-d="-1" aria-label="accuracy down">−</button><b>A${c.acc}</b><button data-tune="acc" data-b="${c.k}" data-d="1" aria-label="accuracy up">+</button></span>
         <span class="rg"><button data-tune="rng" data-b="${c.k}" data-d="-2" aria-label="range down">−</button><input type="range" min="0" max="150" step="1" value="${c.rng}" data-slide="rng" data-b="${c.k}" aria-label="range"><button data-tune="rng" data-b="${c.k}" data-d="2" aria-label="range up">+</button><b class="rv">${c.rng}</b></span></div>` : ''}
     </div>`;
   }).join('');
-  const visRow = `<div class="exm-row vis ${tuned.vis ? 'chg' : ''}" data-b="vis" style="--c:${EXTRA.vis.color}">${ring('vis', EXTRA.vis.color, S.ringOn.vis, false)}<span class="exm-name">👁 Vision</span><span></span><span class="exm-rng">${f0(vis.r)}</span><span class="exm-mult"></span>
-    ${ed ? `<div class="exm-edit"><span class="lv"></span><span class="rg"><button data-tune="vis" data-b="vis" data-d="-5" aria-label="vision down">−</button><input type="range" min="0" max="200" step="1" value="${vis.r}" data-slide="vis" data-b="vis" aria-label="vision"><button data-tune="vis" data-b="vis" data-d="5" aria-label="vision up">+</button><b class="rv">${vis.r}</b></span></div>` : ''}</div>`;
-  const extra = m.extras.filter((e) => e.k !== 'vis').map((e) => `<div class="exm-row xtra" style="--c:${EXTRA[e.k].color}" title="${esc(e.note)}">${ring(e.k, EXTRA[e.k].color, S.ringOn[e.k], true)}<span class="exm-name">${EXTRA[e.k].icon} ${EXTRA[e.k].label}</span><span></span><span class="exm-rng">${f0(e.r)}</span><span class="exm-mult"></span></div>`).join('');
+  const visRow = `<div class="exm-row vis ${tuned.vis ? 'chg' : ''}" data-b="vis" style="--c:${EXTRA.vis.color}">${ring('vis', EXTRA.vis.color, S.ringOn.vis, false)}<span class="exm-name">👁 Vision</span><span></span><span class="exm-rng">${f0(vis.r)}</span><span class="exm-mult"></span><span></span>
+    ${ed ? `<div class="exm-edit"><span class="lv"></span><span class="lv ac"></span><span class="rg"><button data-tune="vis" data-b="vis" data-d="-5" aria-label="vision down">−</button><input type="range" min="0" max="200" step="1" value="${vis.r}" data-slide="vis" data-b="vis" aria-label="vision"><button data-tune="vis" data-b="vis" data-d="5" aria-label="vision up">+</button><b class="rv">${vis.r}</b></span></div>` : ''}</div>`;
+  const extra = m.extras.filter((e) => e.k !== 'vis').map((e) => `<div class="exm-row xtra" style="--c:${EXTRA[e.k].color}" title="${esc(e.note)}">${ring(e.k, EXTRA[e.k].color, S.ringOn[e.k], true)}<span class="exm-name">${EXTRA[e.k].icon} ${EXTRA[e.k].label}</span><span></span><span class="exm-rng">${f0(e.r)}</span><span class="exm-mult"></span><span></span></div>`).join('');
   const cant = m.rows.filter((c) => !c.can).map((c) => `${c.icon} ${c.label}`);
-  return `<div class="exm ${S.rings ? '' : 'off'} ${ed ? 'editing' : ''}">
-    <div class="exm-head"><span></span><span>Body</span><span>Level</span><span>Rng</span><span>Dmg</span></div>
+  return `<div class="exm ${S.rings || S.ringNums ? '' : 'off'} ${ed ? 'editing' : ''}">
+    <div class="exm-head"><span></span><span>Body</span><span>Level</span><span>Rng</span><span>Dmg</span><span>Acc</span></div>
     ${rowsHtml}${visRow}${extra}</div>
     ${cant.length ? `<div class="excant">🚫 Can't hit: ${cant.join(' · ')}</div>` : ''}
     <div class="exm-tools"><button class="exm-tune ${ed ? 'on' : ''}" data-ui="tune">✏️ ${ed ? 'Done tuning' : 'Tune levels & ranges'}</button>${tuned.any ? `<button class="exm-reset" data-ui="tunereset">↺ Reset to default</button><span class="exm-tuned">🎛 tuned (this browser only)</span>` : ''}</div>`;
@@ -425,9 +335,9 @@ function renderTest() {
   $('#exsec-test').innerHTML = `
     <div class="exacts"></div>
     <div class="exred"></div>
-    <div class="exlab">📊 Live</div>
-    <div class="exlive" id="exlive"></div>
-    <div class="exlab">🎯 Attack matrix &amp; rings <label class="exchk inline"><input type="checkbox" id="exrings" ${S.rings ? 'checked' : ''}> rings</label></div>
+    <div class="exlab">📊 Live stats <button class="extgl ${S.live ? 'on' : ''}" data-ui="live" aria-pressed="${S.live}" title="Show / hide the live stats (remembered)">📊 <b>${S.live ? 'on' : 'off'}</b></button></div>
+    <div class="exlive ${S.live ? '' : 'hidden'}" id="exlive"></div>
+    <div class="exlab">🎯 Attack matrix &amp; rings <span class="exrt">${ringBtns()}</span></div>
     <div id="exlegend">${matrixHtml(m)}</div>
     <div class="exlab">⚙️ Config <small>config.js</small></div>
     <div class="excfg">${cfg.map(([i, k, v]) => `<span><i>${i}</i>${k}<b>${esc(v)}</b></span>`).join('')}</div>
@@ -436,11 +346,18 @@ function renderTest() {
   S.legendSig = legendSig(m);
   updateLive(true);
 }
-const legendSig = (m) => m.rows.map((r) => r.can + ':' + r.lvl + ':' + f0(r.r)).join() + m.extras.map((e) => e.k + f0(e.r)).join() + S.tuning;
-function bar(f, cls = '') { return `<i class="exbar ${cls}"><i style="width:${Math.max(0, Math.min(1, f)) * 100}%"></i></i>`; }
+function ringBtns() { return `<button class="extgl ${S.rings ? 'on' : ''}" id="exrings" data-ui="rings" aria-pressed="${S.rings}" title="Show / hide all range rings on the ground">⭕ <b>${S.rings ? 'on' : 'off'}</b></button><button class="extgl ${S.ringNums ? 'on' : ''}" id="exringnums" data-ui="ringnums" aria-pressed="${S.ringNums}" title="Show / hide the ring numbers (range, level, multiplier)">🔢 <b>${S.ringNums ? 'on' : 'off'}</b></button>`; }
+function setRingToggles(rings = S.rings, nums = S.ringNums) {
+  S.rings = !!rings; S.ringNums = !!nums; saveRings(); savePrefs();
+  const el = $('#exsec-test .exrt'); if (el) el.innerHTML = ringBtns();
+  $('#exlegend .exm')?.classList.toggle('off', !S.rings && !S.ringNums);
+  if (A) updateRings();
+}
+const legendSig = (m) => m.rows.map((r) => r.can + ':' + r.lvl + ':' + f0(r.r) + ':' + r.acc).join() + m.extras.map((e) => e.k + f0(e.r)).join() + S.tuning;
 function updateLive() {
   const el = $('#exlive'); if (!el || !S.blue) return;
   const r = readout(); const u = S.blue;
+  if (!S.live) { updateLiveSide(r, u); return; }
   const hpTxt = r.men !== null ? `${r.men}/${r.maxMen} men · ${f0(r.hp)}/${r.maxHp} hp` : `${f0(r.hp)}/${r.maxHp} hp`;
   const rows = [
     ['❤️', 'Health', `${bar(r.hp / r.maxHp, r.dmgState)}${hpTxt} <em class="ds ${r.dmgState}">${r.dmgState === 'clean' ? '✔ clean' : r.dmgState === 'smoking' ? '💨 smoking' : '🔥 burning'}</em>`],
@@ -455,7 +372,9 @@ function updateLive() {
   rows.push(['💥', 'Dealt', `<b>${f0(r.dealt)}</b> dmg · ${r.shots} shots · ${r.hits} hits`]);
   if (S.red && S.red.maxHp) rows.push(['🔴', 'Red', `${bar(S.red.hp / S.red.maxHp, 'red')}${f0(S.red.hp)}/${S.red.maxHp}${S.red.alive ? '' : ' 💀'}${S.red.dealt ? ` · dealt ${f0(S.red.dealt)}` : ''}`]);
   el.innerHTML = rows.map(([i, k, v]) => `<div class="exr"><i>${i}</i><span>${esc(k)}</span><div>${v}</div></div>`).join('');
-  // ability button cooldown ring + active state
+  updateLiveSide(r, u);
+}
+function updateLiveSide(r, u) {   // ability cooldown ring, red HP, matrix refresh (run even when the live stats are hidden)
   const ab = $('#exsec-test [data-act="ability"]');
   if (ab && r.ability) { ab.querySelector('.cdr').style.background = r.ability.cd > 0 ? `conic-gradient(rgba(0,0,0,.6) ${(r.ability.cd / r.ability.max * 100).toFixed(1)}%, transparent 0)` : 'none'; ab.classList.toggle('active', !!(u.deployed || u.wantDeploy || u.ambush || u.satchel || A.game.time < u.sprintUntil)); }
   const rhp = $('#exsec-test .rhp'); if (rhp && S.red) rhp.textContent = S.red.alive ? `${Math.round(S.red.hp / S.red.maxHp * 100)}%` : '💀';
@@ -475,7 +394,7 @@ function renderNotes() {
     <div class="exlab">📝 Units with notes <small>${listed.length}/${Object.keys(UNITS).length}</small></div>
     <div class="exnlist">${listed.length ? listed.map((k) => `<button data-pick-note="${k}">${svg(k, 'blue')}<b>${esc(UNITS[k].name)}</b><span>${tuneDiff(k).any ? '🎛 tuned · ' : ''}${esc((notes[k] || '').trim().split('\n')[0].slice(0, 60))}</span></button>`).join('') : '<div class="exempty">No notes yet. Pick a unit, watch it, write what needs fixing.</div>'}</div>`;
 }
-const lvlTxt = (v) => (v.lvl > 0 ? `lvl ${v.lvl} (×${LVL_MULT[v.lvl]}), rng ${v.rng}` : `lvl 0 (can't hit)${v.rng ? `, rng ${v.rng}` : ''}`);
+const lvlTxt = (v) => (v.lvl > 0 ? `lvl ${v.lvl} (×${LVL_MULT[v.lvl]}), rng ${v.rng}, acc ${v.acc ?? 3}` : `lvl 0 (can't hit)${v.rng ? `, rng ${v.rng}` : ''}`);
 function tuneLines(t) {
   const d = tuneDiff(t); if (!d.any) return '';
   const l = d.list.map(({ b, from, to }) => `  vs ${BODIES[b].name}: ${lvlTxt(from)}  ->  ${lvlTxt(to)}`);
@@ -522,7 +441,7 @@ function renderAll() { renderHead(); renderTabs(); renderPick(); renderTest(); r
 function buildDom() {
   root = document.createElement('div'); root.id = 'ex';
   root.innerHTML = `
-    <div id="extop"><button data-ui="menu" aria-label="Back to menu">◀ Menu</button><b>🔍 Unit Examiner</b><span class="hint">${'ontouchstart' in window ? 'tap ground: move · tap red: attack' : 'click ground: move · click red: attack · wheel: zoom · right-drag: rotate'}</span></div>
+    <div id="extop"><button data-ui="menu" aria-label="Back to menu">◀ Menu</button><button data-ui="guide" class="exguide" title="Unit Menu: every unit's attack matrix, rings and config">📖 Units</button><b>🔍 Unit Explore</b><span class="hint">${'ontouchstart' in window ? 'tap ground: move · tap red: attack' : 'click ground: move · click red: attack · wheel: zoom · right-drag: rotate'}</span></div>
     <aside id="expanel">
       <div id="exhead"></div>
       <nav id="extabs"></nav>
@@ -568,7 +487,16 @@ function onUiClick(e) {
   if (ui === 'tunereset') { delete tune[S.type]; saveTune(); for (const u of [S.blue, S.red, ...S.extra]) if (u && !u.isBld && u.type === S.type) applyTune(u); refreshMatrix(); renderHead(); renderPick(); A.toast(`↺ ${UNITS[S.type].name}: back to config.js defaults`); return; }
   if (el.dataset.tune) { const b = el.dataset.b, f = el.dataset.tune, cur = b === 'vis' ? effVis(S.type) : effVs(S.type)[b][f]; setTune(S.type, b, f === 'vis' ? 'vis' : f, cur + +el.dataset.d); refreshMatrix(); renderHead(); return; }
   if (ui === 'toggle') { S.open = !S.open; root.classList.toggle('min', !S.open); return; }
+  if (ui === 'rings') { setRingToggles(!S.rings, S.ringNums); A.toast(`⭕ Rings ${S.rings ? 'on' : 'off'}`); return; }
+  if (ui === 'ringnums') { setRingToggles(S.rings, !S.ringNums); A.toast(`🔢 Ring numbers ${S.ringNums ? 'on' : 'off'}`); return; }
+  if (ui === 'live') { setLive(!S.live); return; }
+  if (ui === 'guide') { A.openGuide({ from: 'examiner', tuned: JSON.parse(JSON.stringify(tune)) }); return; }
   if (ui === 'follow') { S.follow = !S.follow; savePrefs(); renderHead(); A.toast(S.follow ? '🎥 Camera follows the unit' : '🎥 Free camera'); return; }
+}
+function setLive(on) {
+  S.live = !!on; savePrefs();
+  const b = $('#exsec-test [data-ui="live"]'); if (b) { b.classList.toggle('on', S.live); b.setAttribute('aria-pressed', S.live); b.querySelector('b').textContent = S.live ? 'on' : 'off'; }
+  $('#exlive')?.classList.toggle('hidden', !S.live); if (S.live) updateLive();
 }
 function refreshMatrix() { if (!S.blue) return; const m = rangeModel(S.blue); S.legendSig = legendSig(m); $('#exlegend').innerHTML = matrixHtml(m); }
 function onUiChange(e) {
@@ -577,7 +505,6 @@ function onUiChange(e) {
   if (t.id === 'exopp') { S.opp = t.value; savePrefs(); resetArena(); return; }
   if (t.id === 'eximpacts') { S.impacts = t.checked; savePrefs(); if (!S.impacts) clearImpacts(); return; }
   if (t.id === 'exreveal') { S.reveal = t.checked; savePrefs(); resetArena(); return; }
-  if (t.id === 'exrings') { S.rings = t.checked; savePrefs(); $('#exlegend .exm')?.classList.toggle('off', !S.rings); return; }
   if (t.dataset.ring) { S.ringOn[t.dataset.ring] = t.checked; savePrefs(); return; }
 }
 
@@ -669,8 +596,21 @@ function closeExaminer() {
   document.body.classList.remove('examiner'); root?.classList.add('hidden'); labelsEl?.classList.add('hidden');
 }
 
+// ring drawing for other modes (Play Sandbox): same rings, labels and ⭕/🔢 toggles as Unit Explore, for any unit
+export const ringsApi = {
+  update(api, u) {
+    A = api; if (!labelsEl) { labelsEl = document.createElement('div'); labelsEl.id = 'exlabels'; document.body.appendChild(labelsEl); }
+    labelsEl.classList.remove('hidden'); panelRect = document.querySelector('#sbxpanel')?.getBoundingClientRect() || null;
+    updateRings(u?.alive && !u.isBld ? u : null);
+  },
+  clear() { if (A) clearRings(); labelsEl?.classList.add('hidden'); },
+  get toggles() { return { rings: S.rings, nums: S.ringNums }; },
+  setToggles(r, n) { setRingToggles(r, n); },
+  list: () => ringList.map((r) => ({ ...r })), labels: () => labelList(),
+};
 // test hooks
 window.__examiner = {
+  setLive, get live() { return S.live; }, setRingToggles, ringToggles: () => ({ rings: S.rings, nums: S.ringNums, ribbons: [...ringPool.values()].filter((r) => r.ribbon.mesh.visible).length, labels: labelList().filter((t) => !t.startsWith('💣 ') || / vs | ·/.test(t)).length }),
   get state() { return { type: S.type, opp: oppSpec(), redMode: S.redMode, arena: S.arena, speed: S.speed, follow: S.follow, tab: S.tab, open: S.open, rings: S.rings }; },
   pick: (t) => { S.type = t; resetArena(); S.tab = 'test'; renderTabs(); },
   setOpp: (v) => { S.opp = v; resetArena(); }, setRedMode: (v) => { S.redMode = v; applyRedMode(); renderPick(); }, setArena: (v) => { S.arena = v; resetArena(); },
