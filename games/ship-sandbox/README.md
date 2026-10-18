@@ -9,6 +9,7 @@ Built for phones first and icons first. Installs as a PWA (Add to Home Screen) a
 - **Target**: tap a part on the ship, or a row in the 🧩 list. Tap the 🎯 chip (or the same part again) to go back to the whole ship.
 - **Top buttons**: ⏸ pause · 🐢 slow-mo (×1 / ×0.5 / ×0.25) · ↺ reset ship · 🫧 shield on/off · ↩ ship fires back · ×N attackers per tap (1/3/5/10)
 - **Lists**: 🧩 parts (HP bars, status, 🔧 repair) · 📜 log (what hit what, for how much) · 🔢 damage matrix (attack vs armor)
+- **Identify parts** (v2): with a mouse, hover any part to light it up (outline and glow, rest of the ship dims) with a live card: icon, name, what it does, HP, armor, status (OK / damaged / broken / offline / shielded) and active effects (e.g. "engines at 25%: reactor down"). Hovering a 🧩 list row lights up that part on the ship, and hovering the ship lights up its row. On touch, **long-press** a part for the same card (✕ or tap elsewhere to close); a normal tap still targets. 🏷 toggles small name tags on every part (off by default).
 - **Camera**: drag to rotate, pinch or scroll to zoom, two fingers (or right-drag) to pan.
 
 ## Parts and what breaking them does
@@ -37,4 +38,4 @@ Same rule as Front Line (`games/tank-2v2`) and Space Defense (`games/space-defen
 - `js/particles.js`: copied from Front Line (ground bounce removed)
 - `js/icons.js`: SVG button icons
 - `vendor/`: three.js r-module and OrbitControls, vendored so it works offline
-- `sw.js`, `manifest.webmanifest`, `icon-*.png`: PWA. The cache is `ship-sandbox-v1`, cleanup only deletes `ship-sandbox-*` caches, and fetches are network-first with `cache: 'no-cache'`. An update toast shows when a new version is ready.
+- `sw.js`, `manifest.webmanifest`, `icon-*.png`: PWA. The cache is `ship-sandbox-v2` (scripts load with `?v=2`), cleanup only deletes `ship-sandbox-*` caches, and fetches are network-first with `cache: 'no-cache'`. An update toast shows when a new version is ready.

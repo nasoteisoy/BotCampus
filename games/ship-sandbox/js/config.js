@@ -37,20 +37,20 @@ export const ATTACK_KEYS = Object.keys(ATTACKS);
 
 // ship parts: pos = [x along keel (bow +x), y up, z right]; fn = what it does
 export const PARTS = [
-  { id: 'bow',     icon: '🔺', name: 'Bow hull',    armor: 'plate', hp: 700, pos: [17, 0, 0],    fn: 'hull' },
-  { id: 'mid',     icon: '🟫', name: 'Mid hull',    armor: 'plate', hp: 900, pos: [0, 0, 0],     fn: 'hull' },
-  { id: 'stern',   icon: '🔻', name: 'Stern hull',  armor: 'plate', hp: 700, pos: [-16, 0, 0],   fn: 'hull' },
-  { id: 'bridge',  icon: '🧭', name: 'Bridge',      armor: 'heavy', hp: 380, pos: [-9, 5.2, 0],  fn: 'aim' },
-  { id: 'sensors', icon: '📡', name: 'Sensors',     armor: 'light', hp: 160, pos: [11, 4.4, 0],  fn: 'aim' },
-  { id: 'reactor', icon: '☢️', name: 'Reactor',     armor: 'heavy', hp: 520, pos: [-2, 3.2, 0],  fn: 'power' },
-  { id: 'shield',  icon: '🫧', name: 'Shield gen',  armor: 'nrg',   hp: 260, pos: [-14, 4.2, 0], fn: 'shield' },
-  { id: 'engL',    icon: '🔥', name: 'Engine L',    armor: 'mech',  hp: 280, pos: [-25, 0, -3.2], fn: 'engine' },
-  { id: 'engR',    icon: '🔥', name: 'Engine R',    armor: 'mech',  hp: 280, pos: [-25, 0, 3.2],  fn: 'engine' },
-  { id: 'gun1',    icon: '💥', name: 'Cannon 1',    armor: 'mech',  hp: 240, pos: [14, 2.6, 0],  fn: 'weapon', wpn: 'cannon' },
-  { id: 'gun2',    icon: '💥', name: 'Cannon 2',    armor: 'mech',  hp: 240, pos: [5, 3.2, 0],   fn: 'weapon', wpn: 'cannon' },
-  { id: 'launcher',icon: '🚀', name: 'Launcher',    armor: 'mech',  hp: 220, pos: [-5, 1.4, 4.4], fn: 'weapon', wpn: 'rocket' },
-  { id: 'laser',   icon: '🔦', name: 'Laser',       armor: 'nrg',   hp: 190, pos: [-5, 1.4, -4.4], fn: 'weapon', wpn: 'laser' },
-  { id: 'hangar',  icon: '🛬', name: 'Hangar',      armor: 'mech',  hp: 320, pos: [3, -1.6, 0],  fn: 'hangar' },
+  { id: 'bow',     icon: '🔺', name: 'Bow hull',    armor: 'plate', hp: 700, pos: [17, 0, 0],    fn: 'hull', desc: 'Front armor. Lose all 3 hull sections = ship lost.' },
+  { id: 'mid',     icon: '🟫', name: 'Mid hull',    armor: 'plate', hp: 900, pos: [0, 0, 0],     fn: 'hull', desc: 'Main hull. Holds the reactor, guns and hangar.' },
+  { id: 'stern',   icon: '🔻', name: 'Stern hull',  armor: 'plate', hp: 700, pos: [-16, 0, 0],   fn: 'hull', desc: 'Rear hull. Carries bridge, shield gen and engines.' },
+  { id: 'bridge',  icon: '🧭', name: 'Bridge',      armor: 'heavy', hp: 380, pos: [-9, 5.2, 0],  fn: 'aim', desc: 'Command deck. Steers the guns: aim and fire rate.' },
+  { id: 'sensors', icon: '📡', name: 'Sensors',     armor: 'light', hp: 160, pos: [11, 4.4, 0],  fn: 'aim', desc: 'Radar dish. Aim and weapon range.' },
+  { id: 'reactor', icon: '☢️', name: 'Reactor',     armor: 'heavy', hp: 520, pos: [-2, 3.2, 0],  fn: 'power', desc: 'Powers weapons, shield, hangar and full thrust.' },
+  { id: 'shield',  icon: '🫧', name: 'Shield gen',  armor: 'nrg',   hp: 260, pos: [-14, 4.2, 0], fn: 'shield', desc: 'Makes the shield bubble that soaks hits first.' },
+  { id: 'engL',    icon: '🔥', name: 'Engine L',    armor: 'mech',  hp: 280, pos: [-25, 0, -3.2], fn: 'engine', desc: 'Left thruster. Half of the ship speed.' },
+  { id: 'engR',    icon: '🔥', name: 'Engine R',    armor: 'mech',  hp: 280, pos: [-25, 0, 3.2],  fn: 'engine', desc: 'Right thruster. Half of the ship speed.' },
+  { id: 'gun1',    icon: '💥', name: 'Cannon 1',    armor: 'mech',  hp: 240, pos: [14, 2.6, 0],  fn: 'weapon', wpn: 'cannon', desc: 'Twin cannon. Shoots attackers when fire-back is on.' },
+  { id: 'gun2',    icon: '💥', name: 'Cannon 2',    armor: 'mech',  hp: 240, pos: [5, 3.2, 0],   fn: 'weapon', wpn: 'cannon', desc: 'Twin cannon. Shoots attackers when fire-back is on.' },
+  { id: 'launcher',icon: '🚀', name: 'Launcher',    armor: 'mech',  hp: 220, pos: [-5, 1.4, 4.4], fn: 'weapon', wpn: 'rocket', desc: 'Homing rockets vs attackers (fire-back).' },
+  { id: 'laser',   icon: '🔦', name: 'Laser',       armor: 'nrg',   hp: 190, pos: [-5, 1.4, -4.4], fn: 'weapon', wpn: 'laser', desc: 'Fast beam vs fighters and bombers (fire-back).' },
+  { id: 'hangar',  icon: '🛬', name: 'Hangar',      armor: 'mech',  hp: 320, pos: [3, -1.6, 0],  fn: 'hangar', desc: 'Launches escort fighters every few seconds.' },
 ];
 
 export const SHIP = {

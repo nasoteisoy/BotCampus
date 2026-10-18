@@ -12,18 +12,21 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=2">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
 </head>
 <body>
 <canvas id="cv"></canvas>
+<div id="tags" class="hidden"></div>
 <div id="floats"></div>
+<div id="tip" class="hidden" role="tooltip"></div>
 <div id="top">
   <button class="tb" id="bPause" title="Pause"></button>
   <button class="tb" id="bSlow" title="Slow-mo"><span>🐢</span><small id="slowV">×1</small></button>
   <button class="tb" id="bReset" title="Reset ship"></button>
   <button class="tb on" id="bShield" title="Shield on/off"><span>🫧</span><small id="shieldV">ON</small></button>
   <button class="tb" id="bBack" title="Ship fires back"><span id="backIc"></span><small id="backV">OFF</small></button>
+  <button class="tb" id="bLabels" title="Show labels"><span>🏷</span><small id="labelsV">OFF</small></button>
   <button class="tb" id="bCount" title="Attackers per tap"><b id="countV">×1</b></button>
 </div>
 <div id="stats">
@@ -45,7 +48,7 @@
 </div>
 <div id="banner" class="hidden"><div class="card"><div class="big">💀</div><div id="bannerTxt">Ship lost</div><button id="bAgain">↺</button></div></div>
 <div id="updToast" class="hidden">⬆️ New version <button id="updGo">↻</button></div>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=2"></script>
 <script>
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {

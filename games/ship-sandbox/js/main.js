@@ -2,9 +2,9 @@
 // three.js setup / particles / attack-level rules reused from Front Line (games/tank-2v2) and Space Defense (games/space-defense).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Particles } from './particles.js';
-import * as C from './config.js';
-import { ICON, svg } from './icons.js';
+import { Particles } from './particles.js?v=2';
+import * as C from './config.js?v=2';
+import { ICON, svg } from './icons.js?v=2';
 
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -24,7 +24,7 @@ const controls = new OrbitControls(camera, cv);
 controls.enableDamping = true; controls.dampingFactor = 0.12;
 controls.minDistance = 18; controls.maxDistance = 220;
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x201820, 1.1));
+const hemi = new THREE.HemisphereLight(0xbfd8ff, 0x201820, 1.1); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(40, 60, 30); scene.add(sun);
 const rim = new THREE.DirectionalLight(0x6fa8ff, 0.8); rim.position.set(-40, -10, -40); scene.add(rim);
 
@@ -472,8 +472,9 @@ function frame(now) {
   const up = shieldUp(); bubble.visible = up || bubbleMat.uniforms.uHitT.value < .6 && S.shieldOn && !parts.shield.broken && power();
   bubbleMat.uniforms.uA.value = .25 + .55 * (S.shieldHp / C.SHIP.shieldHp);
   controls.update();
+  updHover(); shipRoot.updateMatrixWorld(); applyHighlight();
   if (!window.__noRender) renderer.render(scene, camera);
-  drawFloats();
+  drawFloats(); drawTags(); if (!card.id && !$('tip').classList.contains('hidden')) $('tip').classList.add('hidden'); if (card.id && (now - (ui.cardT || 0) > 150 || !card.pinned)) { ui.cardT = now; drawCard(); }
   hud(now);
 }
 const pv = V();
@@ -516,7 +517,7 @@ function renderSheet() {
       `<div class="row ${shieldUp() ? '' : 'off'}"><span class="pi">🫧</span><span class="nm">Bubble</span><span class="ar">🫧</span><span class="bar"><i style="width:${100 * S.shieldHp / C.SHIP.shieldHp}%"></i></span><span class="hpn">${Math.round(S.shieldHp)}</span><span class="stt">${shieldUp() ? '✅' : '✖'}</span></div>`];
     for (const d of C.PARTS) {
       const p = parts[d.id], f = p.hp / d.hp;
-      rows.push(`<div class="row ${S.target === d.id ? 'sel' : ''} ${p.broken ? 'broken' : !working(p) ? 'off' : ''}" data-tgt="${d.id}" data-part="${d.id}"><span class="pi">${d.icon}</span><span class="nm">${d.name}</span><span class="ar">${C.ARMOR[d.armor].icon}</span>` +
+      rows.push(`<div class="row ${S.target === d.id ? 'sel' : ''} ${ui.hl === d.id ? 'hl' : ''} ${p.broken ? 'broken' : !working(p) ? 'off' : ''}" data-tgt="${d.id}" data-part="${d.id}"><span class="pi">${d.icon}</span><span class="nm">${d.name}</span><span class="ar">${C.ARMOR[d.armor].icon}</span>` +
         `<span class="bar"><i class="${barCls(f)}" style="width:${100 * f}%"></i></span><span class="hpn">${Math.ceil(p.hp)}</span><span class="stt">${partStatus(p)}</span>` +
         `<button class="rb fix" data-fix="${d.id}" ${p.hp >= d.hp ? 'disabled' : ''} title="Repair">🔧</button></div>`);
     }
@@ -567,18 +568,185 @@ $('sheetBody').onclick = (e) => {
   const fx = e.target.closest('[data-fix]'); if (fx) { repairPart(fx.dataset.fix); ui.dirty = true; return; }
   const r = e.target.closest('[data-tgt]'); if (r) setTarget(r.dataset.tgt || null);
 };
-// tap on the ship = choose that part as target (tap it again = whole ship); drags go to the camera
+// ---------- picking: tap = target, mouse hover = highlight + tooltip, long-press (touch) = info card ----------
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-let down = null;
-cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
-cv.addEventListener('pointerup', (e) => {
-  if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
-  if (moved > 10 || dt > 600) return;
-  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+function pickAt(x, y) {
+  ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hit = ray.intersectObjects(partMeshes, false)[0];
+  return ray.intersectObjects(partMeshes, false)[0] || null;
+}
+let down = null, lpTimer = 0;
+const card = { id: null, pinned: false, x: 0, y: 0 };
+cv.addEventListener('pointerdown', (e) => {
+  if (card.pinned) { hideCard(); down = { consumed: true, x: e.clientX, y: e.clientY, t: performance.now() }; return; }
+  down = { x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType };
+  clearTimeout(lpTimer);
+  if (e.pointerType !== 'mouse') lpTimer = setTimeout(() => longPress(e.clientX, e.clientY), 480);
+});
+cv.addEventListener('pointermove', (e) => {
+  if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) { clearTimeout(lpTimer); down.moved = true; }
+  if (e.pointerType === 'mouse') {
+    if (e.buttons) { setHover(null, 'ship'); hideCard(); return; }       // dragging the camera
+    ui.mouse = { x: e.clientX, y: e.clientY };
+  }
+});
+cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { ui.mouse = null; setHover(null, 'ship'); if (!card.pinned) hideCard(); } });
+function longPress(x, y) {
+  if (!down || down.moved) return;
+  const hit = pickAt(x, y); if (!hit) return;
+  down.consumed = true;
+  showCard(hit.object.userData.part, x, y, true);
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {}
+}
+cv.addEventListener('pointerup', (e) => {
+  clearTimeout(lpTimer);
+  if (!down) return; const d = down; down = null;
+  if (d.consumed) return;
+  const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y), dt = performance.now() - d.t;
+  if (moved > 10 || dt > 600) return;
+  const hit = pickAt(e.clientX, e.clientY);
   if (hit) { const id = hit.object.userData.part; setTarget(S.target === id ? null : id); floatNum(hit.point, '🎯' + parts[id].def.icon, 'ev'); }
 });
+cv.addEventListener('pointercancel', () => { clearTimeout(lpTimer); down = null; });
+document.addEventListener('pointerdown', (e) => { if (card.pinned && !e.target.closest('#tip') && e.target !== cv) hideCard(); }, true);
+$('tip').addEventListener('click', (e) => { if (e.target.closest('#tipX')) hideCard(); });
+
+// highlight: glow on the hovered part, outline shell around it, the rest of the ship dimmed
+const outlineMat = new THREE.MeshBasicMaterial({ color: 0xffd65a, side: THREE.BackSide, transparent: true, opacity: .85, depthWrite: false });
+const outlines = new THREE.Group(); scene.add(outlines);
+const OUT_S = new THREE.Matrix4().makeScale(1.09, 1.09, 1.09);
+for (const id in parts) { parts[id].outline = []; parts[id].grp.traverse((m) => { if (m.isMesh) { const o = new THREE.Mesh(m.geometry, outlineMat); o.matrixAutoUpdate = false; o.visible = false; o.renderOrder = 1; o.userData.src = m; outlines.add(o); parts[id].outline.push(o); } }); }
+const HL_EM = new THREE.Color(0x3a5878), BLACK = new THREE.Color(0);
+ui.hl = null; ui.hlFrom = null;
+function setHover(id, from) {
+  id = id && parts[id] ? id : null;
+  if (!id && ui.hl && ui.hlFrom !== from) return;      // only the source that set the highlight clears it
+  if (ui.hl === id) { if (id) ui.hlFrom = from; return; }
+  const prev = ui.hl; ui.hl = id; ui.hlFrom = id ? from : null;
+  if (prev) for (const o of parts[prev].outline) o.visible = false;
+  if (id) for (const o of parts[id].outline) o.visible = true;
+  document.querySelectorAll('#sheetBody .row.hl').forEach((r) => r.classList.remove('hl'));
+  if (id) { const r = document.querySelector(`#sheetBody .row[data-part="${id}"]`); if (r) { r.classList.add('hl'); if (from === 'ship') r.scrollIntoView({ block: 'nearest' }); } }
+}
+function applyHighlight() {
+  const on = !!ui.hl;
+  for (const m of partMeshes) {
+    if (m.userData.glow || !m.material.emissive) continue;
+    const mine = on && m.userData.part === ui.hl;
+    m.material.emissive.copy(mine ? HL_EM : BLACK); m.material.emissiveIntensity = mine ? 1 : 0;
+  }
+  if (on) for (const o of parts[ui.hl].outline) { o.matrix.copy(o.userData.src.matrixWorld).multiply(OUT_S); o.matrixWorldNeedsUpdate = true; }
+  const k = on ? .45 : 1;   // dim everything else; the hovered part keeps its own glow
+  hemi.intensity = 1.1 * k; sun.intensity = 2.2 * k; rim.intensity = .8 * k;
+  outlineMat.opacity = .55 + .35 * Math.sin(performance.now() / 180) ** 2;
+}
+
+// part info card (hover tooltip on desktop, long-press card on touch)
+function partInfo(id) {
+  const p = parts[id], d = p.def, f = p.hp / d.hp, st = [], fx = [];
+  const needsPower = ['weapon', 'shield', 'hangar'].includes(d.fn);
+  if (p.broken) st.push(['💥', 'Broken', 'bad']);
+  else if (needsPower && !power()) st.push(['⚡', 'Offline (no power)', 'off']);
+  else if (f < 1) st.push(['🔧', 'Damaged', 'mid']); else st.push(['✅', 'OK', 'ok']);
+  if (!p.broken && shieldUp()) st.push(['🫧', 'Shielded', 'shd']);
+  if (p.broken) fx.push('↘ hits fall through to the hull at 50%');
+  else if (f < .5) fx.push('🔥 burning: under 50% HP');
+  if (S.target === id) fx.push('🎯 current target');
+  const pwr = power(), engOn = ['engL', 'engR'].filter((k) => !parts[k].broken).length;
+  switch (d.fn) {
+    case 'engine':
+      if (p.broken) fx.push(`🚀 engine out: speed ${speedNow().toFixed(0)}/${C.SHIP.speed}`);
+      else { if (!pwr) fx.push(`⚡ engines at ${Math.round(C.SHIP.auxPower * 100)}%: reactor down`); if (engOn < 2) fx.push('🚀 speed 50%: other engine out'); if (pwr && engOn === 2) fx.push('🚀 full thrust'); }
+      break;
+    case 'weapon':
+      if (!p.broken) {
+        if (!pwr) fx.push('⚡ offline: reactor down');
+        if (parts.bridge.broken) fx.push('🧭 aim ×2.5 worse: bridge down');
+        if (parts.sensors.broken) fx.push('📡 aim ×2 worse, range −40%: sensors down');
+        if (pwr) fx.push(S.fireBack ? '↩ firing back' : '✋ holding fire (↩ off)');
+      }
+      break;
+    case 'shield':
+      if (!p.broken) {
+        if (!pwr) fx.push('⚡ no bubble: reactor down');
+        else if (!S.shieldOn) fx.push('🫧 switched off');
+        else fx.push(`🫧 bubble ${Math.round(S.shieldHp)}/${C.SHIP.shieldHp}${S.shieldHp < C.SHIP.shieldHp ? (S.t - S.shieldHitT > C.SHIP.shieldDelay ? ' · recharging' : ' · under fire') : ''}`);
+      } else fx.push('🫧 bubble gone');
+      break;
+    case 'hangar':
+      if (!p.broken && !pwr) fx.push('⚡ no launches: reactor down');
+      fx.push(`✈️ ${S.friends.length} fighters out · ${S.launched} launched`);
+      break;
+    case 'power': if (p.broken) fx.push('⚡ ship power lost: weapons, shield, hangar off; engines 25%'); else fx.push('⚡ power OK'); break;
+    case 'aim': if (p.broken) fx.push(id === 'bridge' ? '🎯 ship aim ×2.5 worse, slower cannons' : '🎯 ship aim ×2 worse, range −40%'); break;
+    case 'hull': if (!pwr && !p.broken) fx.push('🌑 lights out: reactor down'); { const left = ['bow', 'mid', 'stern'].filter((k) => !parts[k].broken).length; if (left < 3) fx.push(`🧱 ${left}/3 hull sections left`); } break;
+  }
+  return { id, icon: d.icon, name: d.name, desc: d.desc, hp: Math.ceil(p.hp), mhp: d.hp, armor: d.armor, status: st.map((x) => x[1]), effects: fx, st };
+}
+function cardHtml(i) {
+  const f = i.hp / i.mhp, A = C.ARMOR[i.armor];
+  return `<div class="th"><span class="ti">${i.icon}</span><b>${i.name}</b>${card.pinned ? '<button id="tipX" title="Close">✕</button>' : ''}</div>` +
+    `<div class="td">${i.desc}</div>` +
+    `<div class="thp"><span class="bar"><i class="${barCls(f)}" style="width:${100 * f}%"></i></span><b>${i.hp}</b>/${i.mhp}</div>` +
+    `<div class="tar">${A.icon} ${A.name} armor</div>` +
+    `<div class="tst">${i.st.map(([ic, t, c]) => `<span class="chip ${c}">${ic} ${t}</span>`).join('')}</div>` +
+    (i.effects.length ? `<ul class="tfx">${i.effects.map((e) => `<li>${e}</li>`).join('')}</ul>` : '');
+}
+function showCard(id, x, y, pinned) {
+  card.id = id; card.pinned = !!pinned; card.x = x; card.y = y;
+  if (pinned) setHover(id, 'card');
+  drawCard();
+}
+function hideCard() { if (card.pinned && ui.hlFrom === 'card') setHover(null, 'card'); card.id = null; card.pinned = false; $('tip').classList.add('hidden'); }
+function drawCard() {
+  const el = $('tip');
+  if (!card.id) { el.classList.add('hidden'); return; }
+  el.innerHTML = cardHtml(partInfo(card.id)); el.dataset.part = card.id;
+  el.classList.remove('hidden'); el.classList.toggle('pinned', card.pinned);
+  const w = el.offsetWidth, h = el.offsetHeight, m = 6;
+  let x = card.x + 18, y = card.y + 18;
+  if (x + w > innerWidth - m) x = card.x - w - 18;
+  if (y + h > innerHeight - m) y = card.y - h - 18;
+  el.style.left = clamp(x, m, innerWidth - w - m) + 'px'; el.style.top = clamp(y, m, innerHeight - h - m) + 'px';
+}
+// mouse hover is resolved once per frame (cheap: one raycast)
+function updHover() {
+  if (ui.mouse) {
+    const hit = pickAt(ui.mouse.x, ui.mouse.y), id = hit ? hit.object.userData.part : null;
+    if (id) { setHover(id, 'ship'); card.id = id; card.pinned = false; card.x = ui.mouse.x; card.y = ui.mouse.y; }
+    else { if (ui.hlFrom === 'ship') setHover(null, 'ship'); if (!card.pinned) card.id = null; }
+  }
+}
+// parts list rows <-> ship
+$('sheetBody').addEventListener('pointerover', (e) => { if (e.pointerType !== 'mouse') return; const r = e.target.closest('.row[data-part]'); if (r) setHover(r.dataset.part, 'list'); });
+$('sheetBody').addEventListener('pointerout', (e) => { if (e.pointerType !== 'mouse') return; const r = e.target.closest('.row[data-part]'); if (r && !r.contains(e.relatedTarget) && ui.hlFrom === 'list') setHover(null, 'list'); });
+
+// name tags (🏷 toggle): small, projected per frame, nudged apart so they don't stack
+ui.labels = false;
+const tagEls = {};
+for (const d of C.PARTS) { const el = document.createElement('div'); el.className = 'tag'; el.dataset.part = d.id; el.innerHTML = `<span>${d.icon}</span>${d.name}`; $('tags').appendChild(el); tagEls[d.id] = el; }
+const TAG_UP = { bow: 4.5, mid: 3.5, stern: 4, hangar: -2.5, engL: 0, engR: 0, launcher: 1.2, laser: 1.2 };
+function drawTags() {
+  $('tags').classList.toggle('hidden', !ui.labels);
+  if (!ui.labels) return;
+  const placed = [], list = [];
+  for (const d of C.PARTS) {
+    const p = parts[d.id]; const w = partWorld(p, pv); w.y += TAG_UP[d.id] ?? 2.6; w.project(camera);
+    const el = tagEls[d.id];
+    if (w.z > 1) { el.style.display = 'none'; continue; }
+    el.style.display = ''; list.push({ el, x: (w.x + 1) / 2 * innerWidth, y: (1 - w.y) / 2 * innerHeight, d, p });
+  }
+  list.sort((a, b) => a.y - b.y);
+  for (const t of list) {
+    const w = t.el.offsetWidth || 70, h = 18; let y = t.y;
+    for (let k = 0; k < 6; k++) { const hitR = placed.find((q) => Math.abs(q.x - t.x) < (q.w + w) / 2 + 2 && Math.abs(q.y - y) < h); if (!hitR) break; y = hitR.y + h; }
+    placed.push({ x: t.x, y, w });
+    t.el.style.transform = `translate(${t.x.toFixed(0)}px,${y.toFixed(0)}px) translate(-50%,-50%)`;
+    t.el.classList.toggle('broken', t.p.broken); t.el.classList.toggle('hl', ui.hl === t.d.id);
+    t.el.classList.toggle('off', !t.p.broken && !working(t.p));
+  }
+}
+$('bLabels').onclick = () => { ui.labels = !ui.labels; $('bLabels').classList.toggle('on', ui.labels); $('labelsV').textContent = ui.labels ? 'ON' : 'OFF'; };
 
 // ---------- layout: keep the ship centred in the free area between the UI ----------
 function freeRect() {
@@ -616,6 +784,13 @@ window.__ss = {
   run: (sec, dt = 1 / 30) => { for (let t = 0; t < sec; t += dt) step(dt); },
   screenOf: (id) => { const p = partWorld(parts[id]).project(camera); return { x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight }; },
   free: () => ui.free,
+  hover: () => ({ hl: ui.hl, from: ui.hlFrom, card: card.id, pinned: card.pinned, labels: ui.labels, light: +hemi.intensity.toFixed(2) }),
+  info: (id) => partInfo(id),
+  pickPoint: (id) => { // a screen point whose ray hits this part first
+    for (const m of partMeshes) { if (m.userData.part !== id) continue; const bb = new THREE.Box3().setFromObject(m); const c = bb.getCenter(V());
+      for (const off of [[0, 0, 0], [0, .4, 0], [.5, 0, 0], [-.5, 0, 0], [0, 0, .5], [0, 0, -.5]]) { const q = c.clone().add(V(...off)).project(camera); const x = (q.x + 1) / 2 * innerWidth, y = (1 - q.y) / 2 * innerHeight;
+        const h = pickAt(x, y); if (h && h.object.userData.part === id && document.elementFromPoint(x, y) === cv) return { x, y }; } }
+    return null; },
 };
 
 reset(); syncButtons();
