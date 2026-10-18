@@ -1075,10 +1075,15 @@ function flashReveal(u) {
 // aircraft: fly out, loiter / attack, return to the airfield and rearm
 // =====================================================================================
 function homeOf(u) { if (u.home?.alive) return u.home; u.home = aliveBlds(u.team).find((b) => b.type === 'airfield' && b.built) || hqOf(u.team); return u.home; }
+// an entity the plane's team can't see right now (buildings stay known once seen)
+const hiddenFrom = (t, team) => !!t && !t.isBld && !t.vis[team];
 function airOrder(u, tgt) {
   if (u.airState === 'rearm' || u.falling) return;
-  u.airTarget = tgt.isBld || tgt.def ? tgt : null;
-  const tp = u.airTarget ? tgtPos(tgt) : tgt; u.airPoint = { x: tp.x, z: tp.z };
+  const ent = tgt.isBld || tgt.def ? tgt : null;
+  // hidden targets: fly to the LAST KNOWN position (same rule as ground units), never the live one
+  const tp = ent ? knownPos(ent, u.team) : tgt;
+  if (!tp) { if (u.team === 'blue') toast('That target has never been spotted'); return; }
+  u.airTarget = ent; u.airPoint = { x: tp.x, z: tp.z };
   u.airState = 'out'; u.loiterT = 0; u.runT = 0; u.run = null;
   if (u.team === 'blue') addMarker(u.airPoint.x, u.airPoint.z, u.airTarget ? 0xff5050 : 0xc58cff, true);
 }
@@ -1109,7 +1114,8 @@ function updatePlane(u, dt) {
   let speed = def.speed, altWant = def.alt;
   const home = homeOf(u);
   if (u.airTarget && !u.airTarget.alive) u.airTarget = null;
-  if (u.airTarget) { const q = tgtPos(u.airTarget); u.airPoint = { x: q.x, z: q.z }; }
+  // track the target only while it is spotted; while hidden keep its last known position
+  if (u.airTarget) { const q = hiddenFrom(u.airTarget, u.team) ? u.airTarget.lastSeen?.[u.team] : tgtPos(u.airTarget); if (q) u.airPoint = { x: q.x, z: q.z }; }
   const tp = u.airPoint;
   switch (u.airState) {
     case 'idle': case 'rearm': {
@@ -1127,6 +1133,8 @@ function updatePlane(u, dt) {
     }
     case 'loiter': {
       u.loiterT -= dt;
+      // waiting at a lost target's last known spot: re-attack the moment it is spotted again
+      if (u.airTarget && (def.wpn === 'rocket' || def.wpn === 'bomb') && !hiddenFrom(u.airTarget, u.team) && u.ammo > 0) { u.airState = 'out'; u.run = null; u.loiterT = 0; break; }
       // fighters chase enemy aircraft that come near the patrol point
       let enemy = null;
       if (def.wpn === 'aamg' && u.vs.air.lvl > 0) { let bd = 70; for (const e of units) if (e.alive && isAir(e) && e.team !== u.team && e.vis[u.team]) { const d = Math.min(dist2d(pos(e), tp), dist2d(pos(e), p)); if (d < bd) { bd = d; enemy = e; } } }
@@ -1134,7 +1142,7 @@ function updatePlane(u, dt) {
         const ep = pos(enemy), err = steerPlane(u, ep.x, ep.z, dt, 1.8); altWant = ep.y;
         if (dist2d(ep, p) < u.vs.air.rng && err < .5 && u.reload <= 0) { u.fireTarget = enemy; fireAt(u, enemy); }
       } else orbit(u, tp.x, tp.z, 24, dt);
-      if (u.loiterT <= 0) goHome(u);
+      if (u.loiterT <= 0) { if (hiddenFrom(u.airTarget, u.team)) lostTarget(u, { lx: tp.x, lz: tp.z }); goHome(u); }
       break;
     }
     case 'return': {
@@ -1171,8 +1179,16 @@ function attackRun(u, dt) {
     }
     tgt = best; u.airTarget = best;
   }
-  const tp = tgt ? tgtPos(tgt) : u.airPoint;
+  const hidden = hiddenFrom(tgt, u.team);
+  const tp = tgt && !hidden ? tgtPos(tgt) : u.airPoint;               // hidden: its last known position
   const d = dist2d(p, tp);
+  if (hidden && u.runT <= 0) {
+    // no shot at a target nobody can see: head for the last known spot, then loiter there for the normal loiter time
+    u.diving = false; u.run = null;
+    steerPlane(u, tp.x, tp.z, dt, 1.1);
+    if (d < 30) { u.airState = 'loiter'; u.loiterT = def.loiter || 30; }
+    return;
+  }
   if (u.runT > 0) { u.runT -= dt; steerPlane(u, p.x + Math.sin(u.yaw) * 50, p.z + Math.cos(u.yaw) * 50, dt, .5); if (u.runT <= 0 && u.ammo <= 0) goHome(u); return; }
   // run-in / racetrack: a pass that can't reach the fire window (target inside the turning circle, overshot, or badly
   // lined up) turns into an "extend": fly straight out to a run-in distance, then turn back and line up again.
@@ -1478,7 +1494,7 @@ function makeAI(diff) {
       if (u.def.wpn === 'rocket') { const t = units.find((e) => e.alive && e.team === FOE && e.vis[T] && e.def.armor === 'armor') || units.find((e) => e.alive && e.team === FOE && e.vis[T] && !isAir(e)); if (t) airOrder(u, t); else if (game.time > A.nextWave - A.waveGap + 20) { const b = nearestFoeBld(pos(u)); if (b) airOrder(u, b); } }
       else if (u.def.wpn === 'bomb') { const bs = foeTargets().filter((b) => b.type !== 'hq'); const b = bs.find((b) => b.def.units.length) || bs[0] || hqOf(FOE); if (b) airOrder(u, b); }
       else if (u.def.wpn === 'aamg') { const e = units.find((e) => e.alive && e.team === FOE && isAir(e) && e.vis[T]); airOrder(u, e ? e : { x: h.x, z: h.z + 40, isBld: false, def: null, root: { position: new THREE.Vector3(h.x, 0, h.z + 40) } }); }
-      else { const b = hqOf(FOE); if (b) airOrder(u, { root: { position: new THREE.Vector3(b.x + rand(-40, 40), 0, b.z - 30) } }); }
+      else { const b = hqOf(FOE); if (b) airOrder(u, { x: b.x + rand(-40, 40), z: b.z - 30 }); }   // recon: a plain point
     }
   }
   function pickWaveTarget() {
@@ -2088,7 +2104,7 @@ frame();
 // test / debug hooks
 // =====================================================================================
 const entById = (id) => units.find((u) => u.id === id) || buildings.find((b) => b.id === id);
-const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, shots: u.shots || 0, goal: u.goal ? { ...u.goal } : null, lastKnown: u.order?.type === 'attack' && u.order.lx !== undefined ? { x: u.order.lx, z: u.order.lz } : null, runPhase: u.run?.phase || null, runPasses: u.run?.passes || 0, yaw: u.yaw, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
+const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, shots: u.shots || 0, goal: u.goal ? { ...u.goal } : null, lastKnown: u.order?.type === 'attack' && u.order.lx !== undefined ? { x: u.order.lx, z: u.order.lz } : null, airPoint: u.airPoint ? { x: u.airPoint.x, z: u.airPoint.z } : null, airTarget: u.airTarget?.id || null, runPhase: u.run?.phase || null, runPasses: u.run?.passes || 0, yaw: u.yaw, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
 const bInfo = (b) => ({ id: b.id, type: b.type, team: b.team, hp: b.hp, maxHp: b.maxHp, dmg: b.dmg, alive: b.alive, built: b.built, progress: b.progress, x: b.x, z: b.z, hx: b.hx, hz: b.hz, queue: [...b.queue], rally: { ...b.rally }, visBlue: b.vis.blue, selected: selBld === b });
 window.__game = {
   get state() { return game.state; }, get result() { return game.result; }, get stats() { return { ...game.stats }; }, get fps() { return fps; }, get cpuMs() { return cpuMs; }, get simMs() { return simMs; },
