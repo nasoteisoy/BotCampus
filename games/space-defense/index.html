@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05060f">
+<title>Space Defense: Front Line</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="selbox"></div>
+<div id="hud" class="hidden">
+  <div id="top">
+    <div class="stat cr" title="Credits"><span class="ic">💰</span><b id="credits">0</b></div>
+    <div class="stat wv" title="Wave"><span class="ic">🌊</span><b id="wave">0/12</b></div>
+    <div class="stat hp" title="Station"><span class="ic">🛰️</span><i class="bar"><i id="hpS"></i></i></div>
+    <div class="stat hp" title="Planet HQ"><span class="ic">🏰</span><i class="bar"><i id="hpP"></i></i></div>
+    <span class="grow"></span>
+    <button id="speed" class="tb" aria-label="Speed">⏩<small>1x</small></button>
+    <button id="pause" class="tb" aria-label="Pause">⏸</button>
+    <button id="help" class="tb q" aria-label="Rules">?</button>
+  </div>
+  <button id="viewbtn" aria-label="Switch view"><span class="vi">🪐</span><span class="vl">⇄</span><span class="badge hidden">!</span></button>
+  <button id="wavebtn" class="hidden" aria-label="Next wave"><span>▶</span><b>🌊1</b><small></small></button>
+  <div id="layertag"></div>
+  <div id="prompt" class="hidden"><span class="t"></span><button class="pcancel" aria-label="Cancel">✖</button></div>
+  <div id="tray"></div>
+  <div id="popup" class="hidden"></div>
+  <div id="toast"></div>
+</div>
+<div id="start" class="ovl">
+  <div class="card">
+    <h1>SPACE DEFENSE</h1>
+    <div class="sub">FRONT LINE</div>
+    <div class="how">
+      <div class="step"><span class="big">🛰️ + 🏰</span><span>protect both</span></div>
+      <div class="step"><span class="big">⬡ → 🔫</span><span>tap slot: build</span></div>
+      <div class="step"><span class="big">🚀 👆 📍</span><span>buy · tap · move</span></div>
+      <div class="step"><span class="big">📦 → 🪐</span><span>landers drop troops</span></div>
+    </div>
+    <div class="diff"><button data-diff="easy" aria-label="Easy">🙂</button><button data-diff="normal" class="on" aria-label="Normal">😠</button></div>
+    <div class="startbtns"><button id="play">▶ Play</button><button id="exambtn">🔍</button><button id="help2" class="q">?</button></div>
+  </div>
+</div>
+<div id="end" class="ovl hidden">
+  <div class="card">
+    <div class="big" id="endicon">🏆</div>
+    <h1 id="endtitle">VICTORY</h1>
+    <div class="sub" id="endsub"></div>
+    <button id="restart">↻ Play again</button>
+  </div>
+</div>
+<div id="rules" class="ovl hidden">
+  <div class="card rules">
+    <button class="close" aria-label="Close">✖</button>
+    <div class="rgrid">
+      <span>🛰️🏰</span><span>❤ = 0 → ❌</span>
+      <span>🌊 12</span><span>👾 → 🏆</span>
+      <span>⬡ 👆</span><span>🔫 build · ⬆ upgrade</span>
+      <span>🚀🪖 💰</span><span>buy units</span>
+      <span>👆 👆📍</span><span>select · move</span>
+      <span>👾 👆</span><span>attack</span>
+      <span>⚔️ ✋ ↩</span><span>attack-move · hold · retreat</span>
+      <span>📦👾</span><span>landers → 🪐 troops</span>
+      <span>🪐 ⇄ 🚀</span><span>switch view</span>
+      <span>☄️</span><span>ship bombs 🪐</span>
+      <span>📦🚀</span><span>dropship moves 🪖</span>
+      <span>🔍</span><span>who beats who</span>
+    </div>
+    <div class="mouse">🖱 drag: box · right-click: order · wheel: zoom · Space: view · A/H/R</div>
+  </div>
+</div>
+<div id="exam" class="ovl hidden">
+  <div class="card exam">
+    <button class="close" aria-label="Close">✖</button>
+    <h2>🔍 Unit Examiner</h2>
+    <div class="legend"><i class="l0"></i>0 <i class="l1"></i>1 <i class="l2"></i>2 <i class="l3"></i>3 <i class="l4"></i>4 <i class="l5"></i>5</div>
+    <div id="matrix"></div>
+    <div id="ucard"></div>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
