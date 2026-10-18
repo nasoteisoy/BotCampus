@@ -7,11 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Trooper Customizer</title>
-<link rel="icon" href="icon.svg?v=1" type="image/svg+xml">
-<link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="css/style.css?v=1">
+<link rel="icon" href="icon.svg?v=2" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="stylesheet" href="css/style.css?v=2">
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.min.js?v=1" } }
+{ "imports": { "three": "./vendor/three.module.min.js?v=2" } }
 </script>
 </head>
 <body>
@@ -19,8 +19,11 @@
   <div id="view">
     <div id="app"></div>
     <div id="stats" class="chip" title="Triangles · draw calls · frames per second"><span id="sMode">🧍</span><span>🔺<b id="sTri">0</b></span><span>🖌️<b id="sCalls">0</b></span><span>⏱<b id="sFps">–</b></span></div>
-    <div id="brand" class="chip">🪖 <b>Trooper</b></div>
-    <div id="squadbar" class="chip hidden"><button id="squadN" title="Squad size">👥 <b>100</b></button></div>
+    <div id="unitbar" class="chip" role="tablist" aria-label="Unit">
+      <button data-unit="trooper" title="Trooper" aria-label="Trooper">🪖</button>
+      <button data-unit="tank" title="Tank" aria-label="Tank"><svg viewBox="0 0 32 24"><path d="M5 15h22l-2 5H7z" fill="#9fb3c8"/><circle cx="9" cy="17.5" r="1.6" fill="#33404d"/><circle cx="14" cy="17.5" r="1.6" fill="#33404d"/><circle cx="19" cy="17.5" r="1.6" fill="#33404d"/><circle cx="24" cy="17.5" r="1.6" fill="#33404d"/><path d="M4 11h24l-1 4H5z" fill="#cfe3ff"/><path d="M10 6h10l2 5H9z" fill="#cfe3ff"/><path d="M21 8h9v1.6h-9z" fill="#cfe3ff"/></svg></button>
+    </div>
+    <div id="squadbar" class="chip hidden"><button id="squadN" title="Squad size">👥 <b>100</b></button><button id="squadMix" title="Mixed squad: troopers + tanks" aria-label="Mixed squad">🔀</button></div>
     <div id="viewbar">
       <button data-view="front" title="Front" aria-label="Front view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M7 10h10l-1 7h-2l-.5 5h-3l-.5-5H8z"/></svg></button>
       <button data-view="side" title="Side" aria-label="Side view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M10 10h4.5l.5 7h-1.5l-.5 5h-3l.3-5H9z"/><path d="M14 12h7v2h-7z"/></svg></button>
@@ -37,6 +40,6 @@
     <div id="pbody"></div>
   </div>
 </div>
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

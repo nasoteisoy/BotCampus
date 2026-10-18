@@ -13,39 +13,77 @@ export const GLOW = [0, 0.6, 1.4];
 export const GUNMETAL = '#3b4047', TRIM = '#d9dee4';
 export const SYMBOLS = ['star', 'planet', 'comet', 'skull', 'wing', 'bolt', 'chevron', 'crescent', 'gear', 'atom', 'triangle', 'circle'];
 
-// enumerated fields (order = share-code order; never reorder, only append)
-export const FIELDS = [
+// ----- data model -----
+// Nation-level (edited once, shared by every unit of the nation): colors, suit tone, flag symbol, tech glow.
+// Unit-level: shape / gear only. Field order = code order; never reorder, only append.
+export const NATION_FIELDS = [['suit', 5], ['sym', 12], ['sc', 4], ['vis', 6], ['glow', 3]];
+export const NATION_DEFAULT = Object.freeze({ p: '#2f80ed', s: '#ffe14d', suit: 0, sym: 0, sc: 0, vis: 0, glow: 1 });
+export const TROOPER_FIELDS = [['helm', 5], ['armor', 3], ['pads', 3], ['pack', 4], ['rifle', 3], ['extra', 3], ['banner', 2], ['skin', 5]];
+export const TROOPER_DEFAULT = Object.freeze({ helm: 0, armor: 1, pads: 1, pack: 3, rifle: 0, extra: 0, banner: 1, skin: 1 });
+// legacy v1 (TC1) trooper code layout
+export const TC1_FIELDS = [
   ['sym', 12], ['sc', 4], ['helm', 5], ['vis', 6], ['glow', 3], ['armor', 3], ['pads', 3],
   ['pack', 4], ['rifle', 3], ['extra', 3], ['banner', 2], ['suit', 5], ['skin', 5],
 ];
-export const DEFAULT = Object.freeze({
-  p: '#2f80ed', s: '#ffe14d', sym: 0, sc: 0, helm: 0, vis: 0, glow: 1, armor: 1, pads: 1,
-  pack: 3, rifle: 0, extra: 0, banner: 1, suit: 0, skin: 1,
-});
 
 const HEX = /^#?([0-9a-f]{6})$/i;
 export function normHex(h, fb) { const m = HEX.exec(String(h || '').trim()); return m ? '#' + m[1].toLowerCase() : fb; }
-export function sanitize(o) {
-  const st = { ...DEFAULT };
+export function sanitizeFields(o, fields, defaults) {
+  const st = { ...defaults };
   if (!o || typeof o !== 'object') return st;
-  st.p = normHex(o.p, DEFAULT.p); st.s = normHex(o.s, DEFAULT.s);
-  for (const [k, n] of FIELDS) { const v = Number(o[k]); if (Number.isInteger(v) && v >= 0 && v < n) st[k] = v; }
+  for (const [k, n] of fields) { const v = Number(o[k]); if (o[k] !== '' && o[k] != null && Number.isInteger(v) && v >= 0 && v < n) st[k] = v; }
   return st;
 }
-export function encode(st) {
-  return ('TC1:' + st.p.slice(1) + st.s.slice(1) + FIELDS.map(([k]) => st[k].toString(36)).join('')).toUpperCase();
+export function sanitizeNation(o) {
+  const n = sanitizeFields(o, NATION_FIELDS, NATION_DEFAULT);
+  n.p = normHex(o && o.p, NATION_DEFAULT.p); n.s = normHex(o && o.s, NATION_DEFAULT.s);
+  return n;
 }
-export function decode(code) {
+export const digits = (st, fields) => fields.map(([k]) => st[k].toString(36)).join('').toUpperCase();
+export function undigits(str, fields, defaults) {
+  str = String(str || '').toLowerCase();
+  if (!/^[0-9a-z]*$/.test(str) || str.length > fields.length) return null;
+  const o = { ...defaults };
+  for (let i = 0; i < str.length; i++) { const [k, n] = fields[i], v = parseInt(str[i], 36); if (!(v >= 0 && v < n)) return null; o[k] = v; }
+  return o;
+}
+export const nationCode = (n) => (n.p.slice(1) + n.s.slice(1)).toUpperCase() + digits(n, NATION_FIELDS);
+export function decodeNation(c) {
+  const m = /^([0-9A-F]{6})([0-9A-F]{6})([0-9A-Z]*)$/i.exec(String(c || ''));
+  if (!m) return null;
+  const o = undigits(m[3], NATION_FIELDS, NATION_DEFAULT); if (!o) return null;
+  return { ...o, p: '#' + m[1].toLowerCase(), s: '#' + m[2].toLowerCase() };
+}
+// legacy TC1 trooper code -> { nation, trooper }
+export function encodeTC1(nation, trooper) {
+  const st = { ...nation, ...trooper };
+  return ('TC1:' + st.p.slice(1) + st.s.slice(1) + TC1_FIELDS.map(([k]) => st[k].toString(36)).join('')).toUpperCase();
+}
+export function decodeTC1(code) {
   const m = /^TC1:([0-9A-F]{6})([0-9A-F]{6})([0-9A-Z]*)$/i.exec(String(code || '').replace(/\s+/g, ''));
   if (!m) return null;
-  const o = { p: '#' + m[1], s: '#' + m[2] }, rest = m[3].toLowerCase();
-  if (rest.length > FIELDS.length) return null;
-  for (let i = 0; i < rest.length; i++) {
-    const [k, n] = FIELDS[i], v = parseInt(rest[i], 36);
-    if (!(v >= 0 && v < n)) return null;
-    o[k] = v;
-  }
-  return sanitize(o);
+  const all = { ...NATION_DEFAULT, ...TROOPER_DEFAULT, p: '#' + m[1].toLowerCase(), s: '#' + m[2].toLowerCase() };
+  const rest = m[3].toLowerCase();
+  if (rest.length > TC1_FIELDS.length) return null;
+  for (let i = 0; i < rest.length; i++) { const [k, n] = TC1_FIELDS[i], v = parseInt(rest[i], 36); if (!(v >= 0 && v < n)) return null; all[k] = v; }
+  return { nation: sanitizeNation(all), trooper: sanitizeFields(all, TROOPER_FIELDS, TROOPER_DEFAULT) };
+}
+// TC2 = player + nation + both unit looks; base64url(JSON), UTF-8 safe
+const b64e = (str) => { const b = new TextEncoder().encode(str); let s = ''; for (const x of b) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const b64d = (str) => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); return new TextDecoder().decode(Uint8Array.from(s, (c) => c.charCodeAt(0))); };
+export function encodeTC2({ player, nationName, nation, trooper, tank, unit }, TANK_FIELDS) {
+  return 'TC2:' + b64e(JSON.stringify({ pl: String(player || '').slice(0, 24), nn: String(nationName || '').slice(0, 24), n: nationCode(nation), t: digits(trooper, TROOPER_FIELDS), k: digits(tank, TANK_FIELDS), u: unit === 'tank' ? 'k' : 't' }));
+}
+export function decodeTC2(code, TANK_FIELDS, TANK_DEFAULT) {
+  const m = /^TC2:([A-Za-z0-9_-]+)$/.exec(String(code || '').replace(/\s+/g, ''));
+  if (!m) return null;
+  let o; try { o = JSON.parse(b64d(m[1])); } catch (e) { return null; }
+  if (!o || typeof o !== 'object') return null;
+  const nation = decodeNation(o.n); if (!nation) return null;
+  const trooper = undigits(o.t ?? '', TROOPER_FIELDS, TROOPER_DEFAULT), tank = undigits(o.k ?? '', TANK_FIELDS, TANK_DEFAULT);
+  if (!trooper || !tank) return null;
+  const clean = (x) => String(x ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 24);
+  return { player: clean(o.pl), nationName: clean(o.nn), nation, trooper, tank, unit: o.u === 'k' ? 'tank' : 'trooper' };
 }
 export function lum(hex) {
   const c = new THREE.Color(hex); return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; // c is linear
@@ -136,12 +174,12 @@ const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _v = new THREE.Vector
 export function M(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
   return new THREE.Matrix4().compose(_v.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
 }
-const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-const cyl = (rt, rb, h, n = 8) => new THREE.CylinderGeometry(rt, rb, h, n, 1);
-const sph = (r, ws = 8, hs = 6, ps = 0, pl = Math.PI * 2, ts = 0, tl = Math.PI) => new THREE.SphereGeometry(r, ws, hs, ps, pl, ts, tl);
-const HALF = Math.PI / 2;
+export const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+export const cyl = (rt, rb, h, n = 8) => new THREE.CylinderGeometry(rt, rb, h, n, 1);
+export const sph = (r, ws = 8, hs = 6, ps = 0, pl = Math.PI * 2, ts = 0, tl = Math.PI) => new THREE.SphereGeometry(r, ws, hs, ps, pl, ts, tl);
+export const HALF = Math.PI / 2;
 
-class Builder {
+export class Builder {
   constructor() { this.parts = []; this.stack = [new THREE.Matrix4()]; this.bone = 'torso'; }
   get top() { return this.stack[this.stack.length - 1]; }
   push(m) { this.stack.push(this.top.clone().multiply(m)); }
@@ -370,7 +408,7 @@ export function buildParts(st) {
 }
 
 // ---------- merging ----------
-function concat(geos) {
+export function concat(geos) {
   let n = 0; for (const g of geos) n += g.attributes.position.count;
   const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2);
   let o = 0;
@@ -385,38 +423,39 @@ function concat(geos) {
   out.computeBoundingSphere(); out.computeBoundingBox();
   return out;
 }
-const disposeAll = (parts) => parts.forEach((p) => p.geo.dispose());
+export const disposeAll = (parts) => parts.forEach((p) => p.geo.dispose());
 
 // All parts merged per material at rest pose (RTS/squad/thumbnail path): 2 geometries.
-export function buildMerged(st) {
-  const parts = buildParts(st);
+export function buildMergedDef(def, st) {
+  const parts = def.build(st);
   const out = {};
   for (const mat of ['team', 'visor']) { const g = parts.filter((p) => p.mat === mat).map((p) => p.geo); if (g.length) out[mat] = concat(g); }
   disposeAll(parts);
   return out;
 }
+export const buildMerged = (st) => buildMergedDef(TROOPER, st);
 
-// Posable trooper (single view): merged per (bone, material) so idle animation is just group transforms.
-export class Trooper {
-  constructor(look) {
-    this.look = look; this.root = new THREE.Group(); this.root.name = 'trooper';
+// Posable unit (single view): merged per (bone, material) so idle animation is just group transforms.
+export class Unit {
+  constructor(look, def) {
+    this.look = look; this.def = def; this.root = new THREE.Group(); this.root.name = def.id;
     this.bones = {};
-    for (const k of Object.keys(PIVOT)) { const g = new THREE.Group(); g.name = k; this.bones[k] = g; }
-    for (const [k, par] of Object.entries(PARENT)) {
-      const p = PIVOT[k], pp = par ? PIVOT[par] : [0, 0, 0];
+    for (const k of Object.keys(def.pivot)) { const g = new THREE.Group(); g.name = k; this.bones[k] = g; }
+    for (const [k, par] of Object.entries(def.parent)) {
+      const p = def.pivot[k], pp = par ? def.pivot[par] : [0, 0, 0];
       this.bones[k].position.set(p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]);
       (par ? this.bones[par] : this.root).add(this.bones[k]);
     }
-    this.meshes = []; this.tris = 0;
+    this.meshes = []; this.tris = 0; this.st = null;
   }
   build(st) {
     for (const m of this.meshes) { m.parent.remove(m); m.geometry.dispose(); }
-    this.meshes = []; this.tris = 0;
-    const parts = buildParts(st);
-    for (const bone of Object.keys(PIVOT)) for (const mat of ['team', 'visor']) {
+    this.meshes = []; this.tris = 0; this.st = st;
+    const parts = this.def.build(st);
+    for (const bone of Object.keys(this.def.pivot)) for (const mat of ['team', 'visor']) {
       const sel = parts.filter((p) => p.bone === bone && p.mat === mat);
       if (!sel.length) continue;
-      const g = concat(sel.map((p) => p.geo)); const p = PIVOT[bone];
+      const g = concat(sel.map((p) => p.geo)); const p = this.def.pivot[bone];
       g.translate(-p[0], -p[1], -p[2]); g.computeBoundingSphere();
       const mesh = new THREE.Mesh(g, mat === 'team' ? this.look.team : this.look.visor);
       mesh.name = bone + ':' + mat;
@@ -425,15 +464,18 @@ export class Trooper {
     disposeAll(parts);
     this.sig = signatureOf(this.meshes.map((m) => m.geometry));
   }
-  animate(t) {
-    const B = this.bones;
+  animate(t) { this.def.animate(this.bones, t, this.st); }
+}
+export const TROOPER = {
+  id: 'trooper', fields: TROOPER_FIELDS, defaults: TROOPER_DEFAULT, pivot: PIVOT, parent: PARENT, build: buildParts,
+  animate(B, t) {
     B.torso.scale.set(1 + 0.008 * Math.sin(t * 2.1), 1 + 0.012 * Math.sin(t * 2.1), 1);
     B.arms.rotation.x = 0.025 * Math.sin(t * 2.1 + 0.6);
     B.arms.rotation.y = 0.02 * Math.sin(t * 0.8);
     B.head.rotation.y = 0.18 * Math.sin(t * 0.45);
     B.head.rotation.x = 0.03 * Math.sin(t * 0.7);
-  }
-}
+  },
+};
 export function signatureOf(geos) {
   let tris = 0, s = 0;
   for (const g of geos) { const a = g.attributes.position.array; tris += a.length / 9; for (let i = 0; i < a.length; i += 3) s += a[i] * 1.3 + a[i + 1] * 2.1 + a[i + 2] * 3.7; }

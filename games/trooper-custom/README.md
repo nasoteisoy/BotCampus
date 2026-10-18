@@ -1,61 +1,99 @@
-# 🪖 Trooper Customizer
+# 🪖 Trooper Customizer (v2: nations + tank)
 
-A sandbox with one space-era rifle trooper. You only change how he looks: two team colors, a flag symbol, and his gear. There's no fighting. The model is built to the same budget as an RTS unit, so this exact trooper can be dropped into an RTS by the hundred.
+A sandbox for designing the look of your RTS army. No fighting. You set a **player name**, create **nations** (colors + flag), and design **unit looks** (a space-era rifle trooper and a space tank) that belong to a nation. Every model is built to an RTS budget, so the same units can be dropped into an RTS by the hundred.
 
 Play: `games/trooper-custom/` (https://nasoteisoy.github.io/BotCampus/games/trooper-custom/)
+
+## Data model
+```
+Player { name }
+ └─ Nation { name, primary, secondary, suit tone, flag symbol + symbol color, tech glow color + level }
+     └─ unit looks (trooper looks, tank looks): shape / gear only, no colors
+```
+You edit colors and the flag **once per nation**, and every unit of that nation uses them: trooper, tank, squads, and saved-look thumbnails.
 
 ## Controls
 | | |
 |---|---|
 | **Drag** / one finger | rotate the turntable |
 | **Wheel** / pinch | zoom |
-| 🧍 front · side · back | camera presets (the three figure buttons) |
+| 🪖 / tank icon (top right) | switch unit: trooper ↔ tank |
+| front · side · back figures | camera presets |
 | 🔄 | auto spin |
-| 👥 | squad preview: 100 copies at RTS camera distance. Tap the **👥 100** chip to switch 50 / 100 / 200 |
-| 🎲 / ↺ | randomize / reset |
+| 👥 | squad preview at RTS camera distance. **👥 100** cycles 50 / 100 / 200, and **🔀** gives a mixed squad (90% troopers + 10% tanks) |
+| 🎲 / ↺ | randomize / reset the current unit (on the 🏳️ tab, 🎲 randomizes the nation's colors and flag) |
 
-Panel tabs (bottom sheet on phones, right side on desktop / landscape):
+Panel tabs (bottom sheet on phones, side panel on desktop and landscape):
 
-- 🎨 **Colors**: primary (12 + 🎨 custom picker), secondary/trim (12 + custom), suit tone (5)
-- 🏳️ **Flag**: 12 vector symbols (star, planet, comet, skull, wing, bolt, chevron, crescent, gear, atom, triangle, circle). Symbol color: Auto / Light / Dark / Primary. 🚩 back banner on/off (it goes on the antenna when the radio pack is equipped)
-- 🪖 **Head**: helmet (Dome visor, Angular, Crest, Open-face goggles, Recon mono-eye), visor color (6), glow (off / soft / bright), skin tone (shows with the goggles helmet)
-- 🛡️ **Armor**: build (light / medium / heavy), shoulder pads (none / round / angular)
-- 🎒 **Gear**: backpack (none / jetpack / radio / ammo), extra (none / cape / scarf). Extra is off by default
-- 🔫 **Rifle**: carbine, long laser rifle, bullpup
-- 💾 **Looks**: type a name and press **💾+** to save. Each saved look shows a rendered thumbnail. Tap a row to load it, 🔗 copies its share code, 🔁 overwrites it with the current look, ✏️ renames it, 🗑️ deletes it (asks ✔️/✖️ first). The 🔗 share code field shows the current look's `TC1:` code: 📋 copies it, and pasting a code then pressing ⤵ loads it.
+- 🏳️ **Nation**:
+  - 👤 player name
+  - nation list: tap to switch, ✏️ rename, 🗑️ delete. Delete asks ✔️/✖️ first and says how many saved looks go with it; the last nation can't be deleted. ➕ creates a new nation.
+  - primary and secondary colors (12 each + 🎨 custom), suit tone, 12 flag symbols, symbol color (auto / light / dark / primary), glow color and glow level
+- Trooper parts:
+  - 🪖 helmet (dome, angular, crest, goggles, recon) + skin tone
+  - 🛡️ armor (light / medium / heavy) + shoulder pads
+  - 🎒 backpack + 🚩 back flag + cape / scarf
+  - 🔫 rifle (carbine, laser, bullpup)
+- Tank parts:
+  - ⛓️ hull (light / medium / heavy) + drive (treads / hover)
+  - 🎯 turret (dome / wedge / box) + main gun (cannon / twin / railgun / laser)
+  - 📡 extras, as on/off tiles: antenna, pennant (nation flag), side skirts, smoke launchers, roof MG
 
-The part tiles are live 3D thumbnails of each option, drawn in your current colors.
+  The nation flag is always shown on both turret sides.
+- 💾 **Saved**: **💾+** saves the current unit look into the active nation. Looks are grouped by nation, with thumbnails rendered in that nation's colors; they re-render when the nation's colors change. Tap a look to load it (this switches the unit and the active nation). 🔗 copies a share code, 🔁 overwrites the look with the current one, ✏️ renames, 🗑️ deletes (with confirm).
 
-**Persistence** (localStorage): the current trooper is stored in `trooper-custom:current` (as a share code) and the library in `trooper-custom:looks` (up to 40 looks, with a 96 px PNG thumbnail each).
+Part buttons are live 3D thumbnails drawn in the current nation's colors.
 
-**Share code**: `TC1:` + primary hex + secondary hex + one base-36 digit per option, in this order: sym, sc, helm, vis, glow, armor, pads, pack, rifle, extra, banner, suit, skin. Fields are only ever appended, so old codes keep working.
+## Share codes
+- **TC2:** `TC2:<base64url JSON>`, with player name, nation name, nation colors/flag, trooper look, tank look and the active unit. Loading a code reuses a nation with identical colors/flag (preferring the same name) or creates a new one. It does not overwrite your player name.
+- **TC1** (v1 trooper codes) still load. Their colors/flag go to a matching or new nation and the gear goes to the trooper.
+
+## Storage and v1 migration
+Everything is saved in localStorage under `trooper-custom:db` (`{v:2, player, nations, active, unit, cur, looks}`).
+
+On first run of v2, the v1 keys (`trooper-custom:current`, `trooper-custom:looks`) are migrated:
+- one nation is created per distinct color/flag combination ("Nation 1", "Nation 2", ...)
+- each v1 look moves into its nation as a trooper look
+- the current look's nation becomes active
+- the 💾 tab opens once
+
+The v1 keys are left untouched.
 
 ## Performance budget (RTS-ready)
-- **Triangles:** the default trooper is ~1,000 triangles. Across all 3,240 part combinations the range is 480 to 1,410, and the hard cap is 1,500 (enforced by the tests).
-- **Materials: 2 in total.** One Lambert material uses a 160×64 canvas **team atlas**: the flag tile plus solid swatches for primary, secondary, skin, suit, gunmetal and trim. The second is an emissive **visor** material (visor, lenses, rifle coils, jet glow). Changing colors or the symbol only repaints the atlas. No new materials or textures are created, and each team shares one atlas.
-- **Draw calls:** 6 for the posable single trooper (merged per bone × material, so the idle animation is just group transforms with no skinning). In the squad, the whole trooper is merged per material into **one `InstancedMesh` each → 2 draw calls for the entire squad**, whether it's 50, 100 or 200 troopers. Every instance's matrix is updated each frame (bob/sway), as it would be in an RTS.
-- The HUD chip shows 🔺 triangles · 🖌️ draw calls · ⏱ FPS for the single trooper or the whole squad.
-- Headless Chromium with SwiftShader (software rendering, no GPU) gets about 60 fps for the single trooper, about 15 fps for 100 troopers (116k tris) and about 8 fps for 200. A real GPU handles this easily, since the draw-call count stays constant.
+| | trooper | tank |
+|---|---|---|
+| triangles (all part combos) | 480 to 1,410 (default 1,004) | 552 to 1,330 (default 898) |
+| budget (enforced by tests) | ≤ 1,500 | ≤ 2,500 |
+| materials | **2, shared by both units** | same 2 |
+| draw calls, posable single unit | 6 | 4 |
+| draw calls, squad (any size) | 2 | 2 (mixed squad: 4) |
 
-For RTS reuse: `js/trooper.js` exports `buildMerged(state)` (2 geometries) and `TeamLook` (atlas + 2 materials). Create one `TeamLook` per team and one `InstancedMesh` per material per unit type.
+- **Materials:** one Lambert **nation atlas** (a 160×64 canvas holding the flag tile plus primary, secondary, skin, suit, gunmetal and trim swatches) and one emissive **glow** material. Recoloring a nation only repaints the atlas: no new materials, no new draw calls. The trooper and tank use the *same* material instances.
+- **Squads:** each unit type is merged per material into one `InstancedMesh`. Every instance's matrix is updated each frame (bob/sway, hover tanks float), as it would be in an RTS.
+- The HUD shows 🔺 triangles · 🖌️ draw calls · ⏱ FPS.
+- Headless Chromium with SwiftShader (software rendering, no GPU) runs a single unit at ~60 fps and 100 troopers, tanks or mixed at ~12–20 fps. A real GPU handles this easily, since the draw-call count stays constant.
+
+For RTS reuse, `js/trooper.js` exports `TeamLook` (atlas + 2 materials), `buildMergedDef(def, state)` and `TROOPER`, and `js/tank.js` exports `TANK`. Create one `TeamLook` per nation and one `InstancedMesh` per material per unit type.
 
 ## Files
-Publish: `index.html`, `css/`, `js/`, `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
+Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
 Don't publish: `test/`, `screenshots/`.
 
-The service worker only registers over https. Its cache is `trooper-custom-v1`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=1`.
+The service worker only registers over https. Its cache is `trooper-custom-v2`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=2`.
 
 ## Tests
 ```
 PLAYWRIGHT_BROWSERS_PATH=/workspace/pw-runner/browsers node test/run.mjs
 ```
-The tests start a static server (`test/server.mjs`) and check the following at 390×844, 390×664, 360×740, 844×390 and 1280×800:
-- 0 console errors, no overflow, touch targets of 36 px or more
-- every option value changes the model
-- every UI button sets the state
-- share codes round-trip
-- the triangle and material budget holds over all combinations
-- squad preview, including the FPS readout and live updates
-- the saved-looks library: save, load, rename, overwrite, and delete with confirm, all surviving a reload
+The tests check the following at 390×844, 390×664, 360×740, 844×390 and 1280×800:
+- 0 console errors and no overflow on every tab of both units, touch targets of 36 px or more
+- every trooper, tank and nation option changes the model, and nation colors propagate to both units
+- all UI buttons work
+- TC2 round-trips, TC1 is accepted, bad codes are rejected
+- trooper and tank triangle budgets hold over all part combinations
+- trooper, tank and mixed squads
+- nation create / rename / switch / delete with confirm, and the player name, all surviving a reload
+- saved looks grouped by nation (load, rename, overwrite, delete) surviving a reload, with thumbnails re-rendering in the nation's colors
+- v1 → v2 migration, which runs once
 
 Screenshots are written to `screenshots/` and results to `test/last-results.txt`.

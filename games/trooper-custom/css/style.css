@@ -20,8 +20,12 @@ svg { display: block; }
 #stats { left: 8px; top: 8px; font-variant-numeric: tabular-nums; pointer-events: none; }
 #stats b { margin-left: 2px; color: #fff; }
 #stats.slow #sFps { color: #ff8f80; } #stats.ok #sFps { color: #8fe39a; }
-#brand { right: 8px; top: 8px; color: #9fb3c8; pointer-events: none; } #brand b { color: #dfe9ff; }
-#squadbar { right: 8px; top: 44px; padding: 3px; }
+#unitbar { right: 8px; top: 8px; padding: 3px; gap: 3px; }
+#unitbar button { width: 46px; height: 38px; border-radius: 8px; border: 1px solid transparent; background: transparent; font-size: 20px; padding: 0; display: grid; place-items: center; opacity: .55; }
+#unitbar button svg { width: 32px; height: 24px; }
+#unitbar button.on { opacity: 1; border-color: #6ff3ff; background: rgba(40,90,110,.6); }
+#squadbar { right: 8px; top: 58px; padding: 3px; gap: 3px; }
+#squadbar button.on { background: rgba(40,90,110,.7); box-shadow: 0 0 0 1px #6ff3ff inset; }
 #squadbar button { border: 0; background: rgba(255,255,255,.07); border-radius: 8px; padding: 6px 10px; font-weight: 800; min-height: 34px; }
 
 #viewbar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; z-index: 2;
@@ -78,7 +82,17 @@ svg { display: block; }
 .btn.go { background: rgba(61,126,230,.3); border-color: #6fa8ff; }
 .btn.bad { background: rgba(180,50,40,.35); border-color: #ff8f80; }
 .shake { animation: shake .3s; } @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-#looks { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.rows { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.btn.wide { width: 100%; margin-top: 6px; }
+.btn:disabled { opacity: .4; }
+.look canvas.flag { width: 40px; height: 40px; flex: none; }
+.look .cnt { color: #8796a5; font-size: 11px; font-weight: 700; padding-right: 4px; }
+.grp { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; padding: 2px 4px; font-size: 12px; color: #cfd8e1; }
+.grp canvas.flag.sm { width: 24px; height: 24px; }
+.grp b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .grp small { color: #8796a5; }
+.grp.on b { color: #6ff3ff; }
+.look .tw { position: relative; flex: none; display: block; width: 48px; height: 48px; }
+.look .tw .ub { position: absolute; right: -3px; bottom: -3px; font-size: 13px; line-height: 1; background: rgba(14,18,24,.9); border-radius: 6px; padding: 1px 2px; }
 .look { display: flex; align-items: center; gap: 5px; padding: 3px; border-radius: 9px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); }
 .look.on { border-color: #6ff3ff; background: rgba(40,90,110,.35); }
 .look .ld { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; border: 0; background: none; padding: 0; text-align: left; height: 48px; }
