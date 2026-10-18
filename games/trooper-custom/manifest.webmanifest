@@ -1,0 +1,10 @@
+{
+  "name": "Trooper Customizer",
+  "short_name": "Trooper",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070a1c",
+  "theme_color": "#070a1c",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
