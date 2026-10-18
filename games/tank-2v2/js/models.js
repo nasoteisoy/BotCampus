@@ -40,37 +40,79 @@ const S = (r, w = 8, h = 6) => new THREE.SphereGeometry(r, w, h);
 
 // ---------------- vehicles ----------------
 const geoCache = {};
+// Each tank type has its own silhouette, not just its own size:
+//  light  = wheeled recon tank: low narrow hull on 3 big wheels a side, small round turret, short thin gun, whip antenna
+//  medium = classic tank: tracks, sloped glacis, rounded (domed) turret, medium gun with a muzzle brake
+//  heavy  = boxy and wide: wide tracks behind side skirts, big square turret with add-on plates, very long thick gun
 function tankGeos(type) {
-  const v = { light: { s: .82, bl: 2.2, br: .1, box: false }, medium: { s: 1, bl: 2.7, br: .12, box: false }, heavy: { s: 1.2, bl: 3.4, br: .15, box: true } }[type];
-  const s = v.s, body = new Kit(), tur = new Kit(), bar = new Kit();
-  for (const k of [-1, 1]) {
-    body.add('dark', B(.9, .95, 4.9), k * 1.55, .5, 0);
-    body.add('trim', B(1.05, .12, 5.1), k * 1.55, 1.04, 0);
-    for (let i = 0; i < 5; i++) body.add('metal', C(.36, .36, .14, 10), k * 2.03, .45, -1.72 + i * .86, 0, 0, Math.PI / 2);
-    if (v.box) body.add('trim', B(.12, .55, 4.4), k * 2.15, .75, 0);
+  const body = new Kit(), tur = new Kit(), bar = new Kit();
+  if (type === 'light') {
+    body.add('main', B(2.0, .55, 3.7), 0, .95, 0);
+    body.add('main', B(2.0, .45, 1.0), 0, .86, 2.1, .65);                     // sloped nose
+    body.add('main', B(2.0, .4, .8), 0, .9, -2.05, -.55);                     // sloped tail
+    body.add('trim', B(2.25, .09, 3.4), 0, 1.24, .05);                         // fender line
+    for (const k of [-1, 1]) for (const z of [-1.35, 0, 1.35]) {
+      body.add('dark', C(.56, .56, .36, 12), k * 1.1, .56, z, 0, 0, Math.PI / 2);
+      body.add('metal', C(.24, .24, .4, 8), k * 1.12, .56, z, 0, 0, Math.PI / 2);
+    }
+    body.add('dark', B(.55, .25, .5), .55, 1.34, -1.45);                      // stowage box
+    body.add('metal', C(.12, .12, .25, 6), -.7, 1.3, 2.05);                    // headlight
+    tur.add('main', C(.6, .74, .46, 10), 0, .23, 0);
+    tur.add('trim', C(.28, .3, .14, 8), -.22, .53, -.18);
+    tur.add('dark', C(.022, .022, 2.6, 4), .42, 1.5, -.42);                    // whip antenna
+    bar.add('metal', C(.065, .075, 1.45, 6), 0, 0, .72, Math.PI / 2);
+    return { s: .95, bl: 1.45, body: body.geos(), tur: tur.geos(), bar: bar.geos(), turY: 1.22, barY: .25, barZ: .55 };
   }
-  body.add('main', B(2.3, .75, 4.4), 0, .95, 0);
-  body.add('main', B(2.3, .14, 1.25), 0, 1.12, 2.28, .55);
-  body.add('trim', B(1.8, .16, 1.1), 0, 1.38, -1.55);
-  if (v.box) { tur.add('main', B(1.9, .75, 2.2), 0, .38, -.1); tur.add('trim', B(1.2, .3, .9), 0, .85, -.5); }
-  else { tur.add('main', C(1.0, 1.18, .66, 8), 0, .33, 0); tur.add('main', B(1.5, .52, 1.0), 0, .3, -.85); }
-  tur.add('trim', B(.75, .5, .45), 0, .33, 1.05);
-  tur.add('trim', C(.32, .32, .14, 10), .38, .72, -.25);
-  tur.add('dark', C(.025, .025, 1.9, 4), -.62, 1.5, -.9);
-  bar.add('metal', C(v.br, v.br + .02, v.bl, 8), 0, 0, v.bl / 2, Math.PI / 2);
-  bar.add('dark', C(v.br + .08, v.br + .08, .42, 8), 0, 0, v.bl, Math.PI / 2);
-  return { s, bl: v.bl, body: body.geos(), tur: tur.geos(), bar: bar.geos() };
+  if (type === 'medium') {
+    for (const k of [-1, 1]) {
+      body.add('dark', B(.8, .9, 4.8), k * 1.45, .47, 0);
+      body.add('trim', B(.92, .1, 4.9), k * 1.45, .96, 0);
+      for (let i = 0; i < 5; i++) body.add('metal', C(.36, .36, .14, 10), k * 1.88, .45, -1.72 + i * .86, 0, 0, Math.PI / 2);
+    }
+    body.add('main', B(2.2, .62, 3.9), 0, .98, -.2);
+    body.add('main', B(2.2, .12, 1.5), 0, 1.02, 2.25, .62);                    // sloped glacis
+    body.add('trim', B(1.7, .14, 1.0), 0, 1.36, -1.55);                        // engine deck
+    tur.add('main', C(.95, 1.08, .55, 12), 0, .28, 0);
+    tur.add('main', S(.97, 12, 6), 0, .5, -.05, 0, 0, 0, 1, .42, 1.05);        // rounded dome
+    tur.add('trim', B(.7, .48, .4), 0, .36, .98);                               // mantlet
+    tur.add('trim', C(.28, .3, .16, 8), .38, .9, -.3);                          // cupola
+    tur.add('dark', C(.022, .022, 1.7, 4), -.6, 1.4, -.75);
+    bar.add('metal', C(.11, .13, 2.7, 8), 0, 0, 1.35, Math.PI / 2);
+    bar.add('dark', B(.42, .24, .32), 0, 0, 2.75);                              // muzzle brake
+    return { s: 1, bl: 2.75, body: body.geos(), tur: tur.geos(), bar: bar.geos(), turY: 1.3, barY: .36, barZ: .95 };
+  }
+  // heavy
+  for (const k of [-1, 1]) {
+    body.add('dark', B(1.2, 1.0, 5.5), k * 1.75, .5, 0);                       // wide tracks
+    body.add('trim', B(.14, .72, 5.3), k * 2.42, .86, 0);                       // side skirts
+    for (const z of [-1.8, 0, 1.8]) body.add('trim', B(.18, .62, 1.6), k * 2.5, .86, z);   // skirt plates
+  }
+  body.add('main', B(3.1, 1.0, 5.0), 0, 1.15, 0);                               // boxy hull
+  body.add('main', B(3.1, .9, .22), 0, 1.1, 2.56);                              // flat front plate
+  body.add('dark', B(2.2, .1, 1.3), 0, 1.7, -1.75);                             // engine grille
+  body.add('trim', B(3.2, .14, .3), 0, 1.66, 2.35);
+  tur.add('main', B(2.5, 1.0, 2.7), 0, .5, -.1);                                // big square turret
+  for (const k of [-1, 1]) tur.add('trim', B(.16, .8, 2.3), k * 1.33, .48, 0);  // add-on plates
+  tur.add('main', B(2.1, .75, 1.0), 0, .42, -1.8);                              // bustle
+  tur.add('trim', B(1.0, .7, .45), 0, .48, 1.32);                               // mantlet
+  tur.add('trim', C(.36, .38, .2, 8), .55, 1.1, -.5);
+  bar.add('metal', C(.19, .21, 4.3, 8), 0, 0, 2.15, Math.PI / 2);
+  bar.add('trim', C(.3, .3, .9, 8), 0, 0, .45, Math.PI / 2);                    // thick sleeve
+  bar.add('dark', C(.27, .27, .55, 8), 0, 0, 4.25, Math.PI / 2);                // muzzle
+  return { s: 1.08, bl: 4.5, body: body.geos(), tur: tur.geos(), bar: bar.geos(), turY: 1.65, barY: .5, barZ: 1.45 };
 }
+// jeep: open-top 4x4 with windshield, spare wheel, driver, and a pintle MG
 function jeepGeos() {
   const k = new Kit(), t = new Kit(), b = new Kit();
-  k.add('main', B(1.9, .7, 3.6), 0, .95, 0); k.add('main', B(1.9, .35, 1.2), 0, 1.45, 1.1);
-  k.add('trim', B(2.0, .1, 3.7), 0, 1.32, 0);
-  k.add('dark', B(1.7, .9, .08), 0, 1.75, .45, -.2);
-  for (const x of [-1, 1]) for (const z of [-1.15, 1.2]) k.add('dark', C(.45, .45, .35, 10), x * 1.0, .45, z, 0, 0, Math.PI / 2);
-  k.add('dark', B(.3, .3, .5), 0, 1.4, -1.9);
+  k.add('main', B(1.8, .55, 3.4), 0, .88, 0); k.add('main', B(1.6, .32, 1.1), 0, 1.28, 1.1);
+  for (const x of [-1, 1]) k.add('trim', B(.32, .1, 3.5), x * .98, 1.2, 0);
+  k.add('dark', B(1.7, .7, .07), 0, 1.6, .45, -.18); k.add('glass', B(1.45, .48, .05), 0, 1.6, .47, -.18);
+  for (const x of [-1, 1]) for (const z of [-1.15, 1.2]) { k.add('dark', C(.48, .48, .34, 12), x * 1.0, .48, z, 0, 0, Math.PI / 2); k.add('metal', C(.2, .2, .38, 6), x * 1.02, .48, z, 0, 0, Math.PI / 2); }
+  k.add('dark', C(.42, .42, .22, 12), 0, 1.05, -1.85, Math.PI / 2);             // spare wheel
+  k.add('trim', B(.5, .5, .35), -.42, 1.4, -.15); k.add('skin', S(.18, 6, 4), -.42, 1.82, -.15); k.add('olive', S(.22, 6, 3), -.42, 1.88, -.15, 0, 0, 0, 1, .6, 1);   // driver
   t.add('metal', C(.06, .06, 1, 4), 0, .5, 0); t.add('dark', B(.25, .25, .5), 0, 1.05, .15);
   b.add('dark', C(.05, .05, .8, 4), 0, 0, .4, Math.PI / 2);
-  return { s: 1, bl: .8, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 1.3 };
+  return { s: 1, bl: .8, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 1.1, turZ: -.75 };
 }
 function crewMan(k, x, z, kneel = true) {
   k.add('trim', B(.45, kneel ? .5 : .8, .35), x, kneel ? .25 : .4, z); k.add('main', B(.55, .65, .35), x, kneel ? .8 : 1.15, z);
@@ -81,7 +123,8 @@ function gunGeos(type) {
   if (type === 'atgun') {
     for (const x of [-1, 1]) { k.add('dark', C(.55, .55, .25, 10), x * 1.05, .55, 0, 0, 0, Math.PI / 2); k.add('trim', B(.18, .18, 2.8), x * .5, .3, -1.5, 0, x * .25); }
     t.add('main', B(2.1, 1.2, .12), 0, 1.05, .35, -.1); t.add('trim', B(.6, .45, .9), 0, .75, 0);
-    b.add('metal', C(.09, .11, 3.2, 8), 0, 0, 1.6, Math.PI / 2); b.add('dark', C(.16, .16, .35, 8), 0, 0, 3.2, Math.PI / 2);
+    b.add('metal', C(.09, .11, 3.2, 8), 0, 0, 1.6, Math.PI / 2); b.add('dark', B(.36, .2, .32), 0, 0, 3.25);   // long thin barrel + muzzle brake
+    t.add('main', B(2.1, .35, .12), 0, 1.78, .25, -.55);                          // angled shield top
     crewMan(k, -.9, -1.3); crewMan(k, .9, -1.6);
     return { s: 1, bl: 3.2, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: .8, barZ: .3 };
   }
@@ -89,6 +132,8 @@ function gunGeos(type) {
     for (const x of [-1, 1]) { k.add('dark', C(.75, .75, .3, 12), x * 1.3, .75, 0, 0, 0, Math.PI / 2); k.add('trim', B(.25, .25, 3.6), x * .6, .35, -1.9, 0, x * .22); }
     t.add('main', B(1.6, .8, 1.6), 0, 1.0, 0); t.add('main', B(2.4, 1.3, .12), 0, 1.4, .8);
     b.add('metal', C(.16, .2, 4.4, 8), 0, 0, 2.0, Math.PI / 2); b.add('dark', C(.25, .25, .5, 8), 0, 0, 4.2, Math.PI / 2);
+    b.add('metal', C(.1, .1, 2.4, 6), 0, .3, 1.2, Math.PI / 2);                   // recuperator above the barrel
+    for (const x of [-1, 1]) k.add('dark', B(.8, .55, .12), x * 1.4, .28, -3.55, -.3, x * .22);   // trail spades
     crewMan(k, -1.3, -2.2); crewMan(k, 1.2, -2.6); crewMan(k, 0, -3.1, false);
     return { s: 1, bl: 4.4, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: 1.3, barZ: .2 };
   }
@@ -96,10 +141,11 @@ function gunGeos(type) {
   k.add('trim', B(2.4, .35, 2.4), 0, .45, 0); k.add('dark', B(4.2, .15, .3), 0, .3, 0); k.add('dark', B(.3, .15, 4.2), 0, .3, 0);
   for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) k.add('dark', C(.3, .3, .1, 6), x, .2, z);
   t.add('main', C(.9, 1.0, .5, 8), 0, .9, 0); t.add('main', B(.3, 1.0, .9), .7, 1.4, 0); t.add('main', B(.3, 1.0, .9), -.7, 1.4, 0);
-  for (const x of [-.25, .25]) b.add('metal', C(.07, .08, 2.6, 6), x, 0, 1.3, Math.PI / 2);
+  for (const x of [-.25, .25]) { b.add('metal', C(.06, .07, 3.0, 6), x, 0, 1.5, Math.PI / 2); b.add('dark', C(.11, .09, .35, 6), x, 0, 3.0, Math.PI / 2); }   // twin barrels + flash hiders
+  t.add('dark', C(.6, .6, .05, 12), 0, 2.15, .2, Math.PI / 2 - .3);            // ring sight
   b.add('dark', B(.7, .5, .7), 0, 0, 0);
   crewMan(k, 1.5, -1.4); crewMan(k, -1.5, -1.4);
-  return { s: 1, bl: 2.6, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: 1.5, barZ: 0, aa: true };
+  return { s: 1, bl: 3.1, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: 1.5, barZ: 0, aa: true };
 }
 function planeGeos(type) {
   const k = new Kit(), p = new Kit();
@@ -132,8 +178,7 @@ export function buildVehicle(type, team) {
   meshes(g.body, mats, body);
   const turret = new THREE.Group(); body.add(turret);
   const barrel = new THREE.Group(); turret.add(barrel);
-  if (g.turY === undefined) { turret.position.set(0, 1.33, -.15); barrel.position.set(0, .36, 1.15); } // tanks
-  else { turret.position.set(0, g.turY, 0); barrel.position.set(0, g.barY ?? 0, g.barZ ?? 0); }
+  turret.position.set(0, g.turY, g.turZ ?? 0); barrel.position.set(0, g.barY ?? 0, g.barZ ?? 0);
   meshes(g.tur, mats, turret); meshes(g.bar, mats, barrel);
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, g.bl + .3); barrel.add(muzzle);
   body.scale.setScalar(g.s || 1);
@@ -165,23 +210,64 @@ function colorize(g, hex) {
   for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
   g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g;
 }
+// Each squad type has a signature prop, headgear and a small accent on top of the team color:
+//  rifle    = helmet, long rifle with wooden stock          bazooka = long tube on the shoulder, rocket pack
+//  scout    = lighter build, soft cap, binoculars up, green scarf, radio antenna
+//  engineer = yellow helmet, orange vest stripes, big backpack, wrench over the shoulder
+//  mgteam   = heavy MG at the hip, tripod on the back, ammo box, brass ammo belt
+//  commando = dark team-tinted gear, maroon beret, SMG, knife and satchel (team-colored armband)
 export function soldierGeometry(type, team) {
   const key = type + team; if (soldierCache[key]) return soldierCache[key];
   const T = TEAM[team], parts = [];
   const P = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => parts.push(colorize(prep(geo, x, y, z, rx, ry, rz, sx, sy, sz), col));
-  const elite = type === 'commando';
-  P(B(.5, .85, .32), elite ? 0x2a2d30 : T.trim, 0, .43, 0);
-  P(B(.62, .72, .38), elite ? 0x3b3f35 : T.main, 0, 1.2, 0);
-  P(B(.66, .14, .4), 0x3a3324, 0, .95, 0);
-  P(S(.2, 7, 5), 0xe0b48c, 0, 1.75, 0);
-  if (elite) P(C(.24, .24, .1, 8), 0x7a1f1f, .04, 1.92, 0, 0, 0, .25);
-  else P(S(.25, 7, 4, ), type === 'engineer' ? 0xc9a227 : 0x56603a, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
-  P(B(.09, .09, 1.0), 0x2b2b2b, .3, 1.18, .25);                        // rifle
-  if (type === 'bazooka') P(C(.11, .11, 1.5, 6), 0x4b5a35, -.22, 1.62, -.05, Math.PI / 2 - .15);
-  if (type === 'mgteam') { P(B(.14, .14, 1.3), 0x232323, .28, 1.2, .35); P(B(.25, .2, .3), 0x232323, .28, 1.2, .1); }
-  if (type === 'engineer') P(B(.5, .6, .3), 0x6b5a3a, 0, 1.25, -.33);
-  if (type === 'scout') { P(B(.4, .5, .25), 0x4a4f3a, 0, 1.25, -.3); P(C(.02, .02, 1.1, 4), 0x222222, .15, 1.9, -.35); }
-  if (elite) P(B(.45, .45, .28), 0x2f3328, 0, 1.25, -.3);
+  const elite = type === 'commando', scout = type === 'scout', W = scout ? .86 : 1;
+  const torso = elite ? new THREE.Color(0x2c302a).lerp(new THREE.Color(T.main), .42).getHex() : T.main, legs = elite ? 0x24272a : T.trim, SKIN = 0xe0b48c, GUN = 0x2b2b2b, OLIVE = 0x56603a;
+  P(B(.5 * W, .85, .32), legs, 0, .43, 0);
+  P(B(.62 * W, .72, .38), torso, 0, 1.2, 0);
+  P(B(.66 * W, .14, .4), 0x3a3324, 0, .95, 0);
+  P(S(.2, 7, 5), SKIN, 0, 1.75, 0);
+  const arm = (x, rx = -.5, y = 1.27, z = .12) => P(B(.15, .58, .17), torso, x, y, z, rx);
+  if (type === 'rifle') {
+    P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
+    arm(.36); arm(-.3, -.9);
+    P(B(.09, .09, 1.15), GUN, .26, 1.3, .38); P(B(.11, .17, .36), 0x6b4a2a, .26, 1.26, -.12);   // rifle + stock
+  } else if (type === 'bazooka') {
+    P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
+    arm(.36, -.2, 1.4); arm(-.3, -.6);
+    P(C(.13, .13, 1.85, 8), 0x4b5a35, .3, 1.66, .15, Math.PI / 2);              // tube on the shoulder
+    P(C(.17, .13, .22, 8), 0x2b2b2b, .3, 1.66, -.85, Math.PI / 2);              // rear flare
+    P(C(.145, .145, .1, 8), 0xe6e6e0, .3, 1.66, 1.02, Math.PI / 2);             // white band at the muzzle
+    P(B(.4, .45, .24), 0x4a4f3a, 0, 1.22, -.3);
+    for (const x of [-.11, .11]) P(C(.06, .06, .55, 6), 0x3b3f35, x, 1.62, -.32);   // spare rockets
+  } else if (type === 'scout') {
+    P(C(.21, .22, .17, 8), 0x6f7a4a, 0, 1.9, 0); P(B(.32, .04, .2), 0x59633e, 0, 1.83, .2);   // soft cap
+    P(B(.42, .1, .42), 0x8fd16a, 0, 1.53, 0);                                   // green scarf (accent)
+    arm(.24, -1.25, 1.5, .2); arm(-.24, -1.25, 1.5, .2);                        // arms up
+    for (const x of [-.08, .08]) P(C(.055, .055, .2, 6), 0x1f1f1f, x, 1.78, .28, Math.PI / 2);   // binoculars
+    P(B(.34, .44, .22), 0x4a4f3a, 0, 1.24, -.29); P(C(.018, .018, 1.2, 4), 0x222222, .12, 1.95, -.33);   // radio + antenna
+  } else if (type === 'engineer') {
+    P(S(.26, 7, 4), 0xe8b520, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);                  // yellow helmet
+    for (const y of [1.08, 1.36]) P(B(.64, .07, .4), 0xff8a1f, 0, y, 0);        // orange vest stripes
+    arm(.36, -.2); arm(-.36, -2.4, 1.45, -.02);
+    P(B(.56, .7, .36), 0x6b5a3a, 0, 1.25, -.37);                                // big backpack
+    P(B(.07, .07, 1.0), 0x9aa0a6, -.36, 1.75, -.25, .9); P(B(.26, .08, .13), 0x9aa0a6, -.36, 2.08, .1, .9);   // wrench over the shoulder
+  } else if (type === 'mgteam') {
+    P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
+    arm(.36, -.7); arm(-.36, 0, 1.15, 0);
+    P(C(.1, .1, 1.35, 8), 0x232323, .27, 1.12, .55, Math.PI / 2);               // heavy MG barrel jacket
+    P(B(.24, .26, .45), 0x232323, .27, 1.12, -.05);                             // receiver
+    P(B(.66, .07, .07), 0xc9a227, 0, 1.25, .2, 0, 0, .7);                        // brass ammo belt (accent)
+    P(B(.32, .26, .2), 0x4f5b2e, -.44, .82, .05);                                // ammo box in hand
+    for (const r of [-.35, 0, .35]) P(C(.03, .03, 1.1, 4), 0x2b2b2b, 0, 1.35, -.32, 0, 0, r);   // tripod on the back
+  } else if (elite) {
+    P(C(.25, .25, .09, 8), 0x7a1f1f, .05, 1.92, 0, 0, 0, .3);                   // maroon beret
+    P(B(.42, .08, .44), 0x1a1c1e, 0, 1.68, 0);                                  // face mask
+    P(B(.18, .14, .2), T.main, .39, 1.38, .05);                                  // team armband
+    arm(.36, -.6); arm(-.32, -.8);
+    P(B(.08, .1, .62), GUN, .2, 1.28, .38);                                      // SMG
+    P(B(.3, .26, .16), 0x7a5a32, -.38, .95, .06); P(B(.06, .85, .05), 0x5a4126, 0, 1.2, .2, 0, 0, -.7);   // satchel + strap
+    P(B(.05, .3, .07), 0xcfd3d6, .33, .78, .16); P(B(.07, .12, .09), 0x1a1a1a, .33, .98, .16);   // knife
+  }
   const g = mergeGeometries(parts); g.computeBoundingSphere(); g.boundingSphere.radius = 400; // instance spread
   return (soldierCache[key] = g);
 }

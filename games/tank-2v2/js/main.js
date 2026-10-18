@@ -7,6 +7,7 @@ import { Particles } from './particles.js';
 import { UNITS, BUILDINGS, DMG_MULT, LVL_MULT, BODIES, BODY_KEYS, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
 import { TEAM, SHARED, buildVehicle, buildPlane, buildSquad, buildBuilding, supplyPadTexture, buildFlag } from './models.js';
 import { svg } from './icons.js';
+import { createBadges } from './badges.js';
 
 const CFG = { minDist: 8, maxDist: 330, shellSpeed: 72, gravity: 14 };
 const $ = (s) => document.querySelector(s);
@@ -32,6 +33,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9cbe0);
 scene.fog = new THREE.Fog(0xa9cbe0, 200, 600);
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.5, 1600);
+const badges = createBadges(scene, camera, Object.keys(UNITS));   // unit-type icon above every visible unit (V toggles)
 
 scene.add(new THREE.HemisphereLight(0xe3f0ff, 0x6b5d45, 1.25));
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.4);
@@ -159,7 +161,7 @@ let units = [], buildings = [], shells = [], emitters = [], markers = [], mines 
 const teams = { blue: { money: START_MONEY, rate: 0 }, red: { money: START_MONEY, rate: 0 } };
 const game = { state: 'menu', time: 0, endAt: 0, timeScale: 1, result: null, difficulty: 'normal', holdAI: false, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } };
 const selUnits = new Set();
-const exam = { onFrame: null, onClick: null, close: null };   // Unit Examiner hooks (null in normal play)
+const exam = { onFrame: null, onClick: null, close: null, onBomb: null };   // Unit Examiner hooks (null in normal play)
 let selBld = null;
 let uid = 0;
 const pickMeshes = [];   // unit + building pick volumes
@@ -578,6 +580,7 @@ function validTarget(u, t) {
   return hasLOS(u, t);
 }
 function chooseFireTarget(u) {
+  if (game.ceasefire) return null;   // test hook only (lineup screenshots)
   if (u.order?.type === 'attack' && validTarget(u, u.order.target)) return u.order.target;
   if (u.fireTarget && validTarget(u, u.fireTarget) && !u.fireTarget.isBld) return u.fireTarget;
   let best = null, bs = Infinity;
@@ -803,12 +806,34 @@ function impact(p, ground) {
   flashLight(p, 70); addShake(p, .15);
 }
 // bombs from bombers: fall with the plane's velocity, explode on the ground
+// bomb impact log (tests + Unit Examiner impact markers): impact point vs the target's position at impact
+const bombLog = [];
+function logBomb(b, p) {
+  const t = b.target?.alive ? b.target : null, q = t ? tgtPos(t) : b.center;
+  const e = { x: p.x, z: p.z, time: game.time, owner: b.owner?.id, team: b.team, salvo: b.salvo, tv: b.tv, ax: b.center?.x, az: b.center?.z, tx: q?.x, tz: q?.z, target: t?.id || null, miss: q ? Math.hypot(p.x - q.x, p.z - q.z) : null };
+  bombLog.push(e); if (bombLog.length > 300) bombLog.shift();
+  exam.onBomb?.(e);
+}
+// Bomb flight is closed-form (frame-rate independent): horizontal speed decays with air drag BOMB_K (the old 0.99 per
+// 1/20 s step), vertical starts at -1 m/s and falls with BOMB_G. bombSolution() uses the same formulas to aim.
+const BOMB_G = CFG.gravity * 1.4, BOMB_K = -Math.log(.99) * 20;
+const bombAt = (b, t, out) => { const f = (1 - Math.exp(-BOMB_K * t)) / BOMB_K; return out.set(b.p0.x + b.dir.x * b.v * f, b.p0.y - t - .5 * BOMB_G * t * t, b.p0.z + b.dir.z * b.v * f); };
+const bombFall = (h) => (-1 + Math.sqrt(1 + 2 * BOMB_G * Math.max(0, h))) / BOMB_G;          // time to fall h metres
+const bombThrow = (v, T) => v * (1 - Math.exp(-BOMB_K * T)) / BOMB_K;                         // forward travel in that time
+function bombSolution(u, tp, tgt) {
+  const p = pos(u), gy = surfaceY(tp.x, tp.z), T = bombFall(p.y - 1 - gy);
+  const tv = tgt && !tgt.isBld && tgt.vel ? tgt.vel : null;                                     // moving target: lead it
+  const aim = tv ? { x: tp.x + tv.x * T, z: tp.z + tv.z * T } : { x: tp.x, z: tp.z };
+  return { aim, T, throw: bombThrow(u.def.speed, T) };
+}
 function updateBombs(dt) {
   for (let i = bombs.length - 1; i >= 0; i--) {
-    const b = bombs[i]; b.vel.y -= CFG.gravity * 1.4 * dt; b.vel.x *= .99; b.vel.z *= .99; b.mesh.position.addScaledVector(b.vel, dt);
-    b.mesh.lookAt(tmpV.copy(b.mesh.position).add(b.vel));
-    const p = b.mesh.position;
-    if (p.y <= surfaceY(p.x, p.z)) { scene.remove(b.mesh); bombs.splice(i, 1); bigBoom(p.clone(), 1.3); splashDamage(p, b.splash, b.dmg, 'bomb', b.owner, b.team); }
+    const b = bombs[i]; const t0 = b.t; b.t += dt;
+    const p = bombAt(b, b.t, b.mesh.position);
+    const vh = b.v * Math.exp(-BOMB_K * b.t); b.mesh.lookAt(tmpV.set(p.x + b.dir.x * vh, p.y - 1 - BOMB_G * b.t, p.z + b.dir.z * vh));
+    if (p.y <= surfaceY(p.x, p.z)) {
+      let lo = t0, hi = b.t; for (let k = 0; k < 12; k++) { const m = (lo + hi) / 2; bombAt(b, m, p); if (p.y <= surfaceY(p.x, p.z)) hi = m; else lo = m; }   // exact ground contact
+      bombAt(b, hi, p); scene.remove(b.mesh); bombs.splice(i, 1); bigBoom(p.clone(), 1.3); splashDamage(p, b.splash, b.dmg, 'bomb', b.owner, b.team); logBomb(b, p); }
   }
 }
 // mines: hidden from the enemy, blow up enemy ground vehicles (and hurt infantry) that roll over them
@@ -1180,7 +1205,11 @@ function attackRun(u, dt) {
     tgt = best; u.airTarget = best;
   }
   const hidden = hiddenFrom(tgt, u.team);
-  const tp = tgt && !hidden ? tgtPos(tgt) : u.airPoint;               // hidden: its last known position
+  const rocket = def.wpn === 'rocket';
+  const tp0 = tgt && !hidden ? tgtPos(tgt) : u.airPoint;              // hidden: its last known position
+  // bombs: aim at where the target will be when the bombs land, and release exactly one "throw" before that point
+  const ball = !rocket && !hidden ? bombSolution(u, tp0, tgt) : null;
+  const tp = ball ? ball.aim : tp0;
   const d = dist2d(p, tp);
   if (hidden && u.runT <= 0) {
     // no shot at a target nobody can see: head for the last known spot, then loiter there for the normal loiter time
@@ -1194,11 +1223,9 @@ function attackRun(u, dt) {
   // lined up) turns into an "extend": fly straight out to a run-in distance, then turn back and line up again.
   // After 3 failed passes the alignment limit is relaxed; after 6 the plane gives up and flies home, so it never loops.
   const R = def.speed / 1.1;                                                   // turning radius at the run turn rate
-  const rocket = def.wpn === 'rocket';
-  const lead = rocket ? 0 : def.speed * Math.sqrt(2 * p.y / (CFG.gravity * 1.4));
-  // fire window (distance to the target): rockets from config; bombs at the lead distance (from far away this is the old
-  // "drop once inside lead + 4"; a closer start no longer drops a stick that lands past the target)
-  const [wMin, wMax] = rocket ? (def.rocketWin || [14, 38]) : [Math.max(0, lead - 8), lead + 4];
+  // fire window (distance to the aim point): rockets from config; bombs when the plane is one bomb throw away
+  // (released on the step that reaches it; a closer start extends out and comes back instead of dropping long)
+  const [wMin, wMax] = rocket ? (def.rocketWin || [14, 38]) : [Math.max(0, ball.throw - 3), ball.throw + def.speed * dt + .5];
   const ext = Math.max(60, wMax + 1.2 * R);                                    // run-in distance before turning back
   const run = u.run && u.run.tgt === tgt ? u.run : (u.run = { tgt, phase: 'in', t: 0, passes: 0 });
   if (run.phase === 'extend') {
@@ -1219,10 +1246,15 @@ function attackRun(u, dt) {
       u.runT = 2.6; u.diving = false;
     }
   } else if (def.wpn === 'bomb') {
-    // lead the drop: bombs carry the plane's forward speed
-    if (d < wMax && err < errMax && u.ammo > 0) {
+    // a stick of 6 bombs, 2.2 m apart along the run, centred on the aim point
+    if (d < wMax && d > wMin && err < errMax && u.ammo > 0) {
       u.ammo--; u.runT = 3.5; u.shots = (u.shots || 0) + 1; u.firedAt = game.time; fired = true;
-      for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(bombGeo, SHARED.dark); m.position.copy(p).add(new THREE.Vector3(Math.sin(u.yaw) * (i - 3) * 2.2, -1, Math.cos(u.yaw) * (i - 3) * 2.2)); scene.add(m); bombs.push({ mesh: m, vel: new THREE.Vector3(Math.sin(u.yaw) * def.speed, -1, Math.cos(u.yaw) * def.speed), dmg: def.dmg, splash: def.splash, owner: u, team: u.team }); }
+      const dx = (tp.x - p.x) / (d || 1), dz = (tp.z - p.z) / (d || 1);
+      for (let i = 0; i < 6; i++) {
+        const o = (i - 2.5) * 2.2, x0 = tp.x - dx * (ball.throw - o), z0 = tp.z - dz * (ball.throw - o);
+        const m = new THREE.Mesh(bombGeo, SHARED.dark); m.position.set(x0, p.y - 1, z0); scene.add(m);
+        bombs.push({ mesh: m, p0: { x: x0, y: p.y - 1, z: z0 }, dir: { x: dx, z: dz }, v: def.speed, t: 0, center: { x: tp.x, z: tp.z }, tv: tgt?.vel ? { x: tgt.vel.x, z: tgt.vel.z } : null, dmg: def.dmg, splash: def.splash, owner: u, team: u.team, target: tgt, salvo: u.id + ':' + u.shots });
+      }
     }
   }
   if (fired) { run.passes = 0; run.t = 0; return; }
@@ -1724,6 +1756,7 @@ window.addEventListener('keydown', (e) => {
   if (placing && e.code === 'KeyR') { rotatePlacing(); return; }
   for (const [ab, A] of Object.entries(ABILITIES)) if (e.code === A.key && selUnits.size) useAbility([...selUnits], ab);
   if (e.code === 'KeyX') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
+  if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey) setBadges(!badges.on);
   if (e.code === 'KeyH') { const h = hqOf('blue'); if (h) cam.shift.set(h.x - controls.target.x, 0, h.z - 18 - controls.target.z); }
   if (e.code === 'Space') { e.preventDefault(); focusSelection(); }
   if (e.code.startsWith('Arrow')) e.preventDefault();
@@ -1869,7 +1902,7 @@ function touchButton(id) {
   if (id === 'desel') { rallyMode = false; clearSelection(); }
   if (id === 'stop') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
   if (id === 'rally') { rallyMode = !rallyMode; if (rallyMode) toast('Tap the map to set the rally point'); }
-  if (id === 'help') $('#touchhelp').classList.toggle('on');
+  if (id === 'help') { const th = $('#touchhelp'); clearTimeout(th._t); th.classList.toggle('pinned', th.classList.toggle('on')); }   // pinned = opened by Help: only then is its badge button tappable
   updateTouchBar();
 }
 $('#placebar').addEventListener('click', (e) => {
@@ -2030,7 +2063,24 @@ $('#examiner')?.addEventListener('click', () => openExaminer());
 // =====================================================================================
 // per-frame visuals & loop
 // =====================================================================================
+// unit-type badges: one instanced draw call; only units the player can see (fog), not garrisoned squads
+const BADGE_H = { light: 2.9, medium: 3.5, heavy: 4.1, jeep: 3.0, atgun: 3.0, howitzer: 3.6, aagun: 3.6 };
+const badgeList = [];
+function updateBadges() {
+  let n = 0;
+  if (badges.on && game.state !== 'menu') for (const u of units) {
+    if (!u.alive || u.gone || u.garrison || !(u.team === 'blue' || u.vis.blue) || (isInf(u) ? !u.im.visible : !u.root.visible)) continue;
+    const p = pos(u), b = badgeList[n] ||= {};
+    b.x = p.x; b.z = p.z; b.y = p.y + (isAir(u) ? 3.4 : isInf(u) ? 2.9 : BADGE_H[u.type] || 3.4); b.type = u.type; b.team = u.team; n++;
+  }
+  badgeList.length = n;
+  badges.update(badgeList, TOUCH.on ? 22 : 21);
+}
+function setBadges(on) { badges.set(on); toast(`Unit badges ${on ? 'on' : 'off'} (V)`); document.querySelectorAll('.badgetgl b').forEach((el) => { el.textContent = on ? 'on' : 'off'; }); }
+document.addEventListener('click', (e) => { if (e.target.closest?.('.badgetgl')) setBadges(!badges.on); });
+document.querySelectorAll('.badgetgl b').forEach((el) => { el.textContent = badges.on ? 'on' : 'off'; });
 function updateVisuals(dt, now) {
+  updateBadges();
   for (const u of units) {
     if (isInf(u)) updateSquadVisual(u, dt, now);
     if (!u.alive) { if (u.pathLine) u.pathLine.visible = false; continue; }
@@ -2127,6 +2177,7 @@ window.__game = {
   selection: () => ({ units: [...selUnits].map((u) => u.id), building: selBld?.id || null }),
   damage: (id, n, wpn = 'cannon') => { const e = entById(id); if (e) applyDamage(e, n, wpn, null, null); },   // exactly n (no attacker: multiplier 1)
   kill: (id) => { const e = entById(id); if (e?.alive) { if (e.isBld) { e.hp = 0; destroyBuilding(e); } else { e.hp = 0; killUnit(e); } } },
+  pose: (id, x, z, yaw) => { const u = entById(id); pos(u).set(x, surfaceY(x, z), z); u.prev.copy(pos(u)); u.safe?.copy(pos(u)); stop(u); u.order = null; u.yaw = yaw; u.turretYaw = 0; if (u.soldiers) for (const s of u.soldiers) { s.x = x + s.ox; s.z = z + s.oz; s.yaw = yaw; } },
   airPose: (id, x, z, yaw) => { const u = entById(id); pos(u).set(x, u.def.alt, z); u.prev.copy(pos(u)); u.yaw = yaw; u.bank = 0; u.airState = 'idle'; u.run = null; u.runT = 0; u.climb = false; },
   teleport: (id, x, z) => { const u = entById(id); pos(u).set(x, isAir(u) ? pos(u).y : surfaceY(x, z), z); u.prev.copy(pos(u)); u.safe?.copy(pos(u)); stop(u); u.order = null; if (u.soldiers) for (const s of u.soldiers) { s.x = x + s.ox; s.z = z + s.oz; } },
   face: (id, yaw) => { const u = entById(id); u.yaw = yaw; },
@@ -2146,8 +2197,11 @@ window.__game = {
   cameraTarget: () => ({ x: controls.target.x, z: controls.target.z }), cameraDistance: () => camera.position.distanceTo(controls.target),
   minimapRect: () => { const r = mmCanvas.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
   spots: () => spots.map((s) => ({ x: s.x, z: s.z, taken: !!s.bld, team: s.bld?.team || null })),
+  clearWrecks: () => { wrecks = []; },   // tests: wrecks block line of sight; lets scenarios reuse one spot
+  bombLog: (clear) => { const out = bombLog.map((e) => ({ ...e })); if (clear) bombLog.length = 0; return out; },
   shellsInFlight: () => shells.length + bombs.length, mines: () => mines.map((m) => ({ team: m.team, x: m.x, z: m.z, visible: m.mesh.visible })),
   reveals: () => reveals.length,
+  badges: () => ({ on: badges.on, count: badges.count() }), setBadges: (on) => badges.set(on),
   countHealthBarObjects: () => { let n = 0; scene.traverse((o) => { if (o.isSprite || /hp|health/i.test(o.name || '')) n++; }); return n + document.querySelectorAll('.hpbar, .healthbar, [class*="hp-"]').length; },
   placing: () => placing && { type: placing.type, ok: placing.ok, reason: placing.reason, x: placing.x, z: placing.z, flip: placing.flip },
   isWet: (x, z) => wet(x, z), riverZ: (x) => riverZ(x), bridges: () => BRIDGES_INFO,
@@ -2162,6 +2216,7 @@ window.__game = {
   los: (x0, z0, x1, z1) => losClear(x0, surfaceY(x0, z0) + 1.8, z0, x1, surfaceY(x1, z1) + 1.3, z1) && !inForest(x0, z0) && !inForest(x1, z1),
   // test hook: run the simulation headless-fast (no rendering) for `sec` game seconds
   simulate: (sec, dt = 1 / 20) => { const t0 = performance.now(); let n = 0; while (n * dt < sec && (game.state === 'playing' || game.state === 'ending')) { step(dt); n++; } hudDirty = true; return { steps: n, ms: performance.now() - t0 }; },
+  ceasefire: (on = true) => { game.ceasefire = on; },
   invulnerable: (team, on = true) => { game.invuln = on ? team : null; },
   pathLinesVisible: () => units.filter((u) => u.pathLine?.visible).length,
   cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),
@@ -2188,7 +2243,7 @@ function startExaminerWorld() {
 }
 function removeAirHome(u) { if (u.home && !u.home.isBld) u.home = null; }
 const EXAPI = {
-  THREE, scene, camera, controls, canvas, renderer, game, teams, cam, CFG, TOUCH, LOW,
+  THREE, scene, camera, controls, canvas, renderer, game, teams, cam, CFG, TOUCH, LOW, bombFall, bombThrow,
   get units() { return units; }, get buildings() { return buildings; }, get mines() { return mines; }, get reveals() { return reveals; },
   get selUnits() { return selUnits; }, houses,
   startWorld: startExaminerWorld, clearWorld, createUnit, createBuilding, orderMove, orderAttack, orderGarrison, airOrder, goHome, useAbility, stop, killUnit, destroyBuilding,

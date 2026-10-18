@@ -180,3 +180,4 @@ body.examiner #toast { top: 52px; z-index: 12; background: rgba(20, 40, 70, .92)
 .excur .bd { color: #cfe3ff; }
 .exu .td { position: absolute; top: -3px; left: -2px; font-style: normal; font-size: 10px; }
 @media (max-width: 699px) { .exm-head, .exm-row { grid-template-columns: 24px minmax(0, 1fr) 66px 30px 36px; } }
+.exlbl.eximp { border-color: #ffd23f; color: #ffe9a0; font-size: 11px; }

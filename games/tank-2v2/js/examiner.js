@@ -35,7 +35,7 @@ const QUICK = ['too slow', 'too fast', 'does not fire', 'too strong', 'too weak'
 
 let A = null, H = null, root = null, labelsEl = null;
 const S = {
-  type: 'rifle', opp: 'auto', redMode: 'hold', arena: 'forest', speed: 1, follow: true, reveal: true, rings: true,
+  type: 'rifle', opp: 'auto', redMode: 'hold', arena: 'forest', speed: 1, follow: true, reveal: true, rings: true, impacts: true,
   ringOn: { vis: true, inf: true, armor: true, air: true, art: true, truck: true, bld: true, min: true, dive: true, drop: true, deploy: true, satchel: true, repair: true }, tuning: false,
   tab: 'pick', open: true, mode: null, blue: null, red: null, home: null, homeFlag: null, extra: [], fightT: 0, uiT: 0, lastReport: '',
 };
@@ -64,7 +64,7 @@ function setTune(t, b, field, val) {
 try { notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}') || {}; } catch { notes = {}; }
 try { Object.assign(S, JSON.parse(localStorage.getItem(PREF_KEY) || '{}')); } catch { /* ignore */ }
 S.mode = null; S.blue = S.red = S.home = S.homeFlag = null; S.extra = []; S.tab = 'pick'; S.open = true;
-const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ type: S.type, opp: S.opp, redMode: S.redMode, arena: S.arena, speed: S.speed === 0 ? 1 : S.speed, follow: S.follow, reveal: S.reveal, rings: S.rings, ringOn: S.ringOn })); } catch { /* ignore */ } };
+const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ type: S.type, opp: S.opp, redMode: S.redMode, arena: S.arena, speed: S.speed === 0 ? 1 : S.speed, follow: S.follow, reveal: S.reveal, impacts: S.impacts, rings: S.rings, ringOn: S.ringOn })); } catch { /* ignore */ } };
 const saveNotes = () => { try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch { /* ignore */ } };
 const phone = () => innerWidth < 700 || (innerHeight < 520 && innerWidth < 1000);
 
@@ -100,7 +100,7 @@ export function rangeModel(u) {
   }
   if (def.minRng) extras.push({ k: 'min', r: def.minRng, note: 'cannot fire at targets closer than this' });
   if (w === 'rocket') { const [wn, wx] = def.rocketWin || [14, 38]; extras.push({ k: 'min', r: wn, note: `rockets fire only when the target is more than ${wn} ahead; closer passes extend out and come back around` }); extras.push({ k: 'dive', r: wx, note: `dives within 70, fires 2 rocket pairs when the target is ${wn}–${wx} ahead (splash 4)` }); }
-  if (w === 'bomb') { const lead = def.speed * Math.sqrt(2 * Math.max(4, A.pos(u).y) / (14 * 1.4)); extras.push({ k: 'drop', r: lead + 4, note: `drops 6 bombs ${f0(Math.max(0, lead - 8))}–${f0(lead + 4)} before the target (lead for speed/altitude), splash ${def.splash}; closer starts extend out and come back around` }); }
+  if (w === 'bomb') { const thr = A.bombThrow(def.speed, A.bombFall(def.alt - 1)); extras.push({ k: 'drop', r: thr, note: `releases ${f0(thr)} before the (predicted) target position: a stick of 6 bombs 2.2 apart centred on it, splash ${def.splash}; closer starts extend out and come back around` }); }
   if (def.ability === 'deploy' && !u.deployed) extras.push({ k: 'deploy', r: maxR(vs) + 8, note: 'range once deployed (+8)' });
   if (def.ability === 'satchel') extras.push({ k: 'satchel', r: 45, note: 'finds the nearest tank/gun/building within 45' });
   if (def.repair) extras.push({ k: 'repair', r: 10, note: 'repairs damaged friendly vehicles within 10 (buildings within 6 of the wall) while idle' });
@@ -370,7 +370,8 @@ function renderPick() {
     <div class="exseg" data-seg="redMode">${[['dummy', '😴 Dummy', 'never fires'], ['hold', '🛡️ Hold', 'fires, never moves'], ['fight', '⚔️ Fight back', 'attacks your unit']].map(([v, l, d]) => `<button data-v="${v}" class="${S.redMode === v ? 'on' : ''}" title="${d}">${l}</button>`).join('')}</div>
     <div class="exlab">🗺️ Arena</div>
     <div class="exseg" data-seg="arena">${Object.entries(ARENAS).map(([k, a]) => `<button data-v="${k}" class="${S.arena === k ? 'on' : ''}" title="${esc(a.desc)}">${a.icon} ${a.name}</button>`).join('')}</div>
-    <label class="exchk"><input type="checkbox" id="exreveal" ${S.reveal ? 'checked' : ''}> 👁 Both sides see everything <small>(off = real spotting / fog of war)</small></label>`;
+    <label class="exchk"><input type="checkbox" id="exreveal" ${S.reveal ? 'checked' : ''}> 👁 Both sides see everything <small>(off = real spotting / fog of war)</small></label>
+    <label class="exchk"><input type="checkbox" id="eximpacts" ${S.impacts ? 'checked' : ''}> 💣 Show bomb impacts <small>(markers + miss distance in m)</small></label>`;
   $('#exopp').value = S.opp;
 }
 function renderActions() {
@@ -574,6 +575,7 @@ function onUiChange(e) {
   const t = e.target;
   if (t.dataset.slide) { S.dragging = false; refreshMatrix(); renderHead(); renderPick(); return; }
   if (t.id === 'exopp') { S.opp = t.value; savePrefs(); resetArena(); return; }
+  if (t.id === 'eximpacts') { S.impacts = t.checked; savePrefs(); if (!S.impacts) clearImpacts(); return; }
   if (t.id === 'exreveal') { S.reveal = t.checked; savePrefs(); resetArena(); return; }
   if (t.id === 'exrings') { S.rings = t.checked; savePrefs(); $('#exlegend .exm')?.classList.toggle('off', !S.rings); return; }
   if (t.dataset.ring) { S.ringOn[t.dataset.ring] = t.checked; savePrefs(); return; }
@@ -591,7 +593,49 @@ function onClick(cx, cy, right) {
   if (e && e.team === 'blue' && e !== u) return true;   // helper units (repair test) never steal the selection
   return false;   // the normal game click: ground = move, red = attack, house = garrison
 }
+// ---------- bomb impact markers (debug): a dot per bomb, a cross at the stick centre, label with miss distances ----------
+const impacts = [];          // { salvo, bombs: [{x,z,miss}], tx, tz, meshes: [], label, t }
+let lastSalvo = null;
+function onBomb(e) {
+  if (!S.impacts || !A) return;
+  const T = A.THREE;
+  let s = impacts.find((i) => i.salvo === e.salvo);
+  if (!s) {
+    s = { salvo: e.salvo, bombs: [], meshes: [], t: 0, label: document.createElement('div') };
+    s.label.className = 'exlbl eximp'; labelsEl.appendChild(s.label); impacts.push(s);
+    while (impacts.length > 4) dropImpact(impacts[0]);
+  }
+  s.bombs.push({ x: e.x, z: e.z, miss: e.miss }); s.t = 0;
+  if (e.tx !== undefined && e.target) { s.tx = e.tx; s.tz = e.tz; } else if (s.tx === undefined) { s.tx = e.tx; s.tz = e.tz; }
+  const y = A.surfaceY(e.x, e.z) + .25;
+  const dot = new T.Mesh(new T.RingGeometry(.35, .8, 16), new T.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: .95, depthWrite: false, depthTest: false, side: T.DoubleSide, toneMapped: false }));
+  dot.rotation.x = -Math.PI / 2; dot.position.set(e.x, y, e.z); dot.renderOrder = 4; A.scene.add(dot); s.meshes.push(dot);
+  // stick centre
+  const cx = s.bombs.reduce((a, b) => a + b.x, 0) / s.bombs.length, cz = s.bombs.reduce((a, b) => a + b.z, 0) / s.bombs.length;
+  s.cx = cx; s.cz = cz; s.center = s.tx !== undefined ? Math.hypot(cx - s.tx, cz - s.tz) : null;
+  if (!s.cross) {
+    s.cross = new T.Group();
+    for (const r of [0, Math.PI / 2]) { const m = new T.Mesh(new T.PlaneGeometry(3.2, .35), new T.MeshBasicMaterial({ color: 0xff3b3b, depthWrite: false, depthTest: false, side: T.DoubleSide, toneMapped: false })); m.rotation.set(-Math.PI / 2, 0, r + Math.PI / 4); s.cross.add(m); }
+    s.cross.renderOrder = 4; A.scene.add(s.cross); s.meshes.push(s.cross);
+  }
+  s.cross.position.set(cx, A.surfaceY(cx, cz) + .3, cz);
+  const per = s.bombs.map((b) => b.miss).filter((m) => m != null);
+  s.label.textContent = `💣 ${s.bombs.length} bombs · centre ${s.center == null ? '?' : f1(s.center) + ' m'} from target · each ${per.length ? f1(Math.min(...per)) + '–' + f1(Math.max(...per)) + ' m' : '?'}`;
+  lastSalvo = { bombs: s.bombs.length, center: s.center, min: per.length ? Math.min(...per) : null, max: per.length ? Math.max(...per) : null };
+}
+function dropImpact(s) { for (const m of s.meshes) { A.scene.remove(m); m.traverse?.((o) => { o.geometry?.dispose(); o.material?.dispose(); }); } s.label.remove(); impacts.splice(impacts.indexOf(s), 1); }
+function clearImpacts() { while (impacts.length) dropImpact(impacts[0]); lastSalvo = null; }
+function updateImpacts(dt) {
+  for (const s of [...impacts]) {
+    s.t += dt; if (s.t > 20) { dropImpact(s); continue; }
+    const p = A.toScreen(new A.THREE.Vector3(s.cx, A.surfaceY(s.cx, s.cz) + 1.5, s.cz));
+    const vis = p && p.z < 1 && p.x > 0 && p.x < innerWidth && p.y > 0 && p.y < innerHeight && !(panelRect && p.x > panelRect.left && p.y > panelRect.top);
+    s.label.style.display = vis ? '' : 'none';
+    if (vis) s.label.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - 22)}px) translateX(-50%)`;
+  }
+}
 function onFrame(dt) {
+  updateImpacts(dt);
   if (!S.blue) return;
   const u = S.blue;
   if (u.alive && !A.selUnits.has(u)) A.selectUnits([u]);
@@ -611,14 +655,14 @@ export function openExaminer(api, hooks) {
   document.body.classList.add('examiner');
   root.classList.remove('hidden'); labelsEl.classList.remove('hidden');
   if (!UNITS[S.type]) S.type = 'rifle';
-  H.onFrame = onFrame; H.onClick = onClick; H.close = closeExaminer;
+  H.onFrame = onFrame; H.onClick = onClick; H.close = closeExaminer; H.onBomb = onBomb;
   resetArena();
   if (matchMedia('(pointer: coarse)').matches) A.enableTouchUI();
   return true;
 }
 function closeExaminer() {
   if (!A) return;
-  H.onFrame = H.onClick = H.close = null;
+  H.onFrame = H.onClick = H.close = H.onBomb = null; clearImpacts();
   A.game.timeScale = 1; A.removeReveals();
   if (S.homeFlag) { A.scene.remove(S.homeFlag); S.homeFlag = null; }
   clearRings(); S.blue = S.red = null;
@@ -634,6 +678,8 @@ window.__examiner = {
   blueId: () => S.blue?.id, redId: () => S.red?.id,
   rangeModel: () => S.blue && rangeModel(S.blue), rings: () => { updateRings(); return ringList.map((r) => ({ ...r })); },
   ringLabels: () => { updateRings(); return labelList(); },
+  impacts: () => impacts.map((s) => ({ salvo: s.salvo, bombs: s.bombs.length, center: s.center, label: s.label.textContent, markers: s.meshes.length })),
+  setImpacts: (on) => { S.impacts = !!on; if (!on) clearImpacts(); },
 
   setRing: (k, on) => { S.ringOn[k] = on; }, notes: () => ({ ...notes }), report: buildReport, copy: copyReport, get lastReport() { return S.lastReport; },
   tuning: () => JSON.parse(JSON.stringify(tune)), blueVs: () => S.blue && JSON.parse(JSON.stringify(S.blue.vs)), blueVis: () => S.blue && (S.blue.visR ?? S.blue.def.vis),
