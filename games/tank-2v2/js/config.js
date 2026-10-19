@@ -38,8 +38,11 @@ export const CONCEAL_SPREAD = 1.6, BLD_SPREAD = 0.3, SHELL_LEAD = 0.9;
 //   mg     inf 1.0  light .8  armor .04 gun 1.5 bld .08 | at     inf .08 light 1.1 armor 1.0 gun .35 bld .4
 //   cannon inf 1.25 light 1.0 armor 1.0 gun .35 bld .7  | he     inf 1.3 light 1.0 armor .55 gun 1.3 bld 1.6
 //   rocket inf .7   light 1.2 armor 1.3 gun 1.0 bld .8  | bomb   inf 1.0 light 1.0 armor .8  gun 1.2 bld 2.2 | flak/aamg air 1
-// Gadget damage (grenade, AT mine, time bomb, detpack) uses the gadget's own matrix (UNITS[t].gadgets[].vs), see GADGET_WPN.
-export const DMG_MULT = {};
+// Ability damage (satchel charge, mines) is not a unit attack and keeps its own multipliers per armor class:
+export const DMG_MULT = {
+  satchel:{ inf: 1, light: 1.5, armor: 1.5, gun: 1.5, bld: 2.5, air: 0 },
+  mine:   { inf: 0.6, light: 1.2, armor: 1.0, gun: 1.0, bld: 0, air: 0 },
+};
 
 export const BRANCHES = {
   inf: { name: 'Infantry', color: '#7fc96b' },
@@ -50,38 +53,22 @@ export const BRANCHES = {
 
 // kind: inf (squad of men) | veh | gun | air.  men: squad size, hpm: hp per man.
 // r: collision radius, vis: vision, rng: base range (kept for reference/AI), rof: seconds between shots, dmg: base damage per shot
-// weapons (visual/ballistics): mg, snipe, shotgun, at, emp, cannon, he, flak, aamg, rocket, bomb. Only hit-scan weapons can reach aircraft.
+// weapons (visual/ballistics): mg, at, cannon, he, flak, aamg, rocket, bomb. Only mg/flak/aamg (hit-scan) can reach aircraft.
 // vs: per body type { lvl 0-5, rng, acc 0-5 } (rng: attack range vs that body; acc: accuracy level, see ACC_*). Aircraft with rockets/bombs: rng = how far from the ordered point they pick a target.
 export const UNITS = {
-  // infantry (Barracks): exactly 6 classes, modelled on the classic Battlefront II Republic classes.
-  // Each has a main weapon (vs) plus gadget(s) with their own 6-body matrix (gadgets[].vs: lvl / rng / acc; rng = use range).
-  rifle:    { br: 'inf', name: 'Rifle Trooper', base: 80, time: 5, kind: 'inf', men: 8, hpm: 12, speed: 5.2, r: 2.3, vis: 55, rng: 28, rof: 1.0, dmg: 10, wpn: 'mg', armor: 'inf', ability: 'grenade', desc: '8 men. Cheap all-rounder with a blaster rifle. Throws grenades at groups of infantry.',
-    vs: { inf:{ lvl:4, rng:28, acc:4 }, armor:{ lvl:1, rng:16, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:26, acc:5 }, truck:{ lvl:3, rng:24, acc:5 }, bld:{ lvl:1, rng:18, acc:5 } },
-    gadgets: [{ id: 'grenade', ability: 'grenade', name: 'Grenade', icon: '💣', wpn: 'grenade', dmg: 36, splash: 5, note: 'arcs over cover, 5 m splash; auto-thrown at infantry, guns and trucks in reach',
-      vs: { inf:{ lvl:5, rng:22, acc:3 }, armor:{ lvl:1, rng:18, acc:3 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:22, acc:3 }, truck:{ lvl:4, rng:22, acc:3 }, bld:{ lvl:2, rng:18, acc:3 } } }] },
-  bazooka:  { br: 'inf', name: 'Rocket Trooper', base: 125, time: 6, kind: 'inf', men: 4, hpm: 15, speed: 4.6, r: 1.9, vis: 50, rng: 32, rof: 3.2, dmg: 36, wpn: 'at', armor: 'inf', ability: 'atmine', desc: '4 men. Rocket launchers vs tanks. Lays hidden AT mines.',
-    vs: { inf:{ lvl:1, rng:18, acc:3 }, armor:{ lvl:4, rng:32, acc:3 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:2, rng:26, acc:3 }, truck:{ lvl:4, rng:30, acc:3 }, bld:{ lvl:2, rng:24, acc:3 } },
-    gadgets: [{ id: 'atmine', ability: 'atmine', name: 'AT Mine', icon: '🟤', wpn: 'atmine', dmg: 95, splash: 3, note: 'hidden from the enemy until it goes off; only vehicles and guns set it off (rng = trigger radius); 3 per squad',
-      vs: { inf:{ lvl:0, rng:0, acc:0 }, armor:{ lvl:4, rng:3, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:3, acc:5 }, truck:{ lvl:5, rng:3, acc:5 }, bld:{ lvl:0, rng:0, acc:0 } } }] },
-  sniper:   { br: 'inf', name: 'Sniper', base: 110, time: 7, kind: 'inf', men: 2, hpm: 12, speed: 5.0, r: 1.5, vis: 95, rng: 72, rof: 3.0, dmg: 10, wpn: 'snipe', armor: 'inf', ability: 'timebomb', camo: true, desc: '2 men. Very long range vs infantry only, hits 4 shots in 5. Hidden when still. Plants time bombs.',
-    vs: { inf:{ lvl:5, rng:72, acc:5 }, armor:{ lvl:0, rng:0, acc:0 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:0, rng:0, acc:0 }, truck:{ lvl:0, rng:0, acc:0 }, bld:{ lvl:0, rng:0, acc:0 } },
-    gadgets: [{ id: 'timebomb', ability: 'timebomb', name: 'Time Bomb', icon: '⏱️', wpn: 'timebomb', dmg: 150, splash: 6, fuse: 8, note: 'walks to the nearest enemy building / gun / vehicle within reach and plants it; blows up after 8 s (6 m splash); no target: planted here',
-      vs: { inf:{ lvl:1, rng:0, acc:5 }, armor:{ lvl:2, rng:20, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:35, acc:5 }, truck:{ lvl:3, rng:25, acc:5 }, bld:{ lvl:5, rng:40, acc:5 } } }] },
-  engineer: { br: 'inf', name: 'Engineer', base: 85, time: 6, kind: 'inf', men: 4, hpm: 13, speed: 4.8, r: 2, vis: 50, rng: 14, rof: 1.5, dmg: 15, wpn: 'shotgun', armor: 'inf', ability: 'detpack', repair: 9, desc: '4 men. Shotgun (deadly up close), repair tool for vehicles, guns and buildings, detpacks.',
-    vs: { inf:{ lvl:5, rng:14, acc:4 }, armor:{ lvl:1, rng:8, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:12, acc:5 }, truck:{ lvl:3, rng:12, acc:5 }, bld:{ lvl:1, rng:10, acc:5 } },
-    gadgets: [{ id: 'repair', name: 'Repair Tool', icon: '🔧', passive: true, friendly: true, note: 'repairs damaged FRIENDLY vehicles, guns and buildings nearby while idle (level = repair speed)',
-      vs: { inf:{ lvl:0, rng:0, acc:0 }, armor:{ lvl:4, rng:10, acc:0 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:10, acc:0 }, truck:{ lvl:4, rng:10, acc:0 }, bld:{ lvl:3, rng:6, acc:0 } } },
-      { id: 'detpack', ability: 'detpack', name: 'Detpack', icon: '🧨', wpn: 'detpack', dmg: 150, splash: 3, fuse: 2.5, note: 'runs in and sticks a charge on a tank / gun / building in reach; blows after 2.5 s or press again to blow it now',
-      vs: { inf:{ lvl:1, rng:0, acc:5 }, armor:{ lvl:5, rng:40, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:40, acc:5 }, truck:{ lvl:4, rng:40, acc:5 }, bld:{ lvl:5, rng:40, acc:5 } } }] },
-  jettrooper:{ br: 'inf', name: 'Jet Trooper', base: 150, time: 8, kind: 'inf', men: 3, hpm: 14, speed: 5.4, r: 1.8, vis: 60, rng: 34, rof: 2.6, dmg: 22, splash: 2.5, wpn: 'emp', armor: 'inf', ability: 'jetpack', hop: 42, desc: '3 men. EMP launcher stuns and hurts vehicles and guns (weak vs infantry). Jetpack hops over rivers, walls and slopes.',
-    vs: { inf:{ lvl:1, rng:20, acc:3 }, armor:{ lvl:5, rng:34, acc:3 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:32, acc:3 }, truck:{ lvl:5, rng:34, acc:3 }, bld:{ lvl:2, rng:24, acc:3 } },
-    gadgets: [{ id: 'jetpack', ability: 'jetpack', name: 'Jet Hop', icon: '🚀', note: 'flies up to 42 m toward the move target in 1.6 s, over water, walls and slopes; auto-used on long detours' }] },
-  mgteam:   { br: 'inf', name: 'Heavy Gunner', base: 130, time: 7, kind: 'inf', men: 3, hpm: 20, speed: 4.2, r: 1.9, vis: 55, rng: 34, rof: 0.4, dmg: 5, wpn: 'mg', armor: 'inf', suppress: true, ability: 'turret', desc: '3 tough men with chainguns: suppress infantry. Deploy auto-turrets.',
-    vs: { inf:{ lvl:5, rng:34, acc:4 }, armor:{ lvl:1, rng:14, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:4, rng:30, acc:5 }, truck:{ lvl:3, rng:28, acc:5 }, bld:{ lvl:1, rng:18, acc:5 } },
-    gadgets: [{ id: 'turret', ability: 'turret', name: 'Auto-Turret', icon: '🛰️', summon: 'turret', note: 'deploys a small auto-turret (Artillery body, 90 hp) that shoots infantry by itself; 2 per squad, 1 at a time; matrix = the turret gun' }] },
-  // summoned, not built: the Heavy Gunner's auto-turret
-  turret:   { br: 'inf', name: 'Auto-Turret', summon: 'mgteam', cost: 0, time: 0, kind: 'gun', hp: 90, speed: 0, turn: 4, r: 1.3, vis: 50, rng: 32, rof: 0.45, dmg: 5, wpn: 'mg', armor: 'gun', deploy: 1.5, fullTraverse: true, desc: 'Deployed by a Heavy Gunner. Auto-targets infantry. Cannot move.',
-    vs: { inf:{ lvl:4, rng:32, acc:4 }, armor:{ lvl:0, rng:0, acc:0 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:2, rng:24, acc:4 }, truck:{ lvl:2, rng:26, acc:4 }, bld:{ lvl:0, rng:0, acc:0 } } },
+  // infantry (Barracks)
+  rifle:    { br: 'inf', name: 'Rifle Squad', cost: 100, time: 5, kind: 'inf', men: 8, hpm: 12, speed: 5.2, r: 2.3, vis: 55, rng: 28, rof: 1.0, dmg: 10, wpn: 'mg', armor: 'inf', ability: 'sprint', desc: '8 men. Cheap all-rounder.',
+    vs: { inf:{ lvl:4, rng:28, acc:4 }, armor:{ lvl:1, rng:16, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:26, acc:5 }, truck:{ lvl:3, rng:24, acc:5 }, bld:{ lvl:1, rng:18, acc:5 } } },
+  bazooka:  { br: 'inf', name: 'Bazooka Team', cost: 170, time: 6, kind: 'inf', men: 4, hpm: 15, speed: 4.6, r: 1.9, vis: 50, rng: 32, rof: 3.2, dmg: 36, wpn: 'at', armor: 'inf', ability: 'ambush', desc: '4 men. Anti-tank.',
+    vs: { inf:{ lvl:1, rng:18, acc:3 }, armor:{ lvl:4, rng:32, acc:3 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:2, rng:26, acc:3 }, truck:{ lvl:4, rng:30, acc:3 }, bld:{ lvl:2, rng:24, acc:3 } } },
+  scout:    { br: 'inf', name: 'Scout Team', cost: 90, time: 4, kind: 'inf', men: 3, hpm: 12, speed: 6.2, r: 1.7, vis: 105, rng: 24, rof: 1.2, dmg: 3, wpn: 'mg', armor: 'inf', ability: 'binoculars', desc: '3 men. Huge vision.',
+    vs: { inf:{ lvl:4, rng:24, acc:4 }, armor:{ lvl:1, rng:12, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:22, acc:5 }, truck:{ lvl:3, rng:20, acc:5 }, bld:{ lvl:1, rng:14, acc:5 } } },
+  engineer: { br: 'inf', name: 'Engineers', cost: 150, time: 6, kind: 'inf', men: 5, hpm: 12, speed: 4.8, r: 2, vis: 50, rng: 22, rof: 1.2, dmg: 5, wpn: 'mg', armor: 'inf', ability: 'mine', repair: 9, desc: '5 men. Repair nearby vehicles and buildings, lay mines.',
+    vs: { inf:{ lvl:4, rng:22, acc:4 }, armor:{ lvl:1, rng:12, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:20, acc:5 }, truck:{ lvl:3, rng:18, acc:5 }, bld:{ lvl:1, rng:14, acc:5 } } },
+  mgteam:   { br: 'inf', name: 'Machine Gun Team', cost: 160, time: 6, kind: 'inf', men: 4, hpm: 14, speed: 4.4, r: 1.9, vis: 52, rng: 34, rof: 0.55, dmg: 7, wpn: 'mg', armor: 'inf', suppress: true, ability: 'deploy', desc: '4 men. Suppresses infantry.',
+    vs: { inf:{ lvl:4, rng:34, acc:4 }, armor:{ lvl:1, rng:14, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:30, acc:5 }, truck:{ lvl:3, rng:28, acc:5 }, bld:{ lvl:1, rng:18, acc:5 } } },
+  commando: { br: 'inf', name: 'Commandos', cost: 320, time: 9, kind: 'inf', men: 4, hpm: 26, speed: 5.8, r: 1.9, vis: 65, rng: 28, rof: 0.8, dmg: 12, wpn: 'mg', armor: 'inf', ability: 'satchel', desc: '4 elite men. Satchel charge vs tanks and buildings.',
+    vs: { inf:{ lvl:4, rng:28, acc:4 }, armor:{ lvl:1, rng:16, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:26, acc:5 }, truck:{ lvl:3, rng:24, acc:5 }, bld:{ lvl:1, rng:18, acc:5 } } },
   jeep:     { br: 'inf', name: 'Recon Jeep', cost: 100, time: 5, kind: 'veh', hp: 50, speed: 14, turn: 3.4, r: 1.6, vis: 100, rng: 28, rof: 0.9, dmg: 6, wpn: 'mg', armor: 'light', desc: 'Fast, sees far. Weak.',
     vs: { inf:{ lvl:4, rng:28, acc:4 }, armor:{ lvl:1, rng:14, acc:5 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:26, acc:5 }, truck:{ lvl:3, rng:26, acc:5 }, bld:{ lvl:1, rng:16, acc:5 } } },
   // armor (Tank factory)
@@ -109,40 +96,23 @@ export const UNITS = {
     vs: { inf:{ lvl:4, rng:35, acc:3 }, armor:{ lvl:3, rng:35, acc:3 }, air:{ lvl:0, rng:0, acc:0 }, art:{ lvl:5, rng:35, acc:3 }, truck:{ lvl:4, rng:35, acc:3 }, bld:{ lvl:5, rng:35, acc:3 } } },
 };
 for (const u of Object.values(UNITS)) if (u.kind === 'inf') u.hp = u.men * u.hpm;
-UNITS.mgteam.gadgets[0].vs = UNITS.turret.vs;
-// buildable types (the auto-turret is summoned, never built or listed)
-// COST RULE (infantry): the more / better gear a class carries, the more it costs.
-//   cost = base (men + main weapon) + GEAR_COST of every gadget it carries.
-// A stronger secondary item = a higher GEAR_COST, so a squad with a better gadget is always dearer than the same
-// squad with a weaker one. Change a gadget's strength -> change its GEAR_COST here; the cost follows automatically.
-export const GEAR_COST = { grenade: 20, timebomb: 40, atmine: 45, detpack: 45, repair: 30, jetpack: 50, turret: 60 };
-for (const U of Object.values(UNITS)) if (U.base !== undefined) {
-  U.gear = (U.gadgets || []).map((g) => ({ id: g.id, icon: g.icon, name: g.name, cost: GEAR_COST[g.id] ?? 0 }));
-  U.cost = U.base + U.gear.reduce((a, g) => a + g.cost, 0);
-}
-export const UNIT_TYPES = Object.keys(UNITS).filter((t) => !UNITS[t].summon);
-// gadget damage: weapon id -> gadget (its matrix sets the multiplier per body)
-export const GADGET_WPN = {};
-for (const u of Object.values(UNITS)) for (const g of u.gadgets || []) if (g.wpn) GADGET_WPN[g.wpn] = g;
-// old saved scenarios / share codes used these type ids
-export const TYPE_ALIAS = { scout: 'sniper', commando: 'jettrooper' };
 for (const u of Object.values(UNITS)) if (u.kind === 'air') u.armor = 'air';
 for (const u of Object.values(UNITS)) u.body = ARMOR_BODY[u.armor];   // body type: Infantry / Armor / Air / Artillery / Truck/Jeep
 
 export const ABILITIES = {
-  grenade:  { key: 'KeyQ', label: 'Q', name: 'Grenade', cd: 14, desc: 'Throw a grenade at the best enemy group in reach (arc, 5 m splash). Auto-thrown at infantry.' },
-  atmine:   { key: 'KeyE', label: 'E', name: 'AT Mine', cd: 5, charges: 3, desc: 'Lay a hidden anti-tank mine here (3 per squad). Only vehicles and guns set it off.' },
-  timebomb: { key: 'KeyR', label: 'R', name: 'Time Bomb', cd: 30, desc: 'Sneak to the nearest enemy building or gun and plant a bomb; it blows up after 8 s.' },
-  detpack:  { key: 'KeyF', label: 'F', name: 'Detpack', cd: 22, desc: 'Run in and stick a charge on the nearest tank, gun or building. Press again to blow it now.' },
-  jetpack:  { key: 'KeyG', label: 'G', name: 'Jet Hop', cd: 12, desc: 'Fly up to 42 m toward the move target: over rivers, walls and slopes.' },
-  turret:   { key: 'KeyT', label: 'T', name: 'Auto-Turret', cd: 20, charges: 2, desc: 'Deploy an auto-turret here (2 per squad, 1 at a time). It shoots infantry by itself.' },
+  sprint:     { key: 'KeyQ', label: 'Q', name: 'Sprint', cd: 20, dur: 6, desc: 'Run 80% faster for 6 s.' },
+  ambush:     { key: 'KeyE', label: 'E', name: 'Ambush', cd: 12, desc: 'Hide while still. First shot deals double damage.' },
+  binoculars: { key: 'KeyR', label: 'R', name: 'Binoculars', cd: 25, dur: 8, desc: 'Reveal a wide area for 8 s.' },
+  mine:       { key: 'KeyF', label: 'F', name: 'Lay Mine', cd: 10, desc: 'Hidden mine; blows up enemy vehicles.' },
+  deploy:     { key: 'KeyG', label: 'G', name: 'Deploy MG', cd: 3, desc: 'Set up: much faster fire and longer range, cannot move.' },
+  satchel:    { key: 'KeyT', label: 'T', name: 'Satchel Charge', cd: 25, desc: 'Run in and blow up the nearest tank or building.' },
 };
 
 // hx/hz: half size of footprint; door points toward the enemy
 export const BUILDINGS = {
   hq:        { name: 'HQ', cost: 0, time: 0, hp: 1800, hx: 7, hz: 6, h: 7, units: [] },
   depot:     { br: 'eco', name: 'Supply Depot', cost: 250, time: 7, hp: 450, hx: 4.5, hz: 4.5, h: 4, units: [], desc: 'Place on a supply spot. +$270/min.' },
-  barracks:  { br: 'inf', name: 'Barracks', cost: 300, time: 8, hp: 600, hx: 6, hz: 4.5, h: 5, units: ['rifle', 'bazooka', 'sniper', 'engineer', 'jettrooper', 'mgteam'], desc: 'All 6 infantry classes.' },
+  barracks:  { br: 'inf', name: 'Barracks', cost: 300, time: 8, hp: 600, hx: 6, hz: 4.5, h: 5, units: ['rifle', 'bazooka', 'scout', 'engineer', 'mgteam', 'commando'], desc: 'All infantry squads.' },
   recon:     { br: 'inf', name: 'Recon Post', cost: 200, time: 6, hp: 400, hx: 4, hz: 4, h: 9, units: ['jeep'], desc: 'Recon jeeps: fast, big vision.' },
   factory:   { br: 'armor', name: 'Tank Factory', cost: 500, time: 11, hp: 800, hx: 7.5, hz: 6, h: 7, units: ['light', 'medium', 'heavy'], desc: 'Light, medium and heavy tanks.' },
   atdepot:   { br: 'art', name: 'AT Gun Depot', cost: 350, time: 8, hp: 550, hx: 5.5, hz: 4.5, h: 4.5, units: ['atgun'], desc: 'Towed anti-tank guns.' },

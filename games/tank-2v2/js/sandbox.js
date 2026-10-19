@@ -2,7 +2,7 @@
 // then ▶ Play it with the real game code. ⏸ pause / speed / ↺ reset to setup / save, load, export, import.
 // Loaded lazily by main.js. The world itself is the scenario: snapshot() turns it into a list of items, rebuild() turns
 // items back into a world (Reset, Move, Rotate, Delete, Load and Import all go through these two).
-import { UNITS, UNIT_TYPES, TYPE_ALIAS, BUILDINGS, BRANCHES } from './config.js';
+import { UNITS, BUILDINGS, BRANCHES } from './config.js';
 import { svg } from './icons.js';
 import { ringsApi } from './examiner.js';
 
@@ -170,8 +170,7 @@ function scenario() { return { v: 1, items: S.phase === 'setup' ? snapshot() : S
 function load(sc) {
   if (!sc || !Array.isArray(sc.items)) throw new Error('not a sandbox scenario');
   if (sc.opts) S.opts = { ...S.opts, ...sc.opts, money: { ...S.opts.money, ...(sc.opts.money || {}) } }; savePrefs();
-  // old codes: scout -> sniper, commando -> jettrooper (the 6 infantry classes); unknown types are skipped
-  const items = sc.items.map((it) => (it && it.k === 'u' && TYPE_ALIAS[it.t] ? { ...it, t: TYPE_ALIAS[it.t] } : it)).filter((it) => it && (it.k === 'u' && UNITS[it.t] && !UNITS[it.t].summon) || (it.k === 'b' && BUILDINGS[it.t])).map((it) => ({ ...it, team: it.team === 'red' ? 'red' : 'blue', x: +it.x || 0, z: +it.z || 0, hp: it.hp > 0 && it.hp <= 1 ? it.hp : 1 }));
+  const items = sc.items.filter((it) => (it.k === 'u' && UNITS[it.t]) || (it.k === 'b' && BUILDINGS[it.t])).map((it) => ({ ...it, team: it.team === 'red' ? 'red' : 'blue', x: +it.x || 0, z: +it.z || 0, hp: it.hp > 0 && it.hp <= 1 ? it.hp : 1 }));
   rebuild(items); S.phase = 'setup'; S.setup = items; A.game.paused = true; render();
   return items.length;
 }
@@ -191,7 +190,7 @@ function renderPalette() {
   const el = $('#sbxsec-place'); if (!el) return;
   const btn = (k, t, name, br) => `<button class="sbi ${S.tool?.k === k && S.tool.t === t ? 'on' : ''}" data-tool="${k}:${t}" style="--c:${BRANCHES[br]?.color || '#9fb3c8'}" title="${esc(name)}">${svg(t, S.team)}<span>${esc(name)}</span></button>`;
   const bl = Object.keys(BUILDINGS).map((t) => btn('b', t, BUILDINGS[t].name, BUILDINGS[t].br || 'eco')).join('');
-  const groups = BR_ORDER.map((br) => `<div class="sbg" style="--c:${BRANCHES[br].color}"><div class="sbgh">${BR_ICON[br]} ${BRANCHES[br].name}</div><div class="sbgrid">${UNIT_TYPES.filter((t) => UNITS[t].br === br).map((t) => btn('u', t, UNITS[t].name, br)).join('')}</div></div>`).join('');
+  const groups = BR_ORDER.map((br) => `<div class="sbg" style="--c:${BRANCHES[br].color}"><div class="sbgh">${BR_ICON[br]} ${BRANCHES[br].name}</div><div class="sbgrid">${Object.keys(UNITS).filter((t) => UNITS[t].br === br).map((t) => btn('u', t, UNITS[t].name, br)).join('')}</div></div>`).join('');
   el.innerHTML = `<div class="sbteam" role="group" aria-label="Team"><button data-team="blue" class="${S.team === 'blue' ? 'on' : ''}">🔵 Blue</button><button data-team="red" class="${S.team === 'red' ? 'on' : ''}">🔴 Red</button><button data-tool="" class="sbsel ${!S.tool ? 'on' : ''}" title="Select / move existing pieces">👆 Select</button></div>
     <div class="sbhint">${S.tool ? `Click / tap the map to place <b>${esc(nameOf(S.tool))}</b> (${S.team}) · right-click or 👆 to stop` : S.phase === 'running' ? '⏸ Pause to place or edit' : 'Pick a piece, then click / tap the map. Click a piece to select it.'}</div>
     <div class="sbsel-row" id="sbxselrow"></div>

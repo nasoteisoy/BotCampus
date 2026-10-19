@@ -190,12 +190,3 @@ body.examiner #toast { top: 52px; z-index: 12; background: rgba(20, 40, 70, .92)
 .exlab .exrt { margin-left: auto; display: inline-flex; gap: 4px; } .exlab .exrt .extgl { margin-left: 0; }
 .apips { display: inline-flex; gap: 1.5px; } .apips i { width: 5px; height: 9px; border-radius: 1px; background: rgba(255,255,255,.14); } .apips i.on { background: #ffd23f; }
 .exm-acc { grid-column: 2 / -1; font-size: 10.5px; color: #c8b98a; margin-top: -1px; white-space: normal; }
-
-.exgad { margin: 4px 0; padding: 5px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; font-size: 12px; }
-.exgad kbd { font: 700 10px system-ui; color: #ffe08a; border: 1px solid #ffe08a; border-radius: 3px; padding: 0 3px; }
-.exgad small { color: #9fb0c0; }
-.exgrows { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
-.exgrows span { border-left: 3px solid var(--c); padding: 0 5px; background: rgba(255,255,255,.04); border-radius: 3px; font-size: 11px; }
-.exgrows span.cant { opacity: .4; }
-.exgn { color: #9fb0c0; font-size: 11px; margin-top: 2px; }
-.exchk.inl { display: inline-flex; margin-left: 8px; font-weight: 400; }

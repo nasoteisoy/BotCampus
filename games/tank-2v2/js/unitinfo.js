@@ -1,6 +1,5 @@
 // Shared unit read-outs used by the Unit Examiner, the Unit Guide and the in-game live-stats card:
-//  - unitModel(): the 6-row attack matrix + extra rings (vision, min range, rocket window, bomb drop, gadget reach, repair)
-//  - gadgetRows(): each gadget's own 6-row matrix (grenade, AT mine, time bomb, repair, detpack, auto-turret)
+//  - unitModel(): the 6-row attack matrix + extra rings (vision, min range, deploy, rocket window, bomb drop, satchel, repair)
 //  - readout(): live state of one unit (HP/men, state, target, reload, cooldowns, damage dealt)
 // Pure functions: everything game-specific comes in through the `A` API object from main.js (EXAPI).
 import { UNITS, BUILDINGS, ABILITIES, BODIES, BODY_KEYS, LVL_MULT, ACC_HIT, CONCEAL_HIT, ACC_SPREAD, ACC_RKT, CONCEAL_SPREAD, BLD_SPREAD, SHELL_LEAD } from './config.js';
@@ -8,18 +7,14 @@ import { UNITS, BUILDINGS, ABILITIES, BODIES, BODY_KEYS, LVL_MULT, ACC_HIT, CONC
 export const f1 = (n) => (Math.round(n * 10) / 10).toFixed(1), f0 = (n) => String(Math.round(n));
 export const BODY_COLOR = { inf: '#7ddc5a', armor: '#ff8a3d', air: '#4fd6ff', art: '#ff5ab4', truck: '#ffd23f', bld: '#b48cff' };
 export const CLASSES = BODY_KEYS.map((k) => ({ k, label: BODIES[k].name, icon: BODIES[k].icon, color: BODY_COLOR[k] }));   // the 6 body types
-export const HITSCAN = { mg: true, flak: true, aamg: true, snipe: true, shotgun: true };
+export const HITSCAN = { mg: true, flak: true, aamg: true };
 export const EXTRA = {
   vis: { label: 'Vision', icon: '👁', color: '#f2f6ff' },
   min: { label: 'Min range', icon: '⛔', color: '#ff3b3b' },
   dive: { label: 'Rocket window', icon: '🚀', color: '#ffffff' },
   drop: { label: 'Bomb release', icon: '💣', color: '#ffffff' },
-  grenade: { label: 'Grenade throw', icon: '💣', color: '#c8ff5a' },
-  mine: { label: 'Mine trigger', icon: '🟤', color: '#ffcc33' },
-  timebomb: { label: 'Time bomb reach', icon: '⏱️', color: '#ff6060' },
-  detpack: { label: 'Detpack reach', icon: '🧨', color: '#ff6060' },
-  hop: { label: 'Jet hop', icon: '🚀', color: '#ffa94d' },
-  turret: { label: 'Turret gun', icon: '🛰️', color: '#7fe66a' },
+  deploy: { label: 'Deployed range', icon: '⚙️', color: '#ffffff' },
+  satchel: { label: 'Satchel reach', icon: '💣', color: '#ff6060' },
   repair: { label: 'Repair radius', icon: '🔧', color: '#8ff7ff' },
 };
 export const maxR = (vs) => Math.max(0, ...BODY_KEYS.map((b) => (vs[b].lvl > 0 ? vs[b].rng : 0)));
@@ -56,31 +51,10 @@ export function unitModel(def, o = {}) {
   if (def.minRng) extras.push({ k: 'min', r: def.minRng, note: 'cannot fire at targets closer than this' });
   if (w === 'rocket') { const [wn, wx] = def.rocketWin || [14, 38]; extras.push({ k: 'min', r: wn, note: `rockets fire only when the target is more than ${wn} ahead; closer passes extend out and come back around` }); extras.push({ k: 'dive', r: wx, note: `dives within 70, fires 2 rocket pairs when the target is ${wn}–${wx} ahead (splash 4)` }); }
   if (w === 'bomb' && o.bombThrow) { const thr = o.bombThrow(def.speed, o.bombFall(def.alt - 1)); extras.push({ k: 'drop', r: thr, note: `releases ${f0(thr)} before the (predicted) target position: a stick of 6 bombs 2.2 apart centred on it, splash ${def.splash}; closer starts extend out and come back around` }); }
-  for (const g of def.gadgets || []) {
-    const gv = g.summon ? UNITS[g.summon]?.vs : g.vs;
-    if (g.id === 'grenade') extras.push({ k: 'grenade', r: maxR(gv), note: `throws up to ${maxR(gv)} m (not closer than 7), ${g.splash} m splash` });
-    else if (g.id === 'atmine') extras.push({ k: 'mine', r: maxR(gv), note: `a vehicle or gun within ${maxR(gv)} m of the mine sets it off; infantry don't` });
-    else if (g.id === 'timebomb' || g.id === 'detpack') extras.push({ k: g.id, r: maxR(gv), note: `runs to a target up to ${maxR(gv)} m away and plants it (${g.fuse} s fuse, ${g.splash} m splash)` });
-    else if (g.id === 'jetpack') extras.push({ k: 'hop', r: def.hop || 42, note: `hops up to ${def.hop || 42} m in one jump` });
-    else if (g.id === 'turret') extras.push({ k: 'turret', r: maxR(gv), note: `the deployed turret shoots infantry up to ${maxR(gv)} m` });
-    else if (g.id === 'repair') extras.push({ k: 'repair', r: g.vs.armor.rng, note: `repairs damaged friendly vehicles and guns within ${g.vs.armor.rng} (buildings within ${g.vs.bld.rng} of the wall) while idle` });
-  }
-  if (def.repair && !def.gadgets?.some((g) => g.id === 'repair')) extras.push({ k: 'repair', r: 10, note: 'repairs damaged friendly vehicles within 10 (buildings within 6 of the wall) while idle' });
+  if (def.ability === 'deploy' && !o.deployed) extras.push({ k: 'deploy', r: maxR(vs) + 8, note: 'range once deployed (+8)' });
+  if (def.ability === 'satchel') extras.push({ k: 'satchel', r: 45, note: 'finds the nearest tank/gun/building within 45' });
+  if (def.repair) extras.push({ k: 'repair', r: 10, note: 'repairs damaged friendly vehicles within 10 (buildings within 6 of the wall) while idle' });
   return { rows, extras };
-}
-
-// gadget matrices: one 6-row block per gadget (the turret block is the turret gun's own matrix)
-export function gadgetRows(def) {
-  return (def.gadgets || []).map((g) => {
-    const vs = g.summon ? UNITS[g.summon]?.vs : g.vs;
-    const A = g.ability ? ABILITIES[g.ability] : null;
-    const rows = vs ? CLASSES.map((c) => {
-      const v = vs[c.k], can = v.lvl > 0;
-      let note = !can ? "lvl 0: no effect" : g.friendly ? `repair speed ×${LVL_MULT[v.lvl]} · within ${v.rng} m` : g.id === 'atmine' ? `set off within ${v.rng} m` : (g.id === 'timebomb' || g.id === 'detpack') && v.rng === 0 ? 'splash only (not run at)' : `reach ${v.rng} m`;
-      return { ...c, lvl: v.lvl, rng: v.rng, acc: v.acc ?? 0, mult: LVL_MULT[v.lvl] || 0, can, note };
-    }) : [];
-    return { id: g.id, name: g.name, icon: g.icon, note: g.note, key: A?.label || null, cd: A?.cd || 0, charges: A?.charges || 0, dmg: g.summon ? UNITS[g.summon].dmg : g.dmg || 0, splash: g.splash || 0, fuse: g.fuse || 0, passive: !!g.passive, friendly: !!g.friendly, summon: g.summon || null, rows };
-  });
 }
 
 // ---------- live readout ----------
@@ -97,9 +71,8 @@ export function stateOf(A, u) {
     return ['✈️', s];
   }
   if (u.garrison) return ['🏠', 'garrisoned in a house'];
-  if (u.hop) return ['🚀', 'jet hop'];
-  if (u.empUntil > t) return ['⚡', `EMP: stunned ${f1(u.empUntil - t)} s`];
-  if (u.run) return [u.run.kind === 'detpack' ? '🧨' : '⏱️', `running to plant ${u.run.kind === 'detpack' ? 'a detpack' : 'a time bomb'}`];
+  if (u.satchel) return ['💣', u.satchel.fuse !== undefined ? `satchel planted, fuse ${f1(Math.max(0, u.satchel.fuse))} s` : 'running to plant satchel'];
+  if (u.wantDeploy) return ['⚙️', 'deploying (stop to set up)'];
   const moving = u.speed > .4 || u.path.length;
   if (moving) return ['🏃', (t < u.sprintUntil ? 'sprinting' : 'moving') + (u.order?.type === 'attack' ? ' (closing in on target)' : '')];
   const pre = u.deployed ? 'deployed · ' : u.ambush ? 'ambush (hidden) · ' : '';
@@ -124,10 +97,8 @@ export function readout(A, u) {
   const flags = [];
   if (t < u.sprintUntil) flags.push('🏃 sprint ' + f1(u.sprintUntil - t) + ' s');
   if (t < u.suppressedUntil) flags.push('😵 suppressed');
-  if (u.empUntil > t) flags.push('⚡ EMP ' + f1(u.empUntil - t) + ' s');
-  if (u.def.ability && ABILITIES[u.def.ability]?.charges) flags.push(`${ABILITIES[u.def.ability].name}: ${u.charges} left`);
-  if (u.turretRef?.alive) flags.push('🛰️ turret up');
-  if (u.detpack) flags.push('🧨 detpack planted');
+  if (u.deployed) flags.push('⚙️ deployed');
+  if (u.ambush) flags.push('🌿 ambush');
   if (!A.isAir(u) && u.alive) { const p = A.pos(u); if (A.inForest(p.x, p.z)) flags.push('🌲 in forest'); else if (A.inCity(p.x, p.z)) flags.push('🏘️ in town'); if (A.onRoad(p.x, p.z)) flags.push('🛣️ on road'); const c = A.concealed(u); if (c) flags.push('🙈 concealed ' + c); }
   const ab = def.ability ? { key: def.ability, name: ABILITIES[def.ability].name, cd: Math.max(0, u.cd), max: ABILITIES[def.ability].cd } : null;
   return {
@@ -136,7 +107,7 @@ export function readout(A, u) {
     target: tgt ? nameOf(tgt) : null, targetDist: tgt && u.alive ? A.distTo(u, tgt) : null, targetRange: tgt && u.alive && !A.isAir(u) ? A.rangeOf(u, tgt) : null,
     range: u.alive && !A.isAir(u) ? A.rangeOf(u, null) : def.rng || 0, minRng: def.minRng || 0,
     reload: Math.max(0, u.reload), rof: effRof(A, u), speed: u.speed || 0, maxSpeed: A.isAir(u) ? def.speed : (u.alive ? A.speedOf(u) : 0),
-    ability: ab, charges: u.charges || 0, emp: u.empUntil > t, hop: !!u.hop, dealt: u.dealt || 0, shots: u.shots || 0, hits: u.hits || 0, kills: 0,
+    ability: ab, dealt: u.dealt || 0, shots: u.shots || 0, hits: u.hits || 0, kills: 0,
     alt: A.isAir(u) ? A.pos(u).y : null, ammo: A.isAir(u) ? u.ammo : null, airState: u.airState || null,
     x: A.pos(u).x, z: A.pos(u).z, order: u.order?.type || null,
   };
@@ -170,9 +141,7 @@ export function accInfo(def, body, v) {
 export const ACC_LEGEND = [
   ['🎯', 'Accuracy level', 'acc 1–5 per body. 3 = the normal shell spread; MG/flak levels are hit chances.'],
   ['🔫', 'MG, flak, fighter guns', `roll a hit per burst: acc 1–5 = ${ACC_HIT.slice(1).map(pct).join(' / ')}.`],
-  ['🔭', 'Sniper & shotgun', 'hit chance per shot like MG bursts. Snipers hide (concealment 2) when standing still 2 s after a shot. Shotgun damage falls off with distance: full at point blank, ~40% at max range.'],
-  ['⚡', 'EMP & gadgets', 'EMP bolts fly straight (no drop) and stun vehicles and guns for 3 s: ¼ speed, no firing. Grenades arc (acc = landing scatter). Mines, time bombs and detpacks always hit what is in their splash.'],
-  ['🌲', 'Concealment', `infantry in forest, town, a house, or a still sniper: MG hit chance ×${CONCEAL_HIT.toFixed(2)} (72% → 50%). Any concealed target: shell wobble ×${CONCEAL_SPREAD}.`],
+  ['🌲', 'Concealment', `infantry in forest, town, a house or on ambush: MG hit chance ×${CONCEAL_HIT.toFixed(2)} (72% → 50%). Any concealed target: shell wobble ×${CONCEAL_SPREAD}.`],
   ['💥', 'Shells & bazookas', `sideways wobble ±(0.6 + 0.05 × distance) × acc factor (acc 1–5 = ×${ACC_SPREAD.slice(1).join(' / ×')}); the worst shot is 2× that. Buildings are big: ×${BLD_SPREAD}.`],
   ['🏃', 'Moving targets', `direct-fire shells lead ${Math.round(SHELL_LEAD * 100)}% of the target's motion, so fast movers get missed more. Howitzer shells do not lead. Bombers lead exactly; plane rockets aim at the current spot.`],
   ['💣', 'Howitzer & bomber', 'howitzer: landing spread ±(2 + 0.045 × distance) × acc factor. Bomber: 6 bombs, 2.2 m apart × acc factor, centred on the aim point.'],
