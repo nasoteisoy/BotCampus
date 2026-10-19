@@ -25,7 +25,7 @@ export function loadArmies(storage = globalThis.localStorage) {
     for (const n of d.nations) if (n && typeof n.id === 'string') out.nations.push({ id: n.id, name: clean(n.name) || 'Nation', ...sanitizeNation(n), _roster: n.roster });
     const ids = new Set(out.nations.map((n) => n.id));
     // v4 save: each nation's 6-slot roster comes first
-    if (d.v === 3) for (const n of out.nations) out.looks.push(...rosterLooks(n.id, Array.isArray(n._roster) && n._roster.length ? n._roster : defaultRoster()));
+    if (d.v === 3) for (const n of out.nations) { const filled = Array.isArray(n._roster) ? n._roster.filter((r) => r && !r.blank) : []; out.looks.push(...rosterLooks(n.id, filled.length ? filled : defaultRoster())); }
     for (const l of d.looks || []) {
       if (!l || l.unit !== 'trooper' || !ids.has(l.nationId)) continue;
       const st = d.v === 3 ? undigits(l.u, TROOPER_FIELDS, TROOPER_DEFAULT) : undigitsV2Trooper(l.u); if (!st) continue;
