@@ -175,3 +175,35 @@ svg { display: block; }
   #tabs button .tl { font-size: 9.5px; } #tabs button.on .ti { font-size: 16px; }
   #sechead { padding: 3px 8px; } #sechead b { font-size: 12px; }
 }
+
+/* ---------- v4.2: blank roster slots, slot sheet, templates ---------- */
+#panel { position: relative; }
+#roster button.blank { border-style: dashed; opacity: .8; background: rgba(255,255,255,.02); }
+#roster button.blank .ri { font-size: 20px; font-weight: 900; color: #6ff3ff; }
+#roster button.blank small { color: #9fb0c0; }
+#roster button.blank.on { opacity: 1; }
+#panel.sheet #tabs, #panel.sheet #sechead, #panel.sheet #pbody { display: none; }
+#sheet { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 10px 14px; background: rgba(255,255,255,.06); border-top: 1px solid rgba(111,243,255,.35); margin-top: 6px; }
+#sheet.hidden { display: none; }
+#sheet .shhead { display: flex; align-items: center; gap: 8px; }
+#sheet .shhead b { font-size: 15px; } #sheet .shhead small { flex: 1; min-width: 0; color: #9fb0c0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sheet .ib { width: 40px; height: 40px; border-radius: 9px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); padding: 0; font-size: 16px; flex: none; }
+#sheet .saverow input { font-size: 16px; } /* 16px: no iOS zoom-on-focus */
+.acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.acts .btn { flex: 1; min-height: 40px; } .acts .q { flex: 1; font-weight: 800; color: #ff9a8a; font-size: 13px; }
+#sheet .btn.on { border-color: #6ff3ff; color: #6ff3ff; }
+.tiles.icons { grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); }
+.tiles.icons button { height: 42px; padding: 0; } .tiles.icons .ico { font-size: 20px; } .tiles.icons button i { bottom: 0; font-size: 8.5px; }
+.tpls { display: grid; gap: 5px; }
+.tplrole { font-size: 12px; font-weight: 800; color: #cfd8e1; margin: 8px 0 1px; }
+.tpl { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 3px 8px 3px 3px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: inherit; text-align: left; width: 100%; }
+.tpl canvas { width: 50px; height: 50px; flex: none; border-radius: 7px; background: rgba(0,0,0,.25); }
+.tpl .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tpl .nm b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tpl .nm small { font-size: 11px; color: #9fb0c0; line-height: 1.25; }
+.tpl .tc { flex: none; text-align: right; font-size: 12px; font-weight: 800; color: #ffe08a; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.tpl .tc i { font-style: normal; font-size: 10px; color: #8fe3ff; }
+.slotchip { flex: none; display: flex; align-items: center; gap: 3px; height: 26px; margin: -3px -4px -3px 0; padding: 0 6px; border-radius: 8px; border: 1px solid rgba(111,243,255,.4); background: rgba(40,90,110,.35); color: inherit; max-width: 46%; }
+.slotchip em { font-style: normal; font-size: 11px; font-weight: 800; color: #6ff3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slotchip i { font-style: normal; font-size: 11px; }
+#fillRow .btn { font-size: 13px; }

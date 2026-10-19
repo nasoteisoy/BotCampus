@@ -1,9 +1,10 @@
 // Trooper Customizer v4: Player -> Nation (colors + flag + 6-slot trooper roster with loadouts) -> unit looks (trooper, tank).
 import * as THREE from 'three';
-import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=5';
-import * as T from './trooper.js?v=5';
-import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=5';
-import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=5';
+import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=6';
+import * as T from './trooper.js?v=6';
+import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=6';
+import { TEMPLATES, ROLES, STARTER_IDS, SLOT_ICONS, WEAPON_ICONS, NAME_MAX, templateById } from './templates.js?v=6';
+import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=6';
 
 const UNITS = { trooper: T.TROOPER, tank: TANK };
 const NATION_KEYS = new Set(['p', 's', ...T.NATION_FIELDS.map(([k]) => k)]);
@@ -23,14 +24,20 @@ const pick = (a) => a[(Math.random() * a.length) | 0];
 const LS_DB = 'trooper-custom:db', LS_DB_V2 = 'trooper-custom:db-v2', LS_CUR_V1 = 'trooper-custom:current', LS_LOOKS_V1 = 'trooper-custom:looks', MAX_LOOKS = 60, MAX_NATIONS = 12;
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
-function cleanRoster(r) {
-  const def = T.defaultRoster();
-  if (!Array.isArray(r)) return def;
-  return def.map((d, i) => {
-    const x = r[i]; if (!x || typeof x !== 'object') return d;
-    return { name: clean(x.name, 16) || d.name, icon: clean(x.icon, 4) || d.icon, t: T.sanitizeFields(x.t, T.TROOPER_FIELDS, T.TROOPER_DEFAULT) };
-  });
+// roster slot: { blank, name, icon, ia (auto icon), tpl (template id | null), t (v4 kit) }. New nations start with 6 blanks.
+const weaponIcon = (t) => WEAPON_ICONS[t.weapon] || '🔫';
+const blankSlot = () => ({ blank: true, name: '', icon: '', ia: true, tpl: null, t: { ...T.TROOPER_DEFAULT } });
+const tplSlot = (tp) => ({ blank: false, name: tp.name, icon: tp.icon, ia: false, tpl: tp.id, t: { ...tp.t } });
+const blankRoster = () => Array.from({ length: T.ROSTER_SIZE }, blankSlot);
+const starterRoster = () => STARTER_IDS.map((id) => tplSlot(templateById(id)));
+function cleanSlot(x, i) {
+  if (!x || typeof x !== 'object' || x.blank === true) return blankSlot();
+  const t = T.sanitizeFields(x.t, T.TROOPER_FIELDS, T.TROOPER_DEFAULT);
+  const tpl = 'tpl' in x ? (templateById(x.tpl) ? x.tpl : null) : STARTER_IDS[i]; // v4 (pre-4.2) slots were the 6 starter types
+  const ia = x.ia === true, tp = templateById(tpl);
+  return { blank: false, name: clean(x.name, NAME_MAX) || (tp ? tp.name : 'Slot ' + (i + 1)), icon: ia ? weaponIcon(t) : clean(x.icon, 4) || (tp ? tp.icon : weaponIcon(t)), ia, tpl, t };
 }
+function cleanRoster(r) { return Array.isArray(r) ? Array.from({ length: T.ROSTER_SIZE }, (_, i) => cleanSlot(r[i], i)) : blankRoster(); }
 const newNation = (name, colors, roster) => ({ id: newId(), name, ...T.sanitizeNation(colors), roster: cleanRoster(roster) });
 function cleanDB(d) {
   const db = { v: 3, player: { name: clean(d.player && d.player.name) || 'Player' }, nations: [], active: null, slot: 0, unit: d.unit === 'tank' ? 'tank' : 'trooper', tank: null, looks: [], medals: [], debugAward: d.debugAward === true };
@@ -67,7 +74,7 @@ function upgradeV2(d) {
 function migrateV1() {
   const d = { player: { name: 'Player' }, nations: [], looks: [], unit: 'trooper' };
   const combos = new Map();
-  const nationFor = (nat) => { const key = T.nationCode(nat); if (!combos.has(key)) { const n = newNation('Nation ' + (combos.size + 1), nat); combos.set(key, n); d.nations.push(n); } return combos.get(key); };
+  const nationFor = (nat) => { const key = T.nationCode(nat); if (!combos.has(key)) { const n = newNation('Nation ' + (combos.size + 1), nat, starterRoster()); combos.set(key, n); d.nations.push(n); } return combos.get(key); };
   const cur = T.decodeTC1(lsGet(LS_CUR_V1)); // TC1 decode already maps into the v4 kit
   if (cur) { const n = nationFor(cur.nation); d.active = n.id; n.roster[0].t = cur.trooper; }
   let old = []; try { old = JSON.parse(lsGet(LS_LOOKS_V1) || '[]'); } catch (e) { old = []; }
@@ -99,7 +106,12 @@ flushDB();
 const nation = (id = db.active) => db.nations.find((n) => n.id === id) || db.nations[0];
 // current unit looks: trooper = active roster slot of the active nation, tank = shared
 const cur = {
-  get trooper() { return nation().roster[db.slot].t; }, set trooper(v) { nation().roster[db.slot].t = v; },
+  get trooper() { return nation().roster[db.slot].t; },
+  set trooper(v) { // editing a blank slot turns it into a (base) trooper named 'Slot N'
+    const s = nation().roster[db.slot];
+    if (s.blank) Object.assign(s, { blank: false, name: 'Slot ' + (db.slot + 1), ia: true, tpl: null });
+    s.t = v; if (s.ia) s.icon = weaponIcon(v);
+  },
   get tank() { return db.tank; }, set tank(v) { db.tank = v; },
 };
 const unlocked = (w) => db.debugAward || (db.medals[w] | 0) >= MEDALS_NEEDED;
@@ -201,10 +213,12 @@ function disposeSquad() {
   field.remove(squad.blobs); squad.blobs.dispose?.(); squad = null;
 }
 function squadPlan() {
-  if (!squadMix) return [{ unit: db.unit, count: squadN, state: fullState(db.unit), slot: db.unit === 'trooper' ? db.slot : -1 }];
+  if (!squadMix) return [{ unit: db.unit, count: squadN, state: fullState(db.unit), slot: db.unit === 'trooper' && !nation().roster[db.slot].blank ? db.slot : -1 }];
   // mixed: ~10% tanks + the nation's 6 roster types split evenly
   const tanks = Math.max(1, Math.round(squadN / 10)), tr = squadN - tanks, plan = [{ unit: 'tank', count: tanks, state: fullState('tank'), slot: -1 }];
-  nation().roster.forEach((r, i) => { const count = Math.floor(tr / 6) + (i < tr % 6 ? 1 : 0); if (count) plan.push({ unit: 'trooper', count, state: fullState('trooper', r.t), slot: i }); });
+  // blank slots are skipped; with no filled slot the troopers use the base kit
+  const filled = nation().roster.map((r, i) => ({ r, i })).filter((x) => !x.r.blank), types = filled.length ? filled : [{ r: { t: T.TROOPER_DEFAULT }, i: -1 }];
+  types.forEach(({ r, i }, k) => { const count = Math.floor(tr / types.length) + (k < tr % types.length ? 1 : 0); if (count) plan.push({ unit: 'trooper', count, state: fullState('trooper', r.t), slot: i }); });
   return plan;
 }
 function buildSquad() {
@@ -283,6 +297,7 @@ const LUT = new Uint8Array(256);
 for (let i = 0; i < 256; i++) { const c = i / 255; LUT[i] = Math.round(255 * (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055)); }
 const FRAMES = {
   full: { t: [0, 1.0, 0], r: 4.4, az: 0.45, pol: 1.4 },
+  tpl: { t: [-0.02, 1.08, 0.08], r: 3.1, az: 0.55, pol: 1.4 },
   head: { t: [0, 1.65, 0.02], r: 0.85, az: 0.55, pol: 1.4 },
   torso: { t: [0, 1.12, 0], r: 2.0, az: 0.5, pol: 1.35 },
   arm: { t: [0.2, 1.28, 0], r: 1.35, az: 0.95, pol: 1.3 },
@@ -329,8 +344,8 @@ function thumbDataURL(unit, state) {
 }
 function pumpThumbs() {
   let n = 0;
-  while (thumbQueue.length && n < 4) {
-    const job = thumbQueue.shift();
+  while ((thumbQueue.length || sheetThumbs.length) && n < 4) {
+    const job = thumbQueue.length ? thumbQueue.shift() : sheetThumbs.shift();
     if (!job.canvas.isConnected) continue;
     job.canvas.getContext('2d').putImageData(cachedThumb(job.unit, job.state, job.frame), 0, 0); n++;
   }
@@ -388,7 +403,7 @@ const TOGGLES = [['antenna', 'tback', 'Antenna'], ['pennant', 'tback', 'Pennant'
 let tab = 'nation';
 const DEBUG = /[?&]debug=1\b/.test(location.search);
 const tabsEl = $('#tabs'), body = $('#pbody');
-tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) { setTab(b.dataset.tab); tapLabel(b, tabLabel(b.dataset.tab)); } });
+tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) { if (sheet) closeSheet(); setTab(b.dataset.tab); tapLabel(b, tabLabel(b.dataset.tab)); } });
 
 const lab = (ico, txt) => h('div', { className: 'lab' }, [ico, txt ? h('small', { textContent: txt }) : null]);
 function swatchRow(key, palette, custom, glow = false) {
@@ -440,6 +455,7 @@ const SECS = {
     lab('👤', 'player'),
     h('div', { className: 'saverow' }, [h('input', { id: 'playerName', type: 'text', maxLength: 24, placeholder: '👤', 'aria-label': 'Player name', autocomplete: 'off' })]),
     lab('🏳️', 'nations'), h('div', { id: 'nations', className: 'rows' }),
+    lab('🪖', 'roster of the active nation'), h('div', { id: 'fillRow', className: 'acts' }),
     h('button', { id: 'addNation', type: 'button', className: 'btn go wide', title: 'New nation', textContent: '➕ 🏳️' }),
     lab('🎨 1', 'main'), swatchRow('p', T.PRIMARY, true), lab('🎨 2', 'trim'), swatchRow('s', T.SECONDARY, true),
     lab('🧥', 'suit'), swatchRow('suit', T.SUIT, false),
@@ -525,7 +541,7 @@ function refreshPanel() {
     const s2 = { ...nat }; if (c.dataset.sym) s2.sym = +c.dataset.sym; if (c.dataset.sc) s2.sc = +c.dataset.sc;
     drawFlag(c, s2);
   }
-  if (tab === 'nation') { const pn = $('#playerName'); if (document.activeElement !== pn) pn.value = db.player.name; renderNations(); }
+  if (tab === 'nation') { const pn = $('#playerName'); if (document.activeElement !== pn) pn.value = db.player.name; renderNations(); renderFill(); }
   clearTimeout(thumbTimer);
   thumbTimer = setTimeout(() => {
     thumbQueue = [];
@@ -542,6 +558,19 @@ function refreshPanel() {
   if (tab === 'looks') { renderLooks(); refreshCode(); }
 }
 function refreshCode() { const ci = $('#codeIn'); if (ci && document.activeElement !== ci) ci.value = currentCode(); }
+
+// nation-level convenience: fill the roster from the 6 starter templates (asks first if it would replace filled slots)
+function renderFill() {
+  const filled = nation().roster.filter((r) => !r.blank).length, row = $('#fillRow');
+  row.replaceChildren(...(fillConfirm
+    ? [h('span', { className: 'q', textContent: `📋 Replace ${filled} filled?` }), h('button', { type: 'button', id: 'fillOk', className: 'btn bad', title: 'Replace with the 6 starter templates', textContent: '✔️' }), h('button', { type: 'button', id: 'fillNo', className: 'btn', title: 'Keep', textContent: '✖️' })]
+    : [h('button', { type: 'button', id: 'fillStarter', className: 'btn go wide', title: 'Fill roster from 6 starter templates (Trooper, Heavy, Sniper, Engineer, Jet Trooper, Commander)', textContent: `📋 Fill roster: 6 starter templates · ${filled}/6 filled` })]));
+}
+body.addEventListener('click', (e) => {
+  if (e.target.closest('#fillStarter')) { if (nation().roster.some((r) => !r.blank)) { fillConfirm = true; renderFill(); } else fillStarter(); }
+  else if (e.target.closest('#fillOk')) fillStarter();
+  else if (e.target.closest('#fillNo')) { fillConfirm = false; renderFill(); }
+});
 
 // ---------- nations ----------
 let nEdit = null, nDel = null;
@@ -581,7 +610,7 @@ function createNation(name, colors) {
 }
 function nationAct(act, id, arg) {
   const n = db.nations.find((x) => x.id === id); if (!n) return false;
-  if (act === 'activate') { db.active = id; nEdit = nDel = null; applyState(); toast('🏳️ ' + n.name); return true; }
+  if (act === 'activate') { db.active = id; nEdit = nDel = null; sheet = null; fillConfirm = false; applyState(); toast('🏳️ ' + n.name); return true; }
   if (act === 'rename') { nEdit = id; nDel = null; }
   else if (act === 'renok') { const v = clean(arg ?? $(`[data-nid="${id}"] input.rn`)?.value); if (v) n.name = v; nEdit = null; saveDB(); refreshCode(); }
   else if (act === 'del') { if (db.nations.length < 2) return false; nDel = id; nEdit = null; }
@@ -659,7 +688,9 @@ function lookAct(act, id, arg) {
   const l = db.looks.find((x) => x.id === id); if (!l) return false;
   if (act === 'load') {
     const def = UNITS[l.unit], u = T.undigits(l.u, def.fields, def.defaults);
-    db.active = l.nationId; cur[l.unit] = u; switchUnit(l.unit, false); applyState(); toast('✅ ' + l.name); return true;
+    db.active = l.nationId; const wasBlank = l.unit === 'trooper' && nation().roster[db.slot].blank; cur[l.unit] = u;
+    if (wasBlank) nation().roster[db.slot].name = clean(l.name, NAME_MAX) || nation().roster[db.slot].name;
+    switchUnit(l.unit, false); applyState(); toast('✅ ' + l.name); return true;
   }
   if (act === 'copy') copyText(lookCode(l));
   else if (act === 'update') { l.u = T.digits(cur[l.unit], UNITS[l.unit].fields); ensureThumb(l); saveDB(); toast('🔁 ' + l.name); }
@@ -686,10 +717,35 @@ body.addEventListener('keydown', (e) => {
 
 // ---------- share codes ----------
 // TC3 = player + nation + full 6-slot roster + tank. Older TC2/TC1 codes still load (into the active roster slot).
-const currentCode = () => T.encodeTC3({ player: db.player.name, nationName: nation().name, nation: nation(), roster: nation().roster, slot: db.slot, tank: cur.tank, unit: db.unit }, TANK_FIELDS);
+// v4.2 TC3 = the v4 TC3 JSON (r: [name, icon, digits] per slot) + rb (blank flags), rt (template ids), ri (auto-icon flags).
+// v4 TC3 codes (no rb/rt/ri) still load: all slots filled, templates = the 6 starters.
+const b64e = (str) => { let s = ''; for (const x of new TextEncoder().encode(str)) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const b64d = (str) => new TextDecoder().decode(Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
+function encodeRosterTC3() {
+  const n = nation(), R = n.roster;
+  return 'TC3:' + b64e(JSON.stringify({
+    pl: String(db.player.name || '').slice(0, 24), nn: String(n.name || '').slice(0, 24), n: T.nationCode(n), k: T.digits(cur.tank, TANK_FIELDS), u: db.unit === 'tank' ? 'k' : 't',
+    r: R.map((s) => [s.blank ? '' : s.name, s.blank ? '' : s.icon, T.digits(s.t, T.TROOPER_FIELDS)]), sl: db.slot,
+    rb: R.map((s) => (s.blank ? 1 : 0)), rt: R.map((s) => s.tpl || ''), ri: R.map((s) => (s.ia ? 1 : 0)),
+  }));
+}
+const currentCode = () => encodeRosterTC3();
 function parseCode(c) {
   const s = String(c || '').replace(/\s+/g, '');
-  if (/^TC3:/i.test(s)) { const d = T.decodeTC3('TC3:' + s.slice(4), TANK_FIELDS, TANK_DEFAULT); return d && { kind: 'TC3', ...d }; }
+  if (/^TC3:/i.test(s)) {
+    const d = T.decodeTC3('TC3:' + s.slice(4), TANK_FIELDS, TANK_DEFAULT); if (!d) return null;
+    if (d.roster) { // overlay the v4.2 blank / template / auto-icon info
+      let o = {}; try { o = JSON.parse(b64d(s.slice(4))) || {}; } catch (e) { o = {}; }
+      const arr = (a) => (Array.isArray(a) && a.length === T.ROSTER_SIZE ? a : null), rb = arr(o.rb), rt = arr(o.rt), ri = arr(o.ri);
+      d.roster = d.roster.map((r, i) => {
+        if (rb && rb[i] === 1) return blankSlot();
+        const x = { name: clean(o.r[i][0], NAME_MAX) || r.name, icon: r.icon, t: r.t, ia: !!(ri && ri[i] === 1) };
+        if (rt) x.tpl = rt[i] || null;
+        return cleanSlot(x, i);
+      });
+    }
+    return { kind: 'TC3', ...d };
+  }
   if (/^TC2:/i.test(s)) { const d = T.decodeTC2('TC2:' + s.slice(4), TANK_FIELDS, TANK_DEFAULT); return d && { kind: 'TC2', ...d }; }
   const d1 = T.decodeTC1(s); return d1 && { kind: 'TC1', nation: d1.nation, trooper: d1.trooper, unit: 'trooper', nationName: '', player: '' };
 }
@@ -707,7 +763,7 @@ function importNation(nat, name) {
 function loadCode(c) {
   const d = parseCode(c); if (!d) return false;
   importNation(d.nation, d.nationName);
-  if (d.roster) { nation().roster = d.roster.map((r) => ({ ...r, t: { ...r.t } })); db.slot = d.slot; }
+  if (d.roster) { nation().roster = d.roster.map((r) => ({ ...r, t: { ...r.t } })); db.slot = d.slot; sheet = null; }
   else cur.trooper = d.trooper;
   if (d.tank) cur.tank = d.tank;
   switchUnit(d.unit, false); applyState();
@@ -751,7 +807,7 @@ function applyState() {
 }
 function switchUnit(u, apply = true) {
   if (!UNITS[u]) return;
-  const changed = u !== db.unit; db.unit = u; buildTabs(); setTab(tab);
+  const changed = u !== db.unit; db.unit = u; if (changed) sheet = null; buildTabs(); setTab(tab);
   if (apply) applyState();
   if (changed) { if (squadOn) setSquad(true); else camHome(); }
 }
@@ -768,29 +824,146 @@ function randomize() {
   if (db.unit === 'trooper') { o.extra = Math.random() < 0.65 ? 0 : 1 + ((Math.random() * 2) | 0); o.banner = Math.random() < 0.7 ? 1 : 0; o.award = unlocked(o.weapon) && Math.random() < 0.5 ? 1 : 0; }
   setValues(o);
 }
-// ↺ trooper: back to this roster slot's default type (Trooper, Heavy, Sniper, ...); tank: defaults
-function resetUnit() { cur[db.unit] = db.unit === 'trooper' ? { ...T.DEFAULT_ROSTER[db.slot].t } : { ...UNITS[db.unit].defaults }; applyState(); }
-
-// ---------- roster (6 trooper types per nation) ----------
-const rosterEl = $('#roster');
-// section header: '🔫 Weapons · main weapon, ⭐ award' + the roster type being edited
+// ---------- roster (6 trooper slots per nation) ----------
+// slot shape (db v3, v4.2): { blank, name, icon, ia, tpl, t }
+//   blank: true = empty slot (name '' icon '' , t = base kit, not a unit) · ia: auto icon from the main weapon
+//   tpl: template id the slot came from (↺ resets to it) or null (blank trooper: ↺ resets to the base kit)
+const rosterEl = $('#roster'), sheetEl = $('#sheet'), panelEl = $('#panel');
+let sheet = null; // { mode: 'blank' | 'edit', tpl: bool, clear: bool, focus: bool }
+let fillConfirm = false;
+// section header: '🔫 Weapons · main weapon, ⭐ award' + the roster slot being edited (tap to rename / edit)
 function renderSecHead() {
   const d = TAB_DEF[tab], r = db.unit === 'trooper' ? nation().roster[db.slot] : null;
-  $('#sechead').replaceChildren(h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }), h('em', { textContent: r ? r.icon + ' ' + r.name : UNIT_LABEL.tank }));
+  const chip = r ? h('button', { type: 'button', className: 'slotchip', id: 'slotChip', title: r.blank ? 'Fill this slot' : 'Rename / edit this slot' }, [h('em', { textContent: slotLabel(db.slot) }), h('i', { textContent: r.blank ? '' : '✏️' })]) : h('em', { textContent: UNIT_LABEL.tank });
+  $('#sechead').replaceChildren(h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }), chip);
 }
-function renderRoster() {
-  renderSecHead();
+$('#sechead').addEventListener('click', (e) => { if (e.target.closest('#slotChip')) openSheet(db.slot, true); });
+function renderRoster() { renderSecHead(); renderSheet(); renderStrip(); }
+function renderStrip() {
   const show = db.unit === 'trooper'; rosterEl.classList.toggle('hidden', !show); if (!show) return;
-  rosterEl.replaceChildren(...nation().roster.map((r, i) => h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: i === db.slot ? 'on' : '', title: r.icon + ' ' + r.name + ' · 💰' + fmt(unitCost('trooper', fullState('trooper', r.t)).cost), 'aria-label': 'Roster: ' + r.name },
-    [h('span', { className: 'ri', textContent: r.icon }), h('small', { textContent: '💰' + fmt(unitCost('trooper', fullState('trooper', r.t)).cost) })])));
+  rosterEl.replaceChildren(...nation().roster.map((r, i) => {
+    const on = i === db.slot ? 'on' : '';
+    if (r.blank) return h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: 'blank ' + on, title: `➕ Slot ${i + 1} · empty: tap to fill`, 'aria-label': `Roster slot ${i + 1}: empty` }, [h('span', { className: 'ri', textContent: '+' }), h('small', { textContent: 'Slot ' + (i + 1) })]);
+    const c = fmt(unitCost('trooper', fullState('trooper', r.t)).cost);
+    return h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: on, title: r.icon + ' ' + r.name + ' · 💰' + c, 'aria-label': 'Roster: ' + r.name }, [h('span', { className: 'ri', textContent: r.icon }), h('small', { textContent: '💰' + c })]);
+  }));
 }
 function setSlot(i) {
   if (!(i >= 0 && i < T.ROSTER_SIZE)) return false;
   db.slot = i; if (db.unit !== 'trooper') switchUnit('trooper', false);
   applyState(); return true;
 }
-const slotLabel = (i) => { const r = nation().roster[i]; return r.icon + ' ' + r.name; };
-rosterEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-slot]'); if (!b) return; const i = Number(b.dataset.slot); setSlot(i); tapLabel(rosterEl.querySelector(`[data-slot="${i}"]`), slotLabel(i)); });
+const slotLabel = (i) => { const r = nation().roster[i]; return r.blank ? `➕ Slot ${i + 1}` : r.icon + ' ' + r.name; };
+rosterEl.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-slot]'); if (!b) return;
+  const i = Number(b.dataset.slot), s = nation().roster[i], again = i === db.slot && db.unit === 'trooper';
+  if (s.blank || again) openSheet(i, again && !s.blank); else { sheet = null; setSlot(i); }
+  tapLabel(rosterEl.querySelector(`[data-slot="${i}"]`), slotLabel(i));
+});
+function openSheet(i = db.slot, focus = false) {
+  if (db.slot !== i || db.unit !== 'trooper') { db.slot = i; if (db.unit !== 'trooper') switchUnit('trooper', false); }
+  const s = nation().roster[i];
+  sheet = { mode: s.blank ? 'blank' : 'edit', tpl: s.blank, clear: false, focus };
+  applyState(); return sheet.mode;
+}
+function closeSheet() { sheet = null; renderSheet(); }
+// slot edits
+const slotAt = (i = db.slot) => nation().roster[i];
+function applyTemplate(id, i = db.slot) {
+  const tp = templateById(id); if (!tp) return false;
+  nation().roster[i] = tplSlot(tp); db.slot = i; sheet = null; applyState(); toast('📋 ' + tp.icon + ' ' + tp.name); return true;
+}
+function makeBlankTrooper(name, i = db.slot) {
+  const t = { ...T.TROOPER_DEFAULT };
+  nation().roster[i] = { blank: false, name: clean(name, NAME_MAX) || 'Slot ' + (i + 1), icon: weaponIcon(t), ia: true, tpl: null, t };
+  db.slot = i; sheet = null; applyState(); toast('➕ ' + slotLabel(i)); return true;
+}
+function renameSlot(name, i = db.slot) {
+  const s = slotAt(i), v = clean(name, NAME_MAX); if (s.blank || !v) return false;
+  s.name = v; saveDB(); renderSecHead(); renderStrip(); return true; // keeps the sheet (and its input focus) as is
+}
+function setSlotIcon(icon, i = db.slot) {
+  const s = slotAt(i); if (s.blank) return false;
+  if (icon) { s.icon = clean(icon, 4); s.ia = false; } else { s.ia = true; s.icon = weaponIcon(s.t); }
+  applyState(); return true;
+}
+function clearSlot(i = db.slot) { nation().roster[i] = blankSlot(); if (sheet) sheet = { mode: 'blank', tpl: true, clear: false }; applyState(); toast('🗑️ Slot ' + (i + 1)); return true; }
+function fillStarter() { nation().roster = starterRoster(); fillConfirm = false; applyState(); toast('📋 6 starter templates'); return true; }
+// ↺ trooper: back to the slot's template, or to the base kit if it was made as a blank trooper
+function resetUnit() {
+  if (db.unit === 'tank') cur.tank = { ...UNITS.tank.defaults };
+  else { const s = slotAt(); if (!s.blank) { const tp = templateById(s.tpl); s.t = { ...(tp ? tp.t : T.TROOPER_DEFAULT) }; if (s.ia) s.icon = weaponIcon(s.t); } }
+  applyState();
+}
+// template library: grouped by role, thumbnails in the nation's colors, cost + one-line description
+let sheetThumbs = [];
+function templateList() {
+  const box = h('div', { className: 'tpls', id: 'tplList' });
+  for (const r of ROLES) {
+    box.append(h('div', { className: 'tplrole' }, [r.ico + ' ' + r.name]));
+    for (const tp of TEMPLATES.filter((x) => x.role === r.id)) {
+      const st = fullState('trooper', tp.t), c = unitCost('trooper', st), sx = unitStats('trooper', st), cv = h('canvas', { width: TS, height: TS });
+      sheetThumbs.push({ canvas: cv, unit: 'trooper', state: st, frame: 'tpl' });
+      box.append(h('button', { type: 'button', className: 'tpl', 'data-tpl': tp.id, title: `${tp.icon} ${tp.name}: ${tp.desc}` }, [cv,
+        h('span', { className: 'nm' }, [h('b', { textContent: tp.icon + ' ' + tp.name }), h('small', { textContent: tp.desc })]),
+        h('span', { className: 'tc' }, ['💰' + fmt(c.cost), h('i', { textContent: '⚡' + c.power + ' ❤️' + sx.hp })])]));
+    }
+  }
+  return box;
+}
+function renderSheet() {
+  const open = !!sheet && db.unit === 'trooper';
+  panelEl.classList.toggle('sheet', open); sheetEl.classList.toggle('hidden', !open);
+  sheetThumbs = [];
+  if (!open) { sheetEl.replaceChildren(); return; }
+  const i = db.slot, s = slotAt(i);
+  if (s.blank && sheet.mode !== 'blank') sheet = { mode: 'blank', tpl: true, clear: false };
+  const head = h('div', { className: 'shhead' }, [h('b', { textContent: s.blank ? `➕ Slot ${i + 1}` : `${s.icon} Slot ${i + 1}` }),
+    h('small', { textContent: s.blank ? 'empty' : s.tpl ? '📋 ' + templateById(s.tpl).name : '➕ blank trooper' }), h('button', { type: 'button', id: 'shClose', className: 'ib', title: 'Close', 'aria-label': 'Close', textContent: '✖️' })]);
+  const kids = [head];
+  if (sheet.mode === 'blank') {
+    kids.push(lab('➕', 'blank trooper · base kit, name it'),
+      h('div', { className: 'saverow' }, [h('input', { id: 'newSlotName', type: 'text', maxLength: NAME_MAX, placeholder: `🏷️ Slot ${i + 1}`, 'aria-label': 'New slot name', autocomplete: 'off', enterKeyHint: 'done' }),
+        h('button', { id: 'mkBlank', type: 'button', className: 'btn go', title: 'Make a blank trooper', textContent: '➕' })]),
+      lab('📋', `from template · ${TEMPLATES.length}`), templateList());
+  } else {
+    const icons = h('div', { className: 'tiles small icons', 'data-key': 'icon' }, [h('button', { type: 'button', 'data-icon': '', className: s.ia ? 'on' : '', title: 'Auto: main weapon icon', 'aria-label': 'Auto icon' }, [h('span', { className: 'ico', textContent: weaponIcon(s.t) }), h('i', { textContent: 'auto' })]),
+      ...SLOT_ICONS.map((ic) => h('button', { type: 'button', 'data-icon': ic, className: !s.ia && s.icon === ic ? 'on' : '', title: ic, 'aria-label': 'Icon ' + ic }, [h('span', { className: 'ico', textContent: ic })]))]);
+    const acts = sheet.clear
+      ? h('div', { className: 'acts' }, [h('span', { className: 'q', textContent: '🗑️ Clear slot?' }), h('button', { type: 'button', id: 'clearOk', className: 'btn bad', title: 'Clear to blank', textContent: '✔️' }), h('button', { type: 'button', id: 'clearNo', className: 'btn', title: 'Keep', textContent: '✖️' })])
+      : h('div', { className: 'acts' }, [h('button', { type: 'button', id: 'shTpl', className: 'btn' + (sheet.tpl ? ' on' : ''), title: 'Replace with a template', textContent: '📋 Template' }),
+        h('button', { type: 'button', id: 'shReset', className: 'btn', title: s.tpl ? 'Reset to ' + templateById(s.tpl).name : 'Reset to the base kit', textContent: '↺ Reset' }),
+        h('button', { type: 'button', id: 'shClear', className: 'btn', title: 'Clear back to blank', textContent: '🗑️ Clear' })]);
+    kids.push(lab('🏷️', 'name'),
+      h('div', { className: 'saverow' }, [h('input', { id: 'slotName', type: 'text', value: s.name, maxLength: NAME_MAX, 'aria-label': 'Slot name', autocomplete: 'off', enterKeyHint: 'done' }),
+        h('button', { id: 'nameOk', type: 'button', className: 'btn go', title: 'Done', textContent: '✔️' })]),
+      lab('🙂', 'icon'), icons, acts);
+    if (sheet.tpl) kids.push(lab('📋', `replace with template · ${TEMPLATES.length}`), templateList());
+  }
+  sheetEl.replaceChildren(...kids);
+  if (sheet.focus) { sheet.focus = false; const inp = $('#slotName') || $('#newSlotName'); setTimeout(() => { inp.focus(); inp.select(); }, 0); }
+}
+sheetEl.addEventListener('click', (e) => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.tpl) return applyTemplate(t.dataset.tpl);
+  if (t.dataset.icon != null) return setSlotIcon(t.dataset.icon);
+  switch (t.id) {
+    case 'shClose': case 'nameOk': { const v = $('#slotName'); if (v) renameSlot(v.value); closeSheet(); break; }
+    case 'mkBlank': makeBlankTrooper($('#newSlotName').value); break;
+    case 'shTpl': sheet.tpl = !sheet.tpl; renderSheet(); break;
+    case 'shReset': resetUnit(); toast('↺ ' + slotLabel(db.slot)); break;
+    case 'shClear': sheet.clear = true; renderSheet(); break;
+    case 'clearOk': clearSlot(); break;
+    case 'clearNo': sheet.clear = false; renderSheet(); break;
+  }
+});
+sheetEl.addEventListener('input', (e) => { if (e.target.id === 'slotName') renameSlot(e.target.value); });
+sheetEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSheet();
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'slotName') { renameSlot(e.target.value); closeSheet(); }
+  if (e.target.id === 'newSlotName') makeBlankTrooper(e.target.value);
+});
 
 // ---------- ⭐ award weapons ----------
 function awardPick(w) {
@@ -893,8 +1066,11 @@ window.__tc = {
     tc1: (t2 = {}, nat = nation()) => T.encodeTC1(nat, { ...T.TROOPER_DEFAULT_V2, ...t2 }),
     tc2: (t2 = {}, tank = cur.tank, unit = 'trooper') => T.encodeTC2({ player: db.player.name, nationName: nation().name, nation: nation(), trooper: { ...T.TROOPER_DEFAULT_V2, ...t2 }, tank, unit }, TANK_FIELDS),
     map: T.mapV2Trooper, fieldsV2: T.TROOPER_FIELDS_V2,
+    tc3v4: () => T.encodeTC3({ player: db.player.name, nationName: nation().name, nation: nation(), roster: nation().roster.map((r, i) => ({ name: r.name || 'Old ' + (i + 1), icon: r.icon || '🪖', t: r.t })), slot: db.slot, tank: cur.tank, unit: db.unit }, TANK_FIELDS),
   },
   roster: () => nation().roster.map((r, i) => ({ ...r, t: { ...r.t }, slot: i, active: i === db.slot, ...unitCost('trooper', fullState('trooper', r.t)), ...unitStats('trooper', fullState('trooper', r.t)) })),
+  templates: TEMPLATES, roles: ROLES, starterIds: STARTER_IDS,
+  fillStarter, applyTemplate, makeBlankTrooper, renameSlot, setSlotIcon, clearSlot, openSheet, closeSheet, get sheet() { return sheet && { ...sheet }; },
   defaultRoster: T.DEFAULT_ROSTER,
   get slot() { return db.slot; }, setSlot,
   items: ITEMS, statsTable: STATS, unitStats: (u = db.unit, o) => unitStats(u, o ? { ...fullState(u), ...o } : fullState(u)),

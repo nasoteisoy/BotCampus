@@ -1,6 +1,6 @@
-# 🪖 Trooper Customizer (v4.1: 6-type roster + loadouts + ⭐ award weapons + visible labels)
+# 🪖 Trooper Customizer (v4.2: 6 blank roster slots + 23 templates + loadouts + ⭐ award weapons)
 
-A sandbox for designing the look of your RTS army. No fighting. You set a **player name**, create **nations** (colors + flag), give each nation a **6-type trooper roster** with full loadouts, and design a **space tank**. Every model is built to an RTS budget, so the same units can be dropped into an RTS by the hundred.
+A sandbox for designing the look of your RTS army. No fighting. You set a **player name**, create **nations** (colors + flag), give each nation a **6-slot trooper roster** (blank to start: name each slot yourself or pick one of 23 templates) with full loadouts, and design a **space tank**. Every model is built to an RTS budget, so the same units can be dropped into an RTS by the hundred.
 
 Play: `games/trooper-custom/` (https://nasoteisoy.github.io/BotCampus/games/trooper-custom/)
 
@@ -8,11 +8,26 @@ Play: `games/trooper-custom/` (https://nasoteisoy.github.io/BotCampus/games/troo
 ```
 Player { name }
  └─ Nation { name, primary, secondary, suit tone, flag symbol + symbol color, tech glow color + level }
-     ├─ roster: 6 trooper types { name, icon, loadout + look }
+     ├─ roster: 6 slots { blank?, name, icon, template, loadout + look }
      └─ saved looks (trooper looks, tank looks): shape / gear only, no colors
 tank look (shared) · award medals per main weapon (0/64)
 ```
-Default roster (every nation starts with it; ↺ resets a slot to its type):
+**New nations start with 6 blank slots** (v4.2). Each one is a dashed card with **+ Slot N**. Tap it to open the chooser:
+- **➕ Blank trooper**: type a name (or keep "Slot N"); it starts with the base kit
+- **📋 From template**: pick from the template library below. This copies the loadout, name and icon; the name stays editable
+
+Tap the active slot again (or the **✏️ name chip** in the section header) to edit the slot:
+- **rename** inline (max 16 characters, Enter saves)
+- **icon**: one of 26 emoji, or 🔫 *auto*, which follows the main weapon
+- **📋 Template**: replace the loadout with a template
+- **↺ Reset**: back to the slot's template, or the base kit for a blank trooper
+- **🗑️ Clear**: back to a blank slot (asks ✔️/✖️ first)
+
+Editing a blank slot with the tabs (for example picking a helmet) turns it into a trooper named "Slot N".
+
+On the 🏳️ nation tab, **📋 Fill roster: 6 starter templates** fills the six starters below (it asks first if any slot is already filled). Saves from v4/v4.1 keep their filled rosters; only new nations start blank.
+
+Starter templates (the v4 default roster):
 
 | slot | main weapon | explosive | sidearm | gadget | armor |
 |---|---|---|---|---|---|
@@ -22,6 +37,35 @@ Default roster (every nation starts with it; ↺ resets a slot to its type):
 | 🔧 Engineer | Shotgun | Detpacks | Blaster pistol | Fusion cutter | Standard |
 | 🚀 Jet Trooper | EMP launcher | Thermal detonator | Blaster pistol | Jetpack | Standard |
 | ⭐ Commander | Chaingun | Thermal detonator | Commando pistol | Rally | Standard |
+
+### 📋 Template library (23, `js/templates.js`)
+Grouped by role in the picker. Each row has a thumbnail in the nation's colors, its 💰 cost, ⚡ power, ❤️ HP and a one-line description. Templates only use existing kit options. The kit allows one explosive per trooper, so 🏗️ Demolitions carries detpacks plus a rocket launcher.
+
+| role | template | 💰 | description |
+|---|---|---|---|
+| ⚔️ Assault | 🪖 Trooper | 105 | Cheap all-rounder: blaster rifle + thermal detonator. |
+| ⚔️ Assault | 🚀 Jet Trooper | 198 | Flies over walls and stuns droids: EMP + jetpack. |
+| ⚔️ Assault | 🎖️ Rifle Veteran | 153 | Seasoned rifleman: commando pistol + supply drop. |
+| ⚔️ Assault | 💥 Breacher | 138 | Clears rooms: shotgun + thermal, commando pistol. |
+| ⚔️ Assault | 🦘 Jump Assault | 165 | Jets in and blasts up close: shotgun + jetpack. |
+| ⚔️ Assault | 💣 Grenadier | 155 | Explosives expert: time bombs + ammo drop for more. |
+| 🛡️ Heavy | 🛡️ Heavy | 238 | Tank buster in heavy armor: rocket + mines. |
+| 🛡️ Heavy | 🧨 AT Specialist | 185 | Lighter tank hunter: rocket + mines, standard armor. |
+| 🛡️ Heavy | 🌀 Suppressor | 243 | Bullet storm pins enemies down: chaingun, heavy armor. |
+| 🛡️ Heavy | 🦾 Heavy Commando | 203 | Armored shock trooper: shotgun, detpacks, heavy armor. |
+| 🔭 Recon | 🎯 Sniper | 195 | Long-range killer: sniper, time bombs, recon droid. |
+| 🔭 Recon | 👟 Scout | 135 | Light and cheap: blaster + recon droid spots enemies. |
+| 🔭 Recon | 🛰️ Recon | 205 | Sniper + droid spotter, mines to cover the retreat. |
+| 🔭 Recon | 🏹 Marksman | 160 | Cheaper sharpshooter: sniper + commando pistol. |
+| 🔭 Recon | ⚡ EMP Hunter | 200 | Hunts droids and tanks: EMP + mines + droid. |
+| 🧰 Support | 🔧 Engineer | 170 | Fixes tanks and gates: shotgun, detpack, fusion cutter. |
+| 🧰 Support | 🩹 Medic | 140 | Keeps the squad alive with health & ammo drops. |
+| 🧰 Support | 🏗️ Demolitions | 185 | Cracks buildings: detpacks + rocket (one explosive type). |
+| 🧰 Support | ⛏️ Sapper | 160 | Mines chokepoints and repairs: fusion cutter + mines. |
+| 🧰 Support | 🗼 Turret Engineer | 170 | Holds ground with a deployable auto turret. |
+| ⭐ Command | ⭐ Commander | 218 | Leads the squad: chaingun + rally call + cape. |
+| ⭐ Command | 📣 Rally Captain | 160 | Cheaper leader: blaster + rally call + cape. |
+| ⭐ Command | 🏅 Field Marshal | 273 | Armored leader: EMP, rally call, heavy armor. |
 
 You edit colors and the flag **once per nation**, and every unit of that nation uses them: trooper, tank, squads, and saved-look thumbnails.
 
@@ -34,10 +78,11 @@ You edit colors and the flag **once per nation**, and every unit of that nation 
 | front · side · back figures | camera presets |
 | 🔄 | auto spin |
 | 👥 | squad preview at RTS camera distance. **👥 100** cycles 50 / 100 / 200, and **🔀** gives a mixed squad (90% troopers + 10% tanks) |
-| 🎲 / ↺ | randomize / reset the current unit. For a trooper, ↺ resets to the slot's roster type. On the 🏳️ tab, 🎲 randomizes the nation's colors and flag. |
-| roster strip (above the tabs, trooper only) | 6 icon buttons with each type's 💰 cost; tap one to edit that type |
+| 🎲 / ↺ | randomize / reset the current unit. For a trooper, ↺ resets to the slot's template (or the base kit). On the 🏳️ tab, 🎲 randomizes the nation's colors and flag. |
+| roster strip (above the tabs, trooper only) | 6 slot buttons (icon + 💰, or dashed **+ Slot N** when blank). Tap one to edit it; tap a blank one or the active one again to open the slot sheet |
 
 **Labels (v4.1).** The UI is icon-first, so:
+- the section header shows the slot as a ✏️ chip (tap to rename)
 - the active tab shows its name under the icon (e.g. 🔫 **Weapons**)
 - a section header sits at the top of the panel, e.g. `🔫 Weapons · main weapon, ⭐ award`, plus the roster type being edited (🛡️ Heavy) or 🚜 Tank
 - tapping a tab, roster slot, unit switch or view/spin/squad/🎲/↺ button pops a short label right next to it (🛡️ Heavy, 📷 Back view, 🚜 Tank…) without covering it
@@ -111,7 +156,7 @@ Where cost shows up:
 - the **squad total** in the 👥 squad header. A mixed 100 is 10 tanks plus 15 of each roster type: 10×495 + 15×(105+238+195+170+198+218) = 💰21.8k
 
 ## Share codes
-- **TC3:** `TC3:<base64url JSON>`, with player name, nation name, nation colors/flag, **all 6 roster slots** (name, icon, full loadout including ⭐), active slot, tank look and the active unit. A per-look 🔗 code carries a single trooper look instead of the roster, and loads into the active slot. Loading a code reuses a nation with identical colors/flag (preferring the same name) or creates a new one. It does not overwrite your player name.
+- **TC3:** `TC3:<base64url JSON>`, with player name, nation name, nation colors/flag, **all 6 roster slots** (name, icon, full loadout including ⭐), active slot, tank look and the active unit. v4.2 adds three optional arrays: `rb` (blank flags, 0/1), `rt` (template id or null) and `ri` (auto-icon flags). Older readers ignore them; v4 codes without them load as 6 filled slots with the starter templates. A per-look 🔗 code carries a single trooper look instead of the roster, and loads into the active slot. Loading a code reuses a nation with identical colors/flag (preferring the same name) or creates a new one. It does not overwrite your player name.
 - **TC2** (v2/v3) and **TC1** (v1) codes still load into the active roster slot. Old gear maps into the kit like this:
   - armor: light/medium → Standard, heavy → Heavy
   - rifle: carbine → Blaster rifle, long laser → Sniper rifle, bullpup → Shotgun
@@ -120,8 +165,21 @@ Where cost shows up:
 ## Storage and migration
 Everything is saved in localStorage under `trooper-custom:db` (`{v:3, player, nations[{…colors, roster[6]}], active, slot, unit, tank, looks, medals, debugAward}`).
 
+**Roster slot shape (v4.2, still `v:3`).** The format is additive: every v4 field is still there.
+```js
+{ name: 'Medic',   // '' when blank (v4: always set)
+  icon: '🩹',      // '' when blank
+  t: { helm, armor, pads, weapon, award, side, expl, gadget, extra, banner, skin }, // always present; base kit when blank
+  blank: false,    // NEW: true = empty slot
+  tpl: 'medic',    // NEW: template id, or null (blank trooper / empty)
+  ia: false }      // NEW: true = icon follows the main weapon
+```
+**For Conquest Commander** (it reads `nations[].roster`): skip slots with `blank === true` (e.g. `roster.filter(r => r && !r.blank)`), and fall back to its default roster if none are left. Without this filter, a blank slot still parses (name '' → 'Trooper', base kit), so nothing crashes; it would just appear as an extra base-kit unit. In this app, squads and mixed squads skip blank slots; if the active slot is blank, a single-type squad uses the base kit.
+
+**v4/v4.1 save → v4.2:** nothing to migrate. Slots without a `tpl` key get the starter template of their index (so ↺ behaves as before), plus `blank:false`.
+
 **v2/v3 save → v4:**
-- every nation gets the 6 default roster types
+- every nation gets the 6 starter templates
 - the old current trooper goes into slot 0 (Trooper) of the active nation, mapped as above
 - saved trooper looks are converted; tank looks and the current tank are kept
 - the old save is kept as `trooper-custom:db-v2`
@@ -153,10 +211,10 @@ The worst trooper loadout is goggles helmet, Heavy armor, round pads, ⭐ rocket
 For RTS reuse, `js/trooper.js` exports `TeamLook` (atlas + 2 materials), `buildMergedDef(def, state)` and `TROOPER`, and `js/tank.js` exports `TANK`. Create one `TeamLook` per nation and one `InstancedMesh` per material per unit type.
 
 ## Files
-Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`, `cost.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
+Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`, `cost.js`, `templates.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
 Don't publish: `test/`, `screenshots/`.
 
-The service worker only registers over https. Its cache is `trooper-custom-v5`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=5`.
+The service worker only registers over https. Its cache is `trooper-custom-v6`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=6`.
 
 ## Tests
 ```
@@ -167,9 +225,11 @@ The tests check the following at 390×844, 390×664, 360×740, 844×390 and 1280
 - every trooper, tank and nation option changes the model, and nation colors propagate to both units
 - all UI buttons work
 - labels: at every size, the active tab shows its name and the section header matches, for every tab of both units; tap labels appear for tabs, roster slots, unit switch and view buttons, stay in view and don't cover the button; every control has a hover title
-- TC3 round-trips all 6 roster loadouts; TC2 and TC1 are accepted and mapped; bad codes are rejected
+- TC3 round-trips all 6 roster slots (loadouts, names, icons, blanks, templates); v4 TC3 codes still load; TC2 and TC1 are accepted and mapped; bad codes are rejected
 - trooper (8,064 loadout combos) and tank triangle budgets hold, and each roster type is within budget
-- the roster: 6 default kits, distinct models, cost/HP/speed, the strip UI, per-slot edits surviving a reload, ↺ to the type default
+- the roster: 6 starter kits, distinct models, cost/HP/speed, the strip UI, per-slot edits surviving a reload, ↺ to the template
+- blank slots (v4.2): a new nation = 6 blanks; the chooser; the template picker (≥18, grouped, thumbnails, cost, description) applies loadout + name; blank trooper with a typed name; inline rename persists after reload; icon picker and auto icon; ↺ to the template or base kit; clear with confirm; fill-starter with confirm; squads skip blanks; the save shape; the slot sheet fits at all 5 sizes
+- a v4 save (no blank/tpl fields) keeps its filled roster
 - loadouts: every tile has an RTS tooltip and toasts it, every option adds a visible model piece, the HP/speed preview works
 - ⭐ award weapons: locked 0/64, unlocks at 64 medals (not 63), gold model, priced per the table, `?debug=1` toggle, relock behavior
 - cost = base + table for every option; every priced option changes cost and every cosmetic one doesn't; the +cost badges match the table; better = pricier; cost shows on saved-look cards and in the squad header

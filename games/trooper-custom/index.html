@@ -7,11 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Trooper Customizer</title>
-<link rel="icon" href="icon.svg?v=5" type="image/svg+xml">
-<link rel="manifest" href="manifest.webmanifest?v=5">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="icon" href="icon.svg?v=6" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest?v=6">
+<link rel="stylesheet" href="css/style.css?v=6">
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.min.js?v=5" } }
+{ "imports": { "three": "./vendor/three.module.min.js?v=6" } }
 </script>
 </head>
 <body>
@@ -32,17 +32,18 @@
       <button id="spinBtn" title="Auto spin" aria-label="Auto spin">🔄</button>
       <button id="squadBtn" title="Squad preview" aria-label="Squad preview">👥</button>
       <button id="randBtn" title="Randomize" aria-label="Randomize">🎲</button>
-      <button id="resetBtn" title="Reset (roster type default)" aria-label="Reset">↺</button>
+      <button id="resetBtn" title="Reset (slot template / base kit)" aria-label="Reset">↺</button>
     </div>
     <div id="toast"></div>
   </div>
   <div id="panel">
     <div id="roster" role="tablist" aria-label="Roster"></div>
+    <div id="sheet" class="hidden" role="dialog" aria-label="Roster slot"></div>
     <div id="tabs" role="tablist"></div>
     <div id="sechead" aria-live="polite"></div>
     <div id="pbody"></div>
   </div>
 </div>
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>
