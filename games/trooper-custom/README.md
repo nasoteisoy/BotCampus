@@ -1,4 +1,4 @@
-# 🪖 Trooper Customizer (v2: nations + tank)
+# 🪖 Trooper Customizer (v3: nations + tank + cost)
 
 A sandbox for designing the look of your RTS army. No fighting. You set a **player name**, create **nations** (colors + flag), and design **unit looks** (a space-era rifle trooper and a space tank) that belong to a nation. Every model is built to an RTS budget, so the same units can be dropped into an RTS by the hundred.
 
@@ -44,6 +44,38 @@ Panel tabs (bottom sheet on phones, side panel on desktop and landscape):
 
 Part buttons are live 3D thumbnails drawn in the current nation's colors.
 
+## 💰 Cost and ⚡ power
+Chumi's rule: *"The more or better stuff a unit has the more it will cost in game."* The whole table lives in one config object, `COST` in `js/cost.js`, which the RTS can import as-is.
+
+- **Unit cost** = base + the cost of each chosen option.
+- **Power** = base + the power of each chosen option, so "better = pricier" is visible.
+- **Cosmetics are free:** everything at nation level (colors, suit, flag, symbol color, glow), plus helmet style (except the recon sensor), cape/scarf, back flag, skin and tank pennant.
+
+| Trooper (base 💰100 ⚡10) | options: cost (power) |
+|---|---|
+| helmet | dome / angular / crest / goggles 0, recon +5 (+1) |
+| armor | light 0, medium +20 (+4), heavy +45 (+9) |
+| shoulder pads | none 0, round +5 (+1), angular +8 (+2) |
+| backpack | none 0, jetpack +40 (+6), radio +25 (+3), ammo +15 (+4) |
+| rifle | carbine 0, long laser +25 (+6), bullpup +15 (+3) |
+| cape / scarf, back flag, skin | 0 |
+
+| Tank (base 💰400 ⚡50) | options: cost (power) |
+|---|---|
+| hull | light 0, medium +80 (+15), heavy +180 (+35) |
+| drive | treads 0, hover +120 (+10) |
+| turret | dome 0, wedge +10 (+2), box +20 (+4) |
+| main gun | cannon 0, twin +60 (+12), railgun +140 (+28), laser +110 (+22) |
+| extras | antenna +15 (+3), side skirts +30 (+6), smoke +25 (+4), roof MG +35 (+7), pennant 0 |
+
+Ranges: the trooper costs 💰100 to 223 (default 140) and the tank 💰400 to 965 (default 495).
+
+Where cost shows up:
+- the live **💰 cost ⚡ power** chip under the stats (it bumps when the cost changes)
+- a **+cost** badge on every priced option button (free options have no badge)
+- **💰/⚡ on each saved-look card**
+- the **squad total** in the 👥 squad header, e.g. a mixed 100 = 90×140 + 10×495 = 💰17.6k
+
 ## Share codes
 - **TC2:** `TC2:<base64url JSON>`, with player name, nation name, nation colors/flag, trooper look, tank look and the active unit. Loading a code reuses a nation with identical colors/flag (preferring the same name) or creates a new one. It does not overwrite your player name.
 - **TC1** (v1 trooper codes) still load. Their colors/flag go to a matching or new nation and the gear goes to the trooper.
@@ -76,10 +108,10 @@ The v1 keys are left untouched.
 For RTS reuse, `js/trooper.js` exports `TeamLook` (atlas + 2 materials), `buildMergedDef(def, state)` and `TROOPER`, and `js/tank.js` exports `TANK`. Create one `TeamLook` per nation and one `InstancedMesh` per material per unit type.
 
 ## Files
-Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
+Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`, `cost.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
 Don't publish: `test/`, `screenshots/`.
 
-The service worker only registers over https. Its cache is `trooper-custom-v2`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=2`.
+The service worker only registers over https. Its cache is `trooper-custom-v3`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=3`.
 
 ## Tests
 ```
@@ -91,6 +123,7 @@ The tests check the following at 390×844, 390×664, 360×740, 844×390 and 1280
 - all UI buttons work
 - TC2 round-trips, TC1 is accepted, bad codes are rejected
 - trooper and tank triangle budgets hold over all part combinations
+- cost = base + table for every option; every priced option changes cost and every cosmetic one doesn't; the +cost badges match the table; better = pricier; cost shows on saved-look cards and in the squad header
 - trooper, tank and mixed squads
 - nation create / rename / switch / delete with confirm, and the player name, all surviving a reload
 - saved looks grouped by nation (load, rename, overwrite, delete) surviving a reload, with thumbnails re-rendering in the nation's colors

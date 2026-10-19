@@ -1,8 +1,9 @@
 // Trooper Customizer v2: Player -> Nation (colors + flag) -> unit looks (trooper, tank).
 import * as THREE from 'three';
-import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=2';
-import * as T from './trooper.js?v=2';
-import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=2';
+import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=3';
+import * as T from './trooper.js?v=3';
+import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=3';
+import { COST, unitCost, optionCost, fmt } from './cost.js?v=3';
 
 const UNITS = { trooper: T.TROOPER, tank: TANK };
 const NATION_KEYS = new Set(['p', 's', ...T.NATION_FIELDS.map(([k]) => k)]);
@@ -333,12 +334,13 @@ function swatchRow(key, palette, custom, glow = false) {
 function partTiles(key) {
   const p = PARTS[key], row = h('div', { className: 'tiles', 'data-key': key });
   p.names.forEach((n, i) => row.append(h('button', { type: 'button', title: n, 'aria-label': key + ' ' + n, 'data-k': key, 'data-v': String(i), 'data-frame': p.frame, 'data-unit': p.unit },
-    [h('canvas', { width: TS, height: TS }), h('i', { textContent: n })])));
+    [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge(p.unit, key, i)])));
   return row;
 }
+function costBadge(unit, k, v) { const c = optionCost(unit, k, v); return h('b', { className: 'cb' + (c ? '' : ' free'), textContent: c ? '+' + c : '' }); }
 function toggleTiles() {
   const row = h('div', { className: 'tiles', 'data-key': 'toggles' });
-  for (const [k, frame, n] of TOGGLES) row.append(h('button', { type: 'button', title: n, 'aria-label': 'toggle ' + n, 'data-toggle': k, 'data-frame': frame, 'data-unit': 'tank' }, [h('canvas', { width: TS, height: TS }), h('i', { textContent: n })]));
+  for (const [k, frame, n] of TOGGLES) row.append(h('button', { type: 'button', title: n, 'aria-label': 'toggle ' + n, 'data-toggle': k, 'data-frame': frame, 'data-unit': 'tank' }, [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge('tank', k, 1)]));
   return row;
 }
 function symTiles() {
@@ -517,6 +519,7 @@ function renderLooks() {
       const active = l.nationId === db.active && l.unit === db.unit && l.u === curU;
       const row = h('div', { className: 'look' + (active ? ' on' : ''), 'data-id': l.id, 'data-unit': l.unit });
       const img = h('img', { src: ensureThumb(l), alt: '' });
+      const lc = unitCost(l.unit, lookState(l));
       const badge = h('span', { className: 'ub', textContent: l.unit === 'tank' ? '🚜' : '🪖' });
       if (editId === l.id) {
         const inp = h('input', { type: 'text', value: l.name, maxLength: 24, 'aria-label': 'New name', className: 'rn' });
@@ -526,7 +529,7 @@ function renderLooks() {
       } else if (delId === l.id) {
         row.append(img, h('span', { className: 'q', textContent: '🗑️ ?' }), h('button', { type: 'button', className: 'ib btn bad', 'data-act': 'delok', title: 'Delete', textContent: '✔️' }), h('button', { type: 'button', className: 'ib', 'data-act': 'cancel', title: 'Keep', textContent: '✖️' }));
       } else {
-        row.append(h('button', { type: 'button', className: 'ld', 'data-act': 'load', title: 'Load ' + l.name }, [h('span', { className: 'tw' }, [img, badge]), h('span', { className: 'nm', textContent: l.name })]),
+        row.append(h('button', { type: 'button', className: 'ld', 'data-act': 'load', title: 'Load ' + l.name }, [h('span', { className: 'tw' }, [img, badge]), h('span', { className: 'nm' }, [l.name, h('small', { className: 'lc' }, ['💰' + fmt(lc.cost), h('i', { textContent: '⚡' + lc.power })])])]),
           h('button', { type: 'button', className: 'ib', 'data-act': 'copy', title: 'Copy share code', textContent: '🔗' }),
           h('button', { type: 'button', className: 'ib', 'data-act': 'update', title: 'Overwrite with current look', textContent: '🔁' }),
           h('button', { type: 'button', className: 'ib', 'data-act': 'rename', title: 'Rename', textContent: '✏️' }),
@@ -666,16 +669,22 @@ function modelStats() {
   if (squadOn && squad) {
     let tris = 0, calls = 0, count = 0; const per = {};
     for (const g of squad.groups) { tris += g.perTris * g.count; calls += g.meshes.length; count += g.count; per[g.unit] = { count: g.count, tris: g.perTris }; }
-    return { mode: 'squad', mix: squadMix, count, tris, calls, per };
+    let cost = 0, power = 0;
+    for (const g of squad.groups) { const c = unitCost(g.unit, fullState(g.unit)); cost += c.cost * g.count; power += c.power * g.count; per[g.unit].cost = c.cost; }
+    return { mode: 'squad', mix: squadMix, count, tris, calls, per, cost, power };
   }
-  const u = units[db.unit];
-  return { mode: 'single', unit: db.unit, count: 1, tris: u.tris, perTris: u.tris, calls: u.meshes.length };
+  const u = units[db.unit], c = unitCost(db.unit, fullState());
+  return { mode: 'single', unit: db.unit, count: 1, tris: u.tris, perTris: u.tris, calls: u.meshes.length, cost: c.cost, power: c.power };
 }
 function updateStatsText() {
   const m = modelStats();
   $('#sMode').textContent = m.mode === 'squad' ? '👥' + m.count : db.unit === 'tank' ? '🚜' : '🧍';
   $('#sTri').textContent = m.tris >= 10000 ? (m.tris / 1000).toFixed(1) + 'k' : String(m.tris);
   $('#sCalls').textContent = String(m.calls);
+  const c = unitCost(db.unit, fullState()), cc = $('#cCost'), prev = cc.textContent;
+  cc.textContent = fmt(c.cost); $('#cPow').textContent = String(c.power);
+  if (prev !== cc.textContent && prev !== '0') { const chip = $('#costchip'); chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
+  $('#squadCost').textContent = m.mode === 'squad' ? '💰' + fmt(m.cost) + ' ⚡' + fmt(m.power) : '';
 }
 let toastT = 0;
 function toast(msg, bad = false) {
@@ -741,6 +750,8 @@ window.__tc = {
   randomize, reset: resetUnit,
   resetNation: () => { Object.assign(nation(), T.sanitizeNation(T.NATION_DEFAULT)); applyState(); },
   signature: (u = db.unit) => sigOf(u),
+  cost: (u = db.unit, o) => unitCost(u, o ? { ...fullState(u), ...o } : fullState(u)),
+  costTable: COST,
   atlasColor: (x = 72) => { const d = look.ctx.getImageData(x, 32, 1, 1).data; return '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join(''); },
   trisFor: (u, o) => { const d = UNITS[u], g = T.buildMergedDef(d, { ...T.NATION_DEFAULT, skin: 1, ...T.sanitizeFields(o, d.fields, d.defaults) }); let n = 0; for (const x of Object.values(g)) { n += x.attributes.position.count / 3; x.dispose(); } return n; },
   stats: () => ({ ...modelStats(), fps, frame: { ...lastInfo }, materials: new Set(units[db.unit].meshes.map((m) => m.material.uuid)).size, sharedMaterials: units.trooper.meshes[0].material === units.tank.meshes[0].material }),

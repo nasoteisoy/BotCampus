@@ -1,6 +1,6 @@
 // Space-era tank: same RTS rules as the trooper (primitives only, 2 shared materials, nation atlas colors).
 import * as THREE from 'three';
-import { Builder, M, box, cyl, sph, HALF } from './trooper.js?v=2';
+import { Builder, M, box, cyl, sph, HALF } from './trooper.js?v=3';
 
 export const TANK_FIELDS = [['hull', 3], ['drive', 2], ['turret', 3], ['gun', 4], ['antenna', 2], ['skirts', 2], ['smoke', 2], ['mg', 2], ['pennant', 2]];
 export const TANK_DEFAULT = Object.freeze({ hull: 1, drive: 0, turret: 0, gun: 0, antenna: 1, skirts: 0, smoke: 0, mg: 0, pennant: 1 });
