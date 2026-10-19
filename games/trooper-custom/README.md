@@ -1,4 +1,4 @@
-# 🪖 Trooper Customizer (v4: 6-type roster + loadouts + ⭐ award weapons)
+# 🪖 Trooper Customizer (v4.1: 6-type roster + loadouts + ⭐ award weapons + visible labels)
 
 A sandbox for designing the look of your RTS army. No fighting. You set a **player name**, create **nations** (colors + flag), give each nation a **6-type trooper roster** with full loadouts, and design a **space tank**. Every model is built to an RTS budget, so the same units can be dropped into an RTS by the hundred.
 
@@ -36,6 +36,12 @@ You edit colors and the flag **once per nation**, and every unit of that nation 
 | 👥 | squad preview at RTS camera distance. **👥 100** cycles 50 / 100 / 200, and **🔀** gives a mixed squad (90% troopers + 10% tanks) |
 | 🎲 / ↺ | randomize / reset the current unit. For a trooper, ↺ resets to the slot's roster type. On the 🏳️ tab, 🎲 randomizes the nation's colors and flag. |
 | roster strip (above the tabs, trooper only) | 6 icon buttons with each type's 💰 cost; tap one to edit that type |
+
+**Labels (v4.1).** The UI is icon-first, so:
+- the active tab shows its name under the icon (e.g. 🔫 **Weapons**)
+- a section header sits at the top of the panel, e.g. `🔫 Weapons · main weapon, ⭐ award`, plus the roster type being edited (🛡️ Heavy) or 🚜 Tank
+- tapping a tab, roster slot, unit switch or view/spin/squad/🎲/↺ button pops a short label right next to it (🛡️ Heavy, 📷 Back view, 🚜 Tank…) without covering it
+- every one of those buttons has a hover title on desktop
 
 Panel tabs (bottom sheet on phones, side panel on desktop and landscape):
 
@@ -150,7 +156,7 @@ For RTS reuse, `js/trooper.js` exports `TeamLook` (atlas + 2 materials), `buildM
 Publish: `index.html`, `css/`, `js/` (`main.js`, `trooper.js`, `tank.js`, `cost.js`), `vendor/` (three.js r169 + OrbitControls, vendored, no CDN), `icon.svg`, `manifest.webmanifest`, `sw.js`, `README.md`.
 Don't publish: `test/`, `screenshots/`.
 
-The service worker only registers over https. Its cache is `trooper-custom-v4`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=4`.
+The service worker only registers over https. Its cache is `trooper-custom-v5`, and cleanup only deletes caches starting with `trooper-custom-`. Assets load with `?v=5`.
 
 ## Tests
 ```
@@ -160,6 +166,7 @@ The tests check the following at 390×844, 390×664, 360×740, 844×390 and 1280
 - 0 console errors and no overflow on every tab of both units, touch targets of 36 px or more
 - every trooper, tank and nation option changes the model, and nation colors propagate to both units
 - all UI buttons work
+- labels: at every size, the active tab shows its name and the section header matches, for every tab of both units; tap labels appear for tabs, roster slots, unit switch and view buttons, stay in view and don't cover the button; every control has a hover title
 - TC3 round-trips all 6 roster loadouts; TC2 and TC1 are accepted and mapped; bad codes are rejected
 - trooper (8,064 loadout combos) and tank triangle budgets hold, and each roster type is within budget
 - the roster: 6 default kits, distinct models, cost/HP/speed, the strip UI, per-slot edits surviving a reload, ↺ to the type default

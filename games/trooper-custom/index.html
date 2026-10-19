@@ -7,11 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Trooper Customizer</title>
-<link rel="icon" href="icon.svg?v=4" type="image/svg+xml">
-<link rel="manifest" href="manifest.webmanifest?v=4">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="icon" href="icon.svg?v=5" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest?v=5">
+<link rel="stylesheet" href="css/style.css?v=5">
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.min.js?v=4" } }
+{ "imports": { "three": "./vendor/three.module.min.js?v=5" } }
 </script>
 </head>
 <body>
@@ -21,14 +21,14 @@
     <div id="stats" class="chip" title="Triangles · draw calls · frames per second"><span id="sMode">🧍</span><span>🔺<b id="sTri">0</b></span><span>🖌️<b id="sCalls">0</b></span><span>⏱<b id="sFps">–</b></span></div>
     <div id="costchip" class="chip" title="In-game cost · power · HP · speed"><span>💰<b id="cCost">0</b></span><span>⚡<b id="cPow">0</b></span><span class="st">❤️<b id="cHp">0</b></span><span class="st">🏃<b id="cSpd">0</b></span></div>
     <div id="unitbar" class="chip" role="tablist" aria-label="Unit">
-      <button data-unit="trooper" title="Trooper" aria-label="Trooper">🪖</button>
-      <button data-unit="tank" title="Tank" aria-label="Tank"><svg viewBox="0 0 32 24"><path d="M5 15h22l-2 5H7z" fill="#9fb3c8"/><circle cx="9" cy="17.5" r="1.6" fill="#33404d"/><circle cx="14" cy="17.5" r="1.6" fill="#33404d"/><circle cx="19" cy="17.5" r="1.6" fill="#33404d"/><circle cx="24" cy="17.5" r="1.6" fill="#33404d"/><path d="M4 11h24l-1 4H5z" fill="#cfe3ff"/><path d="M10 6h10l2 5H9z" fill="#cfe3ff"/><path d="M21 8h9v1.6h-9z" fill="#cfe3ff"/></svg></button>
+      <button data-unit="trooper" title="🪖 Trooper" aria-label="Trooper">🪖</button>
+      <button data-unit="tank" title="🚜 Tank" aria-label="Tank"><svg viewBox="0 0 32 24"><path d="M5 15h22l-2 5H7z" fill="#9fb3c8"/><circle cx="9" cy="17.5" r="1.6" fill="#33404d"/><circle cx="14" cy="17.5" r="1.6" fill="#33404d"/><circle cx="19" cy="17.5" r="1.6" fill="#33404d"/><circle cx="24" cy="17.5" r="1.6" fill="#33404d"/><path d="M4 11h24l-1 4H5z" fill="#cfe3ff"/><path d="M10 6h10l2 5H9z" fill="#cfe3ff"/><path d="M21 8h9v1.6h-9z" fill="#cfe3ff"/></svg></button>
     </div>
     <div id="squadbar" class="chip hidden"><button id="squadN" title="Squad size">👥 <b>100</b></button><button id="squadMix" title="Mixed squad: troopers + tanks" aria-label="Mixed squad">🔀</button><span id="squadCost" title="Squad total cost"></span></div>
     <div id="viewbar">
-      <button data-view="front" title="Front" aria-label="Front view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M7 10h10l-1 7h-2l-.5 5h-3l-.5-5H8z"/></svg></button>
-      <button data-view="side" title="Side" aria-label="Side view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M10 10h4.5l.5 7h-1.5l-.5 5h-3l.3-5H9z"/><path d="M14 12h7v2h-7z"/></svg></button>
-      <button data-view="back" title="Back" aria-label="Back view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M7 10h10l-1 7h-2l-.5 5h-3l-.5-5H8z"/><rect x="9" y="10.5" width="6" height="6" rx="1" fill="#0d1218"/></svg></button>
+      <button data-view="front" title="📷 Front view" aria-label="Front view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M7 10h10l-1 7h-2l-.5 5h-3l-.5-5H8z"/></svg></button>
+      <button data-view="side" title="📷 Side view" aria-label="Side view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M10 10h4.5l.5 7h-1.5l-.5 5h-3l.3-5H9z"/><path d="M14 12h7v2h-7z"/></svg></button>
+      <button data-view="back" title="📷 Back view" aria-label="Back view"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M7 10h10l-1 7h-2l-.5 5h-3l-.5-5H8z"/><rect x="9" y="10.5" width="6" height="6" rx="1" fill="#0d1218"/></svg></button>
       <button id="spinBtn" title="Auto spin" aria-label="Auto spin">🔄</button>
       <button id="squadBtn" title="Squad preview" aria-label="Squad preview">👥</button>
       <button id="randBtn" title="Randomize" aria-label="Randomize">🎲</button>
@@ -39,9 +39,10 @@
   <div id="panel">
     <div id="roster" role="tablist" aria-label="Roster"></div>
     <div id="tabs" role="tablist"></div>
+    <div id="sechead" aria-live="polite"></div>
     <div id="pbody"></div>
   </div>
 </div>
-<script type="module" src="js/main.js?v=4"></script>
+<script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

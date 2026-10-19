@@ -1,9 +1,9 @@
 // Trooper Customizer v4: Player -> Nation (colors + flag + 6-slot trooper roster with loadouts) -> unit looks (trooper, tank).
 import * as THREE from 'three';
-import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=4';
-import * as T from './trooper.js?v=4';
-import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=4';
-import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=4';
+import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=5';
+import * as T from './trooper.js?v=5';
+import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=5';
+import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=5';
 
 const UNITS = { trooper: T.TROOPER, tank: TANK };
 const NATION_KEYS = new Set(['p', 's', ...T.NATION_FIELDS.map(([k]) => k)]);
@@ -343,13 +343,31 @@ function drawFlag(c, nat) {
 }
 
 // ---------- panel ----------
+// name = label shown on the active tab + section header; sub = what's in the section
 const TAB_DEF = {
-  nation: { ico: '🏳️', title: 'Nation: player, colors, flag' },
-  head: { ico: '🪖', title: 'Helmet' }, armor: { ico: '🛡️', title: 'Armor, pads & stats' }, weapon: { ico: '🔫', title: 'Main weapon & ⭐ award weapons' },
-  kit: { ico: '💣', title: 'Sidearm & explosive' }, gear: { ico: '🎒', title: 'Gadget, banner & extras' },
-  hull: { ico: '⛓️', title: 'Hull & drive' }, turret: { ico: '🎯', title: 'Turret & gun' }, tx: { ico: '📡', title: 'Tank extras' },
-  looks: { ico: '💾', title: 'Saved looks & share code' },
+  nation: { ico: '🏳️', name: 'Nation', sub: 'player, colors, flag' },
+  head: { ico: '🪖', name: 'Helmet', sub: 'helmet, skin' }, armor: { ico: '🛡️', name: 'Armor', sub: 'armor, pads, ❤️ HP · 🏃 speed' },
+  weapon: { ico: '🔫', name: 'Weapons', sub: 'main weapon, ⭐ award' }, kit: { ico: '💣', name: 'Kit', sub: 'sidearm, explosive' },
+  gear: { ico: '🎒', name: 'Gear', sub: 'gadget, back flag, cape' },
+  hull: { ico: '⛓️', name: 'Hull', sub: 'hull, drive' }, turret: { ico: '🎯', name: 'Turret', sub: 'turret, main gun' }, tx: { ico: '📡', name: 'Extras', sub: 'antenna, skirts, smoke, MG' },
+  looks: { ico: '💾', name: 'Saved', sub: 'save, load, share code' },
 };
+const tabLabel = (id) => TAB_DEF[id].ico + ' ' + TAB_DEF[id].name;
+const tabTitle = (id) => tabLabel(id) + ' · ' + TAB_DEF[id].sub;
+const UNIT_LABEL = { trooper: '🪖 Trooper', tank: '🚜 Tank' };
+
+// brief label next to whatever was tapped (tabs, roster slots, unit switch, view buttons)
+const tapEl = h('div', { id: 'taplabel', role: 'status', 'aria-live': 'polite' }); document.body.append(tapEl);
+let tapT = 0;
+function tapLabel(el, text) {
+  if (!el || !el.isConnected) return;
+  tapEl.textContent = text; tapEl.classList.add('on');
+  const r = el.getBoundingClientRect(), w = tapEl.offsetWidth, hh = tapEl.offsetHeight;
+  let top = r.top - hh - 6; if (top < 4) top = r.bottom + 6;
+  tapEl.style.left = Math.max(4, Math.min(innerWidth - w - 4, r.left + r.width / 2 - w / 2)) + 'px';
+  tapEl.style.top = Math.min(innerHeight - hh - 4, top) + 'px';
+  clearTimeout(tapT); tapT = setTimeout(() => tapEl.classList.remove('on'), 1200);
+}
 const UNIT_TABS = { trooper: ['nation', 'head', 'armor', 'weapon', 'kit', 'gear', 'looks'], tank: ['nation', 'hull', 'turret', 'tx', 'looks'] };
 const PARTS = {
   helm: { unit: 'trooper', frame: 'head', names: ['Dome', 'Angular', 'Crest', 'Goggles', 'Recon'] },
@@ -370,7 +388,7 @@ const TOGGLES = [['antenna', 'tback', 'Antenna'], ['pennant', 'tback', 'Pennant'
 let tab = 'nation';
 const DEBUG = /[?&]debug=1\b/.test(location.search);
 const tabsEl = $('#tabs'), body = $('#pbody');
-tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
+tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) { setTab(b.dataset.tab); tapLabel(b, tabLabel(b.dataset.tab)); } });
 
 const lab = (ico, txt) => h('div', { className: 'lab' }, [ico, txt ? h('small', { textContent: txt }) : null]);
 function swatchRow(key, palette, custom, glow = false) {
@@ -464,13 +482,15 @@ body.addEventListener('click', (e) => {
 });
 
 function buildTabs() {
-  tabsEl.replaceChildren(...UNIT_TABS[db.unit].map((id) => h('button', { type: 'button', title: TAB_DEF[id].title, 'aria-label': TAB_DEF[id].title, role: 'tab', 'data-tab': id, textContent: TAB_DEF[id].ico })));
+  tabsEl.replaceChildren(...UNIT_TABS[db.unit].map((id) => h('button', { type: 'button', title: tabTitle(id), 'aria-label': TAB_DEF[id].name, role: 'tab', 'data-tab': id },
+    [h('span', { className: 'ti', textContent: TAB_DEF[id].ico }), h('span', { className: 'tl', textContent: TAB_DEF[id].name })])));
   for (const b of document.querySelectorAll('#unitbar [data-unit]')) b.classList.toggle('on', b.dataset.unit === db.unit);
 }
 function setTab(id) {
   if (!UNIT_TABS[db.unit].includes(id)) id = UNIT_TABS[db.unit][1];
   tab = id;
-  for (const b of tabsEl.children) b.classList.toggle('on', b.dataset.tab === id);
+  for (const b of tabsEl.children) { b.classList.toggle('on', b.dataset.tab === id); b.setAttribute('aria-selected', String(b.dataset.tab === id)); }
+  renderSecHead();
   for (const s of body.children) s.classList.toggle('on', s.dataset.sec === id);
   body.scrollTop = 0;
   refreshPanel();
@@ -753,17 +773,24 @@ function resetUnit() { cur[db.unit] = db.unit === 'trooper' ? { ...T.DEFAULT_ROS
 
 // ---------- roster (6 trooper types per nation) ----------
 const rosterEl = $('#roster');
+// section header: '🔫 Weapons · main weapon, ⭐ award' + the roster type being edited
+function renderSecHead() {
+  const d = TAB_DEF[tab], r = db.unit === 'trooper' ? nation().roster[db.slot] : null;
+  $('#sechead').replaceChildren(h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }), h('em', { textContent: r ? r.icon + ' ' + r.name : UNIT_LABEL.tank }));
+}
 function renderRoster() {
+  renderSecHead();
   const show = db.unit === 'trooper'; rosterEl.classList.toggle('hidden', !show); if (!show) return;
-  rosterEl.replaceChildren(...nation().roster.map((r, i) => h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: i === db.slot ? 'on' : '', title: r.name, 'aria-label': 'Roster: ' + r.name },
+  rosterEl.replaceChildren(...nation().roster.map((r, i) => h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: i === db.slot ? 'on' : '', title: r.icon + ' ' + r.name + ' · 💰' + fmt(unitCost('trooper', fullState('trooper', r.t)).cost), 'aria-label': 'Roster: ' + r.name },
     [h('span', { className: 'ri', textContent: r.icon }), h('small', { textContent: '💰' + fmt(unitCost('trooper', fullState('trooper', r.t)).cost) })])));
 }
 function setSlot(i) {
   if (!(i >= 0 && i < T.ROSTER_SIZE)) return false;
   db.slot = i; if (db.unit !== 'trooper') switchUnit('trooper', false);
-  applyState(); const r = nation().roster[i]; toast(r.icon + ' ' + r.name); return true;
+  applyState(); return true;
 }
-rosterEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-slot]'); if (b) setSlot(Number(b.dataset.slot)); });
+const slotLabel = (i) => { const r = nation().roster[i]; return r.icon + ' ' + r.name; };
+rosterEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-slot]'); if (!b) return; const i = Number(b.dataset.slot); setSlot(i); tapLabel(rosterEl.querySelector(`[data-slot="${i}"]`), slotLabel(i)); });
 
 // ---------- ⭐ award weapons ----------
 function awardPick(w) {
@@ -806,14 +833,15 @@ function toast(msg, bad = false, ms = 1400) {
   const t = $('#toast'); t.textContent = msg; t.classList.toggle('bad', bad); t.classList.add('on');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms);
 }
-for (const b of document.querySelectorAll('#viewbar [data-view]')) b.addEventListener('click', () => { controls.autoRotate = false; $('#spinBtn').classList.remove('on'); viewTo(b.dataset.view); });
-for (const b of document.querySelectorAll('#unitbar [data-unit]')) b.addEventListener('click', () => switchUnit(b.dataset.unit));
-$('#spinBtn').addEventListener('click', () => { controls.autoRotate = !controls.autoRotate; $('#spinBtn').classList.toggle('on', controls.autoRotate); });
-$('#squadBtn').addEventListener('click', () => setSquad(!squadOn));
-$('#squadN').addEventListener('click', () => { squadN = SQUAD_SIZES[(SQUAD_SIZES.indexOf(squadN) + 1) % SQUAD_SIZES.length]; setSquad(true); });
-$('#squadMix').addEventListener('click', () => { squadMix = !squadMix; setSquad(true); });
-$('#randBtn').addEventListener('click', () => { randomize(); toast('🎲'); });
-$('#resetBtn').addEventListener('click', () => { resetUnit(); toast('↺'); });
+const VIEW_LABEL = { front: '📷 Front view', side: '📷 Side view', back: '📷 Back view' };
+for (const b of document.querySelectorAll('#viewbar [data-view]')) b.addEventListener('click', () => { controls.autoRotate = false; $('#spinBtn').classList.remove('on'); viewTo(b.dataset.view); tapLabel(b, VIEW_LABEL[b.dataset.view]); });
+for (const b of document.querySelectorAll('#unitbar [data-unit]')) b.addEventListener('click', () => { switchUnit(b.dataset.unit); tapLabel(b, UNIT_LABEL[b.dataset.unit]); });
+$('#spinBtn').addEventListener('click', (e) => { controls.autoRotate = !controls.autoRotate; $('#spinBtn').classList.toggle('on', controls.autoRotate); tapLabel(e.currentTarget, controls.autoRotate ? '🔄 Auto spin on' : '🔄 Auto spin off'); });
+$('#squadBtn').addEventListener('click', (e) => { setSquad(!squadOn); tapLabel(e.currentTarget, squadOn ? '👥 Squad preview' : (db.unit === 'tank' ? '🚜' : '🧍') + ' Single unit'); });
+$('#squadN').addEventListener('click', (e) => { squadN = SQUAD_SIZES[(SQUAD_SIZES.indexOf(squadN) + 1) % SQUAD_SIZES.length]; setSquad(true); tapLabel(e.currentTarget, '👥 ' + squadN + ' units'); });
+$('#squadMix').addEventListener('click', (e) => { squadMix = !squadMix; setSquad(true); tapLabel(e.currentTarget, squadMix ? '🔀 Mixed: 6 types + tanks' : '🔀 One type'); });
+$('#randBtn').addEventListener('click', (e) => { randomize(); tapLabel(e.currentTarget, tab === 'nation' ? '🎲 Random nation' : '🎲 Randomize'); });
+$('#resetBtn').addEventListener('click', (e) => { resetUnit(); tapLabel(e.currentTarget, db.unit === 'trooper' ? '↺ Reset to ' + slotLabel(db.slot) : '↺ Reset tank'); });
 
 // ---------- loop ----------
 const clock = new THREE.Clock();

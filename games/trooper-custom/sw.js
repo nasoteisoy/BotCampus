@@ -1,9 +1,9 @@
 // Trooper Customizer service worker: cache-first for this game's own files only.
-const CACHE = 'trooper-custom-v4';
+const CACHE = 'trooper-custom-v5';
 const ASSETS = [
-  './', './index.html', './css/style.css?v=4', './js/main.js?v=4', './js/trooper.js?v=4', './js/tank.js?v=4', './js/cost.js?v=4',
-  './vendor/three.module.min.js?v=4', './vendor/addons/controls/OrbitControls.js?v=4',
-  './icon.svg?v=4', './manifest.webmanifest?v=4',
+  './', './index.html', './css/style.css?v=5', './js/main.js?v=5', './js/trooper.js?v=5', './js/tank.js?v=5', './js/cost.js?v=5',
+  './vendor/three.module.min.js?v=5', './vendor/addons/controls/OrbitControls.js?v=5',
+  './icon.svg?v=5', './manifest.webmanifest?v=5',
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
