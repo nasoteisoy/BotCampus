@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2a2318">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Conquest Commander</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=1">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="badges"></div>
+<div id="pings"></div>
+
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <div id="score">
+      <div class="tix t0" title="Your tickets"><canvas width="32" height="32"></canvas><b>150</b></div>
+      <div id="postIcons"></div>
+      <div class="tix t1" title="Enemy tickets"><b>150</b><canvas width="32" height="32"></canvas></div>
+    </div>
+    <button id="pauseBtn" class="rb" aria-label="Pause" title="Pause (Esc)">⏸️</button>
+  </div>
+  <div id="cpChip" title="Command Points: buy reinforcements"><span>⭐</span><b>0</b><i id="wave" title="Next wave">⏱10</i></div>
+  <div id="side">
+    <button id="rallyBtn" class="rb" aria-label="Rally point" title="Rally point (R)">🚩</button>
+    <button id="camBtn" class="rb" aria-label="Center camera" title="Center on the fight (Space)">🎯</button>
+    <button id="helpBtn" class="rb" aria-label="Help" title="Help (H)">❓</button>
+  </div>
+  <div id="radial" class="hidden" role="menu">
+    <button class="rd mk" data-mark="attack" aria-label="Attack" title="Attack (1)">⚔️</button>
+    <button class="rd mk" data-mark="defend" aria-label="Defend" title="Defend (2)">🛡️</button>
+    <button class="rd mk" data-mark="ignore" aria-label="Ignore" title="Ignore (3)">🚫</button>
+    <button class="rd st" data-stars="1" aria-label="Priority 1" title="Priority 1 (−)">★</button>
+    <button class="rd st" data-stars="2" aria-label="Priority 2" title="Priority 2">★★</button>
+    <button class="rd st" data-stars="3" aria-label="Priority 3" title="Priority 3 (+)">★★★</button>
+    <button class="rd ctr" aria-label="Close" title="Close (Esc)">✖</button>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<div id="start" class="screen">
+  <div class="card">
+    <h1>⚔️ Conquest Commander</h1>
+    <p class="sub">🗺️ Dust Ridge · 🎟️ 150 · 🪖 12 vs 12</p>
+    <div class="sec"><h2>🏳️ You</h2><div id="myNations" class="chips"></div></div>
+    <div class="sec"><h2>🪖 Army <small id="lookCount"></small></h2><div id="myLooks" class="looks"></div></div>
+    <div class="sec"><h2>🎯 Enemy</h2><div id="enemyNations" class="chips"></div></div>
+    <div class="sec"><h2>🧠 Enemy brain</h2><div class="chips" id="diff">
+      <button class="chip" data-diff="easy">😊 Easy</button><button class="chip on" data-diff="normal">😠 Normal</button></div></div>
+    <button id="play">▶️ Play</button>
+    <p id="src" class="src"></p>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden"><div class="card small">
+  <h1>⏸️</h1>
+  <button id="resume" class="big">▶️</button>
+  <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button></div>
+</div></div>
+
+<div id="end" class="screen hidden"><div class="card small">
+  <h1 id="endTitle">🏆</h1>
+  <p id="endWhy" class="sub"></p>
+  <div id="endStats" class="stats"></div>
+  <div class="row"><button id="again" class="big2" aria-label="Play again">🔄</button><button id="endMenu" class="big2" aria-label="Menu">🏠</button></div>
+</div></div>
+
+<div id="help" class="screen hidden"><div class="card small">
+  <h1>❓</h1>
+  <ul class="legend">
+    <li><b>👆 A B C</b><span>tap a post</span></li>
+    <li><b>⚔️ 🛡️ 🚫</b><span>attack · defend · ignore</span></li>
+    <li><b>★ ★★ ★★★</b><span>how much it matters</span></li>
+    <li><b>🚩</b><span>new troops walk here first</span></li>
+    <li><b>🎟️</b><span>0 = you lose · hold 2 posts = enemy bleeds</span></li>
+    <li><b>⭐</b><span>pays for new troops (auto, every 10 s)</span></li>
+    <li class="pc"><b>🖱️ / WASD</b><span>drag = move · wheel = zoom · Q E = turn</span></li>
+    <li class="pc"><b>1 2 3 · + −</b><span>marks · stars · Tab = next post</span></li>
+    <li class="tc"><b>✌️</b><span>pinch = zoom · twist = turn</span></li>
+  </ul>
+  <button id="helpClose" class="big">👍</button>
+</div></div>
+
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
