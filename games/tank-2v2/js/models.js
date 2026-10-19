@@ -137,6 +137,15 @@ function gunGeos(type) {
     crewMan(k, -1.3, -2.2); crewMan(k, 1.2, -2.6); crewMan(k, 0, -3.1, false);
     return { s: 1, bl: 4.4, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: 1.3, barZ: .2 };
   }
+  if (type === 'turret') {
+    // Heavy Gunner's auto-turret: low tripod, round sensor head, armored box with a twin-barrel gun and a green sensor eye
+    for (const a of [0, 2.1, 4.2]) k.add('dark', B(.14, .14, 1.5), Math.sin(a) * .55, .32, Math.cos(a) * .55, .55, a);
+    k.add('trim', C(.45, .55, .35, 8), 0, .55, 0);
+    t.add('main', B(1.1, .7, 1.0), 0, 1.05, 0); t.add('trim', B(1.2, .14, 1.1), 0, 1.45, 0); t.add('main', B(.08, .55, .9), .6, 1.05, 0);
+    t.add('glass', S(.16, 6, 4), -.32, 1.2, .5);
+    for (const x of [-.13, .13]) b.add('metal', C(.06, .07, 1.3, 6), x, 0, .65, Math.PI / 2);
+    return { s: 1, bl: 1.3, body: k.geos(), tur: t.geos(), bar: b.geos(), turY: 0, barY: 1.05, barZ: .45 };
+  }
   // aa gun: platform on outriggers with twin barrels
   k.add('trim', B(2.4, .35, 2.4), 0, .45, 0); k.add('dark', B(4.2, .15, .3), 0, .3, 0); k.add('dark', B(.3, .15, 4.2), 0, .3, 0);
   for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) k.add('dark', C(.3, .3, .1, 6), x, .2, z);
@@ -182,7 +191,7 @@ export function buildVehicle(type, team) {
   meshes(g.tur, mats, turret); meshes(g.bar, mats, barrel);
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, g.bl + .3); barrel.add(muzzle);
   body.scale.setScalar(g.s || 1);
-  const R = { light: 2.5, medium: 3, heavy: 3.6, jeep: 2.3, atgun: 2.6, howitzer: 3.2, aagun: 2.8 }[type];
+  const R = { light: 2.5, medium: 3, heavy: 3.6, jeep: 2.3, atgun: 2.6, howitzer: 3.2, aagun: 2.8, turret: 1.8 }[type];
   const ring = selRing(R, C_.ring); root.add(ring);
   const pick = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 3.4, 10), new THREE.MeshBasicMaterial({ visible: false })); pick.position.y = 1.5; root.add(pick);
   if (type === 'howitzer') barrel.rotation.x = -.35;
@@ -210,63 +219,62 @@ function colorize(g, hex) {
   for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
   g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g;
 }
-// Each squad type has a signature prop, headgear and a small accent on top of the team color:
-//  rifle    = helmet, long rifle with wooden stock          bazooka = long tube on the shoulder, rocket pack
-//  scout    = lighter build, soft cap, binoculars up, green scarf, radio antenna
-//  engineer = yellow helmet, orange vest stripes, big backpack, wrench over the shoulder
-//  mgteam   = heavy MG at the hip, tripod on the back, ammo box, brass ammo belt
-//  commando = dark team-tinted gear, maroon beret, SMG, knife and satchel (team-colored armband)
+// The 6 infantry classes each have their own silhouette and gear (tell them apart at a glance, not by size):
+//  rifle      Rifle Trooper  = round helmet, blaster rifle with stock, grenades on the chest belt
+//  bazooka    Rocket Trooper = rocket launcher tube on the shoulder (white muzzle band), AT-mine discs on the back
+//  sniper     Sniper         = hooded ghillie cloak (wide, drooping), very long scoped rifle, low stance
+//  engineer   Engineer       = yellow helmet, orange vest stripes, big tool backpack with welding torch, short wide shotgun
+//  jettrooper Jet Trooper    = white flight helmet + visor, twin jetpack tanks with nozzles, fat EMP launcher with a cyan tip
+//  mgteam     Heavy Gunner   = bulky, red officer beret, rotary chaingun (3 barrels) at the hip, ammo drum backpack
 export function soldierGeometry(type, team) {
   const key = type + team; if (soldierCache[key]) return soldierCache[key];
   const T = TEAM[team], parts = [];
   const P = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => parts.push(colorize(prep(geo, x, y, z, rx, ry, rz, sx, sy, sz), col));
-  const elite = type === 'commando', scout = type === 'scout', W = scout ? .86 : 1;
-  const torso = elite ? new THREE.Color(0x2c302a).lerp(new THREE.Color(T.main), .42).getHex() : T.main, legs = elite ? 0x24272a : T.trim, SKIN = 0xe0b48c, GUN = 0x2b2b2b, OLIVE = 0x56603a;
-  P(B(.5 * W, .85, .32), legs, 0, .43, 0);
-  P(B(.62 * W, .72, .38), torso, 0, 1.2, 0);
-  P(B(.66 * W, .14, .4), 0x3a3324, 0, .95, 0);
+  const heavy = type === 'mgteam', sniper = type === 'sniper', W = heavy ? 1.22 : sniper ? .9 : 1;
+  const torso = T.main, legs = T.trim, SKIN = 0xe0b48c, GUN = 0x2b2b2b, OLIVE = 0x56603a;
+  P(B(.5 * W, .85, .32 * W), legs, 0, .43, 0);
+  P(B(.62 * W, .72, .38 * W), torso, 0, 1.2, 0);
+  P(B(.66 * W, .14, .4 * W), 0x3a3324, 0, .95, 0);
   P(S(.2, 7, 5), SKIN, 0, 1.75, 0);
-  const arm = (x, rx = -.5, y = 1.27, z = .12) => P(B(.15, .58, .17), torso, x, y, z, rx);
+  const arm = (x, rx = -.5, y = 1.27, z = .12) => P(B(.15 * W, .58, .17 * W), torso, x, y, z, rx);
   if (type === 'rifle') {
     P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
     arm(.36); arm(-.3, -.9);
     P(B(.09, .09, 1.15), GUN, .26, 1.3, .38); P(B(.11, .17, .36), 0x6b4a2a, .26, 1.26, -.12);   // rifle + stock
+    for (const x of [-.2, 0, .2]) P(S(.075, 5, 4), 0x4e5a2c, x, 1.02, .21);                     // grenades on the belt
   } else if (type === 'bazooka') {
     P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
     arm(.36, -.2, 1.4); arm(-.3, -.6);
     P(C(.13, .13, 1.85, 8), 0x4b5a35, .3, 1.66, .15, Math.PI / 2);              // tube on the shoulder
     P(C(.17, .13, .22, 8), 0x2b2b2b, .3, 1.66, -.85, Math.PI / 2);              // rear flare
     P(C(.145, .145, .1, 8), 0xe6e6e0, .3, 1.66, 1.02, Math.PI / 2);             // white band at the muzzle
-    P(B(.4, .45, .24), 0x4a4f3a, 0, 1.22, -.3);
-    for (const x of [-.11, .11]) P(C(.06, .06, .55, 6), 0x3b3f35, x, 1.62, -.32);   // spare rockets
-  } else if (type === 'scout') {
-    P(C(.21, .22, .17, 8), 0x6f7a4a, 0, 1.9, 0); P(B(.32, .04, .2), 0x59633e, 0, 1.83, .2);   // soft cap
-    P(B(.42, .1, .42), 0x8fd16a, 0, 1.53, 0);                                   // green scarf (accent)
-    arm(.24, -1.25, 1.5, .2); arm(-.24, -1.25, 1.5, .2);                        // arms up
-    for (const x of [-.08, .08]) P(C(.055, .055, .2, 6), 0x1f1f1f, x, 1.78, .28, Math.PI / 2);   // binoculars
-    P(B(.34, .44, .22), 0x4a4f3a, 0, 1.24, -.29); P(C(.018, .018, 1.2, 4), 0x222222, .12, 1.95, -.33);   // radio + antenna
+    for (const y of [1.05, 1.32]) P(C(.2, .2, .07, 10), 0x4a4d40, -.02, y, -.27, Math.PI / 2);   // AT-mine discs on the back
+  } else if (sniper) {
+    P(C(.12, .52, 1.25, 7), 0x5b6a3a, 0, 1.3, -.02);                             // ghillie cloak (wide cone over the body)
+    P(S(.26, 7, 5), 0x4f5d33, 0, 1.84, -.03, 0, 0, 0, 1, .85, 1.05);             // hood
+    for (const [x, z] of [[-.38, .1], [.38, .1], [0, -.4], [-.25, -.3], [.25, -.3]]) P(B(.12, .5, .05), 0x6f7c45, x, .95, z, .2, 0, x * .6);   // ragged strips
+    P(B(.07, .07, 1.75), GUN, .2, 1.42, .55); P(C(.06, .06, .34, 6), 0x111111, .2, 1.56, .45, Math.PI / 2);   // very long rifle + scope
+    arm(.25, -1.1, 1.42, .2); arm(-.2, -1.2, 1.42, .25);
   } else if (type === 'engineer') {
     P(S(.26, 7, 4), 0xe8b520, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);                  // yellow helmet
     for (const y of [1.08, 1.36]) P(B(.64, .07, .4), 0xff8a1f, 0, y, 0);        // orange vest stripes
-    arm(.36, -.2); arm(-.36, -2.4, 1.45, -.02);
-    P(B(.56, .7, .36), 0x6b5a3a, 0, 1.25, -.37);                                // big backpack
-    P(B(.07, .07, 1.0), 0x9aa0a6, -.36, 1.75, -.25, .9); P(B(.26, .08, .13), 0x9aa0a6, -.36, 2.08, .1, .9);   // wrench over the shoulder
-  } else if (type === 'mgteam') {
-    P(S(.25, 7, 4), OLIVE, 0, 1.82, 0, 0, 0, 0, 1, .62, 1);
-    arm(.36, -.7); arm(-.36, 0, 1.15, 0);
-    P(C(.1, .1, 1.35, 8), 0x232323, .27, 1.12, .55, Math.PI / 2);               // heavy MG barrel jacket
-    P(B(.24, .26, .45), 0x232323, .27, 1.12, -.05);                             // receiver
-    P(B(.66, .07, .07), 0xc9a227, 0, 1.25, .2, 0, 0, .7);                        // brass ammo belt (accent)
-    P(B(.32, .26, .2), 0x4f5b2e, -.44, .82, .05);                                // ammo box in hand
-    for (const r of [-.35, 0, .35]) P(C(.03, .03, 1.1, 4), 0x2b2b2b, 0, 1.35, -.32, 0, 0, r);   // tripod on the back
-  } else if (elite) {
-    P(C(.25, .25, .09, 8), 0x7a1f1f, .05, 1.92, 0, 0, 0, .3);                   // maroon beret
-    P(B(.42, .08, .44), 0x1a1c1e, 0, 1.68, 0);                                  // face mask
-    P(B(.18, .14, .2), T.main, .39, 1.38, .05);                                  // team armband
     arm(.36, -.6); arm(-.32, -.8);
-    P(B(.08, .1, .62), GUN, .2, 1.28, .38);                                      // SMG
-    P(B(.3, .26, .16), 0x7a5a32, -.38, .95, .06); P(B(.06, .85, .05), 0x5a4126, 0, 1.2, .2, 0, 0, -.7);   // satchel + strap
-    P(B(.05, .3, .07), 0xcfd3d6, .33, .78, .16); P(B(.07, .12, .09), 0x1a1a1a, .33, .98, .16);   // knife
+    P(B(.56, .7, .36), 0x6b5a3a, 0, 1.25, -.37);                                // big tool backpack
+    P(C(.05, .05, .7, 5), 0x9aa0a6, -.24, 1.75, -.4, .35); P(C(.08, .05, .14, 6), 0xffb030, -.24, 2.08, -.28, .35);   // welding torch
+    P(B(.16, .14, .62), GUN, .22, 1.27, .32); P(C(.08, .08, .3, 6), 0x1a1a1a, .22, 1.3, .7, Math.PI / 2);   // short wide shotgun
+  } else if (type === 'jettrooper') {
+    P(S(.27, 8, 6), 0xeeeeea, 0, 1.8, 0, 0, 0, 0, 1, .95, 1); P(B(.36, .12, .1), 0x2a4a6a, 0, 1.78, .22);   // white flight helmet + visor
+    for (const x of [-.17, .17]) { P(C(.13, .13, .62, 8), 0x9aa0a6, x, 1.3, -.3); P(C(.09, .14, .14, 8), 0x2b2b2b, x, .92, -.3); }   // twin jetpack tanks + nozzles
+    P(B(.5, .1, .2), 0x9aa0a6, 0, 1.58, -.3);
+    arm(.36, -.6); arm(-.3, -.9);
+    P(C(.12, .12, .8, 8), 0x3a3f46, .26, 1.32, .35, Math.PI / 2); P(C(.13, .13, .1, 8), 0x7fe6ff, .26, 1.32, .78, Math.PI / 2);   // EMP launcher + cyan tip
+  } else if (heavy) {
+    P(C(.24, .25, .1, 8), 0xb3261e, .04, 1.9, 0, 0, 0, .25);                     // red officer beret (commander)
+    P(B(.7, .1, .44), 0xc9a227, 0, 1.5, 0);                                     // gold collar / shoulder plate
+    arm(.42, -.7); arm(-.42, -.3, 1.2, .1);
+    for (const [x, y] of [[-.06, 0], [.06, 0], [0, .09]]) P(C(.045, .045, 1.25, 6), 0x232323, .3 + x, 1.12 + y, .7, Math.PI / 2);   // rotary chaingun barrels
+    P(C(.16, .16, .35, 8), 0x232323, .3, 1.15, .05, Math.PI / 2);
+    P(C(.3, .3, .32, 10), 0x4f5b2e, 0, 1.28, -.42, Math.PI / 2, 0, 0); P(B(.66, .07, .07), 0xc9a227, .14, 1.15, -.15, 0, .6, .4);   // ammo drum + feed belt
   }
   const g = mergeGeometries(parts); g.computeBoundingSphere(); g.boundingSphere.radius = 400; // instance spread
   return (soldierCache[key] = g);

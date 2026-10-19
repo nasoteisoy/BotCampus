@@ -1,9 +1,9 @@
 // 📖 Unit Menu ("Unit Guide" in code): full-screen reference of every unit (attack matrix, special ranges, ring diagram to scale, config)
 // plus a sortable / filterable compare table and a side-by-side compare of two picked units.
 // Loaded lazily by main.js; data comes from config.js (and the Unit Examiner's tuning when opened from there).
-import { UNITS, BUILDINGS, ABILITIES, BRANCHES, BODIES, BODY_KEYS, LVL_MULT, DMG_MULT, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD } from './config.js';
+import { UNITS, UNIT_TYPES, BUILDINGS, ABILITIES, BRANCHES, BODIES, BODY_KEYS, LVL_MULT, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD } from './config.js';
 import { svg } from './icons.js';
-import { unitModel, EXTRA, BODY_COLOR, f0, accInfo, ACC_LEGEND } from './unitinfo.js';
+import { unitModel, gadgetRows, EXTRA, BODY_COLOR, f0, accInfo, ACC_LEGEND } from './unitinfo.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -15,7 +15,7 @@ const BLD_TYPES = Object.keys(BUILDINGS);
 const BLD_BR = { hq: { name: 'Command', icon: '⭐', color: '#e6e6e6' }, eco: { name: 'Economy', icon: '💲', color: '#ffd65a' } };
 const bldBr = (k) => { const br = BUILDINGS[k].br; return br ? BLD_BR[br] || { name: BRANCHES[br].name, icon: BR_ICON[br], color: BRANCHES[br].color } : BLD_BR.hq; };
 const BLD_COLOR = '#b48cff';
-const TYPES = BR_ORDER.flatMap((br) => Object.keys(UNITS).filter((t) => UNITS[t].br === br));
+const TYPES = BR_ORDER.flatMap((br) => UNIT_TYPES.filter((t) => UNITS[t].br === br));   // buildable units (the summoned auto-turret is shown in the Heavy Gunner card)
 const PREF_KEY = 'frontline.guide.v1', RINGS_KEY = 'frontline.rings.v1';   // ring toggles are shared with Unit Explore
 
 const G = { rings: true, nums: true, open: false, tab: 'units', filter: 'all', sort: { k: 'order', dir: 1 }, picks: [], common: false, tuned: null, from: 'menu', onClose: null, opts: {} };
@@ -40,7 +40,7 @@ let COMMON_R = 0;
 function commonR() { if (!COMMON_R) COMMON_R = Math.max(...TYPES.map((t) => Math.max(...ringsOf(model(t)).map((r) => r.r)))); return COMMON_R; }
 function config(t) {
   const d = UNITS[t], ab = d.ability ? ABILITIES[d.ability] : null;
-  const c = [['💲', 'Cost', '$' + d.cost], ['⏱️', 'Build time', d.time + ' s'], ['❤️', d.men ? 'Men × hp' : 'HP', d.men ? `${d.men} × ${d.hpm} = ${d.hp}` : d.hp], ['🏃', 'Speed', d.speed]];
+  const c = [['💲', 'Cost', '$' + d.cost + (d.gear ? ` = $${d.base} squad${d.gear.map((g) => ` + ${g.icon}$${g.cost}`).join('')}` : '')], ['⏱️', 'Build time', d.time + ' s'], ['❤️', d.men ? 'Men × hp' : 'HP', d.men ? `${d.men} × ${d.hpm} = ${d.hp}` : d.hp], ['🏃', 'Speed', d.speed]];
   if (d.turn) c.push(['↻', 'Turn', d.turn]);
   c.push(['🔫', 'Weapon', d.wpn ? WPN[d.wpn] || d.wpn : 'none'], ['💥', 'Damage', d.dmg ?? '—'], ['⏳', 'Rate of fire', d.rof ? `1 / ${d.rof} s` : d.wpn ? 'per run' : '—']);
   if (d.splash) c.push(['💢', 'Splash', d.splash]);
@@ -91,12 +91,22 @@ function matrixHtml(t) {
   const extras = m.extras.map((e) => `<div class="gx ${e.k === 'vis' && isTuned(t, 'vis') ? 'tuned' : ''}" style="--c:${EXTRA[e.k].color}" title="${esc(e.note)}"><i class="sw ${e.k !== 'vis' && e.k !== 'repair' ? 'dash' : ''}"></i>${EXTRA[e.k].icon} ${EXTRA[e.k].label} <b>${f0(e.r)}</b>${e.k === 'vis' && isTuned(t, 'vis') ? ` <em class="gtag" title="config.js: ${UNITS[t].vis}">tuned</em>` : ''}</div>`).join('');
   return `<div class="gm"><div class="gm-head"><span>Body</span><span>Level</span><span>Rng</span><span>Dmg</span><span>Acc</span></div>${rows}</div><div class="gxs">${extras}</div>`;
 }
+// gadgets: each gets its own 6-body matrix block (.gg-row rows; the main weapon keeps the .gm-row rows)
+function gadgetHtml(t) {
+  const gs = gadgetRows(UNITS[t]); if (!gs.length) return '';
+  return `<div class="ggad">${gs.map((g) => `<div class="ggb" data-gadget="${g.id}">
+    <div class="ggh">${g.key ? `<span class="ggi">${svg(UNITS[t].ability)}</span>` : `<span class="ggi e">${g.icon}</span>`}<b>${esc(g.name)}</b>${g.key ? `<kbd>${g.key}</kbd>` : '<small>passive</small>'}${UNITS[t].gear ? `<em class="ggc" title="adds this much to the unit cost">+$${UNITS[t].gear.find((x) => x.id === g.id)?.cost ?? 0}</em>` : ''}
+      <span class="ggs">${g.dmg ? `💥 ${g.dmg}${g.summon ? '/shot' : ''}` : ''}${g.splash ? ` · ⭕ ${g.splash} m` : ''}${g.fuse ? ` · ⏱ ${g.fuse} s` : ''}${g.cd ? ` · ⟳ ${g.cd} s` : ''}${g.charges ? ` · ×${g.charges}` : ''}${g.summon ? ` · ❤️ ${UNITS[g.summon].hp} · ${BODIES[UNITS[g.summon].body].icon} ${BODIES[UNITS[g.summon].body].name}` : ''}</span></div>
+    ${g.rows.length ? `<div class="gm gmg">${g.rows.map((c) => `<div class="gg-row ${c.can ? '' : 'cant'}" data-b="${c.k}" style="--c:${c.color}" title="${esc(c.note)}"><span class="gm-name"><i class="sw"></i>${c.icon} ${c.label}</span>${c.lvl > 0 ? pips(c.lvl) : '<span class="gm-no">—</span>'}<span class="gm-rng">${c.lvl > 0 ? f0(c.rng) : '—'}</span><span class="gm-mult">${c.lvl > 0 ? '×' + c.mult : ''}</span><span class="gm-accp">${c.lvl > 0 && c.acc ? apips(c.acc) : ''}</span></div>`).join('')}</div>` : ''}
+    <p class="ggn">${esc(g.note)}</p></div>`).join('')}</div>`;
+}
 function cardHtml(t, compact = false) {
   const d = UNITS[t], ab = d.ability ? ABILITIES[d.ability] : null, tuned = isTuned(t);
   return `<article class="gcard ${compact ? 'compact' : ''}" data-unit="${t}" style="--c:${BRANCHES[d.br].color}">
     <header>${svg(t, 'blue')}<div><b>${esc(d.name)}</b><small>${BR_ICON[d.br]} ${BRANCHES[d.br].name} · body <span class="gbt">${BODIES[d.body].icon} ${BODIES[d.body].name}</span>${tuned ? ' · <em class="gtag">tuned</em>' : ''}</small></div>
       ${compact ? '' : `<button class="gpick ${G.picks.includes(t) ? 'on' : ''}" data-pick="${t}" title="Add to the side-by-side compare">⚖️</button>`}</header>
     <div class="gtop"><div class="gleft">${matrixHtml(t)}</div><div class="gright">${ringSvg(t, compact ? 128 : 150)}</div></div>
+    ${compact ? '' : gadgetHtml(t)}
     <div class="gcfg">${config(t).map(([i, k, v, bk]) => bk ? `<button class="glink" data-gotob="${bk}" title="Show the ${esc(v)} card"><i>${i}</i>${esc(k)}<b>${esc(v)}</b></button>` : `<span><i>${i}</i>${esc(k)}<b>${esc(v)}</b></span>`).join('')}</div>
     <p class="gdesc">${esc(d.desc)}${ab ? ` <b>${esc(ab.name)}:</b> ${esc(ab.desc)}` : ''}</p>
   </article>`;
@@ -123,7 +133,7 @@ function bldConfig(k) {
   return c;
 }
 function bldCardHtml(k) {
-  const b = BUILDINGS[k], br = bldBr(k), dm = bldDamagers(k), sat = DMG_MULT.satchel?.bld;
+  const b = BUILDINGS[k], br = bldBr(k), dm = bldDamagers(k), sat = TYPES.flatMap((t) => (UNITS[t].gadgets || []).filter((g) => g.vs?.bld.lvl >= 4 && !g.friendly).map((g) => `${UNITS[t].name} ${g.name} L${g.vs.bld.lvl}`));
   const prod = b.units.length ? b.units.map((t) => `<button class="gchip" data-goto="${t}" title="Show the ${esc(UNITS[t].name)} card">${svg(t, 'blue')}<span>${esc(UNITS[t].name)}</span><small>$${UNITS[t].cost}</small></button>`).join('') : '<span class="gnone">— no units</span>';
   const dmRow = ({ t, v }, i) => `<div class="gdm ${i < 3 ? 'top' : ''}"><button class="gdm-u" data-goto="${t}">${svg(t, 'blue')}${esc(UNITS[t].name)}</button>${pips(v.lvl)}<span class="gm-mult">×${LVL_MULT[v.lvl]}</span><span class="gm-rng">${v.rng} m</span><span class="gdm-d" title="damage per shot vs buildings">${f0((UNITS[t].dmg || 0) * LVL_MULT[v.lvl])}</span></div>`;
   const dmg = dm.slice(0, 6).map(dmRow).join('') + (dm.length > 6 ? `<details class="gmore"><summary>all ${dm.length} units that can hit buildings</summary>${dm.slice(6).map((o, i) => dmRow(o, i + 6)).join('')}</details>` : '');
@@ -132,7 +142,7 @@ function bldCardHtml(k) {
     <div class="gcfg">${bldConfig(k).map(([i, kk, v]) => `<span><i>${i}</i>${esc(kk)}<b>${esc(v)}</b></span>`).join('')}</div>
     <div class="gbsec"><h4>🏭 Produces</h4><div class="gchips">${prod}</div></div>
     <div class="gbsec"><h4>📍 Placement</h4><ul class="grules">${placeRules(k).map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>
-    <div class="gbsec gdmg"><h4>💣 Damages it best <small>level vs Building · ×dmg · range · dmg/shot</small></h4><div class="gdm-list">${dmg}</div>${sat ? `<p class="gnote">Commando satchel charge: ×${sat} vs buildings. Engineers repair buildings.</p>` : ''}</div>
+    <div class="gbsec gdmg"><h4>💣 Damages it best <small>level vs Building · ×dmg · range · dmg/shot</small></h4><div class="gdm-list">${dmg}</div>${sat.length ? `<p class="gnote">Gadgets: ${esc(sat.join(' · '))}. Engineers repair buildings.</p>` : ''}</div>
     <p class="gdesc">${esc(b.desc || (k === 'hq' ? `Your command post. +$${f0(HQ_INCOME * 60)}/min. Lose it and you lose.` : ''))}</p>
   </article>`;
 }

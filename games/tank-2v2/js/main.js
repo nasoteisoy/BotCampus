@@ -5,7 +5,7 @@ import { buildMap, renderMinimap, obstacles, sdObs, segmentHitT, pushOut, minObs
 import { NavGrid } from './nav.js';
 import { Particles } from './particles.js';
 import { ACC_HIT, CONCEAL_HIT, ACC_SPREAD, ACC_RKT, CONCEAL_SPREAD, BLD_SPREAD, SHELL_LEAD } from './config.js';
-import { UNITS, BUILDINGS, DMG_MULT, LVL_MULT, BODIES, BODY_KEYS, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
+import { UNITS, UNIT_TYPES, GADGET_WPN, TYPE_ALIAS, BUILDINGS, DMG_MULT, LVL_MULT, BODIES, BODY_KEYS, ABILITIES, BRANCHES, START_MONEY, HQ_INCOME, DEPOT_INCOME, BUILD_RADIUS, VISION_BLD, HQ_POS, SUPPLY } from './config.js';
 import { TEAM, SHARED, buildVehicle, buildPlane, buildSquad, buildBuilding, supplyPadTexture, buildFlag } from './models.js';
 import { svg } from './icons.js';
 import { createBadges } from './badges.js';
@@ -159,7 +159,7 @@ function addShake(p, amount) {
 // =====================================================================================
 // world state
 // =====================================================================================
-let units = [], buildings = [], shells = [], emitters = [], markers = [], mines = [], reveals = [], wrecks = [], bombs = [];
+let units = [], buildings = [], shells = [], emitters = [], markers = [], mines = [], reveals = [], wrecks = [], bombs = [], throwables = [], charges = [];
 const teams = { blue: { money: START_MONEY, rate: 0 }, red: { money: START_MONEY, rate: 0 } };
 const game = { state: 'menu', time: 0, endAt: 0, timeScale: 1, result: null, difficulty: 'normal', holdAI: false, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } };
 const selUnits = new Set();
@@ -217,6 +217,7 @@ function createUnit(type, team, x, z, yaw = team === 'blue' ? Math.PI : 0) {
     vel: new THREE.Vector3(), prev: new THREE.Vector3(x, 0, z), stuck: { t: 0, x, z, n: 0 }, repath: 0, dustT: 0,
     dmg: 0, dmgT: 0, sparkT: 1, flash: 0, recoil: 0, deployT: 0, vis: { blue: team === 'blue', red: team === 'red' }, seen: { blue: 0, red: 0 },
     cd: 0, sprintUntil: 0, suppressedUntil: 0, ambush: false, deployed: false, garrison: null, firedAt: -99, satchel: null,
+    charges: ABILITIES[def.ability]?.charges || 0, empUntil: 0, hop: null, hopY: 0, run: null, turretRef: null, gT: rand(0, .5),
     men: def.men || 0, ai: null, vs: def.vs,   // vs: per-body attack {lvl, rng} (config.js; the examiner may swap in a tuned copy)
   };
   if (u.kind === 'inf') {
@@ -477,9 +478,9 @@ function leaveGarrison(u, toward) {
   pos(u).set(fx_, surfaceY(fx_, fz_), fz_); u.prev.copy(pos(u)); u.safe?.copy(pos(u));
   u.im.visible = true; for (const s of u.soldiers) { s.x = fx_ + s.ox; s.z = fz_ + s.oz; }
 }
-function prepMove(u, x, z) { if (u.garrison) leaveGarrison(u, { x, z }); u.deployed = false; u.ambush = false; u.satchel = null; }
+function prepMove(u, x, z) { if (u.garrison) leaveGarrison(u, { x, z }); u.deployed = false; u.ambush = false; u.run = null; }
 function orderMove(list, x, z, type = 'move') {
-  const ground = list.filter((u) => u.alive && !isAir(u)), air = list.filter((u) => u.alive && isAir(u));
+  const ground = list.filter((u) => u.alive && !isAir(u) && u.def.speed > 0), air = list.filter((u) => u.alive && isAir(u));
   for (const a of air) airOrder(a, { x, z });
   if (ground.length) {
     const c = ground.reduce((a, u) => a.add(pos(u)), new THREE.Vector3()).multiplyScalar(1 / ground.length);
@@ -557,7 +558,7 @@ function addMarker(x, z, color, big = false) {
 // body types & attack levels (config.js): the attacker's level vs the target's body sets damage and range
 const bodyOf = (t) => (t.isBld ? 'bld' : t.def.body);
 const vsOf = (u, t) => (t ? u.vs?.[bodyOf(t)] : undefined);   // no target (ground-point run) -> undefined (acc 3 = old spread)
-const HITSCAN = { mg: true, flak: true, aamg: true };   // only hit-scan weapons can reach aircraft (shells fly under them)
+const HITSCAN = { mg: true, flak: true, aamg: true, snipe: true, shotgun: true };   // only hit-scan weapons can reach aircraft (shells fly under them)
 const lvlMult = (u, t) => LVL_MULT[vsOf(u, t)?.lvl || 0] || 0;
 // accuracy level per body (vs.<body>.acc, config.js ACC_* tables); 3 when missing (= the old fixed spread)
 const accOf = (u, t) => vsOf(u, t)?.acc || 3;
@@ -565,12 +566,18 @@ const hitChance = (u, t) => (ACC_HIT[accOf(u, t)] ?? .72) * (isInf(t) && conceal
 const spreadMult = (u, t) => ACC_SPREAD[accOf(u, t)] ?? 1;
 function canHurt(u, t) { const v = vsOf(u, t); return !!u.def.wpn && !!v && v.lvl > 0 && (!isAir(t) || !!HITSCAN[u.def.wpn]); }
 const maxRng = (u) => { let r = 0; if (u.vs) for (const b of BODY_KEYS) if (u.vs[b].lvl > 0) r = Math.max(r, u.vs[b].rng); return r; };
-// unit attacks: multiplier from the attacker's level; ability damage (satchel, mine) keeps its own table
-function dmgMult(wpn, t, attacker) { if (DMG_MULT[wpn]) return DMG_MULT[wpn][t.isBld ? 'bld' : t.def.armor]; return attacker?.vs ? lvlMult(attacker, t) : 1; }
+// unit attacks: multiplier from the attacker's level; gadget damage (grenade, mine, time bomb, detpack) from the gadget's own matrix
+function dmgMult(wpn, t, attacker) { const g = GADGET_WPN[wpn]; if (g) return LVL_MULT[g.vs[bodyOf(t)]?.lvl || 0] || 0; if (DMG_MULT[wpn]) return DMG_MULT[wpn][t.isBld ? 'bld' : t.def.armor]; return attacker?.vs ? lvlMult(attacker, t) : 1; }
+// gadgets: their own 6-body matrix (config.js UNITS[t].gadgets[].vs)
+const gadgetOf = (u, id) => u.def.gadgets?.find((g) => g.id === id);
+const gvsOf = (g, t) => g?.vs?.[bodyOf(t)];
+const isVeh = (t) => !t.isBld && (t.kind === 'veh' || t.kind === 'gun');
+const empOn = (u) => game.time < (u.empUntil || 0);
 function concealed(t) { // harder to spot: infantry in cover, vehicles in forest, ambushers
   if (t.isBld || isAir(t)) return 0;
   const p = pos(t);
   if (t.ambush) return 3;
+  if (t.def.camo && t.speed < .3 && !t.hop && game.time - t.firedAt > 2) return 2;   // sniper cloak: hidden when still
   if (t.garrison) return 2;
   if (isInf(t) && (inForest(p.x, p.z) || inCity(p.x, p.z))) return 2;
   if (inForest(p.x, p.z) && game.time - t.firedAt > 3) return 1;
@@ -618,6 +625,7 @@ function applyDamage(t, amount, wpn, from, attacker) {
     }
     if (t.kind === 'inf' && attacker?.def?.suppress) t.suppressedUntil = game.time + 3;
   } else if (!t.built) d *= 1.4;
+  if (wpn === 'emp' && isVeh(t)) { t.empUntil = game.time + 3; empSparks(t); }   // EMP: vehicles and guns are stunned for 3 s
   if (d <= 0) return;
   const menBefore = t.kind === 'inf' ? menAlive(t) : 0;
   const hpBefore = t.hp;
@@ -683,11 +691,11 @@ function fireAt(u, t) {
   u.reload = rof * rand(.9, 1.1);
   u.firedAt = game.time; u.shots = (u.shots || 0) + 1;
   let dmg = def.dmg * (isInf(u) ? menAlive(u) / def.men * .5 + .5 : 1);
-  if (u.ambush) { dmg *= 2; u.ambush = false; u.cd = ABILITIES.ambush.cd; }
   if (u.team === 'blue') game.stats.shots++;
   const m0 = muzzleOf(u), m = new THREE.Vector3(m0.x, m0.y, m0.z);
   const tp = tgtPos(t), aimY = t.isBld ? tp.y + t.def.h * .45 : isAir(t) ? tp.y : tp.y + (isInf(t) ? .9 : 1.15);
-  if (wpn === 'mg' || wpn === 'flak' || wpn === 'aamg') {
+  if (wpn === 'shotgun') dmg *= clamp(1.25 - .75 * distTo(u, t) / Math.max(1, rangeOf(u, t)), .5, 1.25);   // shotgun: deadly up close
+  if (HITSCAN[wpn]) {
     const tpt = t.isBld ? eyeOf(t, m) : t.garrison ? eyeOf(t, m) : { x: tp.x, y: aimY, z: tp.z };
     let hit = Math.random() < hitChance(u, t);   // seeded acc: 4 = 72% (MG vs inf, 50% in cover), 5 = 80% (vs vehicles / fighter guns), 2 = 50% (flak)
     const end = new THREE.Vector3(tpt.x + rand(-1, 1) * (hit ? .6 : 3), tpt.y + rand(-.5, .5) * (hit ? 1 : 3), tpt.z + rand(-1, 1) * (hit ? .6 : 3));
@@ -695,6 +703,11 @@ function fireAt(u, t) {
       // flak: tracer + dark puff bursts around the plane
       tracer(m, end, [1, .7, .3]);
       for (let k = 0; k < 2; k++) { const q = end.clone().add(new THREE.Vector3(rand(-3, 3), rand(-2, 2), rand(-3, 3))); for (let i = 0; i < 6; i++) smoke.spawn(q.x, q.y, q.z, rand(-1.5, 1.5), rand(-1, 1.5), rand(-1.5, 1.5), rand(1.5, 2.4), .8, rand(2, 3), flakColor[0], flakColor[1], flakColor[2], .8, 1, 0); fx.spawn(q.x, q.y, q.z, 0, 0, 0, .1, 2.6, 1.2, 1, .7, .3, .9); }
+    } else if (wpn === 'snipe') {
+      tracer(m, end, [.85, .95, 1]); fx.spawn(m.x, m.y, m.z, 0, 0, 0, .08, 2.2, 1.2, .9, .95, 1, 1);
+    } else if (wpn === 'shotgun') {
+      for (let k = 0; k < 5; k++) tracer(m, end.clone().add(new THREE.Vector3(rand(-1.2, 1.2), rand(-.6, .6), rand(-1.2, 1.2))), [1, .75, .4]);
+      fx.spawn(m.x, m.y, m.z, 0, 0, 0, .1, 2, 1.2, 1, .8, .4, 1);
     } else {
       for (let k = 0; k < 3; k++) tracer(m, end.clone().add(new THREE.Vector3(rand(-.4, .4), rand(-.3, .3), rand(-.4, .4))));
       fx.spawn(m.x, m.y, m.z, 0, 0, 0, .06, 1.6, 1.2, 1, .8, .4, 1);
@@ -712,15 +725,15 @@ function fireAt(u, t) {
     muzzleFx(m, vel, 1.6); u.recoil = 1; return;
   }
   // ballistic direct-fire shell (tank cannon, AT gun, bazooka, plane rockets)
-  const d = dist2d(m, tp), speed = wpn === 'rocket' ? 60 : isInf(u) ? 48 : CFG.shellSpeed, flight = d / speed;
+  const d = dist2d(m, tp), speed = wpn === 'rocket' ? 60 : wpn === 'emp' ? 42 : isInf(u) ? 48 : CFG.shellSpeed, flight = d / speed;
   const lat = (rand(-1, 1) + rand(-1, 1)) * (.6 + d * .05) * spreadMult(u, t) * (concealed(t) ? CONCEAL_SPREAD : 1) * (t.isBld ? BLD_SPREAD : 1);
   const px = -(tp.z - m.z) / (d || 1), pz = (tp.x - m.x) / (d || 1);
   const tv = t.vel || { x: 0, z: 0 };
   const aim = t.isBld ? eyeOf(t, m) : t.garrison ? eyeOf(t, m) : { x: tp.x + tv.x * flight * SHELL_LEAD + px * lat, y: aimY + rand(-.3, .3), z: tp.z + tv.z * flight * SHELL_LEAD + pz * lat };
   const hd = Math.hypot(aim.x - m.x, aim.z - m.z), tt = Math.max(.05, hd / speed);
-  const g = wpn === 'rocket' ? 0 : CFG.gravity;
+  const g = wpn === 'rocket' || wpn === 'emp' ? 0 : CFG.gravity;
   const vel = new THREE.Vector3((aim.x - m.x) / tt, (aim.y - m.y) / tt + .5 * g * tt, (aim.z - m.z) / tt);
-  spawnShell(u, m, vel, { dmg, wpn, target: t, g, small: isInf(u), splash: wpn === 'rocket' ? 3.5 : 0 });
+  spawnShell(u, m, vel, { dmg, wpn, target: t, g, small: isInf(u), splash: wpn === 'rocket' ? 3.5 : wpn === 'emp' ? def.splash : 0, mat: wpn === 'emp' ? empMat : null });
   muzzleFx(m, vel, isInf(u) ? .5 : 1);
   if (!isInf(u) && !isAir(u)) { u.recoil = 1; u.pitch = -.07; }
 }
@@ -732,13 +745,15 @@ function muzzleFx(m, vel, s) {
   if (s >= 1) { flashLight(m, 120 * s); addShake(m, .08 * s); }
 }
 function spawnShell(owner, m, vel, o) {
-  const mesh = new THREE.Mesh(o.he ? bombGeo : shellGeo, shellMat); mesh.position.copy(m); if (o.small) mesh.scale.setScalar(.7); scene.add(mesh);
+  const mesh = new THREE.Mesh(o.he ? bombGeo : shellGeo, o.mat || shellMat); mesh.position.copy(m); if (o.small) mesh.scale.setScalar(.7); scene.add(mesh);
   shells.push({ mesh, pos: m.clone(), vel, owner, team: owner.team, life: o.life || 2.5, dist: 0, g: o.g ?? CFG.gravity, ...o });
 }
 function inBldBox(b, x, y, z, pad = 0) { return b.alive && Math.abs(x - b.x) < b.hx + pad && Math.abs(z - b.z) < b.hz + pad && y < surfaceY(b.x, b.z) + b.def.h * (b.built ? 1 : Math.max(.3, b.progress)) + pad; }
 function splashDamage(p, r, dmg, wpn, owner, team) {
-  for (const t of units) { if (!t.alive || t.team === team || isAir(t)) continue; const d = dist2d(pos(t), p); if (d < r) applyDamage(t, dmg * (1 - d / r * .6), wpn, p, owner); }
+  let n = 0;
+  for (const t of units) { if (!t.alive || t.team === team || isAir(t)) continue; const d = dist2d(pos(t), p); if (d < r) { const h = t.hp; applyDamage(t, dmg * (1 - d / r * .6), wpn, p, owner); if (t.hp < h) n++; } }
   for (const b of buildings) { if (!b.alive || b.team === team) continue; const dx = Math.max(Math.abs(p.x - b.x) - b.hx, 0), dz = Math.max(Math.abs(p.z - b.z) - b.hz, 0), d = Math.hypot(dx, dz); if (d < r) applyDamage(b, dmg * (1 - d / r * .5), wpn, p, owner); }
+  return n;
 }
 function updateShells(dt) {
   for (let i = shells.length - 1; i >= 0; i--) {
@@ -770,11 +785,11 @@ function updateShells(dt) {
     if (!hit && !s.he && s.dist > 6 && inForest(b.x, b.z) && b.y < heightAt(b.x, b.z) + 6 && Math.random() < .03 * segL) { bestT = .5; hit = 'tree'; }
     s.mesh.position.copy(b); s.mesh.lookAt(tmpV.copy(b).add(s.vel));
     fx.spawn(b.x, b.y, b.z, 0, 0, 0, .05, 1.6, 1.2, 1, .85, .5, 1);
-    if (!s.he) { const nTrail = Math.min(24, Math.ceil(a.distanceTo(b) / .35)); for (let k = 0; k < nTrail; k++) { const q = a.clone().lerp(b, k / nTrail); fx.spawn(q.x, q.y, q.z, 0, 0, 0, .16, .75, .12, 1, .7, .3, .55); } }
-    if (s.small || s.wpn === 'rocket' || s.he) smoke.spawn(b.x, b.y, b.z, rand(-.3, .3), rand(0, .4), rand(-.3, .3), .7, .5, 1.6, .85, .83, .8, .35);
+    if (!s.he) { const nTrail = Math.min(24, Math.ceil(a.distanceTo(b) / .35)), ec = s.wpn === 'emp'; for (let k = 0; k < nTrail; k++) { const q = a.clone().lerp(b, k / nTrail); fx.spawn(q.x, q.y, q.z, 0, 0, 0, ec ? .22 : .16, .75, .12, ec ? .35 : 1, ec ? .85 : .7, ec ? 1 : .3, .55); } }
+    if ((s.small && s.wpn !== 'emp') || s.wpn === 'rocket' || s.he) smoke.spawn(b.x, b.y, b.z, rand(-.3, .3), rand(0, .4), rand(-.3, .3), .7, .5, 1.6, .85, .83, .8, .35);
     if (hit || s.life <= 0) {
       const p = a.clone().lerp(b, Math.min(bestT, 1));
-      if (s.splash) { bigBoom(p, s.he ? 1 : .6); splashDamage(p, s.splash, s.dmg, s.wpn, s.owner, s.team); }
+      if (s.splash) { if (s.wpn === 'emp') empBurst(p); else bigBoom(p, s.he ? 1 : .6); splashDamage(p, s.splash, s.dmg, s.wpn, s.owner, s.team); }
       else if (hit && typeof hit === 'object') { hitFx(p); applyDamage(hit, s.dmg, s.wpn, s.owner.alive ? pos(s.owner) : p, s.owner); }
       else if (hit === 'water') splash(p);
       else if (hit === 'tree') splinters(p);
@@ -844,23 +859,203 @@ function updateBombs(dt) {
       bombAt(b, hi, p); scene.remove(b.mesh); bombs.splice(i, 1); bigBoom(p.clone(), 1.3); splashDamage(p, b.splash, b.dmg, 'bomb', b.owner, b.team); logBomb(b, p); }
   }
 }
-// mines: hidden from the enemy, blow up enemy ground vehicles (and hurt infantry) that roll over them
+// AT mines (Rocket Trooper): hidden from the enemy until they go off; only bodies the mine matrix can hit (vehicles, guns) set them off
 const mineGeo = new THREE.CylinderGeometry(.55, .65, .22, 10);
 function layMine(u) {
-  const p = pos(u), m = new THREE.Mesh(mineGeo, new THREE.MeshStandardMaterial({ color: 0x4a4d40, roughness: .8 }));
+  const p = pos(u), g = gadgetOf(u, 'atmine'), m = new THREE.Mesh(mineGeo, new THREE.MeshStandardMaterial({ color: 0x4a4d40, roughness: .8 }));
   m.position.set(p.x, surfaceY(p.x, p.z) + .1, p.z); scene.add(m);
   const ring = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.4, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: .7, depthWrite: false, toneMapped: false })); ring.position.y = .05; m.add(ring);
-  mines.push({ team: u.team, x: p.x, z: p.z, mesh: m, armT: 1.5, owner: u });
+  mines.push({ team: u.team, x: p.x, z: p.z, mesh: m, armT: 1.5, owner: u, g });
+  u.gadgetUses = (u.gadgetUses || 0) + 1;
 }
 function updateMines(dt) {
   for (let i = mines.length - 1; i >= 0; i--) {
-    const m = mines[i]; m.armT -= dt; m.mesh.visible = m.team === 'blue' || game.state === 'over';
+    const m = mines[i], g = m.g || UNITS.bazooka.gadgets[0]; m.armT -= dt; m.mesh.visible = m.team === 'blue' || game.state === 'over';
     if (m.armT > 0) continue;
-    const t = units.find((u) => u.alive && u.team !== m.team && !isAir(u) && !u.garrison && Math.hypot(pos(u).x - m.x, pos(u).z - m.z) < (isInf(u) ? 1.6 : u.def.r + .6));
+    const t = units.find((u) => { if (!u.alive || u.team === m.team || isAir(u) || u.garrison || u.hop) return false; const v = gvsOf(g, u); return v?.lvl > 0 && Math.hypot(pos(u).x - m.x, pos(u).z - m.z) < v.rng + u.def.r * .5; });
     if (!t) continue;
     const p = new THREE.Vector3(m.x, surfaceY(m.x, m.z) + .3, m.z);
-    bigBoom(p, .9); applyDamage(t, 95, 'mine', p, m.owner); splashDamage(p, 3, 20, 'mine', m.owner, m.team);
+    bigBoom(p, .9); applyDamage(t, g.dmg, 'atmine', p, m.owner); splashDamage(p, g.splash, g.dmg * .25, 'atmine', m.owner, m.team);
+    gadgetLog.push({ kind: 'atmine', time: game.time, team: m.team, target: t.id, x: m.x, z: m.z });
     scene.remove(m.mesh); mines.splice(i, 1);
+  }
+}
+// ---------- gadgets: grenades (thrown, arcing), time bombs + detpacks (planted charges), jet hops, auto-turrets ----------
+const gadgetLog = [];
+const grenadeGeo = new THREE.SphereGeometry(.3, 6, 4), grenadeMat = new THREE.MeshStandardMaterial({ color: 0x3b4a2a, roughness: .7 });
+const chargeGeo = new THREE.BoxGeometry(.9, .55, .65);
+const empMat = new THREE.MeshBasicMaterial({ color: 0x7fe6ff, toneMapped: false });
+function empBurst(p) {
+  for (let i = 0; i < 26; i++) fx.spawn(p.x, p.y + .5, p.z, rand(-7, 7), rand(1, 7), rand(-7, 7), rand(.15, .35), rand(.25, .5), .05, .4, .85, 1, 1, 2, 10);
+  fx.spawn(p.x, p.y + .5, p.z, 0, 0, 0, .3, 4, 1.2, .5, .9, 1, .9); flashLight(p, 160, 0x7fe6ff);
+}
+function empSparks(t) { const q = tgtPos(t); for (let i = 0; i < 4; i++) fx.spawn(q.x + rand(-1.5, 1.5), q.y + rand(.5, 2.4), q.z + rand(-1.5, 1.5), rand(-2, 2), rand(0, 2), rand(-2, 2), rand(.1, .22), .35, .1, .45, .9, 1, 1, 2, 0); }
+// grenade: best visible enemy in reach (level >= 4 bodies: infantry, guns, trucks), preferring groups
+function grenadeTarget(u, manual) {
+  const g = gadgetOf(u, 'grenade'); if (!g) return null;
+  const p = pos(u); let best = null, bs = -1e9;
+  const ft = u.fireTarget;
+  for (const t of units) {
+    if (!t.alive || t.team === u.team || isAir(t) || !t.vis[u.team] || t.hop) continue;
+    const v = gvsOf(g, t); if (!v || v.lvl < (manual ? 2 : 4)) continue;
+    const d = dist2d(pos(t), p); if (d > v.rng || d < 7) continue;
+    if (!manual && isInf(t) && menAlive(t) < 3) continue;
+    let near = 0; for (const o of units) if (o.alive && o.team === t.team && o !== t && !isAir(o) && dist2d(pos(o), pos(t)) < g.splash) near++;
+    const sc = v.lvl * 2 + near * 1.5 - d / v.rng + (t === ft ? 1 : 0);
+    if (sc > bs) { bs = sc; best = t; }
+  }
+  return best;
+}
+function throwGrenade(u, t) {
+  const g = gadgetOf(u, 'grenade'), m0 = muzzleOf(u), tp = tgtPos(t), d = dist2d(m0, tp), v = gvsOf(g, t);
+  const sp = (1 + d * .06) * (ACC_SPREAD[v?.acc || 3] ?? 1), T = .7 + d / 30, tv = t.vel || { x: 0, z: 0 };
+  const ax = tp.x + tv.x * T * .6 + rand(-1, 1) * sp, az = tp.z + tv.z * T * .6 + rand(-1, 1) * sp;
+  const mesh = new THREE.Mesh(grenadeGeo, grenadeMat); mesh.position.set(m0.x, m0.y, m0.z); scene.add(mesh);
+  throwables.push({ kind: 'grenade', fx: m0.x, fy: m0.y + .4, fz: m0.z, tx: ax, tz: az, t: 0, T, apex: 2 + d * .18, dmg: g.dmg * (menAlive(u) / u.def.men * .5 + .5), splash: g.splash, owner: u, team: u.team, mesh, target: t.id });
+  u.firedAt = game.time; u.cd = ABILITIES.grenade.cd; u.gadgetUses = (u.gadgetUses || 0) + 1;
+}
+function updateThrowables(dt) {
+  for (let i = throwables.length - 1; i >= 0; i--) {
+    const th = throwables[i]; th.t += dt; const k = Math.min(1, th.t / th.T);
+    const x = th.fx + (th.tx - th.fx) * k, z = th.fz + (th.tz - th.fz) * k, gy = surfaceY(th.tx, th.tz);
+    th.mesh.position.set(x, th.fy + (gy - th.fy) * k + th.apex * 4 * k * (1 - k), z); th.mesh.rotation.x += dt * 9;
+    if (k < 1) continue;
+    const p = new THREE.Vector3(th.tx, gy + .2, th.tz);
+    bigBoom(p, .55); const hit = splashDamage(p, th.splash, th.dmg, 'grenade', th.owner, th.team);
+    gadgetLog.push({ kind: 'grenade', time: game.time, team: th.team, x: th.tx, z: th.tz, target: th.target, hit });
+    scene.remove(th.mesh); throwables.splice(i, 1);
+  }
+}
+// planted charges: time bomb (fixed spot, 8 s) and detpack (sticks to the target, 2.5 s or remote)
+function plantCharge(u, kind, target, at) {
+  const g = gadgetOf(u, kind);
+  const mesh = new THREE.Mesh(chargeGeo, new THREE.MeshStandardMaterial({ color: kind === 'detpack' ? 0x8a6a3a : 0x3c4046, emissive: 0xff2010, emissiveIntensity: 0, roughness: .7 }));
+  const c = { kind, owner: u, team: u.team, target: kind === 'detpack' && target && !target.isBld ? target : null, x: at.x, z: at.z, y: at.y ?? surfaceY(at.x, at.z), fuse: g.fuse, dmg: g.dmg, splash: g.splash, mesh, planted: game.time };
+  mesh.position.set(c.x, c.y + .3, c.z); scene.add(mesh); charges.push(c);
+  if (kind === 'detpack') u.detpack = c;
+  u.gadgetUses = (u.gadgetUses || 0) + 1;
+  gadgetLog.push({ kind: kind + '-planted', time: game.time, team: u.team, x: c.x, z: c.z, target: target?.id || null });
+  return c;
+}
+function updateCharges(dt) {
+  for (let i = charges.length - 1; i >= 0; i--) {
+    const c = charges[i]; c.fuse -= dt;
+    if (c.target) { if (c.target.alive) { const q = pos(c.target); c.x = q.x; c.z = q.z; c.y = q.y + 1.4; } else c.target = null; }
+    c.mesh.position.set(c.x, c.y + .3, c.z);
+    c.mesh.material.emissiveIntensity = Math.sin(game.time * (c.fuse < 2 ? 26 : 8)) > 0 ? 2.2 : 0;
+    if (c.fuse > 0) continue;
+    const p = new THREE.Vector3(c.x, c.y + .4, c.z);
+    bigBoom(p, 1.15); splashDamage(p, c.splash, c.dmg, c.kind, c.owner, c.team);
+    gadgetLog.push({ kind: c.kind, time: game.time, team: c.team, x: c.x, z: c.z });
+    if (c.owner?.detpack === c) c.owner.detpack = null;
+    scene.remove(c.mesh); charges.splice(i, 1);
+  }
+}
+// run-in gadgets (time bomb, detpack): nearest visible enemy the gadget matrix can reach, highest level first
+function runTarget(u, kind, maxD = Infinity) {
+  const g = gadgetOf(u, kind); if (!g) return null;
+  let best = null, bs = Infinity;
+  for (const t of [...units, ...buildings]) {
+    if (!t.alive || t.team === u.team || (!t.isBld && (isAir(t) || isInf(t) || t.hop)) || !t.vis[u.team]) continue;
+    const v = gvsOf(g, t); if (!v || v.lvl <= 0 || v.rng <= 0) continue;
+    const d = distTo(u, t); if (d > Math.min(v.rng, maxD)) continue;
+    const sc = d - v.lvl * 8; if (sc < bs) { bs = sc; best = t; }
+  }
+  return best;
+}
+function startRun(u, kind, t) {
+  if (u.garrison) leaveGarrison(u, tgtPos(t));
+  u.run = { kind, target: t, repath: 0 }; u.order = { type: 'move' };
+  if (kind === 'detpack') u.sprintUntil = Math.max(u.sprintUntil, game.time + 5);
+  setPath(u, tgtPos(t).x, tgtPos(t).z);
+}
+function runTick(u, dt) {
+  const r = u.run, t = r.target;
+  if (!t.alive) { u.run = null; return; }
+  const seen = t.isBld || t.vis[u.team];
+  const q = seen ? tgtPos(t) : knownPos(t, u.team);   // hidden target: its last known position, never the live one
+  if (!q) { u.run = null; return; }
+  const p = pos(u);
+  if (!seen && Math.hypot(p.x - q.x, p.z - q.z) < 7) { u.run = null; stop(u); u.order = null; lostTarget(u, { lx: q.x, lz: q.z }); return; }
+  if (seen && distTo(u, t) < (t.isBld ? 4.5 : 5.5)) {
+    stop(u); u.order = null; u.run = null; u.cd = ABILITIES[r.kind].cd;
+    const at = t.isBld ? eyeOf(t, p) : tgtPos(t);
+    plantCharge(u, r.kind, t, { x: at.x, z: at.z, y: t.isBld ? surfaceY(at.x, at.z) : undefined });
+    const a = muzzleOf(u); tracer(new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(at.x, (at.y ?? surfaceY(at.x, at.z)) + 1, at.z), [.9, .8, .5]);
+    return;
+  }
+  r.repath -= dt; if (r.repath <= 0 || !u.path.length) { r.repath = 1; setPath(u, q.x, q.z); }
+}
+// jet hop: straight-line flight toward the move target (or attack target / forward), lands on dry, open ground
+function hopDest(u) {
+  const p = pos(u); let gx, gz;
+  if (u.goal) { gx = u.goal.x; gz = u.goal.z; }
+  else if (u.order?.type === 'attack') { const k = knownPos(u.order.target, u.team); if (k) { gx = k.x; gz = k.z; } }
+  if (gx === undefined) { gx = p.x + Math.sin(u.yaw) * 30; gz = p.z + Math.cos(u.yaw) * 30; }
+  const d = Math.hypot(gx - p.x, gz - p.z); if (d < 8) return null;
+  const L = Math.min(u.def.hop || 40, d), dx = (gx - p.x) / d, dz = (gz - p.z) / d;
+  for (let l = L; l >= 8; l -= 2.5) {
+    const x = p.x + dx * l, z = p.z + dz * l;
+    if (Math.abs(x) > HALF - 5 || Math.abs(z) > HALF - 5 || wet(x, z, 1.4)) continue;
+    const [px, pz] = pushOut(x, z, 1.4); if (Math.hypot(px - x, pz - z) > .2) continue;
+    return { x, z };
+  }
+  return null;
+}
+function startHop(u) {
+  if (u.garrison || u.hop) return false;
+  const to = hopDest(u); if (!to) return false;
+  const p = pos(u), d = Math.hypot(to.x - p.x, to.z - p.z);
+  u.hop = { fx: p.x, fz: p.z, tx: to.x, tz: to.z, t: 0, T: 1 + d / 42 * .6, apex: 5 + d * .1, goal: u.goal ? { ...u.goal } : null };
+  u.path = []; u.run = null; u.cd = ABILITIES.jetpack.cd; u.yaw = Math.atan2(to.x - p.x, to.z - p.z);
+  u.gadgetUses = (u.gadgetUses || 0) + 1; gadgetLog.push({ kind: 'jetpack', time: game.time, team: u.team, x: p.x, z: p.z, tx: to.x, tz: to.z });
+  return true;
+}
+function hopTick(u, dt) {
+  const h = u.hop, p = pos(u); h.t += dt; const k = Math.min(1, h.t / h.T);
+  p.x = h.fx + (h.tx - h.fx) * k; p.z = h.fz + (h.tz - h.fz) * k;
+  const g0 = surfaceY(h.fx, h.fz), g1 = surfaceY(h.tx, h.tz), gy = surfaceY(p.x, p.z);
+  p.y = Math.max(gy + .2, g0 + (g1 - g0) * k + h.apex * 4 * k * (1 - k)); u.hopY = p.y - gy; u.speed = 0;
+  u.root.rotation.set(0, u.yaw, 0);
+  if (u.im.visible && Math.random() < .9) for (const s of u.soldiers.slice(0, menAlive(u))) fx.spawn(s.x - Math.sin(s.yaw) * .35, s.y + .9, s.z - Math.cos(s.yaw) * .35, rand(-.5, .5), rand(-6, -3), rand(-.5, .5), rand(.12, .24), .25, .06, 1, .7, .3, 1, 1, 0);
+  if (k < 1) return;
+  u.hop = null; u.hopY = 0; p.y = gy; u.prev.copy(p); (u.safe ||= new THREE.Vector3()).copy(p);
+  for (let i = 0; i < 10; i++) smoke.spawn(p.x + rand(-1.5, 1.5), gy + .3, p.z + rand(-1.5, 1.5), rand(-2, 2), rand(.3, 1), rand(-2, 2), rand(.8, 1.4), .8, 2.4, .72, .66, .5, .4, 1.5, -.2);
+  if (h.goal && Math.hypot(h.goal.x - p.x, h.goal.z - p.z) > 3) setPath(u, h.goal.x, h.goal.z); else if (u.order?.type === 'move') u.order = null;
+}
+function deployTurret(u) {
+  const p = pos(u); let x = p.x + Math.sin(u.yaw) * 2.6, z = p.z + Math.cos(u.yaw) * 2.6;
+  [x, z] = pushOut(x, z, 1.6); if (wet(x, z, 1.4)) { x = p.x; z = p.z; }
+  const t = createUnit('turret', u.team, x, z, u.yaw); t.ownerSquad = u; t.deployT = 0; t.passive = u.passive;
+  u.turretRef = t; u.gadgetUses = (u.gadgetUses || 0) + 1;
+  for (let i = 0; i < 10; i++) smoke.spawn(x + rand(-1, 1), surfaceY(x, z) + .3, z + rand(-1, 1), rand(-1, 1), rand(.5, 1.5), rand(-1, 1), rand(.6, 1), .8, 2, .72, .66, .5, .4, 1.5, -.2);
+  gadgetLog.push({ kind: 'turret', time: game.time, team: u.team, x, z, id: t.id });
+  return t;
+}
+// auto-use with simple triggers, for AI and player units alike (player units only use "in place" gadgets on their own;
+// the run-in ones only when the target is right there)
+function pathLen(u) { let L = 0, a = pos(u); for (const q of u.path) { L += Math.hypot(q.x - a.x, q.z - a.z); a = q; } return L; }
+function gadgetTick(u, dt) {
+  u.gT -= dt; if (u.gT > 0) return; u.gT = .5 + Math.random() * .2;
+  if (u.passive || u.garrison || u.hop || u.run || game.state !== 'playing' || game.ceasefire || game.autoGadgets === false || (game.mode === 'examiner' && !game.autoGadgets)) return;   // tests / examiner can switch auto-use off
+  const ab = u.def.ability; if (!ab || u.cd > 0 || !isInf(u) || menAlive(u) <= 0) return;
+  const A = ABILITIES[ab]; if (A.charges && u.charges <= 0) return;
+  const ai = u.team === 'red' && !!u.ai, still = u.speed < .6 && !u.path.length, p = pos(u);
+  if (ab === 'grenade') { if (u.path.length && u.order?.type === 'move' && !ai) return; const t = grenadeTarget(u, false); if (t) throwGrenade(u, t); }
+  else if (ab === 'atmine') {
+    if (!still) return;
+    const foe = units.some((e) => e.alive && e.team !== u.team && isVeh(e) && e.def.speed > 0 && e.vis[u.team] && dist2d(pos(e), p) < 55);
+    if (foe && !mines.some((m) => m.team === u.team && Math.hypot(m.x - p.x, m.z - p.z) < 8)) useAbility([u], 'atmine', false);
+  }
+  else if (ab === 'timebomb' || ab === 'detpack') { const t = runTarget(u, ab, ai ? Infinity : 9); if (t && (ai || still)) startRun(u, ab, t); }
+  else if (ab === 'jetpack') {
+    if (!u.path.length || !u.goal) return;
+    const st = Math.hypot(u.goal.x - p.x, u.goal.z - p.z);
+    if (st > 20 && (pathLen(u) > st * 1.35 + 6 || st > 45)) startHop(u);
+  }
+  else if (ab === 'turret') {
+    if (u.turretRef?.alive || u.speed > .6) return;
+    if (units.some((e) => e.alive && e.team !== u.team && isInf(e) && e.vis[u.team] && dist2d(pos(e), p) < 40)) useAbility([u], 'turret', false);
   }
 }
 
@@ -877,6 +1072,7 @@ function speedOf(u) {
   let s = u.def.speed * (u.dmg === 2 && !isInf(u) ? .8 : 1);
   if (isInf(u)) { const w = waterClass(p.x, p.z); s *= w === 2 ? .6 : 1; if (game.time < u.sprintUntil) s *= 1.8; if (game.time < u.suppressedUntil) s *= .5; }
   else s *= terrainSpeed(p.x, p.z);
+  if (empOn(u)) s *= .25;   // EMP-stunned vehicle
   if (u.ai) s *= .95;
   return s;
 }
@@ -886,6 +1082,8 @@ function updateUnit(u, dt) {
   u.vel.set((p.x - u.prev.x) / dt, 0, (p.z - u.prev.z) / dt); u.prev.copy(p);
   if (!u.alive) return;
   if (u.cd > 0) u.cd -= dt;
+  if (u.hop) return hopTick(u, dt);
+  if (empOn(u) && Math.random() < dt * 8) empSparks(u);
   if (u.garrison) { u.speed = 0; return combatTick(u, dt); }
   const o = u.order;
   // attack: chase until in range with LOS
@@ -926,11 +1124,12 @@ function updateUnit(u, dt) {
     }
   }
   if (o?.type === 'garrison') { const h = o.house; if (h.garrison && h.garrison !== u) { u.order = null; } else if (Math.abs(p.x - h.x) < h.hx + 4.5 && Math.abs(p.z - h.z) < h.hz + 4.5) enterGarrison(u, h); }
-  if (u.satchel) satchelTick(u, dt);
+  if (u.run) runTick(u, dt);
+  gadgetTick(u, dt);
   // engineers: repair damaged friendly vehicles/buildings nearby while idle
   if (u.def.repair && !u.path.length && Math.random() < dt * 2) {
-    const t = [...units, ...buildings].find((e) => e.alive && e.team === u.team && e !== u && !isInf(e) && !isAir(e) && e.hp < e.maxHp && (e.isBld ? distTo(u, e) < 6 : dist2d(pos(e), p) < 10));
-    if (t) { t.hp = Math.min(t.maxHp, t.hp + u.def.repair * .5 * menAlive(u) / u.def.men * 2); if (t.isBld) updateBldDamageState(t); else updateDamageState(t); u.repairing = t; const q = tgtPos(t); for (let i = 0; i < 3; i++) fx.spawn(q.x + rand(-1.5, 1.5), q.y + rand(1, 2.5), q.z + rand(-1.5, 1.5), rand(-2, 2), rand(1, 3), rand(-2, 2), rand(.15, .3), .3, .1, .6, .9, 1, 1, 2, 10); }
+    const t = [...units, ...buildings].find((e) => e.alive && e.team === u.team && e !== u && !isInf(e) && !isAir(e) && e.hp < e.maxHp && (e.isBld ? distTo(u, e) < (gadgetOf(u, 'repair')?.vs.bld.rng ?? 6) : dist2d(pos(e), p) < (gvsOf(gadgetOf(u, 'repair'), e)?.rng ?? 10)));
+    if (t) { const rl = LVL_MULT[gvsOf(gadgetOf(u, 'repair'), t)?.lvl ?? 4] ?? 1; t.hp = Math.min(t.maxHp, t.hp + u.def.repair * rl * .5 * menAlive(u) / u.def.men * 2); u.repaired = (u.repaired || 0) + 1; if (t.isBld) updateBldDamageState(t); else updateDamageState(t); u.repairing = t; const q = tgtPos(t); for (let i = 0; i < 3; i++) fx.spawn(q.x + rand(-1.5, 1.5), q.y + rand(1, 2.5), q.z + rand(-1.5, 1.5), rand(-2, 2), rand(1, 3), rand(-2, 2), rand(.15, .3), .3, .1, .6, .9, 1, 1, 2, 10); }
     else u.repairing = null;
   }
   // follow path
@@ -959,7 +1158,6 @@ function updateUnit(u, dt) {
   else u.speed *= .5;
   if (u.speed > .4) { u.deployT = 0; if (u.ambush) { u.ambush = false; } }
   else u.deployT += dt;
-  if (u.def.ability === 'deploy' && u.wantDeploy && u.speed < .3 && !u.path.length) { u.deployed = true; u.wantDeploy = false; }
   settleOnGround(u, dt);
   combatTick(u, dt);
   // juice
@@ -984,11 +1182,12 @@ function combatTick(u, dt) {
     if (t && u.reload <= 0 && game.state === 'playing' && menAlive(u) > 0) fireAt(u, t);
     return;
   }
+  if (empOn(u)) { u.reload = Math.max(u.reload, .15); return; }   // EMP: cannot aim or fire
   const isGun = u.kind === 'gun';
   let want = 0;
   if (t) { const tp = tgtPos(t); want = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); }
   else if (u.order?.type === 'attack') { const ot = u.order.target, tp = ot.isBld || ot.vis[u.team] || u.order.lx === undefined ? tgtPos(ot) : { x: u.order.lx, z: u.order.lz }; want = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); }
-  if (isGun && !u.def.antiAir) {
+  if (isGun && !u.def.antiAir && !u.def.fullTraverse) {
     // towed guns: limited traverse; the whole carriage swings toward the target when stopped
     want = clamp(want, -.45, .45);
     if (t && u.speed < .3 && !u.path.length) { const tp = tgtPos(t); const err = wrap(Math.atan2(tp.x - p.x, tp.z - p.z) - u.yaw); if (Math.abs(err) > .35) u.yaw = wrap(u.yaw + clamp(err, -u.def.turn * dt, u.def.turn * dt)); }
@@ -1014,7 +1213,7 @@ function settleOnGround(u, dt) {
   u.root.rotation.set(u.tiltP, u.yaw, u.tiltR, 'YXZ');
 }
 function separate() {
-  const live = units.filter((u) => u.alive && !isAir(u) && !u.garrison);
+  const live = units.filter((u) => u.alive && !isAir(u) && !u.garrison && !u.hop);
   for (let i = 0; i < live.length; i++) {
     const a = pos(live[i]), ra = live[i].def.r;
     for (let j = i + 1; j < live.length; j++) {
@@ -1038,7 +1237,7 @@ function updateSquadVisual(u, dt, now) {
   if (!u.alive || !u.im.visible) return;
   const p = pos(u), sy = Math.sin(u.yaw), cy = Math.cos(u.yaw), moving = u.speed > .5;
   const n = menAlive(u);
-  const deployed = u.deployed, k = Math.min(1, dt * (moving ? 5 : 3));
+  const deployed = u.deployed, k = Math.min(1, dt * (u.hop ? 16 : moving ? 5 : 3));
   for (let i = 0; i < n; i++) {
     const s = u.soldiers[i];
     let ox = s.ox, oz = s.oz;
@@ -1047,7 +1246,7 @@ function updateSquadVisual(u, dt, now) {
     s.x += (tx - s.x) * k; s.z += (tz - s.z) * k;
     const gy = surfaceY(s.x, s.z);
     s.ph += dt * (moving ? 11 : 0);
-    s.y = gy + (moving ? Math.abs(Math.sin(s.ph)) * .18 : 0);
+    s.y = gy + (moving ? Math.abs(Math.sin(s.ph)) * .18 : 0) + (u.hopY || 0);
     let face = u.yaw;
     if (u.fireTarget && !moving) { const tp = tgtPos(u.fireTarget); face = Math.atan2(tp.x - s.x, tp.z - s.z); }
     s.yaw += wrap(face - s.yaw) * Math.min(1, dt * 8);
@@ -1060,48 +1259,25 @@ function updateSquadVisual(u, dt, now) {
   if (u.fireTarget && game.time - u.firedAt < .08) for (let i = 0; i < Math.min(n, 3); i++) { const s = u.soldiers[(i * 3 + (now * 10 | 0)) % n]; fx.spawn(s.x + Math.sin(s.yaw) * .9, s.y + 1.2, s.z + Math.cos(s.yaw) * .9, 0, 0, 0, .05, 1.2, 1, 1, .8, .4, 1); }
 }
 
-// ---------- abilities ----------
-function useAbility(list, ab) {
-  let used = 0;
+// ---------- abilities (manual: keys Q E R F G T or the icon buttons; gadgetTick() auto-uses them) ----------
+function useAbility(list, ab, manual = true) {
+  let used = 0; const A = ABILITIES[ab]; if (!A) return 0;
+  const say = (u, m) => { if (manual && u.team === 'blue' && list.length === 1) toast(m); };
   for (const u of list) {
     if (!u.alive || u.def.ability !== ab) continue;
-    if (ab === 'deploy') { if (u.deployed) { u.deployed = false; used++; continue; } if (u.cd > 0) continue; stop(u); if (u.order?.type === 'move') u.order = null; u.wantDeploy = true; u.cd = ABILITIES.deploy.cd; used++; continue; }
-    if (ab === 'ambush' && u.ambush) { u.ambush = false; used++; continue; }
-    if (u.cd > 0) continue;
-    if (ab === 'sprint') { u.sprintUntil = game.time + ABILITIES.sprint.dur; }
-    else if (ab === 'ambush') { stop(u); if (u.order?.type === 'move') u.order = null; u.ambush = true; }
-    else if (ab === 'binoculars') { reveals.push({ team: u.team, x: pos(u).x, z: pos(u).z, r: 120, until: game.time + ABILITIES.binoculars.dur, unit: u }); flashReveal(u); }
-    else if (ab === 'mine') { if (u.garrison) continue; layMine(u); }
-    else if (ab === 'satchel') {
-      const t = nearestSatchelTarget(u); if (!t) { if (u.team === 'blue') toast('No tank or building in reach'); continue; }
-      u.satchel = { target: t }; u.order = { type: 'move' }; u.sprintUntil = Math.max(u.sprintUntil, game.time + 5); if (u.garrison) leaveGarrison(u, tgtPos(t)); setPath(u, tgtPos(t).x, tgtPos(t).z);
-    }
-    if (ab !== 'satchel') u.cd = ABILITIES[ab].cd;
+    if (ab === 'detpack' && u.detpack && charges.includes(u.detpack)) { u.detpack.fuse = Math.min(u.detpack.fuse, .05); used++; continue; }   // remote: blow it now
+    if (u.hop) continue;
+    if (u.cd > 0) { say(u, `${A.name}: cooling down ${f1(u.cd)} s`); continue; }
+    if (A.charges && u.charges <= 0) { say(u, `${A.name}: none left`); continue; }
+    if (ab === 'grenade') { const t = grenadeTarget(u, manual); if (!t) { say(u, 'No enemy in grenade range'); continue; } throwGrenade(u, t); }
+    else if (ab === 'atmine') { if (u.garrison) continue; layMine(u); u.charges--; u.cd = A.cd; }
+    else if (ab === 'timebomb') { const t = runTarget(u, 'timebomb'); if (t) startRun(u, 'timebomb', t); else { if (u.garrison) continue; plantCharge(u, 'timebomb', null, pos(u)); u.cd = A.cd; } }
+    else if (ab === 'detpack') { const t = runTarget(u, 'detpack'); if (!t) { say(u, 'No tank, gun or building in reach'); continue; } startRun(u, 'detpack', t); }
+    else if (ab === 'jetpack') { if (!startHop(u)) { say(u, 'Nowhere to hop: give a move order first'); continue; } }
+    else if (ab === 'turret') { if (u.garrison) continue; if (u.turretRef?.alive) { say(u, 'Turret already deployed'); continue; } deployTurret(u); u.charges--; u.cd = A.cd; }
     used++;
   }
   return used;
-}
-function nearestSatchelTarget(u) {
-  let best = null, bd = 45;
-  for (const t of [...units, ...buildings]) {
-    if (!t.alive || t.team === u.team || isAir(t) || isInf(t) || !t.vis[u.team]) continue;
-    const d = distTo(u, t); if (d < bd) { bd = d; best = t; }
-  }
-  return best;
-}
-function satchelTick(u, dt) {
-  const s = u.satchel, t = s.target;
-  if (!t.alive) { u.satchel = null; return; }
-  if (s.fuse !== undefined) { s.fuse -= dt; if (s.fuse <= 0) { const p = t.isBld ? new THREE.Vector3(...Object.values(eyeOf(t, pos(u)))) : pos(t).clone().setY(pos(t).y + 1); bigBoom(p, 1.2); applyDamage(t, 170, 'satchel', pos(u), u); u.satchel = null; } return; }
-  if (distTo(u, t) < (t.isBld ? 5 : 6)) {
-    stop(u); u.order = null; s.fuse = 1.2; u.cd = ABILITIES.satchel.cd;
-    const a = muzzleOf(u), q = tgtPos(t); tracer(new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(q.x, q.y + 1, q.z), [.9, .8, .5]);
-  } else if (!u.path.length) setPath(u, tgtPos(t).x, tgtPos(t).z);
-}
-function flashReveal(u) {
-  const p = pos(u);
-  const m = new THREE.Mesh(new THREE.RingGeometry(118, 120, 96).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xbfffd0, transparent: true, opacity: .5, depthWrite: false, toneMapped: false }));
-  m.position.set(p.x, 1.5, p.z); scene.add(m); markers.push({ m, t: 0, ring: true, dur: ABILITIES.binoculars.dur });
 }
 
 // =====================================================================================
@@ -1453,7 +1629,7 @@ function makeAI(diff) {
   function pickUnit(b) {
     const tm = game.time, foeArmor = foeCount((u) => u.def.armor === 'armor'), foeInf = foeCount((u) => isInf(u)), foeAir = foeCount((u) => isAir(u));
     const w = {};
-    if (b.type === 'barracks') Object.assign(w, { rifle: 3 + foeInf * .2, bazooka: 1.5 + foeArmor * .8, mgteam: 1 + foeInf * .2, engineer: count((u) => u.type === 'engineer') < 2 ? .6 : 0, scout: count((u) => u.type === 'scout') < 1 ? .6 : 0, commando: tm > 360 ? .6 : 0 });
+    if (b.type === 'barracks') Object.assign(w, { rifle: 3 + foeInf * .2, bazooka: 1.4 + foeArmor * .7, mgteam: 1 + foeInf * .2, engineer: count((u) => u.type === 'engineer') < 2 ? .7 : 0, sniper: count((u) => u.type === 'sniper') < 2 ? .5 + foeInf * .05 : 0, jettrooper: tm > 180 ? .5 + foeArmor * .4 : 0 });
     if (b.type === 'factory') Object.assign(w, { light: 1.6, medium: 3, heavy: tm > 330 ? 1.2 + foeArmor * .2 : 0 });
     if (b.type === 'recon') Object.assign(w, { jeep: count((u) => u.type === 'jeep') < 2 ? 1 : 0 });
     if (b.type === 'atdepot') Object.assign(w, { atgun: count((u) => u.type === 'atgun') < 2 + foeArmor / 2 ? 1 : 0 });
@@ -1764,8 +1940,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyP' && !exam.onFrame) { setPaused(!game.paused); return; }
   if (e.code === 'Escape') { if (game.paused) { if (!$('#howto').classList.contains('hidden')) showHowTo(false); else setPaused(false); } else if (placing) cancelPlacing(); else if (selUnits.size || selBld) clearSelection(); else setPaused(true); }
   if (placing && e.code === 'KeyR') { rotatePlacing(); return; }
-  for (const [ab, A] of Object.entries(ABILITIES)) if (e.code === A.key && selUnits.size) useAbility([...selUnits], ab);
-  if (e.code === 'KeyX') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
+  for (const [ab, A] of Object.entries(ABILITIES)) if (e.code === A.key && selUnits.size && useAbility([...selUnits], ab)) updatePanelDynamic();
+  if (e.code === 'KeyX') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.run = null; } }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey) setBadges(!badges.on);
   if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey) setLive(!liveOn);
   if (e.code === 'KeyU' && !e.ctrlKey && !e.metaKey && !exam.onFrame) openGuide('play');
@@ -1912,7 +2088,7 @@ function touchButton(id) {
   if (id === 'hq') { const h = hqOf('blue'); if (h) cam.shift.set(h.x - controls.target.x, 0, h.z - 18 - controls.target.z); }
   if (id === 'box') { boxMode = !boxMode; toast(boxMode ? 'Select mode: drag a box around units' : 'Drag to pan'); }
   if (id === 'desel') { rallyMode = false; clearSelection(); }
-  if (id === 'stop') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } }
+  if (id === 'stop') for (const u of selUnits) { if (!isAir(u)) { u.order = null; stop(u); u.run = null; } }
   if (id === 'rally') { rallyMode = !rallyMode; if (rallyMode) toast('Tap the map to set the rally point'); }
   if (id === 'help') { const th = $('#touchhelp'); clearTimeout(th._t); th.classList.toggle('pinned', th.classList.toggle('on')); }   // pinned = opened by Help: only then is its badge button tappable
   updateTouchBar();
@@ -1961,7 +2137,7 @@ function renderSelPanel() {
   const sp = $('#selpanel');
   if (selBld && selBld.alive) {
     const b = selBld, d = b.def;
-    const prod = d.units.map((t) => { const U = UNITS[t]; return `<button class="pbtn" data-unit="${t}" style="--c:${BRANCHES[U.br].color}" data-tip="${esc(tipFor(U.name, U.cost, U.desc, `<br><span class='uses'>Body: ${BODIES[U.body].icon} ${BODIES[U.body].name}</span>` + (U.ability ? `<br><span class='uses'>Ability: ${ABILITIES[U.ability].name}</span>` : '')))}">${svg(t, 'blue')}<span class="price">${fmt$(U.cost)}</span><i class="q"></i><i class="bar"></i></button>`; }).join('');
+    const prod = d.units.map((t) => { const U = UNITS[t]; return `<button class="pbtn" data-unit="${t}" style="--c:${BRANCHES[U.br].color}" data-tip="${esc(tipFor(U.name, U.cost, U.desc, (U.gear ? `<br><span class='uses'>💲 $${U.base} squad${U.gear.map((g) => ` + ${g.icon} $${g.cost} ${g.name}`).join('')}</span>` : '') + `<br><span class='uses'>Body: ${BODIES[U.body].icon} ${BODIES[U.body].name}</span>` + (U.ability ? `<br><span class='uses'>Ability: ${ABILITIES[U.ability].name}</span>` : '')))}">${svg(t, 'blue')}<span class="price">${fmt$(U.cost)}</span>${U.gear ? `<span class="gearc" title="gear">${U.gear.map((g) => g.icon).join('')}</span>` : ''}<i class="q"></i><i class="bar"></i></button>`; }).join('');
     sp.innerHTML = `<div class="head">${svg(b.type, 'blue')}<div><b>${d.name}</b><div class="sub" id="bstate"></div></div></div>${prod ? `<div class="prod">${prod}</div><div class="hint">${TOUCH.on ? 'Tap: queue · Hold: cancel · <b>⚑ Rally</b> button: set rally point' : 'Click: queue · Right-click: cancel · Right-click ground: rally point'}</div>` : `<div class="hint">${b.type === 'hq' ? 'Your HQ. If it falls, you lose. +$120/min.' : b.type === 'depot' ? 'Supply depot: +$270/min.' : ''}</div>`}`;
     sp.querySelectorAll('[data-unit]').forEach((el) => {
       el.addEventListener('click', () => { if (el._lpDone) { el._lpDone = false; return; } if (!queueUnit(selBld, el.dataset.unit)) toast(!selBld.built ? 'Still under construction' : teams.blue.money < UNITS[el.dataset.unit].cost ? 'Not enough money' : 'Queue full'); updatePanelDynamic(); });
@@ -1974,12 +2150,12 @@ function renderSelPanel() {
   if (!list.length) { sp.classList.add('hidden'); sp.innerHTML = ''; return; }
   const cards = list.slice(0, 24).map((u) => `<div class="ucard" data-id="${u.id}" data-tip="${esc(`<b>${u.def.name}</b> <span class='uses'>${BODIES[u.def.body].icon} ${BODIES[u.def.body].name}</span><br><span class='desc'>${u.def.desc}</span>`)}">${svg(u.type, 'blue')}<i class="smk"></i><i class="fire"></i></div>`).join('');
   const abs = [...new Set(list.map((u) => u.def.ability).filter(Boolean))];
-  const abHtml = abs.map((a) => { const A = ABILITIES[a]; return `<button class="abtn" data-ab="${a}" data-tip="${esc(tipFor(A.name + ` <span class='key'>${A.label}</span>`, 0, A.desc))}">${svg(a)}<span class="hk">${A.label}</span><i class="cdr"></i></button>`; }).join('');
+  const abHtml = abs.map((a) => { const A = ABILITIES[a]; return `<button class="abtn" data-ab="${a}" aria-label="${A.name} (${A.label})" data-tip="${esc(tipFor(A.name + ` <span class='key'>${A.label}</span>`, 0, A.desc))}">${svg(a)}<span class="hk">${A.label}</span>${A.charges ? '<b class="chg"></b>' : ''}<i class="cdr"></i></button>`; }).join('');
   const types = [...new Set(list.map((u) => u.type))];
   const bodies = `<div class="ubody">${types.slice(0, 3).map((t) => `<span>${BODIES[UNITS[t].body].icon} <b>${UNITS[t].name}</b> · ${BODIES[UNITS[t].body].name}</span>`).join('')}${types.length > 3 ? `<span>+${types.length - 3}</span>` : ''}</div>`;
   sp.innerHTML = `<button class="livetgl sp ${liveOn ? 'on' : ''}" aria-pressed="${liveOn}" title="Live stats for the selected unit (I)" aria-label="Live stats">📊</button>${bodies}<div class="ucards">${cards}${list.length > 24 ? `<div class="more">+${list.length - 24}</div>` : ''}</div>${abHtml ? `<div class="abil">${abHtml}</div>` : ''}`;
   sp.querySelectorAll('.ucard').forEach((el) => el.addEventListener('click', (e) => { const u = units.find((u) => u.id === el.dataset.id); if (u) { if (e.shiftKey) { selUnits.delete(u); hudDirty = true; } else selectUnits([u]); } }));
-  sp.querySelectorAll('[data-ab]').forEach((el) => el.addEventListener('click', () => useAbility([...selUnits], el.dataset.ab)));
+  sp.querySelectorAll('[data-ab]').forEach((el) => el.addEventListener('click', () => { if (useAbility([...selUnits], el.dataset.ab)) updatePanelDynamic(); }));   // cooldown ring shows at once
   sp.classList.remove('hidden');
 }
 function updatePanelDynamic() {
@@ -2003,8 +2179,9 @@ function updatePanelDynamic() {
   sp.querySelectorAll('[data-ab]').forEach((el) => {
     const ab = el.dataset.ab, us = [...selUnits].filter((u) => u.alive && u.def.ability === ab);
     const cd = Math.min(...us.map((u) => Math.max(0, u.cd))), max = ABILITIES[ab].cd;
-    el.querySelector('.cdr').style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,.62) ${(cd / max * 100).toFixed(1)}%, transparent 0)` : 'none';
-    el.classList.toggle('active', us.some((u) => (ab === 'deploy' && (u.deployed || u.wantDeploy)) || (ab === 'ambush' && u.ambush) || (ab === 'sprint' && game.time < u.sprintUntil) || (ab === 'satchel' && u.satchel) || (ab === 'binoculars' && reveals.some((r) => r.unit === u && r.until > game.time))));
+    el.querySelector('.cdr').style.background = cd > 0 ? `radial-gradient(closest-side, rgba(0,0,0,.5) 80%, transparent 82%), conic-gradient(#ffd65a ${(cd / max * 100).toFixed(1)}%, rgba(0,0,0,.55) 0)` : 'none';   // cooldown ring: the gold arc is the time left
+    el.classList.toggle('active', us.some((u) => (ab === 'jetpack' && u.hop) || (ab === 'detpack' && (u.run || u.detpack)) || (ab === 'timebomb' && u.run) || (ab === 'turret' && u.turretRef?.alive)));
+    const ch = el.querySelector('.chg'); if (ch) { const n = us.reduce((a, u) => a + (u.charges || 0), 0); ch.textContent = n; el.classList.toggle('empty', n <= 0); }
   });
 }
 function updateHUD(dt) {
@@ -2034,9 +2211,10 @@ function clearWorld() {
   for (const e of emitters) if (e.scorch) scene.remove(e.scorch);
   for (const m of markers) scene.remove(m.m);
   for (const m of mines) scene.remove(m.mesh);
+  for (const m of [...throwables, ...charges]) scene.remove(m.mesh);
   for (const h of houses) { h.garrison = null; if (h.flagMesh) { scene.remove(h.flagMesh); h.flagMesh = null; } }
   for (const s of spots) { s.bld = null; s.mesh.visible = true; }
-  units = []; buildings = []; shells = []; bombs = []; wrecks = []; emitters = []; markers = []; mines = []; reveals = []; pickMeshes.length = 0;
+  units = []; buildings = []; shells = []; bombs = []; wrecks = []; emitters = []; markers = []; mines = []; throwables = []; charges = []; reveals = []; pickMeshes.length = 0; gadgetLog.length = 0;
   selUnits.clear(); selBld = null; cancelPlacing();
   for (const k in groups) delete groups[k];
   fx.clear(); smoke.clear();
@@ -2046,7 +2224,7 @@ function startGame(diff = game.difficulty) {
   game.difficulty = diff;
   exam.close?.(); sbx.close?.();
   game.paused = false; $('#pause')?.classList.add('hidden'); $('#howto')?.classList.add('hidden'); syncPauseBtn();
-  Object.assign(game, { mode: null, state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
+  Object.assign(game, { mode: null, state: 'playing', time: 0, endAt: 0, result: null, holdAI: false, invuln: null, autoGadgets: undefined, stats: { shots: 0, hits: 0, kills: 0, lost: 0, built: 0, trained: 0 } });
   teams.blue.money = START_MONEY; teams.red.money = START_MONEY;
   aiState = makeAI(diff);
   if (TOUCH.on) { const th = $('#touchhelp'); th.classList.add('on'); clearTimeout(th._t); th._t = setTimeout(() => th.classList.remove('on'), 9000); }
@@ -2078,7 +2256,7 @@ $('#guide')?.addEventListener('click', () => openGuide('menu'));
 // per-frame visuals & loop
 // =====================================================================================
 // unit-type badges: one instanced draw call; only units the player can see (fog), not garrisoned squads
-const BADGE_H = { light: 2.9, medium: 3.5, heavy: 4.1, jeep: 3.0, atgun: 3.0, howitzer: 3.6, aagun: 3.6 };
+const BADGE_H = { light: 2.9, medium: 3.5, heavy: 4.1, jeep: 3.0, atgun: 3.0, howitzer: 3.6, aagun: 3.6, turret: 2.4 };
 const badgeList = [];
 function updateBadges() {
   let n = 0;
@@ -2158,6 +2336,7 @@ $('#howtobtn').addEventListener('click', () => showHowTo(true));
 for (const id of ['#pause', '#howto']) for (const ev of ['wheel', 'pointerdown', 'mousedown', 'touchstart', 'contextmenu']) $(id).addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
 { // How to Play: body types, levels, ring colors straight from config.js
   const BC = { inf: '#7ddc5a', armor: '#ff8a3d', air: '#4fd6ff', art: '#ff5ab4', truck: '#ffd23f', bld: '#b48cff' };
+  $('#hinf').innerHTML = UNIT_TYPES.filter((t) => UNITS[t].kind === 'inf').map((t) => { const U = UNITS[t], A = ABILITIES[U.ability]; return `<div class="hic" data-unit="${t}">${svg(t, 'blue')}<b>${U.name} <em class="hcost">$${U.cost}</em></b><span class="hab">${svg(U.ability)}<span class="k">${A.label}</span> ${A.name}</span><small>${U.desc}</small></div>`; }).join('');
   $('#hbodies').innerHTML = BODY_KEYS.map((b) => `<span style="--c:${BC[b]}"><i>${BODIES[b].icon}</i>${BODIES[b].name}</span>`).join('');
   $('#hlevels').innerHTML = [1, 2, 3, 4, 5].map((l) => `<em class="hl"><i class="hp">${'▮'.repeat(l)}</i> ×${LVL_MULT[l]}</em>`).join('') + ' <em class="hl no">0 = can\'t hit</em>';
   $('#hrings').innerHTML = BODY_KEYS.map((b) => `<span><i class="sw" style="--c:${BC[b]}"></i>vs ${BODIES[b].name}</span>`).join('') + '<span><i class="sw thin" style="--c:#f2f6ff"></i>👁 vision</span><span><i class="sw dash" style="--c:#ff3b3b"></i>⛔ min range</span><span><i class="sw dash" style="--c:#fff"></i>🚀💣⚙️ special</span>';
@@ -2209,7 +2388,7 @@ function step(dt) {
   for (let i = units.length - 1; i >= 0; i--) { const u = units[i]; if (u.gone) { units.splice(i, 1); continue; } updateUnit(u, dt); damageFx(u, dt); }
   updateSpotting(dt);
   separate();
-  updateShells(dt); updateBombs(dt); updateMines(dt);
+  updateShells(dt); updateBombs(dt); updateMines(dt); updateThrowables(dt); updateCharges(dt);
   updateEmitters(dt);
   fx.update(dt); smoke.update(dt);
   reveals = reveals.filter((r) => r.until > game.time);
@@ -2245,7 +2424,7 @@ frame();
 // test / debug hooks
 // =====================================================================================
 const entById = (id) => units.find((u) => u.id === id) || buildings.find((b) => b.id === id);
-const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, shots: u.shots || 0, goal: u.goal ? { ...u.goal } : null, lastKnown: u.order?.type === 'attack' && u.order.lx !== undefined ? { x: u.order.lx, z: u.order.lz } : null, airPoint: u.airPoint ? { x: u.airPoint.x, z: u.airPoint.z } : null, airTarget: u.airTarget?.id || null, runPhase: u.run?.phase || null, runPasses: u.run?.passes || 0, yaw: u.yaw, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString() });
+const uInfo = (u) => ({ id: u.id, type: u.type, kind: u.kind, body: u.def.body, team: u.team, hp: u.hp, maxHp: u.maxHp, dmg: u.dmg, alive: u.alive, x: pos(u).x, y: pos(u).y, z: pos(u).z, men: u.kind === 'inf' ? menAlive(u) : 0, shownMen: u.im ? u.im.count : 0, selected: selUnits.has(u), order: u.order?.type || null, pathLen: u.path.length, visBlue: u.vis.blue, visRed: u.vis.red, cd: u.cd, deployed: u.deployed, ambush: u.ambush, sprinting: game.time < u.sprintUntil, satchel: !!u.satchel, garrison: !!u.garrison, airState: u.airState || null, ammo: u.ammo, shots: u.shots || 0, goal: u.goal ? { ...u.goal } : null, lastKnown: u.order?.type === 'attack' && u.order.lx !== undefined ? { x: u.order.lx, z: u.order.lz } : null, airPoint: u.airPoint ? { x: u.airPoint.x, z: u.airPoint.z } : null, airTarget: u.airTarget?.id || null, runPhase: u.run?.phase || null, runPasses: u.run?.passes || 0, yaw: u.yaw, fireTarget: u.fireTarget?.id || null, hullColor: u.mats?.main.color.getHexString(), charges: u.charges || 0, hop: !!u.hop, hopY: u.hopY || 0, emp: empOn(u), run: u.run?.kind || null, turret: u.turretRef?.alive ? u.turretRef.id : null, gadgetUses: u.gadgetUses || 0, dealt: u.dealt || 0, repaired: u.repaired || 0, speed: u.speed, concealed: u.alive && !isAir(u) ? concealed(u) : 0 });
 const bInfo = (b) => ({ id: b.id, type: b.type, team: b.team, hp: b.hp, maxHp: b.maxHp, dmg: b.dmg, alive: b.alive, built: b.built, progress: b.progress, x: b.x, z: b.z, hx: b.hx, hz: b.hz, queue: [...b.queue], rally: { ...b.rally }, visBlue: b.vis.blue, selected: selBld === b });
 window.__game = {
   get state() { return game.state; }, get result() { return game.result; }, get stats() { return { ...game.stats }; }, get fps() { return fps; }, get cpuMs() { return cpuMs; }, get simMs() { return simMs; },
@@ -2256,7 +2435,7 @@ window.__game = {
   units: (team) => units.filter((u) => !team || u.team === team).map(uInfo),
   buildings: (team) => buildings.filter((b) => !team || b.team === team).map(bInfo),
   unit: (id) => { const u = entById(id); return u ? (u.isBld ? bInfo(u) : uInfo(u)) : null; },
-  spawn: (type, team, x, z) => { const u = createUnit(type, team, x, z); if (team === 'red' && aiState) aiState.newUnit(u); if (isAir(u)) { u.home = homeOf(u); pos(u).y = u.def.alt; } return u.id; },
+  spawn: (type, team, x, z) => { type = TYPE_ALIAS[type] || type; const u = createUnit(type, team, x, z); if (team === 'red' && aiState) aiState.newUnit(u); if (isAir(u)) { u.home = homeOf(u); pos(u).y = u.def.alt; } return u.id; },
   build: (type, team, x, z, done = false) => { const b = done ? createBuilding(type, team, x, z, true) : placeBuilding(type, team, x, z); return b?.id || null; },
   canPlace: (type, x, z, team = 'blue') => canPlace(type, team, x, z),
   finishBuildings: () => { for (const b of buildings) if (b.alive && !b.built) { b.progress = 1; b.built = true; b.body.scale.y = 1; b.ringP.visible = false; } },
@@ -2264,6 +2443,9 @@ window.__game = {
   order: (ids, x, z) => orderMove(ids.map(entById), x, z), attack: (ids, tid) => orderAttack(ids.map(entById), entById(tid)),
   garrison: (ids, hi) => orderGarrison(ids.map(entById), houses[hi]), houses: () => houses.map((h) => ({ x: h.x, z: h.z, hx: h.hx, hz: h.hz, h: h.h, taken: !!h.garrison })),
   ability: (ids, ab) => useAbility(ids.map(entById), ab),
+  gadgets: () => ({ grenades: throwables.length, charges: charges.map((c) => ({ kind: c.kind, team: c.team, fuse: c.fuse, target: c.target?.id || null, x: c.x, z: c.z })), log: gadgetLog.map((e) => ({ ...e })) }),
+  setAutoGadgets: (on) => { game.autoGadgets = !!on; }, hopTo: (id, x, z) => { const u = entById(id); if (!u) return false; setPath(u, x, z); u.order = { type: 'move' }; return startHop(u); },
+  turretOf: (id) => { const u = entById(id); return u?.turretRef?.alive ? uInfo(u.turretRef) : null; },
   select: (ids) => selectUnits(ids.map(entById)), selectBuilding: (id) => selectBuilding(entById(id)),
   selection: () => ({ units: [...selUnits].map((u) => u.id), building: selBld?.id || null }),
   damage: (id, n, wpn = 'cannon') => { const e = entById(id); if (e) applyDamage(e, n, wpn, null, null); },   // exactly n (no attacker: multiplier 1)
@@ -2290,7 +2472,7 @@ window.__game = {
   spots: () => spots.map((s) => ({ x: s.x, z: s.z, taken: !!s.bld, team: s.bld?.team || null })),
   clearWrecks: () => { wrecks = []; },   // tests: wrecks block line of sight; lets scenarios reuse one spot
   bombLog: (clear) => { const out = bombLog.map((e) => ({ ...e })); if (clear) bombLog.length = 0; return out; },
-  shellsInFlight: () => shells.length + bombs.length, mines: () => mines.map((m) => ({ team: m.team, x: m.x, z: m.z, visible: m.mesh.visible })),
+  shellsInFlight: () => shells.length + bombs.length, mines: () => mines.map((m) => ({ team: m.team, x: m.x, z: m.z, visible: m.mesh.visible, armed: m.armT <= 0 })),
   reveals: () => reveals.length,
   accuracy: (id, tid) => { const u = entById(id), t = entById(tid); return { acc: accOf(u, t), hit: hitChance(u, t), spread: spreadMult(u, t), concealed: concealed(t) }; },
   pause: (on = true) => setPaused(on), paused: () => !!game.paused, quitToMenu: () => quitToMenu(),
@@ -2363,7 +2545,7 @@ const EXAPI = {
     if (e.hp <= 0) killUnit(e);
   },
   kill: (e) => { if (!e?.alive) return; e.hp = 0; if (e.isBld) destroyBuilding(e); else killUnit(e); },
-  stopUnit: (u) => { if (!isAir(u)) { u.order = null; stop(u); u.satchel = null; } else goHome(u); },
+  stopUnit: (u) => { if (!isAir(u)) { u.order = null; stop(u); u.run = null; } else goHome(u); },
   focusAt: (x, z, d) => window.__game.focus(x, z, d),
   panTo: (x, z, k = 1) => { const mv = new THREE.Vector3((x - controls.target.x) * k, 0, (z - controls.target.z) * k); controls.target.add(mv); camera.position.add(mv); cam.shift.set(0, 0, 0); },
   cameraYaw: () => Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z),

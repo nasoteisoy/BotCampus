@@ -38,7 +38,7 @@ Build any scenario on the real map, then run it. Setup starts paused.
 
 | Branch | Building | Units |
 |---|---|---|
-| Infantry | Barracks | Rifle Squad (8, Q sprint), Bazooka Team (4, E ambush, first-shot bonus), Scout Team (3, R binoculars), Engineers (5, repair, F mine), MG Team (4, suppresses, G deploy), Commandos (4, T satchel) |
+| Infantry | Barracks | 6 classes, each with one gadget (key): Rifle Trooper (8 men, Q grenade), Rocket Trooper (4, E hidden AT mines ×3), Sniper (2, 72 m vs infantry only, hides when still, R time bomb), Engineer (4, shotgun, repair tool, F detpack, press again to blow), Jet Trooper (3, EMP launcher stuns vehicles, G jet hop), Heavy Gunner (3, chaingun suppression, T auto-turret ×2) |
 | Infantry | Recon Post | Recon Jeep |
 | Armor | Tank Factory | Light, Medium, Heavy tank (the heavy has strong front armor) |
 | Artillery | AT Gun Depot | AT Gun |
@@ -49,6 +49,7 @@ Build any scenario on the real map, then run it. Setup starts paused.
 - **Counters:** AT beats tanks, tanks beat infantry, and infantry beats AT guns. AA beats planes. Infantry is tougher in forest, in the city and in garrisoned houses.
 - **AI:** builds depots and contests the middle spots, then all four branches including air and AA. It sends growing attack waves and defends its HQ. Easy or Normal.
 - **Telling units apart:** every type has its own silhouette. Light tank: low wheeled recon hull, small round turret, short thin gun and a whip antenna. Medium: tracked, sloped glacis, domed turret, muzzle-braked gun. Heavy: wide boxy hull with side skirts and armor plates, big square turret, very long thick gun. Jeep: windshield, spare wheel, driver and pintle MG. AT gun: shield and muzzle brake. Howitzer: long barrel, recuperator, trail spades. AA gun: twin barrels with flash hiders and a ring sight. Infantry: rifle squad (helmet + rifles), bazooka team (long tubes on the shoulder), scouts (lighter build, cap, binoculars, green scarf, radio), engineers (yellow helmet, orange vest stripes, backpack, wrench), MG team (heavy MG, tripod and ammo box), commandos (dark team-tinted gear, maroon beret, SMG, satchel, knife).
+- **Infantry silhouettes:** Rifle Trooper: round helmet, rifle with wooden stock, grenades on the belt. Rocket Trooper: launcher tube on the shoulder with a white muzzle band, AT-mine discs on the back. Sniper: hooded ghillie cloak with ragged strips, very long scoped rifle. Engineer: yellow helmet, orange vest stripes, tool backpack with welding torch, short shotgun. Jet Trooper: white flight helmet with visor, twin jetpack tanks, fat EMP launcher with a cyan tip (flames when hopping). Heavy Gunner: bulky, red beret, gold collar, 3-barrel chaingun, ammo drum. Auto-Turret: tripod with a boxy twin-gun head and a green sensor eye. Each also has its own badge icon.
 - **Unit badges:** a small icon of the unit type floats above every squad and vehicle you can see. Units hidden in the fog get none. Press **V** (or the button in the help panel / touch help) to switch them off and on. They are on by default and the setting is remembered.
 
 ## Controls
@@ -77,17 +78,18 @@ Every unit and building has one of six **body types**: 🪖 Infantry (`inf`), �
 Each unit in `js/config.js` has `vs: { inf, armor, air, art, truck, bld }`, and each entry is `{ lvl, rng, acc }`:
 - `lvl` 0–5 sets the damage multiplier through `LVL_MULT = [0, 0.06, 0.4, 0.75, 1.0, 1.4]`. Level 0 means the unit can't hit that body, so it never targets it.
 - `rng` is the engagement range against that body. Deploy (+8), garrison (+5) and the height bonus still apply on top. For aircraft, `rng` is the radius around the ordered point in which they pick targets.
-- `acc` 1–5 is the accuracy. Hit-scan weapons (MG, flak, fighter guns) roll `ACC_HIT = [0, .35, .5, .62, .72, .8]`; infantry in cover (forest, town, garrison, ambush) is ×`CONCEAL_HIT` (72% → 50%). Shells and HE use a spread multiplier `ACC_SPREAD = [0, 1.6, 1.25, 1, .8, .62]` on the wobble (±(0.6 + 0.05·d) m for shells, ±(2 + 0.045·d) m for the howitzer); concealed targets ×1.6, buildings ×0.3, moving targets are led by 90% of their motion. Plane rockets aim off by up to `ACC_RKT[acc]` m; bombs space the 6-bomb stick 2.2 m × spread. The seed reproduces the old hidden numbers exactly.
+- `acc` 1–5 is the accuracy. Hit-scan weapons (MG, flak, fighter guns) roll `ACC_HIT = [0, .35, .5, .62, .72, .8]`; infantry in cover (forest, town, garrison, a sniper standing still) is ×`CONCEAL_HIT` (72% → 50%). Shells and HE use a spread multiplier `ACC_SPREAD = [0, 1.6, 1.25, 1, .8, .62]` on the wobble (±(0.6 + 0.05·d) m for shells, ±(2 + 0.045·d) m for the howitzer); concealed targets ×1.6, buildings ×0.3, moving targets are led by 90% of their motion. Plane rockets aim off by up to `ACC_RKT[acc]` m; bombs space the 6-bomb stick 2.2 m × spread. The seed reproduces the old hidden numbers exactly.
 - Ranges differ per body by role (anti-tank units reach armor furthest, infantry reach infantry furthest):
 
 | Unit | Infantry | Armor | Air | Artillery | Truck/Jeep | Building |
 |---|---|---|---|---|---|---|
-| Rifle Squad | L4 · 28 m · acc 4 | L1 · 16 m · acc 5 | — | L5 · 26 m · acc 5 | L3 · 24 m · acc 5 | L1 · 18 m · acc 5 |
-| Bazooka Team | L1 · 18 m · acc 3 | L4 · 32 m · acc 3 | — | L2 · 26 m · acc 3 | L4 · 30 m · acc 3 | L2 · 24 m · acc 3 |
-| Scout Team | L4 · 24 m · acc 4 | L1 · 12 m · acc 5 | — | L5 · 22 m · acc 5 | L3 · 20 m · acc 5 | L1 · 14 m · acc 5 |
-| Engineers | L4 · 22 m · acc 4 | L1 · 12 m · acc 5 | — | L5 · 20 m · acc 5 | L3 · 18 m · acc 5 | L1 · 14 m · acc 5 |
-| Machine Gun Team | L4 · 34 m · acc 4 | L1 · 14 m · acc 5 | — | L5 · 30 m · acc 5 | L3 · 28 m · acc 5 | L1 · 18 m · acc 5 |
-| Commandos | L4 · 28 m · acc 4 | L1 · 16 m · acc 5 | — | L5 · 26 m · acc 5 | L3 · 24 m · acc 5 | L1 · 18 m · acc 5 |
+| Rifle Trooper | L4 · 28 m · acc 4 | L1 · 16 m · acc 5 | — | L5 · 26 m · acc 5 | L3 · 24 m · acc 5 | L1 · 18 m · acc 5 |
+| Rocket Trooper | L1 · 18 m · acc 3 | L4 · 32 m · acc 3 | — | L2 · 26 m · acc 3 | L4 · 30 m · acc 3 | L2 · 24 m · acc 3 |
+| Sniper | L5 · 72 m · acc 5 | — | — | — | — | — |
+| Engineer | L5 · 14 m · acc 4 | L1 · 8 m · acc 5 | — | L4 · 12 m · acc 5 | L3 · 12 m · acc 5 | L1 · 10 m · acc 5 |
+| Jet Trooper | L1 · 20 m · acc 3 | L5 · 34 m · acc 3 | — | L5 · 32 m · acc 3 | L5 · 34 m · acc 3 | L2 · 24 m · acc 3 |
+| Heavy Gunner | L5 · 34 m · acc 4 | L1 · 14 m · acc 5 | — | L4 · 30 m · acc 5 | L3 · 28 m · acc 5 | L1 · 18 m · acc 5 |
+| ↳ Auto-Turret (summoned) | L4 · 32 m · acc 4 | — | — | L2 · 24 m · acc 4 | L2 · 26 m · acc 4 | — |
 | Recon Jeep | L4 · 28 m · acc 4 | L1 · 14 m · acc 5 | — | L5 · 26 m · acc 5 | L3 · 26 m · acc 5 | L1 · 16 m · acc 5 |
 | Light Tank | L5 · 22 m · acc 3 | L4 · 38 m · acc 3 | — | L2 · 34 m · acc 3 | L4 · 36 m · acc 3 | L3 · 30 m · acc 3 |
 | Medium Tank | L5 · 24 m · acc 3 | L4 · 44 m · acc 3 | — | L2 · 40 m · acc 3 | L4 · 40 m · acc 3 | L3 · 34 m · acc 3 |
@@ -100,7 +102,32 @@ Each unit in `js/config.js` has `vs: { inf, armor, air, art, truck, bld }`, and 
 | Fighter-Bomber | L3 · 35 m · acc 5 | L5 · 35 m · acc 5 | — | L4 · 35 m · acc 5 | L5 · 35 m · acc 5 | L3 · 35 m · acc 5 |
 | Bomber | L4 · 35 m · acc 3 | L3 · 35 m · acc 3 | — | L5 · 35 m · acc 3 | L4 · 35 m · acc 3 | L5 · 35 m · acc 3 |
 
-- Special cases keep their own rules: the howitzer's minimum range, MG deploy, the AA gun's anti-air only, indirect fire, the fighter-bomber's dive (fires when the target is `rocketWin` = 14–38 m ahead), bomber ammo, and satchel/mine damage (`DMG_MULT.satchel` / `.mine`).
+### Cost rule (infantry): more / better gear costs more
+Every infantry class costs **base (men + main weapon) + the value of each gadget it carries**: `cost = base + Σ GEAR_COST[gadget]` (`js/config.js`, `GEAR_COST`; the costs are computed from it, so changing a gadget's value changes the price). A stronger item has a higher `GEAR_COST`; carrying two items (Engineer) adds both. The barracks buttons show the price plus the gear icons (tooltip: the breakdown), and the Unit Menu cost row shows the sum (e.g. Engineer `$160 = $85 squad + 🔧$30 + 🧨$45`).
+
+| Class | Base | Gear | Cost |
+|---|---|---|---|
+| Rifle Trooper | $80 | 💣 Grenade +$20 | **$100** |
+| Sniper | $110 | ⏱️ Time Bomb +$40 | **$150** |
+| Engineer | $85 | 🔧 Repair Tool +$30, 🧨 Detpack +$45 | **$160** |
+| Rocket Trooper | $125 | 🟤 AT Mine ×3 +$45 | **$170** |
+| Heavy Gunner | $130 | 🛰️ Auto-Turret ×2 +$60 | **$190** |
+| Jet Trooper | $150 | 🚀 Jet Hop +$50 | **$200** |
+
+### Infantry gadgets
+Each gadget has its own 6-body matrix in `config.js` (`UNITS[type].gadgets[].vs`, same `{ lvl, rng, acc }` format; `rng` = how far it reaches, for the AT mine the trigger radius). Gadget damage uses that matrix's level (×`LVL_MULT`) and ignores `DMG_MULT`. Gadgets fire on their own with simple triggers (grenade: groups of 3+ men in reach; mine: an enemy vehicle within 55 m; time bomb / detpack: the AI runs to targets, player squads only use them on a target within 9 m; jet hop: long detours or goals > 45 m away; turret: enemy infantry within 40 m). Select a squad and press the key or tap its round button to use it now; the gold ring is the cooldown. Hidden targets: time bomb / detpack runs go to the last known position and give up there, like attack orders. Old sandbox codes and saves stay valid: `scout` loads as Sniper, `commando` as Jet Trooper.
+
+| Class | Gadget | Dmg | Splash | Cooldown | Infantry | Armor | Air | Artillery | Truck/Jeep | Building |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Rifle Trooper | 💣 Grenade (Q) | 36 | 5 | 14 s | L5 · 22 m · acc 3 | L1 · 18 m · acc 3 | — | L4 · 22 m · acc 3 | L4 · 22 m · acc 3 | L2 · 18 m · acc 3 |
+| Rocket Trooper | 🟤 AT Mine (E) | 95 | 3 | 5 s · ×3 | — | L4 · 3 m · acc 5 | — | L4 · 3 m · acc 5 | L5 · 3 m · acc 5 | — |
+| Sniper | ⏱️ Time Bomb (R) | 150 | 6 | 30 s | L1 · 0 m · acc 5 | L2 · 20 m · acc 5 | — | L5 · 35 m · acc 5 | L3 · 25 m · acc 5 | L5 · 40 m · acc 5 |
+| Engineer | 🔧 Repair Tool (passive) | — | — | — | — | L4 · 10 m | — | L4 · 10 m | L4 · 10 m | L3 · 6 m |
+| Engineer | 🧨 Detpack (F) | 150 | 3 | 22 s | L1 · 0 m · acc 5 | L5 · 40 m · acc 5 | — | L4 · 40 m · acc 5 | L4 · 40 m · acc 5 | L5 · 40 m · acc 5 |
+| Jet Trooper | 🚀 Jet Hop (G) | — | — | 12 s | — | — | — | — | — | — |
+| Heavy Gunner | 🛰️ Auto-Turret (T) | 5/shot | — | 20 s · ×2 | L4 · 32 m · acc 4 | — | — | L2 · 24 m · acc 4 | L2 · 26 m · acc 4 | — |
+
+- Special cases keep their own rules: the howitzer's minimum range, EMP stun (3 s, vehicles and guns: ¼ speed, no fire), the AA gun's anti-air only, indirect fire, the fighter-bomber's dive (fires when the target is `rocketWin` = 14–38 m ahead), bomber ammo, and satchel/mine damage (`DMG_MULT.satchel` / `.mine`).
 
 ### Attack orders and air runs
 - **Attack on a target that drops out of sight:** units keep the order and head for its *last known position* (where the team last actually saw it, never its live position). They engage again as soon as it's spotted. If it isn't there when they arrive, they stop and a "Target lost" toast plus a grey marker explains why. A target the team has never spotted can't be ordered on.
@@ -148,5 +175,6 @@ Open it with **🔍 Unit Explore** in the main menu, `index.html?explore` or `in
     node test/regress.mjs                  # attack orders on hidden targets for ground units and aircraft (last known position, no fog leak); fighter-bomber + bomber vs targets 10/25/40/80 m ahead; bomber accuracy (9 approaches); accuracy seeding + per-body ranges; unit badges
     node test/lineup.mjs                   # screenshots/lineup-tanks.png, lineup-infantry.png (+ -close, -phone): every type side by side, blue front row, red behind
     node test/ui.mjs                       # 67 checks: main menu, How to Play, pause (frozen), live stats, Unit Menu (17 units × 6 rows, 8 buildings, compare), ring toggles, sandbox, iPhone 13
+    node test/infantry.mjs                 # the 6 infantry classes + gadgets: grenade splash, AT mine hidden/trigger, time bomb timer, repair, detpack (remote), EMP stun, jet hop over the river, auto-turret, AI builds them, iPhone ability buttons
     node test/bodies.mjs                   # every unit has 6 body entries; level-0 bodies are never targeted or damaged; level>0 ones are
 The tests use `__game.simulate(sec)` to fast-forward without rendering, because headless SwiftShader renders at about 1 to 6 fps.

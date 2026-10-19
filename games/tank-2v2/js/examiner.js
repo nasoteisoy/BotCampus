@@ -1,10 +1,10 @@
 // Unit Examiner: a sandbox on the real map that spawns one blue unit (and an optional red opponent) and lets you
 // drive it with the real game code (movement, combat, abilities, models all come from main.js through the API).
 // Loaded lazily by main.js only when the examiner is opened; normal Play never imports this file.
-import { UNITS, BUILDINGS, ABILITIES, BRANCHES, BODIES, BODY_KEYS, LVL_MULT } from './config.js';
+import { UNITS, UNIT_TYPES, BUILDINGS, ABILITIES, BRANCHES, BODIES, BODY_KEYS, LVL_MULT } from './config.js';
 import { svg } from './icons.js';
 import { buildFlag } from './models.js';
-import { f1, f0, EXTRA, unitModel, nameOf, readout as liveReadout, bar } from './unitinfo.js';
+import { f1, f0, EXTRA, unitModel, gadgetRows, nameOf, readout as liveReadout, bar } from './unitinfo.js';
 
 const RINGS_KEY = 'frontline.rings.v1';   // ⭕ rings / 🔢 ring numbers master toggles (shared with the Unit Guide)
 const NOTES_KEY = 'frontline.examiner.notes.v1', PREF_KEY = 'frontline.examiner.prefs.v1', TUNE_KEY = 'frontline.examiner.tuning.v1';
@@ -19,13 +19,13 @@ const ARENAS = {
   open: { name: 'Open field', icon: '🌾', blue: { x: 104, z: -90 }, red: { x: 104, z: -126 }, home: { x: 72, z: -100 }, desc: 'Flat, no cover' },
 };
 // suggested sparring partner per unit (red side)
-const SUGGEST = { rifle: 'u:rifle', bazooka: 'u:medium', scout: 'u:rifle', engineer: 'u:light', mgteam: 'u:rifle', commando: 'u:medium', jeep: 'u:rifle', light: 'u:rifle', medium: 'u:light', heavy: 'u:medium', atgun: 'u:medium', howitzer: 'b:barracks', aagun: 'u:fbomber', reconplane: 'none', fighter: 'u:fighter', fbomber: 'u:medium', bomber: 'b:barracks' };
+const SUGGEST = { rifle: 'u:rifle', bazooka: 'u:medium', sniper: 'u:rifle', engineer: 'u:light', jettrooper: 'u:medium', mgteam: 'u:rifle', jeep: 'u:rifle', light: 'u:rifle', medium: 'u:light', heavy: 'u:medium', atgun: 'u:medium', howitzer: 'b:barracks', aagun: 'u:fbomber', reconplane: 'none', fighter: 'u:fighter', fbomber: 'u:medium', bomber: 'b:barracks' };
 const QUICK = ['too slow', 'too fast', 'does not fire', 'too strong', 'too weak', 'range too short', 'gets stuck', 'looks wrong', 'ability broken', 'good as is'];
 
 let A = null, H = null, root = null, labelsEl = null;
 const S = {
   type: 'rifle', opp: 'auto', redMode: 'hold', arena: 'forest', speed: 1, follow: true, reveal: true, rings: true, impacts: true, live: true,
-  ringOn: { vis: true, inf: true, armor: true, air: true, art: true, truck: true, bld: true, min: true, dive: true, drop: true, deploy: true, satchel: true, repair: true }, tuning: false,
+  ringOn: { vis: true, inf: true, armor: true, air: true, art: true, truck: true, bld: true, min: true, dive: true, drop: true, grenade: true, mine: true, timebomb: true, detpack: true, hop: true, turret: true, repair: true }, tuning: false,
   tab: 'pick', open: true, mode: null, blue: null, red: null, home: null, homeFlag: null, extra: [], fightT: 0, uiT: 0, lastReport: '',
 };
 let notes = {}, tune = {};
@@ -264,10 +264,10 @@ export function readout(u = S.blue) { return liveReadout(A, u); }
 const unitBtn = (t) => { const U = UNITS[t]; return `<button class="exu ${t === S.type ? 'on' : ''}" data-pick="${t}" style="--c:${BRANCHES[U.br].color}" title="${esc(U.name + ': ' + U.desc)}">${svg(t, 'blue')}<span>${esc(U.name)}</span>${notes[t]?.trim() ? '<i class="nd">📝</i>' : ''}${tuneDiff(t).any ? '<i class="td">🎛</i>' : ''}</button>`; };
 function renderPick() {
   const groups = BR_ORDER.map((br) => {
-    const list = Object.keys(UNITS).filter((t) => UNITS[t].br === br);
+    const list = UNIT_TYPES.filter((t) => UNITS[t].br === br);
     return `<div class="exg" style="--c:${BRANCHES[br].color}"><div class="exgh">${BR_ICON[br]} ${BRANCHES[br].name} <small>${list.length}</small></div><div class="exgrid">${list.map(unitBtn).join('')}</div></div>`;
   }).join('');
-  const optU = BR_ORDER.map((br) => `<optgroup label="${BR_ICON[br]} ${BRANCHES[br].name}">${Object.keys(UNITS).filter((t) => UNITS[t].br === br).map((t) => `<option value="u:${t}">${esc(UNITS[t].name)}</option>`).join('')}</optgroup>`).join('');
+  const optU = BR_ORDER.map((br) => `<optgroup label="${BR_ICON[br]} ${BRANCHES[br].name}">${UNIT_TYPES.filter((t) => UNITS[t].br === br).map((t) => `<option value="u:${t}">${esc(UNITS[t].name)}</option>`).join('')}</optgroup>`).join('');
   const optB = `<optgroup label="🏠 Building target">${Object.keys(BUILDINGS).map((t) => `<option value="b:${t}">${esc(BUILDINGS[t].name)}</option>`).join('')}</optgroup>`;
   $('#exsec-pick').innerHTML = `
     <div class="exlab">🔵 Your unit <small>tap to spawn</small></div>${groups}
@@ -328,7 +328,7 @@ function matrixHtml(m) {
 function renderTest() {
   const u = S.blue; if (!u) return;
   const def = u.def;
-  const cfg = [['💲', 'cost', def.cost], ['❤️', def.men ? 'men×hp' : 'hp', def.men ? `${def.men}×${def.hpm}` : def.hp], ['🎯', 'rng', def.rng ?? '—'], ['⏱️', 'rof', def.rof ? def.rof + ' s' : '—'], ['💥', 'dmg', def.dmg ?? '—'], ['🔫', 'weapon', def.wpn || 'none'], ['🧍', 'body', BODIES[def.body].icon + ' ' + BODIES[def.body].name], ['👁', 'vis', def.vis], ['🏃', 'speed', def.speed]];
+  const cfg = [['💲', 'cost', def.cost + (def.gear ? ` (${def.base}${def.gear.map((g) => '+' + g.icon + g.cost).join('')})` : '')], ['❤️', def.men ? 'men×hp' : 'hp', def.men ? `${def.men}×${def.hpm}` : def.hp], ['🎯', 'rng', def.rng ?? '—'], ['⏱️', 'rof', def.rof ? def.rof + ' s' : '—'], ['💥', 'dmg', def.dmg ?? '—'], ['🔫', 'weapon', def.wpn || 'none'], ['🧍', 'body', BODIES[def.body].icon + ' ' + BODIES[def.body].name], ['👁', 'vis', def.vis], ['🏃', 'speed', def.speed]];
   if (def.minRng) cfg.push(['⛔', 'minRng', def.minRng]); if (def.splash) cfg.push(['💢', 'splash', def.splash]); if (def.turn) cfg.push(['↻', 'turn', def.turn]); if (def.deploy) cfg.push(['⚙️', 'setup', def.deploy + ' s']);
   if (def.front) cfg.push(['🛡️', 'front', '×' + def.front]); if (def.ammo) cfg.push(['🚀', 'ammo', def.ammo]); if (def.alt) cfg.push(['☁️', 'alt', def.alt]); if (def.ability) cfg.push(['✨', 'ability', ABILITIES[def.ability].name]);
   const m = rangeModel(u);
@@ -339,12 +339,20 @@ function renderTest() {
     <div class="exlive ${S.live ? '' : 'hidden'}" id="exlive"></div>
     <div class="exlab">🎯 Attack matrix &amp; rings <span class="exrt">${ringBtns()}</span></div>
     <div id="exlegend">${matrixHtml(m)}</div>
+    ${gadgetBlock(def)}
     <div class="exlab">⚙️ Config <small>config.js</small></div>
     <div class="excfg">${cfg.map(([i, k, v]) => `<span><i>${i}</i>${k}<b>${esc(v)}</b></span>`).join('')}</div>
     <div class="exdesc">${esc(def.desc)}${def.ability ? ` · <b>${ABILITIES[def.ability].name}</b>: ${esc(ABILITIES[def.ability].desc)}` : ''}</div>`;
   renderActions();
   S.legendSig = legendSig(m);
   updateLive(true);
+}
+// gadget matrices (grenade, AT mine, time bomb, repair, detpack, turret gun): level / range / acc per body
+function gadgetBlock(def) {
+  const gs = gadgetRows(def); if (!gs.length) return '';
+  return `<div class="exlab">🧰 Gadgets <label class="exchk inl"><input type="checkbox" id="exautog" ${A.game.autoGadgets ? 'checked' : ''}> auto-use</label></div>` + gs.map((g) => `<div class="exgad" data-gadget="${g.id}"><div class="exgh"><b>${g.icon} ${esc(g.name)}</b>${g.key ? ` <kbd>${g.key}</kbd>` : ' <small>passive</small>'} <small>${[g.dmg ? '💥 ' + g.dmg : '', g.splash ? '⭕ ' + g.splash + ' m' : '', g.fuse ? '⏱ ' + g.fuse + ' s' : '', g.cd ? '⟳ ' + g.cd + ' s' : '', g.charges ? '×' + g.charges : ''].filter(Boolean).join(' · ')}</small></div>
+    ${g.rows.length ? `<div class="exgrows">${g.rows.map((c) => `<span class="${c.can ? '' : 'cant'}" style="--c:${c.color}" title="${esc(c.note)}">${c.icon} L${c.lvl}${c.lvl > 0 ? ` · ${c.rng} m${c.acc ? ' · A' + c.acc : ''}` : ''}</span>`).join('')}</div>` : ''}
+    <div class="exgn">${esc(g.note)}</div></div>`).join('');
 }
 function ringBtns() { return `<button class="extgl ${S.rings ? 'on' : ''}" id="exrings" data-ui="rings" aria-pressed="${S.rings}" title="Show / hide all range rings on the ground">⭕ <b>${S.rings ? 'on' : 'off'}</b></button><button class="extgl ${S.ringNums ? 'on' : ''}" id="exringnums" data-ui="ringnums" aria-pressed="${S.ringNums}" title="Show / hide the ring numbers (range, level, multiplier)">🔢 <b>${S.ringNums ? 'on' : 'off'}</b></button>`; }
 function setRingToggles(rings = S.rings, nums = S.ringNums) {
@@ -503,6 +511,7 @@ function onUiChange(e) {
   const t = e.target;
   if (t.dataset.slide) { S.dragging = false; refreshMatrix(); renderHead(); renderPick(); return; }
   if (t.id === 'exopp') { S.opp = t.value; savePrefs(); resetArena(); return; }
+  if (t.id === 'exautog') { A.game.autoGadgets = t.checked; return; }
   if (t.id === 'eximpacts') { S.impacts = t.checked; savePrefs(); if (!S.impacts) clearImpacts(); return; }
   if (t.id === 'exreveal') { S.reveal = t.checked; savePrefs(); resetArena(); return; }
   if (t.dataset.ring) { S.ringOn[t.dataset.ring] = t.checked; savePrefs(); return; }
