@@ -10,7 +10,7 @@ export const SUIT = ['#2a2f36', '#3d4434', '#5e5444', '#25304a', '#cfd4da'];
 export const SKIN = ['#f1c9a5', '#d9a37a', '#a8714a', '#7a4b2e', '#4a2e1e'];
 export const VISOR = ['#5ee8ff', '#ff4a4a', '#ffb43a', '#5dff7a', '#b779ff', '#f2f6ff'];
 export const GLOW = [0, 0.6, 1.4];
-export const GUNMETAL = '#3b4047', TRIM = '#d9dee4';
+export const GUNMETAL = '#3b4047', TRIM = '#e9edf1', GOLD = '#e3b341';
 export const SYMBOLS = ['star', 'planet', 'comet', 'skull', 'wing', 'bolt', 'chevron', 'crescent', 'gear', 'atom', 'triangle', 'circle'];
 
 // ----- data model -----
@@ -18,8 +18,33 @@ export const SYMBOLS = ['star', 'planet', 'comet', 'skull', 'wing', 'bolt', 'che
 // Unit-level: shape / gear only. Field order = code order; never reorder, only append.
 export const NATION_FIELDS = [['suit', 5], ['sym', 12], ['sc', 4], ['vis', 6], ['glow', 3]];
 export const NATION_DEFAULT = Object.freeze({ p: '#2f80ed', s: '#ffe14d', suit: 0, sym: 0, sc: 0, vis: 0, glow: 1 });
-export const TROOPER_FIELDS = [['helm', 5], ['armor', 3], ['pads', 3], ['pack', 4], ['rifle', 3], ['extra', 3], ['banner', 2], ['skin', 5]];
-export const TROOPER_DEFAULT = Object.freeze({ helm: 0, armor: 1, pads: 1, pack: 3, rifle: 0, extra: 0, banner: 1, skin: 1 });
+// v4 trooper kit: armor (standard/heavy) + loadout (main weapon, award ⭐, sidearm, explosive, gadget) + cosmetics
+export const TROOPER_FIELDS = [['helm', 5], ['armor', 2], ['pads', 3], ['weapon', 6], ['award', 2], ['side', 2], ['expl', 4], ['gadget', 7], ['extra', 3], ['banner', 2], ['skin', 5]];
+export const TROOPER_DEFAULT = Object.freeze({ helm: 0, armor: 0, pads: 1, weapon: 0, award: 0, side: 0, expl: 0, gadget: 0, extra: 0, banner: 1, skin: 1 });
+// v2/v3 trooper layout (TC1/TC2 codes, v2/v3 saves) and its mapping into the v4 kit
+export const TROOPER_FIELDS_V2 = [['helm', 5], ['armor', 3], ['pads', 3], ['pack', 4], ['rifle', 3], ['extra', 3], ['banner', 2], ['skin', 5]];
+export const TROOPER_DEFAULT_V2 = Object.freeze({ helm: 0, armor: 1, pads: 1, pack: 3, rifle: 0, extra: 0, banner: 1, skin: 1 });
+export function mapV2Trooper(o) {
+  return {
+    ...TROOPER_DEFAULT, helm: o.helm, pads: o.pads, extra: o.extra, banner: o.banner, skin: o.skin,
+    armor: o.armor === 2 ? 1 : 0,          // light/medium -> Standard, heavy -> Heavy
+    weapon: [0, 2, 3][o.rifle] ?? 0,       // carbine -> Blaster rifle, laser -> Sniper rifle, bullpup -> Shotgun
+    gadget: [0, 3, 6, 5][o.pack] ?? 0,     // none, jetpack -> Jetpack, radio -> Rally, ammo pack -> Health & ammo drop
+  };
+}
+export function undigitsV2Trooper(str) { const o = undigits(str, TROOPER_FIELDS_V2, TROOPER_DEFAULT_V2); return o && mapV2Trooper(o); }
+export const ROSTER_SIZE = 6;
+const RT = (o) => Object.freeze({ ...TROOPER_DEFAULT, ...o });
+export const DEFAULT_ROSTER = Object.freeze([
+  { name: 'Trooper', icon: '🪖', t: RT({ weapon: 0, expl: 0 }) },
+  { name: 'Heavy', icon: '🛡️', t: RT({ helm: 1, armor: 1, pads: 2, weapon: 1, expl: 1, side: 1 }) },
+  { name: 'Sniper', icon: '🎯', t: RT({ helm: 4, pads: 0, weapon: 2, expl: 3, gadget: 2, extra: 2, banner: 0 }) },
+  { name: 'Engineer', icon: '🔧', t: RT({ helm: 3, weapon: 3, expl: 2, gadget: 4, banner: 0 }) },
+  { name: 'Jet Trooper', icon: '🚀', t: RT({ helm: 2, pads: 2, weapon: 5, gadget: 3, banner: 0 }) },
+  { name: 'Commander', icon: '⭐', t: RT({ helm: 2, pads: 2, weapon: 4, side: 1, gadget: 6, extra: 1 }) },
+].map(Object.freeze));
+export const defaultRoster = () => DEFAULT_ROSTER.map((r) => ({ name: r.name, icon: r.icon, t: { ...r.t } }));
+
 // legacy v1 (TC1) trooper code layout
 export const TC1_FIELDS = [
   ['sym', 12], ['sc', 4], ['helm', 5], ['vis', 6], ['glow', 3], ['armor', 3], ['pads', 3],
@@ -62,17 +87,18 @@ export function encodeTC1(nation, trooper) {
 export function decodeTC1(code) {
   const m = /^TC1:([0-9A-F]{6})([0-9A-F]{6})([0-9A-Z]*)$/i.exec(String(code || '').replace(/\s+/g, ''));
   if (!m) return null;
-  const all = { ...NATION_DEFAULT, ...TROOPER_DEFAULT, p: '#' + m[1].toLowerCase(), s: '#' + m[2].toLowerCase() };
+  const all = { ...NATION_DEFAULT, ...TROOPER_DEFAULT_V2, p: '#' + m[1].toLowerCase(), s: '#' + m[2].toLowerCase() };
   const rest = m[3].toLowerCase();
   if (rest.length > TC1_FIELDS.length) return null;
   for (let i = 0; i < rest.length; i++) { const [k, n] = TC1_FIELDS[i], v = parseInt(rest[i], 36); if (!(v >= 0 && v < n)) return null; all[k] = v; }
-  return { nation: sanitizeNation(all), trooper: sanitizeFields(all, TROOPER_FIELDS, TROOPER_DEFAULT) };
+  return { nation: sanitizeNation(all), trooper: mapV2Trooper(sanitizeFields(all, TROOPER_FIELDS_V2, TROOPER_DEFAULT_V2)) };
 }
+// legacy encoders above/below take v2/v3 trooper objects (TROOPER_FIELDS_V2); kept for migration tests
 // TC2 = player + nation + both unit looks; base64url(JSON), UTF-8 safe
 const b64e = (str) => { const b = new TextEncoder().encode(str); let s = ''; for (const x of b) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
 const b64d = (str) => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); return new TextDecoder().decode(Uint8Array.from(s, (c) => c.charCodeAt(0))); };
 export function encodeTC2({ player, nationName, nation, trooper, tank, unit }, TANK_FIELDS) {
-  return 'TC2:' + b64e(JSON.stringify({ pl: String(player || '').slice(0, 24), nn: String(nationName || '').slice(0, 24), n: nationCode(nation), t: digits(trooper, TROOPER_FIELDS), k: digits(tank, TANK_FIELDS), u: unit === 'tank' ? 'k' : 't' }));
+  return 'TC2:' + b64e(JSON.stringify({ pl: String(player || '').slice(0, 24), nn: String(nationName || '').slice(0, 24), n: nationCode(nation), t: digits(trooper, TROOPER_FIELDS_V2), k: digits(tank, TANK_FIELDS), u: unit === 'tank' ? 'k' : 't' }));
 }
 export function decodeTC2(code, TANK_FIELDS, TANK_DEFAULT) {
   const m = /^TC2:([A-Za-z0-9_-]+)$/.exec(String(code || '').replace(/\s+/g, ''));
@@ -80,10 +106,39 @@ export function decodeTC2(code, TANK_FIELDS, TANK_DEFAULT) {
   let o; try { o = JSON.parse(b64d(m[1])); } catch (e) { return null; }
   if (!o || typeof o !== 'object') return null;
   const nation = decodeNation(o.n); if (!nation) return null;
-  const trooper = undigits(o.t ?? '', TROOPER_FIELDS, TROOPER_DEFAULT), tank = undigits(o.k ?? '', TANK_FIELDS, TANK_DEFAULT);
+  const trooper = undigitsV2Trooper(o.t ?? ''), tank = undigits(o.k ?? '', TANK_FIELDS, TANK_DEFAULT);
   if (!trooper || !tank) return null;
   const clean = (x) => String(x ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 24);
   return { player: clean(o.pl), nationName: clean(o.nn), nation, trooper, tank, unit: o.u === 'k' ? 'tank' : 'trooper' };
+}
+// TC3 = player + nation + (6-slot roster | single trooper look) in the v4 kit + tank + active unit/slot
+export function encodeTC3({ player, nationName, nation, roster, slot, trooper, tank, unit }, TANK_FIELDS) {
+  const o = { pl: String(player || '').slice(0, 24), nn: String(nationName || '').slice(0, 24), n: nationCode(nation), k: digits(tank, TANK_FIELDS), u: unit === 'tank' ? 'k' : 't' };
+  if (roster) { o.r = roster.map((r) => [String(r.name).slice(0, 16), r.icon, digits(r.t, TROOPER_FIELDS)]); o.sl = slot | 0; }
+  else o.t = digits(trooper, TROOPER_FIELDS);
+  return 'TC3:' + b64e(JSON.stringify(o));
+}
+export function decodeTC3(code, TANK_FIELDS, TANK_DEFAULT) {
+  const m = /^TC3:([A-Za-z0-9_-]+)$/.exec(String(code || '').replace(/\s+/g, ''));
+  if (!m) return null;
+  let o; try { o = JSON.parse(b64d(m[1])); } catch (e) { return null; }
+  if (!o || typeof o !== 'object') return null;
+  const nation = decodeNation(o.n); if (!nation) return null;
+  const tank = undigits(o.k ?? '', TANK_FIELDS, TANK_DEFAULT); if (!tank) return null;
+  const clean = (x, n = 24) => String(x ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
+  let roster = null, slot = 0, trooper;
+  if (o.r !== undefined) {
+    if (!Array.isArray(o.r) || o.r.length !== ROSTER_SIZE) return null;
+    roster = [];
+    for (let i = 0; i < ROSTER_SIZE; i++) {
+      const r = o.r[i]; if (!Array.isArray(r)) return null;
+      const t = undigits(r[2] ?? '', TROOPER_FIELDS, TROOPER_DEFAULT); if (!t) return null;
+      roster.push({ name: clean(r[0], 16) || DEFAULT_ROSTER[i].name, icon: clean(r[1], 4) || DEFAULT_ROSTER[i].icon, t });
+    }
+    slot = Number.isInteger(o.sl) && o.sl >= 0 && o.sl < ROSTER_SIZE ? o.sl : 0;
+    trooper = roster[slot].t;
+  } else { trooper = undigits(o.t ?? '', TROOPER_FIELDS, TROOPER_DEFAULT); if (!trooper) return null; }
+  return { player: clean(o.pl), nationName: clean(o.nn), nation, roster, slot, trooper, tank, unit: o.u === 'k' ? 'tank' : 'trooper' };
 }
 export function lum(hex) {
   const c = new THREE.Color(hex); return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; // c is linear
@@ -133,8 +188,8 @@ export function drawSymbol(ctx, idx, cx, cy, r, col) {
 
 // ---------- team look: atlas texture + 2 shared materials ----------
 // Atlas 160x64: [0..64) flag tile, then six 16px solid swatches: primary, secondary, skin, suit, gunmetal, trim.
-const AW = 160, AH = 64;
-const REG = { P: 0, S: 1, K: 2, D: 3, G: 4, L: 5 };
+const AW = 176, AH = 64;
+const REG = { P: 0, S: 1, K: 2, D: 3, G: 4, L: 5, A: 6 };
 const regU = (k) => (64 + 8 + 16 * REG[k]) / AW;
 const FLAG_U0 = 1.5 / AW, FLAG_U1 = 62.5 / AW;
 
@@ -150,7 +205,7 @@ export class TeamLook {
     this.team.name = 'team-atlas'; this.visor.name = 'visor';
   }
   paint(st) {
-    const c = this.ctx, sw = [st.p, st.s, SKIN[st.skin], SUIT[st.suit], GUNMETAL, TRIM];
+    const c = this.ctx, sw = [st.p, st.s, SKIN[st.skin], SUIT[st.suit], GUNMETAL, TRIM, GOLD];
     sw.forEach((col, i) => { c.fillStyle = col; c.fillRect(64 + 16 * i, 0, 16, AH); });
     c.fillStyle = st.s; c.fillRect(0, 0, 64, 64);
     c.strokeStyle = st.p; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
@@ -213,197 +268,258 @@ export class Builder {
   }
 }
 
-// rifle grip transform (arms space = world rest pose)
+// weapon grip transform (arms space = world rest pose)
 const RIFLE_POS = [-0.085, 1.16, 0.25], RIFLE_PITCH = 0.18, RIFLE_YAW = 0.1;
-const FOREGRIP = [0.25, 0.33, 0.13];
+//                blaster rocket sniper shotgun chaingun emp
+const FOREGRIP = [0.25, 0.3, 0.33, 0.22, 0.2, 0.24];
+const MUZZLE = [0.46, 0.6, 0.8, 0.5, 0.57, 0.47], TOPY = [0.07, 0.14, 0.11, 0.09, 0.1, 0.07], MUZZLE_R = [0.022, 0.07, 0.024, 0.03, 0.06, 0.09];
+
+function buildWeapon(b, st) {
+  const R = (x, y, z, w, h, d, reg, rx = 0) => b.add(box(w, h, d), reg, M(x, y, z, rx));
+  const BAR = (z, r, len, reg, y = 0.02, n = 8, x = 0) => b.add(cyl(r, r, len, n), reg, M(x, y, z, HALF));
+  const grip = () => R(0, -0.06, -0.005, 0.035, 0.08, 0.04, 'D', 0.3);
+  switch (st.weapon) {
+    case 0: // blaster rifle (v1 carbine)
+      R(0, 0.01, 0.08, 0.055, 0.085, 0.32, 'G'); R(0, 0.06, 0.1, 0.057, 0.018, 0.2, 'S');
+      BAR(0.34, 0.016, 0.2, 'G', 0.02, 6); BAR(0.45, 0.022, 0.04, 'D', 0.02, 6);
+      R(0, -0.005, -0.15, 0.045, 0.075, 0.16, 'D'); grip(); R(0, -0.08, 0.13, 0.035, 0.11, 0.05, 'D', 0.2);
+      R(0, 0.08, 0.03, 0.03, 0.03, 0.07, 'G'); R(0.029, 0.02, 0.18, 0.006, 0.015, 0.06, 'V');
+      break;
+    case 1: // rocket launcher (tube rides high on the arm)
+      BAR(0.1, 0.065, 0.9, 'G', 0.07);
+      for (const z of [-0.2, 0.38]) BAR(z, 0.071, 0.04, 'S', 0.07);
+      b.add(cyl(0.065, 0.085, 0.08, 8), 'D', M(0, 0.07, -0.37, HALF));
+      b.add(cyl(0.012, 0.055, 0.1, 8), 'S', M(0, 0.07, 0.6, HALF));
+      R(0.075, 0.1, 0.06, 0.04, 0.05, 0.1, 'G'); R(0.097, 0.1, 0.06, 0.004, 0.03, 0.03, 'V');
+      grip(); R(0, -0.02, 0.24, 0.035, 0.07, 0.04, 'D');
+      break;
+    case 2: // sniper rifle (v1 long laser rifle)
+      R(0, 0.01, 0.06, 0.05, 0.08, 0.34, 'G'); R(0, 0, -0.2, 0.045, 0.09, 0.24, 'D');
+      BAR(0.5, 0.016, 0.56, 'G', 0.02, 6); BAR(0.79, 0.024, 0.06, 'D', 0.02, 6);
+      BAR(0.06, 0.026, 0.2, 'S', 0.085); BAR(0.165, 0.021, 0.012, 'V', 0.085);
+      for (const sx of [1, -1]) b.add(box(0.012, 0.12, 0.012), 'G', M(0.02 * sx, -0.04, 0.45, 0.3, 0, 0.3 * sx));
+      grip(); R(0, -0.07, 0.11, 0.032, 0.07, 0.05, 'D', 0.2);
+      break;
+    case 3: // shotgun (v1 bullpup slot)
+      R(0, 0.01, 0.04, 0.065, 0.1, 0.26, 'G'); BAR(0.33, 0.028, 0.34, 'G', 0.03);
+      BAR(0.3, 0.02, 0.28, 'D', -0.025, 6); R(0, -0.025, 0.22, 0.06, 0.05, 0.12, 'S');
+      R(0, -0.005, -0.17, 0.05, 0.09, 0.2, 'D'); grip(); R(0.034, 0.03, 0.05, 0.006, 0.02, 0.1, 'V');
+      break;
+    case 4: // chaingun
+      R(0, 0.01, 0.02, 0.1, 0.12, 0.24, 'G');
+      for (let i = 0; i < 3; i++) { const a = i * 2.094; BAR(0.36, 0.016, 0.42, 'G', 0.02 + Math.sin(a) * 0.035, 6, Math.cos(a) * 0.035); }
+      BAR(0.57, 0.06, 0.02, 'D', 0.02, 6); BAR(0.2, 0.06, 0.02, 'D', 0.02, 6);
+      b.add(cyl(0.075, 0.075, 0.07, 8), 'S', M(0, -0.1, 0.05, 0, 0, HALF));
+      R(0, 0.1, 0.0, 0.025, 0.04, 0.16, 'D'); grip(); R(0.052, 0.02, 0.06, 0.006, 0.02, 0.12, 'V');
+      break;
+    default: // EMP launcher
+      R(0, 0.01, 0.04, 0.07, 0.1, 0.3, 'G'); BAR(0.3, 0.045, 0.24, 'G');
+      for (const z of [0.24, 0.34]) BAR(z, 0.06, 0.025, 'V');
+      b.add(cyl(0.09, 0.05, 0.05, 8), 'S', M(0, 0.02, 0.445, HALF)); BAR(0.472, 0.03, 0.012, 'V');
+      R(0, -0.08, 0.1, 0.05, 0.08, 0.1, 'S'); R(0, 0, -0.16, 0.05, 0.08, 0.18, 'D'); grip();
+  }
+  if (st.award) { // ⭐ award version: gold rail + gold muzzle ring + star light
+    const w = st.weapon;
+    R(0, TOPY[w], 0.08, 0.03, 0.02, 0.24, 'A');
+    b.add(cyl(MUZZLE_R[w] + 0.01, MUZZLE_R[w] + 0.01, 0.03, 6), 'A', M(0, w === 1 ? 0.07 : 0.02, MUZZLE[w] - 0.03, HALF));
+    R(-0.04, TOPY[w] - 0.02, 0.0, 0.006, 0.03, 0.03, 'V');
+  }
+}
 
 export function buildParts(st) {
   const b = new Builder();
-  const heavy = st.armor === 2, med = st.armor >= 1;
+  const heavy = st.armor === 1, W = 'L'; // clone-white plates, nation-tinted trim
   // ----- legs -----
   b.bone = 'legs';
   for (const sx of [1, -1]) {
     const dz = sx > 0 ? 0.06 : -0.04; // relaxed stance: left foot forward
     const hip = [0.105 * sx, 0.9, 0], knee = [0.125 * sx, 0.5, 0.03 + dz * 0.6], ank = [0.13 * sx, 0.11, dz];
-    b.seg(hip, knee, 0.165, 0.18, 'D');
-    b.seg(knee, ank, 0.14, 0.155, 'D');
-    b.add(box(0.16, 0.1, 0.27), 'G', M(0.13 * sx, 0.05, dz + 0.035));
-    if (med) b.add(box(0.12, 0.09, 0.05), 'S', M(0.125 * sx, 0.5, 0.115 + dz * 0.6, -0.1));
-    if (med) b.add(box(heavy ? 0.18 : 0.16, heavy ? 0.2 : 0.16, 0.045), 'P', M(0.115 * sx, 0.72, 0.1 + dz * 0.3, 0.05 - dz));
-    if (heavy) b.add(box(0.15, 0.24, 0.045), 'P', M(0.128 * sx, 0.3, 0.09 + dz * 0.8, 0.04));
+    b.seg(hip, knee, heavy ? 0.18 : 0.165, 0.18, 'D');
+    b.seg(knee, ank, heavy ? 0.15 : 0.14, 0.155, 'D');
+    b.add(box(heavy ? 0.18 : 0.16, 0.1, 0.27), 'G', M(0.13 * sx, 0.05, dz + 0.035));
+    b.add(box(0.12, 0.09, 0.05), 'S', M(0.125 * sx, 0.5, 0.115 + dz * 0.6, -0.1));
+    b.add(box(heavy ? 0.19 : 0.16, heavy ? 0.22 : 0.16, 0.045), W, M(0.115 * sx, 0.72, 0.1 + dz * 0.3, 0.05 - dz));
+    b.add(box(heavy ? 0.16 : 0.13, heavy ? 0.26 : 0.2, 0.045), W, M(0.128 * sx, 0.3, 0.09 + dz * 0.8, 0.04));
   }
   b.add(box(0.34, 0.2, 0.21), 'D', M(0, 0.9, 0));
-  if (heavy) b.add(box(0.32, 0.12, 0.04), 'P', M(0, 0.86, 0.12, -0.15));
+  if (heavy) b.add(box(0.34, 0.13, 0.045), W, M(0, 0.86, 0.12, -0.15));
+  // sidearm in a holster on the right thigh
+  b.add(box(0.05, st.side ? 0.17 : 0.13, st.side ? 0.09 : 0.08), 'D', M(-0.215, 0.76, 0.0));
+  b.add(box(0.035, 0.07, 0.05), st.side ? 'S' : 'G', M(-0.215, 0.87, -0.02, 0.3));
+  if (st.side) b.add(box(0.012, 0.02, 0.02), 'V', M(-0.215, 0.91, -0.005));
   // ----- torso -----
   b.bone = 'torso';
   b.add(box(0.37, 0.06, 0.23), 'S', M(0, 1.0, 0));
   b.add(box(0.36, 0.4, 0.21), 'D', M(0, 1.21, 0));
   b.add(cyl(0.055, 0.065, 0.1, 6), 'D', M(0, 1.44, 0));
   let bz;
-  if (st.armor === 0) {
-    b.add(box(0.32, 0.2, 0.05), 'P', M(0, 1.29, 0.11));
-    b.add(box(0.3, 0.2, 0.04), 'P', M(0, 1.29, -0.115));
-    bz = -0.135;
-  } else if (st.armor === 1) {
-    b.add(box(0.38, 0.26, 0.08), 'P', M(0, 1.28, 0.11));
-    b.add(box(0.3, 0.1, 0.05), 'P', M(0, 1.1, 0.11));
-    b.add(box(0.36, 0.28, 0.06), 'P', M(0, 1.27, -0.115));
-    b.add(box(0.05, 0.27, 0.01), 'S', M(0.1, 1.28, 0.152));
+  if (!heavy) { // Standard
+    b.add(box(0.38, 0.26, 0.08), W, M(0, 1.28, 0.11));
+    b.add(box(0.3, 0.1, 0.05), W, M(0, 1.1, 0.11));
+    b.add(box(0.36, 0.28, 0.06), W, M(0, 1.27, -0.115));
+    b.add(box(0.05, 0.27, 0.01), 'P', M(0.1, 1.28, 0.152));
     bz = -0.145;
-  } else {
-    b.add(box(0.44, 0.32, 0.13), 'P', M(0, 1.26, 0.1));
-    b.add(box(0.34, 0.12, 0.07), 'P', M(0, 1.07, 0.11));
-    b.add(box(0.42, 0.32, 0.08), 'P', M(0, 1.26, -0.11));
+  } else { // Heavy: bulkier plates + side armor
+    b.add(box(0.46, 0.34, 0.14), W, M(0, 1.26, 0.1));
+    b.add(box(0.36, 0.12, 0.08), W, M(0, 1.07, 0.11));
+    b.add(box(0.44, 0.34, 0.09), W, M(0, 1.26, -0.115));
     b.add(box(0.3, 0.06, 0.25), 'S', M(0, 1.43, 0));
-    b.add(box(0.12, 0.04, 0.01), 'S', M(0.1, 1.33, 0.168));
-    b.add(box(0.12, 0.04, 0.01), 'S', M(0.1, 1.27, 0.168));
-    bz = -0.15;
+    b.add(box(0.12, 0.045, 0.01), 'P', M(0.1, 1.34, 0.172));
+    b.add(box(0.12, 0.045, 0.01), 'P', M(0.1, 1.27, 0.172));
+    for (const sx of [1, -1]) b.add(box(0.05, 0.22, 0.2), 'P', M(0.235 * sx, 1.21, 0));
+    bz = -0.16;
   }
-  // shoulder pads
+  // shoulder pads (nation colored)
+  const pk = heavy ? 1.18 : 1;
   for (const sx of [1, -1]) {
     if (st.pads === 1) {
-      b.add(sph(0.12, 8, 5), 'P', M(0.265 * sx, 1.4, 0, 0, 0, 0, 0.85, 0.55, 1));
-      b.add(cyl(0.06, 0.06, 0.012, 6), 'S', M(0.265 * sx, 1.462, 0, 0, 0, 0, 1, 1, 1.2));
+      b.add(sph(0.12 * pk, 7, 4), 'P', M(0.265 * sx * pk, 1.4, 0, 0, 0, 0, 0.85, 0.55, 1));
+      b.add(cyl(0.06, 0.06, 0.012, 6), 'S', M(0.265 * sx * pk, 1.462 + (pk - 1) * 0.07, 0, 0, 0, 0, 1, 1, 1.2));
     } else if (st.pads === 2) {
-      b.add(box(0.17, 0.06, 0.21), 'P', M(0.27 * sx, 1.41, 0, 0, 0, -0.35 * sx));
-      b.add(box(0.15, 0.04, 0.19), 'S', M(0.32 * sx, 1.35, 0, 0, 0, -0.65 * sx));
+      b.add(box(0.17 * pk, 0.06, 0.21 * pk), 'P', M(0.27 * sx * pk, 1.41, 0, 0, 0, -0.35 * sx));
+      b.add(box(0.15 * pk, 0.04, 0.19 * pk), 'S', M(0.32 * sx * pk, 1.35, 0, 0, 0, -0.65 * sx));
     }
   }
-  // backpack
-  let pd = 0, antenna = null;
-  if (st.pack === 1) { // jetpack
+  // explosive on the belt
+  if (st.expl === 0) { // thermal detonator
+    b.add(sph(0.048, 6, 4), 'S', M(0.15, 0.965, 0.125));
+    b.add(box(0.02, 0.012, 0.012), 'V', M(0.15, 0.985, 0.155));
+  } else if (st.expl === 1) { // two mines clipped to the left hip
+    for (const z of [0.07, -0.07]) {
+      b.add(cyl(0.06, 0.06, 0.025, 6), 'D', M(0.205, 0.95, z, 0, 0, HALF));
+      b.add(box(0.008, 0.025, 0.025), 'V', M(0.22, 0.95, z));
+    }
+  } else if (st.expl === 2) { // detpacks on the front of the belt
     for (const sx of [1, -1]) {
-      b.add(cyl(0.06, 0.06, 0.3, 8), 'P', M(0.08 * sx, 1.22, bz - 0.07));
-      b.add(cyl(0.035, 0.06, 0.03, 6), 'S', M(0.08 * sx, 1.385, bz - 0.07));
+      b.add(box(0.07, 0.06, 0.035), 'L', M(0.075 * sx, 0.99, 0.13));
+      b.add(box(0.015, 0.015, 0.008), 'V', M(0.075 * sx, 1.0, 0.15));
+    }
+  } else { // time bombs on the left hip
+    for (const z of [0.035, -0.045]) {
+      b.add(cyl(0.028, 0.028, 0.11, 6), 'D', M(0.2, 0.97, z));
+      b.add(box(0.008, 0.02, 0.025), 'V', M(0.228, 0.99, z));
+    }
+  }
+  // gadget / special (back slot)
+  let pd = 0, antenna = null;
+  const g = st.gadget;
+  if (g === 1) { // deployable auto turret, folded
+    b.add(box(0.24, 0.16, 0.12), 'G', M(0, 1.22, bz - 0.06));
+    b.add(sph(0.08, 6, 4), 'P', M(0, 1.31, bz - 0.06, 0, 0, 0, 1, 0.7, 1));
+    b.add(cyl(0.015, 0.015, 0.2, 6), 'D', M(0.03, 1.42, bz - 0.06));
+    b.add(box(0.02, 0.02, 0.02), 'V', M(0, 1.33, bz - 0.135));
+    for (const sx of [1, -1]) b.add(box(0.03, 0.24, 0.03), 'D', M(0.135 * sx, 1.18, bz - 0.06, 0, 0, 0.12 * sx));
+    pd = 0.13;
+  } else if (g === 2) { // remote recon droid hovering over the left shoulder + dock
+    b.add(box(0.14, 0.1, 0.06), 'G', M(0, 1.25, bz - 0.03));
+    b.add(sph(0.07, 8, 5), W, M(0.33, 1.68, -0.12));
+    b.add(cyl(0.026, 0.026, 0.02, 8), 'V', M(0.33, 1.68, -0.05, HALF));
+    b.add(box(0.2, 0.012, 0.04), 'P', M(0.33, 1.68, -0.13));
+    pd = 0.06;
+  } else if (g === 3) { // jetpack
+    for (const sx of [1, -1]) {
+      b.add(cyl(0.06, 0.06, 0.3, 6), 'P', M(0.08 * sx, 1.22, bz - 0.07));
+      b.add(box(0.07, 0.03, 0.07), 'S', M(0.08 * sx, 1.385, bz - 0.07));
       b.add(cyl(0.05, 0.035, 0.07, 6), 'G', M(0.08 * sx, 1.035, bz - 0.07));
-      b.add(cyl(0.035, 0.035, 0.012, 6), 'V', M(0.08 * sx, 0.998, bz - 0.07));
+      b.add(box(0.05, 0.012, 0.05), 'V', M(0.08 * sx, 0.997, bz - 0.07));
     }
     b.add(box(0.1, 0.24, 0.08), 'S', M(0, 1.24, bz - 0.04));
     pd = 0.14;
-  } else if (st.pack === 2) { // radio
+  } else if (g === 4) { // fusion cutter: fuel cell + cutter tool
+    b.add(cyl(0.045, 0.045, 0.24, 8), 'S', M(0.07, 1.24, bz - 0.045));
+    b.push(M(-0.07, 1.2, bz - 0.04, 0, 0, 0.5));
+    b.add(cyl(0.02, 0.02, 0.22, 6), 'G');
+    b.add(cyl(0.012, 0.026, 0.05, 6), 'V', M(0, 0.135, 0));
+    b.pop();
+    pd = 0.09;
+  } else if (g === 5) { // health & ammo drop crate
+    b.add(box(0.28, 0.22, 0.13), W, M(0, 1.22, bz - 0.065));
+    b.add(box(0.12, 0.035, 0.01), 'S', M(0, 1.24, bz - 0.132));
+    b.add(box(0.035, 0.12, 0.01), 'S', M(0, 1.24, bz - 0.132));
+    b.add(box(0.29, 0.03, 0.135), 'G', M(0, 1.13, bz - 0.065));
+    pd = 0.13;
+  } else if (g === 6) { // rally: command radio + tall antenna beacon
     b.add(box(0.26, 0.3, 0.11), 'D', M(0, 1.21, bz - 0.055));
     b.add(box(0.18, 0.1, 0.012), 'S', M(0, 1.25, bz - 0.112));
-    b.add(box(0.03, 0.03, 0.012), 'V', M(-0.07, 1.13, bz - 0.112));
     antenna = [0.09, bz - 0.08];
     b.add(cyl(0.006, 0.01, 0.64, 4), 'G', M(antenna[0], 1.66, antenna[1]));
-    b.add(cyl(0.02, 0.02, 0.04, 6), 'D', M(antenna[0], 1.36, antenna[1]));
-    if (!st.banner) b.add(box(0.025, 0.025, 0.025), 'V', M(antenna[0], 1.99, antenna[1]));
+    if (!st.banner) b.add(box(0.03, 0.03, 0.03), 'V', M(antenna[0], 1.99, antenna[1]));
     pd = 0.11;
-  } else if (st.pack === 3) { // ammo pack
-    b.add(box(0.3, 0.22, 0.11), 'S', M(0, 1.22, bz - 0.055));
-    for (const sx of [1, -1]) b.add(box(0.12, 0.12, 0.04), 'P', M(0.075 * sx, 1.18, bz - 0.13));
-    b.add(cyl(0.05, 0.05, 0.32, 8), 'D', M(0, 1.38, bz - 0.06, 0, 0, HALF));
-    pd = 0.15;
   }
   const backZ = bz - pd;
-  // banner / antenna flag
   if (st.banner) {
-    let px = 0.1, pz = backZ - 0.02, top = 1.97;
+    let px = 0.1, pz = backZ - 0.02; const top = 1.97;
     if (antenna) { px = antenna[0]; pz = antenna[1]; }
     else { b.add(cyl(0.008, 0.008, 0.82, 4), 'G', M(px, 1.56, pz)); b.add(cyl(0.02, 0.02, 0.03, 6), 'S', M(px, 1.16, pz)); }
     b.add(box(0.22, 0.15, 0.006), { flag: [4, 5], base: 'S' }, M(px - 0.115, top - 0.09, pz));
     b.add(box(0.026, 0.026, 0.026), 'S', M(px, top + 0.005, pz));
   }
-  // cape / scarf
-  if (st.extra === 1) {
+  if (st.extra === 1) { // cape
     b.push(M(0, 1.41, Math.min(backZ, bz) - 0.02, 0.12));
     b.add(box(0.36, 0.74, 0.02), 'P', M(0, -0.37, 0));
     b.add(box(0.37, 0.05, 0.026), 'S', M(0, -0.72, 0));
     b.pop();
     b.add(box(0.4, 0.04, 0.05), 'S', M(0, 1.42, bz + 0.02));
-  } else if (st.extra === 2) {
+  } else if (st.extra === 2) { // scarf
     b.add(new THREE.TorusGeometry(0.095, 0.035, 3, 8), 'S', M(0, 1.42, 0, HALF));
     b.add(box(0.075, 0.24, 0.02), 'S', M(-0.07, 1.3, bz - 0.005, 0.1, 0, -0.15));
   }
-  // ----- head -----
+  // ----- head (clone-white shells, nation stripe) -----
   b.bone = 'head';
   const H = [0, 1.6, 0.01];
-  const dome = (sy = 1.05) => b.add(sph(0.145, 10, 7), 'P', M(H[0], H[1], H[2], 0, 0, 0, 1, sy, 1.08));
+  const dome = (sy = 1.05) => b.add(sph(0.145, 10, 7), W, M(H[0], H[1], H[2], 0, 0, 0, 1, sy, 1.08));
+  const stripe = (sy = 1.05) => b.add(sph(0.149, 3, 3, HALF - 0.16, 0.32, 0.05, 1.05), 'P', M(H[0], H[1], H[2], 0, 0, 0, 1, sy, 1.08));
   const band = (t0, tl) => b.add(sph(0.149, 8, 2, HALF - 1.0, 2.0, t0, tl), 'V', M(H[0], H[1], H[2], 0, 0, 0, 1, 1.05, 1.08));
   if (st.helm === 0) { // dome visor
-    dome(); band(1.2, 0.55);
+    dome(); stripe(); band(1.2, 0.55);
     b.add(box(0.15, 0.06, 0.08), 'S', M(0, 1.49, 0.1));
-    for (const sx of [1, -1]) b.add(cyl(0.04, 0.04, 0.03, 8), 'S', M(0.148 * sx, 1.58, 0, 0, 0, HALF));
+    for (const sx of [1, -1]) b.add(cyl(0.04, 0.04, 0.03, 8), 'P', M(0.148 * sx, 1.58, 0, 0, 0, HALF));
   } else if (st.helm === 1) { // angular
-    b.add(cyl(0.12, 0.155, 0.2, 6), 'P', M(0, 1.59, 0, 0, Math.PI / 6));
+    b.add(cyl(0.12, 0.155, 0.2, 6), W, M(0, 1.59, 0, 0, Math.PI / 6));
     b.add(cyl(0.07, 0.12, 0.06, 6), 'P', M(0, 1.72, 0, 0, Math.PI / 6));
     b.add(box(0.22, 0.03, 0.05), 'S', M(0, 1.665, 0.12));
     b.add(box(0.17, 0.035, 0.02), 'V', M(0, 1.625, 0.128));
     b.add(box(0.035, 0.08, 0.02), 'V', M(0, 1.575, 0.128));
     b.add(box(0.14, 0.05, 0.07), 'D', M(0, 1.49, 0.09));
-    for (const sx of [1, -1]) b.add(box(0.02, 0.11, 0.1), 'S', M(0.13 * sx, 1.55, 0.05, 0, 0.5 * sx));
+    for (const sx of [1, -1]) b.add(box(0.02, 0.11, 0.1), 'P', M(0.13 * sx, 1.55, 0.05, 0, 0.5 * sx));
   } else if (st.helm === 2) { // crested
     dome(1.0); band(1.35, 0.3);
-    b.add(box(0.03, 0.1, 0.3), 'S', M(0, 1.75, -0.02, 0.15));
+    b.add(box(0.03, 0.1, 0.3), 'P', M(0, 1.75, -0.02, 0.15));
     b.add(box(0.02, 0.07, 0.12), 'S', M(0, 1.71, -0.17, 0.6));
     for (const sx of [1, -1]) b.add(box(0.03, 0.12, 0.1), 'P', M(0.135 * sx, 1.52, 0.06, 0, 0.35 * sx));
   } else if (st.helm === 3) { // open face + goggles
     b.add(sph(0.12, 8, 6), 'K', M(0, 1.585, 0.015, 0, 0, 0, 0.95, 1.12, 1));
-    b.add(sph(0.142, 10, 4, 0, Math.PI * 2, 0, HALF), 'P', M(0, 1.6, 0.0, -0.12, 0, 0, 1, 1.0, 1.07));
-    b.add(cyl(0.143, 0.143, 0.025, 10), 'S', M(0, 1.6, 0.0, -0.12, 0, 0, 1, 1, 1.07));
+    b.add(sph(0.142, 10, 4, 0, Math.PI * 2, 0, HALF), W, M(0, 1.6, 0.0, -0.12, 0, 0, 1, 1.0, 1.07));
+    b.add(cyl(0.143, 0.143, 0.025, 10), 'P', M(0, 1.6, 0.0, -0.12, 0, 0, 1, 1, 1.07));
     for (const sx of [1, -1]) b.add(cyl(0.034, 0.034, 0.03, 8), 'V', M(0.045 * sx, 1.635, 0.123, HALF));
     b.add(box(0.03, 0.015, 0.02), 'G', M(0, 1.637, 0.128));
     b.add(box(0.08, 0.04, 0.04), 'G', M(0, 1.505, 0.115));
   } else { // recon mono-eye
-    dome(1.0);
+    dome(1.0); stripe(1.0);
     b.add(box(0.19, 0.1, 0.05), 'D', M(0, 1.565, 0.12));
     b.add(cyl(0.05, 0.05, 0.04, 8), 'S', M(0.045, 1.6, 0.15, HALF));
     b.add(cyl(0.036, 0.036, 0.02, 8), 'V', M(0.045, 1.6, 0.172, HALF));
-    b.add(box(0.04, 0.1, 0.07), 'S', M(-0.15, 1.6, 0));
+    b.add(box(0.04, 0.1, 0.07), 'P', M(-0.15, 1.6, 0));
     b.add(cyl(0.006, 0.008, 0.3, 4), 'G', M(-0.155, 1.78, -0.02));
   }
-  // ----- arms + rifle -----
+  // ----- arms + main weapon -----
   b.bone = 'arms';
   const R = M(...RIFLE_POS).multiply(M(0, 0, 0, RIFLE_PITCH, RIFLE_YAW, 0));
-  const fz = FOREGRIP[st.rifle];
+  const fz = FOREGRIP[st.weapon] ?? 0.25;
   const gripW = new THREE.Vector3(0, -0.035, 0).applyMatrix4(R).toArray();
-  const foreW = new THREE.Vector3(0, -0.03, fz).applyMatrix4(R).toArray();
-  b.push(R);
-  const ROT = (x, y, z, w, h, d, reg, rx = 0) => b.add(box(w, h, d), reg, M(x, y, z, rx));
-  const BAR = (z, r, len, reg, y = 0.02, n = 8) => b.add(cyl(r, r, len, n), reg, M(0, y, z, HALF));
-  if (st.rifle === 0) { // carbine
-    ROT(0, 0.01, 0.08, 0.055, 0.085, 0.32, 'G');
-    ROT(0, 0.06, 0.1, 0.057, 0.018, 0.2, 'S');
-    BAR(0.34, 0.016, 0.2, 'G', 0.02, 6);
-    BAR(0.45, 0.022, 0.04, 'D', 0.02, 6);
-    ROT(0, -0.005, -0.15, 0.045, 0.075, 0.16, 'D');
-    ROT(0, -0.06, -0.005, 0.035, 0.08, 0.04, 'D', 0.3);
-    ROT(0, -0.08, 0.13, 0.035, 0.11, 0.05, 'D', 0.2);
-    ROT(0, 0.08, 0.03, 0.03, 0.03, 0.07, 'G');
-    ROT(0.029, 0.02, 0.18, 0.006, 0.015, 0.06, 'V');
-  } else if (st.rifle === 1) { // long laser rifle
-    ROT(0, 0.01, 0.1, 0.06, 0.09, 0.4, 'G');
-    ROT(0, 0, -0.18, 0.05, 0.085, 0.2, 'D');
-    BAR(0.52, 0.022, 0.46, 'G');
-    for (const z of [0.38, 0.48, 0.58]) BAR(z, 0.034, 0.025, 'V', 0.02, 6);
-    b.add(cyl(0.032, 0.022, 0.06, 8), 'S', M(0, 0.02, 0.77, HALF));
-    BAR(0.06, 0.022, 0.18, 'S', 0.09);
-    ROT(0, -0.06, -0.005, 0.035, 0.08, 0.04, 'D', 0.3);
-    ROT(0, -0.075, 0.13, 0.04, 0.07, 0.09, 'S');
-  } else { // bullpup
-    ROT(0, 0, -0.08, 0.065, 0.12, 0.46, 'G');
-    ROT(0, 0.09, 0.02, 0.03, 0.022, 0.22, 'S');
-    for (const z of [-0.07, 0.11]) ROT(0, 0.07, z, 0.02, 0.03, 0.02, 'S');
-    BAR(0.22, 0.017, 0.14, 'G', 0.02, 6);
-    ROT(0, 0, -0.32, 0.068, 0.125, 0.03, 'D');
-    ROT(0, -0.1, -0.17, 0.04, 0.1, 0.06, 'D', 0.15);
-    ROT(0, -0.06, -0.005, 0.035, 0.08, 0.04, 'D', 0.3);
-    ROT(0.034, 0.02, 0.0, 0.006, 0.02, 0.12, 'V');
-  }
-  b.pop();
-  // right arm -> grip, left arm -> foregrip
+  const foreW = new THREE.Vector3(0, st.weapon === 1 ? 0.0 : -0.03, fz).applyMatrix4(R).toArray();
+  b.push(R); buildWeapon(b, st); b.pop();
   const arm = (sx, hand, elbow) => {
     const sh = [0.225 * sx, 1.37, 0];
-    const up = b.seg(sh, elbow, 0.1, 0.11, 'D');
-    const fo = b.seg(elbow, hand, 0.09, 0.1, 'D');
+    const up = b.seg(sh, elbow, heavy ? 0.115 : 0.1, 0.11, 'D');
+    const fo = b.seg(elbow, hand, heavy ? 0.1 : 0.09, 0.1, 'D');
     b.add(box(0.075, 0.075, 0.08), 'G', M(...hand));
-    if (med) b.add(box(0.105, fo.len * 0.45, 0.115), 'P', fo.m.clone().multiply(M(0, fo.len * 0.12, 0)));
+    b.add(box(heavy ? 0.125 : 0.105, fo.len * 0.45, heavy ? 0.13 : 0.115), W, fo.m.clone().multiply(M(0, fo.len * 0.12, 0)));
     return up;
   };
   arm(-1, gripW, [-0.285, 1.13, 0.03]);
   const upL = arm(1, foreW, [0.255, 1.12, 0.1]);
-  // shoulder patch with the team symbol (outer face of left upper arm, upright)
-  b.add(box(0.006, 0.08, 0.08), { flag: [0], base: 'S' }, upL.m.clone().multiply(M(0.053, -upL.len * 0.12, 0, Math.PI)));
+  b.add(box(0.006, 0.08, 0.08), { flag: [0], base: 'S' }, upL.m.clone().multiply(M(heavy ? 0.06 : 0.053, -upL.len * 0.12, 0, Math.PI)));
   return b.parts;
 }
 
