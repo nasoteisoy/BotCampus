@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-17T18:30:00-07:00",
+  "updatedAt": "2026-10-18T18:30:00-07:00",
   "updatedBy": "Field Marshal",
   "fieldMarshalAgentId": "e2f304a3-666f-4fa3-8b60-6556806b74ea",
   "topics": [
@@ -144,6 +144,16 @@
       "note": "What: Talking to each bot in separate topic threads (for example one just for \"Pocket Pet\") instead of one long chat per bot.\n\nSummary: 1. This page already lists topics per bot, but the app itself has one chat per bot.\n2. Oct 17: asked for a phone app that keeps separate topic threads inside each bot.\n\nLeft off: Oct 17 PT: phone app for per-bot topic threads requested.\n\nBot: Field Marshal"
     },
     {
+      "id": "fm-trooper-customizer",
+      "title": "Trooper Customizer",
+      "bot": "Field Marshal",
+      "what": "A sandbox for designing how your RTS army looks: nations with their own colors and flag, plus a space rifle trooper and a space tank you can dress up and save.",
+      "summary": "1. Oct 18: talked about the classic Star Wars Battlefront II trooper classes and how they combine into squads.\n2. Oct 18, about 3:44 PM PT: v1 live with a space rifle trooper, colors, a flag, and saved looks.\n3. Oct 18, about 4:12 PM PT: v2 added a player name and nations (colors and flag set once per nation), a space tank, and a mixed squad preview of 50 to 200 units.\n4. Oct 18, about 5:42 PM PT: v3 added cost and power, so the more or better gear a unit has, the more it costs; looks like colors and capes stay free.\n5. Live at nasoteisoy.github.io/BotCampus/games/trooper-custom/.",
+      "leftOff": "Oct 18, about 5:42 PM PT: v3 with cost and power is live. Waiting on your feedback.",
+      "updatedAt": "2026-10-18T18:30:00-07:00",
+      "note": "What: A sandbox for designing how your RTS army looks: nations with their own colors and flag, plus a space rifle trooper and a space tank you can dress up and save.\n\nSummary: 1. Oct 18: talked about the classic Star Wars Battlefront II trooper classes and how they combine into squads.\n2. Oct 18, about 3:44 PM PT: v1 live with a space rifle trooper, colors, a flag, and saved looks.\n3. Oct 18, about 4:12 PM PT: v2 added a player name and nations (colors and flag set once per nation), a space tank, and a mixed squad preview of 50 to 200 units.\n4. Oct 18, about 5:42 PM PT: v3 added cost and power, so the more or better gear a unit has, the more it costs; looks like colors and capes stay free.\n5. Live at nasoteisoy.github.io/BotCampus/games/trooper-custom/.\n\nLeft off: Oct 18, about 5:42 PM PT: v3 with cost and power is live. Waiting on your feedback.\n\nBot: Field Marshal"
+    },
+    {
       "id": "leader-render-school",
       "title": "Blender render school",
       "what": "Teaching the render bots to make real 3D game art in Blender by following real tutorials until they pass.",
@@ -237,11 +247,11 @@
       "id": "deva-front-line",
       "title": "Front Line tank RTS (publishing)",
       "what": "Publishing Front Line, a small 3D tank-and-base-building strategy game (blue vs an AI), to BotCampus Pages.",
-      "summary": "1. Oct 16, about 9:55 PM PT: first publish as Tank 2v2.\n2. Oct 16 night: removed health bars (damage shows as smoke, fire, and wrecks) and pushed a bigger map with a river, bridges, forest, farm, hill, and a minimap.\n3. Oct 17 morning: new unit models, icons, and start screen, then a touch and phone update (tap, drag, pinch, twist controls).\n4. Oct 17, about 12:14 PM PT: added the Unit Examiner sandbox and six body types (infantry, armor, air, artillery, trucks, buildings) with per-type attack levels.\n5. Live at nasoteisoy.github.io/BotCampus/games/tank-2v2/.",
-      "leftOff": "Oct 17, about 12:14 PM PT: Unit Examiner update live.",
+      "summary": "1. Oct 16, about 9:55 PM PT: first publish as Tank 2v2.\n2. Oct 16 night: removed health bars (damage shows as smoke, fire, and wrecks) and pushed a bigger map with a river, bridges, forest, farm, hill, and a minimap.\n3. Oct 17 morning: new unit models, icons, and start screen, then a touch and phone update (tap, drag, pinch, twist controls).\n4. Oct 17, about 12:14 PM PT: added the Unit Examiner sandbox and six body types (infantry, armor, air, artillery, trucks, buildings) with per-type attack levels.\n5. Oct 17 evening and night: attack orders on hidden targets, bomber and fighter-bomber attack runs, planes aiming at the last place they saw a target, a bomber accuracy fix, and more distinct unit shapes with badges.\n6. Oct 18, about 12:43 PM PT: main menu (how to play, 1v1, sandbox, unit explore, unit menu), pause, a unit and building guide, range and accuracy per body type, range ring toggles, and live stats.\n7. Oct 18: asked for each player to design up to 6 infantry types of their own, all with the same rifle and different grenades (frag, smoke, EMP, anti-tank, flash, mine). In progress.\n8. Live at nasoteisoy.github.io/BotCampus/games/tank-2v2/.",
+      "leftOff": "Oct 18 PT: main menu update live. Custom infantry types (up to 6 per player, chosen by grenade) are being built; link comes when it's live.",
       "bot": "Dev A",
-      "updatedAt": "2026-10-17T18:30:00-07:00",
-      "note": "What: Publishing Front Line, a small 3D tank-and-base-building strategy game (blue vs an AI), to BotCampus Pages.\n\nSummary: 1. Oct 16, about 9:55 PM PT: first publish as Tank 2v2.\n2. Oct 16 night: removed health bars (damage shows as smoke, fire, and wrecks) and pushed a bigger map with a river, bridges, forest, farm, hill, and a minimap.\n3. Oct 17 morning: new unit models, icons, and start screen, then a touch and phone update (tap, drag, pinch, twist controls).\n4. Oct 17, about 12:14 PM PT: added the Unit Examiner sandbox and six body types (infantry, armor, air, artillery, trucks, buildings) with per-type attack levels.\n5. Live at nasoteisoy.github.io/BotCampus/games/tank-2v2/.\n\nLeft off: Oct 17, about 12:14 PM PT: Unit Examiner update live.\n\nBot: Dev A"
+      "updatedAt": "2026-10-18T18:30:00-07:00",
+      "note": "What: Publishing Front Line, a small 3D tank-and-base-building strategy game (blue vs an AI), to BotCampus Pages.\n\nSummary: 1. Oct 16, about 9:55 PM PT: first publish as Tank 2v2.\n2. Oct 16 night: removed health bars (damage shows as smoke, fire, and wrecks) and pushed a bigger map with a river, bridges, forest, farm, hill, and a minimap.\n3. Oct 17 morning: new unit models, icons, and start screen, then a touch and phone update (tap, drag, pinch, twist controls).\n4. Oct 17, about 12:14 PM PT: added the Unit Examiner sandbox and six body types (infantry, armor, air, artillery, trucks, buildings) with per-type attack levels.\n5. Oct 17 evening and night: attack orders on hidden targets, bomber and fighter-bomber attack runs, planes aiming at the last place they saw a target, a bomber accuracy fix, and more distinct unit shapes with badges.\n6. Oct 18, about 12:43 PM PT: main menu (how to play, 1v1, sandbox, unit explore, unit menu), pause, a unit and building guide, range and accuracy per body type, range ring toggles, and live stats.\n7. Oct 18: asked for each player to design up to 6 infantry types of their own, all with the same rifle and different grenades (frag, smoke, EMP, anti-tank, flash, mine). In progress.\n8. Live at nasoteisoy.github.io/BotCampus/games/tank-2v2/.\n\nLeft off: Oct 18 PT: main menu update live. Custom infantry types (up to 6 per player, chosen by grenade) are being built; link comes when it's live.\n\nBot: Dev A"
     },
     {
       "id": "deva-bot-campus",
@@ -294,6 +304,26 @@
       "bot": "Dev B"
     },
     {
+      "id": "devb-front-line-defense",
+      "title": "Front Line Defense",
+      "bot": "Dev B",
+      "what": "A phone tower defense game built on Dev A's Front Line engine: hold three bridges to your HQ against 12 waves.",
+      "summary": "1. Oct 18: asked for a ground tower defense using Front Line.\n2. Four towers (MG nest, anti-tank bunker, flak tower, mortar pit) plus supply depots, and you can deploy all 17 Front Line units from the HQ.\n3. Tower upgrades, an armory, supply income, HQ repair, and a bonus for calling waves early; wave 12 is a boss wave.\n4. Oct 18, about 12:51 PM PT: v1 live at nasoteisoy.github.io/BotCampus/games/front-line-defense/.",
+      "leftOff": "Oct 18, about 12:51 PM PT: v1 is live. Waiting on play feedback.",
+      "updatedAt": "2026-10-18T18:30:00-07:00",
+      "note": "What: A phone tower defense game built on Dev A's Front Line engine: hold three bridges to your HQ against 12 waves.\n\nSummary: 1. Oct 18: asked for a ground tower defense using Front Line.\n2. Four towers (MG nest, anti-tank bunker, flak tower, mortar pit) plus supply depots, and you can deploy all 17 Front Line units from the HQ.\n3. Tower upgrades, an armory, supply income, HQ repair, and a bonus for calling waves early; wave 12 is a boss wave.\n4. Oct 18, about 12:51 PM PT: v1 live at nasoteisoy.github.io/BotCampus/games/front-line-defense/.\n\nLeft off: Oct 18, about 12:51 PM PT: v1 is live. Waiting on play feedback.\n\nBot: Dev B (with Dev A)"
+    },
+    {
+      "id": "devb-ship-sandbox",
+      "title": "Ship Sandbox",
+      "bot": "Dev B",
+      "what": "A small sandbox to see how cannons, bombers, lasers, and other attacks damage one big ship, part by part.",
+      "summary": "1. Oct 18: asked for a way to test attacks on a single ship.\n2. One capital ship with parts that break on their own: hull sections, bridge, sensors, reactor, shield generator, engines, cannons, rocket launcher, laser, and a hangar that launches fighters.\n3. Breaking parts has effects: engines slow the ship, the shield stays up until its generator dies, and losing the reactor knocks weapons offline.\n4. Oct 18, about 1:45 PM PT: v1 live with an attack palette, part list, hit log, and damage table.\n5. Oct 18, about 2:07 PM PT: v2 highlights a part when you hover it and shows a card with what it is and its status; on phone, long-press a part for the card, plus optional name tags.\n6. Live at nasoteisoy.github.io/BotCampus/games/ship-sandbox/.",
+      "leftOff": "Oct 18, about 2:07 PM PT: v2 with part highlights and info cards is live. Waiting on your feedback.",
+      "updatedAt": "2026-10-18T18:30:00-07:00",
+      "note": "What: A small sandbox to see how cannons, bombers, lasers, and other attacks damage one big ship, part by part.\n\nSummary: 1. Oct 18: asked for a way to test attacks on a single ship.\n2. One capital ship with parts that break on their own: hull sections, bridge, sensors, reactor, shield generator, engines, cannons, rocket launcher, laser, and a hangar that launches fighters.\n3. Breaking parts has effects: engines slow the ship, the shield stays up until its generator dies, and losing the reactor knocks weapons offline.\n4. Oct 18, about 1:45 PM PT: v1 live with an attack palette, part list, hit log, and damage table.\n5. Oct 18, about 2:07 PM PT: v2 highlights a part when you hover it and shows a card with what it is and its status; on phone, long-press a part for the card, plus optional name tags.\n6. Live at nasoteisoy.github.io/BotCampus/games/ship-sandbox/.\n\nLeft off: Oct 18, about 2:07 PM PT: v2 with part highlights and info cards is live. Waiting on your feedback.\n\nBot: Dev B"
+    },
+    {
       "id": "devc-board-night",
       "title": "Board night and Know Me games",
       "what": "Party games for game nights, played from phones with almost no reading.",
@@ -312,6 +342,16 @@
       "updatedAt": "2026-09-15T20:59:00-07:00",
       "note": "What: Games built for you and friends before the crew had roles.\n\nSummary: 1. Little Element Ninja: wordless picture-and-sound ninja game.\n2. Battle Fleet, Ranks 3D (all US branches with rank names), Battleship Command (walk the ship, multiplayer).\n3. Code Rooms and Party Rooms, then Chummy Games: 3D lobby with Haunted Dig, Pass the Bomb, Relic Run, Neon Blitz FPS.\n4. Sep 15: built the Command Board for your sign-offs.\n\nLeft off: Sep 15 PT: Command Board live with sign-off questions waiting for your answers.\n\nBot: Dev C",
       "bot": "Dev C"
+    },
+    {
+      "id": "devc-space-front-line",
+      "title": "Space Front Line and Space Defense",
+      "bot": "Dev C",
+      "what": "The space version of Front Line: the same 2v2 base-building battle, fought on a planet and in orbit at the same time.",
+      "summary": "1. Oct 18, about 12:51 PM PT: Space Defense went up first, a space and planet tower defense. It stays up as a bonus.\n2. Oct 18: you wanted a space version of Front Line itself, not a tower defense.\n3. Two layers: bases and ground units on the planet, and space stations, shipyards, and ships in orbit. One button switches views, and a badge warns when the other layer is under attack.\n4. Cross-layer moves: orbital strikes from frigates and battleships, dropships that drop troops in pods, and carriers that launch drones.\n5. 1v1 or 2v2 against AI, plus the sandbox, unit explorer, and unit menu from Front Line.\n6. Oct 18, about 2:38 PM PT: live at nasoteisoy.github.io/BotCampus/games/space-front-line/ (Space Defense at games/space-defense/).",
+      "leftOff": "Oct 18, about 2:38 PM PT: Space Front Line is live. Waiting on play feedback.",
+      "updatedAt": "2026-10-18T18:30:00-07:00",
+      "note": "What: The space version of Front Line: the same 2v2 base-building battle, fought on a planet and in orbit at the same time.\n\nSummary: 1. Oct 18, about 12:51 PM PT: Space Defense went up first, a space and planet tower defense. It stays up as a bonus.\n2. Oct 18: you wanted a space version of Front Line itself, not a tower defense.\n3. Two layers: bases and ground units on the planet, and space stations, shipyards, and ships in orbit. One button switches views, and a badge warns when the other layer is under attack.\n4. Cross-layer moves: orbital strikes from frigates and battleships, dropships that drop troops in pods, and carriers that launch drones.\n5. 1v1 or 2v2 against AI, plus the sandbox, unit explorer, and unit menu from Front Line.\n6. Oct 18, about 2:38 PM PT: live at nasoteisoy.github.io/BotCampus/games/space-front-line/ (Space Defense at games/space-defense/).\n\nLeft off: Oct 18, about 2:38 PM PT: Space Front Line is live. Waiting on play feedback.\n\nBot: Dev C"
     },
     {
       "id": "gad-style-pipeline",
