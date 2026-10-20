@@ -4,9 +4,9 @@ export const MAP = {
   name: 'Dust Ridge',
   hx: 100, hz: 60,
   posts: [
-    { id: 'A', x: -72, z: 8, owner: 0 },    // blue home
-    { id: 'B', x: 0, z: 0, owner: -1 },     // middle (neutral)
-    { id: 'C', x: 72, z: -8, owner: 1 },    // red home
+    { id: 'A', x: -72, z: 8, owner: 0, value: 1 },    // blue home
+    { id: 'B', x: 0, z: 0, owner: -1, value: 2 },     // middle (neutral), worth more bleed
+    { id: 'C', x: 72, z: -8, owner: 1, value: 1 },    // red home
   ],
   postR: 9,
   hills: [

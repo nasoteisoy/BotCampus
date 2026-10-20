@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Conquest Commander</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=2">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
@@ -21,13 +21,15 @@
 <div id="hud" class="hidden">
   <div id="topbar">
     <div id="score">
-      <div class="tix t0" title="Your tickets"><canvas width="32" height="32"></canvas><b>150</b></div>
+      <div class="tix t0" title="Your tickets"><canvas width="32" height="32"></canvas><b>200</b><i class="lsI" title="Last stand: no more reinforcements">☠️</i></div>
       <div id="postIcons"></div>
-      <div class="tix t1" title="Enemy tickets"><b>150</b><canvas width="32" height="32"></canvas></div>
+      <div class="tix t1" title="Enemy tickets"><i class="lsI" title="Last stand: no more reinforcements">☠️</i><b>200</b><canvas width="32" height="32"></canvas></div>
     </div>
     <button id="pauseBtn" class="rb" aria-label="Pause" title="Pause (Esc)">⏸️</button>
   </div>
-  <div id="cpChip" title="Command Points: buy reinforcements"><span>⭐</span><b>0</b><i id="wave" title="Next wave">⏱10</i></div>
+  <div id="cpChip" title="Command Points: buy reinforcements"><span>⭐</span><b>0</b><i id="wave" title="Next wave">⏱10</i><i id="alive" title="Troops on the field">🪖20/20</i></div>
+  <div id="countdown" class="hidden" title="Holding every post: victory countdown"><span>🏆</span><b>20</b></div>
+  <div id="perkBanner" class="hidden"></div>
   <div id="side">
     <button id="rallyBtn" class="rb" aria-label="Rally point" title="Rally point (R)">🚩</button>
     <button id="camBtn" class="rb" aria-label="Center camera" title="Center on the fight (Space)">🎯</button>
@@ -48,19 +50,28 @@
 <div id="start" class="screen">
   <div class="card">
     <h1>⚔️ Conquest Commander</h1>
-    <p class="sub">🗺️ Dust Ridge · 🎟️ 150 · 🪖 12 vs 12</p>
+    <p class="sub" id="mapLine">🏜️ Dust Ridge · 🎟️ 200 · 🪖 20 vs 20</p>
+    <div class="sec camp"><div id="campStat" class="campstat"></div><button id="newCamp" class="chip" title="Start over with 💰1500">🆕 New campaign</button></div>
     <div class="sec"><h2>🏳️ You</h2><div id="myNations" class="chips"></div></div>
     <div class="sec"><h2>🪖 Army <small id="lookCount"></small></h2><div id="myLooks" class="looks"></div></div>
     <div class="sec"><h2>🎯 Enemy</h2><div id="enemyNations" class="chips"></div></div>
     <div class="sec"><h2>🧠 Enemy brain</h2><div class="chips" id="diff">
       <button class="chip" data-diff="easy">😊 Easy</button><button class="chip on" data-diff="normal">😠 Normal</button></div></div>
-    <button id="play">▶️ Play</button>
+    <button id="play" aria-label="Play">🛒 ▶️</button>
     <p id="src" class="src"></p>
   </div>
 </div>
 
+<div id="shop" class="screen hidden"><div class="card">
+  <div class="shophead"><button id="shopBack" class="big2 sq" aria-label="Back" title="Back (Esc)">⬅️</button><h1>🛒</h1><div id="shopCredits" class="credits" title="Credits left">💰 <b>1500</b></div></div>
+  <p class="sub" id="shopInfo"></p>
+  <div id="perkGrid" class="perks"></div>
+  <button id="fight" title="Fight (Enter)">⚔️ Fight</button>
+</div></div>
+
 <div id="pause" class="screen hidden"><div class="card small">
   <h1>⏸️</h1>
+  <div id="pausePerks" class="perkline"></div>
   <button id="resume" class="big">▶️</button>
   <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button></div>
 </div></div>
@@ -69,6 +80,8 @@
   <h1 id="endTitle">🏆</h1>
   <p id="endWhy" class="sub"></p>
   <div id="endStats" class="stats"></div>
+  <div id="endCredits" class="credlist hidden"></div>
+  <p id="endBal" class="bal hidden"></p>
   <div class="row"><button id="again" class="big2" aria-label="Play again">🔄</button><button id="endMenu" class="big2" aria-label="Menu">🏠</button></div>
 </div></div>
 
@@ -79,7 +92,11 @@
     <li><b>⚔️ 🛡️ 🚫</b><span>attack · defend · ignore</span></li>
     <li><b>★ ★★ ★★★</b><span>how much it matters</span></li>
     <li><b>🚩</b><span>new troops walk here first</span></li>
-    <li><b>🎟️</b><span>0 = you lose · hold 2 posts = enemy bleeds</span></li>
+    <li><b>🎟️</b><span>0 = you lose · more posts = enemy bleeds</span></li>
+    <li><b>🚩🚩🚩</b><span>hold all posts 20 s = win</span></li>
+    <li><b>⚪</b><span>enemy post: make it white first, then yours</span></li>
+    <li><b>☠️</b><span>last stand: no more reinforcements</span></li>
+    <li><b>🪖🚀🔧🎯⭐🛩️</b><span>trooper · heavy · engineer · sniper · commander · jet</span></li>
     <li><b>⭐</b><span>pays for new troops (auto, every 10 s)</span></li>
     <li class="pc"><b>🖱️ / WASD</b><span>drag = move · wheel = zoom · Q E = turn</span></li>
     <li class="pc"><b>1 2 3 · + −</b><span>marks · stars · Tab = next post</span></li>
@@ -88,6 +105,6 @@
   <button id="helpClose" class="big">👍</button>
 </div></div>
 
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

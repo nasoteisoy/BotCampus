@@ -88,6 +88,7 @@ export class View {
   }
   // ---------- armies ----------
   buildArmies(teams, cap) {
+    this.cap = cap;
     this.disposeArmies();
     this.armies = teams.map((T, ti) => {
       const look = new TeamLook(); look._nat = T.nation; look.paint({ ...T.nation, skin: 1 });
@@ -177,11 +178,12 @@ export class View {
     const Y = this._Y ||= new THREE.Vector3(0, 1, 0), X = this._X ||= new THREE.Vector3(1, 0, 0), Z = this._Z ||= new THREE.Vector3(0, 0, 1);
     const white = this._w ||= new THREE.Color(1, 1, 1), red = this._r ||= new THREE.Color(1, 0.25, 0.2);
     const counts = this.armies.map((a) => a.meshes.map(() => 0)), mks = [0, 0];
-    for (const u of sim.units) {
+    for (const pass of [true, false]) for (const u of sim.units) {  // living first, so corpses never steal a living unit's instance
+      if (u.alive !== pass) continue;
       const A = this.armies[u.team], M = A.meshes[u.look]; if (!M) continue;
       let y = heightAt(u.x, u.z);
       if (u.alive) {
-        const limp = u.hp < u.s.hp * 0.35;
+        const limp = u.hp < (u.hpMax || u.s.hp) * 0.35;
         q.setFromAxisAngle(Y, u.yaw);
         if (u.moving) {
           y += Math.abs(Math.sin(u.phase)) * (limp ? 0.05 : 0.1);
@@ -194,6 +196,7 @@ export class View {
         y -= Math.max(0, u.deadT - 1) * 0.45;
       }
       m.compose(v.set(u.x, y, u.z), q, s);
+      if (counts[u.team][u.look] >= this.cap) continue;  // more bodies than instances: skip the extra corpses
       const k = counts[u.team][u.look]++;
       if (M.team) { M.team.setMatrixAt(k, m); M.team.setColorAt(k, u.alive && u.hurtT > 0 ? red : white); }
       if (M.visor) M.visor.setMatrixAt(k, m);

@@ -106,3 +106,55 @@ body.touch .legend .pc { display: none; } body:not(.touch) .legend .tc { display
   .card.small h1 { font-size: 30px; }
   #side { flex-direction: row; }
 }
+
+/* ---------- v2: campaign, shop, countdown, perks, last stand ---------- */
+.lsI { display: none; font-style: normal; font-size: 16px; }
+.tix.ls .lsI { display: inline; animation: blink .8s steps(2) infinite; }
+#alive { margin-left: 4px; }
+#countdown { position: absolute; left: 50%; top: 22%; translate: -50% 0; pointer-events: none; display: flex; align-items: center; gap: 10px; padding: 6px 22px; border-radius: 22px; background: rgba(20, 16, 10, .78); box-shadow: 0 6px 30px #0009; }
+#countdown span { font-size: 44px; }
+#countdown b { font-size: 84px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; animation: cdA 1s ease-in-out infinite; }
+#countdown.cd0 b { color: #6cc8ff; } #countdown.cd1 b { color: #ff7a6a; } #countdown.cd1 { box-shadow: 0 0 0 4px #ff7a6a88; }
+@keyframes cdA { 50% { scale: 1.12; } }
+#perkBanner { position: absolute; left: 50%; top: 64px; translate: -50% 0; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 16px; background: rgba(20, 16, 10, .82); transition: opacity .6s; max-width: calc(100% - 16px); }
+#perkBanner.fade { opacity: 0; }
+.pside, .perkline .pside { display: flex; flex-wrap: wrap; gap: 2px; font-size: 26px; padding: 2px 6px; border-radius: 10px; }
+.pside.c0 { background: #6cc8ff33; } .pside.c1 { background: #ff7a6a33; }
+.pside b { font-weight: 400; } .pside .none { opacity: .6; font-size: 20px; }
+.vs { font-size: 20px; }
+.perkline { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.camp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.campstat { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 17px; align-items: center; }
+.campstat .cr { font-size: 22px; color: #ffd65a; }
+#newCamp { padding: 4px 12px; font-size: 14px; }
+#newCamp.arm { border-color: #ff7a6a; background: #ff7a6a33; }
+.shophead { display: flex; align-items: center; gap: 10px; }
+.shophead h1 { flex: 1; font-size: 30px; }
+.big2.sq { min-width: 52px; margin: 0; }
+.credits { font-size: 26px; font-weight: 800; color: #ffd65a; background: #ffd65a1a; padding: 4px 14px; border-radius: 14px; font-variant-numeric: tabular-nums; }
+#shopInfo { margin: 6px 0 10px; font-size: 15px; }
+.perks { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.perk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 120px; padding: 8px 4px 6px; border-radius: 14px; background: #ffffff12; border: 2px solid transparent; }
+.perk .pic { font-size: 40px; line-height: 1.1; font-weight: 400; }
+.perk .pn { font-size: 12px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.perk em { font-style: normal; font-size: 15px; font-weight: 700; }
+.perk u { text-decoration: none; font-size: 15px; font-weight: 800; color: #ffd65a; }
+.perk .tick { position: absolute; top: 4px; right: 6px; font-style: normal; font-size: 16px; }
+.perk.on { border-color: #ffd65a; background: #ffd65a26; box-shadow: 0 0 0 2px #ffd65a44; }
+.perk.no { opacity: .4; }
+#fight { display: block; width: 100%; margin: 12px 0 4px; min-height: 58px; border-radius: 14px; background: #e2553f; color: #fff; font-size: 24px; font-weight: 800; }
+.credlist { display: grid; grid-template-columns: auto auto auto; gap: 3px 14px; margin: 6px auto; width: max-content; font-size: 17px; text-align: right; background: #ffd65a14; padding: 8px 14px; border-radius: 12px; }
+.credlist .n { opacity: .8; } .credlist .v { color: #ffd65a; font-weight: 700; }
+.credlist .tot { border-top: 1px solid #ffd65a55; padding-top: 3px; font-weight: 800; font-size: 19px; }
+.bal { margin: 4px 0; font-size: 18px; } .bal b { color: #ffd65a; font-size: 22px; }
+@media (max-width: 420px) {
+  .perks { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .perk { min-height: 108px; } .perk .pic { font-size: 34px; }
+  #countdown b { font-size: 64px; } #countdown span { font-size: 34px; }
+  #perkBanner { top: 60px; } .pside { font-size: 22px; }
+}
+@media (max-height: 430px) {
+  .perks { grid-template-columns: repeat(5, 1fr); } .perk { min-height: 92px; padding: 4px 2px; } .perk .pic { font-size: 28px; }
+  #countdown { top: 16%; } #countdown b { font-size: 56px; }
+  #fight { min-height: 48px; margin-top: 8px; }
+}

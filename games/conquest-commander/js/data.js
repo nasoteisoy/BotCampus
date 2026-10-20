@@ -68,11 +68,21 @@ export function randomLooks(rng, nationId, n = 4) {
   return out;
 }
 
-// ---------- class + stats from gear (v1: Trooper + Heavy) ----------
-// Design rule (v4 kit): rocket launcher → Heavy. Everything else plays as Trooper in v1, but keeps its own
-// weapon numbers (sniper = long range, shotgun = close, chaingun = fast, EMP = small splash).
-// Sharpshooter / Engineer / Jet Trooper / Commander abilities come in v2.
-export const classOf = (st) => (st.weapon === 1 ? 'heavy' : 'trooper');
+// ---------- class + stats from gear (SWBF2 classes) ----------
+// Class comes from the look's gear (v4 kit), in this order:
+//   rocket → heavy · sniper rifle → sniper · jetpack or EMP → jet (special) · rally or chaingun → commander
+//   fusion cutter or shotgun → engineer · everything else → trooper
+// Each class keeps its own weapon numbers below (abilities beyond the weapon come later).
+export const CLASSES = ['trooper', 'heavy', 'engineer', 'sniper', 'commander', 'jet'];
+export const CLASS_ICON = { trooper: '🪖', heavy: '🚀', engineer: '🔧', sniper: '🎯', commander: '⭐', jet: '🛩️' };
+export function classOf(st) {
+  if (st.weapon === 1) return 'heavy';
+  if (st.weapon === 2) return 'sniper';
+  if (st.gadget === 3 || st.weapon === 5) return 'jet';
+  if (st.gadget === 6 || st.weapon === 4) return 'commander';
+  if (st.gadget === 4 || st.weapon === 3) return 'engineer';
+  return 'trooper';
+}
 
 const WEAPONS = [
   { weapon: 'rifle', range: 28, rof: 0.55, dmg: 11, splash: 0 },        // blaster
