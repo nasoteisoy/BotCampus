@@ -1,16 +1,37 @@
-// Grid A* over the map (2 m cells), obstacles inflated by unit radius. Paths are LOS-smoothed.
-import { MAP, solidDist } from './map.js';
+// Grid A* over the active map (2 m cells), obstacles inflated by unit radius. Paths are LOS-smoothed.
+// v2.2: built per map (sim.js caches one Nav per MAP.id); free pockets that can't be reached from the posts are blocked,
+// so no bot can spawn, path or get pushed into a dead end.
+import { MAP, solidWithin } from './map.js';
 
 export class Nav {
-  constructor(cell = 2, inflate = 1.1) {
-    this.cell = cell; this.nx = Math.ceil(MAP.hx * 2 / cell); this.nz = Math.ceil(MAP.hz * 2 / cell);
+  constructor(cell = MAP.navCell || 2, inflate = 1.1) {
+    this.mapId = MAP.id; this.cell = cell; this.nx = Math.ceil(MAP.hx * 2 / cell); this.nz = Math.ceil(MAP.hz * 2 / cell);
     const N = this.nx * this.nz;
     this.blocked = new Uint8Array(N); this.g = new Float32Array(N); this.f = new Float32Array(N);
     this.parent = new Int32Array(N); this.state = new Uint8Array(N);
     for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nx; i++) {
       const [x, z] = this.center(i, j);
-      this.blocked[j * this.nx + i] = (Math.abs(x) > MAP.hx - 2 || Math.abs(z) > MAP.hz - 2 || solidDist(x, z) < inflate) ? 1 : 0;
+      this.blocked[j * this.nx + i] = (Math.abs(x) > MAP.hx - 2 || Math.abs(z) > MAP.hz - 2 || solidWithin(x, z, inflate)) ? 1 : 0;
     }
+    this.pruned = this.prune();
+  }
+  // flood fill (8-way, same corner rule as A*) from the first post; every free cell it can't reach is blocked
+  prune() {
+    const nx = this.nx, nz = this.nz, B = this.blocked, seen = this.state; seen.fill(0);
+    const [si, sj] = this.nearestFree(...this.cellOf(MAP.posts[0].x, MAP.posts[0].z));
+    const q = new Int32Array(nx * nz); let h = 0, t = 0; q[t++] = sj * nx + si; seen[sj * nx + si] = 1;
+    while (h < t) {
+      const c = q[h++], ci = c % nx, cj = (c / nx) | 0;
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const a = ci + di, b = cj + dj; if ((!di && !dj) || a < 0 || b < 0 || a >= nx || b >= nz) continue;
+        const v = b * nx + a; if (B[v] || seen[v]) continue;
+        if (di && dj && (B[cj * nx + a] || B[b * nx + ci])) continue;
+        seen[v] = 1; q[t++] = v;
+      }
+    }
+    let n = 0; for (let v = 0; v < nx * nz; v++) if (!B[v] && !seen[v]) { B[v] = 1; n++; }
+    seen.fill(0);
+    return n;
   }
   center(i, j) { return [-MAP.hx + (i + 0.5) * this.cell, -MAP.hz + (j + 0.5) * this.cell]; }
   cellOf(x, z) { return [Math.min(this.nx - 1, Math.max(0, Math.floor((x + MAP.hx) / this.cell))), Math.min(this.nz - 1, Math.max(0, Math.floor((z + MAP.hz) / this.cell)))]; }

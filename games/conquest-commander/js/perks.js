@@ -5,9 +5,9 @@ export const PERKS = [
   { id: 'weapon', icon: '💥', name: 'Weapon Boost', short: '+20% 💥', price: 500 },
   { id: 'capture', icon: '🚩', name: 'Fast Capture', short: '+50% 🚩', price: 300 },
   { id: 'deploy', icon: '⏩', name: 'Quick Deploy', short: '-40% ⏱️', price: 300 },
-  { id: 'army', icon: '👥', name: 'Bigger Army', short: '24 🪖', price: 700 },
+  { id: 'army', icon: '👥', name: 'Bigger Army', short: '+4 🪖', price: 700 },
   { id: 'elite', icon: '⭐', name: 'Elite Classes', short: '⭐🛩️ +2', price: 400 },
-  { id: 'garrison', icon: '🏰', name: 'Garrison', short: 'B + 4 🪖', price: 600 },
+  { id: 'garrison', icon: '🏰', name: 'Garrison', short: '🚩 mid + 4 🪖', price: 600 },
   { id: 'sabotage', icon: '🧨', name: 'Sabotage', short: '-25 🎟️ 🔴', price: 450 },
   { id: 'warchest', icon: '💰', name: 'War Chest', short: '+1000 ⭐', price: 350 },
 ];

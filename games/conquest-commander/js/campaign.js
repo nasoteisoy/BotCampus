@@ -1,11 +1,13 @@
 // Campaign state (credits, battles, streak) in localStorage 'conquest-commander:campaign', rewards, enemy perk scaling.
 import { PERKS } from './perks.js';
 import { mulberry32 } from './data.js';
+import { MAP_LIST } from './map.js';
 
 export const LS_CAMP = 'conquest-commander:campaign';
 export const START_CREDITS = 1500;
-// campaign map list (Dust Ridge only for now; the sim/renderer read MAP from map.js)
-export const MAPS = [{ id: 'dust-ridge', name: 'Dust Ridge', icon: '🏜️' }];
+// campaign map list = map.js MAP_LIST (index 0 = Dust Ridge, 1 = Grand Valley). mapIndex = the map of the next battle;
+// v2.2: it follows the map picked on the setup screen (main.js sets it before each fight), so old saves (mapIndex 0) stay valid.
+export const MAPS = MAP_LIST.map(({ id, name, icon, size }) => ({ id, name, icon, size }));
 
 export const newCampaign = () => ({ v: 1, credits: START_CREDITS, battle: 1, wins: 0, losses: 0, streak: 0, mapIndex: 0 });
 const int = (x, d, lo = -1e9, hi = 1e9) => (Number.isInteger(x) && x >= lo && x <= hi ? x : d);
@@ -29,7 +31,7 @@ export function recordBattle(c, won, postsHeld, ticketsLeft) {
   const r = battleReward(won, postsHeld, ticketsLeft);
   c.credits += r.total; c.battle += 1;
   if (won) { c.wins++; c.streak = c.streak > 0 ? c.streak + 1 : 1; } else { c.losses++; c.streak = c.streak < 0 ? c.streak - 1 : -1; }
-  c.mapIndex = (c.mapIndex + 1) % MAPS.length;
+  // v2.2: no automatic rotation; the player picks the map (mapIndex keeps the map that was just played)
   return r;
 }
 // enemy perks: 1 to start, +1 per win in your streak, -1 per loss in your losing streak (min 0, max 6)

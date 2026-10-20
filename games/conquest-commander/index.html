@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Conquest Commander</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=2.3">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
@@ -44,6 +44,7 @@
     <button class="rd st" data-stars="3" aria-label="Priority 3" title="Priority 3 (+)">★★★</button>
     <button class="rd ctr" aria-label="Close" title="Close (Esc)">✖</button>
   </div>
+  <canvas id="minimap" class="hidden" aria-label="Minimap: tap to move the camera" title="Minimap: tap / drag to move the camera"></canvas>
   <div id="toast"></div>
 </div>
 
@@ -53,14 +54,19 @@
     <p class="sub" id="mapLine">🏜️ Dust Ridge · 🎟️ 200 · 🪖 20 vs 20</p>
     <div class="sec camp"><div id="campStat" class="campstat"></div><button id="newCamp" class="chip" title="Start over with 💰1500">🆕 New campaign</button></div>
     <div class="sec"><h2>🏳️ You</h2><div id="myNations" class="chips"></div></div>
-    <div class="sec"><h2>🪖 Army <small id="lookCount"></small></h2><div id="myLooks" class="looks"></div></div>
+    <div class="sec"><h2>🪖 Army <small id="lookCount"></small> <small class="hint" title="Tap the chip under a trooper to pick how it fights">· 🧠 👇</small></h2><div id="myLooks" class="looks"></div></div>
     <div class="sec"><h2>🎯 Enemy</h2><div id="enemyNations" class="chips"></div></div>
+    <div class="duo">
+    <div class="sec"><h2>🗺️ Map</h2><div id="mapPick" class="chips"></div></div>
     <div class="sec"><h2>🧠 Enemy brain</h2><div class="chips" id="diff">
-      <button class="chip" data-diff="easy">😊 Easy</button><button class="chip on" data-diff="normal">😠 Normal</button></div></div>
+      <button class="chip on" data-diff="normal" title="Normal">😠 Normal</button><button class="chip" data-diff="elite" title="Elite: better aim (snipers most), faster fire">😈 Elite</button></div></div>
+    </div>
     <button id="play" aria-label="Play">🛒 ▶️</button>
     <p id="src" class="src"></p>
   </div>
 </div>
+
+<div id="traitPop" class="hidden"><div id="traitCard"><p id="traitHead"></p><div id="traitOpts"></div></div></div>
 
 <div id="shop" class="screen hidden"><div class="card">
   <div class="shophead"><button id="shopBack" class="big2 sq" aria-label="Back" title="Back (Esc)">⬅️</button><h1>🛒</h1><div id="shopCredits" class="credits" title="Credits left">💰 <b>1500</b></div></div>
@@ -72,6 +78,7 @@
 <div id="pause" class="screen hidden"><div class="card small">
   <h1>⏸️</h1>
   <div id="pausePerks" class="perkline"></div>
+  <div id="pauseUnits" class="units"></div>
   <button id="resume" class="big">▶️</button>
   <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button></div>
 </div></div>
@@ -89,6 +96,7 @@
   <h1>❓</h1>
   <ul class="legend">
     <li><b>👆 A B C</b><span>tap a post</span></li>
+    <li><b>🗺️</b><span>big map: tap the minimap to look there</span></li>
     <li><b>⚔️ 🛡️ 🚫</b><span>attack · defend · ignore</span></li>
     <li><b>★ ★★ ★★★</b><span>how much it matters</span></li>
     <li><b>🚩</b><span>new troops walk here first</span></li>
@@ -97,6 +105,10 @@
     <li><b>⚪</b><span>enemy post: make it white first, then yours</span></li>
     <li><b>☠️</b><span>last stand: no more reinforcements</span></li>
     <li><b>🪖🚀🔧🎯⭐🛩️</b><span>trooper · heavy · engineer · sniper · commander · jet</span></li>
+    <li><b>🤖</b><span>no orders: bots take the nearest post</span></li>
+    <li><b>🔁</b><span>post lost: troops near it go back</span></li>
+    <li><b>🏃 🧱 🎯</b><span>rusher · cover · sniper nest</span></li>
+    <li><b>🔁 ➕ 💣 🛡️</b><span>retaker · supplier · mines · guard</span></li>
     <li><b>⭐</b><span>pays for new troops (auto, every 10 s)</span></li>
     <li class="pc"><b>🖱️ / WASD</b><span>drag = move · wheel = zoom · Q E = turn</span></li>
     <li class="pc"><b>1 2 3 · + −</b><span>marks · stars · Tab = next post</span></li>
@@ -105,6 +117,6 @@
   <button id="helpClose" class="big">👍</button>
 </div></div>
 
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=2.3"></script>
 </body>
 </html>

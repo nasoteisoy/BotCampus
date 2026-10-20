@@ -1,10 +1,11 @@
-// Conquest Commander: start screen, campaign + perk shop, game loop, commander input (marks, stars, rally), HUD, pings, end screen.
+// Conquest Commander: start screen (army, traits, enemy, brain, map), campaign + perk shop, game loop, commander input (marks, stars, rally), HUD, pings, minimap, end screen.
 import { View, flagCanvas, lookThumb, disposeThumbs, TEAM_COLOR } from './render.js';
 import { Sim, CFG } from './sim.js';
-import { MAP, heightAt } from './map.js';
+import { MAP, heightAt, setMap, MAP_LIST, isMap } from './map.js';
 import { loadArmies, defaultLooksFor, randomNation, randomLooks, statsOf, mulberry32, CLASS_ICON } from './data.js';
 import { PERKS, PERK } from './perks.js';
 import { loadCampaign, saveCampaign, newCampaign, recordBattle, enemyPerks, enemyPerkCount, MAPS } from './campaign.js';
+import { TRAITS, TRAIT, TRAIT_LONG, traitOf, loadSetup, saveSetup, normDiff } from './traits.js';
 
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const h = (tag, props = {}, kids = []) => { const e = Object.assign(document.createElement(tag), props); for (const k of [].concat(kids)) if (k != null) e.append(k); return e; };
@@ -20,8 +21,15 @@ addEventListener('resize', () => view.resize());
 // ---------- state ----------
 const G = { state: 'start', sim: null, paused: false, speed: 1, sel: -1, rallyMode: false, opts: null, pings: [], frames: [], longFrames: 0 };
 const armies = loadArmies();
-const pick = { nation: armies.active, looks: new Set(), enemy: null, diff: 'normal' };
+// setup (nation, looks, enemy, brain, one trait per look) is remembered in localStorage 'conquest-commander:setup'
+const setup = loadSetup();
+const pick = { nation: armies.nations.some((n) => n.id === setup.nation) ? setup.nation : armies.active, looks: new Set(setup.looks), enemy: setup.enemy, diff: setup.diff, traits: setup.traits, map: setup.map };
 G.camp = loadCampaign(); G.cart = new Set();
+// v2.2 map picker: saved in the setup; no pick yet → the campaign's map (old saves: mapIndex 0 = Dust Ridge)
+if (!isMap(pick.map)) pick.map = (MAPS[G.camp.mapIndex] || MAPS[0]).id;
+const mapInfo = (id) => MAP_LIST.find((m) => m.id === id) || MAP_LIST[0];
+function showMap(id) { setMap(id); view.setMap(); }   // active map for the menu backdrop / next battle
+showMap(pick.map);
 
 // ---------- start screen ----------
 const looksOf = (nid) => { const l = armies.looks.filter((x) => x.nationId === nid); return l.length ? l : defaultLooksFor(nid); };
@@ -39,10 +47,11 @@ function renderStart() {
   const my = $('#myNations'); my.replaceChildren(...armies.nations.map((n) => nationChip(n, n.id === pick.nation, () => { pick.nation = n.id; pick.looks.clear(); if (pick.enemy === n.id) pick.enemy = null; renderStart(); })));
   const nat = armies.nations.find((n) => n.id === pick.nation) || armies.nations[0];
   const looks = looksOf(nat.id);
+  for (const id of [...pick.looks]) if (!looks.some((l) => l.id === id)) pick.looks.delete(id);
   if (!pick.looks.size) looks.slice(0, 6).forEach((l) => pick.looks.add(l.id));
   $('#myLooks').replaceChildren(...looks.map((l) => {
-    const s = statsOf(l.st), url = thumbOf(nat, l);
-    const b = h('button', { className: 'look' + (pick.looks.has(l.id) ? ' on' : ''), title: `${l.name} · ${CLASS_NAME[s.cls]} · 💰${s.cost} ⚡${s.power}` }, [
+    const s = statsOf(l.st), url = thumbOf(nat, l), on = pick.looks.has(l.id);
+    const b = h('button', { className: 'look' + (on ? ' on' : ''), title: `${l.name} · ${CLASS_NAME[s.cls]} · 💰${s.cost} ⚡${s.power}` }, [
       url ? h('img', { src: url, alt: '' }) : h('div', { className: 'noimg', textContent: '🪖' }),
       h('b', { className: 'cls', textContent: CLASS_ICON[s.cls], title: CLASS_NAME[s.cls] }),
       l.icon ? h('b', { className: 'ico', textContent: l.icon }) : null,
@@ -53,7 +62,14 @@ function renderStart() {
       else if (pick.looks.size < 6) pick.looks.add(l.id); else toast('6 max');
       renderStart();
     });
-    return b;
+    // behaviour trait chip: big icon + 1-2 words; tap → small icon popup
+    const chosen = pick.traits[l.id] || '', tid = traitOf(chosen, s.cls), T = TRAIT[tid];
+    const tb = h('button', { className: 'trait' + (chosen ? ' set' : ' auto') + (on ? '' : ' off'), title: `${TRAIT_LONG[tid]}${chosen ? '' : ' (auto)'}`, 'aria-label': 'Behaviour: ' + TRAIT_LONG[tid] },
+      [h('b', { textContent: T.icon }), h('span', { textContent: T.name })]);   // dashed border = class default (auto)
+    tb.dataset.id = l.id; tb.dataset.trait = tid;
+    tb.addEventListener('click', (e) => { e.stopPropagation(); openTraitPop(l, s.cls, tb); });
+    const w = h('div', { className: 'lookw' }, [b, tb]); w.dataset.id = l.id;
+    return w;
   }));
   $('#lookCount').textContent = `${pick.looks.size}/6`;
   const others = armies.nations.filter((n) => n.id !== nat.id);
@@ -62,18 +78,50 @@ function renderStart() {
   const rnd = h('button', { className: 'chip' + (pick.enemy === 'random' ? ' on' : ''), title: 'Random' }, [h('span', { textContent: '🎲 Random' })]);
   rnd.dataset.id = 'random'; rnd.addEventListener('click', () => { pick.enemy = 'random'; renderStart(); });
   $('#enemyNations').replaceChildren(...others.map((n) => nationChip(n, n.id === pick.enemy, () => { pick.enemy = n.id; renderStart(); })), rnd);
+  pick.diff = normDiff(pick.diff);
   $$('#diff [data-diff]').forEach((b) => b.classList.toggle('on', b.dataset.diff === pick.diff));
+  // 🗺️ map picker (small / large)
+  if (!isMap(pick.map)) pick.map = MAP_LIST[0].id;
+  if (G.state === 'start' && MAP.id !== pick.map) showMap(pick.map);
+  $('#mapPick').replaceChildren(...MAP_LIST.map((m) => {
+    const b = h('button', { className: 'chip mapc' + (m.id === pick.map ? ' on' : ''), title: `${m.name}: ${m.dims}, ${m.posts} posts`, 'aria-pressed': String(m.id === pick.map) },
+      [h('b', { textContent: m.icon }), h('span', { textContent: m.name }), h('em', { textContent: `${m.size}·${m.posts}🚩` })]);
+    b.dataset.map = m.id; b.addEventListener('click', () => { pick.map = m.id; renderStart(); });
+    return b;
+  }));
+  saveSetup(pick);
   $('#src').innerHTML = armies.source === 'customizer'
     ? `📥 ${escapeHTML(armies.player)} · army from <a href="../trooper-custom/">🪖 Trooper Customizer</a>`
     : `No saved army yet → default armies. Make your own in <a href="../trooper-custom/">🪖 Trooper Customizer</a>`;
   renderCamp();
 }
+// ---------- trait popup (one behaviour per look) ----------
+function openTraitPop(l, cls, anchor) {
+  const pop = $('#traitPop'), cur = pick.traits[l.id] || '';
+  const opt = (id) => {
+    const tid = traitOf(id, cls), T = TRAIT[tid];
+    const b = h('button', { className: 'topt' + (cur === id ? ' on' : '') + (id ? '' : ' auto'), title: id ? TRAIT_LONG[id] : `Auto: ${TRAIT_LONG[tid]}` }, [h('b', { textContent: T.icon }), h('span', { textContent: id ? T.name : 'Auto' })]);
+    b.dataset.trait = id;
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (id) pick.traits[l.id] = id; else delete pick.traits[l.id]; closeTraitPop(); renderStart(); });
+    return b;
+  };
+  $('#traitOpts').replaceChildren(opt(''), ...TRAITS.map((t) => opt(t.id)));
+  $('#traitHead').textContent = `${l.icon || CLASS_ICON[cls]} ${l.name}`;
+  pop.classList.remove('hidden'); pop.dataset.id = l.id;
+  const r = anchor.getBoundingClientRect(), card = $('#traitCard'), cw = card.offsetWidth, ch = card.offsetHeight;
+  const x = Math.max(6, Math.min(innerWidth - cw - 6, r.left + r.width / 2 - cw / 2)), y = r.bottom + ch + 8 < innerHeight ? r.bottom + 4 : Math.max(6, r.top - ch - 4);
+  card.style.left = x + 'px'; card.style.top = y + 'px';
+}
+function closeTraitPop() { $('#traitPop').classList.add('hidden'); }
+$('#traitPop').addEventListener('click', (e) => { if (e.target.id === 'traitPop') closeTraitPop(); });
+
 // ---------- campaign status + perk shop ----------
 const streakTxt = (c) => (c.streak > 0 ? `🔥${c.streak}` : c.streak < 0 ? `🧊${-c.streak}` : '');
+const mapCfg = (id) => { const was = MAP.id; setMap(id); const c = { tickets: MAP.cfg.tickets ?? CFG.tickets, live: MAP.cfg.live ?? CFG.live }; setMap(was); return c; };
 function renderCamp() {
-  const c = G.camp, m = MAPS[c.mapIndex] || MAPS[0];
+  const c = G.camp, m = mapInfo(pick.map), mc = mapCfg(m.id);
   $('#campStat').innerHTML = `<b class="cr" title="Credits">💰 ${c.credits}</b><span title="Battle">⚔️ #${c.battle}</span><span title="Wins">🏆 ${c.wins}</span><span title="Losses">💀 ${c.losses}</span>${streakTxt(c) ? `<span title="Streak">${streakTxt(c)}</span>` : ''}<span title="Map">${m.icon} ${escapeHTML(m.name)}</span>`;
-  $('#mapLine').textContent = `${m.icon} ${m.name} · 🎟️ ${CFG.tickets} · 🪖 ${CFG.live} vs ${CFG.live}`;
+  $('#mapLine').textContent = `${m.icon} ${m.name} · 🎟️ ${mc.tickets} · 🪖 ${mc.live} vs ${mc.live} · 🚩×${m.posts}`;
 }
 let newCampArm = 0;
 $('#newCamp').addEventListener('click', () => {
@@ -93,7 +141,7 @@ function openShop() {
 function renderShop() {
   const left = G.camp.credits - cartCost();
   $('#shopCredits').innerHTML = `💰 <b>${left}</b>`;
-  const n = enemyPerkCount(G.camp), m = MAPS[G.camp.mapIndex] || MAPS[0];
+  const n = enemyPerkCount(G.camp), m = mapInfo(pick.map);
   $('#shopInfo').innerHTML = `⚔️ #${G.camp.battle} · ${m.icon} ${escapeHTML(m.name)} · <span title="Enemy perks">🔴 🎁×${n}</span> · ⏳ 1 battle`;
   $('#perkGrid').replaceChildren(...PERKS.map((P) => {
     const on = G.cart.has(P.id), can = on || P.price <= left;
@@ -114,11 +162,12 @@ function buyPerk(id) {
 function fight(o = {}) {
   const mine = PERKS.map((p) => p.id).filter((id) => G.cart.has(id));  // shop order
   const cost = cartCost(); if (cost > G.camp.credits) return false;
-  G.camp.credits -= cost; saveCampaign(G.camp);
+  const map = o.map && isMap(o.map) ? o.map : pick.map;
+  G.camp.credits -= cost; G.camp.mapIndex = Math.max(0, MAPS.findIndex((m) => m.id === map)); saveCampaign(G.camp);
   const seed = o.seed ?? ((Math.random() * 1e9) | 0);
   const foe = enemyPerks(G.camp, mine, seed ^ 0x5eed);
   G.cart.clear(); $('#shop').classList.add('hidden');
-  startMatch({ ...o, seed, perks: [mine, foe], campaign: true, spent: cost });
+  startMatch({ ...o, map, seed, perks: [mine, foe], campaign: true, spent: cost });
   return true;
 }
 $('#shopBack').addEventListener('click', () => toMenu());
@@ -131,6 +180,8 @@ function buildTeams(o) {
   const rng = mulberry32(o.seed || 1);
   const nat = armies.nations.find((n) => n.id === o.nation) || armies.nations[0];
   const all = looksOf(nat.id); let mine = all.filter((l) => o.looks.includes(l.id)).slice(0, 6); if (!mine.length) mine = all.slice(0, 6);
+  const traits = o.traits || pick.traits;
+  mine = mine.map((l) => ({ ...l, trait: TRAIT[traits[l.id]] ? traits[l.id] : '' }));     // enemy looks keep '' = class default
   let enemyNat, enemyLooks;
   const en = o.enemy !== 'random' && armies.nations.find((n) => n.id === o.enemy && n.id !== nat.id);
   if (en) { enemyNat = en; enemyLooks = looksOf(en.id).slice(0, 6); }
@@ -141,19 +192,23 @@ function buildTeams(o) {
 
 // ---------- match ----------
 function startMatch(o = {}) {
-  o = { nation: pick.nation, looks: [...pick.looks], enemy: pick.enemy, difficulty: pick.diff, seed: (Math.random() * 1e9) | 0, ...o };
+  o = { nation: pick.nation, looks: [...pick.looks], enemy: pick.enemy, difficulty: pick.diff, seed: (Math.random() * 1e9) | 0, map: pick.map, ...o };
+  o.difficulty = normDiff(o.difficulty);   // old 'easy' (v2) → 'normal'
+  if (!isMap(o.map)) o.map = MAP_LIST[0].id;
   G.opts = o;
+  showMap(o.map);   // v2.2: switch map (sim nav/cover + renderer scene follow MAP)
   const teams = buildTeams(o);
-  G.sim = new Sim({ teams, difficulty: o.difficulty, seed: o.seed, cfg: o.cfg || {} });
+  G.sim = new Sim({ teams, difficulty: o.difficulty, seed: o.seed, cfg: o.cfg || {}, map: o.map });
   view.buildArmies(G.sim.teams, Math.max(...G.sim.teams.map((T) => T.live)) + 16);
   view.clearFx();
   disposeThumbs();
   G.state = 'playing'; G.paused = false; G.sel = -1; G.rallyMode = false; G.pings.forEach((p) => p.el.remove()); G.pings = [];
-  ['#start', '#end', '#pause', '#help', '#shop'].forEach((s) => $(s).classList.add('hidden'));
+  ['#start', '#end', '#pause', '#help', '#shop', '#traitPop'].forEach((s) => $(s).classList.add('hidden'));
   $('#hud').classList.remove('hidden');
   $('#restart').classList.toggle('hidden', !!o.campaign);  // campaign battles can't be re-rolled
-  const home = G.sim.posts[0];
-  view.cam.yaw = 0; view.cam.dist = view.w < view.h ? 105 : 80; view.cam.x = home.x + 32; view.cam.z = home.z; view.cam.want = null;
+  const home = G.sim.posts[0], cs = (MAP.view && MAP.view.camStart) || [80, 105];
+  view.cam.yaw = 0; view.cam.dist = view.w < view.h ? cs[1] : cs[0]; view.cam.x = home.x + cs[0] * 0.4; view.cam.z = home.z; view.cam.want = null;
+  mm.id = null; $('#minimap').classList.toggle('hidden', !(MAP.view && MAP.view.minimap));
   [0, 1].forEach((t) => { const c = $(`.tix.t${t} canvas`); c.getContext('2d').drawImage(flagCanvas(G.sim.teams[t].nation, 32), 0, 0); });
   buildBadges(); closeRadial(); showPerkBanner(); updateHUD(true);
 }
@@ -199,7 +254,18 @@ function endMatch() {
 }
 $('#again').addEventListener('click', () => (G.opts && G.opts.campaign ? openShop() : startMatch(G.opts ? { ...G.opts, seed: (Math.random() * 1e9) | 0 } : {})));
 $('#endMenu').addEventListener('click', toMenu);
-function setPause(on) { if (G.state !== 'playing') return; G.paused = on; $('#pause').classList.toggle('hidden', !on); }
+function setPause(on) { if (G.state !== 'playing') return; G.paused = on; if (on) renderPauseUnits(); $('#pause').classList.toggle('hidden', !on); }
+// ⏸️ unit info: per look → its icon, class, behaviour trait, troops alive
+function renderPauseUnits() {
+  const S = G.sim; if (!S) return;
+  const row = (T) => h('div', { className: 'urow c' + T.idx }, T.looks.map((l, i) => {
+    const n = S.units.filter((u) => u.alive && u.team === T.idx && u.look === i).length, tr = TRAIT[l.trait];
+    const el = h('span', { className: 'ucell', title: `${l.name} · ${CLASS_NAME[l.stats.cls]} · ${TRAIT_LONG[l.trait]}${l.traitPick ? '' : ' (auto)'} · ${n} alive` },
+      [h('b', { className: 'uc', textContent: l.icon || CLASS_ICON[l.stats.cls] }), h('i', { className: 'ut', textContent: tr.icon }), h('em', { textContent: '×' + n })]);
+    el.dataset.trait = l.trait; return el;
+  }));
+  $('#pauseUnits').replaceChildren(row(S.teams[0]), row(S.teams[1]));
+}
 $('#pauseBtn').addEventListener('click', () => setPause(true));
 $('#resume').addEventListener('click', () => setPause(false));
 $('#restart').addEventListener('click', () => { setPause(false); startMatch({ ...G.opts, seed: (Math.random() * 1e9) | 0 }); });
@@ -232,6 +298,7 @@ function buildBadges() {
     b.addEventListener('click', (e) => { e.stopPropagation(); openRadial(i); });
     return b;
   }));
+  $('#score').classList.toggle('n5', G.sim.posts.length > 3); $('#hud').classList.toggle('n5', G.sim.posts.length > 3);   // 5 posts: narrow screens put the post icons on their own row
   $('#postIcons').replaceChildren(...G.sim.posts.map((p, i) => {
     const b = h('button', { className: 'pi', 'aria-label': 'Post ' + p.id }, [h('span', { textContent: p.id }), h('i')]);
     b.dataset.post = i; b.addEventListener('click', () => { view.focus(p.x, p.z); openRadial(i); });
@@ -245,9 +312,9 @@ function openRadial(i) {
 function closeRadial() { G.sel = -1; $('#radial').classList.add('hidden'); $$('.badge').forEach((b) => b.classList.remove('sel')); }
 function syncRadial() {
   if (G.sel < 0) return;
-  const m = G.sim.teams[0].marks[G.sel];
-  $$('#radial .mk').forEach((b) => b.classList.toggle('on', b.dataset.mark === m.mark));
-  $$('#radial .st').forEach((b) => b.classList.toggle('on', +b.dataset.stars === m.stars));
+  const m = G.sim.teams[0].marks[G.sel], on = G.sim.teams[0].marked;
+  $$('#radial .mk').forEach((b) => b.classList.toggle('on', on && b.dataset.mark === m.mark));
+  $$('#radial .st').forEach((b) => b.classList.toggle('on', on && +b.dataset.stars === m.stars));
   $$('.badge').forEach((b) => b.classList.toggle('sel', +b.dataset.post === G.sel));
 }
 function setMark(i, mark, stars) {
@@ -304,6 +371,7 @@ function handleEvents(evs) {
     else if (e.type === 'captured' && e.team === 0) ping('✅', post.x, post.z, TEAM_COLOR[0], post.id);
     else if ((e.type === 'captured' && e.team === 1) || (e.type === 'neutral' && e.from === 0)) ping('❌', post.x, post.z, TEAM_COLOR[1], post.id);
     else if (e.type === 'squadLost' && e.team === 0) ping('💀', e.x, e.z, TEAM_COLOR[1]);
+    else if (e.type === 'retake' && e.team === 0 && post) ping('🔁', post.x, post.z, TEAM_COLOR[0], post.id);
     else if (e.type === 'lastStand') toast(e.team === 0 ? '☠️ 🔵 last stand' : '☠️ 🔴 last stand');
     else if (e.type === 'unlock' && e.team === 0) toast('⭐ 🛩️ unlocked');
   }
@@ -315,7 +383,7 @@ function updateHUD(force) {
   const S = G.sim; if (!S) return;
   const [A, B] = S.teams;
   const cd = A.holdT != null ? [0, A.holdT] : B.holdT != null ? [1, B.holdT] : null;
-  const sig = [A.tickets, B.tickets, A.lastStand, B.lastStand, cd && cd[0] + ':' + Math.ceil(cd[1]), S.alive(0), Math.floor(A.cp), Math.ceil(A.waveT), S.posts.map((p) => p.owner + ':' + p.ctrl.toFixed(2) + ':' + p.n.join()).join(), A.marks.map((m) => m.mark + m.stars).join(), !!A.rally, G.rallyMode].join('|');
+  const sig = [A.tickets, B.tickets, A.lastStand, B.lastStand, cd && cd[0] + ':' + Math.ceil(cd[1]), S.alive(0), Math.floor(A.cp), Math.ceil(A.waveT), S.posts.map((p) => p.owner + ':' + p.ctrl.toFixed(2) + ':' + p.n.join()).join(), A.marked, A.marks.map((m) => m.mark + m.stars).join(), !!A.rally, G.rallyMode].join('|');
   if (!force && sig === lastHud) return; lastHud = sig;
   $('.tix.t0 b').textContent = A.tickets; $('.tix.t1 b').textContent = B.tickets;
   $('.tix.t0').classList.toggle('low', A.tickets <= 20); $('.tix.t1').classList.toggle('low', B.tickets <= 20);
@@ -329,9 +397,10 @@ function updateHUD(force) {
   S.posts.forEach((p, i) => {
     const m = A.marks[i], oc = p.owner >= 0 ? TEAM_COLOR[p.owner] : '#6b7077';
     const el = pis[i]; el.style.setProperty('--p', Math.round(Math.abs(p.ctrl) * 100)); el.style.setProperty('--c', TEAM_COLOR[p.ctrl > 0 ? 0 : 1]); el.style.setProperty('--o', oc);
-    el.querySelector('i').textContent = MARK_ICON[m.mark];
-    const b = badges[i]; b.style.setProperty('--o', oc); b.querySelector('i').textContent = MARK_ICON[m.mark];
-    b.querySelector('u').textContent = m.mark === 'ignore' ? '' : '★'.repeat(m.stars);
+    const icon = A.marked ? MARK_ICON[m.mark] : '🤖';   // 🤖 = no orders yet: bots go for the nearest post they don't own
+    el.querySelector('i').textContent = icon;
+    const b = badges[i]; b.style.setProperty('--o', oc); b.querySelector('i').textContent = icon;
+    b.querySelector('u').textContent = !A.marked || m.mark === 'ignore' ? '' : '★'.repeat(m.stars);
     b.classList.toggle('hot', p.n[0] > 0 && p.n[1] > 0);
   });
   $('#rallyBtn').classList.toggle('on', G.rallyMode || !!A.rally);
@@ -380,6 +449,7 @@ addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT') return;
   const k = e.key.toLowerCase(); keys.add(k);
   if (G.state === 'shop') { if (k === 'escape') toMenu(); else if (k === 'enter') fight(); return; }
+  if (G.state === 'start' && k === 'escape') { closeTraitPop(); return; }
   if (G.state !== 'playing') return;
   if (k === 'escape') { if (G.sel >= 0 || G.rallyMode) { closeRadial(); G.rallyMode = false; updateHUD(true); } else setPause(!G.paused); return; }
   if (G.paused) return;
@@ -403,6 +473,48 @@ function keyPan(dt) {
   if (keys.has('q')) view.cam.yaw -= dt * 1.6; if (keys.has('e')) view.cam.yaw += dt * 1.6;
 }
 
+// ---------- minimap (v2.2, big map only): terrain + walls + rocks, posts, troops, camera view; tap / drag = move the camera ----------
+const mm = { el: $('#minimap'), bg: null, id: null, t: 0, draws: 0 };
+function minimapBg(W, H) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), img = g.createImageData(W, H);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const x = (i + 0.5) / W * 2 * MAP.hx - MAP.hx, z = (j + 0.5) / H * 2 * MAP.hz - MAP.hz, hh = Math.min(1, heightAt(x, z) / 18), k = (j * W + i) * 4;
+    img.data[k] = 170 - hh * 50; img.data[k + 1] = 178 - hh * 52; img.data[k + 2] = 122 - hh * 40; img.data[k + 3] = 235;
+  }
+  g.putImageData(img, 0, 0);
+  const sx = W / (2 * MAP.hx), sz = H / (2 * MAP.hz);
+  g.fillStyle = '#5d554a'; for (const r of MAP.rocks) { g.beginPath(); g.arc((r.x + MAP.hx) * sx, (r.z + MAP.hz) * sz, Math.max(0.8, r.r * sx), 0, 7); g.fill(); }
+  g.fillStyle = '#efe9dc'; for (const w of MAP.walls) g.fillRect((w.x - w.hx + MAP.hx) * sx, (w.z - w.hz + MAP.hz) * sz, Math.max(1, w.hx * 2 * sx), Math.max(1, w.hz * 2 * sz));
+  return c;
+}
+function drawMinimap() {
+  const S = G.sim, el = mm.el;
+  if (!S || G.state !== 'playing' || !(MAP.view && MAP.view.minimap)) return;
+  const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(el.clientWidth * dpr), H = Math.round(el.clientHeight * dpr);
+  if (!W || !H) return;
+  if (el.width !== W || el.height !== H || mm.id !== MAP.id) { el.width = W; el.height = H; mm.bg = minimapBg(W, H); mm.id = MAP.id; }
+  const g = el.getContext('2d'), sx = W / (2 * MAP.hx), sz = H / (2 * MAP.hz), X = (x) => (x + MAP.hx) * sx, Z = (z) => (z + MAP.hz) * sz;
+  g.drawImage(mm.bg, 0, 0);
+  for (const u of S.units) { if (!u.alive) continue; g.fillStyle = TEAM_COLOR[u.team]; g.fillRect(X(u.x) - dpr, Z(u.z) - dpr, 2 * dpr, 2 * dpr); }
+  const R = Math.max(5 * dpr, MAP.postR * sx * 1.3);
+  g.font = `bold ${Math.round(R * 1.2)}px system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  S.posts.forEach((p) => {
+    g.beginPath(); g.arc(X(p.x), Z(p.z), R, 0, 7); g.fillStyle = p.owner >= 0 ? TEAM_COLOR[p.owner] : '#9aa1a8'; g.fill();
+    if (p.n[0] && p.n[1]) { g.lineWidth = 2 * dpr; g.strokeStyle = '#ffd65a'; g.stroke(); }
+    g.fillStyle = '#10161c'; g.fillText(p.id, X(p.x), Z(p.z) + dpr * 0.5);
+  });
+  const fp = view.footprint(); g.beginPath(); fp.forEach((q, i) => g[i ? 'lineTo' : 'moveTo'](X(Math.max(-MAP.hx * 2, Math.min(MAP.hx * 2, q.x))), Z(Math.max(-MAP.hz * 2, Math.min(MAP.hz * 2, q.z))))); g.closePath();
+  g.lineWidth = 1.5 * dpr; g.strokeStyle = '#ffffffcc'; g.stroke();
+  mm.draws++;
+}
+{
+  let down = false;
+  const go = (e) => { const r = mm.el.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width * 2 - 1) * MAP.hx, z = ((e.clientY - r.top) / r.height * 2 - 1) * MAP.hz; view.focus(x, z); mm.t = 0; };
+  mm.el.addEventListener('pointerdown', (e) => { e.stopPropagation(); down = true; mm.el.setPointerCapture?.(e.pointerId); go(e); });
+  mm.el.addEventListener('pointermove', (e) => { if (down) go(e); });
+  const up = () => { down = false; }; mm.el.addEventListener('pointerup', up); mm.el.addEventListener('pointercancel', up);
+}
+
 // ---------- loop ----------
 let last = performance.now(), acc = 0, idleT = 0;
 function frame(now) {
@@ -415,11 +527,12 @@ function frame(now) {
     if (n >= 40) acc = 0;
   }
   if (S) { const evs = S.events; S.events = []; view.consume(evs); handleEvents(evs); }
-  if (G.state === 'start') { idleT += dt; view.cam.yaw = Math.sin(idleT * 0.05) * 0.5; view.cam.x = Math.sin(idleT * 0.03) * 30; view.cam.z = 0; view.cam.dist = 120; }
+  if (G.state === 'start') { idleT += dt; view.cam.yaw = Math.sin(idleT * 0.05) * 0.5; view.cam.x = Math.sin(idleT * 0.03) * MAP.hx * 0.3; view.cam.z = 0; view.cam.dist = MAP.hx * 1.2; }
   else keyPan(dt);
   view.update(S, G.paused ? 0 : dt, now);
   placeOverlays();
   if ((hudT -= dt) <= 0) { hudT = 0.12; updateHUD(false); }
+  if ((mm.t -= dt) <= 0) { mm.t = 0.2; drawMinimap(); }
   if (S && S.over && G.state === 'playing') endMatch();
   requestAnimationFrame(frame);
 }
@@ -430,6 +543,8 @@ requestAnimationFrame(frame);
 window.__game = {
   ready: true,
   get state() { return G.state; }, get sim() { return G.sim; }, G, view, armies, pick,
+  version: '2.3', maps: () => MAP_LIST.map((m) => ({ ...m })), get map() { return MAP.id; },
+  pickMap: (id) => { pick.map = id; renderStart(); return pick.map; }, minimapDraws: () => mm.draws,
   lowProfile: view.low, pixelRatio: () => view.pixelRatio,
   start: (o) => startMatch(o),
   get camp() { return G.camp; }, get cart() { return [...G.cart]; }, get lastReward() { return G.lastReward; },
@@ -446,8 +561,10 @@ window.__game = {
   focus: (x, z, d) => { view.cam.x = x; view.cam.z = z; if (d) view.cam.dist = d; view.cam.want = null; },
   screenOfPost: (i) => { const p = G.sim.posts[i]; return view.project(p.x, heightAt(p.x, p.z), p.z); },
   posts: () => G.sim.posts.map((p) => ({ id: p.id, owner: p.owner, ctrl: +p.ctrl.toFixed(3), n: [...p.n] })),
-  teams: () => G.sim.teams.map((T) => ({ tickets: T.tickets, cp: Math.floor(T.cp), kills: T.kills, losses: T.losses, bled: T.bled || 0, rally: T.rally, perks: [...T.perks], live: T.live, alive: G.sim.alive(T.idx), lastStand: T.lastStand, holdT: T.holdT, unlocked: T.unlocked, plan: [...T.plan], marks: T.marks.map((m) => ({ ...m })), squads: T.squads.map((s) => s.post), nation: T.nation.name, p: T.nation.p, s: T.nation.s, looks: T.looks.map((l) => ({ name: l.name, cls: l.stats.cls, cost: l.stats.cost })) })),
-  units: (t) => G.sim.units.filter((u) => u.alive && (t == null || u.team === t)).map((u) => ({ id: u.id, team: u.team, squad: u.squad, cls: u.cls, x: u.x, z: u.z, gx: u.gx, gz: u.gz, hp: u.hp, hpMax: u.hpMax, look: u.look })),
+  teams: () => G.sim.teams.map((T) => ({ tickets: T.tickets, cp: Math.floor(T.cp), kills: T.kills, losses: T.losses, bled: T.bled || 0, rally: T.rally, perks: [...T.perks], live: T.live, alive: G.sim.alive(T.idx), lastStand: T.lastStand, holdT: T.holdT, unlocked: T.unlocked, plan: [...T.plan], marked: T.marked, marks: T.marks.map((m) => ({ ...m })), squads: T.squads.map((s) => s.members.filter((u) => u.alive).length), healed: T.healed, minesLaid: T.minesLaid, retakes: T.retakes, nation: T.nation.name, p: T.nation.p, s: T.nation.s, looks: T.looks.map((l) => ({ id: l.id, name: l.name, cls: l.stats.cls, cost: l.stats.cost, trait: l.trait, traitPick: l.traitPick })) })),
+  units: (t) => G.sim.units.filter((u) => u.alive && (t == null || u.team === t)).map((u) => ({ id: u.id, team: u.team, squad: u.squad, cls: u.cls, x: u.x, z: u.z, gx: u.gx, gz: u.gz, hp: u.hp, hpMax: u.hpMax, look: u.look, trait: u.trait, post: u.post, inCover: u.inCover, duck: u.duck, crouch: u.crouch, atNest: u.atNest })),
+  traitPop: (id) => { const l = looksOf(pick.nation).find((x) => x.id === id), b = document.querySelector(`#myLooks .trait[data-id="${id}"]`); if (l && b) openTraitPop(l, statsOf(l.st).cls, b); },
+  reloadSetup: () => Object.assign(pick, (() => { const d = loadSetup(); return { nation: d.nation || pick.nation, looks: new Set(d.looks), enemy: d.enemy, diff: d.diff, traits: d.traits, map: isMap(d.map) ? d.map : pick.map }; })()),
   frameStats: () => { const f = [...G.frames].sort((a, b) => a - b); return { n: f.length, avg: f.reduce((a, b) => a + b, 0) / (f.length || 1), p95: f[Math.floor(f.length * 0.95)] || 0, max: f[f.length - 1] || 0, long: G.longFrames }; },
   resetFrames: () => { G.frames = []; G.longFrames = 0; },
   renderStats: () => view.stats(),

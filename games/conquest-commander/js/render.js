@@ -1,4 +1,6 @@
-// three.js view: terrain, rocks, walls, command posts, instanced armies, tracers/rockets/booms, rally flag, RTS camera.
+// three.js view: terrain, rocks, walls, command posts, instanced armies (crouch in cover), tracers/rockets/booms/heal beams, mines, rally flag, RTS camera.
+// v2.2: the map scene lives in one group and is rebuilt by setMap() when the active map (map.js MAP) changes;
+// camera limits, far plane and fog follow MAP.view (the big map zooms out to see the whole valley).
 import * as THREE from 'three';
 import { TeamLook, buildMergedDef, TROOPER, drawSymbol, symbolColor } from './trooper.js';
 import { MAP, heightAt } from './map.js';
@@ -29,6 +31,7 @@ export class View {
     sc.fog = new THREE.Fog('#b9a888', 160, 330);
     this.camera = new THREE.PerspectiveCamera(42, 1, 1, 600);
     this.cam = { x: -40, z: 6, dist: 95, yaw: 0, pitch: 0.95, want: null };
+    this.mapGroup = null; this.mapId = null;
     sc.add(new THREE.HemisphereLight('#fff6e6', '#6b5a43', 1.6));
     const sun = new THREE.DirectionalLight('#ffffff', 1.9); sun.position.set(60, 120, 40); sc.add(sun);
     this.buildMap();
@@ -38,29 +41,43 @@ export class View {
     this.resize();
   }
   // ---------- map ----------
+  // rebuild the map scene if the active map changed (returns true if it did)
+  setMap() {
+    if (this.mapId === MAP.id) return false;
+    if (this.mapGroup) {
+      this.scene.remove(this.mapGroup);
+      this.mapGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } if (o.isInstancedMesh) o.dispose(); });
+    }
+    this.buildMap();
+    return true;
+  }
   buildMap() {
-    const segX = this.low ? 80 : 130, segZ = this.low ? 48 : 78;
+    this.mapId = MAP.id;
+    const root = this.mapGroup = new THREE.Group(); this.scene.add(root);
+    const add = (o) => root.add(o);
+    // terrain resolution: ~2.5 m (desktop) / ~4 m (phone) per segment on Dust Ridge; coarser on the big map (~3.4 / ~5.5 m)
+    const big = MAP.hx > 150, segX = big ? (this.low ? 116 : 190) : (this.low ? 80 : 130), segZ = big ? (this.low ? 72 : 118) : (this.low ? 48 : 78);
     const geo = new THREE.PlaneGeometry(MAP.hx * 2 + 40, MAP.hz * 2 + 40, segX, segZ); geo.rotateX(-Math.PI / 2);
-    const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color(), lo = new THREE.Color('#c9b48a'), hi = new THREE.Color('#a8906a'), edge = new THREE.Color('#8c7a5c');
+    const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color(), V = MAP.view || {}, lo = new THREE.Color(V.lo || '#c9b48a'), hi = new THREE.Color(V.hi || '#a8906a'), edge = new THREE.Color(V.edge || '#8c7a5c');
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i), h = heightAt(x, z); pos.setY(i, h);
       const n = 0.5 + 0.5 * Math.sin(x * 0.37 + z * 0.21) * Math.cos(z * 0.29 - x * 0.13);
-      c.copy(lo).lerp(hi, Math.min(1, h / 7 * 0.8 + n * 0.25));
+      c.copy(lo).lerp(hi, Math.min(1, h / (big ? 16 : 7) * 0.8 + n * 0.25));
       if (Math.abs(x) > MAP.hx || Math.abs(z) > MAP.hz) c.lerp(edge, 0.6);
       col.set([c.r, c.g, c.b], i * 3);
     }
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
     this.ground = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
-    this.scene.add(this.ground);
+    add(this.ground);
     // rocks
-    const rg = new THREE.IcosahedronGeometry(1, 0), rm = new THREE.MeshLambertMaterial({ color: '#7d6f5e', flatShading: true });
+    const rg = new THREE.IcosahedronGeometry(1, 0), rm = new THREE.MeshLambertMaterial({ color: V.rock || '#7d6f5e', flatShading: true });
     const rocks = new THREE.InstancedMesh(rg, rm, MAP.rocks.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
     MAP.rocks.forEach((o, i) => { e.set(o.x * 0.3, o.z * 0.7, 0); m.compose(new THREE.Vector3(o.x, heightAt(o.x, o.z) + o.r * 0.25, o.z), q.setFromEuler(e), new THREE.Vector3(o.r, o.r * 0.8, o.r)); rocks.setMatrixAt(i, m); });
-    this.scene.add(rocks);
+    add(rocks);
     // walls (one instanced box)
-    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: '#a59d90' }), MAP.walls.length);
+    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: V.wall || '#a59d90' }), MAP.walls.length);
     MAP.walls.forEach((w, i) => { const y = heightAt(w.x, w.z); m.compose(new THREE.Vector3(w.x, y + w.h / 2 - 0.2, w.z), q.identity(), new THREE.Vector3(w.hx * 2, w.h + 0.4, w.hz * 2)); walls.setMatrixAt(i, m); });
-    this.scene.add(walls);
+    add(walls);
     // posts
     this.posts = MAP.posts.map((p) => {
       const g = new THREE.Group(), y = heightAt(p.x, p.z); g.position.set(p.x, 0, p.z);
@@ -76,7 +93,7 @@ export class View {
       const back = ring(MAP.postR - 0.7, MAP.postR, 64, '#2a2a2a', 0.35);
       const prog = ring(MAP.postR - 0.9, MAP.postR + 0.15, 64, NEUTRAL, 0.95);
       const fill = ring(0.1, MAP.postR - 0.7, 48, NEUTRAL, 0.12);
-      this.scene.add(g);
+      add(g);
       return { g, flag, tex, canvas, prog, fill, back, owner: 'x', key: '' };
     });
     // rally flag
@@ -84,7 +101,15 @@ export class View {
     const rp = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.6, 5), new THREE.MeshBasicMaterial({ color: '#ffffff' })); rp.position.y = 1.8; rally.add(rp);
     const rf = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[0], side: THREE.DoubleSide })); rf.position.set(0.8, 3.1, 0); rally.add(rf);
     const rr = new THREE.Mesh(new THREE.RingGeometry(1.6, 2, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[0], transparent: true, opacity: 0.8, depthWrite: false })); rr.position.y = 0.2; rally.add(rr);
-    rally.visible = false; this.rally = rally; this.scene.add(rally);
+    rally.visible = false; this.rally = rally; add(rally);
+    this.applyView();
+  }
+  // per-map camera limits + fog
+  applyView() {
+    const V = MAP.view || {};
+    this.camMax = V.camMax || 170; this.fogNear = V.fogNear || 160; this.fogFar = V.fogFar || 330;
+    this.scene.fog.near = this.fogNear; this.scene.fog.far = this.fogFar;
+    const sky = V.sky || '#b9a888'; this.scene.background.set(sky); this.scene.fog.color.set(sky);
   }
   // ---------- armies ----------
   buildArmies(teams, cap) {
@@ -137,10 +162,15 @@ export class View {
     this.rocketMesh = new THREE.InstancedMesh(rg, new THREE.MeshBasicMaterial({ color: '#ffd27a' }), 48); this.rocketMesh.count = 0; this.rocketMesh.frustumCulled = false; this.scene.add(this.rocketMesh);
     this.boomMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 6), new THREE.MeshBasicMaterial({ color: '#ff9a3c', transparent: true, opacity: 0.75, depthWrite: false }), 32);
     this.boomMesh.count = 0; this.boomMesh.frustumCulled = false; this.scene.add(this.boomMesh);
+    // 💣 mines: small team-colored discs
+    this.mineMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.5, 0.18, 10), new THREE.MeshBasicMaterial({ color: '#ffffff' }), 32);
+    this.mineMesh.count = 0; this.mineMesh.frustumCulled = false; this.scene.add(this.mineMesh);
+    for (let i = 0; i < 32; i++) this.mineMesh.setColorAt(i, new THREE.Color(1, 1, 1));
   }
   consume(events, nations) {
     for (const e of events) {
       if (e.type === 'tracer') { if (this.fx.tracers.length < this.tracerN) this.fx.tracers.push({ ...e, t: 0, T: e.laser ? 0.16 : 0.09 }); }
+      else if (e.type === 'heal') { if (this.fx.tracers.length < this.tracerN) this.fx.tracers.push({ ...e, t: 0, T: 0.35 }); }
       else if (e.type === 'rocket') { if (this.fx.rockets.length < 48) this.fx.rockets.push({ ...e, t: 0 }); }
       else if (e.type === 'boom') { if (this.fx.booms.length < 32) this.fx.booms.push({ ...e, t: 0 }); }
     }
@@ -149,7 +179,7 @@ export class View {
   // ---------- per frame ----------
   update(sim, dt, now) {
     this.updateCamera(dt);
-    if (sim) { this.syncPosts(sim); this.syncUnits(sim); this.syncRally(sim); }
+    if (sim) { this.syncPosts(sim); this.syncUnits(sim); this.syncRally(sim); this.syncMines(sim); }
     this.syncFx(dt);
     this.renderer.render(this.scene, this.camera);
   }
@@ -177,7 +207,7 @@ export class View {
     const m = this._m ||= new THREE.Matrix4(), q = this._q ||= new THREE.Quaternion(), q2 = this._q2 ||= new THREE.Quaternion(), v = this._v ||= new THREE.Vector3(), s = this._s ||= new THREE.Vector3(UNIT_SCALE, UNIT_SCALE, UNIT_SCALE);
     const Y = this._Y ||= new THREE.Vector3(0, 1, 0), X = this._X ||= new THREE.Vector3(1, 0, 0), Z = this._Z ||= new THREE.Vector3(0, 0, 1);
     const white = this._w ||= new THREE.Color(1, 1, 1), red = this._r ||= new THREE.Color(1, 0.25, 0.2);
-    const counts = this.armies.map((a) => a.meshes.map(() => 0)), mks = [0, 0];
+    const counts = this.armies.map((a) => a.meshes.map(() => 0)), mks = [0, 0], sc = this._sc ||= new THREE.Vector3();
     for (const pass of [true, false]) for (const u of sim.units) {  // living first, so corpses never steal a living unit's instance
       if (u.alive !== pass) continue;
       const A = this.armies[u.team], M = A.meshes[u.look]; if (!M) continue;
@@ -190,12 +220,13 @@ export class View {
           q2.setFromAxisAngle(Z, Math.sin(u.phase) * (limp ? 0.16 : 0.05)); q.multiply(q2);
         }
         if (limp) { q2.setFromAxisAngle(X, 0.18); q.multiply(q2); }
+        if (u.crouch) { q2.setFromAxisAngle(X, 0.22); q.multiply(q2); }   // crouched behind cover / in a sniper nest
       } else {
         const f = Math.min(1, u.deadT / 0.5);
         q.setFromAxisAngle(Y, u.fallYaw ?? u.yaw); q2.setFromAxisAngle(X, f * f * Math.PI / 2); q.multiply(q2);
         y -= Math.max(0, u.deadT - 1) * 0.45;
       }
-      m.compose(v.set(u.x, y, u.z), q, s);
+      m.compose(v.set(u.x, y, u.z), q, u.alive && u.crouch ? sc.set(UNIT_SCALE, UNIT_SCALE * 0.62, UNIT_SCALE) : s);
       if (counts[u.team][u.look] >= this.cap) continue;  // more bodies than instances: skip the extra corpses
       const k = counts[u.team][u.look]++;
       if (M.team) { M.team.setMatrixAt(k, m); M.team.setColorAt(k, u.alive && u.hurtT > 0 ? red : white); }
@@ -207,6 +238,12 @@ export class View {
       A.mk.count = mks[t]; A.mk.instanceMatrix.needsUpdate = true;
     });
   }
+  syncMines(sim) {
+    const M = this.mineMesh, list = sim.mines || [], m = this._mm ||= new THREE.Matrix4(), c = this._mc ||= new THREE.Color(), blink = Math.sin(performance.now() / 180) > 0;
+    let n = 0;
+    for (const mi of list) { if (n >= 32) break; m.makeTranslation(mi.x, heightAt(mi.x, mi.z) + 0.1, mi.z); M.setMatrixAt(n, m); M.setColorAt(n, c.set(TEAM_COLOR[mi.team]).multiplyScalar(blink ? 1 : 0.55)); n++; }
+    M.count = n; M.instanceMatrix.needsUpdate = true; if (M.instanceColor) M.instanceColor.needsUpdate = true;
+  }
   syncRally(sim) {
     const R = sim.teams[0].rally;
     this.rally.visible = !!R;
@@ -217,7 +254,7 @@ export class View {
     F.tracers = F.tracers.filter((t) => (t.t += dt) < t.T);
     let n = 0;
     for (const t of F.tracers) {
-      const a = 1 - t.t / t.T; c.set(t.laser ? (t.team ? '#ff6a5a' : '#6ad8ff') : (t.team ? '#ffb27a' : '#bff0ff')).multiplyScalar(a);
+      const a = 1 - t.t / t.T; c.set(t.type === 'heal' ? '#7dff8a' : t.laser ? (t.team ? '#ff6a5a' : '#6ad8ff') : (t.team ? '#ffb27a' : '#bff0ff')).multiplyScalar(a);
       pos.setXYZ(n * 2, t.x0, t.y0, t.z0); pos.setXYZ(n * 2 + 1, t.x1, t.y1, t.z1); col.setXYZ(n * 2, c.r * 0.4, c.g * 0.4, c.b * 0.4); col.setXYZ(n * 2 + 1, c.r, c.g, c.b); n++;
     }
     this.tracerLines.geometry.setDrawRange(0, n * 2); pos.needsUpdate = col.needsUpdate = true;
@@ -236,7 +273,11 @@ export class View {
     const C = this.cam;
     if (C.want) { const k = Math.min(1, dt * 5); C.x += (C.want.x - C.x) * k; C.z += (C.want.z - C.z) * k; if (Math.hypot(C.want.x - C.x, C.want.z - C.z) < 0.3) C.want = null; }
     C.x = Math.max(-MAP.hx, Math.min(MAP.hx, C.x)); C.z = Math.max(-MAP.hz - 10, Math.min(MAP.hz + 10, C.z));
-    C.dist = Math.max(28, Math.min(170, C.dist));
+    C.dist = Math.max(28, Math.min(this.camMax || 170, C.dist));
+    // fog + far plane follow the zoom so a zoomed-out overview still shows the ground (Dust Ridge at normal zoom: 160-330 m as before)
+    const F = this.scene.fog, near = Math.max(this.fogNear, C.dist * 1.2), far = Math.max(this.fogFar, near + this.fogFar - this.fogNear);
+    if (F.near !== near || F.far !== far) { F.near = near; F.far = far; }
+    const cf = Math.max(600, far + 60); if (this.camera.far !== cf) { this.camera.far = cf; this.camera.updateProjectionMatrix(); }
     const h = Math.sin(C.pitch) * C.dist, b = Math.cos(C.pitch) * C.dist;
     this.camera.position.set(C.x - Math.sin(C.yaw) * b, h + 2, C.z + Math.cos(C.yaw) * b);
     this.camera.lookAt(C.x, 1, C.z);
@@ -253,6 +294,16 @@ export class View {
     rc.setFromCamera(new THREE.Vector2((clientX - rect.left) / rect.width * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1), this.camera);
     const hit = rc.intersectObject(this.ground, false)[0];
     return hit ? { x: hit.point.x, z: hit.point.z } : null;
+  }
+  // ground footprint of the view (4 screen corners → y = 0 plane), for the minimap
+  footprint() {
+    const rc = this._rc ||= new THREE.Raycaster(), pl = this._pl ||= new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), out = [], v = this._fp ||= new THREE.Vector3();
+    for (const [sx, sy] of [[-1, 1], [1, 1], [1, -1], [-1, -1]]) {
+      rc.setFromCamera(new THREE.Vector2(sx, sy), this.camera);
+      const hit = rc.ray.intersectPlane(pl, v);
+      if (hit) out.push({ x: hit.x, z: hit.z }); else { const d = rc.ray.direction; out.push({ x: this.camera.position.x + d.x * 2000, z: this.camera.position.z + d.z * 2000 }); }
+    }
+    return out;
   }
   project(x, y, z) {
     const v = (this._pv ||= new THREE.Vector3()).set(x, y, z).project(this.camera);

@@ -158,3 +158,50 @@ body.touch .legend .pc { display: none; } body:not(.touch) .legend .tc { display
   #countdown { top: 16%; } #countdown b { font-size: 56px; }
   #fight { min-height: 48px; margin-top: 8px; }
 }
+
+/* ---------- v2.1: behaviour traits (roster chips + popup), pause unit info ---------- */
+.lookw { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lookw .look { width: 100%; }
+.trait { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 2px 4px; border-radius: 12px; background: #ffffff14; border: 2px solid #ffd65a66; min-width: 0; }
+.trait b { font-size: 24px; font-weight: 400; line-height: 1; }
+.trait span { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trait.auto { border-style: dashed; border-color: #ffffff40; }
+.trait.auto span { opacity: .75; font-weight: 500; }
+.trait.set { background: #ffd65a26; border-color: #ffd65a; }
+.trait.off { opacity: .5; }
+.hint { font-size: 13px; }
+#traitPop { position: fixed; inset: 0; z-index: 9; background: rgba(10, 8, 4, .45); }
+#traitCard { position: absolute; width: min(300px, calc(100vw - 12px)); background: #2b2216; border: 2px solid #ffd65a; border-radius: 16px; padding: 8px; box-shadow: 0 10px 30px #000a; }
+#traitHead { margin: 0 0 6px; font-weight: 700; text-align: center; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#traitOpts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.topt { min-height: 60px; min-width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 12px; background: #ffffff14; border: 2px solid transparent; padding: 2px; }
+.topt b { font-size: 28px; font-weight: 400; line-height: 1; }
+.topt span { font-size: 11px; font-weight: 700; white-space: nowrap; }
+.topt.on { border-color: #ffd65a; background: #ffd65a2e; }
+.topt.auto { border-style: dashed; border-color: #ffffff40; } .topt.auto.on { border-color: #ffd65a; }
+.units { display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; }
+.urow { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; border-radius: 12px; }
+.urow.c0 { background: #6cc8ff26; } .urow.c1 { background: #ff7a6a26; }
+.ucell { display: flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #0003; }
+.ucell .uc { font-size: 20px; font-weight: 400; } .ucell .ut { font-size: 22px; font-style: normal; } .ucell em { font-style: normal; font-size: 13px; font-weight: 700; opacity: .85; }
+@media (max-height: 430px) { .trait b { font-size: 20px; } .topt { min-height: 50px; } .topt b { font-size: 24px; } .ucell .uc, .ucell .ut { font-size: 18px; } }
+
+/* ---------- v2.2: map picker, minimap, 5-post top bar ---------- */
+.duo { display: flex; flex-wrap: wrap; column-gap: 18px; } .duo > .sec { flex: none; max-width: 100%; }
+.mapc { padding: 4px 10px; gap: 5px; }
+.mapc b { font-size: 22px; } .mapc em { font-style: normal; font-size: 12px; opacity: .75; }
+#minimap { position: absolute; left: max(8px, env(safe-area-inset-left)); bottom: calc(max(8px, env(safe-area-inset-bottom)) + 56px); width: 220px; height: 132px; border-radius: 10px; border: 2px solid #ffffff55; box-shadow: 0 2px 10px #0007; touch-action: none; cursor: crosshair; }
+#minimap.hidden { display: none; }
+body.touch #minimap { width: 160px; height: 96px; }
+@media (max-height: 430px) { body.touch #minimap { width: 140px; height: 84px; } }
+@media (max-width: 520px) {
+  #score.n5 { flex-wrap: wrap; justify-content: space-between; row-gap: 3px; max-width: calc(100vw - 72px); }
+  #score.n5 #postIcons { order: 3; flex-basis: 100%; justify-content: center; }
+  #hud.n5 #perkBanner { top: 116px; } #hud.n5 #toast { top: 116px; }
+}
+@media (max-height: 430px) {
+  #pause .card.small { width: min(620px, 100%); padding: 6px 10px; }
+  #pause h1 { font-size: 24px; margin: 0; } #pause .perkline { margin: 2px 0 4px; } #pause .pside { font-size: 20px; }
+  #pause .units { gap: 3px; margin-bottom: 4px; } #pause .urow { padding: 2px; gap: 3px; }
+  #pause .big { min-height: 46px; margin: 3px; } #pause .big2 { min-height: 46px; margin: 3px; }
+}
