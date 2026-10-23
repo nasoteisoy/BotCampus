@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff5a3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Freeze Dance · Move & Play</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/common.css?v=1">
+<link rel="stylesheet" href="css/game.css?v=1">
+</head>
+<body data-mode="title" style="--c1:#ff9ad5;--c2:#ff5a3c">
+<canvas id="cv" aria-label="Freeze Dance"></canvas>
+<video id="vid" playsinline muted autoplay></video>
+
+<div id="top">
+  <a id="home" class="rb btn" href="../move-play/" aria-label="Home" title="Home">🏠</a>
+  <div id="scores" aria-label="Scores"></div>
+  <div id="timer" aria-label="Time left">⏱️</div>
+  <span id="camSt" aria-label="Camera"></span>
+  <button id="mute" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
+</div>
+
+<div id="title" class="ov">
+  <div class="logo" aria-hidden="true">💃</div>
+  <h1>Freeze Dance</h1>
+  <div class="icons" aria-label="Moves and players"><span>🤸💪</span><span>👤×1–4</span></div>
+  <div class="howto" aria-label="How to play"><span>🎵💃</span><span>🔇🧊</span><span>⭐🙌✈️🦩</span></div>
+  <div class="btns">
+    <button id="bCam" class="big cam" aria-label="Play with camera">📷<small>🙆</small></button>
+    <button id="bTap" class="big" aria-label="Play with tap or keys">👆</button>
+  </div>
+  <div class="tips"><span>📏 🧍↔️</span><span>💡</span><span>👥 ≤4</span></div>
+  <p class="priv">📷 stays on this device: video is processed in the browser and never uploaded.</p>
+</div>
+
+<div id="count" class="ov hidden"><b id="countN">3</b><span id="countMsg"></span></div>
+
+<div id="end" class="ov hidden">
+  <div class="logo" aria-hidden="true" style="font-size:64px">🏆</div>
+  <div id="endRows"></div>
+  <div class="btns">
+    <button id="bAgain" class="big" aria-label="Play again">🔄</button>
+    <button id="bMenu" class="big" aria-label="Back to start">⏮️</button>
+    <a class="big btn" href="../move-play/" aria-label="All games">🏠</a>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>

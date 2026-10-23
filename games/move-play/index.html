@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6a3df0">
+<meta name="description" content="Move & Play: camera games that get kids jumping, reaching and dancing. Runs in the browser, video never leaves the device.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Move & Play">
+<title>Move & Play</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="hub.css?v=1">
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🤸</div>
+  <h1>Move <span>&amp;</span> Play</h1>
+  <button id="install" class="hidden" aria-label="Install app" title="Install">📲</button>
+</header>
+
+<main>
+  <ul class="cards" aria-label="Games">
+    <li><a class="card" href="../flap-flyer/" style="--a:#ffe9a8;--b:#ffb84a" data-game="flap-flyer">
+      <span class="em" aria-hidden="true">🐦</span><b>Flap Flyer</b>
+      <span class="tags"><span title="Arms">💪</span><span title="1 to 4 players">👤×1–4</span></span>
+      <span class="how" aria-hidden="true">🙆 = 🪽</span></a></li>
+    <li><a class="card" href="../bubble-pop/" style="--a:#bfe9ff;--b:#8a6bff" data-game="bubble-pop">
+      <span class="em" aria-hidden="true">🫧</span><b>Bubble Pop</b>
+      <span class="tags"><span title="Arms and legs">💪🦵</span><span title="1 to 4 players">👤×1–4</span></span>
+      <span class="how" aria-hidden="true">✋🫧 🦶🐸 🙌⭐</span></a></li>
+    <li><a class="card" href="../jump-duck/" style="--a:#d4f7b0;--b:#2fb57a" data-game="jump-duck">
+      <span class="em" aria-hidden="true">🐰</span><b>Jump &amp; Duck</b>
+      <span class="tags"><span title="Legs and whole body">🦵🤸</span><span title="1 to 4 players">👤×1–4</span></span>
+      <span class="how" aria-hidden="true">⬆️🪵 ⬇️🚧 ↔️🪨</span></a></li>
+    <li><a class="card" href="../freeze-dance/" style="--a:#ffd1ea;--b:#ff6a4a" data-game="freeze-dance">
+      <span class="em" aria-hidden="true">💃</span><b>Freeze Dance</b>
+      <span class="tags"><span title="Whole body and arms">🤸💪</span><span title="1 to 4 players">👤×1–4</span></span>
+      <span class="how" aria-hidden="true">🎵💃 🔇🧊 ⭐✈️🦩</span></a></li>
+  </ul>
+
+  <ul class="tips" aria-label="Tips">
+    <li><span class="ti">📏</span><span>Stand back so your whole body shows</span></li>
+    <li><span class="ti">💡</span><span>Good light</span></li>
+    <li><span class="ti">👆</span><span>No camera? Tap or keys work too</span></li>
+  </ul>
+  <p class="priv">📷 stays on this device: video is processed in the browser and never uploaded.</p>
+</main>
+<script src="hub.js?v=1"></script>
+</body>
+</html>
