@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#151b22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Squad FSM</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <header class="tb">
+    <button id="bMis" title="Missions">📋</button>
+    <span id="misName" class="mis">🎓</span>
+    <span id="clock" class="clock">⏱ 0</span>
+    <span class="sp"></span>
+    <button id="bPlay" title="Play / pause">▶</button>
+    <button id="bStep" title="Step">⏭</button>
+    <button id="bSpeed" title="Speed">×1</button>
+    <button id="bRestart" title="Restart">↺</button>
+    <button id="bSave" title="Save / load">💾</button>
+  </header>
+  <main id="main">
+    <section id="ed" class="pane">
+      <div class="etb">
+        <div id="roles" class="roles"></div>
+        <span class="sp"></span>
+        <button id="bAdd" title="Add state">➕</button>
+        <button id="bMove" title="Move nodes">✋</button>
+      </div>
+      <div id="graphWrap"><svg id="graph" viewBox="0 0 400 400"></svg><div id="hint" class="hint"></div></div>
+      <div id="insp" class="insp"></div>
+    </section>
+    <section id="bfPane" class="pane">
+      <div id="bf"><canvas id="cv"></canvas>
+        <div id="endCard" class="endcard hidden"></div>
+        <div id="ticker" class="ticker"></div>
+      </div>
+    </section>
+    <section id="logPane" class="pane">
+      <div class="lhead">📜 <span id="logN">0</span><span class="sp"></span><button id="bLogClr" title="Clear">🧹</button></div>
+      <ol id="log" class="log"></ol>
+    </section>
+  </main>
+  <nav id="tabs" class="tabs">
+    <button data-tab="ed" class="on">🧠<small>FSM</small></button>
+    <button data-tab="bfPane">⚔<small>Battle</small></button>
+    <button data-tab="logPane">📜<small>Log</small></button>
+  </nav>
+  <div id="sheet" class="sheet hidden"><div class="shead"><span id="sheetT"></span><span class="sp"></span><button id="sheetX">✕</button></div><div id="sheetB" class="sbody"></div></div>
+  <div id="pick" class="pick hidden"></div>
+  <div id="updToast" class="toast hidden">🔄 New version <button id="updGo">Reload</button></div>
+</div>
+<script type="module" src="js/main.js?v=1"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing; if (!nw) return;
+        nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) document.getElementById('updToast').classList.remove('hidden'); });
+      });
+      setInterval(() => reg.update().catch(() => {}), 60000);
+    }).catch(() => {});
+    document.getElementById('updGo').onclick = () => location.reload();
+  });
+}
+</script>
+</body>
+</html>
