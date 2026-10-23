@@ -12,9 +12,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="hub.css?v=1">
+<link rel="stylesheet" href="hub.css?v=2">
 </head>
 <body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<video id="vid" playsinline muted autoplay></video>
 <header>
   <div class="logo" aria-hidden="true">🤸</div>
   <h1>Move <span>&amp;</span> Play</h1>
@@ -22,32 +24,40 @@
 </header>
 
 <main>
+  <div id="camBar" role="status" aria-label="Camera: raise a hand, hold it on a game"><span class="pcam">📷</span><canvas class="phand" data-demo="point" aria-hidden="true"></canvas><b id="camMsg">⏳</b></div>
   <ul class="cards" aria-label="Games">
     <li><a class="card" href="../flap-flyer/" style="--a:#ffe9a8;--b:#ffb84a" data-game="flap-flyer">
       <span class="em" aria-hidden="true">🐦</span><b>Flap Flyer</b>
       <span class="tags"><span title="Arms">💪</span><span title="1 to 4 players">👤×1–4</span></span>
-      <span class="how" aria-hidden="true">🙆 = 🪽</span></a></li>
+      <span class="how" aria-hidden="true">🙆 = 🪽</span>
+      <span class="demos" aria-hidden="true"><canvas data-demo="flap" data-paused="1"></canvas><canvas data-demo="bank" data-paused="1"></canvas></span></a></li>
     <li><a class="card" href="../bubble-pop/" style="--a:#bfe9ff;--b:#8a6bff" data-game="bubble-pop">
       <span class="em" aria-hidden="true">🫧</span><b>Bubble Pop</b>
       <span class="tags"><span title="Arms and legs">💪🦵</span><span title="1 to 4 players">👤×1–4</span></span>
-      <span class="how" aria-hidden="true">✋🫧 🦶🐸 🙌⭐</span></a></li>
+      <span class="how" aria-hidden="true">✋🫧 🦶🐸 🙌⭐</span>
+      <span class="demos" aria-hidden="true"><canvas data-demo="reach" data-paused="1"></canvas><canvas data-demo="squat" data-paused="1"></canvas><canvas data-demo="kick" data-paused="1"></canvas></span></a></li>
     <li><a class="card" href="../jump-duck/" style="--a:#d4f7b0;--b:#2fb57a" data-game="jump-duck">
       <span class="em" aria-hidden="true">🐰</span><b>Jump &amp; Duck</b>
       <span class="tags"><span title="Legs and whole body">🦵🤸</span><span title="1 to 4 players">👤×1–4</span></span>
-      <span class="how" aria-hidden="true">⬆️🪵 ⬇️🚧 ↔️🪨</span></a></li>
+      <span class="how" aria-hidden="true">⬆️🪵 ⬇️🚧 ↔️🪨</span>
+      <span class="demos" aria-hidden="true"><canvas data-demo="jump" data-paused="1"></canvas><canvas data-demo="squat" data-paused="1"></canvas><canvas data-demo="lean" data-paused="1"></canvas></span></a></li>
     <li><a class="card" href="../freeze-dance/" style="--a:#ffd1ea;--b:#ff6a4a" data-game="freeze-dance">
       <span class="em" aria-hidden="true">💃</span><b>Freeze Dance</b>
       <span class="tags"><span title="Whole body and arms">🤸💪</span><span title="1 to 4 players">👤×1–4</span></span>
-      <span class="how" aria-hidden="true">🎵💃 🔇🧊 ⭐✈️🦩</span></a></li>
+      <span class="how" aria-hidden="true">🎵💃 🔇🧊 ⭐✈️🦩</span>
+      <span class="demos" aria-hidden="true"><canvas data-demo="dance" data-paused="1"></canvas><canvas data-demo="freeze" data-paused="1"></canvas><canvas data-demo="star" data-paused="1"></canvas></span></a></li>
   </ul>
 
   <ul class="tips" aria-label="Tips">
     <li><span class="ti">📏</span><span>Stand back so your whole body shows</span></li>
     <li><span class="ti">💡</span><span>Good light</span></li>
+    <li><span class="ti">✋⏳</span><span>Raise a hand, hold it on a game</span></li>
     <li><span class="ti">👆</span><span>No camera? Tap or keys work too</span></li>
   </ul>
   <p class="priv">📷 stays on this device: video is processed in the browser and never uploaded.</p>
 </main>
-<script src="hub.js?v=1"></script>
+<div id="stepBack" role="status" aria-label="Step back so your whole body fits">📏<span>🔙🧍</span></div>
+<script src="hub.js?v=2"></script>
+<script type="module" src="hubcam.js?v=2"></script>
 </body>
 </html>

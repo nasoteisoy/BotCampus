@@ -1,6 +1,8 @@
 // Webcam + MediaPipe PoseLandmarker (lazy-loaded from jsDelivr / Google storage), up to 4 people.
 import { PoseMapper } from './poseMap.js';
 import { PeopleTracker, personFromLandmarks, PLAYER_COLORS } from './multi.js';
+import { toBody } from './body.js';
+import { pickWideFront } from './view.js';
 
 const TV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -8,7 +10,21 @@ const LINES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16]];
 const DOTS = [11, 12, 13, 14, 15, 16];
 export const NUM_POSES = 4;
 // status icons
-export const ST = { off: '', loading: '⏳', track: '✅', none: '🙈', denied: '🚫', nomodel: '⚠️' };
+export const ST = { off: '', loading: '⏳', track: '✅', none: '🙈', denied: '🚫', nocam: '🚫', tap: '👆', nomodel: '⚠️' };
+// v3: kids further back (wider view) give weaker detections: detection + presence 0.5 -> 0.35. Ghosts stay out:
+// a new player still needs face + both shoulders (visibility >= 0.5) for ~1 s (PeopleTracker), tracking stays 0.5.
+export const POSE_OPTS = { minPoseDetectionConfidence: 0.35, minPosePresenceConfidence: 0.35, minTrackingConfidence: 0.5 };
+// v3: no forced crop. v2 asked for 640 x 480 and Chrome (resizeMode crop-and-scale) cut a portrait phone frame
+// (480x640) to 480x480. Now only a width hint + the camera's native modes.
+export const VIDEO = { facingMode: 'user', width: { ideal: 640 }, resizeMode: { ideal: 'none' } };
+async function failStatus(e) {
+  const n = e?.name || '';
+  if (n === 'NotAllowedError' || n === 'SecurityError') {
+    try { const p = await navigator.permissions?.query({ name: 'camera' }); if (p && p.state === 'prompt' && !navigator.userActivation?.isActive) return 'tap'; } catch (er) { /* unsupported */ }
+    return 'denied';
+  }
+  return 'nocam';
+}
 
 let visionPromise = null;
 function loadLandmarker() {
@@ -18,7 +34,7 @@ function loadLandmarker() {
     const files = await vision.FilesetResolver.forVisionTasks(TV + '/wasm');
     const make = (delegate) => vision.PoseLandmarker.createFromOptions(files, {
       baseOptions: { modelAssetPath: MODEL, delegate }, runningMode: 'VIDEO', numPoses: NUM_POSES,
-      minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+      ...POSE_OPTS,
     });
     try { return await make('GPU'); } catch (e) { console.info('[pose] GPU delegate failed, using CPU', e?.message); return await make('CPU'); }
   })();
@@ -48,48 +64,92 @@ export class PoseInput {
     this.active = false; this.stream = null; this.fake = false; this.fakeLms = [];
     this.out = IDLE(); this.outT = 0; // primary (lowest slot) player, v1-compatible
     this.lastVT = -1; this.lastRun = 0; this.status = 'off'; this.frames = 0; this.raw = 0;
+    this.gen = 0; this.info = {}; this.fakeAr = 4 / 3;
+  }
+  /** width / height of the camera frame (fake camera: 4:3) */
+  get ar() { const v = this.video; return !this.fake && v.videoWidth && v.videoHeight ? v.videoWidth / v.videoHeight : this.fakeAr; }
+  get hasVideo() { return this.active && !this.fake && this.video.readyState >= 2 && this.video.videoWidth > 0; }
+  /** players with a body for the hand-cursor menus: [{id, slot, body}] */
+  get bodies() { const ar = this.ar; return this.tracker.tracks.filter((k) => k.slot >= 0 && k.lm).map((k) => ({ id: k.id, slot: k.slot, body: toBody(k.lm, ar) })).filter((p) => p.body); }
+  /** preview box takes the frame's aspect, so the WHOLE frame shows (no cover crop) */
+  _fitBox() {
+    const ar = this.ar; this.box.style.setProperty('--car', ar.toFixed(4));
+    const w = 320, h = Math.round(w / ar);
+    if (this.cv.width !== w || this.cv.height !== h) { this.cv.width = w; this.cv.height = h; }
   }
   get mapper() { return this.mappers.values().next().value || new PoseMapper(); }
   _set(s) { this.status = s; this.statusEl.textContent = ST[s]; this.onStatus(s); }
   _resetPeople() { this.tracker.reset(); this.mappers.clear(); this.slots = []; this.out = IDLE(); this.raw = 0; }
   async start() {
-    if (this.active) return true;
+    if (this.active && !this.fake) return true;
+    const gen = ++this.gen, stale = () => gen !== this.gen;
     this.active = true; this.fake = false; this.box.classList.remove('hidden'); this.box.classList.remove('fake'); this._set('loading');
-    this._resetPeople();
+    this._resetPeople(); this.info = {};
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('no getUserMedia');
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('no getUserMedia'), { name: 'NotFoundError' });
+      this.stream = await navigator.mediaDevices.getUserMedia({ video: { ...VIDEO }, audio: false });
     } catch (e) {
       console.info('[pose] camera unavailable:', e?.name || e);
-      this._set('denied'); this.active = false;
+      if (stale()) return false;
+      this.active = false; this._set(await failStatus(e));
       setTimeout(() => { if (!this.active) this.box.classList.add('hidden'); }, 2500);
       return false;
     }
-    if (!this.active) { this._stopTracks(); return false; }
+    if (stale() || !this.active) { this._stopTracks(); return false; }
+    await this._widen();
+    if (stale()) { if (this.stream && (!this.active || this.fake)) this._stopTracks(); return false; }
+    if (!this.stream) { this.active = false; this._set('nocam'); return false; }
     this.video.srcObject = this.stream;
     try { await this.video.play(); } catch (e) { /* autoplay with muted should work */ }
+    this._fitBox();
+    this.video.addEventListener('loadedmetadata', () => this._fitBox(), { once: true });
     quietMediapipeLogs();
     try {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('model load timeout')), 30000));
       this.landmarker = await Promise.race([loadLandmarker(), timeout]);
-      if (this.active) this._set('none');
+      if (!stale() && this.active) this._set('none');
     } catch (e) {
       console.info('[pose] model unavailable, keys/touch still work:', e?.message || e);
-      if (this.active) this._set('nomodel');
+      if (!stale() && this.active) this._set('nomodel');
     }
-    return true;
+    return !stale();
+  }
+  /** widest view the device offers: ultra-wide front camera (by label) + minimum zoom when the track reports zoom */
+  async _widen() {
+    const md = navigator.mediaDevices;
+    let track = this.stream?.getVideoTracks?.()[0];
+    try {
+      const wide = md.enumerateDevices ? pickWideFront(await md.enumerateDevices(), track?.getSettings?.().deviceId) : null;
+      if (wide) {
+        const { facingMode, ...rest } = VIDEO;
+        this._stopTracks(); // many phones can't open two cameras at once
+        try {
+          this.stream = await md.getUserMedia({ video: { ...rest, deviceId: { exact: wide.deviceId } }, audio: false });
+          this.info.switched = true; this.info.device = wide.label;
+        } catch (e) {
+          console.info('[pose] wide camera failed, using the default one:', e?.name || e);
+          this.stream = await md.getUserMedia({ video: { ...VIDEO }, audio: false });
+        }
+        track = this.stream.getVideoTracks()[0];
+      }
+    } catch (e) { console.info('[pose] wide camera switch skipped:', e?.name || e); }
+    try {
+      const z = track?.getCapabilities?.().zoom;
+      if (z && Number.isFinite(z.min)) { this.info.zoomMin = z.min; await track.applyConstraints({ advanced: [{ zoom: z.min }] }); this.info.zoom = z.min; }
+    } catch (e) { console.info('[pose] zoom not applied:', e?.name || e); }
+    try { this.info.settings = track?.getSettings?.() || null; if (!this.info.device) this.info.device = track?.label || ''; } catch (e) { /* ignore */ }
   }
   /** Test hook: no camera / model; landmarks come from inject(). */
   startFake() {
     if (this.active && !this.fake) this.stop();
-    this.active = true; this.fake = true; this._resetPeople();
+    this.gen++; this.active = true; this.fake = true; this._resetPeople(); this._fitBox();
     this.box.classList.remove('hidden'); this.box.classList.add('fake'); this._set('none');
   }
   /** Test hook: array of 33-landmark arrays (raw MediaPipe image coords), kept until the next inject. */
   inject(list) { this.fakeLms = Array.isArray(list) ? list : []; }
   _stopTracks() { this.stream?.getTracks().forEach((t) => t.stop()); this.stream = null; }
   stop() {
-    this.active = false; this.fake = false; this._stopTracks(); this.video.srcObject = null;
+    this.gen++; this.active = false; this.fake = false; this._stopTracks(); this.video.srcObject = null;
     this.box.classList.add('hidden'); this._set('off');
     this._resetPeople();
   }

@@ -5,6 +5,10 @@ import { Particles, Ribbon } from './fx.js';
 import { Sound } from './audio.js';
 import { PoseInput } from './pose.js';
 import { layoutViewports, screenOrder, PLAYER_COLORS, MAX_PLAYERS } from './multi.js';
+import { BodyMenu } from './menu.js';
+import { startDemos, MOVES } from './demo.js';
+import { Practice } from './practice.js';
+import { CHASE, ZKEY, loadZoom } from './chase.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -137,8 +141,12 @@ function spawnNearLeader(p) {
   snapCamera(p);
 }
 const tilePortrait = (p) => p.aspect < 0.85;
-const camDist = (p) => (tilePortrait(p) ? 12.5 : 10.5);
-const camHeight = (p) => (tilePortrait(p) ? 6 : 5);
+// v3 chase camera, pulled back so the bird and more of the world fit ("zoom out more").
+// v2 was 10.5 m behind / 5 m up / fov 60 (portrait tiles 12.5 / 6 / 72). 🔍 cycles: fit (default) -> ➖ -> ➕.
+let zoom = loadZoom(); // 🔍 chase camera distance (js/chase.js)
+const camDist = (p) => (tilePortrait(p) ? 12.5 : 10.5) * CHASE[zoom].dist;
+const camHeight = (p) => (tilePortrait(p) ? 6 : 5) * CHASE[zoom].height;
+const camFov = (p) => (tilePortrait(p) ? 72 : 60) + CHASE[zoom].fov;
 function snapCamera(p = primary()) {
   const S = p.S;
   fwd.set(-Math.sin(S.yaw), 0, -Math.cos(S.yaw));
@@ -241,7 +249,7 @@ function showWin() {
   const wp = $('wPlayers');
   wp.innerHTML = ps.length > 1 ? ps.map((p) => `<span class="wpp" style="--c:${p.col.css}"><span class="bn">${p.slot + 1}</span>🍎<b>${p.S.collected}</b></span>`).join('') : '';
   wp.classList.toggle('hidden', ps.length < 2);
-  $('win').classList.remove('hidden'); $('hint').classList.add('hidden');
+  $('win').classList.remove('hidden'); $('hint').classList.add('hidden'); $('camHint').classList.add('hidden');
   sound.win();
 }
 function newGame(newSeed) {
@@ -263,9 +271,46 @@ function start() {
   if (G.mode === 'play') return;
   if (G.mode === 'win') newGame((Math.random() * 1e9) | 0); else newGame();
   G.mode = 'play';
-  $('title').classList.add('hidden'); $('win').classList.add('hidden'); $('hud').classList.remove('hidden');
-  const h = $('hint'); h.classList.remove('hidden'); h.style.animation = 'none'; void h.offsetWidth; h.style.animation = '';
+  $('title').classList.add('hidden'); $('win').classList.add('hidden'); $('practice').classList.add('hidden'); $('hud').classList.remove('hidden');
+  if (practice) lastPractice = practice;
+  practice = null;
+  showHint();
 }
+function showHint() {
+  const cam = G.inputMode === 'cam';
+  $('hint').classList.toggle('hidden', cam); $('camHint').classList.toggle('hidden', !cam);
+  for (const h of [$('hint'), $('camHint')]) { h.style.animation = 'none'; void h.offsetWidth; h.style.animation = ''; }
+}
+// ---------- v3: ▶️ -> (camera on) practice each move once -> play. Keys / Space skip straight to play.
+const PRACTICE = [
+  { move: 'flap', icon: '🪽', hold: 0, check: (e) => e.out.flap },
+  { move: 'bankL', icon: '↩️', hold: 0.25, check: (e) => e.out.bank < -0.4 },
+  { move: 'bankR', icon: '↪️', hold: 0.25, check: (e) => e.out.bank > 0.4 },
+];
+let practice = null, lastPractice = null, practiced = false, practiceOpt = params.get('practice') !== '0';
+function go() {
+  sound.init();
+  if (G.mode === 'play' || G.mode === 'practice') return;
+  if (pose.active && practiceOpt && !practiced && G.mode === 'title') startPractice(); else start();
+}
+function startPractice() {
+  practice = new Practice(PRACTICE); practiced = true;
+  G.mode = 'practice';
+  $('title').classList.add('hidden'); $('win').classList.add('hidden'); $('practice').classList.remove('hidden');
+  renderPractice();
+}
+function renderPractice() {
+  const P = practice; if (!P) return;
+  $('pSteps').innerHTML = P.steps.map((st, i) => `<span class="ps${st.done ? ' ok' : ''}${i === P.i ? ' cur' : ''}"><canvas data-demo="${st.move}"${i === P.i ? '' : ' data-paused="1"'}></canvas><b>${st.done ? '✅' : st.icon}</b></span>`).join('');
+  const cur = P.current;
+  if (cur) { $('pDemo').dataset.demo = cur.move; $('pIcon').textContent = cur.icon; }
+}
+function updatePractice(dt) {
+  if (!practice) return;
+  const got = practice.update(pose.players.filter((e) => !e.away && e.state !== 'lost').map((e) => ({ id: e.id, body: e })), dt);
+  if (got) { sound.chime?.(practice.i); renderPractice(); if (practice.done) { G.mode = 'title'; start(); } }
+}
+function skipPractice() { if (!practice) return; practice.skip(); G.mode = 'title'; start(); }
 
 // ---------- simulation step (fixed dt)
 function stepPlayer(p, dt, playing) {
@@ -357,13 +402,19 @@ function step(dt) {
 // ---------- pose / camera mode
 const pose = new PoseInput({
   box: $('camBox'), video: $('camVid'), canvas: $('camCv'), status: $('camSt'),
-  onStatus: (s) => { $('mCam').classList.toggle('bad', s === 'denied' || s === 'nomodel'); if (s === 'denied') setMode('keys'); },
+  onStatus: (s) => {
+    $('mCam').classList.toggle('bad', s === 'denied' || s === 'nocam' || s === 'nomodel');
+    if (s === 'denied' || s === 'nocam' || s === 'tap') { if (G.inputMode === 'cam') setMode('keys'); }
+    document.body.dataset.cam = s;
+    $('camMsg').textContent = { loading: '⏳', tap: '👆', denied: '🚫', nocam: '🚫', nomodel: '⚠️', none: '🙋', track: '🙋' }[s] || '📷';
+  },
 });
 function setMode(m) {
   G.inputMode = m;
   for (const b of document.querySelectorAll('.mb')) b.classList.toggle('on', b.dataset.mode === m);
   updateHint();
   syncPlayers();
+  if (G.mode === 'play') { $('hint').classList.toggle('hidden', m === 'cam'); $('camHint').classList.toggle('hidden', m !== 'cam'); }
 }
 async function toggleCamera() {
   sound.init();
@@ -411,6 +462,35 @@ function updateHint() {
   else { $('hFlap').textContent = '␣'; $('hFlap').classList.add('key'); $('hBank').textContent = '⬅️➡️'; }
 }
 
+// v3: the camera is the default input. It starts on load (Chrome / desktop: no tap needed); browsers that want a
+// gesture first get one 👆 tap. Keys / tap / tilt stay as the fallback (and whenever the camera is off / blocked).
+async function camFirst() {
+  if (pose.active || tiltOn || G.inputMode === 'keys2') return;
+  setMode('cam');
+  const ok = await pose.start();
+  if (!ok && pose.status === 'tap') {
+    const again = () => { removeEventListener('pointerdown', again, true); if (!pose.active && G.inputMode !== 'keys2' && !tiltOn) camFirst(); };
+    addEventListener('pointerdown', again, true);
+  }
+}
+// body-controlled menus: raise a hand -> ✋ cursor, hold ~1.2 s on ▶️ / 🔄 / 🔍 / 🔊 / ⏭ (off while flying)
+const upperBodyInFrame = (b) => b.sw < 0.5 && b.head.y > 0.03 && b.sh.x > 0.08 && b.sh.x < 0.92; // flying needs head + both arms: not too close
+const menu = new BodyMenu({
+  enabled: () => pose.active && G.mode !== 'play',
+  scope: () => (G.mode === 'practice' ? [$('practice')] : G.mode === 'win' ? [$('win'), $('tr')] : [$('title'), $('tr')]),
+  inFrame: upperBodyInFrame,
+});
+const zoomBtn = $('zoomBtn');
+const ZORDER = [1, 0, 2];
+function setZoom(z) {
+  zoom = CHASE[z] ? z : 1;
+  try { localStorage.setItem(ZKEY, String(zoom)); } catch (e) { /* private mode */ }
+  zoomBtn.querySelector('sup').textContent = CHASE[zoom].icon;
+}
+setZoom(zoom);
+zoomBtn.addEventListener('click', () => setZoom(ZORDER[(ZORDER.indexOf(zoom) + 1) % ZORDER.length]));
+startDemos(document);
+
 // ---------- input wiring
 const keysBtn = $('mKeys');
 keysBtn.textContent = isTouch ? '👆' : '⌨️';
@@ -427,7 +507,8 @@ const muteBtn = $('muteBtn');
 const syncMute = () => (muteBtn.textContent = sound.muted ? '🔇' : '🔊');
 syncMute();
 muteBtn.addEventListener('click', () => { sound.init(); sound.setMuted(!sound.muted); syncMute(); });
-$('playBtn').addEventListener('click', start);
+$('playBtn').addEventListener('click', go);
+$('pSkip').addEventListener('click', skipPractice);
 $('replayBtn').addEventListener('click', start);
 
 // keys: one player = every key flies bird 1. 👥 duo mode: W/A/D (+Space) = bird 1, ↑/←/→ = bird 2.
@@ -438,6 +519,8 @@ addEventListener('keydown', (e) => {
   const k = KEYMAP[e.code];
   if (k || e.code === 'Enter') e.preventDefault();
   if (e.code === 'KeyM') { muteBtn.click(); return; }
+  if (e.code === 'KeyZ') { zoomBtn.click(); return; }
+  if (G.mode === 'practice') { if (k === 'flap' || e.code === 'Enter') skipPractice(); return; }
   if (G.mode !== 'play') { if (k === 'flap' || e.code === 'Enter') start(); return; }
   const p = keyPlayer(e.code);
   if (k === 'flap' && !e.repeat) flap(1, p.slot);
@@ -503,6 +586,7 @@ function resize() {
   });
   $('hud').classList.toggle('multi', n > 1);
   $('hud').dataset.n = n;
+  document.body.classList.toggle('multi', n > 1); document.body.dataset.n = n; // preview + 🔊 live outside #hud
   const b = $('board');
   if (layout.extra) {
     const r = layout.extra;
@@ -532,7 +616,7 @@ function render() {
     renderer.setViewport(r.x, H - r.y - r.h, r.w, r.h);
     renderer.setScissor(r.x, H - r.y - r.h, r.w, r.h);
     camera.aspect = r.w / r.h;
-    camera.fov = tilePortrait(p) ? 72 : 60;
+    camera.fov = camFov(p);
     camera.updateProjectionMatrix();
     applyCamera(p);
     const sc = (r.h * viewDpr) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
@@ -566,16 +650,21 @@ function frame(now) {
   const res = pose.tick(now);
   if (res) {
     syncPlayers();
-    if (G.mode === 'play') for (const e of res) {
+    if (G.mode === 'play' || G.mode === 'practice') for (const e of res) {
       const p = players[e.slot];
-      if (e.out.flap && p.on && !p.away) { p.bird.flap(); sound.flap(); p.S.flaps++; }
+      if (e.out.flap && p.on && !p.away) { p.bird.flap(); sound.flap(); if (G.mode === 'play') p.S.flaps++; }
     }
   }
+  if (G.mode === 'practice') updatePractice(dt);
+  menu.update(pose.active ? pose.bodies : [], now / 1000);
+  document.body.classList.toggle('camlive', pose.active && (pose.fake || pose.hasVideo)); document.body.classList.toggle('inplay', G.mode === 'play'); // multi: centered preview only while flying
   if (!paused) { acc += dt; let n = 0; while (acc >= STEP && n++ < 6) { step(STEP); acc -= STEP; } if (n >= 6) acc = 0; }
   const ps = onPlayers(), playing = G.mode === 'play';
   $('edge').classList.toggle('hidden', !(ps.length === 1 && primary().S.edge && playing));
   for (const p of ps) { p.tile.classList.toggle('isaway', p.away); p.tile.classList.toggle('isedge', ps.length > 1 && p.S.edge && playing); }
   const P = primary().S;
+  // live hint: camera players flying low get the big "flap!" figure
+  $('camHint').classList.toggle('low', playing && G.inputMode === 'cam' && ps.some((p) => !p.away && p.S.y - world.height(p.S.x, p.S.z) < 7));
   sound.wind(P.speed, P.vy);
   render();
   perf.frames++;
@@ -588,6 +677,7 @@ function frame(now) {
   }
 }
 requestAnimationFrame(frame);
+if (params.get('autocam') !== '0') camFirst();
 
 // ---------- test hooks
 const pstate = (p) => ({
@@ -628,10 +718,21 @@ window.__game = {
   height: (x, z) => world.height(x, z),
   replay: (s) => { G.mode = 'win'; start(); if (s != null) newGame(s); },
   toggleCamera, setMode, toggleDuo,
+  go, skipPractice,
+  get practice() { const P = practice || lastPractice; return P ? { live: P === practice, i: P.i, done: P.done, skipped: P.skipped, steps: P.steps.map((s) => ({ move: s.move, done: s.done })) } : null; },
+  get menu() { return menu.state; },
+  get zoom() { return zoom; }, setZoom,
+  get chase() { const p = primary(); return { level: zoom, dist: camDist(p), height: camHeight(p), fov: camFov(p), camFov: camera.fov }; },
+  camInfo: () => ({ ...pose.info, status: pose.status, active: pose.active, fake: pose.fake, ar: pose.ar }),
+  get preview() {
+    const b = $('camBox').getBoundingClientRect(), v = $('camVid'), c = $('camCv');
+    return { box: { w: b.width, h: b.height, x: b.x, y: b.y }, video: { w: v.videoWidth, h: v.videoHeight }, canvas: { w: c.width, h: c.height }, fit: getComputedStyle(v).objectFit };
+  },
   snapCamera: () => onPlayers().forEach(snapCamera),
   // fake camera: no webcam / model, landmarks come from injectPeople([lm33, lm33, ...]) (raw MediaPipe coords)
-  fakeCamera() { if (tiltOn) stopTilt(); pose.startFake(); setMode('cam'); },
+  fakeCamera(opts = {}) { if (tiltOn) stopTilt(); pose.startFake(); setMode('cam'); practiceOpt = !!opts.practice; },
   injectPeople(list) { pose.inject(list); },
+  fakeFrame(ar) { pose.fakeAr = ar; pose._fitBox(); }, // fake camera frame aspect (portrait phone = 0.75)
   render,
   _three: { scene, renderer, camera, get world() { return world; } },
 };

@@ -1,6 +1,6 @@
 // Canvas drawing helpers shared by the games.
 import { BONES } from './body.js';
-/** Draw a glowing stick figure. map = coverMap(...) */
+/** Draw a glowing stick figure. map = viewMap(...) / coverMap(...) */
 export function drawSkeleton(c, body, map, color, { width = 8, glow = 18, alpha = 0.95 } = {}) {
   if (!body) return;
   const P = body.p, X = (q) => map.x(q.x), Y = (q) => map.y(q.y);
@@ -22,9 +22,27 @@ export function drawSkeleton(c, body, map, color, { width = 8, glow = 18, alpha 
   for (const k of ['lw', 'rw', 'la', 'ra']) { const q = P[k]; if (q) { c.beginPath(); c.arc(X(q), Y(q), width * 1.1, 0, 7); c.fill(); } }
   c.restore();
 }
-/** Mirrored live video drawn with object-fit: cover. */
-export function drawVideo(c, video, W, H, map) {
+/** Mirrored live video drawn with `map` (view.js viewMap: whole frame, contain). Where the frame doesn't
+ *  reach the screen edges (letterbox) a blurred, darkened copy of the same video fills the gap, so there are
+ *  no hard black bars. fill = colour for the bars instead of the blur. */
+let tiny = null;
+export function drawVideo(c, video, W, H, map, { fill = null, dim = 0.45 } = {}) {
+  const gap = map.ox > 0.5 || map.oy > 0.5 || map.ox + map.dw < W - 0.5 || map.oy + map.dh < H - 0.5;
   c.save(); c.translate(W, 0); c.scale(-1, 1);
+  if (gap) {
+    if (fill) { c.fillStyle = fill; c.fillRect(0, 0, W, H); }
+    else {
+      // cheap blur: shrink the frame to 32 px wide, scale it back up (smoothing does the blur)
+      const vw = video.videoWidth || 4, vh = video.videoHeight || 3;
+      if (!tiny) tiny = document.createElement('canvas');
+      const tw = 32, th = Math.max(8, Math.round((32 * vh) / vw));
+      if (tiny.width !== tw || tiny.height !== th) { tiny.width = tw; tiny.height = th; }
+      const tc = tiny.getContext('2d'); tc.drawImage(video, 0, 0, tw, th);
+      const s = Math.max(W / tw, H / th), dw = tw * s, dh = th * s;
+      c.imageSmoothingEnabled = true; c.drawImage(tiny, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      c.fillStyle = `rgba(10,8,30,${dim})`; c.fillRect(0, 0, W, H);
+    }
+  }
   c.drawImage(video, W - map.ox - map.dw, map.oy, map.dw, map.dh);
   c.restore();
 }

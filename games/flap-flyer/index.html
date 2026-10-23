@@ -9,7 +9,7 @@
 <title>Flap Flyer 2</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=3">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -24,9 +24,6 @@
   <div id="tiles"></div>
   <div id="board" class="hidden" aria-label="Score"></div>
   <div id="count" aria-label="Apples"><span class="ap">🍎</span><b id="cn">0</b><i id="ct">/16</i></div>
-  <div id="tr">
-    <button id="muteBtn" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
-  </div>
   <div id="modes" role="group" aria-label="Controls">
     <button class="mb" id="mCam" data-mode="cam" aria-label="Camera arms" title="Camera: flap your arms">📷</button>
     <button class="mb on" id="mKeys" data-mode="keys" aria-label="Keys or touch" title="Keys / tap">⌨️</button>
@@ -34,18 +31,23 @@
     <button class="mb" id="mDuo" data-mode="keys2" aria-label="Two players" title="2 players: W vs ↑ (or tap your screen)">👥</button>
   </div>
   <div id="hint" class="hidden"><span id="hFlap" class="key">␣</span><span class="arr">⬆️</span><span class="gap"></span><span id="hBank">⬅️➡️</span></div>
+  <div id="camHint" class="hidden" aria-hidden="true"><span class="mv"><canvas data-demo="flap"></canvas><b>⬆️</b></span><span class="mv"><canvas data-demo="bank"></canvas><b>↩️↪️</b></span></div>
   <div id="edge" class="hidden">↩️</div>
-  <div id="camBox" class="hidden">
-    <div class="mir"><video id="camVid" playsinline muted autoplay></video><canvas id="camCv" width="320" height="240"></canvas></div>
-    <span id="camSt">⏳</span>
-  </div>
 </div>
 
 <div id="title">
   <img class="logo" src="icon.svg" alt="">
   <h1>Flap Flyer</h1>
+  <div class="howto" aria-label="How to move"><span class="mv"><canvas data-demo="flap"></canvas><b>🪽⬆️</b></span><span class="mv"><canvas data-demo="bank"></canvas><b>↩️↪️</b></span><span class="mv"><b class="ap">🍎</b><b>×16</b></span></div>
+  <div id="camPrompt" aria-live="polite"><span class="pcam">📷</span><canvas class="phand" data-demo="point"></canvas><b id="camMsg">⏳</b></div>
   <button id="playBtn" aria-label="Play">▶️</button>
-  <div class="how"><span>🍎 ×16</span><span id="howFlap"><b class="key">␣</b> 🖱️ = 🪽</span><span id="howBank"><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span>📷 = 🙆</span><span>📷 🙆🙆 = 🐦🐦</span></div>
+  <div class="how fallback"><span id="howFlap"><b class="key">␣</b> 🖱️ = 🪽</span><span id="howBank"><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span>📷 🙆🙆 = 🐦🐦</span><span>✋⏳👉</span></div>
+</div>
+
+<div id="practice" class="hidden" aria-label="Practice">
+  <div class="pbig"><canvas id="pDemo" data-demo="flap"></canvas><b id="pIcon">🪽</b></div>
+  <div id="pSteps"></div>
+  <button id="pSkip" aria-label="Skip">⏭</button>
 </div>
 
 <div id="win" class="hidden">
@@ -56,6 +58,18 @@
   <button id="replayBtn" aria-label="Play again">🔄</button>
 </div>
 
-<script type="module" src="js/main.js?v=2"></script>
+<div id="dock">
+  <div id="tr">
+    <button id="zoomBtn" class="rb" aria-label="Camera distance" title="Camera distance (Z)">🔍<sup></sup></button>
+    <button id="muteBtn" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
+  </div>
+  <div id="camBox" class="hidden">
+    <div class="mir"><video id="camVid" playsinline muted autoplay></video><canvas id="camCv" width="320" height="240"></canvas></div>
+    <span id="camSt">⏳</span>
+  </div>
+</div>
+<div id="stepBack" aria-hidden="true">📏<span>🔙</span></div>
+
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

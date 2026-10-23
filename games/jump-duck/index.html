@@ -9,8 +9,8 @@
 <title>Jump & Duck · Move & Play</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/common.css?v=1">
-<link rel="stylesheet" href="css/game.css?v=1">
+<link rel="stylesheet" href="css/common.css?v=2">
+<link rel="stylesheet" href="css/game.css?v=2">
 </head>
 <body data-mode="title" style="--c1:#9be36b;--c2:#1f9e6e">
 <canvas id="cv" aria-label="Jump & Duck"></canvas>
@@ -21,6 +21,7 @@
   <div id="scores" aria-label="Scores"></div>
   <div id="timer" aria-label="Time left">⏱️</div>
   <span id="camSt" aria-label="Camera"></span>
+  <button id="zoom" class="rb" aria-label="Camera zoom" title="Zoom (Z)">🔍<sup></sup></button>
   <button id="mute" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
 </div>
 
@@ -28,14 +29,23 @@
   <div class="logo" aria-hidden="true">🐰</div>
   <h1>Jump & Duck</h1>
   <div class="icons" aria-label="Moves and players"><span>🦵🤸</span><span>👤×1–4</span></div>
-  <div class="howto" aria-label="How to play"><span>⬆️🪵</span><span>⬇️🚧</span><span>⬅️🪨➡️</span></div>
+  <div class="howto" aria-label="How to play"><span class="mv"><canvas data-demo="jump" aria-hidden="true"></canvas><b>⬆️🪵</b></span><span class="mv"><canvas data-demo="squat" aria-hidden="true"></canvas><b>⬇️🚧</b></span><span class="mv"><canvas data-demo="lean" aria-hidden="true"></canvas><b>⬅️🪨➡️</b></span></div>
+  <div id="camPrompt" aria-label="Camera"><span class="pcam">📷</span><canvas class="phand" data-demo="point" aria-hidden="true"></canvas><b id="camMsg">⏳</b></div>
   <div class="btns">
-    <button id="bCam" class="big cam" aria-label="Play with camera">📷<small>🙆</small></button>
-    <button id="bTap" class="big" aria-label="Play with tap or keys">⌨️<small>👤</small></button>
-    <button id="bTap2" class="big" aria-label="Two players with keys">⌨️<small>👥</small></button>
+    <button id="bCam" class="big cam" aria-label="Play">▶️<small>🙆</small></button>
   </div>
-  <div class="tips"><span>📏 🧍↔️</span><span>💡</span><span>👥 ≤4</span></div>
+  <div class="tips"><span>✋⏳👉</span><span>📏 🧍↔️</span><span>💡</span><span>👥 ≤4</span></div>
   <p class="priv">📷 stays on this device: video is processed in the browser and never uploaded.</p>
+  <div class="fallback" aria-label="No camera? Play with tap or keys">
+    <button id="bTap" class="sm" aria-label="Play with tap or keys">⌨️<small>👤</small></button>
+    <button id="bTap2" class="sm" aria-label="Two players with keys">⌨️<small>👥</small></button>
+  </div>
+</div>
+
+<div id="practice" class="ov hidden" aria-label="Practice">
+  <div class="pbig"><canvas id="pDemo" data-demo="reach" aria-hidden="true"></canvas><b id="pIcon"></b></div>
+  <div id="pSteps"></div>
+  <button id="pSkip" class="big" aria-label="Skip practice">⏭</button>
 </div>
 
 <div id="count" class="ov hidden"><b id="countN">3</b><span id="countMsg"></span></div>
@@ -50,7 +60,8 @@
   </div>
 </div>
 <div id="toast" role="status"></div>
+<div id="stepBack" role="status" aria-label="Step back so your whole body fits">📏<span>🔙🧍</span></div>
 
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

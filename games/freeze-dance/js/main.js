@@ -1,13 +1,15 @@
 // Freeze Dance / Copy Me: dance while the music plays, freeze or copy the pose when it stops.
 import { run } from './runner.js';
-import { coverMap } from './body.js';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
+import { drawDemo } from './demo.js';
 import { PLAYER_COLORS } from './multi.js';
 import { MotionMeter, poseScore, POSES, MATCH, starsFor, makeScript } from './moves.js';
 import { mulberry32 } from './rng.js';
 
 const FREEZE_GRACE = 0.7, POSE_HOLD = 0.4, WOBBLE_OK = 0.45;
 const F = {
+  // practice before a camera round: dance, freeze like a statue, copy one pose
+  practice: [{ move: 'dance', icon: '🎵💃' }, { move: 'freeze', icon: '🔇🧊' }, { move: 'star', icon: '⭐', check: (b) => poseScore(b, 'star') >= MATCH }],
   roundSec: 90, script: [], phase: null, pi: -1, P: new Map(), players: [], taps: 0, wiggle: 0, tapE: 0, choices: null,
   reset(S) {
     const seed = +(S.params.get('seed') || 0) || ((Math.random() * 1e9) | 0);
@@ -89,7 +91,7 @@ const F = {
     else { q.ok = false; q.match = 0.7; S.sound.oops(); }
   },
   draw(c, W, H, S) {
-    const f = S.cam.frameSize || { w: W, h: H }, map = coverMap(f.w, f.h, W, H);
+    const map = S.view(W, H);
     const ph = S.mode === 'play' ? this.phase : null;
     if (S.cam.hasVideo) { drawVideo(c, S.cam.video, W, H, map); c.fillStyle = ph && ph.type !== 'dance' ? 'rgba(80,160,255,0.28)' : 'rgba(120,20,140,0.18)'; c.fillRect(0, 0, W, H); }
     else {
@@ -106,6 +108,11 @@ const F = {
       for (const p of this.players) {
         if (!p.body) continue; const q = this.P.get(p.slot);
         const glowCol = q?.ok === true ? '#7dff8a' : q?.ok === false && ph && ph.type !== 'dance' ? '#ff4d6d' : p.color.css;
+        // live hint: a ghost of the pose to copy, standing right where the kid stands (same size)
+        if (ph && ph.type === 'pose' && !q?.matched && p.body.hip) {
+          const u = (p.body.torso * map.dh) / 1.6;
+          drawDemo(c, ph.pose, S.clock, map.x(p.body.hip.x), map.y(p.body.hip.y), u, '#ffffff', { alpha: 0.4 });
+        }
         drawSkeleton(c, p.body, map, p.color.css, { width: Math.max(6, W * 0.008), glow: q?.ok != null ? 34 : 18 });
         if (q?.ok != null && ph && ph.type !== 'dance') emoji(c, q.ok ? '✅' : '🫨', map.x(p.body.head.x), map.y(p.body.head.y) - 60, 44);
         if (glowCol !== p.color.css) { c.save(); c.globalAlpha = 0.35; drawSkeleton(c, p.body, map, glowCol, { width: Math.max(10, W * 0.014), glow: 30 }); c.restore(); }
@@ -117,10 +124,12 @@ const F = {
       const cy = Math.max(110, H * 0.2), sz = Math.min(W, H) * 0.16;
       if (ph.type === 'dance') {
         const b = 1 + Math.sin(S.clock * 10) * 0.08;
-        emoji(c, '💃', W / 2 - sz * 0.9, cy, sz * b); emoji(c, '🎵', W / 2, cy - sz * 0.2, sz * 0.7 * b); emoji(c, '🕺', W / 2 + sz * 0.9, cy, sz * (2 - b));
+        emoji(c, '💃', W / 2 - sz * 1.3, cy, sz * b); emoji(c, '🎵', W / 2 + sz * 1.3, cy - sz * 0.2, sz * 0.7 * b);
+        drawDemo(c, 'dance', S.clock, W / 2, cy + sz * 0.25, sz / 4.2, '#ffffff');
       } else if (ph.type === 'freeze') {
         emoji(c, '🧊', W / 2, cy, sz * 1.2);
         this.ring(c, W / 2, cy, sz * 0.85, left / ph.dur, '#bfe9ff');
+        drawDemo(c, 'freeze', 2, W / 2 + sz * 1.5, cy + sz * 0.3, sz / 4.5, '#bfe9ff');
       } else {
         const R = sz * 1.1;
         c.fillStyle = '#ffffffd9'; c.beginPath(); c.arc(W / 2, cy + sz * 0.15, R, 0, 7); c.fill();

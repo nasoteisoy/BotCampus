@@ -25,7 +25,7 @@ export function personFromLandmarks(lm, visMin = 0.5) {
   if (!visOk(ls, visMin) || !visOk(rs, visMin)) return null;
   const face = FACE.some((i) => visOk(lm[i], visMin));
   const sw = Math.hypot(ls.x - rs.x, ls.y - rs.y);
-  if (sw < 0.03) return null;
+  if (sw < 0.018) return null; // v2: 0.03 -> 0.018 so a small kid far back (whole body ~13 % of the frame) still counts
   return { x: 1 - (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2, sw, face };
 }
 

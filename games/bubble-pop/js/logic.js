@@ -31,15 +31,18 @@ export function hitTest(bubbles, touches, pad = 0, minSpeed = 0) {
   }
   return out;
 }
+/** visible play band: H = screen height (number) or the video rect {y, h} when the frame is letterboxed */
+const band = (H) => (typeof H === 'number' ? { y: 0, h: H } : { y: H.y, h: H.h });
 /** Where to put a "reach up" bubble for a player: above their head (needs arms up) */
 export function highSpot(body, map, H) {
-  const y = map.y(body.head.y) - body.torso * map.dh * 0.75;
-  return { x: map.x(body.sh.x), y: Math.max(H * 0.1, y) };
+  const y = map.y(body.head.y) - body.torso * map.dh * 0.75, B = band(H);
+  return { x: map.x(body.sh.x), y: Math.max(B.y + B.h * 0.1, y) };
 }
 /** Where to put a "squat / kick" bubble: about knee height (hands need a squat, feet can kick) */
 export function lowSpot(body, map, H) {
   const k = body.p.lk && body.p.rk ? (body.p.lk.y + body.p.rk.y) / 2 : body.hip ? body.hip.y + body.torso * 0.55 : body.sh.y + body.torso * 1.5;
-  return { x: map.x(body.hip ? body.hip.x : body.sh.x), y: Math.min(H * 0.93, map.y(k)) };
+  const B = band(H);
+  return { x: map.x(body.hip ? body.hip.x : body.sh.x), y: Math.min(B.y + B.h * 0.93, map.y(k)) };
 }
 /** stars for a score: thresholds shrink with more players (they share the bubbles) */
 export function starsFor(score, nPlayers = 1) {

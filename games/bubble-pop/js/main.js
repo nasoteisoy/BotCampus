@@ -1,7 +1,8 @@
 // Bubble Pop: pop bubbles with hands & feet in the mirrored camera view (or tap them).
 import { run } from './runner.js';
-import { coverMap, touchPoints } from './body.js';
+import { touchPoints } from './body.js';
 import { drawSkeleton, drawVideo, emoji } from './draw.js';
+import { drawDemo } from './demo.js';
 import { PLAYER_COLORS } from './multi.js';
 import { hitTest, highSpot, lowSpot, starsFor, POINTS } from './logic.js';
 
@@ -28,35 +29,39 @@ const B = {
   bubbles: [], fx: [], scores: [0, 0, 0, 0], pops: { float: 0, high: 0, low: 0 }, spawned: { float: 0, high: 0, low: 0 },
   spawnT: 0, specialT: 3, touches: [], prevPts: new Map(), players: [], taps: [], rng: Math.random, played: new Set([0]),
   map: null,
-  _baseR(S) { return Math.min(S.W, S.H) * (S.input === 'cam' ? 0.085 : 0.075) + 14; },
+  // practice before a camera round: reach up, squat, kick (each turns ✅)
+  practice: [{ move: 'reach', icon: '🙌⭐' }, { move: 'squat', icon: '⬇️' }, { move: 'kick', icon: '🦶🐸' }],
+  _baseR(S) { const A = this.area(S); return Math.min(A.w, A.h) * (S.input === 'cam' ? 0.085 : 0.075) + 14; },
+  /** play area in px: with the camera = the part of the screen the (uncropped) video covers, so every
+   *  bubble sits on the picture where a hand or foot can reach it; tap mode = the whole screen */
+  area(S) { return S.input === 'cam' ? this.getMap(S).rect : { x: 0, y: 0, w: S.W, h: S.H }; },
+  onZoom(S) { const A = this.area(S); for (const b of this.bubbles) { b.x = Math.max(A.x + b.r, Math.min(A.x + A.w - b.r, b.x)); if (b.kind !== 'float') b.y = Math.max(A.y + b.r, Math.min(A.y + A.h - b.r, b.y)); } },
   reset(S) {
     this.bubbles = []; this.fx = []; this.scores = [0, 0, 0, 0];
     this.pops = { float: 0, high: 0, low: 0 }; this.spawned = { float: 0, high: 0, low: 0 };
     this.spawnT = 0.2; this.specialT = 3; this.prevPts.clear(); this.camTouches = []; this.taps = []; this.played = new Set([0]);
     S.sound.music(false);
   },
-  onPlay(S) { S.sound.music(true); for (let i = 0; i < 4; i++) this.spawn(S, 'float', null, S.H * (0.45 + i * 0.12)); },
+  onPlay(S) { S.sound.music(true); const A = this.area(S); for (let i = 0; i < 4; i++) this.spawn(S, 'float', null, A.y + A.h * (0.45 + i * 0.12)); },
   resize(S) { this.map = null; },
-  getMap(S) {
-    const f = S.cam.frameSize || { w: S.W, h: S.H };
-    return coverMap(f.w, f.h, S.W, S.H);
-  },
+  getMap(S) { return S.view(S.W, S.H); },
   onPose(players, t, S) {
     this.players = players;
     for (const p of players) if (p.body) this.played.add(p.slot);
     if (S.input === 'cam') this.computeCamTouches(S);
   },
   spawn(S, kind = 'float', at = null, y0 = null) {
-    const r0 = this._baseR(S), rng = this.rng;
+    const r0 = this._baseR(S), rng = this.rng, A = this.area(S);
     const b = { kind, age: 0, wob: rng() * 6, hue: HUES[(rng() * HUES.length) | 0], r: r0 * (0.85 + rng() * 0.3), dead: false };
     if (kind === 'float') {
-      b.x = at ? at.x : S.W * (0.1 + rng() * 0.8); b.y = y0 ?? S.H + b.r; b.vy = -(S.H * (0.09 + rng() * 0.07)); b.life = 99;
+      b.x = at ? at.x : A.x + A.w * (0.1 + rng() * 0.8); b.y = y0 ?? A.y + A.h + b.r; b.vy = -(A.h * (0.09 + rng() * 0.07)); b.life = 99;
     } else {
-      b.x = at ? at.x : S.W * (0.15 + rng() * 0.7);
-      b.y = at ? at.y : kind === 'high' ? S.H * (0.14 + rng() * 0.08) : S.H * (0.84 + rng() * 0.06);
+      b.x = at ? at.x : A.x + A.w * (0.15 + rng() * 0.7);
+      b.y = at ? at.y : kind === 'high' ? A.y + A.h * (0.14 + rng() * 0.08) : A.y + A.h * (0.84 + rng() * 0.06);
       b.vy = 0; b.life = 6; b.r *= kind === 'high' ? 0.95 : 1.05;
+      b.y = Math.max(A.y + b.r * 0.6, Math.min(A.y + A.h - b.r * 0.6, b.y));
     }
-    b.x = Math.max(b.r, Math.min(S.W - b.r, b.x));
+    b.x = Math.max(A.x + b.r, Math.min(A.x + A.w - b.r, b.x));
     b.vx = (rng() - 0.5) * 20;
     this.bubbles.push(b); this.spawned[kind]++;
     return b;
@@ -105,18 +110,19 @@ const B = {
       let at = null;
       if (S.input === 'cam' && live.length) {
         const p = live[(this.rng() * live.length) | 0], map = this.getMap(S);
-        at = kind === 'high' ? highSpot(p.body, map, S.H) : lowSpot(p.body, map, S.H);
+        at = kind === 'high' ? highSpot(p.body, map, map.rect) : lowSpot(p.body, map, map.rect);
         at.x += (this.rng() - 0.5) * p.body.sw * map.dw * 2.5;
       }
       if (this.bubbles.filter((b) => b.kind !== 'float').length < 3) this.spawn(S, kind, at);
     }
-    // move
+    // move (bubbles bounce inside the play area)
+    const A = this.area(S);
     for (const b of this.bubbles) {
       b.age += dt; b.wob += dt * 2;
       b.y += b.vy * dt; b.x += (b.vx + Math.sin(b.wob) * 18) * dt;
-      if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); } if (b.x > S.W - b.r) { b.x = S.W - b.r; b.vx = -Math.abs(b.vx); }
+      if (b.x < A.x + b.r) { b.x = A.x + b.r; b.vx = Math.abs(b.vx); } if (b.x > A.x + A.w - b.r) { b.x = A.x + A.w - b.r; b.vx = -Math.abs(b.vx); }
       if (b.kind !== 'float') { b.life -= dt; b.y += Math.sin(b.wob * 1.3) * 6 * dt; }
-      if (b.y < -b.r * 2 || b.life <= 0) { b.dead = true; b.gone = true; }
+      if (b.y < A.y - b.r * 2 || b.life <= 0) { b.dead = true; b.gone = true; }
     }
     // pop
     const touches = (this.lastTouches = this.collectTouches(S));
@@ -144,8 +150,9 @@ const B = {
     }
     // zone hints for special bubbles
     if (S.mode === 'play' || S.mode === 'count') {
-      c.globalAlpha = 0.18; c.fillStyle = '#ffe14a'; c.fillRect(0, 0, W, H * 0.06);
-      c.fillStyle = '#6fe07a'; c.fillRect(0, H * 0.96, W, H * 0.04); c.globalAlpha = 1;
+      const A = this.area(S);
+      c.globalAlpha = 0.18; c.fillStyle = '#ffe14a'; c.fillRect(A.x, A.y, A.w, A.h * 0.06);
+      c.fillStyle = '#6fe07a'; c.fillRect(A.x, A.y + A.h * 0.96, A.w, A.h * 0.04); c.globalAlpha = 1;
     }
     // skeletons
     if (S.input === 'cam') {
@@ -160,8 +167,10 @@ const B = {
       const spr = sprite(hue, b.r, b.kind === 'float' ? 3 : 6);
       c.drawImage(spr, b.x - spr.R * s, b.y - spr.R * s, spr.R * 2 * s, spr.R * 2 * s);
       if (blink) { c.strokeStyle = '#fff'; c.lineWidth = 6; c.beginPath(); c.arc(b.x, b.y, r, 0, 7); c.stroke(); }
-      if (b.kind === 'high') { emoji(c, '⭐', b.x, b.y, r * 0.9); emoji(c, '🙌', b.x, b.y + r * 1.25, r * 0.5); }
-      if (b.kind === 'low') { emoji(c, '🐸', b.x, b.y, r * 0.9); emoji(c, '🦶', b.x, b.y - r * 1.25, r * 0.5); }
+      // live hint: a little stick figure next to each special bubble shows the move (reach up / kick-squat)
+      const side = b.x > W / 2 ? -1 : 1;
+      if (b.kind === 'high') { emoji(c, '⭐', b.x, b.y, r * 0.9); emoji(c, '🙌', b.x, b.y + r * 1.25, r * 0.5); drawDemo(c, 'reach', S.clock, b.x + side * r * 1.7, b.y + r * 0.4, r * 0.2, '#ffe14a'); }
+      if (b.kind === 'low') { emoji(c, '🐸', b.x, b.y, r * 0.9); emoji(c, '🦶', b.x, b.y - r * 1.25, r * 0.5); drawDemo(c, 'kick', S.clock, b.x + side * r * 1.7, b.y - r * 0.1, r * 0.2, '#6fe07a'); }
     }
     // pop fx
     for (const f of this.fx) {

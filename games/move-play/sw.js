@@ -1,8 +1,8 @@
-// Move & Play hub service worker. Cache "move-play-v1" holds ONLY files under this folder's URL prefix
+// Move & Play hub service worker. Cache "move-play-v2" holds ONLY files under this folder's URL prefix
 // (games/move-play/); it never touches requests for other games or other sites. Network first, cache as offline fallback.
-const CACHE = 'move-play-v1';
+const CACHE = 'move-play-v2';
 const PREFIX = new URL('./', self.location.href).href;
-const SHELL = ['./', 'index.html', 'hub.css?v=1', 'hub.js?v=1', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
+const SHELL = ['./', 'index.html', 'hub.css?v=2', 'hub.js?v=2', 'hubcam.js?v=2', 'js/body.js', 'js/multi.js', 'js/cam.js', 'js/view.js', 'js/dwell.js', 'js/hands.js', 'js/menu.js', 'js/demo.js', 'js/draw.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new URL(u, PREFIX).href))).then(() => self.skipWaiting()));
 });

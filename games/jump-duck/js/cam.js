@@ -3,12 +3,32 @@
 // <video> into the in-browser WASM/GPU model.
 import { PeopleTracker, personFromLandmarks, PLAYER_COLORS } from './multi.js';
 import { toBody } from './body.js';
+import { pickWideFront } from './view.js';
 
 const TV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 export const NUM_POSES = 4;
-export const ST = { off: '', loading: '⏳', track: '✅', none: '🙈', denied: '🚫', nomodel: '⚠️' };
+// Small / far-away kids (whole body in frame on a wide view) give weaker detections: detection and presence
+// are loosened from 0.5 to 0.35. Ghosts stay out because a new player still needs face + both shoulders at
+// visibility >= 0.5 for a full second (PeopleTracker / personFromLandmarks), and tracking stays at 0.5.
+export const POSE_OPTS = { minPoseDetectionConfidence: 0.35, minPosePresenceConfidence: 0.35, minTrackingConfidence: 0.5 };
+// No forced crop: v1 asked for width 640 AND height 480, and Chrome (resizeMode crop-and-scale) cut a portrait
+// phone frame (480x640) down to 480x480. Now only a width hint + native modes (resizeMode 'none').
+export const VIDEO = { facingMode: 'user', width: { ideal: 640 }, resizeMode: { ideal: 'none' } };
+export const ST = { off: '', loading: '⏳', track: '✅', none: '🙈', denied: '🚫', nocam: '🚫', tap: '👆', nomodel: '⚠️' };
 
+/** why getUserMedia failed -> status. A NotAllowedError while permission is still 'prompt' means the browser
+ *  wants a user gesture first (some mobile browsers / iframes): ask for one tap instead of giving up.
+ *  Right after a tap it means the kid / parent said no (or closed the prompt): denied. */
+async function failStatus(e) {
+  const n = e?.name || '';
+  if (n === 'NotFoundError' || n === 'OverconstrainedError' || n === 'NotReadableError') return 'nocam';
+  if (n === 'NotAllowedError' || n === 'SecurityError') {
+    try { const p = await navigator.permissions?.query({ name: 'camera' }); if (p && p.state === 'prompt' && !navigator.userActivation?.isActive) return 'tap'; } catch (er) { /* unsupported */ }
+    return 'denied';
+  }
+  return 'nocam';
+}
 let visionPromise = null;
 function loadLandmarker() {
   if (visionPromise) return visionPromise;
@@ -17,7 +37,7 @@ function loadLandmarker() {
     const files = await vision.FilesetResolver.forVisionTasks(TV + '/wasm');
     const make = (delegate) => vision.PoseLandmarker.createFromOptions(files, {
       baseOptions: { modelAssetPath: MODEL, delegate }, runningMode: 'VIDEO', numPoses: NUM_POSES,
-      minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+      ...POSE_OPTS,
     });
     try { return await make('GPU'); } catch (e) { console.info('[pose] GPU delegate failed, using CPU', e?.message); return await make('CPU'); }
   })();
@@ -38,50 +58,93 @@ export class Camera {
   constructor({ video, onStatus } = {}) {
     this.video = video; this.onStatus = onStatus || (() => {});
     this.tracker = new PeopleTracker();
-    this.active = false; this.fake = false; this.fakeLms = []; this.fakeAr = 4 / 3;
-    this.stream = null; this.landmarker = null; this.status = 'off';
+    this.active = false; this.fake = false; this.fakeLms = []; this.fakeAr = 4 / 3; this.fakeSize = null;
+    this.info = { zoom: null, zoomMin: null, device: '', switched: false, settings: null };
+    this.stream = null; this.landmarker = null; this.status = 'off'; this.gen = 0;
     this.players = []; this.lastRun = -1; this.lastVT = -1; this.frames = 0; this.detectMs = 0;
   }
   _set(s) { if (s !== this.status) { this.status = s; this.onStatus(s); } }
   get ar() {
-    if (this.fake) return this.fakeAr;
+    if (this.fake) return this.fakeSize ? this.fakeSize.w / this.fakeSize.h : this.fakeAr;
     const v = this.video; return v && v.videoWidth ? v.videoWidth / v.videoHeight : 4 / 3;
   }
   get frameSize() {
-    if (this.fake) return null;
+    if (this.fake) return this.fakeSize;
     const v = this.video; return v && v.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null;
   }
   get hasVideo() { return !this.fake && this.active && this.video && this.video.readyState >= 2; }
   reset() { this.tracker.reset(); this.players = []; }
+  /** Start the webcam + model. Resolves true when video runs. Failure statuses: 'tap' (browser wants a tap
+   *  first - call start() again from a click), 'denied' (permission refused), 'nocam' (no camera). */
   async start() {
     if (this.active && !this.fake) return true;
+    const gen = ++this.gen; // a later stop()/startFake() makes this (async) start a no-op
     this.active = true; this.fake = false; this.reset(); this._set('loading');
+    const stale = () => gen !== this.gen;
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('no getUserMedia');
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('no getUserMedia'), { name: 'NotFoundError' });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { ...VIDEO }, audio: false });
+      if (stale()) { stream.getTracks().forEach((t) => t.stop()); return false; }
+      this.stream = stream;
     } catch (e) {
       console.info('[pose] camera unavailable:', e?.name || e);
-      this.active = false; this._set('denied'); return false;
+      if (stale()) return false;
+      this.active = false; this._set(await failStatus(e)); return false;
     }
-    if (!this.active) { this._stopTracks(); return false; }
+    await this._widen();
+    if (stale()) { if (this.stream && (!this.active || this.fake)) this._stopTracks(); return false; }
+    if (!this.stream) { this.active = false; this._set('denied'); return false; }
     this.video.srcObject = this.stream;
     try { await this.video.play(); } catch (e) { /* muted autoplay */ }
     quietMediapipeLogs();
     try {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('model load timeout')), 30000));
       this.landmarker = await Promise.race([loadLandmarker(), timeout]);
-      if (this.active) this._set('none');
+      if (!stale() && this.active) this._set('none');
     } catch (e) {
       console.info('[pose] model unavailable, tap/keys still work:', e?.message || e);
-      if (this.active) this._set('nomodel');
+      if (!stale() && this.active) this._set('nomodel');
     }
-    return true;
+    return !stale();
   }
-  /** Test hook: no webcam / model; landmarks come from inject(). ar = virtual frame aspect. */
-  startFake(ar = 4 / 3) { if (this.active && !this.fake) this.stop(); this.active = true; this.fake = true; this.fakeAr = ar; this.reset(); this._set('none'); }
+  /** Show as much of the room as the hardware allows: switch to an ultra-wide front camera when one is
+   *  listed, then set the lowest zoom the track supports. Never fails the start. */
+  async _widen() {
+    const md = navigator.mediaDevices;
+    let track = this.stream?.getVideoTracks?.()[0];
+    try {
+      const wide = md.enumerateDevices ? pickWideFront(await md.enumerateDevices(), track?.getSettings?.().deviceId) : null;
+      if (wide) {
+        // many phones can't open two cameras at once: close the default one first, fall back to it on failure
+        const { facingMode, ...rest } = VIDEO;
+        this._stopTracks();
+        try {
+          this.stream = await md.getUserMedia({ video: { ...rest, deviceId: { exact: wide.deviceId } }, audio: false });
+          this.info.switched = true; this.info.device = wide.label;
+        } catch (e) {
+          console.info('[pose] wide camera failed, using the default one:', e?.name || e);
+          this.stream = await md.getUserMedia({ video: { ...VIDEO }, audio: false });
+        }
+        track = this.stream.getVideoTracks()[0];
+      }
+    } catch (e) { console.info('[pose] wide camera switch skipped:', e?.name || e); }
+    try {
+      const z = track?.getCapabilities?.().zoom;
+      if (z && Number.isFinite(z.min)) {
+        this.info.zoomMin = z.min;
+        await track.applyConstraints({ advanced: [{ zoom: z.min }] });
+        this.info.zoom = z.min;
+      }
+    } catch (e) { console.info('[pose] zoom not applied:', e?.name || e); }
+    try { this.info.settings = track?.getSettings?.() || null; if (!this.info.device) this.info.device = track?.label || ''; } catch (e) { /* ignore */ }
+  }
+  /** Test hook: no webcam / model; landmarks come from inject(). ar = virtual frame aspect.
+   *  setFakeFrame(w, h) pins a real-camera-like frame size (e.g. 640x480) so the contain fit is exercised. */
+  startFake(ar = 4 / 3) { if (this.active && !this.fake) this.stop(); this.gen++; this.active = true; this.fake = true; this.fakeAr = ar; this.reset(); this._set('none'); }
+  setFakeFrame(w, h) { this.fakeSize = w && h ? { w, h } : null; }
   inject(list) { this.fakeLms = Array.isArray(list) ? list : []; }
   _stopTracks() { this.stream?.getTracks().forEach((t) => t.stop()); this.stream = null; }
-  stop() { this.active = false; this.fake = false; this._stopTracks(); if (this.video) this.video.srcObject = null; this.reset(); this._set('off'); }
+  stop() { this.gen++; this.active = false; this.fake = false; this._stopTracks(); if (this.video) this.video.srcObject = null; this.reset(); this._set('off'); }
   /** Run detection at most ~30 Hz. t = game clock (s). Returns players (new detection) or null. */
   tick(t) {
     if (!this.active) return null;

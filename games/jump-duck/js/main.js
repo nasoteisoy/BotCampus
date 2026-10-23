@@ -1,13 +1,16 @@
 // Jump & Duck: a 3-lane runner per player. Jump over logs, duck under bars, lean/step to dodge rocks.
 import { run } from './runner.js';
-import { coverMap } from './body.js';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
+import { drawDemo } from './demo.js';
+import { viewMap } from './view.js';
 import { PLAYER_COLORS, layoutViewports, screenOrder } from './multi.js';
 import { MoveDetector, makeCourse, collides, starsFor } from './moves.js';
 
 const ANIMALS = ['🐰', '🐻', '🦊', '🐼'];
 const GRACE = 0.22, AIR = 0.75, DUCK_TAP = 0.85, BUMP = 0.9, VIEW = 42; // seconds airborne, tap-duck time, bump stun, meters visible
 const J = {
+  // practice before a camera round: jump, squat (duck), lean / step sideways
+  practice: [{ move: 'jump', icon: '⬆️🪵', hold: 0.05 }, { move: 'squat', icon: '⬇️🚧' }, { move: 'lean', icon: '⬅️🪨➡️' }],
   roundSec: 75, runners: [], course: [], rows: [], fx: [], nextRow: 0, d: 0, speed: 6, seed: 1, layout: null, order: [], cal: new Map(),
   reset(S) {
     this.seed = +(S.params.get('seed') || 0) || ((Math.random() * 1e9) | 0);
@@ -153,6 +156,8 @@ const J = {
         emoji(c, '⭐', X(o.lane, z), y - u * 1.6 - Math.sin(this.d + o.d) * u * 0.2, u * 1.6);
       }
     }
+    // live hint: the next obstacle coming up for this runner -> a looping stick figure doing the move
+    if (S.mode === 'play' || S.mode === 'count') this.drawHint(c, r, w, hy, S);
     // runner
     const u0 = Math.min(w * 0.11, h * 0.12), ry = Y(0);
     const jumpH = r.air > 0 ? Math.sin((1 - r.air / AIR) * Math.PI) * h * 0.22 : 0;
@@ -191,6 +196,30 @@ const J = {
     }
     c.restore();
   },
+  /** what this runner should do for the next row (pure-ish, used by the hint + tests) */
+  nextHint(r) {
+    for (const row of this.rows) {
+      const z = row.d - this.d; if (z < 0.5) continue; if (z > 16) break;
+      const obs = row.list.filter((o) => o.type !== 'star');
+      if (obs.some((o) => o.type === 'log')) return { move: 'jump', icon: '⬆️', z };
+      if (obs.some((o) => o.type === 'bar')) return { move: 'squat', icon: '⬇️', z };
+      const rock = obs.find((o) => o.type === 'rock' && o.lane === r.lane);
+      if (rock) { const free = [-1, 0, 1].filter((l) => !obs.some((o) => o.lane === l)); const to = free.sort((a, b) => Math.abs(a - r.lane) - Math.abs(b - r.lane))[0] ?? 0; return { move: 'lean', icon: to < r.lane ? '⬅️' : '➡️', z }; }
+      if (obs.length) continue;
+    }
+    return null;
+  },
+  drawHint(c, r, w, hy, S) {
+    const hint = this.nextHint(r); if (!hint) return;
+    const bh = Math.min(hy * 0.82, 120), bw = bh * 1.7, x = w / 2 - bw / 2, y = Math.max(hy * 0.08, (S.input === 'tap' ? 0 : 0) + (this.runners.length > 1 ? 4 : 66));
+    if (y + bh > hy + bh * 0.4) return;
+    const urgent = hint.z < 7;
+    c.globalAlpha = urgent ? 1 : 0.75;
+    c.fillStyle = urgent ? '#ffe14aee' : '#ffffffcc'; rrect(c, x, y, bw, bh, bh * 0.25); c.fill();
+    drawDemo(c, hint.move, S.clock * 1.4, x + bw * 0.32, y + bh * 0.62, bh / 5.8, '#222', { glow: false });
+    emoji(c, hint.icon, x + bw * 0.74, y + bh / 2, bh * 0.5);
+    c.globalAlpha = 1;
+  },
   buttons(w, h) {
     const s = Math.min(70, w * 0.2, h * 0.16), y = h - s - 10, gap = 8;
     const left = [{ a: 'L', icon: '⬅️' }, { a: 'R', icon: '➡️' }], right = [{ a: 'D', icon: '⬇️' }, { a: 'U', icon: '⬆️' }];
@@ -200,10 +229,15 @@ const J = {
     ];
   },
   drawPip(c, W, H, S) {
-    const pw = Math.min(W * 0.3, 200), ph = pw * 0.75, x = W - pw - 10, y = H - ph - 10;
+    // the PiP box takes the camera frame's own shape (portrait phone = tall box) and shows the WHOLE frame
+    const f = S.cam.frameSize || { w: 4, h: 3 }, ar = f.w / f.h;
+    let pw = Math.min(W * 0.3, 220), ph = pw / ar;
+    if (ph > H * 0.36) { ph = H * 0.36; pw = ph * ar; }
+    const x = W - pw - 10, y = H - ph - 10;
     c.save(); rrect(c, x, y, pw, ph, 14); c.clip();
     c.fillStyle = '#222'; c.fillRect(x, y, pw, ph);
-    const f = S.cam.frameSize || { w: W, h: H }, map = coverMap(f.w, f.h, pw, ph);
+    const map = viewMap(f.w, f.h, pw, ph, S.zoom);
+    this.pip = { x, y, w: pw, h: ph, map: { ox: map.ox, oy: map.oy, dw: map.dw, dh: map.dh } };
     c.translate(x, y);
     if (S.cam.hasVideo) drawVideo(c, S.cam.video, pw, ph, map);
     for (const p of S.cam.players) if (p.body) drawSkeleton(c, p.body, map, p.color.css, { width: 4, glow: 8 });
@@ -253,5 +287,7 @@ cv.addEventListener('pointerup', (e) => {
 Object.assign(window.__game, {
   act: (slot, a) => act(J.runner(slot), a),
   course: () => J.rows.map((r) => ({ d: r.d, list: r.list.map((o) => o.type + (o.type === 'rock' || o.type === 'star' ? o.lane : '')) })),
+  pip: () => J.pip || null,
+  hint: (slot) => { const r = J.runner(slot); return r ? J.nextHint(r) : null; },
   buttons: (slot) => (J.runner(slot)?.btns || []).map((b) => ({ a: b.a, x: b.x + b.w / 2, y: b.y + b.h / 2 })),
 });
