@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf5e4"/><stop offset="1" stop-color="#efe3c4"/></linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8fa8" stop-opacity="0"/><stop offset="1" stop-color="#ff6f8f" stop-opacity=".8"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#sky)"/>
+  <path d="M0 200 Q60 160 120 188 T256 176 V256 H0Z" fill="#b7cf98"/>
+  <path d="M0 222 Q80 196 150 216 T256 212 V256 H0Z" fill="#a8c48e"/>
+  <rect x="194" y="60" width="14" height="150" rx="7" fill="url(#beam)"/>
+  <circle cx="201" cy="208" r="15" fill="#e0473f"/>
+  <rect x="199" y="186" width="4" height="10" fill="#7a5233"/>
+  <ellipse cx="210" cy="190" rx="7" ry="3.5" fill="#6cc26a" transform="rotate(-25 210 190)"/>
+  <g transform="translate(112 112) rotate(-10)">
+    <path d="M-20 -6 L-92 -40 L-100 -26 L-72 -2 Z" fill="#6cc26a"/>
+    <path d="M-92 -40 L-118 -46 L-112 -30 L-100 -26 Z" fill="#5aa7e6"/>
+    <path d="M20 -6 L86 -52 L96 -38 L70 -4 Z" fill="#58ad5a"/>
+    <path d="M86 -52 L110 -62 L108 -46 L96 -38 Z" fill="#5aa7e6"/>
+    <rect x="-30" y="-20" width="60" height="44" rx="6" fill="#6cc26a"/>
+    <rect x="-22" y="10" width="44" height="14" rx="4" fill="#fff8ea"/>
+    <rect x="-8" y="18" width="16" height="26" rx="3" fill="#e2554a"/>
+    <rect x="-22" y="-56" width="44" height="40" rx="6" fill="#e2554a"/>
+    <rect x="-24" y="-64" width="48" height="12" rx="4" fill="#e2554a"/>
+    <rect x="-12" y="-42" width="7" height="8" fill="#2b2622"/>
+    <rect x="6" y="-42" width="7" height="8" fill="#2b2622"/>
+    <path d="M-7 -30 L7 -30 L0 -18 Z" fill="#f2a33a"/>
+  </g>
+</svg>
