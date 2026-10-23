@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#f6efdc">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Flap Flyer</title>
+<title>Flap Flyer 2</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/style.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=2">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -21,6 +21,8 @@
 <div id="app"></div>
 
 <div id="hud" class="hidden">
+  <div id="tiles"></div>
+  <div id="board" class="hidden" aria-label="Score"></div>
   <div id="count" aria-label="Apples"><span class="ap">🍎</span><b id="cn">0</b><i id="ct">/16</i></div>
   <div id="tr">
     <button id="muteBtn" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
@@ -29,6 +31,7 @@
     <button class="mb" id="mCam" data-mode="cam" aria-label="Camera arms" title="Camera: flap your arms">📷</button>
     <button class="mb on" id="mKeys" data-mode="keys" aria-label="Keys or touch" title="Keys / tap">⌨️</button>
     <button class="mb hidden" id="mTilt" data-mode="tilt" aria-label="Tilt phone" title="Tilt to steer">📱</button>
+    <button class="mb" id="mDuo" data-mode="keys2" aria-label="Two players" title="2 players: W vs ↑ (or tap your screen)">👥</button>
   </div>
   <div id="hint" class="hidden"><span id="hFlap" class="key">␣</span><span class="arr">⬆️</span><span class="gap"></span><span id="hBank">⬅️➡️</span></div>
   <div id="edge" class="hidden">↩️</div>
@@ -42,16 +45,17 @@
   <img class="logo" src="icon.svg" alt="">
   <h1>Flap Flyer</h1>
   <button id="playBtn" aria-label="Play">▶️</button>
-  <div class="how"><span>🍎 ×16</span><span id="howFlap"><b class="key">␣</b> 🖱️ = 🪽</span><span id="howBank"><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span>📷 = 🙆</span></div>
+  <div class="how"><span>🍎 ×16</span><span id="howFlap"><b class="key">␣</b> 🖱️ = 🪽</span><span id="howBank"><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span>📷 = 🙆</span><span>📷 🙆🙆 = 🐦🐦</span></div>
 </div>
 
 <div id="win" class="hidden">
   <div class="big"><span class="wa">🍎</span><span class="ws">⭐</span></div>
   <div class="wn">16/16</div>
+  <div id="wPlayers" class="hidden"></div>
   <div class="wt" id="wTime">⏱️ 0:00</div>
   <button id="replayBtn" aria-label="Play again">🔄</button>
 </div>
 
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

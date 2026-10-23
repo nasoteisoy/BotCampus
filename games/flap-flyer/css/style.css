@@ -51,3 +51,45 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .how .key { font-size: .85em; }
 .mb.key-like { }
 @media (max-height: 500px) { #hint { font-size: 28px; bottom: 12px; padding: 6px 14px; } #hint .key { font-size: 22px; } .mb.on { width: 62px; height: 62px; font-size: 32px; } }
+
+/* ---------- v2: split screen */
+#tiles { position: absolute; inset: 0; pointer-events: none; }
+.tile { position: absolute; pointer-events: none; overflow: hidden; }
+#hud.multi .tile { box-shadow: inset 0 0 0 4px var(--c); border-radius: 6px; }
+.tile .badge { position: absolute; left: 10px; top: 10px; display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 24px; background: rgba(255, 250, 238, .85); box-shadow: 0 2px 10px #7a5a3a22; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: #fff; font-weight: 900; font-size: 20px; box-shadow: inset 0 -3px 0 #0002; }
+.tile.solo .badge { display: none; }
+#hud:not(.multi) .tile .badge { left: max(10px, env(safe-area-inset-left)); top: calc(max(10px, env(safe-area-inset-top)) + 58px); }
+#hud:not(.multi) .tile .badge .bc { display: none; }
+#hud:not(.multi) .tile .badge { padding: 4px; }
+.tile .badge.pop .bc { animation: popb .5s ease-out; color: #d9443a; display: inline-block; }
+.tile .away { position: absolute; inset: 0; display: none; place-items: center; font-size: 64px; background: rgba(246, 239, 220, .62); backdrop-filter: grayscale(1); -webkit-backdrop-filter: grayscale(1); }
+.tile.isaway .away { display: grid; animation: fadeIn .4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; } }
+.tile .tedge { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); font-size: 44px; display: none; animation: bob 1s ease-in-out infinite alternate; }
+.tile.isedge .tedge { display: block; }
+/* team apple total moves to the top middle when there are several screens */
+#hud.multi #count { left: 50%; transform: translateX(-50%); top: max(6px, env(safe-area-inset-top)); font-size: 20px; padding: 3px 12px 3px 8px; z-index: 2; }
+#hud.multi #count .ap { font-size: 22px; }
+#hud.multi #count i { font-size: 15px; }
+#hud.multi .tile .badge { font-size: 18px; padding: 3px 10px 3px 3px; top: 8px; left: 8px; }
+#hud.multi .tile.right .badge { left: auto; right: 8px; }
+#hud.multi .tile.right:not(.bottom) .badge, #hud[data-n="2"] .tile.right .badge { top: 70px; }
+#hud.multi .bn { width: 28px; height: 28px; font-size: 17px; }
+#hud.multi .rb { width: 44px; height: 44px; font-size: 22px; }
+#hud.multi .mb { width: 44px; height: 44px; font-size: 22px; }
+#hud.multi .mb.on { width: 56px; height: 56px; font-size: 30px; }
+#board { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #fff8e6; border-radius: 6px; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+#board .row { display: flex; align-items: center; gap: 8px; }
+#board .tot { margin-top: 6px; padding-top: 6px; border-top: 3px dashed #d8cbb3; }
+#board .tot i { font-style: normal; opacity: .55; font-size: 20px; }
+#wPlayers { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.wpp { display: flex; align-items: center; gap: 6px; padding: 6px 14px 6px 6px; border-radius: 26px; background: rgba(255, 250, 238, .9); font-size: min(6vmin, 28px); font-weight: 800; box-shadow: 0 0 0 3px var(--c); }
+.dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; background: var(--c); vertical-align: middle; }
+#camBox.fake video { display: none; }
+#hud.multi #camBox { width: min(30vw, 170px); }
+#hud.multi #hint { bottom: 50%; transform: translate(-50%, 50%); }
+/* several screens: preview sits top-middle under the team total, where all tiles meet */
+#hud.multi #camBox { right: auto; left: 50%; bottom: auto; top: calc(max(6px, env(safe-area-inset-top)) + 40px); transform: translateX(-50%); }
+#hud.multi[data-n="2"] #camBox { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); }
+@media (max-aspect-ratio: 1/1) { #hud.multi[data-n="2"] #camBox { bottom: auto; top: 50%; transform: translate(-50%, -50%); } }

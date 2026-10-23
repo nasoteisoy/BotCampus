@@ -46,6 +46,7 @@ export function createWorld(scene, seed) {
   const cA = new THREE.Color('#b7cf98'), cB = new THREE.Color('#d2e0a6'), cC = new THREE.Color('#a8c48e'), cD = new THREE.Color('#e3dcb0');
   const tmpC = new THREE.Color();
   const C = WORLD.CHUNK, NC = WORLD.CHUNKS;
+  const chunks = [];
   for (let cx = 0; cx < NC; cx++) for (let cz = 0; cz < NC; cz++) {
     const ox = (cx - NC / 2 + 0.5) * C, oz = (cz - NC / 2 + 0.5) * C;
     const far = Math.max(Math.abs(ox), Math.abs(oz)) > 650;
@@ -75,6 +76,7 @@ export function createWorld(scene, seed) {
     const m = new THREE.Mesh(g, terrainMat);
     m.matrixAutoUpdate = false;
     group.add(m);
+    chunks.push({ x: ox, z: oz, m });
   }
 
   // ---------- apples: hilltops, spread out
@@ -100,11 +102,8 @@ export function createWorld(scene, seed) {
   }
   // apple meshes
   const appleGeo = keep(new THREE.IcosahedronGeometry(1.15, 1));
-  const appleMat = keep(new THREE.MeshLambertMaterial({ color: '#e0473f', flatShading: true, emissive: '#5a0f0a' }));
   const stemGeo = keep(new THREE.CylinderGeometry(0.08, 0.1, 0.6, 5));
-  const stemMat = keep(new THREE.MeshLambertMaterial({ color: '#7a5233' }));
   const leafGeo = keep(new THREE.BoxGeometry(0.55, 0.08, 0.3));
-  const leafMat = keep(new THREE.MeshLambertMaterial({ color: '#6cc26a', flatShading: true }));
   const beamGeo = keep(new THREE.CylinderGeometry(1, 1, 1, 10, 1, true).translate(0, 0.5, 0));
   const beamMat = (col, a) => keep(new THREE.ShaderMaterial({
     uniforms: { uCol: { value: new THREE.Color(col) }, uA: { value: a }, uT: { value: 0 } },
@@ -113,14 +112,32 @@ export function createWorld(scene, seed) {
     transparent: true, depthWrite: false, blending: THREE.NormalBlending, side: THREE.DoubleSide, fog: false,
   }));
   const beamIn = beamMat('#ff5c80', 0.8), beamOut = beamMat('#ff9ab4', 0.24);
+  // v2: apple + stem + leaf merged into one vertex-colored mesh (1 draw call per apple instead of 3)
+  const appleOne = (() => {
+    const parts = [
+      [appleGeo, '#e0473f', new THREE.Matrix4().makeScale(1, 0.9, 1)],
+      [stemGeo, '#7a5233', new THREE.Matrix4().makeTranslation(0, 1.2, 0)],
+      [leafGeo, '#6cc26a', new THREE.Matrix4().makeTranslation(0.3, 1.35, 0).multiply(new THREE.Matrix4().makeRotationZ(0.5))],
+    ];
+    const pos = [], col = [], cc = new THREE.Color();
+    for (const [g0, c, m] of parts) {
+      const g = (g0.index ? g0.toNonIndexed() : g0.clone()).applyMatrix4(m);
+      pos.push(...g.attributes.position.array); cc.set(c);
+      for (let i = 0; i < g.attributes.position.count; i++) col.push(cc.r, cc.g, cc.b);
+      g.dispose();
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals();
+    return keep(g);
+  })();
+  const appleAllMat = keep(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, emissive: '#2c0806' }));
   for (const a of apples) {
     a.y = height(a.x, a.z) + 1.9;
     a.collected = false;
-    const g = new THREE.Group();
+    const g = new THREE.Mesh(appleOne, appleAllMat);
     g.position.set(a.x, a.y, a.z);
-    const body = new THREE.Mesh(appleGeo, appleMat); body.scale.set(1, 0.9, 1); g.add(body);
-    const stem = new THREE.Mesh(stemGeo, stemMat); stem.position.y = 1.2; g.add(stem);
-    const leaf = new THREE.Mesh(leafGeo, leafMat); leaf.position.set(0.3, 1.35, 0); leaf.rotation.z = 0.5; g.add(leaf);
     a.spin = g;
     const bi = new THREE.Mesh(beamGeo, beamIn); bi.scale.set(0.9, WORLD.BEAM_H, 0.9); bi.position.set(a.x, a.y - 1.9, a.z);
     const bo = new THREE.Mesh(beamGeo, beamOut); bo.scale.set(2.8, WORLD.BEAM_H, 2.8); bo.position.copy(bi.position);
@@ -160,13 +177,34 @@ export function createWorld(scene, seed) {
     else if (type < 0.8) { addBall(0, r0 * 0.5, 0, r0 * 0.85); addBall(r0 * 0.6, r0 * 0.15, 0.2, r0 * 0.6); addBall(-r0 * 0.5, r0 * 0.25, -0.3, r0 * 0.62); }
     else { addBall(0, r0 * 0.4, 0, r0 * 0.8); addBall(0, r0 * 1.3, 0, r0 * 0.6); }
   }
-  const trunkIM = new THREE.InstancedMesh(trunkGeo, trunkMat, trunks.length);
-  trunks.forEach((m, i) => trunkIM.setMatrixAt(i, m));
-  const ballIM = new THREE.InstancedMesh(leafBallGeo, folMat, balls.length);
-  balls.forEach((b, i) => { ballIM.setMatrixAt(i, b.m); ballIM.setColorAt(i, b.c); });
-  trunkIM.frustumCulled = ballIM.frustumCulled = false;
-  group.add(trunkIM, ballIM);
-  disposables.push(trunkIM, ballIM);
+  // Trees are binned into an 8x8 grid of instanced meshes so each split-screen view can frustum/distance-cull
+  // whole cells, and foliage can drop to a low-poly ball when several views are drawn.
+  const leafBallLo = keep(new THREE.IcosahedronGeometry(1, 0));
+  const CELLS = 8, CW = 1500 / CELLS;
+  const cellOf = (x, z) => Math.min(CELLS - 1, Math.max(0, Math.floor((x + 750) / CW))) * CELLS + Math.min(CELLS - 1, Math.max(0, Math.floor((z + 750) / CW)));
+  const tp = new THREE.Vector3();
+  const binT = Array.from({ length: CELLS * CELLS }, () => []), binB = Array.from({ length: CELLS * CELLS }, () => []);
+  for (const m of trunks) { tp.setFromMatrixPosition(m); binT[cellOf(tp.x, tp.z)].push(m); }
+  for (const b of balls) { tp.setFromMatrixPosition(b.m); binB[cellOf(tp.x, tp.z)].push(b); }
+  const treeCells = [];
+  for (let c = 0; c < CELLS * CELLS; c++) {
+    if (!binT[c].length && !binB[c].length) continue;
+    const cx = (Math.floor(c / CELLS) + 0.5) * CW - 750, cz = ((c % CELLS) + 0.5) * CW - 750;
+    const cell = { x: cx, z: cz, meshes: [] };
+    if (binT[c].length) {
+      const im = new THREE.InstancedMesh(trunkGeo, trunkMat, binT[c].length);
+      binT[c].forEach((m, i) => im.setMatrixAt(i, m));
+      cell.meshes.push(im);
+    }
+    if (binB[c].length) {
+      const im = new THREE.InstancedMesh(leafBallGeo, folMat, binB[c].length);
+      binB[c].forEach((b, i) => { im.setMatrixAt(i, b.m); im.setColorAt(i, b.c); });
+      im.userData.foliage = true;
+      cell.meshes.push(im);
+    }
+    for (const im of cell.meshes) { im.computeBoundingSphere(); im.frustumCulled = true; group.add(im); disposables.push(im); }
+    treeCells.push(cell);
+  }
 
   // ---------- mountains ring (instanced jagged cones, soft fog)
   const mtGeo = keep(new THREE.ConeGeometry(1, 1, 6, 3).translate(0, 0.5, 0));
@@ -201,6 +239,20 @@ export function createWorld(scene, seed) {
   return {
     group, height, apples, seed,
     trees: trunks.length, foliage: balls.length,
+    /** per-view culling + detail. lowDetail: low-poly foliage; maxDist: hide tree cells farther than this */
+    setView(camPos, maxDist = Infinity, lowDetail = false) {
+      const R = CW * 0.75;
+      // terrain past the fog is fully sky-coloured anyway; skip drawing it
+      const tDist = maxDist + 150;
+      for (const c of chunks) c.m.visible = !Number.isFinite(maxDist) || Math.hypot(c.x - camPos.x, c.z - camPos.z) - 142 < tDist;
+      for (const c of treeCells) {
+        const vis = Math.hypot(c.x - camPos.x, c.z - camPos.z) - R < maxDist;
+        for (const im of c.meshes) {
+          im.visible = vis;
+          if (im.userData.foliage) im.geometry = lowDetail ? leafBallLo : leafBallGeo;
+        }
+      }
+    },
     update(t, dt) {
       for (const m of beamMats) m.uniforms.uT.value = t;
       for (const a of apples) if (!a.collected) { a.spin.rotation.y = t * 0.9; a.spin.position.y = a.y + Math.sin(t * 1.6 + a.x) * 0.35; }

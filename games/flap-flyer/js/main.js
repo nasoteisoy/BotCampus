@@ -4,6 +4,7 @@ import { createBird } from './bird.js';
 import { Particles, Ribbon } from './fx.js';
 import { Sound } from './audio.js';
 import { PoseInput } from './pose.js';
+import { layoutViewports, screenOrder, PLAYER_COLORS, MAX_PLAYERS } from './multi.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -11,6 +12,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const params = new URLSearchParams(location.search);
 const isTouch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const STEP = 1 / 60;
+const GAP = 4; // px divider between split-screen tiles
 
 // ---------- tuning
 const T = {
@@ -27,6 +29,13 @@ const T = {
   bounceVy: 5,
   collectR: 6.5,
 };
+// per-view quality by number of views (one renderer, several scissored viewports)
+const VIEWQ = {
+  1: { fogNear: 70, fogFar: 560, treeDist: Infinity, lowDetail: false, dprCap: 2 },
+  2: { fogNear: 55, fogFar: 420, treeDist: 380, lowDetail: isTouch, dprCap: 2 },
+  3: { fogNear: 40, fogFar: 330, treeDist: 290, lowDetail: true, dprCap: 1.5 },
+  4: { fogNear: 40, fogFar: 330, treeDist: 290, lowDetail: true, dprCap: 1.5 },
+};
 
 // ---------- renderer
 const DPR_MAX = isTouch ? 2 : 1.5;
@@ -35,6 +44,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: dpr < 1.5, powerPreference
 renderer.setPixelRatio(dpr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.info.autoReset = false;
 $('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -46,56 +56,146 @@ const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.5, 26
 
 let seed = Number(params.get('seed')) || ((Math.random() * 1e9) | 0);
 let world = createWorld(scene, seed);
-const bird = createBird(); scene.add(bird.root);
-const ribbons = [new Ribbon(scene, 30), new Ribbon(scene, 30)];
-const dust = new Particles(scene, 160, false);
-const spark = new Particles(scene, 260, false);
+const dust = new Particles(scene, 220, false);
+const spark = new Particles(scene, 320, false);
 const sound = new Sound();
 
-// ---------- state
-const S = {
-  mode: 'title', x: 0, y: 40, z: 0, vy: 0, speed: T.baseSpeed, yaw: 0, roll: 0, pitch: 0,
-  collected: 0, bounces: 0, flaps: 0, time: 0, playTime: 0, winAt: null, edge: false, lastHit: -9, inputMode: 'keys',
-};
-const input = { left: 0, right: 0, drag: 0, tilt: 0, test: 0, autopilot: false };
+// ---------- global game state
+const G = { mode: 'title', time: 0, playTime: 0, winAt: null, inputMode: 'keys' };
+const input = { tilt: 0, autopilot: false };
 let paused = false;
-const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), roll: 0 };
 const fwd = new THREE.Vector3();
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), qW = new THREE.Quaternion();
 
-function nearestAppleYaw() {
+// ---------- players (4 slots, created once; only "on" ones fly / get a screen)
+const markerGeo = new THREE.OctahedronGeometry(0.7, 0);
+const tilesEl = $('tiles');
+function makePlayer(slot) {
+  const col = PLAYER_COLORS[slot];
+  const bird = createBird(col); scene.add(bird.root); bird.root.visible = false;
+  const marker = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: col.css, fog: false }));
+  marker.visible = false; scene.add(marker);
+  const rc = slot === 0 ? '#9fd3f5' : new THREE.Color(col.tip).lerp(new THREE.Color('#ffffff'), 0.45).getStyle();
+  const ribbons = [new Ribbon(scene, 30, rc), new Ribbon(scene, 30, rc)];
+  ribbons.forEach((r) => (r.mesh.visible = false));
+  const tile = document.createElement('div');
+  tile.className = 'tile hidden'; tile.dataset.slot = slot; tile.style.setProperty('--c', col.css);
+  tile.innerHTML = `<div class="badge"><span class="bn">${slot + 1}</span><span class="bc">🍎<b>0</b></span></div><div class="away">🙈</div><div class="tedge">↩️</div>`;
+  tilesEl.appendChild(tile);
+  return {
+    slot, col, bird, marker, ribbons, tile, tileCount: tile.querySelector('.bc b'),
+    S: { x: 0, y: 40, z: 0, vy: 0, speed: T.baseSpeed, yaw: 0, roll: 0, pitch: 0, collected: 0, bounces: 0, flaps: 0, edge: false, lastHit: -9 },
+    in: { left: 0, right: 0, drag: 0, test: 0 },
+    cam: { pos: new THREE.Vector3(), look: new THREE.Vector3(), roll: 0 },
+    on: false, away: false, ever: false, aspect: innerWidth / innerHeight,
+  };
+}
+const players = Array.from({ length: MAX_PLAYERS }, (_, i) => makePlayer(i));
+let order = [];          // slots shown on screen, in tile order
+let layout = layoutViewports(1, innerWidth, innerHeight, GAP);
+const onPlayers = () => order.map((s) => players[s]);
+const primary = () => players[order[0] ?? 0];
+
+function nearestAppleYaw(S) {
   let best = null, bd = 1e9;
   for (const a of world.apples) if (!a.collected) { const d = Math.hypot(a.x - S.x, a.z - S.z); if (d < bd) { bd = d; best = a; } }
   return best ? Math.atan2(-(best.x - S.x), -(best.z - S.z)) : 0;
 }
-function resetBird() {
-  S.x = 0; S.z = 0; S.y = world.height(0, 0) + 30; S.vy = 0; S.speed = T.baseSpeed; S.roll = 0; S.pitch = 0;
-  S.yaw = nearestAppleYaw();
-  ribbons.forEach((r) => r.reset());
-  snapCamera();
+function resetBird(p, k = 0, n = 1) {
+  const S = p.S;
+  // start side by side, 9 m apart, all facing the nearest apple
+  S.x = 0; S.z = 0; S.yaw = nearestAppleYaw(S);
+  const off = (k - (n - 1) / 2) * 9;
+  S.x = Math.cos(S.yaw) * off; S.z = -Math.sin(S.yaw) * off;
+  S.y = world.height(S.x, S.z) + 30; S.vy = 0; S.speed = T.baseSpeed; S.roll = 0; S.pitch = 0;
+  p.ribbons.forEach((r) => r.reset());
+  snapCamera(p);
 }
-function snapCamera() {
+function leaderOf(except) {
+  let best = null;
+  for (const q of players) {
+    if (q === except || !q.on) continue;
+    if (!best || q.S.collected > best.S.collected) best = q;
+  }
+  if (best) return best;
+  for (const q of players) if (q !== except && q.ever && (!best || q.S.collected > best.S.collected)) best = q;
+  return best;
+}
+// someone joins mid-game: appear beside the leader, same heading
+function spawnNearLeader(p) {
+  const L = leaderOf(p);
+  if (!L) { resetBird(p); return; }
+  const S = p.S, LS = L.S;
+  // beside the leader (never right behind: that is where the leader's camera is)
+  const nOn = players.filter((q) => q.on && q !== p && q !== L).length;
+  const side = (nOn % 2 ? -1 : 1) * (10 + 6 * Math.floor(nOn / 2));
+  S.yaw = LS.yaw;
+  S.x = LS.x + Math.cos(LS.yaw) * side + Math.sin(LS.yaw) * 2;
+  S.z = LS.z - Math.sin(LS.yaw) * side + Math.cos(LS.yaw) * 2;
+  S.y = Math.max(LS.y + 2, world.height(S.x, S.z) + 15); S.vy = 0; S.speed = LS.speed; S.roll = 0; S.pitch = 0;
+  p.ribbons.forEach((r) => r.reset());
+  snapCamera(p);
+}
+const tilePortrait = (p) => p.aspect < 0.85;
+const camDist = (p) => (tilePortrait(p) ? 12.5 : 10.5);
+const camHeight = (p) => (tilePortrait(p) ? 6 : 5);
+function snapCamera(p = primary()) {
+  const S = p.S;
   fwd.set(-Math.sin(S.yaw), 0, -Math.cos(S.yaw));
-  cam.pos.set(S.x, S.y, S.z).addScaledVector(fwd, -camDist()).add(v1.set(0, camHeight(), 0));
-  cam.look.set(S.x, S.y + 1, S.z).addScaledVector(fwd, 6);
-  cam.roll = 0;
-  applyCamera();
+  p.cam.pos.set(S.x, S.y, S.z).addScaledVector(fwd, -camDist(p)).add(v1.set(0, camHeight(p), 0));
+  p.cam.look.set(S.x, S.y + 1, S.z).addScaledVector(fwd, 6);
+  p.cam.roll = 0;
 }
-const portrait = () => innerWidth / innerHeight < 0.85;
-const camDist = () => (portrait() ? 12.5 : 10.5);
-const camHeight = () => (portrait() ? 6 : 5);
-function applyCamera() {
-  camera.position.copy(cam.pos);
-  camera.lookAt(cam.look);
-  camera.rotateZ(-cam.roll * 0.3);
+function applyCamera(p) {
+  camera.position.copy(p.cam.pos);
+  camera.lookAt(p.cam.look);
+  camera.rotateZ(-p.cam.roll * 0.3);
+}
+
+// ---------- who is playing (camera people / 2-key mode / single)
+function wantedSlots() {
+  if (pose.active) { const ps = pose.players; if (ps.length) return ps; }
+  if (G.inputMode === 'keys2') return [{ slot: 0 }, { slot: 1 }];
+  return [{ slot: 0 }];
+}
+function syncPlayers() {
+  const want = wantedSlots();
+  const key = want.map((e) => e.slot).sort().join(',');
+  const cur = order.slice().sort().join(',');
+  for (const e of want) players[e.slot].away = e.state === 'lost';
+  if (key === cur) return false;
+  const wantSet = new Set(want.map((e) => e.slot));
+  const joined = [];
+  for (const p of players) {
+    const on = wantSet.has(p.slot);
+    if (on && !p.on) joined.push(p);
+    if (!on && p.on) { p.on = false; p.away = false; }
+  }
+  for (const p of joined) p.on = true;
+  // tiles follow where people stand (left to right); only re-sorted when someone joins / leaves
+  order = screenOrder(want).map((e) => e.slot);
+  for (const p of joined) {
+    if (G.mode === 'play') spawnNearLeader(p);
+    else if (!p.ever) resetBird(p, order.indexOf(p.slot), order.length);
+    p.ever = true;
+  }
+  for (const p of players) {
+    p.bird.root.visible = p.on;
+    p.ribbons.forEach((r) => { r.mesh.visible = p.on; if (!p.on) r.reset(); });
+  }
+  resize();
+  return true;
 }
 
 // ---------- actions
-function flap(strength = 1) {
-  if (S.mode === 'title') return;
+function flap(strength = 1, slot) {
+  if (G.mode === 'title') return;
+  const p = slot == null ? primary() : players[slot];
+  if (!p || !p.on) return;
+  const S = p.S;
   S.vy = Math.min(S.vy + T.flapImpulse * strength, T.maxVy);
   S.flaps++;
-  bird.flap(); sound.flap();
+  p.bird.flap(); sound.flap();
 }
 function puff(x, y, z) {
   for (let i = 0; i < 16; i++) {
@@ -103,27 +203,44 @@ function puff(x, y, z) {
     dust.emit({ x: x + Math.cos(a) * 0.6, y: y + 0.2, z: z + Math.sin(a) * 0.6, vx: Math.cos(a) * s, vy: 1 + Math.random() * 2.5, vz: Math.sin(a) * s, drag: 2.2, grav: 0.6, size: 1.1 + Math.random() * 1.1, grow: 1.6, r: 0.85, g: 0.76, b: 0.6, a: 0.75, max: 1.1 + Math.random() * 0.8 });
   }
 }
-function sparkle(a) {
-  const cols = [[1, 0.42, 0.55], [1, 0.78, 0.25], [1, 0.95, 0.75], [0.95, 0.3, 0.4], [0.55, 0.8, 1]];
+function sparkle(a, col) {
+  const pc = new THREE.Color(col);
+  const cols = [[1, 0.42, 0.55], [1, 0.78, 0.25], [1, 0.95, 0.75], [pc.r, pc.g, pc.b], [0.55, 0.8, 1]];
   for (let i = 0; i < 60; i++) {
     const u = Math.random() * 2 - 1, th = Math.random() * 6.283, r = Math.sqrt(1 - u * u), s = 3 + Math.random() * 7, c = cols[i % 5];
     spark.emit({ x: a.x, y: a.y, z: a.z, vx: r * Math.cos(th) * s, vy: u * s + 2, vz: r * Math.sin(th) * s, drag: 1.6, grav: 1.5, size: 0.45 + Math.random() * 0.5, r: c[0], g: c[1], b: c[2], max: 0.9 + Math.random() * 0.9 });
   }
   for (let i = 0; i < 30; i++) spark.emit({ x: a.x + (Math.random() - 0.5) * 2, y: a.y + Math.random() * 30, z: a.z + (Math.random() - 0.5) * 2, vx: 0, vy: 6 + Math.random() * 8, vz: 0, drag: 0.6, size: 0.6, r: 1, g: 0.5, b: 0.65, max: 1.5 });
 }
-function collect(a) {
+const teamTotal = () => world.apples.filter((a) => a.collected).length;
+const pop = (el) => { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); };
+// Apples are SHARED (co-op): whoever flies through a beam first gets it; the team needs all 16.
+function collect(a, p) {
   world.collect(a);
-  S.collected++;
-  sparkle(a);
-  sound.chime(S.collected);
-  const c = $('count'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
-  $('cn').textContent = S.collected;
-  if (S.collected >= world.apples.length && S.winAt == null) S.winAt = S.time + 1.6;
+  p.S.collected++;
+  const total = teamTotal();
+  sparkle(a, p.col.css);
+  sound.chime(total);
+  pop($('count')); pop(p.tile.querySelector('.badge'));
+  $('cn').textContent = total;
+  p.tileCount.textContent = p.S.collected;
+  renderBoard();
+  if (total >= world.apples.length && G.winAt == null) G.winAt = G.time + 1.6;
+}
+function renderBoard() {
+  const b = $('board');
+  if (!b || b.classList.contains('hidden')) return;
+  b.innerHTML = onPlayers().map((p) => `<div class="row" style="--c:${p.col.css}"><span class="bn">${p.slot + 1}</span><span>🍎</span><b>${p.S.collected}</b></div>`).join('')
+    + `<div class="row tot">🍎<b>${teamTotal()}</b><i>/${world.apples.length}</i></div>`;
 }
 function showWin() {
-  S.mode = 'win';
-  const t = Math.round(S.playTime);
+  G.mode = 'win';
+  const t = Math.round(G.playTime);
   $('wTime').textContent = `⏱️ ${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  const ps = onPlayers();
+  const wp = $('wPlayers');
+  wp.innerHTML = ps.length > 1 ? ps.map((p) => `<span class="wpp" style="--c:${p.col.css}"><span class="bn">${p.slot + 1}</span>🍎<b>${p.S.collected}</b></span>`).join('') : '';
+  wp.classList.toggle('hidden', ps.length < 2);
   $('win').classList.remove('hidden'); $('hint').classList.add('hidden');
   sound.win();
 }
@@ -133,35 +250,42 @@ function newGame(newSeed) {
     world.dispose();
     world = createWorld(scene, seed);
   }
-  S.collected = 0; S.bounces = 0; S.flaps = 0; S.playTime = 0; S.winAt = null;
+  G.playTime = 0; G.winAt = null;
   $('cn').textContent = '0'; $('ct').textContent = '/' + world.apples.length;
   dust.clear(); spark.clear();
-  resetBird();
+  const ps = onPlayers();
+  for (const p of players) { Object.assign(p.S, { collected: 0, bounces: 0, flaps: 0 }); p.tileCount.textContent = '0'; }
+  ps.forEach((p, k) => resetBird(p, k, ps.length));
+  renderBoard();
 }
 function start() {
   sound.init();
-  if (S.mode === 'play') return;
-  if (S.mode === 'win') newGame((Math.random() * 1e9) | 0); else newGame();
-  S.mode = 'play';
+  if (G.mode === 'play') return;
+  if (G.mode === 'win') newGame((Math.random() * 1e9) | 0); else newGame();
+  G.mode = 'play';
   $('title').classList.add('hidden'); $('win').classList.add('hidden'); $('hud').classList.remove('hidden');
   const h = $('hint'); h.classList.remove('hidden'); h.style.animation = 'none'; void h.offsetWidth; h.style.animation = '';
 }
 
 // ---------- simulation step (fixed dt)
-function step(dt) {
-  S.time += dt;
-  const playing = S.mode === 'play';
-  if (playing) S.playTime += dt;
-  let bankIn = input.right - input.left + input.drag + input.tilt + input.test;
-  const poseFresh = pose.active && performance.now() - pose.outT < 300;
-  if (poseFresh) bankIn += pose.out.bank;
+function stepPlayer(p, dt, playing) {
+  const S = p.S, inp = p.in, bird = p.bird;
+  if (p.away) { // person left the camera: bird hovers frozen until they come back or the screen closes
+    bird.update(dt, S.roll, S.pitch);
+    return;
+  }
+  let bankIn = inp.right - inp.left + inp.drag + inp.test;
+  if (p === primary()) bankIn += input.tilt;
+  const pe = pose.active ? pose.slots[p.slot] : null;
+  const poseFresh = !!pe && performance.now() - pe.outT < 300;
+  if (poseFresh) bankIn += pe.out.bank;
   const gh0 = world.height(S.x, S.z);
-  if (S.mode !== 'play' || input.autopilot) { // title / win: lazy circles
+  if (!playing || input.autopilot) { // title / win: lazy circles
     bankIn = 0.3;
     if (S.y - gh0 < 22 && !bird.flapping && Math.random() < 0.05) { S.vy = Math.min(S.vy + T.flapImpulse, T.maxVy); bird.flap(); }
   }
   bankIn = clamp(bankIn, -1, 1);
-  if (poseFresh && playing) S.vy = Math.min(S.vy + pose.out.lift * dt, T.maxVy);
+  if (poseFresh && playing) S.vy = Math.min(S.vy + pe.out.lift * dt, T.maxVy);
 
   S.roll += (bankIn * T.maxRoll - S.roll) * (1 - Math.exp(-T.rollRate * dt));
   S.yaw = wrap(S.yaw - S.roll * T.turnRate * dt);
@@ -185,9 +309,9 @@ function step(dt) {
   const gh = world.height(S.x, S.z);
   if (S.y < gh + T.groundClear) {
     S.y = gh + T.groundClear;
-    if (S.time - S.lastHit > 0.25) {
+    if (G.time - S.lastHit > 0.25) {
       S.vy = Math.max(-S.vy * 0.35, 0) + T.bounceVy;
-      S.lastHit = S.time;
+      S.lastHit = G.time;
       if (playing) { S.bounces++; sound.thump(); }
       puff(S.x, gh, S.z);
     } else S.vy = Math.max(S.vy, 3);
@@ -196,9 +320,8 @@ function step(dt) {
   if (playing) for (const a of world.apples) {
     if (a.collected) continue;
     const dx = a.x - S.x, dz = a.z - S.z;
-    if (dx * dx + dz * dz < T.collectR * T.collectR && S.y > a.y - 4 && S.y < a.y + WORLD.BEAM_H) collect(a);
+    if (dx * dx + dz * dz < T.collectR * T.collectR && S.y > a.y - 4 && S.y < a.y + WORLD.BEAM_H) collect(a, p);
   }
-  if (playing && S.winAt != null && S.time >= S.winAt) showWin();
 
   // ---- visuals
   S.pitch += (clamp(S.vy * 0.06, -0.35, 0.4) - S.pitch) * (1 - Math.exp(-4 * dt));
@@ -208,18 +331,27 @@ function step(dt) {
   bird.root.updateMatrixWorld(true);
   bird.body.getWorldQuaternion(qW);
   v2.set(1, 0, 0).applyQuaternion(qW);
-  bird.tips.forEach((tip, i) => { tip.getWorldPosition(v1); ribbons[i].push(v1, v2); ribbons[i].update(); });
-  dust.update(dt); spark.update(dt);
-  world.update(S.time, dt);
+  bird.tips.forEach((tip, i) => { tip.getWorldPosition(v1); p.ribbons[i].push(v1, v2); p.ribbons[i].update(); });
+  p.marker.position.set(S.x, S.y + 3.2 + Math.sin(G.time * 3 + p.slot) * 0.25, S.z);
+  p.marker.rotation.y = G.time * 2;
   // trailing camera with heavy smoothing
+  const c = p.cam;
   fwd.set(-Math.sin(S.yaw), 0, -Math.cos(S.yaw));
-  v1.set(S.x, S.y, S.z).addScaledVector(fwd, -camDist()); v1.y += camHeight();
+  v1.set(S.x, S.y, S.z).addScaledVector(fwd, -camDist(p)); v1.y += camHeight(p);
   v1.y = Math.max(v1.y, world.height(v1.x, v1.z) + 2);
-  cam.pos.lerp(v1, 1 - Math.exp(-2.2 * dt));
+  c.pos.lerp(v1, 1 - Math.exp(-2.2 * dt));
   v2.set(S.x, S.y + 1, S.z).addScaledVector(fwd, 6);
-  cam.look.lerp(v2, 1 - Math.exp(-4 * dt));
-  cam.roll += (S.roll - cam.roll) * (1 - Math.exp(-2 * dt));
-  applyCamera();
+  c.look.lerp(v2, 1 - Math.exp(-4 * dt));
+  c.roll += (S.roll - c.roll) * (1 - Math.exp(-2 * dt));
+}
+function step(dt) {
+  G.time += dt;
+  const playing = G.mode === 'play';
+  if (playing) G.playTime += dt;
+  for (const p of onPlayers()) stepPlayer(p, dt, playing);
+  if (playing && G.winAt != null && G.time >= G.winAt) showWin();
+  dust.update(dt); spark.update(dt);
+  world.update(G.time, dt);
 }
 
 // ---------- pose / camera mode
@@ -228,12 +360,15 @@ const pose = new PoseInput({
   onStatus: (s) => { $('mCam').classList.toggle('bad', s === 'denied' || s === 'nomodel'); if (s === 'denied') setMode('keys'); },
 });
 function setMode(m) {
-  S.inputMode = m;
+  G.inputMode = m;
   for (const b of document.querySelectorAll('.mb')) b.classList.toggle('on', b.dataset.mode === m);
+  updateHint();
+  syncPlayers();
 }
 async function toggleCamera() {
   sound.init();
   if (pose.active) { pose.stop(); setMode('keys'); return; }
+  if (tiltOn) stopTilt();
   setMode('cam');
   await pose.start();
 }
@@ -245,9 +380,10 @@ function onTilt(e) {
   t = Math.abs(t) < 3 ? 0 : t - Math.sign(t) * 3;
   input.tilt = clamp(t / 22, -1, 1);
 }
+function stopTilt() { tiltOn = false; input.tilt = 0; removeEventListener('deviceorientation', onTilt); }
 async function toggleTilt() {
   sound.init();
-  if (tiltOn) { tiltOn = false; input.tilt = 0; removeEventListener('deviceorientation', onTilt); setMode('keys'); return; }
+  if (tiltOn) { stopTilt(); setMode('keys'); return; }
   try {
     const DOE = window.DeviceOrientationEvent;
     if (!DOE) throw new Error('no tilt');
@@ -258,18 +394,35 @@ async function toggleTilt() {
     setMode('tilt');
   } catch (e) { $('mTilt').classList.add('bad'); setMode('keys'); }
 }
+function toggleDuo() {
+  sound.init();
+  if (G.inputMode === 'keys2') { setMode('keys'); return; }
+  if (pose.active) pose.stop();
+  if (tiltOn) stopTilt();
+  setMode('keys2');
+}
+function updateHint() {
+  const duo = G.inputMode === 'keys2';
+  $('hint').classList.toggle('duo', duo);
+  if (duo) {
+    $('hFlap').textContent = isTouch ? '👆' : 'W'; $('hFlap').classList.toggle('key', !isTouch);
+    $('hBank').innerHTML = isTouch ? '1 · 2' : `<b class="dot" style="--c:${PLAYER_COLORS[0].css}"></b><span class="gap"></span><b class="key">↑</b><b class="dot" style="--c:${PLAYER_COLORS[1].css}"></b>`;
+  } else if (isTouch) { $('hFlap').textContent = '👆'; $('hFlap').classList.remove('key'); $('hBank').textContent = '↔️'; }
+  else { $('hFlap').textContent = '␣'; $('hFlap').classList.add('key'); $('hBank').textContent = '⬅️➡️'; }
+}
 
 // ---------- input wiring
 const keysBtn = $('mKeys');
 keysBtn.textContent = isTouch ? '👆' : '⌨️';
 if (isTouch) {
   $('mTilt').classList.remove('hidden');
-  $('hFlap').textContent = '👆'; $('hFlap').classList.remove('key'); $('hBank').textContent = '↔️';
   $('howFlap').textContent = '👆 = 🪽'; $('howBank').textContent = '👆↔️ / 📱 = ↩️↪️';
 }
+updateHint();
 $('mCam').addEventListener('click', toggleCamera);
 $('mTilt').addEventListener('click', toggleTilt);
-keysBtn.addEventListener('click', () => { sound.init(); if (pose.active) pose.stop(); if (tiltOn) toggleTilt(); setMode('keys'); });
+$('mDuo').addEventListener('click', toggleDuo);
+keysBtn.addEventListener('click', () => { sound.init(); if (pose.active) pose.stop(); if (tiltOn) stopTilt(); setMode('keys'); });
 const muteBtn = $('muteBtn');
 const syncMute = () => (muteBtn.textContent = sound.muted ? '🔇' : '🔊');
 syncMute();
@@ -277,72 +430,155 @@ muteBtn.addEventListener('click', () => { sound.init(); sound.setMuted(!sound.mu
 $('playBtn').addEventListener('click', start);
 $('replayBtn').addEventListener('click', start);
 
+// keys: one player = every key flies bird 1. 👥 duo mode: W/A/D (+Space) = bird 1, ↑/←/→ = bird 2.
 const KEYMAP = { Space: 'flap', KeyW: 'flap', ArrowUp: 'flap', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
+const keySlot = (code) => (G.inputMode === 'keys2' && code.startsWith('Arrow') ? 1 : G.inputMode === 'keys2' ? 0 : null);
+const keyPlayer = (code) => { const s = keySlot(code); return s == null ? primary() : players[s]; };
 addEventListener('keydown', (e) => {
   const k = KEYMAP[e.code];
   if (k || e.code === 'Enter') e.preventDefault();
   if (e.code === 'KeyM') { muteBtn.click(); return; }
-  if (S.mode !== 'play') { if (k === 'flap' || e.code === 'Enter') start(); return; }
-  if (k === 'flap' && !e.repeat) flap();
-  if (k === 'left') input.left = 1;
-  if (k === 'right') input.right = 1;
+  if (G.mode !== 'play') { if (k === 'flap' || e.code === 'Enter') start(); return; }
+  const p = keyPlayer(e.code);
+  if (k === 'flap' && !e.repeat) flap(1, p.slot);
+  if (k === 'left') p.in.left = 1;
+  if (k === 'right') p.in.right = 1;
 });
 addEventListener('keyup', (e) => {
   const k = KEYMAP[e.code];
-  if (k === 'left') input.left = 0;
-  if (k === 'right') input.right = 0;
+  const p = keyPlayer(e.code);
+  if (k === 'left') p.in.left = 0;
+  if (k === 'right') p.in.right = 0;
 });
-addEventListener('blur', () => { input.left = input.right = input.drag = 0; });
-// pointer: tap/click = flap, hold + drag sideways = bank
-const drag = { id: null, x0: 0 };
+addEventListener('blur', () => { for (const p of players) p.in.left = p.in.right = p.in.drag = 0; });
+// pointer: tap/click = flap the bird whose screen you touched, hold + drag sideways = bank it
+const drags = new Map(); // pointerId -> { slot, x0 }
 const cv = renderer.domElement;
+function tileAt(x, y) {
+  const vs = layout.views;
+  for (let i = 0; i < vs.length; i++) { const r = vs[i]; if (x >= r.x - GAP && x < r.x + r.w + GAP && y >= r.y - GAP && y < r.y + r.h + GAP) return players[order[i]]; }
+  return primary();
+}
 cv.addEventListener('pointerdown', (e) => {
-  if (S.mode !== 'play') return;
+  if (G.mode !== 'play') return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   sound.init();
-  flap();
-  if (drag.id == null) { drag.id = e.pointerId; drag.x0 = e.clientX; try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
+  const p = tileAt(e.clientX, e.clientY);
+  flap(1, p.slot);
+  if (![...drags.values()].some((d) => d.slot === p.slot)) { drags.set(e.pointerId, { slot: p.slot, x0: e.clientX }); try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
 });
 cv.addEventListener('pointermove', (e) => {
-  if (e.pointerId !== drag.id) return;
-  input.drag = clamp((e.clientX - drag.x0) / (Math.min(innerWidth, 900) * 0.22), -1, 1);
+  const d = drags.get(e.pointerId); if (!d) return;
+  const w = layout.views[order.indexOf(d.slot)]?.w || innerWidth;
+  players[d.slot].in.drag = clamp((e.clientX - d.x0) / (Math.min(w, 900) * 0.22), -1, 1);
 });
-const endDrag = (e) => { if (e.pointerId === drag.id) { drag.id = null; input.drag = 0; } };
+const endDrag = (e) => { const d = drags.get(e.pointerId); if (d) { drags.delete(e.pointerId); players[d.slot].in.drag = 0; } };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
 cv.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('visibilitychange', () => { if (sound.ctx) document.hidden ? sound.ctx.suspend() : sound.ctx.resume(); });
 
-// ---------- resize / perf
+// ---------- resize / layout / perf
 const noAdapt = params.has('noadapt');
+let viewDpr = dpr;
 function resize() {
-  renderer.setPixelRatio(dpr);
+  const n = Math.max(1, order.length);
+  const q = VIEWQ[n];
+  viewDpr = Math.min(dpr, q.dprCap);
+  renderer.setPixelRatio(viewDpr);
   renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.fov = portrait() ? 72 : 60;
-  camera.updateProjectionMatrix();
-  const sc = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-  dust.mat.uniforms.uScale.value = spark.mat.uniforms.uScale.value = sc;
+  layout = layoutViewports(n, innerWidth, innerHeight, GAP);
+  scene.fog.near = q.fogNear; scene.fog.far = q.fogFar;
+  const multi = n > 1 || pose.active;
+  players.forEach((p) => p.tile.classList.add('hidden'));
+  for (const p of players) if (!p.on) p.tile.classList.remove('isaway', 'isedge');
+  layout.views.forEach((r, i) => {
+    const p = players[order[i]]; if (!p) return;
+    p.aspect = r.w / r.h;
+    const t = p.tile;
+    t.classList.remove('hidden');
+    t.classList.toggle('solo', !multi);
+    Object.assign(t.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+    t.classList.toggle('right', r.x + r.w >= innerWidth - 1);
+    t.classList.toggle('bottom', r.y + r.h >= innerHeight - 1);
+  });
+  $('hud').classList.toggle('multi', n > 1);
+  $('hud').dataset.n = n;
+  const b = $('board');
+  if (layout.extra) {
+    const r = layout.extra;
+    Object.assign(b.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+    b.classList.remove('hidden'); renderBoard();
+  } else b.classList.add('hidden');
+  for (const p of players) p.marker.visible = p.on && n > 1;
 }
 addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 200));
-resize();
 
-const perf = { fps: 0, frameMs: 0, dpr, calls: 0, triangles: 0, frames: 0 };
+const perf = { fps: 0, frameMs: 0, dpr, calls: 0, triangles: 0, frames: 0, views: 1, viewRects: [] };
 let fpsAcc = 0, fpsN = 0, lowStreak = 0;
+const clearCol = new THREE.Color('#fff8e6');
+
+function render() {
+  const n = order.length;
+  const q = VIEWQ[Math.max(1, n)];
+  const H = innerHeight;
+  renderer.info.reset();
+  renderer.setScissorTest(false);
+  if (n > 1) { renderer.setClearColor(clearCol, 1); renderer.clear(); }
+  renderer.setScissorTest(n > 1);
+  const rects = [];
+  layout.views.forEach((r, i) => {
+    const p = players[order[i]]; if (!p) return;
+    renderer.setViewport(r.x, H - r.y - r.h, r.w, r.h);
+    renderer.setScissor(r.x, H - r.y - r.h, r.w, r.h);
+    camera.aspect = r.w / r.h;
+    camera.fov = tilePortrait(p) ? 72 : 60;
+    camera.updateProjectionMatrix();
+    applyCamera(p);
+    const sc = (r.h * viewDpr) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    dust.mat.uniforms.uScale.value = spark.mat.uniforms.uScale.value = sc;
+    world.setView(camera.position, q.treeDist, q.lowDetail);
+    p.marker.visible = false; // your own marker would just sit in front of your camera
+    // a friend's bird right in front of your camera would fill the screen: hide it for this view only
+    for (const q of players) if (q !== p && q.on) q.bird.root.visible = q.bird.root.position.distanceToSquared(camera.position) > 36;
+    renderer.render(scene, camera);
+    for (const q of players) q.bird.root.visible = q.on;
+    p.marker.visible = p.on && n > 1;
+    rects.push({ slot: p.slot, ...r });
+  });
+  if (layout.extra) { // 3 players: 4th cell is the scoreboard (DOM), keep it clean
+    const r = layout.extra;
+    renderer.setViewport(r.x, H - r.y - r.h, r.w, r.h); renderer.setScissor(r.x, H - r.y - r.h, r.w, r.h);
+    renderer.setClearColor(clearCol, 1); renderer.clear();
+  }
+  renderer.setScissorTest(false);
+  perf.views = rects.length; perf.viewRects = rects;
+  perf.calls = renderer.info.render.calls; perf.triangles = renderer.info.render.triangles;
+}
 
 // ---------- main loop
 let last = performance.now(), acc = 0;
-resetBird();
+syncPlayers();
+resetBird(players[0]);
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  const po = pose.tick(now);
-  if (po && po.flap && S.mode === 'play') { bird.flap(); sound.flap(); S.flaps++; }
+  const res = pose.tick(now);
+  if (res) {
+    syncPlayers();
+    if (G.mode === 'play') for (const e of res) {
+      const p = players[e.slot];
+      if (e.out.flap && p.on && !p.away) { p.bird.flap(); sound.flap(); p.S.flaps++; }
+    }
+  }
   if (!paused) { acc += dt; let n = 0; while (acc >= STEP && n++ < 6) { step(STEP); acc -= STEP; } if (n >= 6) acc = 0; }
-  $('edge').classList.toggle('hidden', !(S.edge && S.mode === 'play'));
-  sound.wind(S.speed, S.vy);
-  renderer.render(scene, camera);
-  perf.calls = renderer.info.render.calls; perf.triangles = renderer.info.render.triangles; perf.frames++;
+  const ps = onPlayers(), playing = G.mode === 'play';
+  $('edge').classList.toggle('hidden', !(ps.length === 1 && primary().S.edge && playing));
+  for (const p of ps) { p.tile.classList.toggle('isaway', p.away); p.tile.classList.toggle('isedge', ps.length > 1 && p.S.edge && playing); }
+  const P = primary().S;
+  sound.wind(P.speed, P.vy);
+  render();
+  perf.frames++;
   fpsAcc += dt; fpsN++;
   if (fpsAcc >= 2) {
     perf.fps = Math.round(fpsN / fpsAcc); perf.frameMs = +((fpsAcc / fpsN) * 1000).toFixed(1);
@@ -354,24 +590,48 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // ---------- test hooks
+const pstate = (p) => ({
+  slot: p.slot, color: p.col.name, x: p.S.x, y: p.S.y, z: p.S.z, alt: p.S.y - world.height(p.S.x, p.S.z), vy: p.S.vy, speed: p.S.speed, yaw: p.S.yaw, roll: p.S.roll,
+  collected: p.S.collected, flaps: p.S.flaps, bounces: p.S.bounces, away: p.away, edge: p.S.edge,
+});
 window.__game = {
   get state() {
+    const p = primary(), S = p.S;
     return {
-      mode: S.mode, x: S.x, y: S.y, z: S.z, alt: S.y - world.height(S.x, S.z), vy: S.vy, speed: S.speed, yaw: S.yaw, roll: S.roll,
-      collected: S.collected, total: world.apples.length, bounces: S.bounces, flaps: S.flaps, seed, time: S.time, playTime: S.playTime,
-      inputMode: S.inputMode, edge: S.edge, gameOver: false, paused,
+      mode: G.mode, x: S.x, y: S.y, z: S.z, alt: S.y - world.height(S.x, S.z), vy: S.vy, speed: S.speed, yaw: S.yaw, roll: S.roll,
+      collected: teamTotal(), total: world.apples.length, bounces: S.bounces, flaps: S.flaps, seed, time: G.time, playTime: G.playTime,
+      inputMode: G.inputMode, edge: S.edge, gameOver: false, paused, players: order.length, sharedApples: true,
+    };
+  },
+  get players() { return onPlayers().map(pstate); },
+  get views() {
+    return {
+      n: perf.views, order: order.slice(), rects: perf.viewRects, extra: layout.extra,
+      tiles: [...document.querySelectorAll('#tiles .tile:not(.hidden)')].map((t) => +t.dataset.slot),
+      board: !$('board').classList.contains('hidden'),
     };
   },
   get apples() { return world.apples.map((a) => ({ x: a.x, y: a.y, z: a.z, collected: a.collected })); },
-  get perf() { return { ...perf, dpr, trees: world.trees, foliage: world.foliage }; },
-  get pose() { return { active: pose.active, status: pose.status, frames: pose.frames, out: pose.out }; },
-  start, flap,
-  bank(x) { input.test = clamp(+x || 0, -1, 1); },
+  get perf() { return { ...perf, dpr, viewDpr, trees: world.trees, foliage: world.foliage }; },
+  get pose() {
+    return {
+      active: pose.active, fake: pose.fake, status: pose.status, frames: pose.frames, out: pose.out, raw: pose.raw,
+      tracks: pose.tracker.tracks.map((k) => ({ id: k.id, slot: k.slot, state: k.state, x: +k.x.toFixed(3) })),
+    };
+  },
+  start,
+  flap: (strength, slot) => flap(strength, slot),
+  bank(x, slot) { const p = slot == null ? primary() : players[slot]; p.in.test = clamp(+x || 0, -1, 1); },
   simulate(sec) { const n = Math.round(sec / STEP); for (let i = 0; i < n; i++) step(STEP); return this.state; },
   setPaused(p) { paused = !!p; acc = 0; },
-  setBird(o) { Object.assign(S, o); snapCamera(); ribbons.forEach((r) => r.reset()); },
+  setBird(o, slot) { const p = slot == null ? primary() : players[slot]; Object.assign(p.S, o); snapCamera(p); p.ribbons.forEach((r) => r.reset()); },
   height: (x, z) => world.height(x, z),
-  replay: (s) => { S.mode = 'win'; start(); if (s != null) newGame(s); },
-  toggleCamera, setMode,
-  snapCamera,
+  replay: (s) => { G.mode = 'win'; start(); if (s != null) newGame(s); },
+  toggleCamera, setMode, toggleDuo,
+  snapCamera: () => onPlayers().forEach(snapCamera),
+  // fake camera: no webcam / model, landmarks come from injectPeople([lm33, lm33, ...]) (raw MediaPipe coords)
+  fakeCamera() { if (tiltOn) stopTilt(); pose.startFake(); setMode('cam'); },
+  injectPeople(list) { pose.inject(list); },
+  render,
+  _three: { scene, renderer, camera, get world() { return world; } },
 };
