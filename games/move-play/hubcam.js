@@ -1,20 +1,21 @@
 // Move & Play hub, camera-first: the webcam starts on load, the room shows (mirrored, whole frame) behind
 // the cards with glowing skeletons, and a raised hand becomes a cursor: hold it on a game card ~1.2 s to open
 // it. Mouse / touch / keys keep working. Video never leaves the device.
-import { Camera } from './js/cam.js';
+import { Camera } from './js/cam.js?v=f1';
 import { BodyMenu } from './js/menu.js';
 import { startDemos } from './js/demo.js';
 import { drawVideo, drawSkeleton } from './js/draw.js';
 import { viewMap, loadZoom } from './js/view.js';
 import { PLAYER_COLORS } from './js/multi.js';
-import { LockUI } from './js/lockui.js';
+import { LockUI } from './js/lockui.js?v=f1';
 // v3 tracking: the hand cursor follows only the locked players (lock saved by a game's roll call in this tab,
 // re-found by shirt colour + size), or the single nearest person when nobody is locked. 🐞 = debug boxes.
 
 const $ = (id) => document.getElementById(id);
 const cv = $('bg'), c = cv.getContext('2d'), video = $('vid'), msg = $('camMsg');
 const params = new URLSearchParams(location.search);
-const cam = new Camera({ video, onStatus: (s) => { document.body.dataset.cam = s; msg.textContent = { loading: '⏳', tap: '👆', denied: '🚫 👆', nocam: '🚫 👆', nomodel: '⚠️ 👆', none: '🙋', track: '🙋' }[s] || '📷'; } });
+// v5: face memory off in the hub (faces live in one page's memory only, so they could not follow a kid into a game)
+const cam = new Camera({ video, face: 'off', onStatus: (s) => { document.body.dataset.cam = s; msg.textContent = { loading: '⏳', tap: '👆', denied: '🚫 👆', nocam: '🚫 👆', nomodel: '⚠️ 👆', none: '🙋', track: '🙋' }[s] || '📷'; } });
 const menu = new BodyMenu({ enabled: () => cam.active, selector: 'a.card, button:not(.hidden):not(#mpBug)' });
 let W = 0, H = 0, d = 1;
 const zoom = loadZoom(); // same 🔍 level the games use

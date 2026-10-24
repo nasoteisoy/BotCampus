@@ -1,7 +1,7 @@
 // Freeze Dance / Copy Me: dance while the music plays, freeze or copy the pose when it stops.
 // v4: every kid is a dancing kitty (chars.js) in their colour right over their body; it turns to ice when they
 // freeze. 🧸 relaxed (default): the music goes on and on (no timer) and wobbling is never shown as wrong.
-import { run } from './runner.js?v=4';
+import { run } from './runner.js?v=5';
 import { drawChar, drawBadge, rigFromBody, rigFromDemo, headTop, badgeSpot } from './chars.js?v=4';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
 import { drawDemo } from './demo.js';

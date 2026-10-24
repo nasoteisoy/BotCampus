@@ -3,8 +3,11 @@
 // <video> into the in-browser WASM/GPU model.
 // v3 (tracking fix): LockTracker (track.js) replaces the auto-join PeopleTracker: player count N (picker),
 // roll call / auto lock, appearance + motion matching, hold-when-close, strict real-person check.
+// v5 face memory (face.js): an in-browser face descriptor per slot (memory only) brings a returning kid back to
+// their slot even in another shirt. opts.face / ?face= : 'off' | 'stub' (tests) | auto (default).
 import { PLAYER_COLORS } from './multi.js';
-import { LockTracker, checkPerson, torsoHist, TRACK, loadPick, saveLock, loadLock } from './track.js';
+import { LockTracker, checkPerson, torsoHist, TRACK, loadPick, saveLock, loadLock } from './track.js?v=f1';
+import { FaceMemory } from './face.js?v=f1';
 import { toBody } from './body.js';
 import { pickWideFront } from './view.js';
 
@@ -58,11 +61,12 @@ function quietMediapipeLogs() {
 }
 
 export class Camera {
-  constructor({ video, onStatus, track = {} } = {}) {
+  constructor({ video, onStatus, track = {}, face } = {}) {
     this.video = video; this.onStatus = onStatus || (() => {});
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
     const edge = q && q.has('edge') ? +q.get('edge') : NaN;
     this.tracker = new LockTracker({ ...track, ...(Number.isFinite(edge) ? { edge } : {}) });
+    this.face = new FaceMemory(face ?? (q ? q.get('face') : null));
     this.nPick = loadPick(); this.tracker.setN(this.nPick);
     this.importLock();
     this.events = []; this.fakeFrame = null; this.sampler = null; this.cands = [];
@@ -81,7 +85,7 @@ export class Camera {
     const v = this.video; return v && v.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null;
   }
   get hasVideo() { return !this.fake && this.active && this.video && this.video.readyState >= 2; }
-  reset() { this.tracker.reset(); this.tracker.setN(this.nPick); if (!this.fake) this.importLock(); this.players = []; this.cands = []; }
+  reset() { this.face?.clear(); this.tracker.reset(); this.tracker.setN(this.nPick); if (!this.fake) this.importLock(); this.players = []; this.cands = []; }
   /** player count N (1..4): the model looks for N + 1 people, the tracker never makes more than N players */
   setPlayers(n) {
     this.nPick = Math.max(1, Math.min(4, n | 0)); this.tracker.setN(this.nPick);
@@ -130,7 +134,7 @@ export class Camera {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('model load timeout')), 30000));
       this.landmarker = await Promise.race([loadLandmarker(this.numPoses), timeout]);
       this.setPlayers(this.nPick);
-      if (!stale() && this.active) this._set('none');
+      if (!stale() && this.active) { this._set('none'); this.face.later(); } // face memory: lazy, after the pose model
     } catch (e) {
       console.info('[pose] model unavailable, tap/keys still work:', e?.message || e);
       if (!stale() && this.active) this._set('nomodel');
@@ -170,7 +174,7 @@ export class Camera {
   }
   /** Test hook: no webcam / model; landmarks come from inject(). ar = virtual frame aspect.
    *  setFakeFrame(w, h) pins a real-camera-like frame size (e.g. 640x480) so the contain fit is exercised. */
-  startFake(ar = 4 / 3) { if (this.active && !this.fake) this.stop(); this.gen++; this.active = true; this.fake = true; this.fakeAr = ar; this.reset(); this._set('none'); }
+  startFake(ar = 4 / 3) { if (this.active && !this.fake) this.stop(); this.gen++; this.active = true; this.fake = true; this.fakeAr = ar; this.reset(); this._set('none'); if (this.face.mode === 'stub') this.face.later(0); } // the real face model never runs on fake frames
   setFakeFrame(w, h) { this.fakeSize = w && h ? { w, h } : null; }
   inject(list) { this.fakeLms = Array.isArray(list) ? list : []; }
   _stopTracks() { this.stream?.getTracks().forEach((t) => t.stop()); this.stream = null; }
@@ -203,7 +207,8 @@ export class Camera {
     if (res.some((r) => r.ok)) { const img = this._grab(); if (img) for (const r of res) if (r.ok) r.det.hist = torsoHist(img, r.det.lm, ar, this.tracker.o); }
     const tracks = this.tracker.update(res, t, ar);
     this.events = this.tracker.events.slice();
-    if (this.events.some((e) => e.type === 'lock' || e.type === 'swap' || e.type === 'locked')) saveLock(this.tracker.exportLock());
+    if (this.events.some((e) => e.type === 'lock' || e.type === 'swap' || e.type === 'locked' || e.type === 'facefix')) saveLock(this.tracker.exportLock());
+    this.face.tick(this.tracker, this.frameEl, t, ar); // maybe one head crop -> worker (async, throttled)
     this.players = tracks.map((k) => ({
       slot: k.slot, id: k.id, state: k.state, held: k.held, x: k.x, color: PLAYER_COLORS[k.slot], body: k.lm ? toBody(k.lm, ar) : null,
     }));

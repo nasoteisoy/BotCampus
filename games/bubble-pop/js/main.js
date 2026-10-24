@@ -2,7 +2,7 @@
 // v4: every kid becomes a cute octopus (chars.js) in their colour right over their body - its tentacles are the
 // kid's arms & legs - with their score bubble above the head. 🧸 relaxed (default): no timer, no end storm, bigger
 // bubbles that stay longer. Body-size pop pads (EASY_POP) make reaching easier for small kids.
-import { run } from './runner.js?v=4';
+import { run } from './runner.js?v=5';
 import { drawChar, drawBadge, rigFromBody, rigFromDemo, badgeSpot } from './chars.js?v=4';
 import { touchPoints } from './body.js';
 import { drawSkeleton, drawVideo, emoji } from './draw.js';

@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import { META, createGame } from './game.js';
 import { Particles } from './fx.js';
 import { Sound } from './audio.js';
-import { PoseInput } from './pose.js';
+import { PoseInput } from './pose.js?v=f1';
 import { layoutViewports, screenOrder, PLAYER_COLORS, MAX_PLAYERS } from './multi.js';
 import { BodyMenu } from './menu.js';
-import { LockUI } from './lockui.js';
+import { LockUI } from './lockui.js?v=f1';
 import { startDemos } from './demo.js';
 import { Practice } from './practice.js';
 import { CHASE, ZKEY, loadZoom } from './chase.js';
@@ -614,6 +614,8 @@ window.__game = {
   get lock() { const tr = pose.tracker; return { phase: tr.phase, n: tr.n, pick: pose.nPick, numPoses: pose.numPoses, ui: lockUI.mode, roll: tr.rollState(), cands: pose.cands.length, swapEnabled: tr.swapEnabled, debug: { rejected: tr.debug.rejected.map((r) => r.why), held: tr.debug.held.map((h) => h.slot) } }; },
   pickPlayers: (n) => lockUI._picked(n),
   setFakeVideo: (c) => { pose.fakeFrame = c || null; },
+  // v5 face memory: state + per-slot enrolment (sample counts / last distance only; descriptors never leave the tracker)
+  get face() { return { ...pose.face.info, slots: pose.tracker.players().map((p) => ({ slot: p.slot, state: p.state, n: p.face, d: p.faceD })), log: pose.tracker.faceLog.slice(-8) }; },
   debug: (on = true) => lockUI.setDebug(on),
   get mode() { return G.mode; },
   injectPeople(list) { pose.inject(list); },

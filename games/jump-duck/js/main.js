@@ -1,7 +1,7 @@
 // Jump & Duck: a 3-lane runner per player. Jump over logs, duck under bars, lean/step to dodge rocks.
 // v4: every kid is a bunny (chars.js) in their colour that copies their arms / squat live; 🧸 relaxed (default) =
 // no timer, endless course, a missed obstacle just makes the bunny hop over it (no bump, no 💥); ⏱️ = v3 rules.
-import { run } from './runner.js?v=4';
+import { run } from './runner.js?v=5';
 import { drawChar, rigFromBody, fitRig, rigFromDemo, rigOk } from './chars.js?v=4';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
 import { drawDemo } from './demo.js';

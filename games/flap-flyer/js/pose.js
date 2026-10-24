@@ -1,7 +1,8 @@
 // Webcam + MediaPipe PoseLandmarker (lazy-loaded from jsDelivr / Google storage), up to 4 people.
 import { PoseMapper } from './poseMap.js';
 import { PLAYER_COLORS } from './multi.js';
-import { LockTracker, checkPerson, torsoHist, loadPick, saveLock, loadLock } from './track.js';
+import { LockTracker, checkPerson, torsoHist, loadPick, saveLock, loadLock } from './track.js?v=f1';
+import { FaceMemory } from './face.js?v=f1';
 import { toBody } from './body.js';
 import { pickWideFront } from './view.js';
 
@@ -65,6 +66,7 @@ export class PoseInput {
     const q = new URLSearchParams(location.search), edge = q.has('edge') ? +q.get('edge') : NaN;
     this.tracker = new LockTracker(Number.isFinite(edge) ? { edge } : {});
     this.nPick = loadPick(); this.tracker.setN(this.nPick); this.importLock();
+    this.face = new FaceMemory(q.get('face')); // v5 face memory (lazy, in memory only)
     this.events = []; this.fakeFrame = null; this.sampler = null; this.cands = []; this.lastT = 0;
     this.mappers = new Map(); // track id -> PoseMapper
     this.slots = [];          // slot -> { id, state, x, out, outT } for players with a bird (active or lost)
@@ -113,7 +115,7 @@ export class PoseInput {
   }
   get mapper() { return this.mappers.values().next().value || new PoseMapper(); }
   _set(s) { this.status = s; this.statusEl.textContent = ST[s]; this.onStatus(s); }
-  _resetPeople() { this.tracker.reset(); this.tracker.setN(this.nPick); if (!this.fake) this.importLock(); this.mappers.clear(); this.slots = []; this.cands = []; this.out = IDLE(); this.raw = 0; }
+  _resetPeople() { this.face?.clear(); this.tracker.reset(); this.tracker.setN(this.nPick); if (!this.fake) this.importLock(); this.mappers.clear(); this.slots = []; this.cands = []; this.out = IDLE(); this.raw = 0; }
   async start() {
     if (this.active && !this.fake) return true;
     const gen = ++this.gen, stale = () => gen !== this.gen;
@@ -142,7 +144,7 @@ export class PoseInput {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('model load timeout')), 30000));
       this.landmarker = await Promise.race([loadLandmarker(this.numPoses), timeout]);
       this.setPlayers(this.nPick);
-      if (!stale() && this.active) this._set('none');
+      if (!stale() && this.active) { this._set('none'); this.face.later(); }
     } catch (e) {
       console.info('[pose] model unavailable, keys/touch still work:', e?.message || e);
       if (!stale() && this.active) this._set('nomodel');
@@ -179,6 +181,7 @@ export class PoseInput {
     if (this.active && !this.fake) this.stop();
     this.gen++; this.active = true; this.fake = true; this._resetPeople(); this._fitBox();
     this.box.classList.remove('hidden'); this.box.classList.add('fake'); this._set('none');
+    if (this.face.mode === 'stub') this.face.later(0); // the real face model never runs on synthetic test frames
   }
   /** Test hook: array of 33-landmark arrays (raw MediaPipe image coords), kept until the next inject. */
   inject(list) { this.fakeLms = Array.isArray(list) ? list : []; }
@@ -216,7 +219,8 @@ export class PoseInput {
     this.raw = chk.filter((r) => r.ok).length;
     const tracks = this.tracker.update(chk, t, ar);
     this.events = this.tracker.events.slice();
-    if (this.events.some((e) => e.type === 'lock' || e.type === 'swap' || e.type === 'locked')) saveLock(this.tracker.exportLock());
+    if (this.events.some((e) => e.type === 'lock' || e.type === 'swap' || e.type === 'locked' || e.type === 'facefix')) saveLock(this.tracker.exportLock()); // (shirts only, never faces)
+    this.face.tick(this.tracker, this.frameEl, t, ar); // async + throttled: at most one head crop per TRACK.faceEvery
     this.cands = this.tracker.candidates().map((c) => ({ id: c.id, x: c.x, sw: c.sw, lm: c.lm, age: t - c.firstSeen, persisted: c.persisted }));
     const alive = new Set(tracks.map((k) => k.id));
     for (const id of [...this.mappers.keys()]) if (!alive.has(id)) this.mappers.delete(id);

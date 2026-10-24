@@ -8,7 +8,7 @@
 // v3 (tracking fix): ▶️ -> player-count picker (👤 1-4, remembered) -> roll call (raise a hand, slots fill 1..N in
 // colour; ⏭ / auto = by position) -> practice -> 3-2-1. Players are locked (track.js LockTracker): no auto-join,
 // never more than N, appearance + motion matching, hold-when-close, both-hands swap gesture (not while playing).
-import { Camera, ST } from './cam.js';
+import { Camera, ST } from './cam.js?v=f1';
 import { Sound } from './sound.js';
 import { PLAYER_COLORS } from './multi.js';
 import { viewMap, loadZoom, saveZoom, clampZoom, ZOOM_LEVELS } from './view.js';
@@ -16,7 +16,7 @@ import { BodyMenu } from './menu.js';
 import { Practice } from './practice.js?v=4';
 import { startDemos, MOVES } from './demo.js';
 import { drawVideo, drawSkeleton } from './draw.js';
-import { LockUI, PEOPLE } from './lockui.js';
+import { LockUI, PEOPLE } from './lockui.js?v=f1';
 
 export const STEP = 1 / 60;
 const $ = (id) => document.getElementById(id);
@@ -284,6 +284,8 @@ export function run(G) {
     get lock() { const tr = cam.tracker; return { phase: tr.phase, n: tr.n, pick: cam.nPick, numPoses: cam.numPoses, ui: lock.mode, roll: tr.rollState(), cands: tr.cands.map((c) => ({ x: +c.x.toFixed(3), age: +(tr.t - c.firstSeen).toFixed(2), persisted: !!c.persisted })), debug: { dets: tr.debug.dets.map((d) => ({ slot: d.slot, cost: d.cost, x0: +d.box.x0.toFixed(3) })), rejected: tr.debug.rejected.map((r) => r.why), held: tr.debug.held.map((h) => h.slot) }, swapEnabled: tr.swapEnabled }; },
     /** fake camera frame (canvas) for the torso colour histograms */
     setFakeVideo: (cv) => { cam.fakeFrame = cv || null; },
+    /** v5 face memory: state + per-slot enrolment (sample counts / last distance only; descriptors never leave the tracker) */
+    get face() { return { ...cam.face.info, slots: cam.tracker.players().map((p) => ({ slot: p.slot, state: p.state, n: p.face, d: p.faceD })), log: cam.tracker.faceLog.slice(-8) }; },
     debug: (on = true) => lock.setDebug(on),
     pickPlayers: (n) => lock._picked(n),
     get results() { return S.lastResults || null; },

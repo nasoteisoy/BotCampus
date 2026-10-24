@@ -1,8 +1,9 @@
 // Player-count picker, roll call, 🔄 swap flash and the 🐞 tracking debug overlay (DOM glue around track.js).
 // Shared by the 3 games (runner.js), the hub (hubcam.js) and Flap Flyer (copied there). Buttons are plain
 // <button>s, so the raised-hand dwell menus (menu.js) can press them; mouse / touch work too.
+// v5: 🙂 on a roll-call slot = that kid's face is remembered (face.js, memory only); 🐞 shows face distances.
 import { PLAYER_COLORS } from './multi.js';
-import { savePick } from './track.js';
+import { savePick } from './track.js?v=f1';
 
 const CSS = `
 .mpov{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2.2vh,22px);
@@ -21,6 +22,8 @@ const CSS = `
 .mpslot.on{border-style:solid;border-color:#fff;background:var(--pc);transform:scale(1.08)}
 .mpslot i{position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(#ffd84a calc(var(--p,0)*360deg),transparent 0);
   -webkit-mask:radial-gradient(circle,transparent 62%,#000 63%);mask:radial-gradient(circle,transparent 62%,#000 63%)}
+.mpslot em{position:absolute;top:-10px;right:-10px;font-size:.5em;font-style:normal;line-height:1;opacity:0;transform:scale(.3);transition:opacity .25s,transform .25s;filter:drop-shadow(0 2px 3px #0008)}
+.mpslot em.on{opacity:1;transform:scale(1)}
 .mpslot small{position:absolute;bottom:-6px;right:-4px;font-size:.45em;background:#0008;border-radius:12px;padding:2px 6px}
 .mpauto{width:min(60vw,360px);height:10px;border-radius:6px;background:#ffffff33;overflow:hidden}
 .mpauto i{display:block;height:100%;width:calc(var(--a,0)*100%);background:#7fe3ff}
@@ -88,7 +91,7 @@ export class LockUI {
   }
   _slots() {
     const n = this.cam.nPick, row = this.roll.querySelector('#mpSlots');
-    row.innerHTML = Array.from({ length: n }, (_, s) => `<span class="mpslot" style="--pc:${this.colors[s].css}" data-slot="${s}"><i></i><b>✋</b><small>${s + 1}</small></span>`).join('');
+    row.innerHTML = Array.from({ length: n }, (_, s) => `<span class="mpslot" style="--pc:${this.colors[s].css}" data-slot="${s}"><i></i><b>✋</b><em aria-hidden="true">🙂</em><small>${s + 1}</small></span>`).join('');
   }
   _finishRoll(auto) {
     if (this.mode !== 'roll') return;
@@ -104,6 +107,7 @@ export class LockUI {
     this.roll.querySelectorAll('.mpslot').forEach((e, s) => {
       const on = R.slots[s]; e.classList.toggle('on', on);
       e.querySelector('b').textContent = on ? '✅' : '✋';
+      const f = !!(on && R.faces && R.faces[s]), em = e.querySelector('em'); if (em && em.classList.contains('on') !== f) { em.classList.toggle('on', f); e.classList.toggle('face', f); }
       e.style.setProperty('--p', !on && s === next ? R.best.toFixed(2) : '0');
     });
     this.roll.querySelector('.mpauto').style.setProperty('--a', R.auto.toFixed(3));
@@ -138,13 +142,16 @@ export class LockUI {
     for (const q of D.dets || []) {
       const [x, y, w, h] = R(q.box), col = q.slot >= 0 ? (this.colors[q.slot] || this.colors[0]).css : '#ffffff';
       c.strokeStyle = col; c.lineWidth = q.slot >= 0 ? 3 : 2; if (q.slot < 0) c.setLineDash([6, 4]); c.strokeRect(x, y, w, h); c.setLineDash([]);
-      const txt = q.slot >= 0 ? `P${q.slot + 1} c=${q.cost == null ? '–' : q.cost.toFixed(2)}` : q.cand ? `new ${q.cand.age}s${q.cand.persisted ? ' ✓' : ''}${q.extra ? ' extra' : ''}` : 'near held';
+      const fd = q.faceD != null ? ` 🙂${q.faceD.toFixed(2)}` : q.face ? ' 🙂' : '';
+      const txt = (q.slot >= 0 ? `P${q.slot + 1} c=${q.cost == null ? '–' : q.cost.toFixed(2)}` : q.cand ? `new ${q.cand.age}s${q.cand.persisted ? ' ✓' : ''}${q.extra ? ' extra' : ''}` : 'near held') + fd;
       label(x, y, txt, q.slot >= 0 ? col : '#000a');
     }
     for (const h of D.held || []) { const [x, y, w, hh] = R(h.box); c.strokeStyle = '#ffb020'; c.lineWidth = 5; c.strokeRect(x - 3, y - 3, w + 6, hh + 6); label(x, y + hh + 20, `⏸ P${h.slot + 1} held`, '#c77800'); }
     // summary panel
-    const pl = tr.players(), lines = [`${tr.phase} · N=${tr.n} · numPoses=${tr.n + 1}`, ...pl.map((p) => `P${p.slot + 1} ${p.state}${p.cost != null ? ' c=' + p.cost.toFixed(2) : ''}`), `cands ${tr.cands.length}`];
-    c.fillStyle = '#000a'; c.fillRect(40, H - 22 - lines.length * 16, 190, lines.length * 16 + 8);
+    const fm = this.cam.face?.info, fl = tr.faceLog?.[tr.faceLog.length - 1];
+    const pl = tr.players(), lines = [`${tr.phase} · N=${tr.n} · numPoses=${tr.n + 1}`, ...pl.map((p) => `P${p.slot + 1} ${p.state}${p.cost != null ? ' c=' + p.cost.toFixed(2) : ''}${p.face ? ` 🙂×${p.face}${p.faceD != null ? ' d=' + p.faceD.toFixed(2) : ''}` : ''}`), `cands ${tr.cands.length}`,
+      ...(fm ? [`🙂 ${fm.state} ${fm.backend || ''} ${fm.faces}/${fm.req}${fl ? ` · ${fl.type} ${fl.slot >= 0 ? 'P' + (fl.slot + 1) : '–'}${fl.d != null ? ' d=' + fl.d.toFixed(2) : ''}` : ''}`] : [])];
+    c.fillStyle = '#000a'; c.fillRect(40, H - 22 - lines.length * 16, 250, lines.length * 16 + 8);
     c.fillStyle = '#fff'; lines.forEach((t, i) => c.fillText(t, 46, H - 18 - (lines.length - i) * 16 + 4));
   }
 }

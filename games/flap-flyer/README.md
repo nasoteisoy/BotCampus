@@ -17,6 +17,13 @@ Turn on 📷 and everyone who stands in front of the camera gets their own bird 
 - Other birds show a small colored ◆ marker. A friend's bird right in front of your camera is hidden on your screen only.
 - No camera: 1-player keys/tap/tilt as before. 👥 on the title = 2 players on one keyboard (bird 1: W/A/D/Space, bird 2: ↑/←/→). Tapping a screen flaps that screen's bird.
 
+## 🙂 Face memory & privacy (v5)
+- Leave and come back (even in another shirt or jacket) and you get **your** slot back: same character, colour and score. Once the game knows a face, the roll call shows a small 🙂 on that kid's card.
+- How: a tiny face model ([@vladmandic/face-api](https://github.com/vladmandic/face-api), free, about 8 MB, from jsDelivr) turns a small head crop into 128 numbers (a "face descriptor"). It runs in the browser, in a background worker, a few seconds after the camera starts, and only checks someone when needed (at most about 2 checks per second). It helps the shirt-and-position tracking; it doesn't replace it. If it can't load (offline, old phone), the game just works without it.
+- **Privacy:** no photos are kept. The face numbers stay **in this tab's memory only**. They are never saved (no localStorage or IndexedDB) and never sent anywhere. Only the model files are downloaded. They are forgotten on a new roll call, a reset, or when the page closes. `?face=0` turns face memory off.
+- 🐞 shows `🙂×samples d=distance` for each player (lower = more alike; at or under 0.5 = same kid).
+- Limits: kids far away (tiny faces), faces turned away, and look-alike siblings or twins fall back to shirt + position (a clear margin is required). Phones without WebGL use the slower CPU backend (fewer checks).
+
 ## Controls
 | Mode | Flap 🪽 | Bank ↩️↪️ |
 |---|---|---|
@@ -37,6 +44,7 @@ Camera status icons: ⏳ loading · ✅ tracking · 🙈 no person seen · ⚠�
 - `js/audio.js`: procedural WebAudio (wind, ambient pentatonic music, chime, flap, thump); no audio files
 - `js/pose.js`: webcam + PoseLandmarker + skeleton overlay · `js/poseMap.js`: pure pose→control mapping
 - `js/rng.js`: seeded RNG + Perlin noise
+- `js/face.js` + `js/faceworker.js` (v5): face memory loader (lazy, off-thread) · pure face matching lives in `js/track.js`
 - `js/multi.js` (v2): pure helpers: landmarks→person filter, `PeopleTracker` (debounce + stable slots), `layoutViewports`, player colors
 
 ## Test hooks (`window.__game`)
@@ -50,6 +58,9 @@ node test/unit-pose.mjs       # pose -> control mapping, synthetic landmarks
 node test/unit-multi.mjs      # debounce, slot tracking, layout math
 node test/e2e-multi.mjs       # fake 1-4 people at 390x844, 844x390, 1280x800
 node test/shots-multi.mjs     # screenshots 10-19 · node test/perf-multi.mjs (1/2/4 views FPS)
+node test/unit-face.mjs       # face memory: enroll, return in another shirt, siblings, no face, throttle, privacy
+node test/e2e-face.mjs        # stubbed faces in the browser: 🙂 roll call, return in another shirt, twins bounce
+node test/smoke-face.mjs      # real face model from jsDelivr (needs internet; prints SKIP offline)
 node test/playtest.mjs        # ~90 s headless session with fake flapping people (logs only)
 node test/e2e.mjs [profile]   # desktop | iphone13-portrait | iphone13-landscape | denied | person
 ```
