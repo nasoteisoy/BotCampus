@@ -151,3 +151,11 @@ body:has(.savebar) main{padding-bottom:110px}
 .canonlist li{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:var(--r);padding:12px 14px}
 .cq{margin:0 0 6px;color:var(--dim);font-size:14.5px}.ca{margin:0 0 6px;font:700 18px Georgia,serif;color:var(--gold2)}.cm{margin:0;font-size:13px;color:var(--dim)}
 .empty{color:var(--dim);text-align:center;padding:30px}
+
+/* v3: canon per-lord groups, ranks notes */
+h3.cgroup{margin:1.4em 0 .5em;padding:.45em .7em;border-left:4px solid var(--gold,#d8b45a);background:rgba(216,180,90,.08);border-radius:8px;font-size:1.02rem;scroll-margin-top:calc(var(--hdr,90px) + 8px)}
+.gtoc{margin-top:.2em}
+.lords .lnote{display:block;margin-top:.35em;font-size:.88rem}
+.lords .lnote a{display:inline-block;padding:.25em .55em;border-radius:999px;border:1px solid currentColor;text-decoration:none}
+.lords a.nowcanon{color:#7fd39a}
+.lords a.renaming{color:#f0c060}

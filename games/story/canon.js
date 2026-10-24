@@ -13,14 +13,20 @@
     var toc=el('div','toc');keys.forEach(function(k){var a=el('a',null,titles[k]+' ('+by[k].length+')');a.href='#c-'+k;toc.appendChild(a);});root.appendChild(toc);
     keys.forEach(function(k){
       var h=el('h2',null,titles[k]);h.id='c-'+k;root.appendChild(h);
+      var gs=[],gm={};by[k].forEach(function(x){var g=x.group||'';if(!(g in gm)){gm[g]=[];gs.push(g);}gm[g].push(x);});
+      if(gs.length>1||gs[0]){var gt=el('div','toc gtoc');gs.forEach(function(g,i){var a=el('a',null,(g||'Other')+' ('+gm[g].length+')');a.href='#g-'+k+'-'+i;gt.appendChild(a);});root.appendChild(gt);}
+      gs.forEach(function(g,i){
+      if(g){var h3=el('h3','cgroup',g);h3.id='g-'+k+'-'+i;root.appendChild(h3);}
       var ul=el('ul','canonlist');
-      by[k].forEach(function(x){var li=el('li');li.id='c-'+x.question_id;
+      gm[g].forEach(function(x){var li=el('li');li.id='c-'+x.question_id;
         li.appendChild(el('p','cq',x.question));
         var own=x.custom_text&&x.custom_text.trim();
         li.appendChild(el('p','ca',own?x.custom_text:x.answer));
         var m=el('p','cm','🔒 Locked '+(x.locked||''));if(own)m.textContent+=' · ✍️ Chumi’s own words';li.appendChild(m);
         ul.appendChild(li);});
       root.appendChild(ul);
+      });
     });
+    if(location.hash){var t=document.getElementById(location.hash.slice(1));if(t)t.scrollIntoView();}
   }).catch(function(){root.innerHTML='<p class="empty">Could not load canon.json.</p>';});
 })();

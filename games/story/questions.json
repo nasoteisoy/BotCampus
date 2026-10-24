@@ -563,146 +563,139 @@
       "blurb": "One group per High Lord — all names are drafts",
       "questions": [
         {
-          "id": "hl-cassian-01",
+          "id": "hl-cassian-07",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Keep the name High Lord Cassian Thorne?",
+          "prompt": "He was secretly born in a rival kingdom. Which one?",
           "options": [
-            "Keep",
-            "Keep Cassian, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
+            "A south-east kingdom still at war with the Southern Kingdoms",
+            "The free part of the desert kingdom that never fell",
+            "A kingdom the Empire conquered when he was a boy",
+            "A land beyond the known map"
           ]
         },
         {
-          "id": "hl-cassian-02",
+          "id": "hl-cassian-08",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "How old is he, and how long has he led the Black Guard?",
+          "prompt": "Who knows he was born in a rival kingdom?",
           "options": [
-            "About 55, leading for 20 years",
-            "About 48, leading for 10 years",
-            "About 62, he founded the modern Guard",
-            "Looks younger than he is — nobody knows"
+            "No one alive",
+            "Only Seraphina",
+            "The Council knew, and appointed him anyway",
+            "One old friend from his early military days",
+            "An enemy who could use it against him"
           ]
         },
         {
-          "id": "hl-cassian-03",
+          "id": "hl-cassian-09",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Which sin tempts him most (the bible says he is secretly very Proud)?",
+          "prompt": "What is the 'power that will save humanity' he is seeking?",
           "options": [
-            "Pride — he believes he alone can save the Empire",
-            "Pride wearing Wrath — revenge for fathers who died",
-            "Pride wearing Greed — wants corruption's power",
-            "Pride wearing Envy — envies the spirits' knowledge"
+            "Corruption itself, mastered and aimed at the enemy",
+            "Lost knowledge of the Ashara offices",
+            "Spirit-tech pushed further than the Flame Order allows",
+            "He doesn't know yet — he is still searching"
           ]
         },
         {
-          "id": "hl-cassian-04",
+          "id": "hl-cassian-10",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "How did he get the title?",
+          "prompt": "How does he hope to use corruption?",
           "options": [
-            "Won it in war — a famous victory",
-            "Inherited it from his family",
-            "Appointed by the Council for his brilliance",
-            "Took it after his predecessor died suspiciously"
+            "As a weapon — stained fighters aimed at the enemy",
+            "To understand the enemy from the inside",
+            "To make the Black Guard stronger than any army",
+            "Only in small, careful tests — for now"
           ]
         },
         {
-          "id": "hl-cassian-05",
+          "id": "hl-cassian-11",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "His view of the census of the corrupted?",
+          "prompt": "Who was Seraphina's mother?",
           "options": [
-            "Publicly against, secretly using it",
-            "Strongly for it",
-            "Against it — he wants to use corruption, not count it",
-            "Silent — lets others argue"
+            "She died when Seraphina was young",
+            "A noble from the Capital Kingdom",
+            "A woman from his secret homeland",
+            "She left, and Seraphina never knew her",
+            "Still alive, far from court"
           ]
         },
         {
-          "id": "hl-cassian-06",
+          "id": "hl-cassian-12",
           "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "When does Alaric first notice Cassian quietly bending his views?",
+          "options": [
+            "In Book 1, during the Desert War",
+            "Slowly, over many books — he sees it late",
+            "When Cassian argues against the census",
+            "When he sees Cassian use something corrupted",
+            "Seraphina is the one who notices first"
+          ]
+        },
+        {
+          "id": "hl-corin-07",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Which past emperor is he descended from?",
+          "options": [
+            "A great conqueror who grew the Empire",
+            "An explorer-emperor who first sent ships west",
+            "A weak emperor the Council removed",
+            "A forgotten emperor few remember"
+          ]
+        },
+        {
+          "id": "hl-corin-08",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Does his royal blood matter at court?",
+          "options": [
+            "The Council fears he could claim the throne",
+            "Old news — few care",
+            "It is why he got the post so young",
+            "He hides it and wants to earn things himself"
+          ]
+        },
+        {
+          "id": "hl-corin-09",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "What has he found (or heard of) in the far west?",
+          "options": [
+            "New islands with peoples who never met the Empire",
+            "Ruins from before the First Fall",
+            "Signs that the stain has reached the west too",
+            "A clean, untouched land",
+            "Only rumours so far"
+          ]
+        },
+        {
+          "id": "hl-corin-10",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Why does the Council not trust him?",
+          "options": [
+            "He is young and they think he is reckless",
+            "His royal blood makes him a threat",
+            "His reports sound too strange to believe",
+            "He spends too long away from the Empire"
+          ]
+        },
+        {
+          "id": "hl-corin-11",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Temperance is his virtue and Envy tempts him. What does he envy?",
+          "options": [
+            "The older High Lords' respect",
+            "The Black Guard's freedom to act",
+            "The explorers who found things before him",
+            "The family line that rules while he is sent away"
+          ]
+        },
+        {
+          "id": "hl-corin-12",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
           "prompt": "His role toward Alaric and Seraphina?",
           "options": [
-            "Kind mentor to Alaric, distant father to Seraphina, betrays both",
-            "Pushes Alaric up so he can use him",
-            "Truly loves his daughter — the betrayal is meant to protect her",
-            "Sees Alaric as the son he wished he had"
-          ]
-        },
-        {
-          "id": "hl-corin-01",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "Keep the name High Lord Corin Saltmere?",
-          "options": [
-            "Keep",
-            "Keep Corin, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
-          ]
-        },
-        {
-          "id": "hl-corin-02",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "Age and years in charge?",
-          "options": [
-            "About 40, newly appointed",
-            "About 60, has explored for 30 years",
-            "About 50, leading 15 years",
-            "Young heir of an old sailing house"
-          ]
-        },
-        {
-          "id": "hl-corin-03",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "What does West Island Exploration bring in, and what does it lack?",
-          "options": [
-            "Brings ships, maps and island goods; lacks soldiers",
-            "Brings timber and fish from Stonehaven; lacks spirit-tech",
-            "Brings news from the far west; lacks the Council's trust",
-            "Brings old relics; lacks money"
-          ]
-        },
-        {
-          "id": "hl-corin-04",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "His main virtue and the sin that tempts him?",
-          "options": [
-            "Diligence / Greed",
-            "Courage-patience / Pride",
-            "Kindness / Sloth",
-            "Temperance / Envy"
-          ]
-        },
-        {
-          "id": "hl-corin-05",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "What is his secret?",
-          "options": [
-            "He found a thin place on Stonehaven Island",
-            "He trades with a humanoid people the Empire distrusts",
-            "He is hiding a stained crew",
-            "He has no secret — he is honest"
-          ]
-        },
-        {
-          "id": "hl-corin-06",
-          "group": "West Island Exploration – High Lord Corin Saltmere",
-          "prompt": "How does he treat the Black Guard?",
-          "options": [
-            "Friendly — asks them for help on the island",
-            "Wary — they bring trouble",
-            "Wants to borrow Recon for mapping",
-            "Rarely meets them"
-          ]
-        },
-        {
-          "id": "hl-davian-01",
-          "group": "Southern Kingdoms – High Lord Davian Solmarre",
-          "prompt": "Keep the name High Lord Davian Solmarre?",
-          "options": [
-            "Keep",
-            "Keep Davian, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
+            "Brings them news that changes the story",
+            "Becomes a friend to Alaric",
+            "Takes them on a voyage west in a later book",
+            "Little to do with them in Book 1"
           ]
         },
         {
@@ -750,25 +743,36 @@
           ]
         },
         {
-          "id": "hl-davian-06",
+          "id": "hl-davian-07",
           "group": "Southern Kingdoms – High Lord Davian Solmarre",
-          "prompt": "Has the stain touched his lands?",
+          "prompt": "Who are the rival south-east kingdoms he is always fighting?",
           "options": [
-            "Not yet",
-            "Quietly, in one city",
-            "Yes — and he is hiding it",
-            "Only in rumours"
+            "Many small, proud kingdoms that never accepted the Empire",
+            "One big kingdom that is nearly the Empire's equal",
+            "Kingdoms stained by corruption, pushing outward",
+            "Old allies who turned on the Empire"
           ]
         },
         {
-          "id": "hl-edric-01",
-          "group": "Middle Kingdoms – High Lord Edric Halloran",
-          "prompt": "Keep the name High Lord Edric Halloran?",
+          "id": "hl-davian-08",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "How does the Black Guard fit into his wars?",
           "options": [
-            "Keep",
-            "Keep Edric, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
+            "He calls on the Guard often and relies on them",
+            "He refuses them — the wars are his to fight",
+            "The Guard only hunts corruption on his borders",
+            "He resents that the Guard answers to Cassian, not him"
+          ]
+        },
+        {
+          "id": "hl-davian-09",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "His role toward Alaric and Seraphina?",
+          "options": [
+            "They fight beside him on the south-east border",
+            "He calls them in for what his army can't handle",
+            "He sees them as Cassian's spies",
+            "Barely meets them in Book 1"
           ]
         },
         {
@@ -783,17 +787,6 @@
           ]
         },
         {
-          "id": "hl-edric-03",
-          "group": "Middle Kingdoms – High Lord Edric Halloran",
-          "prompt": "What do the Middle Kingdoms trade and lack?",
-          "options": [
-            "Roads and markets; lack natural defences",
-            "Horses and soldiers; lack food",
-            "Craft and spirit-tech workshops (Kembar); lack spirit wisdom",
-            "Everything a little; known for nothing"
-          ]
-        },
-        {
           "id": "hl-edric-04",
           "group": "Middle Kingdoms – High Lord Edric Halloran",
           "prompt": "His main virtue and the sin that tempts him?",
@@ -805,52 +798,52 @@
           ]
         },
         {
-          "id": "hl-edric-05",
+          "id": "hl-edric-07",
           "group": "Middle Kingdoms – High Lord Edric Halloran",
-          "prompt": "Is he the Council High Lord married to Alaric's sister?",
+          "prompt": "The Middle Kingdoms are the last defense of the capital. What holds that line?",
           "options": [
-            "Yes",
-            "No — that's a different High Lord",
-            "Not him, but his son",
-            "Undecided"
+            "Old forts and walls from the first conquests",
+            "A big standing army",
+            "Rivers and land that are hard to cross",
+            "People who have been Imperial the longest and are very loyal"
           ]
         },
         {
-          "id": "hl-edric-06",
+          "id": "hl-edric-08",
           "group": "Middle Kingdoms – High Lord Edric Halloran",
-          "prompt": "His view of the census of the corrupted?",
+          "prompt": "Why is he against the census?",
           "options": [
-            "For it — order first",
-            "Against it",
-            "Wants it only in the borderlands",
-            "Changes his mind during the story"
+            "It insults loyal old subjects",
+            "It will turn neighbours against each other",
+            "He thinks the stained can be helped, not listed",
+            "He sees it as the Council grabbing power"
           ]
         },
         {
-          "id": "hl-aurelian-01",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
-          "prompt": "Keep the name High Lord Aurelian Vaelor?",
+          "id": "hl-edric-09",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "How does he treat the Black Guard?",
           "options": [
-            "Keep",
-            "Keep Aurelian, change the surname (too close to Alaric Vaelen)",
-            "Change the name",
-            "Keep for now, decide later"
+            "Trusts them — they keep the war far from his lands",
+            "Wary of them",
+            "Uses them as the capital's shield",
+            "Rarely deals with them"
           ]
         },
         {
-          "id": "hl-aurelian-02",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
-          "prompt": "Is he related to Sir Alaric Vaelen (Vaelor / Vaelen)?",
+          "id": "hl-edric-10",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "His role toward Alaric and Seraphina?",
           "options": [
-            "No — the names are just similar",
-            "Distant cousins, a proud old house and a farm branch",
-            "Yes, closely — a hidden family tie",
-            "Change one name to avoid confusion"
+            "An ally at the Council who speaks for them",
+            "A tough old lord they must win over",
+            "Stands with them against the census",
+            "Little to do with them in Book 1"
           ]
         },
         {
           "id": "hl-aurelian-03",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
           "prompt": "Age and years ruling the Capital Kingdom (Vorash)?",
           "options": [
             "About 60, ruling 30 years",
@@ -861,7 +854,7 @@
         },
         {
           "id": "hl-aurelian-04",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
           "prompt": "His main virtue and the sin that tempts him?",
           "options": [
             "Diligence / Pride",
@@ -871,58 +864,58 @@
           ]
         },
         {
-          "id": "hl-aurelian-05",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
-          "prompt": "How loyal is he to the Empire?",
+          "id": "hl-capital-07",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+          "prompt": "Pick a new name for the Capital Kingdom High Lord (not too close to Alaric Vaelen):",
           "options": [
-            "He IS the Empire's heart — totally loyal",
-            "Loyal to Vorash first",
-            "Wants to be Emperor",
-            "Loyal, but blind to its pride"
+            "High Lord Gideon Hale",
+            "High Lord Lucan Merrow",
+            "High Lord Matthias Stroud",
+            "High Lord Osric Penhallow"
           ]
         },
         {
-          "id": "hl-aurelian-06",
-          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
-          "prompt": "How does he treat the Black Guard?",
+          "id": "hl-capital-08",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+          "prompt": "Alaric's sister is married to him. What is her name?",
           "options": [
-            "Proud of them",
-            "Distrusts them — too independent",
-            "Uses them for political jobs",
-            "Doesn't care, unless they embarrass the capital"
+            "Elena",
+            "Mirelle",
+            "Isolde",
+            "Maren"
           ]
         },
         {
-          "id": "hl-rashid-01",
-          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "Keep the name High Lord Rashid al-Zahir?",
+          "id": "hl-capital-09",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+          "prompt": "Her role at court?",
           "options": [
-            "Keep",
-            "Keep Rashid, change the family name",
-            "Change the name",
-            "Keep for now, decide later"
+            "A quiet, steady voice at court",
+            "A sharp political mind — sharper than her husband",
+            "Keeps close ties to Alaric and the Black Guard",
+            "Avoids court politics and runs the household"
           ]
         },
         {
-          "id": "hl-rashid-02",
-          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "Is he the bible's 'Third High Lord' — patient, methodical, good, commanding Imperial + Desert forces in the Desert War?",
+          "id": "hl-capital-10",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+          "prompt": "Do they have children?",
           "options": [
-            "Yes, same person",
-            "No, a different person",
-            "He is the Desert King, not the theatre commander",
-            "Undecided"
+            "Young children",
+            "A grown son in the army",
+            "No children yet",
+            "A daughter about Seraphina's age"
           ]
         },
         {
-          "id": "hl-rashid-03",
-          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "Age and years ruling?",
+          "id": "hl-capital-11",
+          "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+          "prompt": "His relationship with the Emperor?",
           "options": [
-            "About 55, ruling 25 years",
-            "About 45, ruling 15 years",
-            "About 65, a veteran of the last war",
-            "About 40, new to the title"
+            "Closest advisor — sees him daily",
+            "Respectful, but speaks up when he disagrees",
+            "Distant — the Council stands between them",
+            "Quietly worried about the Emperor's choices"
           ]
         },
         {
@@ -937,47 +930,68 @@
           ]
         },
         {
-          "id": "hl-rashid-05",
+          "id": "hl-rashid-07",
           "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "Has the stain touched his land (the Blighted Wastes and Korvan Dominion are next door)?",
+          "prompt": "Rashid is the theater commander, not the king. Who rules the desert kingdom?",
           "options": [
-            "Yes — at the borders, and it's spreading",
-            "A city has already fallen",
-            "Not yet, but he can feel it coming",
-            "It's inside his court"
+            "King Farid al-Naseri",
+            "King Idris ibn Malik",
+            "Queen Samira al-Rahim",
+            "King Tarek Haddad",
+            "A council of desert tribes, no single king"
           ]
         },
         {
-          "id": "hl-rashid-06",
+          "id": "hl-rashid-08",
           "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "His role toward Alaric and Seraphina?",
+          "prompt": "Is Rashid still called a 'High Lord'?",
           "options": [
-            "Trusts Seraphina's Recon intel when others don't",
-            "A wise mentor to Alaric, unlike Cassian",
-            "Stays neutral, tests them",
-            "Saves them from the General's bad orders"
+            "Yes — a High Lord who serves as theater commander",
+            "No — he is 'Commander'; the desert king is the High Lord",
+            "Neither — the desert kingdom has no High Lord seat yet"
           ]
         },
         {
-          "id": "hl-bjorn-01",
-          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
-          "prompt": "Keep the name High Lord Bjorn Halvard?",
+          "id": "hl-rashid-09",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "75% of the desert kingdom is conquered. Conquered by whom?",
           "options": [
-            "Keep",
-            "Keep Bjorn, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
+            "By the Empire — the rest is still free",
+            "By the corrupted from the Blighted Wastes and Korvan Dominion",
+            "Both — the Empire took some, the corrupted took some"
           ]
         },
         {
-          "id": "hl-bjorn-02",
-          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
-          "prompt": "Age and years ruling?",
+          "id": "hl-rashid-10",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "How did that 75% fall?",
           "options": [
-            "About 50, ruling 20 years",
-            "About 68, ruling 40 years",
-            "About 42, ruling 8 years",
-            "About 35, after his father fell"
+            "Slowly, city by city, over many years",
+            "One great war a generation ago",
+            "Many cities joined the Empire by treaty",
+            "Corruption weakened them first, then they fell"
+          ]
+        },
+        {
+          "id": "hl-rashid-11",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "What is the remaining 25%?",
+          "options": [
+            "Free tribes who refuse the Empire",
+            "The last holdouts against the corruption",
+            "The oldest cities, held at any cost",
+            "Deep desert nobody can hold"
+          ]
+        },
+        {
+          "id": "hl-rashid-12",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "How does he test Alaric and Seraphina?",
+          "options": [
+            "Gives them a hard mission and watches",
+            "Holds back help to see what they do",
+            "Asks hard questions about the census and the Guard",
+            "Tests them in the Desert War itself"
           ]
         },
         {
@@ -992,135 +1006,124 @@
           ]
         },
         {
-          "id": "hl-bjorn-04",
+          "id": "hl-bjorn-07",
           "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
-          "prompt": "His main virtue and the sin that tempts him?",
+          "prompt": "What has he uncovered in the mountains?",
           "options": [
-            "Diligence / Wrath",
-            "Patience / Pride",
-            "Kindness / Gluttony",
-            "Temperance / Sloth"
+            "Ruins from before the First Fall",
+            "Old places of the Ashara peoples",
+            "Tunnels where something corrupted lives",
+            "Lost mountain peoples",
+            "Something he hasn't told anyone yet"
           ]
         },
         {
-          "id": "hl-bjorn-05",
+          "id": "hl-bjorn-08",
           "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
-          "prompt": "How does he treat the Black Guard?",
+          "prompt": "Where is he searching?",
           "options": [
-            "Respects fighters, likes them",
-            "Thinks they are soft city soldiers",
-            "Sends his best warriors to join them",
-            "Wants them out of his mountains"
+            "The Twinskull Range",
+            "The Deadveil Range",
+            "His own Northern Mountains",
+            "All of them"
           ]
         },
         {
-          "id": "hl-bjorn-06",
+          "id": "hl-bjorn-09",
           "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
-          "prompt": "His secret?",
+          "prompt": "Why does he dig into these secrets?",
           "options": [
-            "Something sleeps under his mountains",
-            "He made a deal with a humanoid people",
-            "He was once Black Guard",
-            "No secret — blunt and honest"
+            "Duty — he wants to know what threatens his people",
+            "Curiosity — he can't leave a mystery alone",
+            "Someone asked him to",
+            "An old loss in the mountains"
           ]
         },
         {
-          "id": "hl-tomas-01",
+          "id": "hl-bjorn-10",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "Diligence is his virtue and Wrath tempts him. How does the wrath show?",
+          "options": [
+            "Rage at the corrupted",
+            "A hot temper with the Council",
+            "He fights too hard, too fast",
+            "Kept tightly under control — until it isn't"
+          ]
+        },
+        {
+          "id": "hl-bjorn-11",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "His role toward Alaric and Seraphina?",
+          "options": [
+            "Fights beside them",
+            "Trains them in mountain fighting",
+            "Shares a mountain secret with them",
+            "Little to do with them in Book 1"
+          ]
+        },
+        {
+          "id": "hl-tomas-07",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "Keep the name High Lord Tomas Greaves?",
+          "prompt": "So Alaric has (at least) two sisters: one married to the Capital lord, one a farmer here. Right?",
           "options": [
-            "Keep",
-            "Keep Tomas, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
+            "Yes — two sisters",
+            "Yes, and other siblings too",
+            "No — I want to change this"
           ]
         },
         {
-          "id": "hl-tomas-02",
+          "id": "hl-tomas-08",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "Age and years ruling?",
+          "prompt": "Who founded the colony?",
           "options": [
-            "About 60, ruling 25 years",
-            "About 45, ruling 10 years",
-            "About 52, a former farmer himself",
-            "About 70, close to stepping down"
+            "Settlers sent out by the Empire",
+            "People fleeing other kingdoms",
+            "A mix who came on their own, then joined the Empire",
+            "Followers of an earlier High Lord, Tomas's ancestor"
           ]
         },
         {
-          "id": "hl-tomas-03",
+          "id": "hl-tomas-09",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "What does the Farm Kingdom trade and lack?",
+          "prompt": "Some colonists were stained. How are they treated now?",
           "options": [
-            "Food for the Empire; lacks soldiers",
-            "Grain and horses; lacks spirit protection",
-            "Food; lacks a voice on the Council",
-            "Wool and timber from the forest ring; lacks roads"
+            "Watched, but accepted",
+            "Kept apart in their own villages",
+            "Hidden — most people don't know",
+            "Some became leaders"
           ]
         },
         {
-          "id": "hl-tomas-04",
+          "id": "hl-tomas-10",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "Has the stain touched his land (Twinskull and Deadveil ranges are north of the forest ring)?",
+          "prompt": "What are the 'unknown' attackers?",
           "options": [
-            "Yes — crops failing, herds startled",
-            "Only at the northern forest edge",
-            "Not yet, but he fears it",
-            "It's inside a village and he's hiding it"
+            "Corrupted things from the Twinskull and Deadveil ranges",
+            "Something coming out of the forests",
+            "No one knows — few survive to tell",
+            "Something that leaves no trace"
           ]
         },
         {
-          "id": "hl-tomas-05",
+          "id": "hl-tomas-11",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "His main virtue and the sin that tempts him?",
+          "prompt": "Why are wood and mountain elves attacking?",
           "options": [
-            "Diligence / Sloth",
-            "Charity / Greed",
-            "Humility / Envy",
-            "Patience / Wrath"
+            "The colony took land that was theirs",
+            "Some of those elves are stained",
+            "Someone is turning them against humans",
+            "A misunderstanding that talk could fix"
           ]
         },
         {
-          "id": "hl-tomas-06",
+          "id": "hl-tomas-12",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "His tie to Alaric?",
+          "prompt": "Charity is his virtue and Greed tempts him. How does the greed show?",
           "options": [
-            "Knew Alaric's father — a fellow farmer",
-            "None at first",
-            "Alaric's farmer sister lives in his land",
-            "His land is where the Book 1 frontier mission happens"
-          ]
-        },
-        {
-          "id": "hl-elowen-01",
-          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
-          "prompt": "Keep the name High Lady Elowen Silvaris (half-elven)?",
-          "options": [
-            "Keep",
-            "Keep Elowen, change the surname",
-            "Change the name",
-            "Keep for now, decide later"
-          ]
-        },
-        {
-          "id": "hl-elowen-02",
-          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
-          "prompt": "Are 'elves' one of the spirit-heavy peoples?",
-          "options": [
-            "Yes — 'elves' is the common name for a spirit-heavy people",
-            "Elves are their own people, not on the Ashara list",
-            "Elves are a stained people that turned back",
-            "Use a different word than elves"
-          ]
-        },
-        {
-          "id": "hl-elowen-03",
-          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
-          "prompt": "Her age and years ruling?",
-          "options": [
-            "Looks 30, is over 150; ruling 80 years",
-            "About 40, ruling 10 years",
-            "Very old, nobody knows",
-            "Young, just inherited"
+            "Holding back food to win favours",
+            "Wanting more land for the farms",
+            "Charging the Empire too much",
+            "He resists it, but his people don't"
           ]
         },
         {
@@ -1135,25 +1138,58 @@
           ]
         },
         {
-          "id": "hl-elowen-05",
+          "id": "hl-elowen-07",
           "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
-          "prompt": "Her main virtue and the sin that tempts her?",
+          "prompt": "Which side of her family is elven?",
           "options": [
-            "Kindness / Pride",
-            "Temperance / Envy",
-            "Charity / Lust (as possessiveness — kept modest)",
-            "Patience / Sloth"
+            "Her mother",
+            "Her father",
+            "An elven grandparent",
+            "No one knows for sure"
           ]
         },
         {
-          "id": "hl-elowen-06",
+          "id": "hl-elowen-08",
           "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
-          "prompt": "Her role toward Alaric and Seraphina?",
+          "prompt": "How do her city's elves feel about the Empire?",
           "options": [
-            "Seraphina's mentor or family friend",
-            "Hosts a big diplomacy mission",
-            "A hidden ally against Cassian",
-            "Distrusts them at first"
+            "Wary friends",
+            "Split down the middle",
+            "They look down on it",
+            "Mostly avoid it"
+          ]
+        },
+        {
+          "id": "hl-elowen-09",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "What is her big diplomacy mission for?",
+          "options": [
+            "Peace between elves and humans",
+            "Uniting against the corruption",
+            "Stopping the elf attacks on Tomas's farm land",
+            "A treaty and trade with the Empire"
+          ]
+        },
+        {
+          "id": "hl-elowen-10",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Are the wood and mountain elves the same people as her city's elves?",
+          "options": [
+            "Same people, different clans",
+            "Distant cousins who reject the city",
+            "A different, wilder people",
+            "Stained elves"
+          ]
+        },
+        {
+          "id": "hl-elowen-11",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "She is very proud, kind, and not patient. How does that show?",
+          "options": [
+            "She rushes deals",
+            "She takes offence easily",
+            "She won't admit mistakes",
+            "She pushes Alaric and Seraphina too hard"
           ]
         }
       ]

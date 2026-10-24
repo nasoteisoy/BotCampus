@@ -1,4 +1,435 @@
 {
   "_help": "Locked (canon) answers. Added by tools/apply-answers.py. Hand-edit freely: each entry has section, section_title, question_id, question, answer, custom_text, locked (YYYY-MM-DD).",
-  "entries": []
+  "entries": [
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-01",
+      "question": "Keep the name High Lord Cassian Thorne?",
+      "answer": "Keep",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-02",
+      "question": "How old is he, and how long has he led the Black Guard?",
+      "answer": "Other (write my own)",
+      "custom_text": "He has always been in the military. He had his daughter at 30. His daughter is now 20. He started the black guard from scratch and the main character is under the first black guard division ever created.",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-03",
+      "question": "Which sin tempts him most (the bible says he is secretly very Proud)?",
+      "answer": "Other (write my own)",
+      "custom_text": "He looks humble and intelligent and smart and ambitious and humorous and just and caring and thinks what is best for the empire. Internally he is seeking the power that will save humanity and doesn’t believe the empire is doing it right. He was secretly born in a rival kingdom",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-04",
+      "question": "How did he get the title?",
+      "answer": "Appointed by the Council for his brilliance",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-05",
+      "question": "His view of the census of the corrupted?",
+      "answer": "Against it — he wants to use corruption, not count it",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-06",
+      "question": "His role toward Alaric and Seraphina?",
+      "answer": "Other (write my own)",
+      "custom_text": "He mentors and truly sees Alaric as the future, but he will have to slowly change Alaric’s views to better the world. Truly loves his daughter but humanity comes first",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-01",
+      "question": "Keep the name High Lord Corin Saltmere?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-02",
+      "question": "Age and years in charge?",
+      "answer": "Other (write my own)",
+      "custom_text": "He is young for a HL in his late 20s early 30s. He is a descendant of a past emperor. He is hungry to know parts of the world unknown.",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-03",
+      "question": "What does West Island Exploration bring in, and what does it lack?",
+      "answer": "Brings news from the far west; lacks the Council's trust",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-04",
+      "question": "His main virtue and the sin that tempts him?",
+      "answer": "Temperance / Envy",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-05",
+      "question": "What is his secret?",
+      "answer": "He has no secret — he is honest",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "West Island Exploration – High Lord Corin Saltmere",
+      "question_id": "hl-corin-06",
+      "question": "How does he treat the Black Guard?",
+      "answer": "Rarely meets them",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Southern Kingdoms – High Lord Davian Solmarre",
+      "question_id": "hl-davian-01",
+      "question": "Keep the name High Lord Davian Solmarre?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Southern Kingdoms – High Lord Davian Solmarre",
+      "question_id": "hl-davian-06",
+      "question": "Has the stain touched his lands?",
+      "answer": "Other (write my own)",
+      "custom_text": "Overcoming known stain. It’s past conquered lands and is in constant wars with rival south east kingdoms",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Middle Kingdoms – High Lord Edric Halloran",
+      "question_id": "hl-edric-01",
+      "question": "Keep the name High Lord Edric Halloran?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Middle Kingdoms – High Lord Edric Halloran",
+      "question_id": "hl-edric-03",
+      "question": "What do the Middle Kingdoms trade and lack?",
+      "answer": "Other (write my own)",
+      "custom_text": "Early conquered lands last defense to the capital",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Middle Kingdoms – High Lord Edric Halloran",
+      "question_id": "hl-edric-05",
+      "question": "Is he the Council High Lord married to Alaric's sister?",
+      "answer": "No — that's a different High Lord",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Middle Kingdoms – High Lord Edric Halloran",
+      "question_id": "hl-edric-06",
+      "question": "His view of the census of the corrupted?",
+      "answer": "Against it",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+      "question_id": "hl-aurelian-01",
+      "question": "Keep the name High Lord Aurelian Vaelor?",
+      "answer": "Change the name",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+      "question_id": "hl-aurelian-02",
+      "question": "Is he related to Sir Alaric Vaelen (Vaelor / Vaelen)?",
+      "answer": "Change one name to avoid confusion",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+      "question_id": "hl-aurelian-05",
+      "question": "How loyal is he to the Empire?",
+      "answer": "Other (write my own)",
+      "custom_text": "Loyal but tries to be unbiased. He is married to Alaric’s sister.",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Capital Kingdom – High Lord (name being changed; was Aurelian Vaelor)",
+      "question_id": "hl-aurelian-06",
+      "question": "How does he treat the Black Guard?",
+      "answer": "Distrusts them — too independent",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+      "question_id": "hl-rashid-01",
+      "question": "Keep the name High Lord Rashid al-Zahir?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+      "question_id": "hl-rashid-02",
+      "question": "Is he the bible's 'Third High Lord' — patient, methodical, good, commanding Imperial + Desert forces in the Desert War?",
+      "answer": "Other (write my own)",
+      "custom_text": "He is more the theater commander. I don’t think he should also be the king. But yes he is patient, methodical and good",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+      "question_id": "hl-rashid-03",
+      "question": "Age and years ruling?",
+      "answer": "About 45, ruling 15 years",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+      "question_id": "hl-rashid-05",
+      "question": "Has the stain touched his land (the Blighted Wastes and Korvan Dominion are next door)?",
+      "answer": "Other (write my own)",
+      "custom_text": "This kingdom’s lands are 75% conquered",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+      "question_id": "hl-rashid-06",
+      "question": "His role toward Alaric and Seraphina?",
+      "answer": "Stays neutral, tests them",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+      "question_id": "hl-bjorn-01",
+      "question": "Keep the name High Lord Bjorn Halvard?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+      "question_id": "hl-bjorn-02",
+      "question": "Age and years ruling?",
+      "answer": "About 50, ruling 20 years",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+      "question_id": "hl-bjorn-04",
+      "question": "His main virtue and the sin that tempts him?",
+      "answer": "Diligence / Wrath",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+      "question_id": "hl-bjorn-05",
+      "question": "How does he treat the Black Guard?",
+      "answer": "Respects fighters, likes them",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+      "question_id": "hl-bjorn-06",
+      "question": "His secret?",
+      "answer": "Other (write my own)",
+      "custom_text": "No secret but he is uncovering secrets in the many mountains",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-01",
+      "question": "Keep the name High Lord Tomas Greaves?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-02",
+      "question": "Age and years ruling?",
+      "answer": "Other (write my own)",
+      "custom_text": "About 52 grew up in the farms but as a descendant of the previous HL",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-03",
+      "question": "What does the Farm Kingdom trade and lack?",
+      "answer": "Food for the Empire; lacks soldiers",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-04",
+      "question": "Has the stain touched his land (Twinskull and Deadveil ranges are north of the forest ring)?",
+      "answer": "Other (write my own)",
+      "custom_text": "What makes this place special is that it was not conquered but founded. But founded as a colony by all types of humans some stained. This land has more and more been attacked by unknown and wood/mountain elves",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-05",
+      "question": "His main virtue and the sin that tempts him?",
+      "answer": "Charity / Greed",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "hl-tomas-06",
+      "question": "His tie to Alaric?",
+      "answer": "Alaric's farmer sister lives in his land",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+      "question_id": "hl-elowen-01",
+      "question": "Keep the name High Lady Elowen Silvaris (half-elven)?",
+      "answer": "Keep for now, decide later",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+      "question_id": "hl-elowen-02",
+      "question": "Are 'elves' one of the spirit-heavy peoples?",
+      "answer": "Yes — 'elves' is the common name for a spirit-heavy people",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+      "question_id": "hl-elowen-03",
+      "question": "Her age and years ruling?",
+      "answer": "About 40, ruling 10 years",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+      "question_id": "hl-elowen-05",
+      "question": "Her main virtue and the sin that tempts her?",
+      "answer": "Other (write my own)",
+      "custom_text": "She is a very proud person, kind, but is not patient",
+      "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+      "question_id": "hl-elowen-06",
+      "question": "Her role toward Alaric and Seraphina?",
+      "answer": "Hosts a big diplomacy mission",
+      "custom_text": "",
+      "locked": "2026-10-24"
+    }
+  ]
 }
