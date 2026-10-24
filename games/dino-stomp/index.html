@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#eaf4d8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Dino Stomp</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css?v=2">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"
+} }
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud" class="hidden">
+  <div id="tiles"></div>
+  <div id="board" class="hidden" aria-label="Score"></div>
+  <div id="count" aria-label="Found"><span class="ap">🍎</span><b id="cn">0</b><i id="ct">/18</i></div>
+  <div id="timer" class="hidden" aria-label="Time left">⏱️<b>3:00</b></div>
+  <div id="modes" role="group" aria-label="Controls">
+    <button class="mb" id="mCam" data-mode="cam" aria-label="Camera: move your body" title="Camera: march, lean, jump, roar">📷</button>
+    <button class="mb on" id="mKeys" data-mode="keys" aria-label="Keys or touch" title="Keys / touch">⌨️</button>
+    <button class="mb" id="mDuo" data-mode="keys2" aria-label="Two players on keys" title="2 players: WAD vs arrows">👥</button>
+  </div>
+  <div id="acts" class="hidden"><button class="ab" data-act="roar" aria-label="Roar">🦖<small>💥</small></button><button class="ab" data-act="jump" aria-label="Jump">⬆️</button></div>
+  <div id="hint" class="hidden"></div>
+  <div id="camHint" class="hidden" aria-hidden="true"><span class="mv"><canvas data-demo="march"></canvas><b>🚶</b></span><span class="mv"><canvas data-demo="lean"></canvas><b>↩️↪️</b></span><span class="mv"><canvas data-demo="jump"></canvas><b>⬆️</b></span><span class="mv"><canvas data-demo="roar"></canvas><b>🦖</b></span></div>
+  <div id="needHint" class="hidden" aria-hidden="true"><canvas data-demo="roar"></canvas><b>🦖</b></div>
+  <div id="edge" class="hidden">↩️</div>
+</div>
+
+<div id="title">
+  <img class="logo" src="icon.svg" alt="">
+  <h1>Dino Stomp</h1>
+  <div class="howto" aria-label="How to move"><span class="mv"><canvas data-demo="march"></canvas><b>🚶</b></span><span class="mv"><canvas data-demo="lean"></canvas><b>↩️↪️</b></span><span class="mv"><canvas data-demo="jump"></canvas><b>⬆️</b></span><span class="mv"><canvas data-demo="roar"></canvas><b>🦖</b></span><span class="mv"><b class="ap">🍎🥚</b><b>×18</b></span></div>
+  <div id="camPrompt" aria-live="polite"><span class="pcam">📷</span><canvas class="phand" data-demo="point"></canvas><b id="camMsg">⏳</b></div>
+  <button id="playBtn" aria-label="Play">▶️</button>
+  <div class="lockbtns" aria-label="Players"><button id="bPlayers" class="lb" aria-label="Players: change">👤<b>2</b></button><button id="bRoll" class="lb" aria-label="Roll call again: who is who">📣🙋</button></div>
+  <div class="how fallback" id="howKeys"><span><b class="key">W</b> = 🚶</span><span><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span><b class="key">␣</b> = ⬆️</span><span><b class="key">E</b> = 🦖</span><span>✋⏳👉</span></div>
+  <button id="bTimed" class="tb" aria-label="Timer: off (relaxed) or 3 minutes" aria-pressed="false" data-dwell>♾️</button>
+</div>
+
+<div id="practice" class="hidden" aria-label="Practice">
+  <div class="pbig"><canvas id="pDemo" data-demo="march"></canvas><b id="pIcon">🚶</b></div>
+  <div id="pSteps"></div>
+  <button id="pSkip" aria-label="Skip">⏭</button>
+</div>
+
+<div id="win" class="hidden">
+  <div class="big"><span class="wa">🦖</span><span class="ws">⭐</span></div>
+  <div class="wn" id="wn">18/18</div>
+  <div id="wPlayers" class="hidden"></div>
+  <div class="wt" id="wTime">⏱️ 0:00</div>
+  <button id="replayBtn" aria-label="Play again">🔄</button>
+</div>
+
+<div id="dock">
+  <div id="tr">
+    <a id="home" class="rb btn" href="../move-play/" aria-label="All games" title="All games">🏠</a>
+    <button id="zoomBtn" class="rb" aria-label="Camera distance" title="Camera distance (Z)">🔍<sup></sup></button>
+    <button id="muteBtn" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
+  </div>
+  <div id="camBox" class="hidden">
+    <div class="mir"><video id="camVid" playsinline muted autoplay></video><canvas id="camCv" width="320" height="240"></canvas></div>
+    <span id="camSt">⏳</span>
+  </div>
+</div>
+<div id="stepBack" aria-hidden="true">📏<span>🔙</span></div>
+
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>

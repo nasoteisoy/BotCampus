@@ -56,3 +56,6 @@ body[data-cam="loading"] #camBar .pcam, body[data-cam="tap"] #camBar .pcam { ani
 /* camera live: the room (mirrored, whole frame, 50 %) + skeletons show behind the cards */
 html:has(body.camlive) { background: linear-gradient(160deg, #8a4dff, #4b2ad6) fixed; }
 body.camlive { background: transparent; }
+/* ---- v3: "3D ✨" badge on the new open-world games ---- */
+.card .badge { position: absolute; top: -10px; right: -6px; z-index: 2; background: #ff5a8a; color: #fff; font: 800 17px/1 system-ui, sans-serif; padding: 6px 10px; border-radius: 999px; box-shadow: 0 3px 0 #0003; transform: rotate(8deg); pointer-events: none; }
+@media (max-width: 520px) { .card .badge { font-size: 14px; padding: 4px 8px; top: -8px; right: -4px; } }
