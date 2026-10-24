@@ -13,19 +13,19 @@
    "url": "games/story/",
    "extras": [
     {
-     "label": "🔊 Letters",
-     "url": "games/story/letters.html"
+     "label": "⭐ Canon",
+     "url": "games/story/canon.html"
     },
     {
-     "label": "Characters",
-     "url": "games/story/characters.html"
+     "label": "✍️ Decide",
+     "url": "games/story/decide.html"
     },
     {
-     "label": "Ranks (draft)",
-     "url": "games/story/ranks.html"
+     "label": "📜 Non-Canon",
+     "url": "games/story/non-canon.html"
     }
    ],
-   "note": "Our fantasy comic world: letters you can listen to, lore, Black Guard characters, comics",
+   "note": "Our fantasy comic world: decide what's canon, plus letters you can listen to, lore, characters, comics",
    "thumb": "thumbs/story.webp"
   },
   {

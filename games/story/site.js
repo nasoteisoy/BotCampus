@@ -1,4 +1,6 @@
 (function(){
+  // Keep sticky audio players just under the header (header height varies by page).
+  var hdr=document.querySelector('.top');function setH(){if(hdr)document.documentElement.style.setProperty('--hdr',(hdr.offsetHeight+6)+'px');}setH();addEventListener('resize',setH);
   // Audio: remember position per file, speed buttons, only one plays at a time.
   var all=[].slice.call(document.querySelectorAll('audio'));
   all.forEach(function(a){

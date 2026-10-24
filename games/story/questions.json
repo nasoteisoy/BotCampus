@@ -1,0 +1,1377 @@
+{
+  "_help": "Hand-edit freely. Each question needs a unique id (never reuse one), a prompt and 3-5 options. The page adds 'Other (write my own)' to every question automatically. 'group' is optional (used for High Lords).",
+  "sections": [
+    {
+      "id": "world",
+      "title": "World & Cosmology",
+      "blurb": "Spirit/Physical spectrum, the Breath, Pride",
+      "questions": [
+        {
+          "id": "world-breath-name-01",
+          "prompt": "Grace has many names in the Letters (the Gift, the Breath, the Light). What do people call it in the old myths?",
+          "options": [
+            "The Breath (Asha) in the myths, Grace in later ages",
+            "Always the Breath",
+            "Always Grace",
+            "The Light",
+            "Different names in each kingdom"
+          ]
+        },
+        {
+          "id": "world-heading-01",
+          "prompt": "The Breath moves like wind with a heading. Where is that heading going?",
+          "options": [
+            "Toward a living join — Spirit and Physical meeting, not erasing each other",
+            "Toward the Creator himself, with both worlds following",
+            "Nobody in the story ever knows; only that there is one",
+            "Toward humans as the place where both worlds are joined"
+          ]
+        },
+        {
+          "id": "world-seven-or-eight-01",
+          "prompt": "Virtues and sins: seven pairs, or eight with Grace vs Corruption?",
+          "options": [
+            "Seven pairs; Grace stands outside the list (Letter II)",
+            "Eight pairs; Grace vs Corruption is the eighth (the bible)",
+            "Seven for people, and Grace/Corruption as the whole-person level above them"
+          ]
+        },
+        {
+          "id": "world-measure-drift-01",
+          "prompt": "Measure (Enough) sits in the middle smear. Which way does it lean?",
+          "options": [
+            "Stays in the middle — law and ration both",
+            "Drifts to the Spirit side (law, limit, ban)",
+            "Drifts to the Physical side (weight, season, crop)",
+            "Splits in two: Meshal (spirit law) and Meseth (felt in the hands), as now"
+          ]
+        },
+        {
+          "id": "world-spirit-contact-01",
+          "prompt": "How does the Spirit World touch the Physical World day to day?",
+          "options": [
+            "Only at thin places (crossings)",
+            "Everywhere, but faintly — most people feel it, few see it",
+            "Through people: human choices open or close it",
+            "Through weather and omens that careful people can read"
+          ]
+        },
+        {
+          "id": "world-species-names-01",
+          "prompt": "Humanoid peoples between humans and spirits — what do we call them?",
+          "options": [
+            "Use the Ashara people-names (Orineth, Selith, Kemur…) for everything",
+            "Common names like elves and dwarves, with Ashara names as their true names",
+            "New names, to be decided later",
+            "Each kingdom has its own names for them"
+          ]
+        },
+        {
+          "id": "world-glimmers-01",
+          "prompt": "Can ordinary people see Glimmers (the good little encouragers)?",
+          "options": [
+            "Never — they only feel a nudge",
+            "Rarely, at moments of real choice",
+            "Children and the humble can see them",
+            "Only Flame Order members trained to see"
+          ]
+        },
+        {
+          "id": "world-pride-root-01",
+          "prompt": "Pride feeds the other sins (\"I deserve this\" → Greed, etc.). How visible is that in the story?",
+          "options": [
+            "Central rule — every villain's sin traces back to Pride",
+            "Shown in the heroes, never explained out loud",
+            "Only in the deep myth (Letters), not on comic pages",
+            "Half the time — some sins stand on their own"
+          ]
+        },
+        {
+          "id": "world-spirit-change-01",
+          "prompt": "Repeated choices change a person's spirit (temptation → choice → habit → spiritual change). Can that be seen?",
+          "options": [
+            "Yes — spirits literally show it to those who can see",
+            "Only through behaviour and art style (colour, shadows)",
+            "Only Flame Order tools or spirit-tech can detect it",
+            "Not visible at all; it's only moral"
+          ]
+        },
+        {
+          "id": "world-creator-name-01",
+          "prompt": "What do people in the story call the Creator?",
+          "options": [
+            "The Creator",
+            "The Maker",
+            "The One Will",
+            "Different names in each culture",
+            "Almost never named on the page"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ashara",
+      "title": "Ashara Offices & the First Fall",
+      "blurb": "The peoples of the spectrum and how the stain spread",
+      "questions": [
+        {
+          "id": "ashara-matchhead-01",
+          "prompt": "Is Ashavar the people who fall first (the 'match-head')?",
+          "options": [
+            "Keep Ashavar",
+            "Change to Dorinel (ranking)",
+            "Change to Orinel (naming as a claim)",
+            "Change to Meshal (law)"
+          ]
+        },
+        {
+          "id": "ashara-first-leaner-01",
+          "prompt": "The first one of Ashavar who leaned into Pride — do they get a name?",
+          "options": [
+            "Yes, a name that is spoken in the story",
+            "Yes, but only secretly known (never on the page)",
+            "No — the silence is the point",
+            "They are the 'Ancient Enemy' from the bible"
+          ]
+        },
+        {
+          "id": "ashara-two-thirds-01",
+          "prompt": "Two-thirds of Ashavar tipped together like a flock. Is that number known in-world?",
+          "options": [
+            "Known only to spirits",
+            "Known to the Flame Order as a secret teaching",
+            "Common legend, but people get it wrong (they think it was one king)",
+            "Nobody in-world knows"
+          ]
+        },
+        {
+          "id": "ashara-remnant-01",
+          "prompt": "What does the faithful remnant third of Ashavar do now?",
+          "options": [
+            "Quietly help humans — they know 'we cannot be the Breath'",
+            "Watch from afar and almost never act",
+            "Hunt their fallen kin",
+            "Live hidden near the Everlight Forest"
+          ]
+        },
+        {
+          "id": "ashara-kan-title-01",
+          "prompt": "'Ashar-Kan' is a later mistaken title, as if one king sat in the Gust. How is it used in the story?",
+          "options": [
+            "People believe in one dark king named Ashar-Kan; the truth is revealed late",
+            "The Empire uses the name as propaganda",
+            "The fallen Ashavar-Kan use it to seem stronger",
+            "Only scholars use it"
+          ]
+        },
+        {
+          "id": "ashara-humans-offices-01",
+          "prompt": "Can humans, being Body and Spirit, stand in an Ashara office (e.g. Recon in Orineth/Selith)?",
+          "options": [
+            "Yes, without knowing the High Title",
+            "Yes, and some learn the title and grow in it",
+            "No — humans are outside the offices, choosing freely",
+            "Only by gift of the Breath, rarely"
+          ]
+        },
+        {
+          "id": "ashara-seen-01",
+          "prompt": "How often do Ashara peoples appear on comic pages?",
+          "options": [
+            "Often — they are part of everyday life",
+            "Sometimes — mostly near thin places",
+            "Rarely — big moments only",
+            "Through the far-physical peoples (herds, rivers, stone) all the time, spirits rarely"
+          ]
+        },
+        {
+          "id": "ashara-long-knowing-look-01",
+          "prompt": "Far-spirit peoples (Long Knowing) were redrawn as light, not dirt. Keep that look?",
+          "options": [
+            "Keep — luminous, ethereal",
+            "Light, but with faces you can read",
+            "Change them to look almost human",
+            "Each people gets its own colour of light"
+          ]
+        },
+        {
+          "id": "ashara-stain-order-01",
+          "prompt": "The stain spread spirit first, smear next, stone last. Is the far-physical world still feeling it now?",
+          "options": [
+            "Yes — weather against season, startled herds are Book 1 omens",
+            "It finished long ago",
+            "It is getting worse right now, which is why the story starts",
+            "Only in corrupted lands (Blighted Wastes, Twinskull, Deadveil)"
+          ]
+        },
+        {
+          "id": "ashara-names-01",
+          "prompt": "Keep the Ashara names (Orinel, Selvar, Kemath, Nurest…) as they are?",
+          "options": [
+            "Keep all",
+            "Keep most, rename a few later",
+            "Keep for the deep myth; simpler common names in the comic",
+            "Rework the whole naming family"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empire",
+      "title": "The Empire",
+      "blurb": "Governance, the census of the corrupted, Vorash, everyday life",
+      "questions": [
+        {
+          "id": "empire-ruler-01",
+          "prompt": "Who rules the Empire of Man?",
+          "options": [
+            "An Emperor with a Council of High Lords",
+            "A Council of High Lords only, no Emperor",
+            "The Capital Kingdom's High Lord leads the Council",
+            "An Emperor whose power is mostly ceremonial"
+          ]
+        },
+        {
+          "id": "empire-census-01",
+          "prompt": "The Empire's 'census of the corrupted' (a counterfeit of Meshal). Where is it in the story?",
+          "options": [
+            "Already law when Book 1 starts",
+            "Proposed during Book 1 and argued over",
+            "Comes later, as the Empire slides into Pride",
+            "Secret — run by a hidden group"
+          ]
+        },
+        {
+          "id": "empire-tech-level-01",
+          "prompt": "Everyday technology in Vorash — street lamps are…",
+          "options": [
+            "Oil",
+            "Spirit-tech",
+            "Both: oil for the poor, spirit-tech for the rich",
+            "Spirit-tech in the capital, oil everywhere else"
+          ]
+        },
+        {
+          "id": "empire-pride-slide-01",
+          "prompt": "How far has the Empire slid toward 'anyone who opposes us must be corrupted'?",
+          "options": [
+            "Barely — the heroes see the first signs",
+            "Halfway — some officials already think this way",
+            "Far — the heroes are fighting inside a proud empire",
+            "Different in each kingdom"
+          ]
+        },
+        {
+          "id": "empire-kingdoms-01",
+          "prompt": "How free are member kingdoms?",
+          "options": [
+            "They keep their kings, laws, dress and languages",
+            "They keep culture, but Imperial law is above theirs",
+            "Very free in peace, Imperial control in war",
+            "Some are free, some are occupied"
+          ]
+        },
+        {
+          "id": "empire-humanoids-01",
+          "prompt": "How does the Empire treat spirit-heavy and physical-heavy humanoid peoples?",
+          "options": [
+            "Allies by treaty, with some distrust",
+            "Second-class subjects",
+            "Mostly ignored unless there is trouble",
+            "It depends on the kingdom"
+          ]
+        },
+        {
+          "id": "empire-flame-01",
+          "prompt": "Relationship between the Empire and the Order of the Living Flame?",
+          "options": [
+            "Close allies, but the Flame keeps its independence",
+            "The Flame serves the Empire",
+            "Old rivals who need each other",
+            "The Flame quietly opposes the census"
+          ]
+        },
+        {
+          "id": "empire-forbidden-tech-01",
+          "prompt": "Who decides what spirit-tech is forbidden?",
+          "options": [
+            "The Flame Order",
+            "An Imperial council",
+            "Nobody clearly — which is the problem",
+            "Each kingdom"
+          ]
+        },
+        {
+          "id": "empire-army-titles-01",
+          "prompt": "Imperial army titles (High Lord/Grand Marshal, Marshal, General, Colonel, Commander, Captain, Lieutenant, Knight) — keep?",
+          "options": [
+            "Keep as written",
+            "Keep, but drop Grand Marshal",
+            "Rework the whole ladder",
+            "Keep, with local names in each culture"
+          ]
+        },
+        {
+          "id": "empire-eastern-general-01",
+          "prompt": "The Eastern Imperial General who distrusts the Black Guard — what is he like?",
+          "options": [
+            "Honest but stubborn — doctrine, not malice",
+            "A proud man the Enemy can use",
+            "Secretly right about something",
+            "Comic relief at first, tragic later"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "title": "The Black Guard",
+      "blurb": "Ranks, kit and role",
+      "questions": [
+        {
+          "id": "guard-ladder-keep-01",
+          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)?",
+          "options": [
+            "Keep it as drafted",
+            "Keep it, but rename some units",
+            "Go back to the bible ladder (Lance → Band → Banner → Host → Army)",
+            "Mix the two"
+          ]
+        },
+        {
+          "id": "guard-banner-size-01",
+          "prompt": "How big is Alaric's Banner?",
+          "options": [
+            "About 1,200 (draft ladder)",
+            "About 50–70, small but full of leaders (bible)",
+            "About 300",
+            "Starts small and grows over the series"
+          ]
+        },
+        {
+          "id": "guard-name-01",
+          "prompt": "Why is it called the Black Guard?",
+          "options": [
+            "The black uniform",
+            "A childhood name for the Special Service that stuck",
+            "An old unit that died holding a line",
+            "Its first High Lord's house colour"
+          ]
+        },
+        {
+          "id": "guard-kit-01",
+          "prompt": "Black Guard look: black uniform + Imperial blue + home-culture colours and weapons. Keep?",
+          "options": [
+            "Keep exactly",
+            "Keep, with more gold for officers",
+            "Black and blue only on duty; home colours off duty",
+            "Keep, plus a sign for each Arm"
+          ]
+        },
+        {
+          "id": "guard-spirittech-kit-01",
+          "prompt": "What spirit-tech does a normal guardsman carry?",
+          "options": [
+            "None — only officers and specialists",
+            "A small corruption detector",
+            "Comm-stones to talk to the Banner",
+            "Armour that resists corruption"
+          ]
+        },
+        {
+          "id": "guard-recruit-01",
+          "prompt": "How are guardsmen chosen?",
+          "options": [
+            "Selection and training from every kingdom (where Book 1 opens)",
+            "Nominated by their kingdom's High Lord",
+            "Volunteers from the regular army",
+            "Chosen after surviving something spiritual"
+          ]
+        },
+        {
+          "id": "guard-answers-to-01",
+          "prompt": "Who does the Black Guard answer to?",
+          "options": [
+            "The Black Guard High Lord only",
+            "The Emperor or Council, through its High Lord",
+            "Whichever theatre commander they are attached to",
+            "It's unclear — and that causes trouble"
+          ]
+        },
+        {
+          "id": "guard-flame-01",
+          "prompt": "How does the Black Guard work with the Flame Order?",
+          "options": [
+            "Each Banner has a Flame member attached",
+            "They call the Flame when needed",
+            "They share missions but don't trust each other",
+            "Some guardsmen are also Flame members"
+          ]
+        },
+        {
+          "id": "guard-mute-speaker-01",
+          "prompt": "The Recon Mute and Speaker leads: are they Wing Leads in the draft ladder?",
+          "options": [
+            "Yes — two Wing Leads under Recon",
+            "No — they are lance-level scouts",
+            "One Wing with two leads",
+            "Undecided rank, special role"
+          ]
+        },
+        {
+          "id": "guard-reputation-01",
+          "prompt": "What do ordinary people think of the Black Guard?",
+          "options": [
+            "Heroes",
+            "Feared — they come when something spiritual is wrong",
+            "Not trusted — too many cultures, too much power",
+            "Unknown to most people"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chars",
+      "title": "Main Characters",
+      "blurb": "Sir Alaric Vaelen and Lady Seraphina",
+      "questions": [
+        {
+          "id": "chars-alaric-name-01",
+          "prompt": "Keep the name Sir Alaric Vaelen for the protagonist?",
+          "options": [
+            "Keep",
+            "Keep Alaric, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "chars-seraphina-name-01",
+          "prompt": "Keep the name Lady Seraphina for the Recon Commander?",
+          "options": [
+            "Keep",
+            "Keep Seraphina, add a family name (Thorne, after her father)",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "chars-alaric-home-01",
+          "prompt": "Where is Alaric from?",
+          "options": [
+            "The Farm Kingdom — his father was a farmer and businessman",
+            "A frontier town near the fort where his father died",
+            "The Southern Kingdoms",
+            "The capital, Vorash"
+          ]
+        },
+        {
+          "id": "chars-seraphina-home-01",
+          "prompt": "Where is Seraphina's home culture (emerald colours) from?",
+          "options": [
+            "The Black Guard High Lord's homeland",
+            "Near the Everlight Forest",
+            "The Northern Mountains",
+            "Stonehaven Island"
+          ]
+        },
+        {
+          "id": "chars-dating-01",
+          "prompt": "When do Alaric and Seraphina start dating?",
+          "options": [
+            "Near the end of Black Guard training",
+            "Early in their first assignment",
+            "Right after the frontier mission in Book 1",
+            "Before training — they already knew each other"
+          ]
+        },
+        {
+          "id": "chars-alaric-wound-01",
+          "prompt": "Alaric never gives 100%, so failure can't prove he isn't exceptional. When does this break?",
+          "options": [
+            "At the Desert War, when obeying orders goes wrong",
+            "When Seraphina is in danger",
+            "At the High Lord's betrayal",
+            "Slowly, across the whole series"
+          ]
+        },
+        {
+          "id": "chars-alaric-weapon-01",
+          "prompt": "Alaric's main weapon?",
+          "options": [
+            "A sword (as on his sheet)",
+            "Sword and pistol-like spirit-tech",
+            "Spear",
+            "Whatever he finds — he improvises"
+          ]
+        },
+        {
+          "id": "chars-seraphina-weapon-01",
+          "prompt": "Seraphina's main weapon?",
+          "options": [
+            "Bow and daggers (as on her sheet)",
+            "Daggers only",
+            "Bow and spirit-tech scope",
+            "Sling and knives"
+          ]
+        },
+        {
+          "id": "chars-father-secret-01",
+          "prompt": "Seraphina refuses her father's help. When does Alaric learn she is the High Lord's daughter?",
+          "options": [
+            "He knows from the start",
+            "Book 1, midway",
+            "End of Book 1",
+            "Much later"
+          ]
+        },
+        {
+          "id": "chars-hardest-words-01",
+          "prompt": "Which line is the turning point for them?",
+          "options": [
+            "Alaric: \"I don't know what I'm doing.\"",
+            "Seraphina: \"I need you.\"",
+            "Both, in the same scene",
+            "Both, in different books"
+          ]
+        },
+        {
+          "id": "chars-ashara-smear-01",
+          "prompt": "On the Ashara spectrum, where do Alaric and Seraphina stand?",
+          "options": [
+            "Both in the smear, leaning differently (Letter III)",
+            "Seraphina in Orineth/Selith (route-naming, watching); Alaric in Vethar (the Bond of a banner)",
+            "Never said in-story",
+            "Alaric in Kemur, Seraphina in Selith"
+          ]
+        },
+        {
+          "id": "chars-alaric-virtue-01",
+          "prompt": "Alaric's virtue is Diligence (from his father) and his temptation is Pride. Keep?",
+          "options": [
+            "Keep",
+            "Swap — Humility as his goal, Pride as his flaw",
+            "Keep, but add Patience as what he learns",
+            "Keep, and make Sloth his hidden second temptation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lords",
+      "title": "High Lords",
+      "blurb": "One group per High Lord — all names are drafts",
+      "questions": [
+        {
+          "id": "hl-cassian-01",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "Keep the name High Lord Cassian Thorne?",
+          "options": [
+            "Keep",
+            "Keep Cassian, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-02",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "How old is he, and how long has he led the Black Guard?",
+          "options": [
+            "About 55, leading for 20 years",
+            "About 48, leading for 10 years",
+            "About 62, he founded the modern Guard",
+            "Looks younger than he is — nobody knows"
+          ]
+        },
+        {
+          "id": "hl-cassian-03",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "Which sin tempts him most (the bible says he is secretly very Proud)?",
+          "options": [
+            "Pride — he believes he alone can save the Empire",
+            "Pride wearing Wrath — revenge for fathers who died",
+            "Pride wearing Greed — wants corruption's power",
+            "Pride wearing Envy — envies the spirits' knowledge"
+          ]
+        },
+        {
+          "id": "hl-cassian-04",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "How did he get the title?",
+          "options": [
+            "Won it in war — a famous victory",
+            "Inherited it from his family",
+            "Appointed by the Council for his brilliance",
+            "Took it after his predecessor died suspiciously"
+          ]
+        },
+        {
+          "id": "hl-cassian-05",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "His view of the census of the corrupted?",
+          "options": [
+            "Publicly against, secretly using it",
+            "Strongly for it",
+            "Against it — he wants to use corruption, not count it",
+            "Silent — lets others argue"
+          ]
+        },
+        {
+          "id": "hl-cassian-06",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "His role toward Alaric and Seraphina?",
+          "options": [
+            "Kind mentor to Alaric, distant father to Seraphina, betrays both",
+            "Pushes Alaric up so he can use him",
+            "Truly loves his daughter — the betrayal is meant to protect her",
+            "Sees Alaric as the son he wished he had"
+          ]
+        },
+        {
+          "id": "hl-corin-01",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Keep the name High Lord Corin Saltmere?",
+          "options": [
+            "Keep",
+            "Keep Corin, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-corin-02",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "Age and years in charge?",
+          "options": [
+            "About 40, newly appointed",
+            "About 60, has explored for 30 years",
+            "About 50, leading 15 years",
+            "Young heir of an old sailing house"
+          ]
+        },
+        {
+          "id": "hl-corin-03",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "What does West Island Exploration bring in, and what does it lack?",
+          "options": [
+            "Brings ships, maps and island goods; lacks soldiers",
+            "Brings timber and fish from Stonehaven; lacks spirit-tech",
+            "Brings news from the far west; lacks the Council's trust",
+            "Brings old relics; lacks money"
+          ]
+        },
+        {
+          "id": "hl-corin-04",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Diligence / Greed",
+            "Courage-patience / Pride",
+            "Kindness / Sloth",
+            "Temperance / Envy"
+          ]
+        },
+        {
+          "id": "hl-corin-05",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "What is his secret?",
+          "options": [
+            "He found a thin place on Stonehaven Island",
+            "He trades with a humanoid people the Empire distrusts",
+            "He is hiding a stained crew",
+            "He has no secret — he is honest"
+          ]
+        },
+        {
+          "id": "hl-corin-06",
+          "group": "West Island Exploration – High Lord Corin Saltmere",
+          "prompt": "How does he treat the Black Guard?",
+          "options": [
+            "Friendly — asks them for help on the island",
+            "Wary — they bring trouble",
+            "Wants to borrow Recon for mapping",
+            "Rarely meets them"
+          ]
+        },
+        {
+          "id": "hl-davian-01",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "Keep the name High Lord Davian Solmarre?",
+          "options": [
+            "Keep",
+            "Keep Davian, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-davian-02",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "Age and years ruling?",
+          "options": [
+            "About 45, ruling 12 years",
+            "About 70, ruling 40 years",
+            "About 35, just took over",
+            "About 55, ruling 25 years"
+          ]
+        },
+        {
+          "id": "hl-davian-03",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "The South Kingdom has many cities. What does it trade and lack?",
+          "options": [
+            "Trades goods and crafts; lacks open land",
+            "Trades sea and river goods; lacks iron",
+            "Trades culture and learning; lacks soldiers",
+            "Trades food; lacks unity between its cities"
+          ]
+        },
+        {
+          "id": "hl-davian-04",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Charity / Gluttony",
+            "Kindness / Envy",
+            "Patience / Sloth",
+            "Temperance / Greed"
+          ]
+        },
+        {
+          "id": "hl-davian-05",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "How loyal is he to the Empire?",
+          "options": [
+            "Fully loyal",
+            "Loyal while it pays",
+            "Loyal to the Empire, not to the Council",
+            "Quietly planning more freedom"
+          ]
+        },
+        {
+          "id": "hl-davian-06",
+          "group": "Southern Kingdoms – High Lord Davian Solmarre",
+          "prompt": "Has the stain touched his lands?",
+          "options": [
+            "Not yet",
+            "Quietly, in one city",
+            "Yes — and he is hiding it",
+            "Only in rumours"
+          ]
+        },
+        {
+          "id": "hl-edric-01",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "Keep the name High Lord Edric Halloran?",
+          "options": [
+            "Keep",
+            "Keep Edric, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-edric-02",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "Age and years ruling?",
+          "options": [
+            "About 50, ruling 20 years",
+            "About 65, the oldest High Lord",
+            "About 40, ruling 8 years",
+            "About 58, recently chosen"
+          ]
+        },
+        {
+          "id": "hl-edric-03",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "What do the Middle Kingdoms trade and lack?",
+          "options": [
+            "Roads and markets; lack natural defences",
+            "Horses and soldiers; lack food",
+            "Craft and spirit-tech workshops (Kembar); lack spirit wisdom",
+            "Everything a little; known for nothing"
+          ]
+        },
+        {
+          "id": "hl-edric-04",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Patience / Sloth",
+            "Humility / Envy",
+            "Diligence / Wrath",
+            "Temperance / Pride"
+          ]
+        },
+        {
+          "id": "hl-edric-05",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "Is he the Council High Lord married to Alaric's sister?",
+          "options": [
+            "Yes",
+            "No — that's a different High Lord",
+            "Not him, but his son",
+            "Undecided"
+          ]
+        },
+        {
+          "id": "hl-edric-06",
+          "group": "Middle Kingdoms – High Lord Edric Halloran",
+          "prompt": "His view of the census of the corrupted?",
+          "options": [
+            "For it — order first",
+            "Against it",
+            "Wants it only in the borderlands",
+            "Changes his mind during the story"
+          ]
+        },
+        {
+          "id": "hl-aurelian-01",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "Keep the name High Lord Aurelian Vaelor?",
+          "options": [
+            "Keep",
+            "Keep Aurelian, change the surname (too close to Alaric Vaelen)",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-aurelian-02",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "Is he related to Sir Alaric Vaelen (Vaelor / Vaelen)?",
+          "options": [
+            "No — the names are just similar",
+            "Distant cousins, a proud old house and a farm branch",
+            "Yes, closely — a hidden family tie",
+            "Change one name to avoid confusion"
+          ]
+        },
+        {
+          "id": "hl-aurelian-03",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "Age and years ruling the Capital Kingdom (Vorash)?",
+          "options": [
+            "About 60, ruling 30 years",
+            "About 45, ruling 10 years",
+            "About 70, failing health",
+            "About 38, the youngest High Lord"
+          ]
+        },
+        {
+          "id": "hl-aurelian-04",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Diligence / Pride",
+            "Charity / Greed",
+            "Humility / Wrath",
+            "Temperance / Envy"
+          ]
+        },
+        {
+          "id": "hl-aurelian-05",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "How loyal is he to the Empire?",
+          "options": [
+            "He IS the Empire's heart — totally loyal",
+            "Loyal to Vorash first",
+            "Wants to be Emperor",
+            "Loyal, but blind to its pride"
+          ]
+        },
+        {
+          "id": "hl-aurelian-06",
+          "group": "Capital Kingdom – High Lord Aurelian Vaelor",
+          "prompt": "How does he treat the Black Guard?",
+          "options": [
+            "Proud of them",
+            "Distrusts them — too independent",
+            "Uses them for political jobs",
+            "Doesn't care, unless they embarrass the capital"
+          ]
+        },
+        {
+          "id": "hl-rashid-01",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "Keep the name High Lord Rashid al-Zahir?",
+          "options": [
+            "Keep",
+            "Keep Rashid, change the family name",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-rashid-02",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "Is he the bible's 'Third High Lord' — patient, methodical, good, commanding Imperial + Desert forces in the Desert War?",
+          "options": [
+            "Yes, same person",
+            "No, a different person",
+            "He is the Desert King, not the theatre commander",
+            "Undecided"
+          ]
+        },
+        {
+          "id": "hl-rashid-03",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "Age and years ruling?",
+          "options": [
+            "About 55, ruling 25 years",
+            "About 45, ruling 15 years",
+            "About 65, a veteran of the last war",
+            "About 40, new to the title"
+          ]
+        },
+        {
+          "id": "hl-rashid-04",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "What does the Desert Kingdom trade and lack?",
+          "options": [
+            "Trade routes and spices; lacks water",
+            "Glass and stone craft; lacks soldiers",
+            "Old learning; lacks Imperial trust",
+            "Horses and fighters; lacks allies"
+          ]
+        },
+        {
+          "id": "hl-rashid-05",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "Has the stain touched his land (the Blighted Wastes and Korvan Dominion are next door)?",
+          "options": [
+            "Yes — at the borders, and it's spreading",
+            "A city has already fallen",
+            "Not yet, but he can feel it coming",
+            "It's inside his court"
+          ]
+        },
+        {
+          "id": "hl-rashid-06",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "His role toward Alaric and Seraphina?",
+          "options": [
+            "Trusts Seraphina's Recon intel when others don't",
+            "A wise mentor to Alaric, unlike Cassian",
+            "Stays neutral, tests them",
+            "Saves them from the General's bad orders"
+          ]
+        },
+        {
+          "id": "hl-bjorn-01",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "Keep the name High Lord Bjorn Halvard?",
+          "options": [
+            "Keep",
+            "Keep Bjorn, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-bjorn-02",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "Age and years ruling?",
+          "options": [
+            "About 50, ruling 20 years",
+            "About 68, ruling 40 years",
+            "About 42, ruling 8 years",
+            "About 35, after his father fell"
+          ]
+        },
+        {
+          "id": "hl-bjorn-03",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "What do the mountains trade and lack?",
+          "options": [
+            "Iron, stone and smiths; lack food",
+            "Furs and hardy fighters; lack roads",
+            "Stone-craft (Durath/Kemur); lack spirit-tech",
+            "Guarding the passes; lack money"
+          ]
+        },
+        {
+          "id": "hl-bjorn-04",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Diligence / Wrath",
+            "Patience / Pride",
+            "Kindness / Gluttony",
+            "Temperance / Sloth"
+          ]
+        },
+        {
+          "id": "hl-bjorn-05",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "How does he treat the Black Guard?",
+          "options": [
+            "Respects fighters, likes them",
+            "Thinks they are soft city soldiers",
+            "Sends his best warriors to join them",
+            "Wants them out of his mountains"
+          ]
+        },
+        {
+          "id": "hl-bjorn-06",
+          "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
+          "prompt": "His secret?",
+          "options": [
+            "Something sleeps under his mountains",
+            "He made a deal with a humanoid people",
+            "He was once Black Guard",
+            "No secret — blunt and honest"
+          ]
+        },
+        {
+          "id": "hl-tomas-01",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "Keep the name High Lord Tomas Greaves?",
+          "options": [
+            "Keep",
+            "Keep Tomas, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-tomas-02",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "Age and years ruling?",
+          "options": [
+            "About 60, ruling 25 years",
+            "About 45, ruling 10 years",
+            "About 52, a former farmer himself",
+            "About 70, close to stepping down"
+          ]
+        },
+        {
+          "id": "hl-tomas-03",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "What does the Farm Kingdom trade and lack?",
+          "options": [
+            "Food for the Empire; lacks soldiers",
+            "Grain and horses; lacks spirit protection",
+            "Food; lacks a voice on the Council",
+            "Wool and timber from the forest ring; lacks roads"
+          ]
+        },
+        {
+          "id": "hl-tomas-04",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "Has the stain touched his land (Twinskull and Deadveil ranges are north of the forest ring)?",
+          "options": [
+            "Yes — crops failing, herds startled",
+            "Only at the northern forest edge",
+            "Not yet, but he fears it",
+            "It's inside a village and he's hiding it"
+          ]
+        },
+        {
+          "id": "hl-tomas-05",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "His main virtue and the sin that tempts him?",
+          "options": [
+            "Diligence / Sloth",
+            "Charity / Greed",
+            "Humility / Envy",
+            "Patience / Wrath"
+          ]
+        },
+        {
+          "id": "hl-tomas-06",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "His tie to Alaric?",
+          "options": [
+            "Knew Alaric's father — a fellow farmer",
+            "None at first",
+            "Alaric's farmer sister lives in his land",
+            "His land is where the Book 1 frontier mission happens"
+          ]
+        },
+        {
+          "id": "hl-elowen-01",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Keep the name High Lady Elowen Silvaris (half-elven)?",
+          "options": [
+            "Keep",
+            "Keep Elowen, change the surname",
+            "Change the name",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-elowen-02",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Are 'elves' one of the spirit-heavy peoples?",
+          "options": [
+            "Yes — 'elves' is the common name for a spirit-heavy people",
+            "Elves are their own people, not on the Ashara list",
+            "Elves are a stained people that turned back",
+            "Use a different word than elves"
+          ]
+        },
+        {
+          "id": "hl-elowen-03",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Her age and years ruling?",
+          "options": [
+            "Looks 30, is over 150; ruling 80 years",
+            "About 40, ruling 10 years",
+            "Very old, nobody knows",
+            "Young, just inherited"
+          ]
+        },
+        {
+          "id": "hl-elowen-04",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "What does her fancy city trade and lack?",
+          "options": [
+            "Art, healing and learning; lacks soldiers",
+            "Spirit-tech and between-speech (Loreth) translators; lacks food",
+            "Goods from the Everlight Forest; lacks trust from humans",
+            "Diplomacy; lacks strong walls"
+          ]
+        },
+        {
+          "id": "hl-elowen-05",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Her main virtue and the sin that tempts her?",
+          "options": [
+            "Kindness / Pride",
+            "Temperance / Envy",
+            "Charity / Lust (as possessiveness — kept modest)",
+            "Patience / Sloth"
+          ]
+        },
+        {
+          "id": "hl-elowen-06",
+          "group": "Far North-East elf-and-human city – High Lady Elowen Silvaris",
+          "prompt": "Her role toward Alaric and Seraphina?",
+          "options": [
+            "Seraphina's mentor or family friend",
+            "Hosts a big diplomacy mission",
+            "A hidden ally against Cassian",
+            "Distrusts them at first"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "enemies",
+      "title": "Enemies",
+      "blurb": "Draft enemy ideas and how evil works",
+      "questions": [
+        {
+          "id": "enemy-list-keep-01",
+          "prompt": "Keep the draft enemy list (Tipped Wisps, Ashavar-Kan Fallen, Stained Neighbors, Hollow Makers, Unmakers, Mist Walkers, Empire Censors, Corrupted Guardsmen, Pride Echo, Ashar-Kan)?",
+          "options": [
+            "Keep all",
+            "Keep most, cut a few",
+            "Keep as ideas only",
+            "Start over"
+          ]
+        },
+        {
+          "id": "enemy-final-boss-01",
+          "prompt": "Final boss 'Ashar-Kan' — but the lore says Ashar-Kan is a mistaken title. Who is the real final enemy?",
+          "options": [
+            "The fallen two-thirds of Ashavar acting together",
+            "The first leaner of Ashavar (the Ancient Enemy)",
+            "A human who takes the Ashar-Kan title",
+            "There is no single boss — the canal itself"
+          ]
+        },
+        {
+          "id": "enemy-tipped-wisps-01",
+          "prompt": "What are Tipped Wisps?",
+          "options": [
+            "Small spirits that tipped with the Fall",
+            "Whispers that grew bodies",
+            "Glimmers that were corrupted",
+            "Lost souls stuck at a crossing"
+          ]
+        },
+        {
+          "id": "enemy-hollow-makers-01",
+          "prompt": "Hollow Makers (fallen Kembar): what do they make?",
+          "options": [
+            "Things that can only be owned, not used",
+            "Corrupted spirit-tech",
+            "Empty bodies for spirits to wear",
+            "Copies that look real but are hollow"
+          ]
+        },
+        {
+          "id": "enemy-unmakers-01",
+          "prompt": "Unmakers (fallen Nurest) — evil cannot truly unmake. So what do they do?",
+          "options": [
+            "Smash and leave a stain",
+            "Bring death too early",
+            "Stop death and harvest, so nothing renews",
+            "Make people fear all endings"
+          ]
+        },
+        {
+          "id": "enemy-censors-01",
+          "prompt": "Empire Censors — who are they?",
+          "options": [
+            "Officials who run the census of the corrupted",
+            "A secret police inside the Empire",
+            "Spirits pretending to be officials",
+            "Good people doing a wrong job"
+          ]
+        },
+        {
+          "id": "enemy-corrupted-guards-01",
+          "prompt": "Corrupted Guardsmen — when do they appear?",
+          "options": [
+            "Book 1, as the Imperial traitor",
+            "After Cassian's betrayal",
+            "Rarely — a big twist",
+            "As a constant fear in the Guard"
+          ]
+        },
+        {
+          "id": "enemy-saving-01",
+          "prompt": "Can corrupted enemies be saved?",
+          "options": [
+            "Yes — the Flame casts corruption out without killing the host",
+            "Some can, some chose too long",
+            "Only humans",
+            "Only with Grace (the Breath) and their own choice"
+          ]
+        },
+        {
+          "id": "enemy-mist-walkers-01",
+          "prompt": "What are Mist Walkers?",
+          "options": [
+            "Stained Thalorim (ushers) who lead people wrong at thin places",
+            "Sleep-counterfeits from the Enemy (stained Shaveth)",
+            "Desert raiders using spirit-tech",
+            "Ghost-like scouts of the Korvan Dominion"
+          ]
+        },
+        {
+          "id": "enemy-minions-01",
+          "prompt": "The bible's evil minions (Whispers, Watchers, Furies, Clingers, Devourers, Lures, Weights) — how do they fit with the new list?",
+          "options": [
+            "Both — minions feed sins, the new list is bigger enemies",
+            "Replace the minions with the new list",
+            "Minions are spiritual only; the new list is physical",
+            "Merge them into one list"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spine",
+      "title": "Story Spine & Plot",
+      "blurb": "Book 1 and the big shape of the series",
+      "questions": [
+        {
+          "id": "spine-book1-open-01",
+          "prompt": "How does Book 1 open?",
+          "options": [
+            "Special Service selection and training (bible)",
+            "In the middle of a mission, then flashback to training",
+            "Meeting the Banner (the comic)",
+            "A myth prologue from the Letters, then training"
+          ]
+        },
+        {
+          "id": "spine-frontier-01",
+          "prompt": "Book 1's first command: a silent frontier region, missing patrols, humans blaming spirit-humanoids. Where?",
+          "options": [
+            "The Farm Kingdom's northern forest edge",
+            "The Desert Kingdom border",
+            "The Northern Mountains",
+            "Near the Everlight Forest"
+          ]
+        },
+        {
+          "id": "spine-desert-war-01",
+          "prompt": "When does the Desert War happen?",
+          "options": [
+            "In Book 1",
+            "Book 2",
+            "It is the end of Book 1",
+            "Later in the series"
+          ]
+        },
+        {
+          "id": "spine-under-fortress-01",
+          "prompt": "What is the enemy really after under the north-west fortress city?",
+          "options": [
+            "An ancient spirit crossing",
+            "A corrupted Flame relic",
+            "A spirit-tech installation",
+            "An old betrayal's buried evidence",
+            "A tunnel through the mountains"
+          ]
+        },
+        {
+          "id": "spine-betrayal-01",
+          "prompt": "When does Cassian's betrayal come out?",
+          "options": [
+            "End of Book 1 (he promises to investigate — because he's part of it)",
+            "Middle of the series",
+            "Near the end of the series",
+            "Seraphina finds out first, long before anyone else"
+          ]
+        },
+        {
+          "id": "spine-thesis-01",
+          "prompt": "Series thesis: which line matters most?",
+          "options": [
+            "Not every monster is corrupted",
+            "Not every corrupted person is beyond saving",
+            "Not every evil act needs a spirit",
+            "All three equally"
+          ]
+        },
+        {
+          "id": "spine-length-01",
+          "prompt": "How long is the story?",
+          "options": [
+            "One big book",
+            "Trilogy",
+            "Five books",
+            "Ongoing comic series"
+          ]
+        },
+        {
+          "id": "spine-pov-01",
+          "prompt": "Whose eyes do we follow?",
+          "options": [
+            "Mostly Alaric",
+            "Alaric and Seraphina, switching",
+            "The whole Banner",
+            "Mostly Seraphina"
+          ]
+        },
+        {
+          "id": "spine-flame-brother-01",
+          "prompt": "Alaric's older brother in the Flame Order — when does he appear?",
+          "options": [
+            "Late — family is revealed slowly",
+            "Book 2",
+            "Only in mentions",
+            "When the Flame Order is needed in Book 1"
+          ]
+        },
+        {
+          "id": "spine-ending-01",
+          "prompt": "How does the whole story end?",
+          "options": [
+            "Alaric finally asks for help, and that saves everyone",
+            "The Empire is humbled, not destroyed",
+            "Alaric and Seraphina build their life — quietly happy",
+            "Bittersweet — victory with a cost"
+          ]
+        }
+      ]
+    }
+  ]
+}

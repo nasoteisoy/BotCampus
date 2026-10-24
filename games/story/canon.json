@@ -1,0 +1,4 @@
+{
+  "_help": "Locked (canon) answers. Added by tools/apply-answers.py. Hand-edit freely: each entry has section, section_title, question_id, question, answer, custom_text, locked (YYYY-MM-DD).",
+  "entries": []
+}
