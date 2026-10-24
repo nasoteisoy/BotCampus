@@ -1,12 +1,16 @@
 // Freeze Dance / Copy Me: dance while the music plays, freeze or copy the pose when it stops.
-import { run } from './runner.js';
+// v4: every kid is a dancing kitty (chars.js) in their colour right over their body; it turns to ice when they
+// freeze. 🧸 relaxed (default): the music goes on and on (no timer) and wobbling is never shown as wrong.
+import { run } from './runner.js?v=4';
+import { drawChar, drawBadge, rigFromBody, rigFromDemo, headTop, badgeSpot } from './chars.js?v=4';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
 import { drawDemo } from './demo.js';
 import { PLAYER_COLORS } from './multi.js';
-import { MotionMeter, poseScore, POSES, MATCH, starsFor, makeScript } from './moves.js';
+import { MotionMeter, poseScore, POSES, MATCH, starsFor, makeScript } from './moves.js?v=4';
 import { mulberry32 } from './rng.js';
 
-const FREEZE_GRACE = 0.7, POSE_HOLD = 0.4, WOBBLE_OK = 0.45;
+// v4 kid-friendly grace windows (v3: 0.7 s / 0.4 s / 0.45 s)
+export const FREEZE_GRACE = 1.0, POSE_HOLD = 0.3, WOBBLE_OK = 0.8, RELAX_SEC = 3600;
 const F = {
   // practice before a camera round: dance, freeze like a statue, copy one pose
   practice: [{ move: 'dance', icon: '🎵💃' }, { move: 'freeze', icon: '🔇🧊' }, { move: 'star', icon: '⭐', check: (b) => poseScore(b, 'star') >= MATCH }],
@@ -23,7 +27,11 @@ const F = {
     if (!this.P.has(slot)) this.P.set(slot, { slot, meter: new MotionMeter(), energy: 0, score: 0, max: 0, danceT: 0, wobble: 0, matchT: 0, matched: false, ok: null, match: 0, seen: false, res: [] });
     return this.P.get(slot);
   },
-  onPlay(S) { this.pi = -1; this.nextPhase(S, 0); },
+  onPlay(S) {
+    // relaxed: one very long script (the music keeps going until 🏁); challenge: the timed round
+    this.script = makeScript(mulberry32(this.seed), S.relaxed ? RELAX_SEC : this.roundSec);
+    this.pi = -1; this.phase = null; this.nextPhase(S, 0);
+  },
   onPose(players, t, S) {
     this.players = players;
     if (S.input !== 'cam' || S.mode === 'title' || S.mode === 'end') return;
@@ -34,7 +42,7 @@ const F = {
       if (this.phase?.type === 'pose' && p.body) q.match = poseScore(p.body, this.phase.pose);
     }
   },
-  elapsed(S) { return this.roundSec - S.left; },
+  elapsed(S) { return S.playT; },
   nextPhase(S, k) {
     // score the phase that just ended
     if (this.phase) for (const q of this.P.values()) this.scorePhase(q, this.phase, S);
@@ -102,7 +110,8 @@ const F = {
       c.fillStyle = g; c.fillRect(0, 0, W, H);
       if (dance) for (let i = 0; i < 10; i++) { c.fillStyle = `hsla(${i * 36},90%,70%,0.25)`; const r = 30 + 20 * Math.sin(S.clock * 4 + i); c.beginPath(); c.arc(((i * 0.13 + S.clock * 0.03) % 1) * W, H * (0.3 + 0.4 * ((i * 0.37) % 1)), r, 0, 7); c.fill(); }
     }
-    // skeletons (glow green when doing it right, red when wobbling)
+    // characters: a kitty over every tracked kid (glows green when doing it right; red wobble only in ⏱️)
+    this.charsDrawn = 0;
     if (S.input === 'cam') {
       for (const q of S.cam.pending) drawSkeleton(c, q.body, map, '#ffffff', { width: 4, glow: 0, alpha: 0.5 });
       for (const p of this.players) {
@@ -113,9 +122,16 @@ const F = {
           const u = (p.body.torso * map.dh) / 1.6;
           drawDemo(c, ph.pose, S.clock, map.x(p.body.hip.x), map.y(p.body.hip.y), u, '#ffffff', { alpha: 0.4 });
         }
-        drawSkeleton(c, p.body, map, p.color.css, { width: Math.max(6, W * 0.008), glow: q?.ok != null ? 34 : 18 });
-        if (q?.ok != null && ph && ph.type !== 'dance') emoji(c, q.ok ? '✅' : '🫨', map.x(p.body.head.x), map.y(p.body.head.y) - 60, 44);
-        if (glowCol !== p.color.css) { c.save(); c.globalAlpha = 0.35; drawSkeleton(c, p.body, map, glowCol, { width: Math.max(10, W * 0.014), glow: 30 }); c.restore(); }
+        const R = rigFromBody(p.body, map), top = headTop(R);
+        const showBad = !S.relaxed && q?.ok === false && ph && ph.type !== 'dance';
+        if (glowCol !== p.color.css && (q?.ok || showBad)) { c.save(); c.globalAlpha = 0.35; drawSkeleton(c, p.body, map, glowCol, { width: Math.max(14, W * 0.02), glow: 30 }); c.restore(); }
+        const mood = ph?.type === 'freeze' ? 'frozen' : q?.ok ? 'wow' : showBad ? 'oops' : 'happy';
+        drawChar(c, 'kitty', R, p.color.css, { t: S.clock + p.slot, mood }); this.charsDrawn++;
+        if (top) {
+          if (q?.ok != null && ph && ph.type !== 'dance' && (q.ok || showBad)) emoji(c, q.ok ? '✅' : '🫨', top.x + R.T * 0.9, top.y, Math.max(34, R.T * 0.5));
+          const bs = Math.max(34, R.T * 0.5), at = badgeSpot(R, bs);
+          if (at && S.mode === 'play') drawBadge(c, at.x, at.y, q?.score || 0, p.color.css, bs);
+        }
       }
     }
     // banner
@@ -136,6 +152,14 @@ const F = {
         this.ring(c, W / 2, cy + sz * 0.15, R, left / ph.dur, '#ffb13b');
         drawPose(c, ph.pose, W / 2, cy + sz * 0.2, R * 1.5, '#3a2a7a');
       }
+    }
+    // tap mode: one kitty friend dances with your taps, freezes into ice, strikes the pose you picked
+    if (S.input !== 'cam' && (S.mode === 'play' || S.mode === 'count')) {
+      const q = this.pl(0), T = Math.min(W, H) * 0.085, pose = ph?.type === 'pose' && this.choices;
+      const x = W - T * 1.6, fy = H - (pose ? Math.min(130, (W - 40) / 3 - 12) + 50 : 30);
+      const R = !ph || ph.type === 'dance' ? rigFromDemo('dance', q.energy > 0.3 ? S.clock : 0, x, fy, T)
+        : ph.type === 'freeze' ? rigFromDemo('freeze', 2, x, fy, T) : rigFromDemo(q.matched ? ph.pose : 'none', S.clock, x, fy, T);
+      drawChar(c, 'kitty', R, PLAYER_COLORS[0].css, { t: S.clock, mood: ph?.type === 'freeze' ? 'frozen' : q.ok ? 'wow' : 'happy' }); this.charsDrawn++;
     }
     // tap-mode choice buttons
     this.btns = [];
@@ -173,7 +197,7 @@ const F = {
   },
   state(S) {
     const ph = this.phase;
-    return { phase: ph ? ph.type : null, pose: ph?.pose || null, pi: this.pi, phases: this.script.length, choices: this.choices,
+    return { kind: 'kitty', chars: this.charsDrawn || 0, relaxScript: this.script.length > 30, phase: ph ? ph.type : null, pose: ph?.pose || null, pi: this.pi, phases: this.script.length, choices: this.choices,
       players: [...this.P.values()].map((q) => ({ slot: q.slot, score: q.score, max: q.max, energy: +q.energy.toFixed(2), danceT: +q.danceT.toFixed(2), wobble: +q.wobble.toFixed(2), matched: q.matched, match: +q.match.toFixed(2), res: q.res.slice() })) };
   },
 };
@@ -215,5 +239,5 @@ Object.assign(window.__game, {
   pick: (name) => F.pick(name, S),
   choiceButtons: () => (F.btns || []).map((b) => ({ name: b.name, x: b.x + b.w / 2, y: b.y + b.h / 2 })),
   script: () => F.script.map((p) => ({ type: p.type, t: +p.t.toFixed(2), dur: +p.dur.toFixed(2), pose: p.pose })),
-  jumpToPhase(type) { const k = F.script.findIndex((p, i) => i > F.pi && p.type === type); if (k < 0) return false; S.left = F.roundSec - F.script[k].t; F.nextPhase(S, k); return true; },
+  jumpToPhase(type) { const k = F.script.findIndex((p, i) => i > F.pi && p.type === type); if (k < 0) return false; S.playT = F.script[k].t; S.left = Math.max(0, F.roundSec - F.script[k].t); F.nextPhase(S, k); return true; },
 });

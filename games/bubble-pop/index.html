@@ -9,8 +9,8 @@
 <title>Bubble Pop · Move & Play</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/common.css?v=3">
-<link rel="stylesheet" href="css/game.css?v=2">
+<link rel="stylesheet" href="css/common.css?v=4">
+<link rel="stylesheet" href="css/game.css?v=4">
 </head>
 <body data-mode="title" style="--c1:#7fd3ff;--c2:#7b4dff">
 <canvas id="cv" aria-label="Bubble Pop"></canvas>
@@ -20,6 +20,7 @@
   <a id="home" class="rb btn" href="../move-play/" aria-label="Home" title="Home">🏠</a>
   <div id="scores" aria-label="Scores"></div>
   <div id="timer" aria-label="Time left">⏱️</div>
+  <button id="bFinish" class="rb" aria-label="Finish" title="Finish">🏁</button>
   <span id="camSt" aria-label="Camera"></span>
   <button id="zoom" class="rb" aria-label="Camera zoom" title="Zoom (Z)">🔍<sup></sup></button>
   <button id="mute" class="rb" aria-label="Sound" title="Sound (M)">🔊</button>
@@ -31,8 +32,10 @@
   <div class="icons" aria-label="Moves and players"><span>💪🦵</span><span>👤×1–4</span></div>
   <div class="howto" aria-label="How to play"><span class="mv"><canvas data-demo="reach" aria-hidden="true"></canvas><b>✋🫧</b></span><span class="mv"><canvas data-demo="squat" aria-hidden="true"></canvas><b>⬇️🫧</b></span><span class="mv"><canvas data-demo="kick" aria-hidden="true"></canvas><b>🦶🐸</b></span><span class="mv"><canvas data-demo="up" aria-hidden="true"></canvas><b>🙌⭐</b></span></div>
   <div id="camPrompt" aria-label="Camera"><span class="pcam">📷</span><canvas class="phand" data-demo="point" aria-hidden="true"></canvas><b id="camMsg">⏳</b></div>
-  <div class="btns">
-    <button id="bCam" class="big cam" aria-label="Play">▶️<small>🙆</small></button>
+  <div class="btns modes" aria-label="Mode">
+    <button id="bRelax" class="sm mode on" aria-pressed="true" aria-label="Relaxed: no timer, no losing">🧸<small>♾️</small></button>
+    <button id="bCam" class="big cam" aria-label="Play">▶️<small>🐙</small></button>
+    <button id="bTimed" class="sm mode" aria-pressed="false" aria-label="Challenge: with timer">⏱️<small>🏆</small></button>
   </div>
   <div class="lockbtns" aria-label="Players">
     <button id="bPlayers" class="sm" aria-label="Players: change">👤<b>2</b></button>
@@ -65,6 +68,6 @@
 <div id="toast" role="status"></div>
 <div id="stepBack" role="status" aria-label="Step back so your whole body fits">📏<span>🔙🧍</span></div>
 
-<script type="module" src="js/main.js?v=3"></script>
+<script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>

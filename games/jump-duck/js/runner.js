@@ -2,6 +2,9 @@
 // 3-2-1 countdown, end screen with stars, fixed-step loop and the window.__game test hooks.
 // v2: the camera is the default input (starts on load), menus are body-controlled (raise a hand, hold it
 // on a button), every game shows animated stick-figure how-tos and a practice step before the round.
+// v4 (characters): 🧸 relaxed mode (no timer, no losing) is the DEFAULT; ⏱️ challenge = the old timed round.
+//   Pick on the title by hand-hover dwell or tap (#bRelax / #bTimed), ?mode=timed in the URL, or start(..., {mode}).
+//   S.playT = seconds played this round (games use it instead of roundSec - left); 🏁 ends a round any time.
 // v3 (tracking fix): ▶️ -> player-count picker (👤 1-4, remembered) -> roll call (raise a hand, slots fill 1..N in
 // colour; ⏭ / auto = by position) -> practice -> 3-2-1. Players are locked (track.js LockTracker): no auto-join,
 // never more than N, appearance + motion matching, hold-when-close, both-hands swap gesture (not while playing).
@@ -10,7 +13,7 @@ import { Sound } from './sound.js';
 import { PLAYER_COLORS } from './multi.js';
 import { viewMap, loadZoom, saveZoom, clampZoom, ZOOM_LEVELS } from './view.js';
 import { BodyMenu } from './menu.js';
-import { Practice } from './practice.js';
+import { Practice } from './practice.js?v=4';
 import { startDemos, MOVES } from './demo.js';
 import { drawVideo, drawSkeleton } from './draw.js';
 import { LockUI, PEOPLE } from './lockui.js';
@@ -24,6 +27,7 @@ export function run(G) {
   const S = {
     mode: 'title', input: 'tap', nTap: 1, clock: 0, left: G.roundSec, count: 0, countMax: 3, W: 0, H: 0, dpr: 1,
     fps: 60, frameMs: 0, round: 0, cam: null, sound: null, params, zoom: loadZoom(), practice: null,
+    relaxed: !/^(timed|challenge)$/.test(params.get('mode') || ''), playT: 0,
   };
   /** camera frame -> screen mapping (whole frame, contain + 🔍 level). Every game maps landmarks AND draws
    *  the video through this, so skeletons / hit tests stay on the picture. */
@@ -88,6 +92,7 @@ export function run(G) {
   // ---- flow
   async function start(input = 'tap', opts = {}) {
     sound.init();
+    if (opts.mode) setRelaxed(opts.mode !== 'timed' && opts.mode !== 'challenge');
     S.input = input; S.nTap = opts.players || S.nTap || 1;
     show('title', false); show('end', false);
     if (input === 'cam' && !opts.fake) {
@@ -135,7 +140,7 @@ export function run(G) {
     newRound();
   }
   function newRound() {
-    S.round++; S.left = G.roundSec; S.count = S.countMax; S.countBeat = -1; S.waitT = 0; S.practice = null;
+    S.round++; S.left = G.roundSec; S.playT = 0; document.body.dataset.play = S.relaxed ? 'relaxed' : 'timed'; S.count = S.countMax; S.countBeat = -1; S.waitT = 0; S.practice = null;
     setMode('count');
     G.reset(S);
     show('count', true); show('end', false); show('title', false); show('practice', false);
@@ -145,7 +150,8 @@ export function run(G) {
     if (S.mode !== 'play') return;
     setMode('end');
     sound.music(false); sound.fanfare();
-    const res = G.results(S);
+    // relaxed = no losing: everyone who played gets at least one star
+    const res = G.results(S).map((r) => (S.relaxed ? { ...r, stars: Math.max(1, r.stars) } : r));
     S.lastResults = res;
     const rows = $('endRows'); rows.innerHTML = '';
     for (const r of res) {
@@ -167,6 +173,16 @@ export function run(G) {
   $('bTap2')?.addEventListener('click', () => start('tap', { players: 2 }));
   $('bAgain').addEventListener('click', () => { sound.init(); newRound(); });
   $('bMenu').addEventListener('click', toTitle);
+  // 🧸 relaxed (default) / ⏱️ challenge
+  function setRelaxed(on) {
+    S.relaxed = !!on; document.body.dataset.play = S.relaxed ? 'relaxed' : 'timed';
+    for (const [id, v] of [['bRelax', true], ['bTimed', false]]) { const b = $(id); if (b) { b.classList.toggle('on', S.relaxed === v); b.setAttribute('aria-pressed', S.relaxed === v ? 'true' : 'false'); } }
+  }
+  $('bRelax')?.addEventListener('click', () => { setRelaxed(true); sound.good?.(); });
+  $('bTimed')?.addEventListener('click', () => { setRelaxed(false); sound.good?.(); });
+  setRelaxed(S.relaxed);
+  // 🏁 = finish now (relaxed rounds have no timer; works in both modes)
+  $('bFinish')?.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode === 'play') { G.update(STEP, S); endRound(); } else if (S.mode === 'count') toTitle(); });
   // 👤N = change the player count (picker -> roll call), 📣 = roll call again (fix who is who)
   $('bPlayers')?.addEventListener('click', () => { if (!camOk()) { toast('🚫📷'); return; } lockFlow({ roll: true }, toTitle); });
   $('bRoll')?.addEventListener('click', () => { if (!camOk()) { toast('🚫📷'); return; } lockFlow({ pick: false, roll: true }, toTitle); });
@@ -209,8 +225,11 @@ export function run(G) {
       if (beat !== S.countBeat && beat > 0) { S.countBeat = beat; sound.tick(); }
       if (S.count <= 0) { setMode('play'); show('count', false); sound.go(); G.onPlay?.(S); }
     } else if (S.mode === 'play') {
-      S.left -= dt;
-      if (S.left <= 0) { S.left = 0; G.update(dt, S); endRound(); return; }
+      S.playT += dt;
+      if (!S.relaxed) {
+        S.left -= dt;
+        if (S.left <= 0) { S.left = 0; G.update(dt, S); endRound(); return; }
+      }
     }
     if (S.mode !== 'title' && S.mode !== 'pick' && S.mode !== 'roll') G.update(dt, S);
   }
@@ -241,7 +260,7 @@ export function run(G) {
     S.frameMs = S.frameMs * 0.95 + (performance.now() - t0) * 0.05;
   }
   function hud() {
-    $('timer').textContent = '⏱️' + Math.ceil(S.left);
+    $('timer').textContent = S.relaxed ? '🧸' : '⏱️' + Math.ceil(S.left);
     const sc = $('scores'), list = G.hud(S) || [];
     const key = list.map((p) => p.slot + ':' + p.score).join(',');
     if (sc.dataset.k !== key) {
@@ -259,7 +278,7 @@ export function run(G) {
 
   // ---- test hooks
   window.__game = {
-    get state() { return { mode: S.mode, zoom: S.zoom, input: S.input, left: S.left, clock: S.clock, round: S.round, nTap: S.nTap, fps: S.fps, frameMs: S.frameMs, dpr: S.dpr, W: S.W, H: S.H, cam: cam.status, fake: cam.fake, detectMs: +(cam.detectMs || 0).toFixed(1), ...(G.state?.(S) || {}) }; },
+    get state() { return { mode: S.mode, zoom: S.zoom, input: S.input, left: S.left, clock: S.clock, round: S.round, nTap: S.nTap, fps: S.fps, frameMs: S.frameMs, dpr: S.dpr, W: S.W, H: S.H, cam: cam.status, fake: cam.fake, relaxed: S.relaxed, playT: +S.playT.toFixed(2), detectMs: +(cam.detectMs || 0).toFixed(1), ...(G.state?.(S) || {}) }; },
     get players() { return cam.players.map((p) => ({ slot: p.slot, state: p.state, x: +p.x.toFixed(3), body: !!p.body })); },
     /** tracking lock: phase (idle | roll | locked), N, numPoses, roll call progress, candidates, last debug info */
     get lock() { const tr = cam.tracker; return { phase: tr.phase, n: tr.n, pick: cam.nPick, numPoses: cam.numPoses, ui: lock.mode, roll: tr.rollState(), cands: tr.cands.map((c) => ({ x: +c.x.toFixed(3), age: +(tr.t - c.firstSeen).toFixed(2), persisted: !!c.persisted })), debug: { dets: tr.debug.dets.map((d) => ({ slot: d.slot, cost: d.cost, x0: +d.box.x0.toFixed(3) })), rejected: tr.debug.rejected.map((r) => r.why), held: tr.debug.held.map((h) => h.slot) }, swapEnabled: tr.swapEnabled }; },
@@ -273,6 +292,8 @@ export function run(G) {
     fakeCamera: (opts = {}) => start('cam', { fake: true, ...opts }),
     setFakeFrame: (w, h) => { cam.setFakeFrame(w, h); },
     setZoom: (z) => setZoom(z),
+    /** 🧸 relaxed (true, default) / ⏱️ challenge (false) */
+    setRelaxed: (on = true) => setRelaxed(on),
     get zoom() { return S.zoom; },
     view: () => { const m = S.view(); return { s: m.s, dw: m.dw, dh: m.dh, ox: m.ox, oy: m.oy, level: m.level, rect: m.rect }; },
     get menu() { return menu.state; },
@@ -288,7 +309,7 @@ export function run(G) {
     pause(p = true) { S.paused = !!p; },
     /** in-page: feed n fake frames (30 Hz) from a generator fn(i) -> landmark list, stepping the sim */
     feed(frames, gen) { for (let i = 0; i < frames; i++) { cam.inject(gen(i)); this.simulate(1 / 30); } return this.state; },
-    end() { if (S.mode === 'play') { S.left = 0.001; step(STEP); } },
+    end() { if (S.mode === 'play') { if (S.relaxed) { G.update(STEP, S); endRound(); } else { S.left = 0.001; step(STEP); } } },
     again: () => newRound(),
     ar: () => S.W / S.H,
     sound, S, G,

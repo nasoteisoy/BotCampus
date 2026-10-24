@@ -1,10 +1,14 @@
 // Bubble Pop: pop bubbles with hands & feet in the mirrored camera view (or tap them).
-import { run } from './runner.js';
+// v4: every kid becomes a cute octopus (chars.js) in their colour right over their body - its tentacles are the
+// kid's arms & legs - with their score bubble above the head. 🧸 relaxed (default): no timer, no end storm, bigger
+// bubbles that stay longer. Body-size pop pads (EASY_POP) make reaching easier for small kids.
+import { run } from './runner.js?v=4';
+import { drawChar, drawBadge, rigFromBody, rigFromDemo, badgeSpot } from './chars.js?v=4';
 import { touchPoints } from './body.js';
 import { drawSkeleton, drawVideo, emoji } from './draw.js';
 import { drawDemo } from './demo.js';
 import { PLAYER_COLORS } from './multi.js';
-import { hitTest, highSpot, lowSpot, starsFor, POINTS } from './logic.js';
+import { hitTest, highSpot, lowSpot, starsFor, POINTS, EASY_POP } from './logic.js?v=4';
 
 const HUES = [195, 285, 330, 160, 45];
 // pre-rendered bubble sprites (radial gradients are slow to redraw every frame on phones)
@@ -31,7 +35,8 @@ const B = {
   map: null,
   // practice before a camera round: reach up, squat, kick (each turns ✅)
   practice: [{ move: 'reach', icon: '🙌⭐' }, { move: 'squat', icon: '⬇️' }, { move: 'kick', icon: '🦶🐸' }],
-  _baseR(S) { const A = this.area(S); return Math.min(A.w, A.h) * (S.input === 'cam' ? 0.085 : 0.075) + 14; },
+  _baseR(S) { const A = this.area(S); return (Math.min(A.w, A.h) * (S.input === 'cam' ? 0.085 : 0.075) + 14) * (S.relaxed ? EASY_POP.relaxSize : 1); },
+  lastPop: [-9, -9, -9, -9],
   /** play area in px: with the camera = the part of the screen the (uncropped) video covers, so every
    *  bubble sits on the picture where a hand or foot can reach it; tap mode = the whole screen */
   area(S) { return S.input === 'cam' ? this.getMap(S).rect : { x: 0, y: 0, w: S.W, h: S.H }; },
@@ -58,7 +63,7 @@ const B = {
     } else {
       b.x = at ? at.x : A.x + A.w * (0.15 + rng() * 0.7);
       b.y = at ? at.y : kind === 'high' ? A.y + A.h * (0.14 + rng() * 0.08) : A.y + A.h * (0.84 + rng() * 0.06);
-      b.vy = 0; b.life = 6; b.r *= kind === 'high' ? 0.95 : 1.05;
+      b.vy = 0; b.life = S.relaxed ? EASY_POP.relaxLife : 6; b.r *= kind === 'high' ? 0.95 : 1.05;
       b.y = Math.max(A.y + b.r * 0.6, Math.min(A.y + A.h - b.r * 0.6, b.y));
     }
     b.x = Math.max(A.x + b.r, Math.min(A.x + A.w - b.r, b.x));
@@ -72,6 +77,7 @@ const B = {
     const out = [], map = this.getMap(S), seen = new Set();
     for (const p of this.players) {
       if (!p.body) continue;
+      const pad = p.body.torso * map.dh * EASY_POP.padTorso; // bigger reach for every kid, scaled to their own size
       touchPoints(p.body).forEach((q, j) => {
         const key = p.id + ':' + j, x = map.x(q.x), y = map.y(q.y), prev = this.prevPts.get(key);
         seen.add(key);
@@ -79,7 +85,7 @@ const B = {
         const ok = prev && S.clock - prev.t < 0.2 && Math.hypot(prev.x - x, prev.y - y) < S.H * 0.35;
         const sp = ok ? Math.hypot(prev.x - x, prev.y - y) / Math.max(1 / 60, S.clock - prev.t) : 0;
         const speed = prev ? prev.speed * 0.4 + sp * 0.6 : 0; // light smoothing
-        out.push({ x, y, px: ok ? prev.x : null, py: ok ? prev.y : null, slot: p.slot, kind: q.kind, speed });
+        out.push({ x, y, px: ok ? prev.x : null, py: ok ? prev.y : null, slot: p.slot, kind: q.kind, speed, pad });
         this.prevPts.set(key, { x, y, t: S.clock, speed });
       });
     }
@@ -97,7 +103,7 @@ const B = {
     this.fx = this.fx.filter((f) => f.t < f.dur);
     if (S.mode !== 'play') { this.taps = []; return; }
     const n = Math.max(1, this.players.filter((p) => p.body).length);
-    const storm = S.left < 10 ? 1.6 : 1;
+    const storm = !S.relaxed && S.left < 10 ? 1.6 : 1;
     // spawn floaters
     this.spawnT -= dt;
     if (this.spawnT <= 0) { this.spawnT = 1 / ((1.3 + 0.45 * (n - 1)) * storm) * (0.7 + this.rng() * 0.6); this.spawn(S, 'float'); }
@@ -126,11 +132,11 @@ const B = {
     }
     // pop
     const touches = (this.lastTouches = this.collectTouches(S));
-    const hits = hitTest(this.bubbles, touches, Math.min(S.W, S.H) * 0.025, this.getMap(S).dh * 0.3);
+    const hits = hitTest(this.bubbles, touches, Math.min(S.W, S.H) * EASY_POP.padMin, this.getMap(S).dh * EASY_POP.minSpeed);
     hits.forEach((h, j) => {
       const b = this.bubbles[h.i]; b.dead = true;
       const pts = POINTS[b.kind];
-      this.scores[h.slot] += pts; this.pops[b.kind]++; this.played.add(h.slot);
+      this.scores[h.slot] += pts; this.pops[b.kind]++; this.played.add(h.slot); this.lastPop[h.slot] = S.clock;
       this.fx.push({ kind: 'pop', x: b.x, y: b.y, r: b.r, t: 0, dur: 0.45, col: (PLAYER_COLORS[h.slot] || PLAYER_COLORS[0]).css, pts });
       S.sound.pop(this.scores[h.slot] + j);
       if (b.kind !== 'float') S.sound.good();
@@ -154,10 +160,21 @@ const B = {
       c.globalAlpha = 0.18; c.fillStyle = '#ffe14a'; c.fillRect(A.x, A.y, A.w, A.h * 0.06);
       c.fillStyle = '#6fe07a'; c.fillRect(A.x, A.y + A.h * 0.96, A.w, A.h * 0.04); c.globalAlpha = 1;
     }
-    // skeletons
+    // characters: each tracked kid is an octopus right over their body (new people waiting = faint skeleton)
+    this.charsDrawn = 0;
     if (S.input === 'cam') {
       for (const q of S.cam.pending) drawSkeleton(c, q.body, map, '#ffffff', { width: 4, glow: 0, alpha: 0.5 });
-      for (const p of this.players) if (p.body) drawSkeleton(c, p.body, map, p.color.css, { width: Math.max(6, W * 0.008), glow: 20 });
+      for (const p of this.players) {
+        if (!p.body) continue;
+        const R = rigFromBody(p.body, map), mood = S.clock - this.lastPop[p.slot] < 0.5 ? 'wow' : 'happy';
+        drawChar(c, 'octo', R, p.color.css, { t: S.clock + p.slot, mood }); this.charsDrawn++;
+        const bs = Math.max(34, R.T * 0.55), at = badgeSpot(R, bs);
+        if (at && S.mode === 'play') drawBadge(c, at.x, at.y, this.scores[p.slot], p.color.css, bs);
+      }
+    } else if (S.mode === 'play' || S.mode === 'count') {
+      // tap mode: a little octopus friend cheers in the corner
+      const T = Math.min(W, H) * 0.09, mood = S.clock - this.lastPop[0] < 0.5 ? 'wow' : 'happy';
+      drawChar(c, 'octo', rigFromDemo(mood === 'wow' ? 'reach' : 'dance', S.clock, W - T * 1.6, H - T * 0.3, T), PLAYER_COLORS[0].css, { t: S.clock, mood }); this.charsDrawn++;
     }
     // bubbles
     for (const b of this.bubbles) {
@@ -186,14 +203,14 @@ const B = {
   },
   hud(S) {
     const slots = [...this.played].sort();
-    return slots.map((s) => ({ slot: s, score: this.scores[s], icon: '🫧' }));
+    return slots.map((s) => ({ slot: s, score: this.scores[s], icon: '🐙' }));
   },
   results(S) {
     const slots = [...this.played].sort(), n = slots.length;
     return slots.map((s) => ({ slot: s, score: this.scores[s], stars: starsFor(this.scores[s], n) }));
   },
   state(S) {
-    return { bubbles: this.bubbles.length, scores: this.scores.slice(), pops: { ...this.pops }, spawned: { ...this.spawned }, touches: (this.lastTouches || []).length };
+    return { kind: 'octo', chars: this.charsDrawn || 0, bubbles: this.bubbles.length, scores: this.scores.slice(), pops: { ...this.pops }, spawned: { ...this.spawned }, touches: (this.lastTouches || []).length };
   },
 };
 

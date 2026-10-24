@@ -2,6 +2,21 @@
 // Pure move checks (no DOM; unit-tested in move-play/test/unit.mjs). Bodies come from toBody() (mirrored,
 // normalized, lengths in frame heights via b.ar). `mem` is per-player memory kept between frames.
 export const HOLD = 0.2; // a move must show for this long (s) to count (one noisy frame can't tick it)
+/** v4 kid-friendly thresholds (all in torso lengths = relative to each kid's own size; energy = torso / s).
+ *  Lower than v3 (in brackets) but still above tracker noise for a kid standing still (unit-tested). */
+export const EASY = {
+  reachAbove: -0.05, // a hand above (head - this * torso): -0.05 = level with the eyes is enough [0.1 above the head]
+  squatKnee: 0.7,    // thigh "height" (knee below hip) under this = knees bent [0.6]
+  squatDrop: 0.2,    // or shoulders this far below standing [0.3]
+  kickFoot: 0.25,    // one foot this much higher than the other [0.35]
+  jumpUp: 0.1,       // shoulders this far above the standing line [0.15]
+  leanStep: 0.25,    // shoulders moved sideways this far from the start [0.35]
+  leanTilt: 0.18,    // or shoulders this far off the hips [0.25]
+  danceOn: 0.7,      // hand / foot energy that counts as dancing [0.9]
+  danceSec: 0.6,     // for this long [0.8]
+  stillMax: 0.35,    // energy under this = statue [0.25]
+  stillSec: 0.7,     // for this long [1.0]
+};
 
 const base = (mem, b) => {
   // standing reference: a slow average of the shoulder line (a quick jump/squat barely moves it) + start x
@@ -12,23 +27,23 @@ const base = (mem, b) => {
 };
 export const CHECKS = {
   /** a hand above the head */
-  reach(b) { const P = b.p, w = [P.lw, P.rw, P.li, P.ri].filter(Boolean); return w.some((q) => q.y < b.head.y - b.torso * 0.1); },
+  reach(b) { const P = b.p, w = [P.lw, P.rw, P.li, P.ri].filter(Boolean); return w.some((q) => q.y < b.head.y - b.torso * EASY.reachAbove); },
   /** knees bent (thighs close to level) or shoulders clearly below the standing line */
   squat(b, mem) {
     base(mem, b); const P = b.p;
     const k = P.lk && P.rk && b.hip ? ((P.lk.y + P.rk.y) / 2 - b.hip.y) / b.torso : 9;
-    return k < 0.6 || b.sh.y - mem.sy > mem.T * 0.3;
+    return k < EASY.squatKnee || b.sh.y - mem.sy > mem.T * EASY.squatDrop;
   },
   /** one foot clearly higher than the other */
-  kick(b) { const P = b.p, l = P.la || P.lf, r = P.ra || P.rf; return !!(l && r) && Math.abs(l.y - r.y) > b.torso * 0.35; },
+  kick(b) { const P = b.p, l = P.la || P.lf, r = P.ra || P.rf; return !!(l && r) && Math.abs(l.y - r.y) > b.torso * EASY.kickFoot; },
   /** whole body up off the standing line */
-  jump(b, mem) { const sy0 = mem.sy; base(mem, b); return sy0 != null && b.sh.y < sy0 - mem.T * 0.15; },
+  jump(b, mem) { const sy0 = mem.sy; base(mem, b); return sy0 != null && b.sh.y < sy0 - mem.T * EASY.jumpUp; },
   /** step / lean sideways from where you started */
-  lean(b, mem) { base(mem, b); const ar = b.ar || 1, hx = b.hip ? b.hip.x : b.sh.x; return Math.abs(b.sh.x - mem.sx) * ar > mem.T * 0.35 || Math.abs(b.sh.x - hx) * ar > b.torso * 0.25; },
+  lean(b, mem) { base(mem, b); const ar = b.ar || 1, hx = b.hip ? b.hip.x : b.sh.x; return Math.abs(b.sh.x - mem.sx) * ar > mem.T * EASY.leanStep || Math.abs(b.sh.x - hx) * ar > b.torso * EASY.leanTilt; },
   /** wiggle: hands moving a lot for ~1 s */
-  dance(b, mem, dt) { const e = motion(b, mem, dt); mem.danceT = e > 0.9 ? (mem.danceT || 0) + dt : Math.max(0, (mem.danceT || 0) - dt * 0.5); return mem.danceT > 0.8; },
+  dance(b, mem, dt) { const e = motion(b, mem, dt); mem.danceT = e > EASY.danceOn ? (mem.danceT || 0) + dt : Math.max(0, (mem.danceT || 0) - dt * 0.5); return mem.danceT > EASY.danceSec; },
   /** after moving, stand still like a statue */
-  freeze(b, mem, dt) { const e = motion(b, mem, dt); mem.moved = mem.moved || e > 0.9; mem.stillT = e < 0.25 ? (mem.stillT || 0) + dt : 0; return mem.moved && mem.stillT > 1.0; },
+  freeze(b, mem, dt) { const e = motion(b, mem, dt); mem.moved = mem.moved || e > EASY.danceOn; mem.stillT = e < EASY.stillMax ? (mem.stillT || 0) + dt : 0; return mem.moved && mem.stillT > EASY.stillSec; },
 };
 /** hand + foot speed in torso lengths per second (smoothed) */
 export function motion(b, mem, dt) {

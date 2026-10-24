@@ -4,11 +4,15 @@ import { clamp } from './body.js';
 
 const PTS = ['nose', 'ls', 'rs', 'le', 're', 'lw', 'rw', 'lh', 'rh', 'lk', 'rk', 'la', 'ra'];
 const W8 = { lw: 1.4, rw: 1.4, le: 1.1, re: 1.1, la: 1.2, ra: 1.2, lk: 1.1, rk: 1.1 };
+// v4 kid-friendly (v3 values in brackets). Standing still stays ~0 energy thanks to the jitter cut, so it never
+// counts as dancing; a small kid's sway while "frozen" stays under freezeMax.
 export const E = {
-  danceOn: 0.55,   // energy (torso/s) that counts as dancing
-  freezeMax: 0.35, // energy that still counts as frozen (kids wobble; generous)
+  danceOn: 0.36,   // energy (torso/s) that counts as dancing [0.55]
+  freezeMax: 0.5,  // energy that still counts as frozen (kids wobble; generous) [0.35]
   rate: 7,         // smoothing (1/s)
   jitter: 0.015,   // per-frame movement under this (torso units) is tracker noise
+  jitterAbs: 0.0035, // v4: ...or under this in frame heights (a small far-away kid's torso is short, so the same
+                     // camera noise is more torso units - this keeps a still small kid "still")
 };
 /** Smoothed "how much is this body moving" meter (torso lengths per second). */
 export class MotionMeter {
@@ -20,12 +24,13 @@ export class MotionMeter {
     if (!b) { this.prev = null; this.energy *= Math.exp(-3 * dt); return this.energy; }
     const ar = b.ar || 1, T = b.torso;
     let sum = 0, wsum = 0;
+    const jit = Math.max(this.o.jitter, this.o.jitterAbs / Math.max(0.02, T));
     if (this.prev && dt < 0.4) {
       // remove whole-body translation drift? No: stepping counts as dancing. Just per-point motion.
       for (const k of PTS) {
         const a = b.p[k], q = this.prev[k]; if (!a || !q) continue;
         let d = Math.hypot((a.x - q.x) * ar, a.y - q.y) / T;
-        d = Math.max(0, d - this.o.jitter);
+        d = Math.max(0, d - jit);
         const w = W8[k] || 1; sum += d * w; wsum += w;
       }
     }
@@ -57,10 +62,10 @@ export function features(b) {
 }
 /** Target poses (shown as silhouettes). Each rule: [feature, min, max]. */
 export const POSES = {
-  star: { icon: '⭐', rules: [['armL', 15, 80], ['armR', 15, 80], ['spread', 0.75, 9]] },
-  up: { icon: '🙌', rules: [['armL', 55, 135], ['armR', 55, 135]] },
-  tpose: { icon: '✈️', rules: [['armL', -25, 28], ['armR', -25, 28]] },
-  oneleg: { icon: '🦩', rules: [['footUp', 0.35, 9]] },
+  star: { icon: '⭐', rules: [['armL', 10, 80], ['armR', 10, 80], ['spread', 0.6, 9]] },   // v3: 15..80, spread 0.75 (up = 55+ so star stays star)
+  up: { icon: '🙌', rules: [['armL', 55, 140], ['armR', 55, 140]] },                       // v3: 55..135
+  tpose: { icon: '✈️', rules: [['armL', -30, 32], ['armR', -30, 32]] },                    // v3: -25..28
+  oneleg: { icon: '🦩', rules: [['footUp', 0.28, 9]] },                                     // v3: 0.35
 };
 /** 0..1 how well body matches pose; missing features count as half (so a cropped foot isn't a fail). */
 export function poseScore(b, name) {
@@ -69,12 +74,12 @@ export function poseScore(b, name) {
   for (const [k, lo, hi] of P.rules) {
     const v = f[k];
     if (v == null) { s += 0.5; continue; }
-    const soft = k.startsWith('arm') ? 15 : 0.15; // soft margin around each range
+    const soft = k.startsWith('arm') ? 20 : 0.2; // soft margin around each range [v3 15 / 0.15]
     if (v >= lo && v <= hi) s += 1; else s += Math.max(0, 1 - (v < lo ? lo - v : v - hi) / soft);
   }
   return s / P.rules.length;
 }
-export const MATCH = 0.8;
+export const MATCH = 0.7; // [v3 0.8]
 export function starsFor(score, maxScore) {
   const k = maxScore > 0 ? score / maxScore : 0;
   return k >= 0.7 ? 3 : k >= 0.4 ? 2 : score > 0 ? 1 : 0;

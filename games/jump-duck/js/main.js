@@ -1,13 +1,18 @@
 // Jump & Duck: a 3-lane runner per player. Jump over logs, duck under bars, lean/step to dodge rocks.
-import { run } from './runner.js';
+// v4: every kid is a bunny (chars.js) in their colour that copies their arms / squat live; 🧸 relaxed (default) =
+// no timer, endless course, a missed obstacle just makes the bunny hop over it (no bump, no 💥); ⏱️ = v3 rules.
+import { run } from './runner.js?v=4';
+import { drawChar, rigFromBody, fitRig, rigFromDemo, rigOk } from './chars.js?v=4';
 import { drawSkeleton, drawVideo, emoji, rrect } from './draw.js';
 import { drawDemo } from './demo.js';
 import { viewMap } from './view.js';
 import { PLAYER_COLORS, layoutViewports, screenOrder } from './multi.js';
-import { MoveDetector, makeCourse, collides, starsFor } from './moves.js';
+import { MoveDetector, makeCourse, collides, starsFor } from './moves.js?v=4';
 
-const ANIMALS = ['🐰', '🐻', '🦊', '🐼'];
-const GRACE = 0.22, AIR = 0.75, DUCK_TAP = 0.85, BUMP = 0.9, VIEW = 42; // seconds airborne, tap-duck time, bump stun, meters visible
+const ANIMALS = ['🐰', '🐰', '🐰', '🐰']; // every kid is a bunny; the colour says who is who
+// late grace (s) [v3 0.22], seconds airborne [0.75], tap-duck time, bump stun (challenge only), meters visible
+export const GRACE = 0.4, AIR = 0.85, DUCK_TAP = 0.85, BUMP = 0.9, VIEW = 42;
+export const RELAX_SPEED = 5; // m/s in 🧸 relaxed (challenge: 6 -> 8.2 over the round)
 const J = {
   // practice before a camera round: jump, squat (duck), lean / step sideways
   practice: [{ move: 'jump', icon: '⬆️🪵', hold: 0.05 }, { move: 'squat', icon: '⬇️🚧' }, { move: 'lean', icon: '⬅️🪨➡️' }],
@@ -19,7 +24,7 @@ const J = {
     const m = new Map();
     for (const o of this.course) { if (!m.has(o.d)) m.set(o.d, []); m.get(o.d).push(o); }
     this.rows = [...m.entries()].map(([d, list]) => ({ d, list })).sort((a, b) => a.d - b.d);
-    this.d = 0; this.speed = 6; this.nextRow = 0; this.runners = []; this.fx = [];
+    this.d = 0; this.speed = 6; this.nextRow = 0; this.runners = []; this.fx = []; this.ext = 0;
     if (S.input === 'tap') for (let i = 0; i < S.nTap; i++) this.addRunner(i, true);
     else { this.cal.clear(); for (const p of S.cam.players) if (p.slot >= 0) this.addRunner(p.slot, false); }
     S.sound.music(false);
@@ -65,8 +70,9 @@ const J = {
     for (const r of this.runners) r.x += (r.lane - r.x) * Math.min(1, dt * 12);
     for (const f of this.fx) f.t += dt; this.fx = this.fx.filter((f) => f.t < 0.8);
     if (S.mode !== 'play') return;
-    const prog = 1 - S.left / this.roundSec;
-    this.speed = 6 + prog * 2.2;
+    const prog = Math.min(1, S.playT / this.roundSec);
+    this.speed = S.relaxed ? RELAX_SPEED : 6 + prog * 2.2;
+    if (this.rows.length - this.nextRow < 6) this.extend(); // relaxed rounds never run out of track
     this.d += this.speed * dt;
     for (const r of this.runners) {
       if (r.air > 0) r.air = Math.max(0, r.air - dt);
@@ -95,7 +101,11 @@ const J = {
         const st = { lane: r.lane, air: r.air > 0.05, duck: r.duck };
         const hit = pe.obstacles.some((o) => collides(o, st));
         if (!hit || r.bump > 0) { if (r.bump <= 0) { r.score++; r.cleared++; r.flash = { t: S.clock, ok: true }; S.sound.good(); } return false; }
-        if (S.clock >= pe.until) { r.hits++; r.bump = BUMP; S.sound.bump(); r.flash = { t: S.clock, ok: false, type: pe.obstacles[0].type }; return false; }
+        if (S.clock >= pe.until) {
+          // 🧸 relaxed: no losing - the bunny hops over by itself (no points, no bump); ⏱️ challenge: bump + stun
+          if (S.relaxed) { r.air = Math.max(r.air, AIR * 0.6); r.autoHops = (r.autoHops || 0) + 1; r.flash = { t: S.clock, ok: null }; S.sound.whoosh(); return false; }
+          r.hits++; r.bump = BUMP; S.sound.bump(); r.flash = { t: S.clock, ok: false, type: pe.obstacles[0].type }; return false;
+        }
         return true;
       });
     }
@@ -164,15 +174,14 @@ const J = {
     const rx = cx + r.x * half * 0.66;
     c.fillStyle = '#0003'; c.beginPath(); c.ellipse(rx, ry, u0 * 0.7 * (1 - jumpH / h), u0 * 0.2, 0, 0, 7); c.fill();
     c.save(); c.translate(rx, ry - jumpH);
-    if (r.duck) c.scale(1.25, 0.6);
+    if (r.duck) c.scale(1.12, 0.78);
     if (r.bump > 0 && Math.sin(S.clock * 30) > 0) c.globalAlpha = 0.4;
-    c.fillStyle = col.css; c.beginPath(); c.arc(0, -u0 * 0.9, u0 * 0.95, 0, 7); c.fill();
-    c.lineWidth = 5; c.strokeStyle = '#fff'; c.stroke();
-    emoji(c, ANIMALS[r.slot % 4], 0, -u0 * 0.9, u0 * 1.35);
+    // the kid's bunny (copies their arms / squat when the camera sees them), drawn in their colour
+    drawChar(c, 'bunny', this.rigFor(r, S, u0 * 0.8), col.css, { t: S.clock, mood: r.bump > 0 ? 'oops' : r.flash?.ok && S.clock - r.flash.t < 0.5 ? 'wow' : 'happy' });
     c.restore();
     // feedback
-    if (r.flash && S.clock - r.flash.t < 0.7) emoji(c, r.flash.ok ? '👍' : '💥', rx + u0 * 1.4, ry - u0 * 2.2 - jumpH, u0 * 0.9);
-    for (const f of this.fx) if (f.slot === r.slot) emoji(c, '✨', rx, ry - u0 * 2.4 - f.t * 60, u0 * (1 - f.t));
+    if (r.flash && S.clock - r.flash.t < 0.7) emoji(c, r.flash.ok ? '👍' : r.flash.ok === null ? '🌈' : '💥', rx + u0 * 1.6, ry - u0 * 3.2 - jumpH, u0 * 0.9);
+    for (const f of this.fx) if (f.slot === r.slot) emoji(c, '✨', rx, ry - u0 * 2.8 - f.t * 60, u0 * (1 - f.t));
     // lane score badge
     if (this.runners.length > 1) {
       const by = v.y < 40 ? 74 : 10;
@@ -195,6 +204,25 @@ const J = {
       for (const b of this.buttons(w, h)) { c.fillStyle = '#ffffffd9'; rrect(c, b.x, b.y, b.w, b.h, 16); c.fill(); emoji(c, b.icon, b.x + b.w / 2, b.y + b.h / 2, b.h * 0.6); }
     }
     c.restore();
+  },
+  /** append more (seeded) track after the last row */
+  extend() {
+    const last = this.rows.length ? this.rows[this.rows.length - 1].d : 0;
+    const more = makeCourse(this.seed + 7919 * ++this.ext, 400, { start: 12, gap: 12 }).map((o) => ({ ...o, d: o.d + last }));
+    this.course.push(...more);
+    const m = new Map(); for (const o of more) { if (!m.has(o.d)) m.set(o.d, []); m.get(o.d).push(o); }
+    this.rows.push(...[...m.entries()].map(([d, list]) => ({ d, list })).sort((a, b) => a.d - b.d));
+    this.course = this.course.filter((o) => o.d > this.d - 5);
+  },
+  /** the bunny's pose: the kid's own body (camera; normalized -> 1000 px units, rigFromBody has a 6 px floor) or a canned move (tap / not seen) */
+  rigFor(r, S, T) {
+    const p = S.input === 'cam' ? S.cam.players.find((q) => q.slot === r.slot && q.body) : null;
+    if (p) { const b = p.body, raw = rigFromBody(b, { x: (v) => v * (b.ar || 1) * 1000, y: (v) => v * 1000, dh: 1000 }); const R = fitRig(raw, 0, 0, T); if (rigOk(R)) return R; }
+    if (r.duck) return rigFromDemo('squat', 0.83, 0, 0, T);
+    if (r.air > 0) return rigFromDemo('reach', 0.83, 0, 0, T);
+    const R = rigFromDemo('none', 0, 0, 0, T), sw = Math.sin(S.clock * 9) * T * 0.25; // little run: arms + feet swing
+    R.armL[2].y -= sw; R.armR[2].y += sw; R.legL[2].y -= Math.max(0, sw) * 0.5; R.legR[2].y -= Math.max(0, -sw) * 0.5;
+    return R;
   },
   /** what this runner should do for the next row (pure-ish, used by the hint + tests) */
   nextHint(r) {
@@ -249,7 +277,8 @@ const J = {
   results(S) { return this.runners.map((r) => ({ slot: r.slot, score: r.score, stars: starsFor(r.score, r.max) })); },
   state(S) {
     return { d: +this.d.toFixed(2), seed: this.seed, nextRow: this.nextRow, rows: this.rows.length,
-      runners: this.runners.map((r) => ({ slot: r.slot, lane: r.lane, air: +r.air.toFixed(2), duck: r.duck, score: r.score, max: r.max, hits: r.hits, cleared: r.cleared, calibrated: r.calibrated, jumps: r.jumps, ducks: r.ducks, laneMoves: r.laneMoves })),
+      speed: +this.speed.toFixed(2), chars: this.runners.length, kind: 'bunny',
+      runners: this.runners.map((r) => ({ slot: r.slot, lane: r.lane, air: +r.air.toFixed(2), duck: r.duck, score: r.score, max: r.max, hits: r.hits, autoHops: r.autoHops || 0, cleared: r.cleared, calibrated: r.calibrated, jumps: r.jumps, ducks: r.ducks, laneMoves: r.laneMoves })),
       views: layoutViewports(Math.max(1, this.runners.length), S.W, S.H, 6).views.length, drawnViews: this.layout ? this.layout.views.length : 0 };
   },
 };

@@ -3,17 +3,20 @@
 // measured during a 2 s "stand still" calibration, so tall dads and short kids use the same thresholds.
 import { clamp } from './body.js';
 
+// v4 kid-friendly: lower thresholds (v3 values in brackets) + short grace windows; still no events for a kid
+// standing still with tracker noise (unit-tested in unit.mjs / unit-chars.mjs).
 export const OPTS = {
-  calibSec: 2.0,      // standing still this long = calibrated
-  calibMove: 0.12,    // max wobble (torso) during calibration (kids wiggle; generous)
-  jumpRise: 0.12,     // hips must rise this much above standing (torso units)...
-  jumpVel: 0.9,       // ...while moving up at least this fast (torso / s)
-  jumpBig: 0.3,       // or simply be this high (slow-motion jump still counts)
-  jumpCooldown: 0.45,
-  duckDrop: 0.28,     // shoulders this far below standing = ducking (squat / bend)
-  duckExit: 0.18,     // hysteresis
-  laneOn: 0.3,        // body shifted / leaned this far (torso) left or right = side lane
-  laneOff: 0.18,      // back within this = middle lane
+  calibSec: 1.2,      // standing still this long = calibrated [2.0]
+  calibMove: 0.16,    // max wobble (torso) during calibration (kids wiggle; generous) [0.12]
+  jumpRise: 0.08,     // hips must rise this much above standing (torso units)... [0.12]
+  jumpVel: 0.6,       // ...while moving up at least this fast (torso / s) [0.9]
+  jumpBig: 0.2,       // or simply be this high (slow-motion jump still counts) [0.3]
+  jumpCooldown: 0.4,  // [0.45]
+  duckDrop: 0.2,      // shoulders this far below standing = ducking (squat / bend) [0.28]
+  duckExit: 0.12,     // hysteresis [0.18]
+  duckHold: 0.35,     // grace: a quick bob stays a duck at least this long (s) [0]
+  laneOn: 0.22,       // body shifted / leaned this far (torso) left or right = side lane [0.3]
+  laneOff: 0.12,      // back within this = middle lane [0.18]
   leanW: 1.6,         // weight of torso lean angle (shoulders vs hips) vs whole-body step
 };
 
@@ -67,8 +70,8 @@ export class MoveDetector {
     }
     // duck: shoulders dropped below standing height (squat or bend over)
     this.drop = (c.sy - cal.sy) / CT;
-    if (!this.ducking && this.drop > o.duckDrop) this.ducking = true;
-    else if (this.ducking && this.drop < o.duckExit) this.ducking = false;
+    if (!this.ducking && this.drop > o.duckDrop) { this.ducking = true; this.duckAt = t; }
+    else if (this.ducking && this.drop < o.duckExit && t - (this.duckAt ?? -9) >= o.duckHold) this.ducking = false;
     // lane: whole-body step sideways + torso lean (shoulders vs hips). + = player's right (screen right, mirrored)
     const step = (c.hx - cal.hx) * ar / CT;
     const leanA = b.hip ? ((c.sx - c.hx) - (cal.sx - cal.hx)) * ar / CT : 0;
