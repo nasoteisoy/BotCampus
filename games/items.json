@@ -1,7 +1,33 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-24 15:30 MST",
+ "generated": "2026-10-24 15:31 MST",
  "items": [
+  {
+   "id": "story",
+   "title": "Story: Letters of the Two Worlds",
+   "type": "art",
+   "maker": "Story",
+   "makerSource": "built by the Story bot for Chumi",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/story/",
+   "extras": [
+    {
+     "label": "🔊 Letters",
+     "url": "games/story/letters.html"
+    },
+    {
+     "label": "Characters",
+     "url": "games/story/characters.html"
+    },
+    {
+     "label": "Ranks (draft)",
+     "url": "games/story/ranks.html"
+    }
+   ],
+   "note": "Our fantasy comic world: letters you can listen to, lore, Black Guard characters, comics",
+   "thumb": "thumbs/story.webp"
+  },
   {
    "id": "seraphina-fortnite",
    "title": "Seraphina Fortnite",
