@@ -122,7 +122,18 @@
       "group": "Black Guard – High Lord Cassian Thorne",
       "question_id": "hl-cassian-09",
       "question": "What is the 'power that will save humanity' he is seeking?",
-      "answer": "A bargain with the fallen Ashavar (Ashavar-Kan).",
+      "answer": "He seeks a power tied to spirit-tech. He thinks it means a bargain with the fallen, but he doesn't fully know or understand who or what the fallen are.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-chat-05",
+      "question": "What does Cassian offer the fallen?",
+      "answer": "He doesn't fully know or understand who or what the fallen are, only that there is a power tied to spirit-tech.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"

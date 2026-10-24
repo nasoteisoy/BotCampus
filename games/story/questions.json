@@ -116,7 +116,7 @@
       "questions": [
         {
           "id": "ashara-matchhead-01",
-          "prompt": "Is Ashavar the people who fall first (the 'match-head')?",
+          "prompt": "In the Letters (non-canon), Ashavar are the people who fall first (the 'match-head'). Who the fallen really are is still open. If this idea stays, keep the name Ashavar?",
           "options": [
             "Keep Ashavar",
             "Change to Dorinel (ranking)",
@@ -126,7 +126,7 @@
         },
         {
           "id": "ashara-first-leaner-01",
-          "prompt": "The first one of Ashavar who leaned into Pride — do they get a name?",
+          "prompt": "In the Letters (non-canon), the first of Ashavar leans into Pride. If that idea stays, does that first one get a name?",
           "options": [
             "Yes, a name that is spoken in the story",
             "Yes, but only secretly known (never on the page)",
@@ -136,7 +136,7 @@
         },
         {
           "id": "ashara-two-thirds-01",
-          "prompt": "Two-thirds of Ashavar tipped together like a flock. Is that number known in-world?",
+          "prompt": "In the Letters (non-canon), two-thirds of Ashavar tip together like a flock. If that idea stays, is the number known in-world?",
           "options": [
             "Known only to spirits",
             "Known to the Flame Order as a secret teaching",
@@ -146,7 +146,7 @@
         },
         {
           "id": "ashara-remnant-01",
-          "prompt": "What does the faithful remnant third of Ashavar do now?",
+          "prompt": "In the Letters (non-canon), only part of Ashavar falls. If that idea stays, what does the faithful remnant do now?",
           "options": [
             "Quietly help humans — they know 'we cannot be the Breath'",
             "Watch from afar and almost never act",
@@ -156,11 +156,11 @@
         },
         {
           "id": "ashara-kan-title-01",
-          "prompt": "'Ashar-Kan' is a later mistaken title, as if one king sat in the Gust. How is it used in the story?",
+          "prompt": "In the Letters (non-canon), 'Ashar-Kan' is a later mistaken title, as if one king sat in the Gust. If that idea stays, how is it used in the story?",
           "options": [
             "People believe in one dark king named Ashar-Kan; the truth is revealed late",
             "The Empire uses the name as propaganda",
-            "The fallen Ashavar-Kan use it to seem stronger",
+            "The fallen use it to seem stronger",
             "Only scholars use it"
           ]
         },
@@ -588,20 +588,20 @@
           ]
         },
         {
-          "id": "hl-cassian-16",
+          "id": "hl-cassian-17",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "What does Cassian offer the fallen Ashavar in the bargain?",
+          "prompt": "What is the spirit-tech power Cassian is chasing? (He doesn't fully understand who or what the fallen are.)",
           "options": [
-            "A way into the Physical World",
-            "Human souls who are already stained",
-            "The throne for one of them, as Ashar-Kan",
-            "Nothing he means to give; he thinks he can outwit them"
+            "An ancient device that opens a crossing",
+            "A way to pull power out of corrupted things",
+            "Something the Flame Order forbade and hid",
+            "He doesn't know; he's following rumours"
           ]
         },
         {
           "id": "hl-cassian-10",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "How does he hope to use corruption?",
+          "prompt": "How does he hope to use corruption? (He's chasing a power tied to spirit-tech and doesn't fully understand the fallen.)",
           "options": [
             "As a weapon — stained fighters aimed at the enemy",
             "To understand the enemy from the inside",
@@ -1213,7 +1213,7 @@
       "questions": [
         {
           "id": "enemy-list-keep-01",
-          "prompt": "Keep the draft enemy list (Tipped Wisps, Ashavar-Kan Fallen, Stained Neighbors, Hollow Makers, Unmakers, Mist Walkers, Empire Censors, Corrupted Guardsmen, Pride Echo, Ashar-Kan)?",
+          "prompt": "Keep the draft enemy list (Tipped Wisps, Ashavar-Kan Fallen, Stained Neighbors, Hollow Makers, Unmakers, Mist Walkers, Empire Censors, Corrupted Guardsmen, Pride Echo, Ashar-Kan)? (Who or what the fallen are is still open.)",
           "options": [
             "Keep all",
             "Keep most, cut a few",
@@ -1222,11 +1222,31 @@
           ]
         },
         {
-          "id": "enemy-final-boss-01",
-          "prompt": "Final boss 'Ashar-Kan' — but the lore says Ashar-Kan is a mistaken title. Who is the real final enemy?",
+          "id": "enemy-fallen-who-01",
+          "prompt": "Who or what are the fallen spirits?",
           "options": [
-            "The fallen two-thirds of Ashavar acting together",
-            "The first leaner of Ashavar (the Ancient Enemy)",
+            "The fallen two-thirds of Ashavar",
+            "Spirits stained by many offices, not one people",
+            "Something older than the Ashara",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "enemy-fallen-role-01",
+          "prompt": "What role do the fallen play in the story?",
+          "options": [
+            "The hidden enemy behind the corruption",
+            "Prisoners who want out",
+            "Tempters who need a human to act for them",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "enemy-final-boss-01",
+          "prompt": "Final boss 'Ashar-Kan'? The Letters call Ashar-Kan a mistaken title, and who or what the fallen are is still open. Who is the real final enemy?",
+          "options": [
+            "The fallen spirits acting together (whoever they turn out to be)",
+            "The first one who fell (the Ancient Enemy)",
             "A human who takes the Ashar-Kan title",
             "There is no single boss — the canal itself"
           ]
@@ -1243,7 +1263,7 @@
         },
         {
           "id": "enemy-hollow-makers-01",
-          "prompt": "Hollow Makers (fallen Kembar): what do they make?",
+          "prompt": "Hollow Makers (draft idea: fallen Kembar): what do they make?",
           "options": [
             "Things that can only be owned, not used",
             "Corrupted spirit-tech",
@@ -1253,7 +1273,7 @@
         },
         {
           "id": "enemy-unmakers-01",
-          "prompt": "Unmakers (fallen Nurest) — evil cannot truly unmake. So what do they do?",
+          "prompt": "Unmakers (draft idea: fallen Nurest). Evil cannot truly unmake, so what do they do?",
           "options": [
             "Smash and leave a stain",
             "Bring death too early",
