@@ -9,7 +9,7 @@
 <title>Bubble Pop · Move & Play</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/common.css?v=2">
+<link rel="stylesheet" href="css/common.css?v=3">
 <link rel="stylesheet" href="css/game.css?v=2">
 </head>
 <body data-mode="title" style="--c1:#7fd3ff;--c2:#7b4dff">
@@ -33,6 +33,10 @@
   <div id="camPrompt" aria-label="Camera"><span class="pcam">📷</span><canvas class="phand" data-demo="point" aria-hidden="true"></canvas><b id="camMsg">⏳</b></div>
   <div class="btns">
     <button id="bCam" class="big cam" aria-label="Play">▶️<small>🙆</small></button>
+  </div>
+  <div class="lockbtns" aria-label="Players">
+    <button id="bPlayers" class="sm" aria-label="Players: change">👤<b>2</b></button>
+    <button id="bRoll" class="sm" aria-label="Roll call again: who is who">📣🙋</button>
   </div>
   <div class="tips"><span>✋⏳👉</span><span>📏 🧍↔️</span><span>💡</span><span>👥 ≤4</span></div>
   <p class="priv">📷 stays on this device: video is processed in the browser and never uploaded.</p>
@@ -61,6 +65,6 @@
 <div id="toast" role="status"></div>
 <div id="stepBack" role="status" aria-label="Step back so your whole body fits">📏<span>🔙🧍</span></div>
 
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

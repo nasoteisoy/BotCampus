@@ -2,6 +2,9 @@
 // 3-2-1 countdown, end screen with stars, fixed-step loop and the window.__game test hooks.
 // v2: the camera is the default input (starts on load), menus are body-controlled (raise a hand, hold it
 // on a button), every game shows animated stick-figure how-tos and a practice step before the round.
+// v3 (tracking fix): ▶️ -> player-count picker (👤 1-4, remembered) -> roll call (raise a hand, slots fill 1..N in
+// colour; ⏭ / auto = by position) -> practice -> 3-2-1. Players are locked (track.js LockTracker): no auto-join,
+// never more than N, appearance + motion matching, hold-when-close, both-hands swap gesture (not while playing).
 import { Camera, ST } from './cam.js';
 import { Sound } from './sound.js';
 import { PLAYER_COLORS } from './multi.js';
@@ -10,6 +13,7 @@ import { BodyMenu } from './menu.js';
 import { Practice } from './practice.js';
 import { startDemos, MOVES } from './demo.js';
 import { drawVideo, drawSkeleton } from './draw.js';
+import { LockUI, PEOPLE } from './lockui.js';
 
 export const STEP = 1 / 60;
 const $ = (id) => document.getElementById(id);
@@ -92,10 +96,26 @@ export function run(G) {
     } else if (input === 'cam' && opts.fake) {
       cam.startFake(S.W / S.H);
     } else if (cam.active) cam.stop();
-    const wantPractice = S.input === 'cam' && G.practice && (opts.fake ? !!opts.practice : params.get('practice') !== '0');
+    if (S.input !== 'cam') { newRound(); return; }
+    if (opts.players) cam.setPlayers(opts.players);
+    // tests: fake camera without pick / roll = lock N (default 4) by position, like ⏭
+    if (opts.fake && !opts.pick && !opts.roll) { cam.lockAuto(opts.players || 4); afterLock(opts); return; }
+    lockFlow(opts, () => afterLock(opts));
+  }
+  /** picker (unless opts.pick === false) -> roll call (skipped when the same N kids are already locked and in view) */
+  function lockFlow(opts, done) {
+    const roll = () => {
+      if (!opts.roll && lockedOk(cam.nPick)) { done(); return; }
+      setMode('roll'); lock.showRoll(() => done());
+    };
+    if (opts.pick === false) roll(); else { setMode('pick'); lock.showPick(() => { syncPlayersBtn(); roll(); }); }
+  }
+  const lockedOk = (n) => cam.phase === 'locked' && cam.tracker.n === n && cam.tracker.filled.length === n && cam.tracker.filled.every((p) => p.state === 'active');
+  function afterLock(opts) {
+    const wantPractice = G.practice && (opts.fake ? !!opts.practice : params.get('practice') !== '0');
     if (wantPractice) startPractice(); else newRound();
   }
-  function setMode(m) { S.mode = m; document.body.dataset.mode = m; }
+  function setMode(m) { S.mode = m; document.body.dataset.mode = m; cam.tracker.swapEnabled = m !== 'play'; }
   function startPractice() {
     const steps = typeof G.practice === 'function' ? G.practice(S) : G.practice;
     S.practice = new Practice(steps);
@@ -137,7 +157,7 @@ export function run(G) {
     show('end', true);
   }
   function toTitle() {
-    setMode('title'); sound.music(false); S.practice = null;
+    setMode('title'); sound.music(false); S.practice = null; lock.hide(); syncPlayersBtn();
     show('end', false); show('count', false); show('practice', false); show('title', true);
     if (autocam && !cam.active) autoCam(); else if (cam.fake) { /* keep fake camera for tests */ }
   }
@@ -147,20 +167,27 @@ export function run(G) {
   $('bTap2')?.addEventListener('click', () => start('tap', { players: 2 }));
   $('bAgain').addEventListener('click', () => { sound.init(); newRound(); });
   $('bMenu').addEventListener('click', toTitle);
+  // 👤N = change the player count (picker -> roll call), 📣 = roll call again (fix who is who)
+  $('bPlayers')?.addEventListener('click', () => { if (!camOk()) { toast('🚫📷'); return; } lockFlow({ roll: true }, toTitle); });
+  $('bRoll')?.addEventListener('click', () => { if (!camOk()) { toast('🚫📷'); return; } lockFlow({ pick: false, roll: true }, toTitle); });
+  function syncPlayersBtn() { const b = $('bPlayers'); if (b) { b.querySelector('b').textContent = cam.nPick; b.setAttribute('aria-label', `Players: ${cam.nPick}. Change`); } }
   $('pSkip')?.addEventListener('click', () => { if (S.mode === 'practice') { S.practice?.skip(); endPractice(true); } });
 
   // ---- body-controlled menus (title / practice / end). Off while counting down + playing.
+  const lock = (S.lock = new LockUI({ cam, sound, getMap: () => S.view() }));
+  syncPlayersBtn();
   const menu = new BodyMenu({
-    enabled: () => cam.active && (S.mode === 'title' || S.mode === 'practice' || S.mode === 'end'),
-    scope: () => (S.mode === 'practice' ? [$('practice')] : S.mode === 'end' ? [$('end'), $('top')] : [$('title'), $('top')]),
+    enabled: () => cam.active && ['title', 'practice', 'end', 'pick', 'roll'].includes(S.mode),
+    scope: () => (S.mode === 'pick' || S.mode === 'roll' ? lock.scope : S.mode === 'practice' ? [$('practice')] : S.mode === 'end' ? [$('end'), $('top')] : [$('title'), $('top')]),
   });
-  const menuPlayers = () => cam.players.filter((p) => p.body && p.slot >= 0);
+  // locked players drive the menus; before anyone is locked, the nearest person does
+  const menuPlayers = () => cam.menuPlayers;
   startDemos(document);
   // live camera backdrop behind the title / practice screens: the whole mirrored frame + glowing skeletons
   function drawBackdrop(c, W, H) {
     const map = S.view(W, H);
     c.fillStyle = '#1d1640'; c.fillRect(0, 0, W, H);
-    if (cam.hasVideo) drawVideo(c, video, W, H, map);
+    if (cam.hasVideo) drawVideo(c, video, W, H, map); else if (cam.fake && cam.fakeFrame) drawVideo(c, cam.fakeFrame, W, H, map);
     for (const p of cam.players) if (p.body) drawSkeleton(c, p.body, map, (PLAYER_COLORS[p.slot] || PLAYER_COLORS[0]).css, { width: 8, glow: 22 });
     for (const q of cam.pending) drawSkeleton(c, q.body, map, '#ffffff88', { width: 5, glow: 0, alpha: 0.6 });
   }
@@ -169,6 +196,7 @@ export function run(G) {
   function step(dt) {
     S.clock += dt;
     if (cam.fake) { const r = cam.tick(S.clock); if (r) G.onPose?.(r, S.clock, S); }
+    lock.update(dt);
     if (S.mode === 'practice' && S.practice) {
       const got = S.practice.update(menuPlayers(), dt);
       if (got) { sound.pop?.(); renderPractice(); if (S.practice.done) endPractice(false); }
@@ -184,7 +212,7 @@ export function run(G) {
       S.left -= dt;
       if (S.left <= 0) { S.left = 0; G.update(dt, S); endRound(); return; }
     }
-    if (S.mode !== 'title') G.update(dt, S);
+    if (S.mode !== 'title' && S.mode !== 'pick' && S.mode !== 'roll') G.update(dt, S);
   }
   let last = performance.now(), acc = 0, frames = 0, fpsT = last, hudT = 0, slowT = 0;
   function frame(now) {
@@ -197,9 +225,10 @@ export function run(G) {
     while (acc >= STEP && n < 6) { step(STEP); acc -= STEP; n++; }
     if (n === 6) acc = 0;
     c.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-    if ((S.mode === 'title' || S.mode === 'practice') && cam.active && (cam.hasVideo || cam.players.length)) drawBackdrop(c, S.W, S.H);
+    if ((S.mode === 'title' || S.mode === 'practice' || S.mode === 'pick' || S.mode === 'roll') && cam.active && (cam.hasVideo || cam.players.length)) drawBackdrop(c, S.W, S.H);
     else G.draw(c, S.W, S.H, S);
     menu.update(menuPlayers(), now / 1000);
+    if (lock.dbgOn) lock.drawDebug();
     document.body.classList.toggle('camlive', cam.hasVideo || (cam.fake && cam.active));
     if (toastT > 0 && (toastT -= dt) <= 0) $('toast').classList.remove('on');
     if ((hudT -= dt) <= 0) { hudT = 0.1; hud(); }
@@ -232,6 +261,12 @@ export function run(G) {
   window.__game = {
     get state() { return { mode: S.mode, zoom: S.zoom, input: S.input, left: S.left, clock: S.clock, round: S.round, nTap: S.nTap, fps: S.fps, frameMs: S.frameMs, dpr: S.dpr, W: S.W, H: S.H, cam: cam.status, fake: cam.fake, detectMs: +(cam.detectMs || 0).toFixed(1), ...(G.state?.(S) || {}) }; },
     get players() { return cam.players.map((p) => ({ slot: p.slot, state: p.state, x: +p.x.toFixed(3), body: !!p.body })); },
+    /** tracking lock: phase (idle | roll | locked), N, numPoses, roll call progress, candidates, last debug info */
+    get lock() { const tr = cam.tracker; return { phase: tr.phase, n: tr.n, pick: cam.nPick, numPoses: cam.numPoses, ui: lock.mode, roll: tr.rollState(), cands: tr.cands.map((c) => ({ x: +c.x.toFixed(3), age: +(tr.t - c.firstSeen).toFixed(2), persisted: !!c.persisted })), debug: { dets: tr.debug.dets.map((d) => ({ slot: d.slot, cost: d.cost, x0: +d.box.x0.toFixed(3) })), rejected: tr.debug.rejected.map((r) => r.why), held: tr.debug.held.map((h) => h.slot) }, swapEnabled: tr.swapEnabled }; },
+    /** fake camera frame (canvas) for the torso colour histograms */
+    setFakeVideo: (cv) => { cam.fakeFrame = cv || null; },
+    debug: (on = true) => lock.setDebug(on),
+    pickPlayers: (n) => lock._picked(n),
     get results() { return S.lastResults || null; },
     start: (input, opts) => start(input, opts),
     /** fake camera (tests). opts.practice = true -> go through the practice step first */

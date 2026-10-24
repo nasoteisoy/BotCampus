@@ -6,6 +6,7 @@ import { Sound } from './audio.js';
 import { PoseInput } from './pose.js';
 import { layoutViewports, screenOrder, PLAYER_COLORS, MAX_PLAYERS } from './multi.js';
 import { BodyMenu } from './menu.js';
+import { LockUI } from './lockui.js';
 import { startDemos, MOVES } from './demo.js';
 import { Practice } from './practice.js';
 import { CHASE, ZKEY, loadZoom } from './chase.js';
@@ -290,9 +291,24 @@ const PRACTICE = [
 let practice = null, lastPractice = null, practiced = false, practiceOpt = params.get('practice') !== '0';
 function go() {
   sound.init();
-  if (G.mode === 'play' || G.mode === 'practice') return;
-  if (pose.active && practiceOpt && !practiced && G.mode === 'title') startPractice(); else start();
+  if (G.mode === 'play' || G.mode === 'practice' || G.mode === 'pick' || G.mode === 'roll') return;
+  const after = () => { if (pose.active && practiceOpt && !practiced) startPractice(); else start(); };
+  // v4: camera on -> 👤 how many players -> 📣 roll call (raise a hand) -> practice / fly. Keys skip it.
+  if (pose.active && G.inputMode === 'cam' && G.mode === 'title') lockFlow({ pick: !lockedOk(pose.nPick) }, after); else start();
 }
+// ---------- v4 tracking: player-count picker + roll call (lockui.js) and the locked players (track.js)
+const lockedOk = (n) => pose.phase === 'locked' && pose.tracker.n === n && pose.tracker.filled.length === n && pose.tracker.filled.every((p) => p.state === 'active');
+function lockFlow(opts, done) {
+  const prev = G.mode;
+  $('title').classList.add('hidden'); $('win').classList.add('hidden');
+  const fin = () => { G.mode = prev; if (prev === 'title') $('title').classList.remove('hidden'); if (prev === 'win') $('win').classList.remove('hidden'); syncPlayersBtn(); done?.(); };
+  const roll = () => {
+    if (!opts.roll && lockedOk(pose.nPick)) { fin(); return; }
+    G.mode = 'roll'; lockUI.showRoll(fin);
+  };
+  if (opts.pick === false) roll(); else { G.mode = 'pick'; lockUI.showPick(() => { syncPlayersBtn(); roll(); }); }
+}
+function syncPlayersBtn() { const b = $('bPlayers'); if (b) { b.querySelector('b').textContent = pose.nPick; b.setAttribute('aria-label', `Players: ${pose.nPick}. Change`); } }
 function startPractice() {
   practice = new Practice(PRACTICE); practiced = true;
   G.mode = 'practice';
@@ -421,7 +437,9 @@ async function toggleCamera() {
   if (pose.active) { pose.stop(); setMode('keys'); return; }
   if (tiltOn) stopTilt();
   setMode('cam');
-  await pose.start();
+  const ok = await pose.start();
+  // camera switched on mid-flight (no roll call): lock whoever is in view, by position (the kept lock wins if it matches)
+  if (ok && (G.mode === 'play' || G.mode === 'practice') && pose.phase !== 'locked') pose.lockAuto(pose.nPick, true);
 }
 let tiltOn = false;
 function onTilt(e) {
@@ -475,9 +493,14 @@ async function camFirst() {
 }
 // body-controlled menus: raise a hand -> ✋ cursor, hold ~1.2 s on ▶️ / 🔄 / 🔍 / 🔊 / ⏭ (off while flying)
 const upperBodyInFrame = (b) => b.sw < 0.5 && b.head.y > 0.03 && b.sh.x > 0.08 && b.sh.x < 0.92; // flying needs head + both arms: not too close
+const lockUI = new LockUI({
+  cam: pose, sound: { pop: () => sound.chime?.(0), good: () => sound.chime?.(2) },
+  // 🐞 boxes over the small camera preview (its canvas is mirrored like the boxes' x)
+  getMap: () => { const r = $('camBox').getBoundingClientRect(); return r.width ? { x: (nx) => r.left + nx * r.width, y: (ny) => r.top + ny * r.height } : null; },
+});
 const menu = new BodyMenu({
   enabled: () => pose.active && G.mode !== 'play',
-  scope: () => (G.mode === 'practice' ? [$('practice')] : G.mode === 'win' ? [$('win'), $('tr')] : [$('title'), $('tr')]),
+  scope: () => (G.mode === 'pick' || G.mode === 'roll' ? lockUI.scope : G.mode === 'practice' ? [$('practice')] : G.mode === 'win' ? [$('win'), $('tr')] : [$('title'), $('tr')]),
   inFrame: upperBodyInFrame,
 });
 const zoomBtn = $('zoomBtn');
@@ -508,6 +531,11 @@ const syncMute = () => (muteBtn.textContent = sound.muted ? '🔇' : '🔊');
 syncMute();
 muteBtn.addEventListener('click', () => { sound.init(); sound.setMuted(!sound.muted); syncMute(); });
 $('playBtn').addEventListener('click', go);
+// 👥N = change the player count (picker -> roll call), 📣 = roll call again (fix who is who)
+const camReady = () => pose.active && !['denied', 'nocam', 'tap'].includes(pose.status);
+$('bPlayers').addEventListener('click', () => { sound.init(); if (camReady() && G.mode === 'title') lockFlow({ roll: true }); });
+$('bRoll').addEventListener('click', () => { sound.init(); if (camReady() && G.mode === 'title') lockFlow({ pick: false, roll: true }); });
+syncPlayersBtn();
 $('pSkip').addEventListener('click', skipPractice);
 $('replayBtn').addEventListener('click', start);
 
@@ -656,6 +684,8 @@ function frame(now) {
     }
   }
   if (G.mode === 'practice') updatePractice(dt);
+  pose.tracker.swapEnabled = G.mode !== 'play'; // 🙌 both hands up is a flying move: no swap gesture while flying
+  lockUI.update(dt);
   menu.update(pose.active ? pose.bodies : [], now / 1000);
   document.body.classList.toggle('camlive', pose.active && (pose.fake || pose.hasVideo)); document.body.classList.toggle('inplay', G.mode === 'play'); // multi: centered preview only while flying
   if (!paused) { acc += dt; let n = 0; while (acc >= STEP && n++ < 6) { step(STEP); acc -= STEP; } if (n >= 6) acc = 0; }
@@ -706,7 +736,7 @@ window.__game = {
   get pose() {
     return {
       active: pose.active, fake: pose.fake, status: pose.status, frames: pose.frames, out: pose.out, raw: pose.raw,
-      tracks: pose.tracker.tracks.map((k) => ({ id: k.id, slot: k.slot, state: k.state, x: +k.x.toFixed(3) })),
+      tracks: pose.tracks.map((k) => ({ id: k.id, slot: k.slot, state: k.state, x: +k.x.toFixed(3) })),
     };
   },
   start,
@@ -730,7 +760,18 @@ window.__game = {
   },
   snapCamera: () => onPlayers().forEach(snapCamera),
   // fake camera: no webcam / model, landmarks come from injectPeople([lm33, lm33, ...]) (raw MediaPipe coords)
-  fakeCamera(opts = {}) { if (tiltOn) stopTilt(); pose.startFake(); setMode('cam'); practiceOpt = !!opts.practice; },
+  // v4: without opts.pick / opts.roll the fake camera locks N (opts.players, default 4) by position, like ⏭
+  fakeCamera(opts = {}) {
+    if (tiltOn) stopTilt(); pose.startFake(); setMode('cam'); practiceOpt = !!opts.practice;
+    if (opts.players) pose.setPlayers(opts.players);
+    if (!opts.pick && !opts.roll) pose.lockAuto(opts.players || 4);
+    else if (G.mode === 'title') lockFlow({ pick: !!opts.pick, roll: true });
+  },
+  get lock() { const tr = pose.tracker; return { phase: tr.phase, n: tr.n, pick: pose.nPick, numPoses: pose.numPoses, ui: lockUI.mode, roll: tr.rollState(), cands: pose.cands.length, swapEnabled: tr.swapEnabled, debug: { rejected: tr.debug.rejected.map((r) => r.why), held: tr.debug.held.map((h) => h.slot) } }; },
+  pickPlayers: (n) => lockUI._picked(n),
+  setFakeVideo: (cv) => { pose.fakeFrame = cv || null; },
+  debug: (on = true) => lockUI.setDebug(on),
+  get mode() { return G.mode; },
   injectPeople(list) { pose.inject(list); },
   fakeFrame(ar) { pose.fakeAr = ar; pose._fitBox(); }, // fake camera frame aspect (portrait phone = 0.75)
   render,

@@ -108,3 +108,8 @@ body[data-cam="denied"] #bCam, body[data-cam="nocam"] #bCam { display: none; }
   .big.cam { height: 100px; }
   #title .tips { font-size: 18px; }
 }
+/* v3 tracking: 👥N player count + 📣 roll call (bottom right; the 🐞 debug toggle sits in the very corner) */
+.lockbtns { display: flex; gap: 8px; position: absolute; right: calc(max(10px, env(safe-area-inset-right)) + 36px); bottom: max(10px, env(safe-area-inset-bottom)); }
+.lockbtns .sm b { font-size: 24px; margin-left: 2px; }
+body[data-cam="denied"] .lockbtns, body[data-cam="nocam"] .lockbtns { display: none; }
+body[data-mode="play"] #mpBug:not([aria-pressed="true"]), body[data-mode="count"] #mpBug:not([aria-pressed="true"]) { display: none; }

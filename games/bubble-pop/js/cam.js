@@ -1,16 +1,19 @@
 // Webcam + MediaPipe PoseLandmarker (free CDN: jsDelivr + Google model storage), up to 4 people.
 // Adapted from Flap Flyer v2 js/pose.js. Video never leaves the device: frames go straight from
 // <video> into the in-browser WASM/GPU model.
-import { PeopleTracker, personFromLandmarks, PLAYER_COLORS } from './multi.js';
+// v3 (tracking fix): LockTracker (track.js) replaces the auto-join PeopleTracker: player count N (picker),
+// roll call / auto lock, appearance + motion matching, hold-when-close, strict real-person check.
+import { PLAYER_COLORS } from './multi.js';
+import { LockTracker, checkPerson, torsoHist, TRACK, loadPick, saveLock, loadLock } from './track.js';
 import { toBody } from './body.js';
 import { pickWideFront } from './view.js';
 
 const TV = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-export const NUM_POSES = 4;
+export const NUM_POSES = 4; // upper bound; the model runs with numPoses = N + 1 (N = player-count pick), best N kept
 // Small / far-away kids (whole body in frame on a wide view) give weaker detections: detection and presence
-// are loosened from 0.5 to 0.35. Ghosts stay out because a new player still needs face + both shoulders at
-// visibility >= 0.5 for a full second (PeopleTracker / personFromLandmarks), and tracking stays at 0.5.
+// are loosened from 0.5 to 0.35. Ghosts stay out because of the strict real-person check (track.js checkPerson:
+// nose + shoulders >= 0.6, a hip, plausible scale, play zone) and the 2 s persistence for any new detection.
 export const POSE_OPTS = { minPoseDetectionConfidence: 0.35, minPosePresenceConfidence: 0.35, minTrackingConfidence: 0.5 };
 // No forced crop: v1 asked for width 640 AND height 480, and Chrome (resizeMode crop-and-scale) cut a portrait
 // phone frame (480x640) down to 480x480. Now only a width hint + native modes (resizeMode 'none').
@@ -30,13 +33,13 @@ async function failStatus(e) {
   return 'nocam';
 }
 let visionPromise = null;
-function loadLandmarker() {
+function loadLandmarker(numPoses) {
   if (visionPromise) return visionPromise;
   visionPromise = (async () => {
     const vision = await import(TV + '/vision_bundle.mjs');
     const files = await vision.FilesetResolver.forVisionTasks(TV + '/wasm');
     const make = (delegate) => vision.PoseLandmarker.createFromOptions(files, {
-      baseOptions: { modelAssetPath: MODEL, delegate }, runningMode: 'VIDEO', numPoses: NUM_POSES,
+      baseOptions: { modelAssetPath: MODEL, delegate }, runningMode: 'VIDEO', numPoses,
       ...POSE_OPTS,
     });
     try { return await make('GPU'); } catch (e) { console.info('[pose] GPU delegate failed, using CPU', e?.message); return await make('CPU'); }
@@ -55,9 +58,14 @@ function quietMediapipeLogs() {
 }
 
 export class Camera {
-  constructor({ video, onStatus } = {}) {
+  constructor({ video, onStatus, track = {} } = {}) {
     this.video = video; this.onStatus = onStatus || (() => {});
-    this.tracker = new PeopleTracker();
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+    const edge = q && q.has('edge') ? +q.get('edge') : NaN;
+    this.tracker = new LockTracker({ ...track, ...(Number.isFinite(edge) ? { edge } : {}) });
+    this.nPick = loadPick(); this.tracker.setN(this.nPick);
+    this.importLock();
+    this.events = []; this.fakeFrame = null; this.sampler = null; this.cands = [];
     this.active = false; this.fake = false; this.fakeLms = []; this.fakeAr = 4 / 3; this.fakeSize = null;
     this.info = { zoom: null, zoomMin: null, device: '', switched: false, settings: null };
     this.stream = null; this.landmarker = null; this.status = 'off'; this.gen = 0;
@@ -73,7 +81,28 @@ export class Camera {
     const v = this.video; return v && v.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null;
   }
   get hasVideo() { return !this.fake && this.active && this.video && this.video.readyState >= 2; }
-  reset() { this.tracker.reset(); this.players = []; }
+  reset() { this.tracker.reset(); this.tracker.setN(this.nPick); if (!this.fake) this.importLock(); this.players = []; this.cands = []; }
+  /** player count N (1..4): the model looks for N + 1 people, the tracker never makes more than N players */
+  setPlayers(n) {
+    this.nPick = Math.max(1, Math.min(4, n | 0)); this.tracker.setN(this.nPick);
+    try { this.landmarker?.setOptions?.({ numPoses: this.nPick + 1 })?.catch?.(() => {}); } catch (e) { console.info('[pose] numPoses not changed', e?.message); }
+  }
+  get numPoses() { return this.nPick + 1; }
+  /** roll call (raise a hand) / skip = lock by position. Lock is saved for this tab (hub + other games). */
+  startRoll(n = this.nPick) { this.setPlayers(n); this.tracker.startRoll(n, this.lastT ?? 0); }
+  lockAuto(n = this.nPick, keep = false) { this.setPlayers(n); this.tracker.lockAuto(n, this.lastT ?? 0, keep); }
+  importLock() { const L = loadLock(); if (L && this.tracker.importLock(L, this.lastT ?? 0)) { this.nPick = this.tracker.n; return true; } return false; }
+  get phase() { return this.tracker.phase; }
+  /** frame source for the torso colour histograms: the live video, or a test canvas in fake mode */
+  get frameEl() { return this.fake ? this.fakeFrame : this.hasVideo ? this.video : null; }
+  _grab() {
+    const src = this.frameEl; if (!src || typeof document === 'undefined') return null;
+    const sw = src.videoWidth || src.width, sh = src.videoHeight || src.height; if (!sw || !sh) return null;
+    const W = 160, H = Math.max(40, Math.round((160 * sh) / sw));
+    if (!this.sampler) { this.sampler = document.createElement('canvas'); this.sctx = this.sampler.getContext('2d', { willReadFrequently: true }); }
+    if (this.sampler.width !== W || this.sampler.height !== H) { this.sampler.width = W; this.sampler.height = H; }
+    try { this.sctx.drawImage(src, 0, 0, W, H); return this.sctx.getImageData(0, 0, W, H); } catch (e) { return null; }
+  }
   /** Start the webcam + model. Resolves true when video runs. Failure statuses: 'tap' (browser wants a tap
    *  first - call start() again from a click), 'denied' (permission refused), 'nocam' (no camera). */
   async start() {
@@ -99,7 +128,8 @@ export class Camera {
     quietMediapipeLogs();
     try {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('model load timeout')), 30000));
-      this.landmarker = await Promise.race([loadLandmarker(), timeout]);
+      this.landmarker = await Promise.race([loadLandmarker(this.numPoses), timeout]);
+      this.setPlayers(this.nPick);
       if (!stale() && this.active) this._set('none');
     } catch (e) {
       console.info('[pose] model unavailable, tap/keys still work:', e?.message || e);
@@ -168,16 +198,26 @@ export class Camera {
     return this.process(list, t);
   }
   process(list, t) {
-    this.frames++;
-    const ar = this.ar, people = [];
-    for (const lm of list || []) { const p = personFromLandmarks(lm); if (p) { p.lm = lm; people.push(p); } }
-    const tracks = this.tracker.update(people, t);
+    this.frames++; this.lastT = t;
+    const ar = this.ar, res = (list || []).map((lm) => checkPerson(lm, ar, this.tracker.o));
+    if (res.some((r) => r.ok)) { const img = this._grab(); if (img) for (const r of res) if (r.ok) r.det.hist = torsoHist(img, r.det.lm, ar, this.tracker.o); }
+    const tracks = this.tracker.update(res, t, ar);
+    this.events = this.tracker.events.slice();
+    if (this.events.some((e) => e.type === 'lock' || e.type === 'swap' || e.type === 'locked')) saveLock(this.tracker.exportLock());
     this.players = tracks.map((k) => ({
-      slot: k.slot, id: k.id, state: k.state, x: k.x, color: PLAYER_COLORS[k.slot], body: k.lm ? toBody(k.lm, ar) : null,
+      slot: k.slot, id: k.id, state: k.state, held: k.held, x: k.x, color: PLAYER_COLORS[k.slot], body: k.lm ? toBody(k.lm, ar) : null,
     }));
-    this._set(this.players.some((p) => p.body) ? 'track' : 'none');
+    this.cands = this.tracker.candidates().map((c) => ({ id: c.id, x: c.x, sw: c.sw, age: t - c.firstSeen, persisted: c.persisted, body: toBody(c.lm, ar) })).filter((c) => c.body);
+    this._set(this.players.some((p) => p.body) || this.cands.length ? 'track' : 'none');
     return this.players;
   }
-  /** people the camera sees but who haven't joined yet (for a "hold still" ghost) */
-  get pending() { return this.tracker.tracks.filter((k) => k.slot < 0 && k.lm).map((k) => ({ body: toBody(k.lm, this.ar) })); }
+  /** people the camera sees who are not players (white "ghost" skeletons) */
+  get pending() { return this.cands; }
+  /** who drives the hand-cursor menus: the locked players in view, else the nearest person (biggest, >= 0.3 s) */
+  get menuPlayers() {
+    const pl = this.players.filter((p) => p.body && p.slot >= 0);
+    if (pl.length) return pl;
+    const near = this.cands.filter((c) => c.age >= this.tracker.o.menuSec).sort((a, b) => b.sw - a.sw)[0];
+    return near ? [{ id: 'c' + near.id, slot: -1, body: near.body }] : [];
+  }
 }

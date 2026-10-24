@@ -9,7 +9,7 @@
 <title>Flap Flyer 2</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
@@ -41,6 +41,7 @@
   <div class="howto" aria-label="How to move"><span class="mv"><canvas data-demo="flap"></canvas><b>🪽⬆️</b></span><span class="mv"><canvas data-demo="bank"></canvas><b>↩️↪️</b></span><span class="mv"><b class="ap">🍎</b><b>×16</b></span></div>
   <div id="camPrompt" aria-live="polite"><span class="pcam">📷</span><canvas class="phand" data-demo="point"></canvas><b id="camMsg">⏳</b></div>
   <button id="playBtn" aria-label="Play">▶️</button>
+  <div class="lockbtns" aria-label="Players"><button id="bPlayers" class="lb" aria-label="Players: change">👤<b>2</b></button><button id="bRoll" class="lb" aria-label="Roll call again: who is who">📣🙋</button></div>
   <div class="how fallback"><span id="howFlap"><b class="key">␣</b> 🖱️ = 🪽</span><span id="howBank"><b class="key">A</b><b class="key">D</b> = ↩️↪️</span><span>📷 🙆🙆 = 🐦🐦</span><span>✋⏳👉</span></div>
 </div>
 
@@ -70,6 +71,6 @@
 </div>
 <div id="stepBack" aria-hidden="true">📏<span>🔙</span></div>
 
-<script type="module" src="js/main.js?v=3"></script>
+<script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>

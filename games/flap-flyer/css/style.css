@@ -159,3 +159,15 @@ body[data-cam="denied"] #camPrompt .phand, body[data-cam="nocam"] #camPrompt .ph
 @media (max-aspect-ratio: 1/1) { #pSkip { align-self: flex-start; margin-left: 4vw; } }
 /* short landscape phones: whole win screen (incl. 🔁 + per-player row) fits above the bottom edge */
 @media (max-height: 500px) { #win { gap: 1.2vmin; } #win .big { font-size: min(28vmin, 200px); } }
+/* v4 tracking: 👤N player count + 📣 roll call under ▶️; 🐞 debug toggle on the left edge (clear of the dock + mode buttons) */
+#title .lockbtns { display: flex; gap: 10px; }
+#title .lb { height: 48px; min-width: 64px; padding: 0 12px; border-radius: 16px; background: #fff8e6cc; font-size: 24px; box-shadow: 0 3px 0 #7a5a3a33; }
+#title .lb b { font-size: 22px; margin-left: 2px; color: #5b8c52; }
+body[data-cam="denied"] #title .lockbtns, body[data-cam="nocam"] #title .lockbtns, body:not(.camlive) #title .lockbtns { display: none; }
+#mpBug { right: auto; bottom: auto; left: 2px; top: 46%; }
+body.inplay #mpBug:not([aria-pressed="true"]) { display: none; }
+/* short landscape phones: 👤 / 📣 go to the bottom-left corner so ▶️ keeps its size */
+@media (orientation: landscape) and (max-height: 520px) {
+  #title .lockbtns { position: absolute; left: max(10px, env(safe-area-inset-left)); bottom: 10px; flex-direction: column; gap: 8px; }
+  #title .lb { height: 44px; min-width: 60px; font-size: 21px; }
+}
