@@ -57,13 +57,13 @@
           ]
         },
         {
-          "id": "world-species-names-01",
-          "prompt": "Humanoid peoples between humans and spirits — what do we call them?",
+          "id": "world-species-names-02",
+          "prompt": "Elves is now the common name for a spirit-heavy people. What about the others?",
           "options": [
-            "Use the Ashara people-names (Orineth, Selith, Kemur…) for everything",
-            "Common names like elves and dwarves, with Ashara names as their true names",
-            "New names, to be decided later",
-            "Each kingdom has its own names for them"
+            "Common names for all (elves, dwarves, etc.), Ashara names as true names",
+            "Elves only; others keep Ashara names",
+            "New names to be decided",
+            "Each kingdom has its own names"
           ]
         },
         {
@@ -223,22 +223,22 @@
       "questions": [
         {
           "id": "empire-ruler-01",
-          "prompt": "Who rules the Empire of Man?",
+          "prompt": "The Council appoints High Lords (it appointed Cassian). Who rules the Empire of Man?",
           "options": [
             "An Emperor with a Council of High Lords",
-            "A Council of High Lords only, no Emperor",
-            "The Capital Kingdom's High Lord leads the Council",
-            "An Emperor whose power is mostly ceremonial"
+            "The Council only, no Emperor",
+            "An Emperor whose power is mostly ceremonial; the Council really rules",
+            "The Capital Kingdom's High Lord leads the Council under the Emperor"
           ]
         },
         {
           "id": "empire-census-01",
-          "prompt": "The Empire's 'census of the corrupted' (a counterfeit of Meshal). Where is it in the story?",
+          "prompt": "The Empire's 'census of the corrupted' (a counterfeit of Meshal). High Lords Cassian Thorne and Edric Halloran are both against it. Where is it in the story?",
           "options": [
-            "Already law when Book 1 starts",
-            "Proposed during Book 1 and argued over",
-            "Comes later, as the Empire slides into Pride",
-            "Secret — run by a hidden group"
+            "Already law, and some High Lords openly oppose it",
+            "Proposed and argued over in the Council",
+            "Law in some kingdoms only",
+            "Secret, run by a hidden group"
           ]
         },
         {
@@ -318,7 +318,9 @@
             "Honest but stubborn — doctrine, not malice",
             "A proud man the Enemy can use",
             "Secretly right about something",
-            "Comic relief at first, tragic later"
+            "Comic relief at first, tragic later",
+            "He serves the Capital Kingdom's High Lord, who also distrusts the Guard",
+            "He IS the Capital Kingdom's High Lord"
           ]
         }
       ]
@@ -340,7 +342,7 @@
         },
         {
           "id": "guard-banner-size-01",
-          "prompt": "How big is Alaric's Banner?",
+          "prompt": "The Guard is brand new and Alaric's Banner is part of its very first division. How big is it?",
           "options": [
             "About 1,200 (draft ladder)",
             "About 50–70, small but full of leaders (bible)",
@@ -352,10 +354,10 @@
           "id": "guard-name-01",
           "prompt": "Why is it called the Black Guard?",
           "options": [
+            "Cassian named it when he founded it from scratch",
             "The black uniform",
             "A childhood name for the Special Service that stuck",
-            "An old unit that died holding a line",
-            "Its first High Lord's house colour"
+            "An old unit that died holding a line"
           ]
         },
         {
@@ -420,7 +422,7 @@
         },
         {
           "id": "guard-reputation-01",
-          "prompt": "What do ordinary people think of the Black Guard?",
+          "prompt": "The Guard is new; Alaric is in its very first division. What do ordinary people think of the Black Guard?",
           "options": [
             "Heroes",
             "Feared — they come when something spiritual is wrong",
@@ -449,8 +451,8 @@
           "id": "chars-seraphina-name-01",
           "prompt": "Keep the name Lady Seraphina for the Recon Commander?",
           "options": [
+            "Seraphina Thorne (after her father, High Lord Cassian Thorne)",
             "Keep",
-            "Keep Seraphina, add a family name (Thorne, after her father)",
             "Change the name",
             "Keep for now, decide later"
           ]
@@ -459,7 +461,7 @@
           "id": "chars-alaric-home-01",
           "prompt": "Where is Alaric from?",
           "options": [
-            "The Farm Kingdom — his father was a farmer and businessman",
+            "The Farm Kingdom (Tomas Greaves's colony), where his farmer sister still lives",
             "A frontier town near the fort where his father died",
             "The Southern Kingdoms",
             "The capital, Vorash"
@@ -469,7 +471,8 @@
           "id": "chars-seraphina-home-01",
           "prompt": "Where is Seraphina's home culture (emerald colours) from?",
           "options": [
-            "The Black Guard High Lord's homeland",
+            "Her father's secret birth kingdom (a rival kingdom), and she doesn't know it",
+            "The Black Guard's home fortress, since Cassian raised her in the military",
             "Near the Everlight Forest",
             "The Northern Mountains",
             "Stonehaven Island"
@@ -491,7 +494,7 @@
           "options": [
             "At the Desert War, when obeying orders goes wrong",
             "When Seraphina is in danger",
-            "At the High Lord's betrayal",
+            "When he learns Cassian's real plan",
             "Slowly, across the whole series"
           ]
         },
@@ -576,10 +579,9 @@
         {
           "id": "hl-cassian-08",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Who knows he was born in a rival kingdom?",
+          "prompt": "Who knows he was born in a rival kingdom? (Seraphina doesn't — she finds out during the story.)",
           "options": [
             "No one alive",
-            "Only Seraphina",
             "The Council knew, and appointed him anyway",
             "One old friend from his early military days",
             "An enemy who could use it against him"
@@ -605,18 +607,6 @@
             "To understand the enemy from the inside",
             "To make the Black Guard stronger than any army",
             "Only in small, careful tests — for now"
-          ]
-        },
-        {
-          "id": "hl-cassian-11",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Who was Seraphina's mother?",
-          "options": [
-            "She died when Seraphina was young",
-            "A noble from the Capital Kingdom",
-            "A woman from his secret homeland",
-            "She left, and Seraphina never knew her",
-            "Still alive, far from court"
           ]
         },
         {
@@ -1264,7 +1254,7 @@
           "prompt": "Corrupted Guardsmen — when do they appear?",
           "options": [
             "Book 1, as the Imperial traitor",
-            "After Cassian's betrayal",
+            "After Cassian's plan comes out",
             "Rarely — a big twist",
             "As a constant fear in the Guard"
           ]
@@ -1320,19 +1310,19 @@
           "id": "spine-frontier-01",
           "prompt": "Book 1's first command: a silent frontier region, missing patrols, humans blaming spirit-humanoids. Where?",
           "options": [
-            "The Farm Kingdom's northern forest edge",
+            "The Farm Kingdom's northern forest edge, where unknown things and wood/mountain elves keep attacking",
             "The Desert Kingdom border",
             "The Northern Mountains",
             "Near the Everlight Forest"
           ]
         },
         {
-          "id": "spine-desert-war-01",
-          "prompt": "When does the Desert War happen?",
+          "id": "spine-desert-war-02",
+          "prompt": "The desert kingdom is already 75% conquered and Rashid commands the war there. When do Alaric and Seraphina join it?",
           "options": [
-            "In Book 1",
+            "Book 1",
+            "End of Book 1",
             "Book 2",
-            "It is the end of Book 1",
             "Later in the series"
           ]
         },
@@ -1348,13 +1338,23 @@
           ]
         },
         {
-          "id": "spine-betrayal-01",
-          "prompt": "When does Cassian's betrayal come out?",
+          "id": "spine-cassian-turn-02",
+          "prompt": "When do Alaric and Seraphina learn Cassian's real plan (to use corruption to save humanity)?",
           "options": [
-            "End of Book 1 (he promises to investigate — because he's part of it)",
+            "End of Book 1, when he promises to investigate because he's part of it",
             "Middle of the series",
-            "Near the end of the series",
-            "Seraphina finds out first, long before anyone else"
+            "Near the end",
+            "Seraphina finds out first, long before anyone"
+          ]
+        },
+        {
+          "id": "spine-cassian-view-01",
+          "prompt": "Is Cassian a villain, or does he think he's right?",
+          "options": [
+            "He truly believes he's saving humanity, a tragic villain",
+            "He starts right and slides into Pride",
+            "He's right about the Empire but wrong about corruption",
+            "The story never fully decides"
           ]
         },
         {

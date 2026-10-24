@@ -64,6 +64,28 @@
     {
       "section": "lords",
       "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-chat-01",
+      "question": "Does Seraphina know Cassian was secretly born in a rival kingdom?",
+      "answer": "No, Seraphina doesn't know. She finds out during the story.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-chat-02",
+      "question": "Who was Seraphina's mother?",
+      "answer": "A noblewoman from the Capital Kingdom.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
       "group": "West Island Exploration – High Lord Corin Saltmere",
       "question_id": "hl-corin-01",
       "question": "Keep the name High Lord Corin Saltmere?",
