@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Everything We Built · BotCampus</title>
+<meta name="description" content="Every game, tool and demo the bot crew built, in one place.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AE%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#0f1220;--card:#1a1f35;--card2:#232a47;--txt:#f2f4ff;--dim:#9aa3c7;--acc:#ffcc33;--acc2:#4fd1ff;--ok:#38d97a;--r:18px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(15,18,32,.94);backdrop-filter:blur(8px);padding:12px 16px 8px;border-bottom:1px solid #2a3157;padding-top:max(12px,env(safe-area-inset-top))}
+h1{margin:0 0 8px;font-size:clamp(22px,5vw,32px)}
+h1 small{font-size:.5em;color:var(--dim);font-weight:500;margin-left:6px}
+.search{width:100%;font-size:18px;padding:12px 16px;border-radius:999px;border:2px solid #2f3866;background:#12162a;color:var(--txt);outline:none}
+.search:focus{border-color:var(--acc2)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:2px solid #2f3866;background:#161b31;color:var(--txt);border-radius:999px;padding:8px 14px;font-size:15px;cursor:pointer;white-space:nowrap;min-height:40px}
+.chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#1b1400;font-weight:700}
+.chip .n{opacity:.65;font-size:.85em;margin-left:4px}
+main{padding:8px 16px 60px;max-width:1500px;margin:0 auto}
+section h2{font-size:22px;margin:22px 4px 10px;display:flex;align-items:center;gap:8px}
+section h2 .count{background:var(--card2);color:var(--dim);border-radius:999px;padding:2px 10px;font-size:15px}
+.hint{color:var(--dim);margin:-4px 4px 12px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:transform .12s}
+.card:hover{transform:translateY(-3px)}
+.thumb{aspect-ratio:16/10;background:#0b0e1a center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tag{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.72);border-radius:999px;padding:4px 10px;font-size:14px;font-weight:600}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.title{font-size:19px;font-weight:800;margin:0}
+.note{color:var(--dim);font-size:14px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:13px}
+.meta span{background:var(--card2);border-radius:8px;padding:3px 8px}
+.play{margin-top:auto;display:block;text-align:center;background:var(--ok);color:#06210f;font-weight:900;font-size:20px;border-radius:14px;padding:13px;text-decoration:none;border:0;cursor:pointer;width:100%}
+.play:active{transform:scale(.98)}
+.play.none{background:#2a3157;color:var(--dim);cursor:default;font-size:16px}
+.extras{display:flex;flex-wrap:wrap;gap:6px}
+.extras a{color:var(--acc2);font-size:13px;text-decoration:none;border:1px solid #2f3866;border-radius:999px;padding:3px 9px}
+.empty{color:var(--dim);text-align:center;padding:40px;font-size:18px}
+footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
+@media (max-width:520px){header{position:static}.chip{padding:6px 11px;font-size:14px;min-height:36px}.grid{grid-template-columns:1fr 1fr;gap:10px}.title{font-size:16px}.body{padding:9px 10px 11px}.play{font-size:17px;padding:11px}.note{display:none}.thumb{font-size:44px}.tag{font-size:12px;left:6px;top:6px;padding:3px 7px}main{padding:4px 10px 60px}header{padding-left:10px;padding-right:10px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧰 Everything We Built <small id="total"></small></h1>
+  <input id="q" class="search" type="search" placeholder="🔎 Search games, tools, bots…" aria-label="Search">
+  <div class="chips" id="typeChips" role="group" aria-label="Filter by type"></div>
+  <div class="chips" id="botChips" role="group" aria-label="Filter by bot"></div>
+  <div class="chips" id="placeChips" role="group" aria-label="Filter by where it lives"></div>
+</header>
+<main id="main"><p class="empty">Loading…</p></main>
+<footer id="foot"></footer>
+<script>
+(function(){
+  var TYPES={game:'🎮 Game',tool:'🛠️ Tool',effect:'✨ Effect demo',art:'🎨 Art',campus:'🏫 Campus'};
+  var SECTIONS=[
+    {key:'live',title:'🌐 Online — tap Play',hint:''},
+    {key:'box',title:'💻 On the bot computer, not online yet',hint:'Ask a bot to put one online.'},
+    {key:'pc',title:'🖥️ On Chumi\'s PC',hint:'Saved on your computer.'}
+  ];
+  var PLACES={live:'🌐 Online',box:'💻 Bot computer',pc:'🖥️ Chumi\'s PC'};
+  var state={type:'all',bot:'all',place:'all',q:''};
+  var data, root;
+  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+  function who(m){return m==='unknown'?'🤖 Crew':'🤖 '+m;}
+  function bots(it){return String(it.maker||'unknown').split(/\s*\+\s*/);}
+  function liveRoot(){
+    // On GitHub Pages use relative links (works at /games/ or site root); elsewhere use the live base URL.
+    if(location.hostname==='nasoteisoy.github.io'){return new URL(/\/games\/(index\.html)?$/.test(location.pathname)?'../':'./',location.href).href;}
+    return data.base;
+  }
+  function chip(group,val,label,n){
+    var b=el('button','chip');b.type='button';b.dataset.group=group;b.dataset.val=val;
+    b.setAttribute('aria-pressed',state[group]===val?'true':'false');
+    b.appendChild(document.createTextNode(label));
+    if(n!=null){b.appendChild(el('span','n',String(n)));}
+    b.addEventListener('click',function(){state[group]=val;render();});
+    return b;
+  }
+  function count(fn){return data.items.filter(fn).length;}
+  function buildChips(){
+    var t=document.getElementById('typeChips');t.textContent='';
+    t.appendChild(chip('type','all','⭐ All types',data.items.length));
+    Object.keys(TYPES).forEach(function(k){var n=count(function(i){return i.type===k});if(n)t.appendChild(chip('type',k,TYPES[k],n));});
+    var b=document.getElementById('botChips');b.textContent='';
+    b.appendChild(chip('bot','all','🤖 All bots'));
+    var m={};data.items.forEach(function(i){bots(i).forEach(function(x){m[x]=(m[x]||0)+1;});});
+    Object.keys(m).sort(function(a,c){if(a==='unknown')return 1;if(c==='unknown')return -1;return m[c]-m[a];}).forEach(function(k){b.appendChild(chip('bot',k,who(k),m[k]));});
+    var p=document.getElementById('placeChips');p.textContent='';
+    p.appendChild(chip('place','all','📍 Everywhere'));
+    Object.keys(PLACES).forEach(function(k){p.appendChild(chip('place',k,PLACES[k],count(function(i){return i.section===k})));});
+  }
+  function match(it){
+    if(state.type!=='all'&&it.type!==state.type)return false;
+    if(state.bot!=='all'&&bots(it).indexOf(state.bot)<0)return false;
+    if(state.place!=='all'&&it.section!==state.place)return false;
+    if(state.q){var h=[it.title,it.note,it.maker,TYPES[it.type],it.url,it.id,(it.maker==='unknown'?'crew':'')].join(' ').toLowerCase();
+      var words=state.q.toLowerCase().split(/\s+/).filter(Boolean);for(var w=0;w<words.length;w++)if(h.indexOf(words[w])<0)return false;}
+    return true;
+  }
+  function card(it){
+    var c=el('article','card');c.dataset.id=it.id;c.dataset.type=it.type;c.dataset.section=it.section;
+    var th=el('div','thumb');
+    if(it.thumb){var img=el('img');img.src=it.thumb;img.alt='';img.loading='lazy';img.decoding='async';img.width=480;img.height=300;th.appendChild(img);}
+    else th.textContent=(TYPES[it.type]||'🎮').split(' ')[0];
+    th.appendChild(el('span','tag',TYPES[it.type]||it.type));c.appendChild(th);
+    var bd=el('div','body');
+    bd.appendChild(el('h3','title',it.title));
+    if(it.note)bd.appendChild(el('p','note',it.note));
+    var meta=el('div','meta');
+    var mk=el('span',null,who(it.maker||'unknown'));if(it.makerSource)mk.title='How we know: '+it.makerSource;meta.appendChild(mk);
+    meta.appendChild(el('span',null,'📅 '+(it.updated||'unknown')));
+    bd.appendChild(meta);
+    if(it.section==='live'){
+      var a=el('a','play','▶ Play');a.href=root+it.url;a.target='_blank';a.rel='noopener';bd.appendChild(a);
+      if(it.extras&&it.extras.length){var ex=el('div','extras');it.extras.forEach(function(x){var e=el('a',null,x.label);e.href=root+x.url;e.target='_blank';e.rel='noopener';ex.appendChild(e);});bd.appendChild(ex);}
+    }else if(it.section==='box'){
+      bd.appendChild(el('div','play none','⏳ Not online yet'));
+    }else{
+      bd.appendChild(el('div','play none','🖥️ On Chumi\'s PC'));
+    }
+    c.appendChild(bd);return c;
+  }
+  function render(){
+    buildChips();
+    var main=document.getElementById('main');main.textContent='';var shown=0;
+    SECTIONS.forEach(function(s){
+      var list=data.items.filter(function(i){return i.section===s.key&&match(i);});
+      if(!list.length)return;shown+=list.length;
+      var sec=el('section');sec.id='sec-'+s.key;
+      var h=el('h2',null,s.title+' ');h.appendChild(el('span','count',String(list.length)));sec.appendChild(h);
+      if(s.hint)sec.appendChild(el('p','hint',s.hint));
+      var g=el('div','grid');list.forEach(function(i){g.appendChild(card(i));});sec.appendChild(g);main.appendChild(sec);
+    });
+    if(!shown)main.appendChild(el('p','empty','Nothing matches. Try another chip 🙂'));
+    document.getElementById('total').textContent=shown+' of '+data.items.length;
+  }
+  var qi=document.getElementById('q');qi.addEventListener('input',function(){state.q=qi.value.trim();render();});
+  fetch('items.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+    data=d;root=liveRoot();render();
+    document.getElementById('foot').textContent='Updated '+(d.generated||'')+' · Add new things in items.json';
+  }).catch(function(){document.getElementById('main').innerHTML='<p class="empty">Could not load items.json</p>';});
+})();
+</script>
+</body>
+</html>

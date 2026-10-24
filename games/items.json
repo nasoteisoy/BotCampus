@@ -1,0 +1,1410 @@
+{
+ "base": "https://nasoteisoy.github.io/BotCampus/",
+ "generated": "2026-10-24 08:06 MST",
+ "items": [
+  {
+   "id": "move-play",
+   "title": "Move & Play hub",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "named by Leader (Chumi brief); git author CampusDev",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/move-play/",
+   "extras": [],
+   "note": "Camera body-movement games hub",
+   "thumb": "thumbs/move-play.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "bubble-pop",
+   "title": "Bubble Pop",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Move & Play set (same commits as hub)",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/bubble-pop/",
+   "extras": [],
+   "note": "Pop bubbles with your body (webcam)",
+   "thumb": "thumbs/bubble-pop.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "jump-duck",
+   "title": "Jump & Duck",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Move & Play set (same commits as hub)",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/jump-duck/",
+   "extras": [],
+   "note": "Jump and duck in front of the camera",
+   "thumb": "thumbs/jump-duck.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "freeze-dance",
+   "title": "Freeze Dance",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Move & Play set (same commits as hub)",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/freeze-dance/",
+   "extras": [],
+   "note": "Dance, then freeze!",
+   "thumb": "thumbs/freeze-dance.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "dino-stomp",
+   "title": "Dino Stomp",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Move & Play set (same commits as hub)",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/dino-stomp/",
+   "extras": [],
+   "note": "3D open world, move to stomp",
+   "thumb": "thumbs/dino-stomp.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "ocean-swim",
+   "title": "Ocean Swim",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Move & Play set (same commits as hub)",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/ocean-swim/",
+   "extras": [],
+   "note": "3D open world, swim with your arms",
+   "thumb": "thumbs/ocean-swim.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "flap-flyer",
+   "title": "Flap Flyer 2",
+   "type": "game",
+   "maker": "Leader",
+   "makerSource": "memory: Leader started Flap Flyer",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/flap-flyer/",
+   "extras": [],
+   "note": "Flap your arms to fly",
+   "thumb": "thumbs/flap-flyer.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "conquest-commander",
+   "title": "Conquest Commander",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "MERGE.md: v2.2 map by Dev A + traits merge (other bot unknown)",
+   "section": "live",
+   "updated": "2026-10-19",
+   "url": "games/conquest-commander/",
+   "extras": [],
+   "note": "Battlefront-style command posts",
+   "thumb": "thumbs/conquest-commander.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "trooper-custom",
+   "title": "Trooper Customizer",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "memory: built by Dev A",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/trooper-custom/",
+   "extras": [],
+   "note": "Design your army looks",
+   "thumb": "thumbs/trooper-custom.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "tank-2v2",
+   "title": "Front Line: tank RTS",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "commit: \"Dev A's Front Line engine\"",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/tank-2v2/",
+   "extras": [],
+   "note": "2v2 tank base builder",
+   "thumb": "thumbs/tank-2v2.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "front-line-defense",
+   "title": "Front Line Defense",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "built on Dev A's engine; maker not named",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/front-line-defense/",
+   "extras": [],
+   "note": "Tower defense",
+   "thumb": "thumbs/front-line-defense.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "space-defense",
+   "title": "Space Defense",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/space-defense/",
+   "extras": [],
+   "note": "Space + planet tower defense",
+   "thumb": "thumbs/space-defense.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "space-front-line",
+   "title": "Space Front Line",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/space-front-line/",
+   "extras": [],
+   "note": "2v2 RTS, planet + orbit",
+   "thumb": "thumbs/space-front-line.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "space-battles",
+   "title": "Space Battles 3D",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-15",
+   "url": "games/space-battles/",
+   "extras": [],
+   "note": "Fleets, admirals, planets",
+   "thumb": "thumbs/space-battles.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "space-axis-allies",
+   "title": "Axis & Allies in Space",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-16",
+   "url": "games/space-axis-allies/",
+   "extras": [],
+   "note": "Board strategy in space",
+   "thumb": "thumbs/space-axis-allies.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "spaceship-chess",
+   "title": "Spaceship Chess",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-11",
+   "url": "games/spaceship-chess/",
+   "extras": [],
+   "note": "Chess with spaceships",
+   "thumb": "thumbs/spaceship-chess.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "spaceship-chess-open",
+   "title": "Spaceship Chess: Open Space",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-11",
+   "url": "games/spaceship-chess-open/",
+   "extras": [],
+   "note": "Board-free chess",
+   "thumb": "thumbs/spaceship-chess-open.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "ship-sandbox",
+   "title": "Ship Sandbox",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-18",
+   "url": "games/ship-sandbox/",
+   "extras": [],
+   "note": "Break a ship part by part",
+   "thumb": "thumbs/ship-sandbox.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "squad-fsm",
+   "title": "Squad FSM",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-23",
+   "url": "games/squad-fsm/",
+   "extras": [],
+   "note": "Program a squad brain",
+   "thumb": "thumbs/squad-fsm.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "austerlitz",
+   "title": "Austerlitz 1805",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-08",
+   "url": "games/austerlitz/",
+   "extras": [],
+   "note": "Napoleonic battle",
+   "thumb": "thumbs/austerlitz.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "bridge-too-far",
+   "title": "Bridge Too Far",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/bridge-too-far/",
+   "extras": [],
+   "note": "WW2 squad tactics",
+   "thumb": "thumbs/bridge-too-far.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "formations",
+   "title": "Formations",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/formations/",
+   "extras": [],
+   "note": "WW2 formation drill",
+   "thumb": "thumbs/formations.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "command",
+   "title": "Command Layers",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/command/",
+   "extras": [
+    {
+     "label": "Editor",
+     "url": "games/command/editor.html"
+    }
+   ],
+   "note": "WW2 objectives sandbox",
+   "thumb": "thumbs/command.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "carrier",
+   "title": "Carrier Traits",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/carrier/",
+   "extras": [],
+   "note": "WW2 carrier + traits",
+   "thumb": "thumbs/carrier.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "trainers",
+   "title": "Trainers",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/trainers/",
+   "extras": [
+    {
+     "label": "Editor",
+     "url": "games/trainers/editor.html"
+    },
+    {
+     "label": "Wiki",
+     "url": "games/trainers/wiki.html"
+    }
+   ],
+   "note": "Monster battles",
+   "thumb": "thumbs/trainers.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "trainer-quest",
+   "title": "Trainer Quest",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-10",
+   "url": "games/trainer-quest/",
+   "extras": [],
+   "note": "Idle monster trainer",
+   "thumb": "thumbs/trainer-quest.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "pocket-pet",
+   "title": "Pocket Pet",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-17",
+   "url": "games/pocket-pet/",
+   "extras": [],
+   "note": "Little pet to care for",
+   "thumb": "thumbs/pocket-pet.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "toy-computer",
+   "title": "Toy Computer",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-14",
+   "url": "games/toy-computer/",
+   "extras": [],
+   "note": "Play computer",
+   "thumb": "thumbs/toy-computer.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "lava2d",
+   "title": "Lava Knight 2D",
+   "type": "game",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-19",
+   "url": "lava2d.html",
+   "extras": [],
+   "note": "Run, jump, attack",
+   "thumb": "thumbs/lava2d.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "lava-iso",
+   "title": "Lava Knight Iso",
+   "type": "game",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "lava-iso.html",
+   "extras": [],
+   "note": "8-way iso walker",
+   "thumb": "thumbs/lava-iso.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "firesoldier-play",
+   "title": "Fire Soldier Iso",
+   "type": "game",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "firesoldier-play.html",
+   "extras": [
+    {
+     "label": "Gallery",
+     "url": "firesoldier.html"
+    }
+   ],
+   "note": "8-way iso walker",
+   "thumb": "thumbs/firesoldier-play.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "watersoldier-play",
+   "title": "Water Soldier Iso",
+   "type": "game",
+   "maker": "Render C",
+   "makerSource": "commit: Render C PASS",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "watersoldier-play.html",
+   "extras": [],
+   "note": "8-way iso walker",
+   "thumb": "thumbs/watersoldier-play.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "airsoldier-play",
+   "title": "Air Soldier Iso",
+   "type": "game",
+   "maker": "Render C",
+   "makerSource": "commit: Render C PASS",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "airsoldier-play.html",
+   "extras": [],
+   "note": "8-way iso walker",
+   "thumb": "thumbs/airsoldier-play.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "earthsoldier-play",
+   "title": "Earth Soldier Iso",
+   "type": "game",
+   "maker": "Render C",
+   "makerSource": "commit: Render C PASS",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "earthsoldier-play.html",
+   "extras": [],
+   "note": "8-way iso walker",
+   "thumb": "thumbs/earthsoldier-play.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "phone-roam-combat",
+   "title": "Phone Combat A/B/C",
+   "type": "game",
+   "maker": "Dev A + Dev B",
+   "makerSource": "commits name Dev A, Dev B, Render A/B",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "game-options/phone-roam-combat/a/",
+   "extras": [
+    {
+     "label": "B Corridor Slash",
+     "url": "game-options/phone-roam-combat/b/"
+    },
+    {
+     "label": "C Shadow Takedown",
+     "url": "game-options/phone-roam-combat/c/"
+    },
+    {
+     "label": "Styles",
+     "url": "game-options/phone-roam-combat/styles.html"
+    }
+   ],
+   "note": "3 phone combat options",
+   "thumb": "thumbs/phone-roam-combat.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "coffee-opening",
+   "title": "Coffee Shop Opening Tracker",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "live",
+   "updated": "2026-10-11",
+   "url": "games/coffee-opening/",
+   "extras": [],
+   "note": "3D new-shop checklist",
+   "thumb": "thumbs/coffee-opening.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "fm-topics",
+   "title": "Bot Topics",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "git author CampusDev (daily refresh)",
+   "section": "live",
+   "updated": "2026-10-22",
+   "url": "fm-topics/",
+   "extras": [
+    {
+     "label": "Two leads",
+     "url": "fm-topics/lead-fight/"
+    }
+   ],
+   "note": "Daily topic board",
+   "thumb": "thumbs/fm-topics.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "research-board",
+   "title": "Game Rendering Research",
+   "type": "tool",
+   "maker": "Researcher A + Researcher B",
+   "makerSource": "commits name Researcher A/B",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "research-board.html",
+   "extras": [],
+   "note": "Research notes board",
+   "thumb": "thumbs/research-board.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "sprite-lab",
+   "title": "Sprite Lab",
+   "type": "tool",
+   "maker": "Render C",
+   "makerSource": "commits name Render C",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "sprite-lab.html",
+   "extras": [],
+   "note": "Character walk rows",
+   "thumb": "thumbs/sprite-lab.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "review",
+   "title": "Review Queue",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "git authors Bot Campus, CampusDev",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "review.html",
+   "extras": [],
+   "note": "Phone review board",
+   "thumb": "thumbs/review.webp",
+   "gitAuthors": [
+    "Bot Campus",
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "gold-studio",
+   "title": "Gold Studio Knights",
+   "type": "art",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-19",
+   "url": "gold-studio.html",
+   "extras": [],
+   "note": "Knight renders",
+   "thumb": "thumbs/gold-studio.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "kingshot",
+   "title": "Kingshot Renders",
+   "type": "art",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-19",
+   "url": "kingshot.html",
+   "extras": [],
+   "note": "Heavy renders",
+   "thumb": "thumbs/kingshot.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "toys",
+   "title": "Toy Box",
+   "type": "art",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-19",
+   "url": "toys.html",
+   "extras": [],
+   "note": "3 Blender toys to spin",
+   "thumb": "thumbs/toys.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "gallery",
+   "title": "Bot Office Gallery",
+   "type": "art",
+   "maker": "Leader",
+   "makerSource": "git author Leader",
+   "section": "live",
+   "updated": "2026-09-19",
+   "url": "gallery.html",
+   "extras": [],
+   "note": "Office renders",
+   "thumb": "thumbs/gallery.webp",
+   "gitAuthors": [
+    "Leader"
+   ]
+  },
+  {
+   "id": "campus-home",
+   "title": "BotCampus home",
+   "type": "campus",
+   "maker": "Leader + CampusDev",
+   "makerSource": "git authors",
+   "section": "live",
+   "updated": "2026-09-25",
+   "url": "index.html",
+   "extras": [],
+   "note": "Campus front door",
+   "thumb": "thumbs/campus-home.webp",
+   "gitAuthors": [
+    "CampusDev",
+    "Leader"
+   ]
+  },
+  {
+   "id": "crossing",
+   "title": "Bot Crossing",
+   "type": "campus",
+   "maker": "unknown",
+   "makerSource": "git author CampusDev",
+   "section": "live",
+   "updated": "2026-09-25",
+   "url": "crossing/",
+   "extras": [],
+   "note": "Live campus shell",
+   "thumb": "thumbs/crossing.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "agent-world",
+   "title": "Agent World",
+   "type": "campus",
+   "maker": "unknown",
+   "makerSource": "git author CampusDev",
+   "section": "live",
+   "updated": "2026-09-25",
+   "url": "agent-world/",
+   "extras": [],
+   "note": "Live campus shell",
+   "thumb": "thumbs/agent-world.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "dev-a-school",
+   "title": "Dev A School",
+   "type": "campus",
+   "maker": "Dev A",
+   "makerSource": "commits name Dev A",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "dev-a-school/game/",
+   "extras": [
+    {
+     "label": "Web",
+     "url": "dev-a-school/web/"
+    },
+    {
+     "label": "Camera",
+     "url": "dev-a-school/game/s-camera/"
+    },
+    {
+     "label": "Juice",
+     "url": "dev-a-school/game/s-juice/"
+    },
+    {
+     "label": "API errors",
+     "url": "dev-a-school/web/s-api-errors/"
+    },
+    {
+     "label": "Security",
+     "url": "dev-a-school/web/s-security/"
+    }
+   ],
+   "note": "Practice drills",
+   "thumb": "thumbs/dev-a-school.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "dev-b-school",
+   "title": "Dev B School",
+   "type": "campus",
+   "maker": "Dev B",
+   "makerSource": "commits name Dev B",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "dev-b-school/game/",
+   "extras": [
+    {
+     "label": "Web",
+     "url": "dev-b-school/web/"
+    },
+    {
+     "label": "Game kinds",
+     "url": "dev-b-school/game/kinds/"
+    },
+    {
+     "label": "Web kinds",
+     "url": "dev-b-school/web/kinds/"
+    }
+   ],
+   "note": "Practice drills",
+   "thumb": "thumbs/dev-b-school.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "campus-cast",
+   "title": "Campus Cast Review",
+   "type": "campus",
+   "maker": "Leader + CampusDev",
+   "makerSource": "git authors",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "campus-cast-review.html",
+   "extras": [],
+   "note": "Bot cast sprites",
+   "thumb": "thumbs/campus-cast.webp",
+   "gitAuthors": [
+    "CampusDev",
+    "Leader"
+   ]
+  },
+  {
+   "id": "campus-live",
+   "title": "Campus Live (retired)",
+   "type": "campus",
+   "maker": "Leader + CampusDev",
+   "makerSource": "commits name Dev A, Dev B",
+   "section": "live",
+   "updated": "2026-09-25",
+   "url": "campus-live.html",
+   "extras": [],
+   "note": "Old live campus",
+   "thumb": "thumbs/campus-live.webp",
+   "gitAuthors": [
+    "CampusDev",
+    "Leader"
+   ]
+  },
+  {
+   "id": "office",
+   "title": "Bot Office (retired)",
+   "type": "campus",
+   "maker": "Leader + CampusDev",
+   "makerSource": "git authors",
+   "section": "live",
+   "updated": "2026-09-25",
+   "url": "office.html",
+   "extras": [],
+   "note": "Old 3D office",
+   "thumb": "thumbs/office.webp",
+   "gitAuthors": [
+    "CampusDev",
+    "Leader"
+   ]
+  },
+  {
+   "id": "walk-proof",
+   "title": "Walk proof (failed test)",
+   "type": "campus",
+   "maker": "Leader",
+   "makerSource": "commit names Leader",
+   "section": "live",
+   "updated": "2026-09-20",
+   "url": "walk-proof/",
+   "extras": [],
+   "note": "Marked FAILED",
+   "thumb": "thumbs/walk-proof.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
+  },
+  {
+   "id": "tornado-vfx",
+   "title": "Tornado VFX",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/tornado-vfx.webp"
+  },
+  {
+   "id": "impact-frames",
+   "title": "Impact Frames",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/impact-frames.webp"
+  },
+  {
+   "id": "anticipation-ab",
+   "title": "Anticipation A/B",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Wind-up vs snap vs charge",
+   "thumb": "thumbs/anticipation-ab.webp"
+  },
+  {
+   "id": "juicy-chest",
+   "title": "Juicy Chest",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Chest opening juice",
+   "thumb": "thumbs/juicy-chest.webp"
+  },
+  {
+   "id": "proc-coefficient",
+   "title": "Proc Coefficient Lab",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/proc-coefficient.webp"
+  },
+  {
+   "id": "aura-arena",
+   "title": "Aura Arena",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/aura-arena.webp"
+  },
+  {
+   "id": "robot-choir",
+   "title": "Robot Choir",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/robot-choir.webp"
+  },
+  {
+   "id": "rrt-vine",
+   "title": "RRT Vine",
+   "type": "effect",
+   "maker": "Screenshot Investigator",
+   "makerSource": "Screenshot Investigator demo folder on the bot computer",
+   "section": "box",
+   "updated": "2026-10-24",
+   "note": "",
+   "thumb": "thumbs/rrt-vine.webp"
+  },
+  {
+   "id": "effects-gallery",
+   "title": "Effects Gallery",
+   "type": "effect",
+   "maker": "Dev C",
+   "makerSource": "Dev C's repo copy on the bot computer, not pushed",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/effects-gallery.webp"
+  },
+  {
+   "id": "combat-sandbox",
+   "title": "Combat Sandbox — Modern Squad",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/combat-sandbox.webp"
+  },
+  {
+   "id": "planetary-war-games",
+   "title": "Planetary War Games 3D",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Also on Chumi's PC",
+   "thumb": "thumbs/planetary-war-games.webp"
+  },
+  {
+   "id": "ww2-tank",
+   "title": "WW2 Tank Commander",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Also on Chumi's PC",
+   "thumb": "thumbs/ww2-tank.webp"
+  },
+  {
+   "id": "ww2-tank-3d",
+   "title": "WW2 Tank Commander 3D",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Also on Chumi's PC",
+   "thumb": "thumbs/ww2-tank-3d.webp"
+  },
+  {
+   "id": "little-element-ninja",
+   "title": "Little Element Ninja",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Also on Chumi's PC",
+   "thumb": "thumbs/little-element-ninja.webp"
+  },
+  {
+   "id": "battle-fleet",
+   "title": "Battle Fleet",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/battle-fleet.webp"
+  },
+  {
+   "id": "battle-wordle",
+   "title": "Battle Wordle",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs its server",
+   "thumb": "thumbs/battle-wordle.webp"
+  },
+  {
+   "id": "battleship-command",
+   "title": "Battleship Command",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/battleship-command.webp"
+  },
+  {
+   "id": "board-night",
+   "title": "Board Night",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Party board games",
+   "thumb": "thumbs/board-night.webp"
+  },
+  {
+   "id": "codenames-3d",
+   "title": "Codenames 3D",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/codenames-3d.webp"
+  },
+  {
+   "id": "chummy-games",
+   "title": "Chummy Games",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs serve.py",
+   "thumb": "thumbs/chummy-games.webp"
+  },
+  {
+   "id": "party-rooms",
+   "title": "Party Rooms",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/party-rooms.webp"
+  },
+  {
+   "id": "party-shell",
+   "title": "RankG Party Shell",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs its server",
+   "thumb": "thumbs/party-shell.webp"
+  },
+  {
+   "id": "party-demos",
+   "title": "Party games",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs its server",
+   "thumb": "thumbs/party-demos.webp"
+  },
+  {
+   "id": "rankg-board",
+   "title": "Command Crew — RankG Board",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs its server",
+   "thumb": "thumbs/rankg-board.webp"
+  },
+  {
+   "id": "planet-zones",
+   "title": "Terra Divided",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Axis & Allies lite",
+   "thumb": "thumbs/planet-zones.webp"
+  },
+  {
+   "id": "planetg-fleet-layer",
+   "title": "PlanetG Fleet Layer",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Prototype for Game Makers",
+   "thumb": "thumbs/planetg-fleet-layer.webp"
+  },
+  {
+   "id": "heliopause-beacon",
+   "title": "Heliopause — Beacon",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/heliopause-beacon.webp"
+  },
+  {
+   "id": "hunter-gatherer",
+   "title": "Wild Forage (web)",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/hunter-gatherer.webp"
+  },
+  {
+   "id": "wild-forage-godot",
+   "title": "Wild Forage (Godot)",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Godot 4.3 project, no web page",
+   "thumb": ""
+  },
+  {
+   "id": "scrap-colony",
+   "title": "Scrap Colony",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Also an Android APK",
+   "thumb": ""
+  },
+  {
+   "id": "free-3d-snack",
+   "title": "Coin Snack 3D",
+   "type": "game",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/free-3d-snack.webp"
+  },
+  {
+   "id": "mechanics-museum",
+   "title": "Mechanics Museum",
+   "type": "effect",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/mechanics-museum.webp"
+  },
+  {
+   "id": "sine-clip-playground",
+   "title": "Sine Clip Playground",
+   "type": "effect",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/sine-clip-playground.webp"
+  },
+  {
+   "id": "d3-rotating-tracks",
+   "title": "Rotating Tracks",
+   "type": "effect",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": "thumbs/d3-rotating-tracks.webp"
+  },
+  {
+   "id": "bot-crossing-poc",
+   "title": "Bot Crossing POC",
+   "type": "campus",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "",
+   "thumb": ""
+  },
+  {
+   "id": "fplanetg-skins",
+   "title": "FPlanetG Skins Kit",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Render packs for Game Makers",
+   "thumb": "thumbs/fplanetg-skins.webp"
+  },
+  {
+   "id": "onfriendg-host",
+   "title": "OnFriendG Phone Pipe",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs its server",
+   "thumb": "thumbs/onfriendg-host.webp"
+  },
+  {
+   "id": "interview-prep-lab",
+   "title": "Interview Prep Lab 4",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Needs app.py",
+   "thumb": "thumbs/interview-prep-lab.webp"
+  },
+  {
+   "id": "looper",
+   "title": "Looper (Android)",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Phone looper pedal app",
+   "thumb": ""
+  },
+  {
+   "id": "grokbots-app",
+   "title": "GrokBots app",
+   "type": "tool",
+   "maker": "unknown",
+   "makerSource": "",
+   "section": "box",
+   "updated": "2026-10-23",
+   "note": "Desktop (Tauri) app",
+   "thumb": ""
+  },
+  {
+   "id": "pc-planetary-war-games",
+   "title": "planetary-war-games",
+   "type": "game",
+   "maker": "unknown",
+   "section": "pc",
+   "updated": "unknown",
+   "note": "",
+   "thumb": ""
+  },
+  {
+   "id": "pc-ww2-tank",
+   "title": "ww2-tank",
+   "type": "game",
+   "maker": "unknown",
+   "section": "pc",
+   "updated": "unknown",
+   "note": "",
+   "thumb": ""
+  },
+  {
+   "id": "pc-ww2-tank-3d",
+   "title": "ww2-tank-3d",
+   "type": "game",
+   "maker": "unknown",
+   "section": "pc",
+   "updated": "unknown",
+   "note": "",
+   "thumb": ""
+  },
+  {
+   "id": "pc-little-element-ninja",
+   "title": "Little Element Ninja",
+   "type": "game",
+   "maker": "unknown",
+   "section": "pc",
+   "updated": "unknown",
+   "note": "",
+   "thumb": ""
+  }
+ ]
+}
