@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Roman walk</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #9a9c9f;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  #c { display: block; width: 100%; height: 100%; }
+  #joystick {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    width: 148px;
+    height: 148px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: rgba(28, 29, 31, 0.42);
+    border: 3px solid rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: 2;
+  }
+  #knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 62px;
+    height: 62px;
+    margin-left: -31px;
+    margin-top: -31px;
+    border-radius: 50%;
+    background: #1c1d1f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    transform: translate(0px, 0px);
+    pointer-events: none;
+  }
+  #err {
+    display: none;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+    padding: 16px;
+    background: #3a1212;
+    color: #fff;
+    font: 20px/1.35 system-ui, Segoe UI, sans-serif;
+    border-radius: 12px;
+    z-index: 3;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="joystick" role="slider" aria-label="Walk joystick" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+  <div id="knob"></div>
+</div>
+<div id="err" role="alert"></div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const CLIP_NAME = "Armature|Casual_Walk|baselayer";
+const WALK_SPEED = 1.2;
+const DEADZONE = 0.12;
+
+const errEl = document.getElementById("err");
+function showError(msg) {
+  errEl.style.display = "block";
+  errEl.textContent = String(msg == null ? "Unknown error" : msg);
+}
+window.addEventListener("error", (ev) => showError(ev.message || "Script error"));
+window.addEventListener("unhandledrejection", (ev) => {
+  const reason = ev.reason;
+  showError(reason && reason.message ? reason.message : reason || "Load failed");
+});
+
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x9a9c9f, 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9a9c9f);
+
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 80);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x5e6063, 1.2));
+const key = new THREE.DirectionalLight(0xffffff, 1.7);
+key.position.set(2.4, 5.0, 3.4);
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xd5dbe2, 0.5);
+fill.position.set(-3.0, 2.2, -1.2);
+scene.add(fill);
+
+const grid = new THREE.GridHelper(80, 80, 0x6e7073, 0x8a8c8f);
+grid.position.y = 0;
+scene.add(grid);
+
+let mixer = null;
+let action = null;
+let model = null;
+let walking = false;
+
+const joy = document.getElementById("joystick");
+const knob = document.getElementById("knob");
+let activePointer = null;
+let stickX = 0;
+let stickY = 0;
+
+function knobLimit() {
+  const size = joy.getBoundingClientRect().width;
+  return Math.max(24, size * 0.5 - 31);
+}
+
+function placeKnob(px, py) {
+  knob.style.transform = "translate(" + px.toFixed(2) + "px, " + py.toFixed(2) + "px)";
+}
+
+function setStickFromClient(clientX, clientY) {
+  const rect = joy.getBoundingClientRect();
+  const cx = rect.left + rect.width * 0.5;
+  const cy = rect.top + rect.height * 0.5;
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+  const maxR = knobLimit();
+  const len = Math.hypot(dx, dy);
+  if (len > maxR && len > 0) {
+    dx *= maxR / len;
+    dy *= maxR / len;
+  }
+  placeKnob(dx, dy);
+  stickX = dx / maxR;
+  stickY = -dy / maxR;
+  const mag = Math.min(1, Math.hypot(stickX, stickY));
+  joy.setAttribute("aria-valuenow", mag.toFixed(2));
+}
+
+function releaseStick() {
+  activePointer = null;
+  stickX = 0;
+  stickY = 0;
+  placeKnob(0, 0);
+  joy.setAttribute("aria-valuenow", "0");
+}
+
+function onPointerDown(ev) {
+  if (activePointer !== null) return;
+  if (ev.pointerType === "mouse" && ev.button !== 0) return;
+  activePointer = ev.pointerId;
+  joy.setPointerCapture(ev.pointerId);
+  setStickFromClient(ev.clientX, ev.clientY);
+  ev.preventDefault();
+}
+function onPointerMove(ev) {
+  if (ev.pointerId !== activePointer) return;
+  setStickFromClient(ev.clientX, ev.clientY);
+  ev.preventDefault();
+}
+function onPointerUp(ev) {
+  if (ev.pointerId !== activePointer) return;
+  releaseStick();
+}
+joy.addEventListener("pointerdown", onPointerDown);
+joy.addEventListener("pointermove", onPointerMove);
+joy.addEventListener("pointerup", onPointerUp);
+joy.addEventListener("pointercancel", onPointerUp);
+joy.addEventListener("contextmenu", (ev) => ev.preventDefault());
+
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(h, 1);
+  camera.updateProjectionMatrix();
+  if (model) frameModel();
+}
+window.addEventListener("resize", resize);
+resize();
+
+function frameModel() {
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  if (box.isEmpty()) return;
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const radius = 0.5 * Math.sqrt(size.x * size.x + size.y * size.y + size.z * size.z);
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+  const dist = Math.max(radius / Math.tan(vFov / 2), radius / Math.tan(hFov / 2)) * 1.35;
+  const dir = new THREE.Vector3(0.62, 0.22, 1).normalize();
+  camera.position.copy(center).addScaledVector(dir, dist);
+  const look = center.clone();
+  look.y -= size.y * 0.06;
+  camera.lookAt(look);
+  camera.near = Math.max(0.02, dist / 80);
+  camera.far = dist + radius * 40;
+  camera.updateProjectionMatrix();
+}
+
+function applyPoseAtStart() {
+  if (!action || !mixer || !model) return;
+  action.enabled = true;
+  action.paused = true;
+  action.time = 0;
+  mixer.setTime(0);
+  model.updateMatrixWorld(true);
+}
+
+function beginWalk() {
+  if (walking || !action) return;
+  walking = true;
+  action.enabled = true;
+  action.paused = false;
+  action.setLoop(THREE.LoopRepeat, Infinity);
+  action.clampWhenFinished = false;
+  action.time = 0;
+  action.play();
+}
+
+function endWalk() {
+  if (!walking) return;
+  walking = false;
+  applyPoseAtStart();
+}
+
+const loader = new GLTFLoader();
+loader.load("./roman_meshy.glb", (gltf) => {
+  model = gltf.scene;
+  scene.add(model);
+  const clips = gltf.animations || [];
+  const clip = THREE.AnimationClip.findByName(clips, CLIP_NAME);
+  if (!clip) {
+    const names = clips.map((c) => c.name).join(", ") || "(none)";
+    showError("GLB loaded but clip " + CLIP_NAME + " was not found.\nClips: " + names);
+    frameModel();
+    return;
+  }
+  mixer = new THREE.AnimationMixer(model);
+  action = mixer.clipAction(clip);
+  action.setLoop(THREE.LoopRepeat, Infinity);
+  action.clampWhenFinished = false;
+  action.play();
+  applyPoseAtStart();
+  frameModel();
+}, undefined, (err) => {
+  let detail = "Failed to load ./roman_meshy.glb";
+  if (err) {
+    if (err.message) detail += "\n" + err.message;
+    else if (err.type) detail += "\n" + err.type;
+    else detail += "\n" + err;
+  }
+  showError(detail);
+});
+
+const clock = new THREE.Clock();
+const _fwd = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+const _move = new THREE.Vector3();
+
+function dampAngle(current, target, dt) {
+  let diff = target - current;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  const t = 1 - Math.exp(-10 * dt);
+  return current + diff * t;
+}
+
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const mag = Math.min(1, Math.hypot(stickX, stickY));
+  if (mixer && model && action && mag > DEADZONE) {
+    beginWalk();
+    mixer.update(dt);
+    camera.getWorldDirection(_fwd);
+    _fwd.y = 0;
+    if (_fwd.lengthSq() < 1e-8) _fwd.set(0, 0, -1);
+    else _fwd.normalize();
+    _right.crossVectors(_fwd, _up).normalize();
+    _move.set(0, 0, 0);
+    _move.addScaledVector(_right, stickX);
+    _move.addScaledVector(_fwd, stickY);
+    _move.y = 0;
+    if (_move.lengthSq() > 1e-8) {
+      _move.normalize();
+      const analog = (mag - DEADZONE) / (1 - DEADZONE);
+      const step = WALK_SPEED * analog * dt;
+      model.position.x += _move.x * step;
+      model.position.z += _move.z * step;
+      const yaw = Math.atan2(_move.x, _move.z);
+      model.rotation.y = dampAngle(model.rotation.y, yaw, dt);
+      camera.position.x += _move.x * step;
+      camera.position.z += _move.z * step;
+    }
+  } else if (walking) {
+    endWalk();
+  }
+  renderer.render(scene, camera);
+}
+tick();
+</script>
+</body>
+</html>

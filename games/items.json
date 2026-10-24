@@ -1,7 +1,120 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-24 15:20 MST",
+ "generated": "2026-10-24 15:30 MST",
  "items": [
+  {
+   "id": "seraphina-fortnite",
+   "title": "Seraphina Fortnite",
+   "type": "game",
+   "maker": "Lead: Art",
+   "makerSource": "Lead: Art made it (Leader brief to Lead: Art, 2026-10-24); repo nasoteisoy/seraphina-fortnite",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "../seraphina-fortnite/",
+   "extras": [
+    {
+     "label": "v5",
+     "url": "../seraphina-fortnite/v5/"
+    },
+    {
+     "label": "v4",
+     "url": "../seraphina-fortnite/v4/"
+    },
+    {
+     "label": "v3",
+     "url": "../seraphina-fortnite/v3/"
+    },
+    {
+     "label": "v2",
+     "url": "../seraphina-fortnite/v2/"
+    }
+   ],
+   "note": "Play the elf ranger: bow, daggers, fists (latest v6)",
+   "thumb": "thumbs/seraphina-fortnite.webp"
+  },
+  {
+   "id": "moveable-8",
+   "title": "Moveable 8",
+   "type": "game",
+   "maker": "Lead: Art",
+   "makerSource": "Lead: Art made it (Leader brief to Lead: Art, 2026-10-24); repo nasoteisoy/moveable-8",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "../moveable-8/",
+   "extras": [
+    {
+     "label": "Fire Bros only",
+     "url": "../moveable-8/play_fire_bros.html"
+    },
+    {
+     "label": "Seraphinas only",
+     "url": "../moveable-8/play_seraphina.html"
+    },
+    {
+     "label": "All 8 offline (32 MB)",
+     "url": "../moveable-8/play_moveable_8.html"
+    }
+   ],
+   "note": "4 Fire Bro + 4 Seraphina styles, all playable",
+   "thumb": "thumbs/moveable-8.webp"
+  },
+  {
+   "id": "style-school",
+   "title": "Style School: 4 styles",
+   "type": "art",
+   "maker": "Lead: Art",
+   "makerSource": "Lead: Art made it (Leader brief to Lead: Art, 2026-10-24)",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/style-school/",
+   "extras": [
+    {
+     "label": "Seraphina image",
+     "url": "games/style-school/seraphina-4-styles.jpg"
+    },
+    {
+     "label": "Fire Bro image",
+     "url": "games/style-school/fire-bro-4-styles.jpg"
+    }
+   ],
+   "note": "Fortnite, BotW, low-poly, AAA side by side",
+   "thumb": "thumbs/style-school.webp"
+  },
+  {
+   "id": "fire-bro-juice",
+   "title": "Fire Bro Juice",
+   "type": "game",
+   "maker": "Lead: Art",
+   "makerSource": "Lead: Art made it (Leader brief to Lead: Art, 2026-10-24); first Meshy fire bro play page",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/fire-bro-juice/",
+   "extras": [],
+   "note": "Chibi fire ninja: fireballs, flame, spin (7 MB)",
+   "thumb": "thumbs/fire-bro-juice.webp"
+  },
+  {
+   "id": "roman-battle",
+   "title": "Romans vs Germanic",
+   "type": "game",
+   "maker": "Lead: Art",
+   "makerSource": "Lead: Art made it (Leader brief to Lead: Art, 2026-10-24); first Meshy Roman soldier pages",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/roman-battle/",
+   "extras": [
+    {
+     "label": "Battle",
+     "url": "games/roman-battle/battle.html"
+    },
+    {
+     "label": "Roman walk",
+     "url": "games/roman-battle/walk.html"
+    }
+   ],
+   "note": "Walk the Roman soldier; 4 v 4 grass battle",
+   "thumb": "thumbs/roman-battle.webp"
+  },
   {
    "id": "arduino-kit-explorer",
    "title": "Arduino Kit Explorer",

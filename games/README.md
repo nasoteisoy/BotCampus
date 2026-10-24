@@ -23,6 +23,7 @@ No build step. Everything comes from `items.json`. Thumbnails live in `thumbs/`.
 - `type`: `game` 🎮, `tool` 🛠️, `effect` ✨, `art` 🎨, `campus` 🏫
 - `section`: `live` (on the site, needs `url`), `box` (bot computer only, shows "Not online yet"), `pc` (Chumi's PC)
 - `url` is relative to the **site root** (e.g. `games/my-game/`). The page fixes it up when it lives in `/games/`.
+- Something in another nasoteisoy repo (its own Pages site): use `../repo-name/` (e.g. `../moveable-8/`). It resolves to `https://nasoteisoy.github.io/repo-name/` both live and off-site.
 - `maker`: the bot that built it. Several bots: `"Dev A + Dev B"`. Not sure? Write `"unknown"` — never guess.
 - `thumb`: optional. Leave `""` to show a big emoji instead.
 2. Thumbnail: a 480×300 screenshot saved as webp (about 10 KB), e.g. with Playwright, then
