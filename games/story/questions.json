@@ -566,20 +566,20 @@
       "blurb": "One group per High Lord — all names are drafts",
       "questions": [
         {
-          "id": "hl-cassian-07",
+          "id": "hl-cassian-15",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "He was secretly born in a rival kingdom. Which one?",
+          "prompt": "Cassian was secretly born in a south-east kingdom still at war with the Southern Kingdoms. What is that kingdom called?",
           "options": [
-            "A south-east kingdom still at war with the Southern Kingdoms",
-            "The free part of the desert kingdom that never fell",
-            "A kingdom the Empire conquered when he was a boy",
-            "A land beyond the known map"
+            "Ostrevan",
+            "Dravenmoor",
+            "Celdara",
+            "Brannoch"
           ]
         },
         {
           "id": "hl-cassian-08",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Who knows he was born in a rival kingdom? (Seraphina doesn't — she finds out during the story.)",
+          "prompt": "Who knows he was born in a rival kingdom? (Not Seraphina, who finds out during the story, and not his wife, who doesn't know his secrets.)",
           "options": [
             "No one alive",
             "The Council knew, and appointed him anyway",
@@ -588,14 +588,14 @@
           ]
         },
         {
-          "id": "hl-cassian-09",
+          "id": "hl-cassian-16",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "What is the 'power that will save humanity' he is seeking?",
+          "prompt": "What does Cassian offer the fallen Ashavar in the bargain?",
           "options": [
-            "Corruption itself, mastered and aimed at the enemy",
-            "Lost knowledge of the Ashara offices",
-            "Spirit-tech pushed further than the Flame Order allows",
-            "He doesn't know yet — he is still searching"
+            "A way into the Physical World",
+            "Human souls who are already stained",
+            "The throne for one of them, as Ashar-Kan",
+            "Nothing he means to give; he thinks he can outwit them"
           ]
         },
         {
@@ -619,6 +619,28 @@
             "When Cassian argues against the census",
             "When he sees Cassian use something corrupted",
             "Seraphina is the one who notices first"
+          ]
+        },
+        {
+          "id": "hl-cassian-13",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "What is Seraphina's mother's name? (A noblewoman from the Capital Kingdom.)",
+          "options": [
+            "Lady Rosalind",
+            "Lady Genevieve",
+            "Lady Beatrix",
+            "Lady Adelaide"
+          ]
+        },
+        {
+          "id": "hl-cassian-14",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "She is Cassian's conscience, but doesn't know his secrets. How does she act as his conscience?",
+          "options": [
+            "She reminds him of the people behind his decisions",
+            "Her faith keeps him grounded",
+            "He tells her half-truths, and her questions slow him down",
+            "She is the one person he can't lie to well"
           ]
         },
         {
@@ -735,7 +757,7 @@
         {
           "id": "hl-davian-07",
           "group": "Southern Kingdoms – High Lord Davian Solmarre",
-          "prompt": "Who are the rival south-east kingdoms he is always fighting?",
+          "prompt": "Who are the rival south-east kingdoms he is always fighting? (Cassian was secretly born in one of them.)",
           "options": [
             "Many small, proud kingdoms that never accepted the Empire",
             "One big kingdom that is nearly the Empire's equal",

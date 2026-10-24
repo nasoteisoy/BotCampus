@@ -86,6 +86,50 @@
     {
       "section": "lords",
       "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-chat-03",
+      "question": "Is Seraphina's mother still alive?",
+      "answer": "Yes. She is alive and still with Cassian.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-chat-04",
+      "question": "What role does Seraphina's mother play?",
+      "answer": "She is Cassian's conscience. She is not aware of his secrets.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-07",
+      "question": "He was secretly born in a rival kingdom. Which one?",
+      "answer": "A south-east kingdom still at war with the Southern Kingdoms.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-09",
+      "question": "What is the 'power that will save humanity' he is seeking?",
+      "answer": "A bargain with the fallen Ashavar (Ashavar-Kan).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
       "group": "West Island Exploration – High Lord Corin Saltmere",
       "question_id": "hl-corin-01",
       "question": "Keep the name High Lord Corin Saltmere?",
