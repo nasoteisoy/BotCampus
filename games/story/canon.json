@@ -2396,6 +2396,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-empire-common-tongue-name",
+      "question": "What is the Empire's common tongue called?",
+      "answer": "You pick. Story picked: High Speech (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-rivals-speak-imperial",
+      "question": "Do the rival southern and mountain kingdoms speak High Speech?",
+      "answer": "Common for most people to know their own and imperial.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-farm-kingdom-language",
+      "question": "What is the Farm Kingdom's own language like?",
+      "answer": "Close to High Speech.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-language",
+      "question": "What language do Black Guard soldiers use with each other?",
+      "answer": "High Speech. High Speech plus battle hand signs.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-hand-signs-users",
+      "question": "Who uses the battle hand signs most?",
+      "answer": "Recon, to stay silent. Every Guard soldier learns them. Officers giving orders in battle.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language",
+      "question": "Do the Mute and Speaker in Recon use a special sign language beyond the battle signs?",
+      "answer": "Yes, a fuller Recon sign language.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language-who",
+      "question": "Who in the Black Guard knows the fuller Recon sign language?",
+      "answer": "Only Recon soldiers.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-specialized-class",
+      "question": "Why do only Recon soldiers know the fuller Recon sign language?",
+      "answer": "Recon is a specialized class.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language-origin",
+      "question": "Where does the fuller Recon sign language come from?",
+      "answer": "It grew out of the battle signs over time. It was borrowed from another people or kingdom.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language-borrowed-from",
+      "question": "Which people or kingdom was the Recon sign language borrowed from?",
+      "answer": "All (one of the rival kingdoms, the Farm Kingdom, and a people outside the Empire). It is an older, more complex language.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language-older-than",
+      "question": "The Recon sign language is older and more complex than what?",
+      "answer": "Than the battle signs. Than High Speech. Than the Black Guard itself.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-recon-sign-language-name",
+      "question": "Does the Recon sign language have its own name?",
+      "answer": "Yes. Old Hand (placeholder picked by Story at Chumi's request; renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-old-hand-teaching",
+      "question": "How does a new Recon soldier learn Old Hand?",
+      "answer": "Older Recon soldiers teach it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-seraphina-old-hand",
+      "question": "Does Lady Seraphina know Old Hand?",
+      "answer": "Yes, fluently.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-alaric-old-hand",
+      "question": "Does Alaric know any Old Hand?",
+      "answer": "No, it stays within Recon.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }
