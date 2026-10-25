@@ -141,6 +141,72 @@
     {
       "section": "lords",
       "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-10",
+      "question": "How does Cassian hope to use corruption?",
+      "answer": "To power spirit-tech.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-12",
+      "question": "When does Alaric first notice Cassian quietly bending his views?",
+      "answer": "Alaric kind of falls into Cassian's ideology at first, but Seraphina talks it through with Alaric, and over time they both start to see something is off.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-08",
+      "question": "Who knows Cassian was secretly born in a rival kingdom?",
+      "answer": "Nobody alive.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-17",
+      "question": "What is the spirit-tech power Cassian is chasing?",
+      "answer": "All of the above: an ancient device that opens a crossing, powered by pulling energy out of corrupted things; the Flame Order forbade and hid it; Cassian doesn't know exactly what it is and follows rumors.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-14",
+      "question": "How does Cassian's wife act as his conscience?",
+      "answer": "Her faith keeps him tied to the Flame Order's teachings.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "hl-cassian-15",
+      "question": "What is the south-east kingdom Cassian was born in called?",
+      "answer": "Dravenmoor (named by Story; Chumi may rename).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
       "group": "West Island Exploration – High Lord Corin Saltmere",
       "question_id": "hl-corin-01",
       "question": "Keep the name High Lord Corin Saltmere?",
@@ -507,6 +573,106 @@
       "answer": "Hosts a big diplomacy mission",
       "custom_text": "",
       "locked": "2026-10-24"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "world-spirit-contact-01",
+      "question": "How do ordinary people come in contact with the spirit world?",
+      "answer": "It is disputed: kingdoms and peoples are divided over the answer (crossings, faint presence everywhere, human choices, omens), and the disagreement itself divides them.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "empire-ruler-01",
+      "question": "Who rules the Empire?",
+      "answer": "An Emperor with a Council of High Lords.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "guard-name-01",
+      "question": "Why is it called the Black Guard?",
+      "answer": "Cassian named it when he founded it from scratch: black like the night.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "spine-frontier-01",
+      "question": "Where is Book 1's first command?",
+      "answer": "The Desert Kingdom border. (Only the location is canon; the 'silent frontier / missing patrols / blaming spirit-humanoids' setup is draft, not canon, and the link to Rashid's war is not decided.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-border-situation",
+      "question": "What's going on at the Desert Kingdom border when Book 1's first command begins?",
+      "answer": "The Desert Kingdom is preparing for another push from the enemy. The enemy armies have 2 paths they could take to get to the desert kingdom capital.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-enemy-who",
+      "question": "Who is the enemy pushing toward the desert kingdom capital?",
+      "answer": "Both the unconquered part of the desert kingdom and a rival kingdom beyond the desert.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-capital-holder",
+      "question": "Who holds the desert kingdom's capital right now?",
+      "answer": "The Empire holds the desert kingdom's capital.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-two-paths",
+      "question": "What are the two paths the enemy could take to the desert kingdom capital?",
+      "answer": "Path 1: a large canyon with a large desert crossing, with one major city. Path 2: the main roads with many fortified cities (seems like the more obvious way).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-guard-deploy",
+      "question": "Where is the Black Guard sent?",
+      "answer": "Alaric's Banner goes to the canyon; the others go to the cities.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-enemy-path",
+      "question": "Which path does the enemy actually take?",
+      "answer": "The enemy takes the canyon, straight into Alaric's Banner.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

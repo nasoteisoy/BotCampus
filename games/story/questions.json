@@ -47,16 +47,6 @@
           ]
         },
         {
-          "id": "world-spirit-contact-01",
-          "prompt": "How does the Spirit World touch the Physical World day to day?",
-          "options": [
-            "Only at thin places (crossings)",
-            "Everywhere, but faintly — most people feel it, few see it",
-            "Through people: human choices open or close it",
-            "Through weather and omens that careful people can read"
-          ]
-        },
-        {
           "id": "world-species-names-02",
           "prompt": "Elves is now the common name for a spirit-heavy people. What about the others?",
           "options": [
@@ -105,6 +95,16 @@
             "The One Will",
             "Different names in each culture",
             "Almost never named on the page"
+          ]
+        },
+        {
+          "id": "world-spirit-dispute-01",
+          "prompt": "Spirit contact is disputed, and the disagreement divides kingdoms and peoples. How deep does that split go?",
+          "options": [
+            "Kingdoms have official views and argue about them",
+            "It splits towns and families, not just kingdoms",
+            "It is mostly a quiet difference, until something forces it",
+            "Decide later"
           ]
         }
       ]
@@ -222,16 +222,6 @@
       "blurb": "Governance, the census of the corrupted, Vorash, everyday life",
       "questions": [
         {
-          "id": "empire-ruler-01",
-          "prompt": "The Council appoints High Lords (it appointed Cassian). Who rules the Empire of Man?",
-          "options": [
-            "An Emperor with a Council of High Lords",
-            "The Council only, no Emperor",
-            "An Emperor whose power is mostly ceremonial; the Council really rules",
-            "The Capital Kingdom's High Lord leads the Council under the Emperor"
-          ]
-        },
-        {
           "id": "empire-census-01",
           "prompt": "The Empire's 'census of the corrupted' (a counterfeit of Meshal). High Lords Cassian Thorne and Edric Halloran are both against it. Where is it in the story?",
           "options": [
@@ -322,6 +312,16 @@
             "He serves the Capital Kingdom's High Lord, who also distrusts the Guard",
             "He IS the Capital Kingdom's High Lord"
           ]
+        },
+        {
+          "id": "empire-emperor-01",
+          "prompt": "The Empire has an Emperor with a Council of High Lords. What is the Emperor like?",
+          "options": [
+            "Old and near the end of his reign",
+            "Young and guided by the Council",
+            "Strong and rules firmly",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -348,16 +348,6 @@
             "About 50–70, small but full of leaders (bible)",
             "About 300",
             "Starts small and grows over the series"
-          ]
-        },
-        {
-          "id": "guard-name-01",
-          "prompt": "Why is it called the Black Guard?",
-          "options": [
-            "Cassian named it when he founded it from scratch",
-            "The black uniform",
-            "A childhood name for the Special Service that stuck",
-            "An old unit that died holding a line"
           ]
         },
         {
@@ -429,6 +419,16 @@
             "Not trusted — too many cultures, too much power",
             "Unknown to most people"
           ]
+        },
+        {
+          "id": "guard-motto-01",
+          "prompt": "Cassian named it the Black Guard: black like the night. Does the Guard have a motto?",
+          "options": [
+            "Yes, something about the night",
+            "Yes, something about duty",
+            "No motto",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -471,7 +471,7 @@
           "id": "chars-seraphina-home-01",
           "prompt": "Where is Seraphina's home culture (emerald colours) from?",
           "options": [
-            "Her father's secret birth kingdom (a rival kingdom), and she doesn't know it",
+            "Her father's secret birth kingdom, Dravenmoor, and she doesn't know it",
             "The Black Guard's home fortress, since Cassian raised her in the military",
             "Near the Everlight Forest",
             "The Northern Mountains",
@@ -529,6 +529,16 @@
           ]
         },
         {
+          "id": "chars-seraphina-discovery-01",
+          "prompt": "How does Seraphina find out Cassian was born in Dravenmoor?",
+          "options": [
+            "She finds an old record or letter",
+            "Cassian tells her himself",
+            "She works it out from clues",
+            "Decide later"
+          ]
+        },
+        {
           "id": "chars-hardest-words-01",
           "prompt": "Which line is the turning point for them?",
           "options": [
@@ -566,62 +576,6 @@
       "blurb": "One group per High Lord — all names are drafts",
       "questions": [
         {
-          "id": "hl-cassian-15",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Cassian was secretly born in a south-east kingdom still at war with the Southern Kingdoms. What is that kingdom called?",
-          "options": [
-            "Ostrevan",
-            "Dravenmoor",
-            "Celdara",
-            "Brannoch"
-          ]
-        },
-        {
-          "id": "hl-cassian-08",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "Who knows he was born in a rival kingdom? (Not Seraphina, who finds out during the story, and not his wife, who doesn't know his secrets.)",
-          "options": [
-            "No one alive",
-            "The Council knew, and appointed him anyway",
-            "One old friend from his early military days",
-            "An enemy who could use it against him"
-          ]
-        },
-        {
-          "id": "hl-cassian-17",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "What is the spirit-tech power Cassian is chasing? (He doesn't fully understand who or what the fallen are.)",
-          "options": [
-            "An ancient device that opens a crossing",
-            "A way to pull power out of corrupted things",
-            "Something the Flame Order forbade and hid",
-            "He doesn't know; he's following rumours"
-          ]
-        },
-        {
-          "id": "hl-cassian-10",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "How does he hope to use corruption? (He's chasing a power tied to spirit-tech and doesn't fully understand the fallen.)",
-          "options": [
-            "As a weapon — stained fighters aimed at the enemy",
-            "To understand the enemy from the inside",
-            "To make the Black Guard stronger than any army",
-            "Only in small, careful tests — for now"
-          ]
-        },
-        {
-          "id": "hl-cassian-12",
-          "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "When does Alaric first notice Cassian quietly bending his views?",
-          "options": [
-            "In Book 1, during the Desert War",
-            "Slowly, over many books — he sees it late",
-            "When Cassian argues against the census",
-            "When he sees Cassian use something corrupted",
-            "Seraphina is the one who notices first"
-          ]
-        },
-        {
           "id": "hl-cassian-13",
           "group": "Black Guard – High Lord Cassian Thorne",
           "prompt": "What is Seraphina's mother's name? (A noblewoman from the Capital Kingdom.)",
@@ -633,14 +587,69 @@
           ]
         },
         {
-          "id": "hl-cassian-14",
+          "id": "hl-cassian-18",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "She is Cassian's conscience, but doesn't know his secrets. How does she act as his conscience?",
+          "prompt": "Dravenmoor is a working name. Keep it?",
           "options": [
-            "She reminds him of the people behind his decisions",
-            "Her faith keeps him grounded",
-            "He tells her half-truths, and her questions slow him down",
-            "She is the one person he can't lie to well"
+            "Keep Dravenmoor",
+            "Rename it",
+            "Keep for now, decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-19",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "Where is the ancient crossing device hidden?",
+          "options": [
+            "In Dravenmoor",
+            "Somewhere in the desert kingdom",
+            "Under a Flame Order site",
+            "No one knows yet",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-20",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "Why did the Flame Order forbid and hide the device?",
+          "options": [
+            "It was too dangerous to use",
+            "They feared what was on the other side of the crossing",
+            "They didn't understand it either",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-21",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "What first set Cassian following the rumours of the device?",
+          "options": [
+            "Something he saw in battle",
+            "An old text or record",
+            "Someone who told him about it",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-22",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "His wife's faith keeps him tied to the Flame Order's teachings, and the Flame Order forbade the device. How does he handle that?",
+          "options": [
+            "He tells himself the teachings are wrong about this one thing",
+            "He feels guilty and keeps delaying",
+            "He doesn't see a conflict",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "hl-cassian-23",
+          "group": "Black Guard – High Lord Cassian Thorne",
+          "prompt": "What makes Seraphina first sense that something is off with her father's ideas?",
+          "options": [
+            "Something he says to Alaric",
+            "Something she sees on a mission",
+            "A small thing at home",
+            "Decide later"
           ]
         },
         {
@@ -757,7 +766,7 @@
         {
           "id": "hl-davian-07",
           "group": "Southern Kingdoms – High Lord Davian Solmarre",
-          "prompt": "Who are the rival south-east kingdoms he is always fighting? (Cassian was secretly born in one of them.)",
+          "prompt": "Who are the rival south-east kingdoms he is always fighting? (Cassian was secretly born in one of them, Dravenmoor.)",
           "options": [
             "Many small, proud kingdoms that never accepted the Empire",
             "One big kingdom that is nearly the Empire's equal",
@@ -966,7 +975,7 @@
         {
           "id": "hl-rashid-09",
           "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "75% of the desert kingdom is conquered. Conquered by whom?",
+          "prompt": "75% of the desert kingdom is conquered, and the Empire holds the desert capital. Who conquered that 75%?",
           "options": [
             "By the Empire — the rest is still free",
             "By the corrupted from the Blighted Wastes and Korvan Dominion",
@@ -987,12 +996,12 @@
         {
           "id": "hl-rashid-11",
           "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
-          "prompt": "What is the remaining 25%?",
+          "prompt": "The unconquered part of the desert kingdom is pushing toward the desert capital, together with a rival kingdom beyond the desert. Who are they?",
           "options": [
             "Free tribes who refuse the Empire",
-            "The last holdouts against the corruption",
-            "The oldest cities, held at any cost",
-            "Deep desert nobody can hold"
+            "The desert kingdom's old rulers and their loyalists",
+            "Holdouts backed by the rival kingdom",
+            "Decide later"
           ]
         },
         {
@@ -1349,23 +1358,53 @@
           ]
         },
         {
-          "id": "spine-frontier-01",
-          "prompt": "Book 1's first command: a silent frontier region, missing patrols, humans blaming spirit-humanoids. Where?",
+          "id": "spine-desert-war-03",
+          "prompt": "Book 1's first command is on the Desert Kingdom border. How does that connect to the larger Desert War?",
           "options": [
-            "The Farm Kingdom's northern forest edge, where unknown things and wood/mountain elves keep attacking",
-            "The Desert Kingdom border",
-            "The Northern Mountains",
-            "Near the Everlight Forest"
+            "It is part of the same war",
+            "It is a separate fight",
+            "It becomes part of it later",
+            "Decide later"
           ]
         },
         {
-          "id": "spine-desert-war-02",
-          "prompt": "The desert kingdom is already 75% conquered and Rashid commands the war there. When do Alaric and Seraphina join it?",
+          "id": "spine-canyon-city-01",
+          "prompt": "The canyon path has one major city. What is it like?",
           "options": [
-            "Book 1",
-            "End of Book 1",
-            "Book 2",
-            "Later in the series"
+            "A trade city at the desert crossing",
+            "A fortress city guarding the canyon",
+            "An old, half-empty city",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-canyon-why-01",
+          "prompt": "Why does the enemy take the canyon instead of the main roads?",
+          "options": [
+            "It is faster",
+            "They expect the cities to be ready for them",
+            "They know where the Black Guard is",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-canyon-hit-01",
+          "prompt": "What happens when the enemy hits Alaric's Banner in the canyon?",
+          "options": [
+            "The Banner holds the canyon",
+            "The Banner falls back to the city",
+            "They hold until help arrives",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-canyon-recon-01",
+          "prompt": "What is Seraphina's Recon Arm doing in the canyon?",
+          "options": [
+            "Spotting the enemy first",
+            "Scouting the desert crossing",
+            "Working behind enemy lines",
+            "Decide later"
           ]
         },
         {
