@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070a1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>🪖 Army HQ</title>
+<meta name="description" content="Army HQ: every BotCampus army game in one page. One shared army save.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%96%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="menu.css?v=2">
+</head>
+<body>
+<div id="bg" aria-hidden="true">
+  <div class="sky"></div>
+  <div class="stars s1"></div><div class="stars s2"></div>
+  <div class="beam b1"></div><div class="beam b2"></div>
+  <div class="floor"><div class="grid"></div></div>
+  <div class="march"><span>🪖🪖🚜🪖🪖🪖🚜🪖🪖🪖🚜🪖🪖🪖🚜🪖</span><span>🪖🪖🚜🪖🪖🪖🚜🪖🪖🪖🚜🪖🪖🪖🚜🪖</span></div>
+  <div class="vignette"></div>
+</div>
+
+<div id="wrap">
+  <header id="top">
+    <div id="who" aria-live="polite">
+      <div class="pick" id="pickP">
+        <span class="k">👤 Player:</span>
+        <span class="sel"><select id="selP" aria-label="Player"></select><span class="dd" aria-hidden="true">▾</span></span>
+        <button class="mk" id="mkP" type="button" hidden>➕ Create</button>
+      </div>
+      <div class="pick" id="pickN">
+        <span class="k">🏳️ Nation:</span>
+        <span id="flag" class="flag" aria-hidden="true"><i>?</i></span>
+        <span class="sel"><select id="selN" aria-label="Nation"></select><span class="dd" aria-hidden="true">▾</span></span>
+        <button class="mk" id="mkN" type="button" hidden>➕ Create</button>
+      </div>
+      <span id="units" class="units" title="Units in your army"></span>
+    </div>
+    <div id="settings" role="group" aria-label="Settings">
+      <button id="tPick" class="tog" type="button" aria-pressed="true" title="Health + ammo packs in Conquest"><span class="ic">📦</span><span class="lb">Packs</span><span class="st">ON</span></button>
+      <button id="tSnd" class="tog" type="button" aria-pressed="true" title="Menu sounds"><span class="ic">🔊</span><span class="lb">Sound</span><span class="st">ON</span></button>
+    </div>
+  </header>
+
+  <h1 id="title"><span class="t1">ARMY</span> <span class="t2">HQ</span></h1>
+
+  <nav id="menu" aria-label="Army games">
+    <a class="tile hero" href="#conquest" data-route="conquest" title="Conquest Commander: big battles with your army"><span class="ic">▶️</span><span class="lb">Conquest</span></a>
+    <a class="tile" href="#ships" data-route="ships" title="Ship Sandbox: break a ship, crewed by your troopers"><span class="ic">🚢</span><span class="lb">Ships</span></a>
+    <button class="tile drop" type="button" data-menu="ddC" aria-haspopup="menu" aria-expanded="false" title="Customize: nation, troopers, armor, ships, brains"><span class="ic">🪖</span><span class="lb">Customize <b class="car">▾</b></span></button>
+    <button class="tile drop" type="button" data-menu="ddV" aria-haspopup="menu" aria-expanded="false" title="Views: action, combat, team"><span class="ic">🎬</span><span class="lb">Views <b class="car">▾</b></span></button>
+    <a class="tile" href="../" data-key="all" title="Everything We Built: every game and tool"><span class="ic">🏠</span><span class="lb">Everything</span></a>
+  </nav>
+  <p id="keys" class="keys" aria-hidden="true">⬅️➡️⬆️⬇️ + ⏎</p>
+</div>
+
+<div id="ddC" class="ddm" role="menu" aria-label="Customize" hidden>
+  <a role="menuitem" href="#customize/nation" data-route="customize/nation" title="Nation: name, colors, flag"><span class="ic">🏳️</span><span class="lb">Nation</span></a>
+  <a role="menuitem" href="#customize/troopers" data-route="customize/troopers" title="Troopers: helmet, armor, weapons, gear"><span class="ic">🪖</span><span class="lb">Troopers</span></a>
+  <a role="menuitem" href="#customize/armor" data-route="customize/armor" title="Armor: tanks (hull, turret, gun)"><span class="ic">🚜</span><span class="lb">Armor</span></a>
+  <a role="menuitem" href="#customize/spaceship" data-route="customize/spaceship" class="soon" title="SpaceShip: ride into battle or space (coming)"><span class="ic">🛸</span><span class="lb">SpaceShip</span><i>🚧</i></a>
+  <a role="menuitem" href="#customize/battleship" data-route="customize/battleship" class="soon" title="BattleShip: win the space battle (coming)"><span class="ic">🚀</span><span class="lb">BattleShip</span><i>🚧</i></a>
+  <a role="menuitem" href="#customize/brains" data-route="customize/brains" title="Brains: IF → THEN for your troops"><span class="ic">🧠</span><span class="lb">Brains</span></a>
+</div>
+<div id="ddV" class="ddm one" role="menu" aria-label="Views" hidden>
+  <a role="menuitem" href="#view/action" data-route="view/action" title="Action view: walk, shoot, drive"><span class="ic">🎬</span><span class="lb">Action view</span></a>
+  <a role="menuitem" href="#view/combat" data-route="view/combat" title="Combat simulator: one trooper vs targets"><span class="ic">🎯</span><span class="lb">Combat sim</span></a>
+  <a role="menuitem" href="#view/team" data-route="view/team" title="Team simulator: your team vs waves"><span class="ic">👥</span><span class="lb">Team sim</span></a>
+</div>
+<div id="scrim" hidden></div>
+
+<div id="stage" hidden></div>
+<section id="soon" hidden aria-live="polite">
+  <div class="big" id="soonIc">🛸</div>
+  <h2 id="soonName">SpaceShip</h2>
+  <p class="cone">🚧 🔨 🚧</p>
+  <p class="sub">Coming soon</p>
+</section>
+<a id="home" href="#" hidden title="Army HQ menu" aria-label="Main menu"><b>🏠</b><span>Menu</span></a>
+<script type="module" src="menu.js?v=2"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-24 17:15 MST",
+ "generated": "2026-10-25 09:27 MST",
  "items": [
   {
    "id": "story",
@@ -265,6 +265,19 @@
    "gitAuthors": [
     "CampusDev"
    ]
+  },
+  {
+   "id": "army-hq",
+   "title": "Army HQ",
+   "type": "game",
+   "maker": "Lead: Dev",
+   "makerSource": "built in the Army HQ main menu task routed by Leader (Chumi brief: make a main menu); builder bot not named",
+   "section": "live",
+   "updated": "2026-10-25",
+   "url": "games/army/",
+   "extras": [],
+   "note": "One page for all army games: pick player + nation, play Conquest or Ships, customize (nation, troopers, armor, brains) and watch views, all inside Army HQ",
+   "thumb": "thumbs/army-hq.webp"
   },
   {
    "id": "conquest-commander",
