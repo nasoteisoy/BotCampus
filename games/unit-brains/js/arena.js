@@ -52,7 +52,7 @@
       this.packs = PACKS.map((p) => ({ ...p, cd: 0 }));
       this.crates = CRATES.map((p) => ({ ...p }));
       this.minHold = typeof opts.minHold === 'number' ? opts.minHold : B.MIN_HOLD;
-      this.brains = { 1: opts.blueBrain || B.presetBrain('rusher'), 2: opts.redBrain || B.presetBrain('rusher') };
+      this.brains = { 1: opts.blueBrain || B.newBrain(), 2: opts.redBrain || B.enemyBrain() };
       this.squads = { 1: opts.blueSquad || B.defaultSquad(), 2: opts.redSquad || B.defaultSquad() };
       this.goal = { 1: null, 2: null }; this.goalT = 0;
       this.units = [];

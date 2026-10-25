@@ -1,7 +1,7 @@
 // Ship Sandbox service worker: network-first (no-cache), offline fallback to cache.
-const CACHE = 'ship-sandbox-v3c';
+const CACHE = 'ship-sandbox-v3d';
 const PREFIX = 'ship-sandbox-';
-const CORE = ['./', 'index.html', 'css/style.css?v=3c', 'js/main.js?v=3c', 'js/config.js?v=3c', 'js/icons.js?v=3c', 'js/particles.js?v=3c', 'js/army.js?v=3c',
+const CORE = ['./', 'index.html', 'css/style.css?v=3d', 'js/main.js?v=3d', 'js/config.js?v=3c', 'js/icons.js?v=3c', 'js/particles.js?v=3c', 'js/army.js?v=3d',
   'vendor/three.module.min.js', 'vendor/addons/controls/OrbitControls.js',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', (e) => {

@@ -22,7 +22,7 @@ export function saveCampaign(c, storage = globalThis.localStorage) { try { stora
 export function battleReward(won, postsHeld, ticketsLeft) {
   const lines = won
     ? [{ icon: '🏆', label: 'win', n: 1, each: 1000 }, { icon: '🚩', label: 'posts', n: postsHeld, each: 50 }, { icon: '🎟️', label: 'tickets', n: ticketsLeft, each: 2 }]
-    : [{ icon: '🎖️', label: 'fought', n: 1, each: 400 }, { icon: '🚩', label: 'posts', n: postsHeld, each: 50 }];
+    : [{ icon: '⚔️', label: 'fought', n: 1, each: 400 }, { icon: '🚩', label: 'posts', n: postsHeld, each: 50 }];
   lines.forEach((l) => (l.total = l.n * l.each));
   return { lines, total: lines.reduce((a, l) => a + l.total, 0) };
 }

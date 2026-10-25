@@ -130,7 +130,7 @@ svg { display: block; }
 .look .nm small { display: block; font-size: 11px; font-weight: 700; color: #ffe08a; margin-top: 1px; }
 .look .nm small i { font-style: normal; color: #8fe3ff; margin-left: 6px; }
 
-/* ---------- v4: roster strip, award tiles, stats ---------- */
+/* ---------- v4: roster strip ---------- */
 #cHp { color: #ff9a9a; } #cSpd { color: #a8ffb0; }
 #roster { display: flex; gap: 4px; padding: 6px 5px 0; flex: none; }
 #roster.hidden { display: none; }
@@ -139,19 +139,6 @@ svg { display: block; }
 #roster button .ri { font-size: 19px; line-height: 1; }
 #roster button small { font-size: 9.5px; font-weight: 800; color: #ffe08a; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #roster button.on { opacity: 1; border-color: #6ff3ff; box-shadow: 0 0 0 1px #6ff3ff inset; background: rgba(40,90,110,.5); }
-.tiles.award button .lock { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font-size: 20px; display: none; pointer-events: none; }
-.tiles.award button .medal { position: absolute; left: 2px; top: 2px; font-style: normal; font-size: 9px; font-weight: 800; color: #ffd65a; background: rgba(0,0,0,.55); border-radius: 5px; padding: 0 3px; line-height: 13px; pointer-events: none; }
-.tiles.award button.locked canvas { opacity: .35; filter: grayscale(.8); }
-.tiles.award button.locked .lock { display: block; }
-.tiles.award button.locked .cb { background: #8a8f98; color: #1d2025; }
-.tiles.award button i { color: #ffd65a; }
-.statprev { display: grid; gap: 4px; margin: 8px 0 2px; }
-.statprev .sp { display: grid; grid-template-columns: 22px 1fr 34px; align-items: center; gap: 6px; font-size: 13px; }
-.statprev .sp i { display: block; height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
-.statprev .sp u { display: block; height: 100%; border-radius: 4px; transition: width .25s; }
-.statprev .hp u { background: #ff7a7a; } .statprev .spd u { background: #7dff8a; }
-.statprev .sp b { text-align: right; font-variant-numeric: tabular-nums; }
-#debugAward { margin-top: 8px; } #debugAward.on { border-color: #ffd65a; color: #ffd65a; }
 @media (min-width: 700px) and (max-height: 520px) {
   #roster button { height: 38px; } #roster button .ri { font-size: 16px; }
 }
@@ -230,3 +217,78 @@ svg { display: block; }
 .tiles.traits button { height: 52px; }
 .look .nm small.pl { color: #cfd8e1; }
 @media (min-width: 700px) and (max-height: 520px) { .tiles.stat button { min-height: 92px; } #whobar .nb { width: 36px; height: 36px; } #who { height: 36px; } }
+
+/* ---------- v6: one Back (top-left), one yellow ✅ Done (bottom-right), labels everywhere, ≥48px taps, ≥11px text ---------- */
+#stats { display: none; left: 8px; top: auto; bottom: 64px; } body.dev #stats { display: flex; } /* dev numbers: ?dev=1 only */
+.navback { position: absolute; left: calc(8px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top)); z-index: 4; width: 52px; height: 52px; border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-decoration: none; color: #fff;
+  background: rgba(16,20,26,.86); border: 1px solid rgba(255,255,255,.22); font-size: 20px; line-height: 1; }
+.navback small { font-size: 11px; font-weight: 800; }
+#whobar #backBtn { display: none !important; }
+#costchip { left: 68px; top: 8px; pointer-events: auto; cursor: pointer; display: grid; grid-template-columns: repeat(3, auto); gap: 3px 6px; padding: 5px 7px; min-height: 52px; align-items: stretch; max-width: calc(100% - 190px); }
+#costchip .pill { position: relative; display: flex; align-items: center; gap: 3px; min-width: 0; padding-bottom: 4px; }
+#costchip .pi { font-size: 14px; flex: none; }
+#costchip .pt { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+#costchip .pt small { font-size: 11px; font-weight: 700; color: #b8c4d0; }
+#costchip .pt b { margin: 0; font-size: 13px; color: #fff; font-variant-numeric: tabular-nums; }
+#costchip .pill[data-k=cost] b { color: #ffe08a; } #costchip .pill[data-k=power] b { color: #8fe3ff; } #costchip .pill[data-k=hp] b { color: #ff9a9a; } #costchip .pill[data-k=speed] b { color: #a8ffb0; }
+#costchip .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; }
+#costchip .bar u { display: block; height: 100%; background: currentColor; color: #8fe3ff; transition: width .25s; }
+#costchip .pill[data-k=cost] .bar u { color: #ffd65a; } #costchip .pill[data-k=hp] .bar u { color: #ff7a7a; } #costchip .pill[data-k=speed] .bar u { color: #7dff8a; } #costchip .pill[data-k=dmg] .bar u { color: #ffae5a; }
+#costchip .dl { position: absolute; right: -2px; top: -9px; font-style: normal; font-size: 11px; font-weight: 900; padding: 0 3px; border-radius: 5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+#costchip .dl.on { opacity: 1; } #costchip .dl.good { background: #1f7a3a; color: #d8ffe0; } #costchip .dl.bad { background: #8a2a20; color: #ffe0da; }
+#costchip .pill.cls { grid-column: 1 / -1; font-size: 12px; font-weight: 800; color: #ffe08a; padding: 0; }
+#costchip.sq .pill:not([data-k=cost]):not([data-k=power]) { display: none; }
+#toast { top: 70px; }
+#taplabel { white-space: pre-line; max-width: min(360px, calc(100vw - 8px)); line-height: 1.35; }
+#donebar { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(255,255,255,.1); background: rgba(10,13,18,.98); }
+#donebar .autos { flex: 1; min-width: 0; font-size: 11px; color: #8796a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#donebar .saved { font-size: 13px; font-weight: 900; color: #8fe39a; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+#donebar .saved.on { opacity: 1; }
+.done { min-width: 120px; height: 52px; border-radius: 14px; border: 0; background: #ffd23f; color: #241a00; font-size: 18px; font-weight: 900; box-shadow: 0 3px 0 #b38b00; padding: 0 18px; }
+.done:active { transform: translateY(2px); box-shadow: 0 1px 0 #b38b00; }
+#panel { padding-bottom: 0; }
+/* labels on every tab */
+#tabs button { height: 52px; } #tabs button .tl { display: block; font-size: 11px; } #tabs button .ti { font-size: 19px; } #tabs button.on { flex-grow: 1.2; }
+#sechead { min-height: 34px; } #sechead .crumb { flex: none; height: 30px; display: flex; align-items: center; padding: 0 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); font-size: 12px; font-weight: 800; color: #e8f6ff; max-width: 34%; overflow: hidden; }
+#sechead .crumb span, #sechead .crumb em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sechead .crs { font-style: normal; color: #6f8090; flex: none; } #sechead .cre { font-style: normal; flex: none; }
+#sechead .slotchip { margin: 0; }
+/* final merge: on a narrow panel (landscape phone) the crumbs shrink with … so the tab name never gets cut off */
+#sechead .crumb { flex: 0 1 auto; min-width: 40px; } #sechead .crumb em { min-width: 0; }
+/* tap targets ≥ 48px, text ≥ 11px */
+#unitbar button { width: 50px; height: 48px; }
+#viewbar { left: 8px; transform: none; } #viewbar button { width: 48px; height: 48px; }
+#squadbar { top: 66px; } #squadbar button { min-height: 48px; }
+#whobar .nb { width: 48px; height: 48px; } #who { height: 48px; }
+#roster button { height: 52px; position: relative; } #roster button small { font-size: 11px; }
+#roster button canvas.rt { position: absolute; inset: 2px 2px 13px; width: calc(100% - 4px); height: calc(100% - 15px); object-fit: contain; opacity: .9; pointer-events: none; }
+#roster button canvas.rt + .ri { position: absolute; left: 2px; top: 1px; font-size: 12px; }
+#roster button small { position: relative; margin-top: auto; }
+.sw { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); } .sw button, .sw label { width: 48px; height: 48px; }
+.btn { height: 48px; min-width: 48px; } .look .ib, #sheet .ib { width: 48px; height: 48px; } .look input, .saverow input, .coderow input { height: 48px; }
+#demomenu button { height: 48px; } .acts .btn { min-height: 48px; } .tiles.small button, .tiles.icons button { height: 48px; } .tiles.icons button i { font-size: 11px; }
+.tiles button i { font-size: 11px; } .tiles.stat button em.gl { font-size: 11px; } .lab small { font-size: 11.5px; }
+.tiles button .cb { font-size: 11px; line-height: 16px; padding: 0 4px; }
+.tiles button .cb.up { background: #ffd65a; color: #3a2a00; } .tiles button .cb.down { background: #6fe08a; color: #08310f; } .tiles button .cb.same { background: rgba(255,255,255,.18); color: #e8edf2; }
+.tiles button .cb.cur { background: #6ff3ff; color: #062a33; }
+/* first-run coach */
+.coach { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 6; width: min(320px, calc(100% - 24px)); padding: 10px 12px; border-radius: 14px;
+  background: rgba(14,32,58,.96); border: 2px solid #6ff3ff; box-shadow: 0 8px 30px rgba(0,0,0,.5); font-size: 13px; }
+.coach b { font-size: 15px; } .coach ol { margin: 6px 0 8px; padding-left: 20px; line-height: 1.4; } .coach .btn { width: 100%; }
+@media (max-width: 699px) {
+  #panel { transition: height .2s; } #panel.tall { height: 65%; }
+  #costchip { grid-template-columns: repeat(3, minmax(0, auto)); }
+}
+@media (min-width: 700px) and (max-height: 520px) {
+  #tabs button { height: 48px; } #roster button { height: 48px; } #whobar .nb { width: 48px; height: 48px; } #who { height: 48px; }
+  .tiles.stat button { min-height: 92px; }
+}
+@media (max-width: 699px) {
+  #panel { height: 56%; }
+  #donebar .autos { display: none; }
+  .coach { bottom: 64px; top: auto; padding: 7px 10px; font-size: 12px; } .coach b { font-size: 13px; } .coach ol { margin: 4px 0 6px; line-height: 1.3; } .coach .btn { height: 44px; min-height: 44px; }
+  #costchip .pill.cls { display: none; }
+}
+.coach { pointer-events: none; } .coach .btn { pointer-events: auto; } /* the hint never blocks a control under it */
+@media (max-width: 380px) { #viewbar { gap: 2px; padding: 3px; left: 4px; } #viewbar button { width: 44px; height: 48px; } #viewbar button[data-view="back"], #squadBtn { margin-right: 3px; } } /* 7 buttons fit a 360 px phone */

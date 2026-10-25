@@ -2,19 +2,23 @@
 // Every number that decides a fight comes from the ONE shared stats file (games/shared/army/stats.js, Conquest v2.3):
 // HP, speed, weapon damage / range / fire rate / splash, aim (acc), cover + crouch + moving hit factors, trait behaviour (TRAIT_FX), mines.
 // Arena distances are Conquest metres × SCALE so long-range weapons fit on a phone screen; speeds use the same scale.
-// Magazines, reload and pickups come from stats.js MAGS (shared with Conquest's pickups flag). Demo-only (🧪): tank guns, dummy aim.
+// Magazines, reload and pickups come from stats.js MAGS (shared with Conquest's pickups flag). Gear (sidearm / explosive / gadget):
+// arena-gear.js, same rules as Conquest gear.js. Taken out: flinch, knockback, onto its back, weapon drops, ~3 s down, fade (OUT_T).
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=6';
-import * as T from './trooper.js?v=6';
-import { RigTemplate, Rig } from './demo-rig.js?v=7';
-import { FX } from './demo-fx.js?v=7';
-import { arenaPose, arenaTankPose, FIRE_PROFILES } from './demo-actions.js?v=7';
-import { S } from './army-data.js?v=7';
+import * as T from './trooper.js?v=7';
+import { RigTemplate, Rig } from './demo-rig.js?v=8';
+import { FX } from './demo-fx.js?v=8';
+import { arenaPose, arenaTankPose, FIRE_PROFILES, OUT_T, dropWeapon } from './demo-actions.js?v=8';
+import { S } from './army-data.js?v=8';
+import { ArenaGear } from './arena-gear.js?v=8';
 
 export const SCALE = 0.4;
 const M = S.MAGS;   // magazines / reload / packs (shared stats.js)
 export const DEMO = Object.freeze({ healthPack: M.healthPack, dummyAim: 0.6 });   // healthPack = alias of MAGS (combat.js toast)
 const B = S.BATTLE;
+const WICON = (i) => (S.ITEMS.trooper.weapon[i] || S.ITEMS.trooper.weapon[0]).i;
+export { OUT_T };
 export const ENEMY_NAT = Object.freeze({ p: '#9b2a22', s: '#23272e', suit: 0, sym: 3, sc: 0, vis: 1, glow: 1, name: 'Dummies', player: 'Training' });
 const TAU = Math.PI * 2;
 const angLerp = (a, b, k) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return a + d * k; };
@@ -45,7 +49,7 @@ export class Arena {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 160);
     const c = this.controls = new OrbitControls(this.camera, r.domElement);
     c.enableDamping = true; c.dampingFactor = 0.1; c.enablePan = false; c.minDistance = 4; c.maxDistance = 46; c.maxPolarAngle = Math.PI * 0.47;
-    this.fx = new FX(sc); this.wreckMat = mat(0x2a2c30, { flatShading: true });
+    this.fx = new FX(sc); this.gear = new ArenaGear(this, SCALE); this.wreckMat = mat(0x2a2c30, { flatShading: true });
     this.units = []; this.covers = []; this.pickups = []; this.mines = []; this.flags = []; this.labels = [];
     this.time = 0; this.speed = 1; this.paused = false; this.cam = 'orbit'; this.follow = null; this.listeners = {};
     this.buildGround();
@@ -84,7 +88,7 @@ export class Arena {
     const band = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.1, 0.52), new THREE.MeshBasicMaterial({ color: col })); band.position.y = 0.45; g.add(band);
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.6 })); ring.position.y = 0.02; g.add(ring);
     const p = { kind, pos: new THREE.Vector3(x, 0, z), mesh: g, box, band, active: true, t: 0, weapon: opt.weapon ?? null };
-    const icon = kind === 'health' ? '❤️' : kind === 'ammo' ? '📦' : (['🔫', '🚀', '🎯', '💥', '🌀', '⚡'][p.weapon] || '🔫');
+    const icon = kind === 'health' ? '❤️' : kind === 'ammo' ? '📦' : WICON(p.weapon ?? 0);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(icon, '#fff', 64), depthWrite: false })); sp.scale.set(0.7, 0.7, 1); sp.position.y = 1.05; g.add(sp); p.sprite = sp; p.icon = icon;
     this.scene.add(g); this.pickups.push(p); return p;
   }
@@ -115,12 +119,12 @@ export class Arena {
       hits: 0, shots: 0, downs: 0, taken: 0, dmgTaken: 0, dmgDealt: 0, mines: 0, healed: 0, mood: '🧍', entry: o.entry || null, state: 'idle',
     };
     this.setWeapon(u, u.wpn, true);
-    this.buildRig(u); this.units.push(u); return u;
+    this.buildRig(u); this.units.push(u); this.gear.init(u); return u;
   }
   buildRig(u) {
     if (u.rig) { this.scene.remove(u.rig.root); u.tpl.dispose(); }
     if (!u.look) { u.look = new T.TeamLook(); u.look.paint({ ...T.NATION_DEFAULT, ...u.nat, skin: u.kind === 'trooper' ? u.st.skin ?? 1 : 1, ...u.st }); }
-    u.tpl = new RigTemplate(u.kind, u.st); u.rig = new Rig(u.tpl, u.look); u.rig.wreckMat = this.wreckMat; this.scene.add(u.rig.root);
+    u.pistol = null; u.tpl = new RigTemplate(u.kind, u.st); u.rig = new Rig(u.tpl, u.look); u.rig.wreckMat = this.wreckMat; this.scene.add(u.rig.root);
   }
   setWeapon(u, w, init) {
     if (u.kind === 'tank') { u.mag = M.tankMag; } else { u.st.weapon = w; u.wpn = w; u.mag = M.mag[w] || M.magDefault; }
@@ -167,6 +171,8 @@ export class Arena {
       if (td > R * 0.8) set(tgt.pos, 'advance'); else set(null, 'fight'); return;
     }
     if (u.kind === 'tank') { if (td > R * 0.75) set(tgt.pos, 'advance'); else set(null, 'fight'); return; }
+    // 🎒 explosive job first: carry a ⏰ time bomb to the enemy post / close in to place a 🧨 detpack (arena-gear.js)
+    { const gw = this.gear.want(u, tgt); if (gw) return set(gw.pos, gw.why); }
     // needs first: health, ammo, weapon packs
     if (this.opts.pickups !== false) {
       const hp = u.hp / u.maxHp, out = u.ammo + u.reserve === 0;
@@ -198,7 +204,7 @@ export class Arena {
   // ---------- shooting: Conquest sim.fire hit chance + damage ----------
   fireAt(u, tgt) {
     const w = u.stats, d = u.pos.distanceTo(tgt.pos) / SCALE;
-    let chance = w.acc * u.aimMul * Math.max(0.05, 1 - B.rangeFalloff * d / w.range);
+    let chance = w.acc * u.aimMul * Math.max(0.05, 1 - B.rangeFalloff * d / w.range) + this.gear.spotBonus(u);
     const tCover = this.inCover(tgt);
     if (tCover) chance *= B.hitInCover; else if (tgt.crouch > 0.5) chance *= B.hitCrouch;
     if (tgt.move > 0.3) chance *= B.hitMoving;
@@ -239,11 +245,13 @@ export class Arena {
   }
   damage(x, amount, by, p) {
     if (!this.alive(x)) return;
+    amount *= this.gear.takenMul(x);
     x.hp -= amount; x.taken++; x.dmgTaken += amount; x.hit = 0; x.lastHit = this.time; if (by) { by.hits++; by.dmgDealt += amount; }
     this.fx.hitPuff(p || x.pos.clone().setY(1.2), amount > 30 ? 2 : 1);
     this.label((p || x.pos).clone().setY(2.3 + this.rand() * 0.3), '−' + Math.round(amount), x.enemy ? '#ffd27a' : '#ff8a7a');
     if (x.hp <= 0) {
-      x.hp = 0; x.down = 0; x.goal = null; x.cover = null; if (by) by.downs++;
+      x.hp = 0; x.down = 0; x.goal = null; x.cover = null; x.reload = null; x.side = null; x.dropped = false; if (by) by.downs++;
+      if (x.kind === 'trooper') { this.gear.holster(x); if (by && by.pos) x.yaw = Math.atan2(by.pos.x - x.pos.x, by.pos.z - x.pos.z); }   // faces the shooter, knocked back away from it
       this.fx.smoke(x.pos.clone().setY(0.8), 8, 1.1, 0x8d939a, 0.7, 0.5, 2.4);
       if (x.kind === 'tank') { this.fx.explosion(x.rig.world('hullTop'), 1.5); this.fx.emit(() => this.fx.smoke(x.rig.world('deck'), 1, 0.9, 0x3a3d42, 1.2, 0.3, 2.5), 6, 6, 'wreck' + x.id); }
       this.emit('down', x, by);
@@ -253,7 +261,8 @@ export class Arena {
   respawn(u, x, z) {
     u.hp = u.maxHp = u.stats.hp; u.down = null; u.hit = null; u.reload = null; u.win = null; u.cover = null; u.goal = null; u.mines = 0; u.buff = null;
     if (u.baseWpn != null && u.wpn !== u.baseWpn) this.setWeapon(u, u.baseWpn);
-    u.ammo = u.mag; u.reserve = u.mag * M.reserveMags; u.pos.set(x ?? u.home.x, 0, z ?? u.home.z); u.rig.root.visible = true;
+    u.ammo = u.mag; u.reserve = u.mag * M.reserveMags; u.pos.set(x ?? u.home.x, 0, z ?? u.home.z); u.rig.root.visible = true; u.side = null; u.dropped = false; u.plantT = null; u.plantGear = null;
+    if (u.kind === 'trooper') { u.yaw = u.team === 'A' ? 0 : Math.PI; this.gear.init(u); }
     if (u.kind === 'tank') { u.rig.setWreck(false, this.wreckMat); this.fx.stop('wreck' + u.id); }
     this.fx.ring(u.pos.clone(), 0x6ff3ff, 1.4, 0.6); this.emit('respawn', u);
   }
@@ -262,10 +271,12 @@ export class Arena {
     this.time += dt;
     for (const u of this.units) {
       u.t += dt; for (const k of ['shot', 'hit', 'down']) if (u[k] != null) u[k] += dt; if (u.win != null) u.win += dt;
-      if (u.down != null) { u.move = 0; if (u.kind === 'trooper' && u.down > 1.6) u.rig.root.visible = u.down < 2.2 ? Math.floor(u.down * 12) % 2 === 0 : false; continue; }
+      if (u.down != null) { u.move = 0;
+        if (u.kind === 'trooper') { if (!u.dropped && u.down > OUT_T.drop) { u.dropped = true; dropWeapon({ rig: u.rig, fx: this.fx }); } if (u.down > OUT_T.fade) u.rig.root.visible = false; }
+        continue; }
       if (u.reload != null) { u.reload += dt / M.reload; if (u.reload >= 1) { const n = Math.min(u.mag, u.reserve); u.ammo = n; u.reserve -= n; u.reload = null; } }
       if (u.plantT != null) { u.plantT += dt; u.state = 'plant'; u.move = Math.max(0, u.move - dt * 6); u.crouch += (1 - u.crouch) * Math.min(1, dt * 8);
-        if (u.plantT > B.mine.plant) { u.plantT = null; u.mines++; this.addMine(u); } this.pose(u, dt); continue; }
+        if (u.plantT > B.mine.plant) { u.plantT = null; u.mines++; this.addMine(u, u.plantGear); u.plantGear = null; } this.pose(u, dt); continue; }
       u.think -= dt; if (u.think <= 0) { u.think = 0.35 + this.rand() * 0.15; this.thinkUnit(u); }
       const tgt = u.target && this.alive(u.target) ? u.target : null, R = this.rangeOf(u);
       const tDist = tgt ? tgt.pos.distanceTo(u.pos) : Infinity, inRange = tDist <= R;
@@ -278,6 +289,7 @@ export class Arena {
           for (const cv of this.covers) { const dx = u.pos.x - cv.pos.x, dz = u.pos.z - cv.pos.z, px = Math.max(0, Math.abs(dx) - cv.hx), pz = Math.max(0, Math.abs(dz) - cv.hz), dd = Math.hypot(px, pz);
             if (dd < 0.7) { const push = (0.7 - dd) / 0.7 * 2.2; steer.x += Math.sign(dx) * (px > 0 || Math.abs(dx) / cv.hx > Math.abs(dz) / cv.hz ? 1 : 0) * push; steer.z += Math.sign(dz) * (pz > 0 || Math.abs(dz) / cv.hz >= Math.abs(dx) / cv.hx ? 1 : 0) * push; } }
           for (const f of this.units) if (f !== u && this.alive(f)) { const v = u.pos.clone().sub(f.pos); v.y = 0; const l = v.length(); if (l < 0.75 && l > 1e-3) steer.addScaledVector(v.normalize(), (0.75 - l) * 2); }
+          { const n = steer.length(); if (n < 1e-3 || steer.dot(dir) / n < 0.25) { steer.x += dir.z * 0.9; steer.z -= dir.x * 0.9; } }   // pushed straight back by a wall: slide along it
           steer.normalize();
           const fight = tgt && inRange && (u.tfx ? this.rand() < u.tfx.fight * dt * 8 || u.aim > 0.5 : u.enemy);
           u.run = u.kind === 'trooper' && d > 3 && !(tgt && inRange) && u.goalWhy !== 'nest';
@@ -309,12 +321,19 @@ export class Arena {
       const canShoot = ready && u.cd <= 0 && (u.kind === 'tank' || u.aim > 0.7) && (!inCov || u.crouch < 0.35) && (!moving || u.enemy || (u.tfx && this.rand() < u.tfx.fight + 0.15) || u.kind === 'tank');
       if (canShoot) { const sp = B.rofSpread; u.cd = u.stats.rof * (sp[0] + this.rand() * (sp[1] - sp[0])); this.fireAt(u, tgt); }
       else if (u.cd <= 0 && ready && moving) u.cd = 0.2;
+      // 🔸 sidearm while the main weapon reloads / is empty · 🎒 explosive + gadget (arena-gear.js)
+      if (u.gear) {
+        const sideOn = tgt && (u.reload != null || u.ammo + u.reserve === 0) && this.gear.sidearm(u, tgt, dt);
+        if (sideOn) u.side = (u.side ?? 0) + dt; else if (u.side != null) { u.side = null; this.gear.holster(u); }
+        this.gear.step(u, dt, tgt, inRange);
+      }
       if (!this.foes(u).length && !u.enemy && u.win == null && this.units.some((x) => x.enemy)) u.win = 0;
       if (this.foes(u).length) u.win = null;
       u.state = u.down != null ? 'down' : u.reload != null ? 'reload' : inCov ? 'cover' : nest ? 'nest' : moving ? (u.run ? 'run' : 'walk') : u.aim > 0.5 ? 'aim' : 'idle';
       this.pose(u, dt);
     }
     for (const u of this.units) if (u.down != null) this.pose(u, dt);
+    this.gear.update(dt);
     // pickups respawn + bob
     for (const p of this.pickups) {
       p.t += dt; if (!p.active && p.t > M.respawn) { p.active = true; p.mesh.visible = true; this.fx.ring(p.pos.clone(), 0xffffff, 0.8, 0.4); }
@@ -328,7 +347,7 @@ export class Arena {
       const p = arenaTankPose({ t: u.t, turret: u.turret, move: u.move, shot: u.shot, hit: u.hit, wreck: u.down != null });
       p.x = u.pos.x; p.z = u.pos.z; p.yaw = u.hullYaw; u.rig.apply(p);
     } else {
-      const p = arenaPose({ t: u.t, aim: u.aim, crouch: u.crouch, move: u.move, dist: u.dist, run: u.run, shot: u.shot, fire: u.fire, hit: u.hit, reload: u.reload, down: u.down, win: u.win });
+      const p = arenaPose({ t: u.t, aim: u.aim, crouch: u.crouch, move: u.move, dist: u.dist, run: u.run, shot: u.shot, fire: u.fire, hit: u.hit, reload: u.side != null ? null : u.reload, side: u.side, down: u.down, win: u.win });
       p.x = u.pos.x; p.z = u.pos.z; p.yaw = u.yaw; u.rig.apply(finish(p));
     }
   }
@@ -337,25 +356,26 @@ export class Arena {
     if (p.kind === 'health') { this.heal(u, M.healthPack); }
     else if (p.kind === 'ammo') { u.reserve = u.mag * M.reserveMags; if (u.ammo === 0) u.reload = 0; this.label(u.pos.clone().setY(2.3), '📦 +' + u.reserve, '#ffe27a'); }
     else if (p.kind === 'weapon' && p.weapon != null) { if (u.baseWpn == null) u.baseWpn = u.wpn; this.setWeapon(u, p.weapon); u.buff = p.weapon; this.label(u.pos.clone().setY(2.3), p.icon + ' ' + S.ITEMS.trooper.weapon[p.weapon].n, '#9fd6ff', 1.4);
-      p.weapon = (p.weapon + 1 + Math.floor(this.rand() * 5)) % 6; p.icon = ['🔫', '🚀', '🎯', '💥', '🌀', '⚡'][p.weapon]; p.sprite.material.map = emojiTex(p.icon, '#fff', 64); }
+      p.weapon = (p.weapon + 1 + Math.floor(this.rand() * 5)) % 6; p.icon = WICON(p.weapon); p.sprite.material.map = emojiTex(p.icon, '#fff', 64); }
     this.emit('pickup', u, p);
   }
-  addMine(u) {
+  addMine(u, ex) {   // ex: the ⚠️ mines explosive (its damage + blast), else the trait mine (B.mine)
     const g = new THREE.Group(); g.position.copy(u.pos).addScaledVector(new THREE.Vector3(Math.sin(u.yaw), 0, Math.cos(u.yaw)), 0.6);
     g.add(shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.07, 10), mat(0x4a5340))).translateY(0.035));
     const light = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 4), new THREE.MeshBasicMaterial({ color: 0x55ff77 })); light.position.y = 0.08; g.add(light);
-    this.scene.add(g); this.mines.push({ pos: g.position.clone(), team: u.team, owner: u, mesh: g, light, t0: this.time, armed: false });
-    this.label(g.position.clone().setY(1.2), '💣', '#fff', 0.8); this.emit('mine', u);
+    this.scene.add(g); this.mines.push({ pos: g.position.clone(), team: u.team, owner: u, mesh: g, light, t0: this.time, armed: false, dmg: ex ? ex.dmg : B.mine.dmg, splash: ex ? ex.splash : B.mine.splash });
+    this.label(g.position.clone().setY(1.2), ex ? '⚠️' : '💣', '#fff', 0.8); this.emit('mine', u);
   }
   boom(m) {
     m.done = true; this.scene.remove(m.mesh); this.fx.explosion(m.pos.clone().setY(0.2), 1.2);
-    for (const x of this.units) if (x.team !== m.team && this.alive(x)) { const d = x.pos.distanceTo(m.pos), r = B.mine.splash * SCALE; if (d < r) this.damage(x, B.mine.dmg * (1 - B.splashFalloff * d / r), m.owner, x.pos.clone().setY(0.8)); }
+    for (const x of this.units) if (x.team !== m.team && this.alive(x)) { const d = x.pos.distanceTo(m.pos), r = m.splash * SCALE; if (d < r) this.damage(x, m.dmg * (1 - B.splashFalloff * d / r), m.owner, x.pos.clone().setY(0.8)); }
   }
   retake(u, dt) {
     const f = this.flags.find((x) => x.team !== u.team); if (!f || f.owner === u.nat) return;
     f.hold += dt; if (f.hold > 2) { f.hold = 0; this.paintFlag(f, u.nat); this.fx.ring(f.pos.clone(), 0x7dffa0, 2, 0.6); this.label(f.pos.clone().setY(3), '🚩 taken!', '#7dffa0', 1.4); this.emit('flag', u, f); }
   }
   reset() {
+    this.gear.clear();
     for (const u of this.units) { this.scene.remove(u.rig.root); u.tpl.dispose(); u.look.tex.dispose(); u.look.team.dispose(); u.look.visor.dispose(); }
     for (const m of this.mines) this.scene.remove(m.mesh);
     for (const l of this.labels) { this.scene.remove(l.sp); l.sp.material.dispose(); }
@@ -388,4 +408,4 @@ export class Arena {
   // test + tooling: run the sim fast without rendering
   fast(seconds, h = 1 / 30) { for (let t = 0; t < seconds; t += h) { this.step(h); this.emit('tick', h); this.fx.update(h, this.camera); } }
 }
-export function stateOf(u) { return { id: u.id, name: u.name, team: u.team, kind: u.kind, hp: Math.round(u.hp), maxHp: Math.round(u.maxHp), speed: +u.stats.speed.toFixed(2), dmg: +u.stats.dmg.toFixed(1), range: u.stats.range, state: u.state, why: u.goalWhy, trait: u.trait, wpn: u.wpn, ammo: u.ammo, reserve: u.reserve, hits: u.hits, shots: u.shots, downs: u.downs, taken: u.taken, dmgTaken: Math.round(u.dmgTaken), healed: Math.round(u.healed), mines: u.mines, x: +u.pos.x.toFixed(2), z: +u.pos.z.toFixed(2), down: u.down != null }; }
+export function stateOf(u) { return { id: u.id, name: u.name, team: u.team, kind: u.kind, hp: Math.round(u.hp), maxHp: Math.round(u.maxHp), speed: +u.stats.speed.toFixed(2), dmg: +u.stats.dmg.toFixed(1), range: u.stats.range, state: u.state, why: u.goalWhy, trait: u.trait, wpn: u.wpn, ammo: u.ammo, reserve: u.reserve, hits: u.hits, shots: u.shots, downs: u.downs, taken: u.taken, dmgTaken: Math.round(u.dmgTaken), healed: Math.round(u.healed), mines: u.mines, x: +u.pos.x.toFixed(2), z: +u.pos.z.toFixed(2), down: u.down != null, side: u.side != null, gear: u.gear ? { side: u.gear.side.id, expl: u.gear.ex.id, gadget: u.gear.gd.id, explLeft: u.gear.exLeft, gadgetUsed: u.gear.gdUsed } : null }; }

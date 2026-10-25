@@ -182,8 +182,8 @@ body.touch .legend .pc { display: none; } body:not(.touch) .legend .tc { display
 .units { display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; }
 .urow { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; border-radius: 12px; }
 .urow.c0 { background: #6cc8ff26; } .urow.c1 { background: #ff7a6a26; }
-.ucell { display: flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #0003; }
-.ucell .uc { font-size: 20px; font-weight: 400; } .ucell .ut { font-size: 22px; font-style: normal; } .ucell em { font-style: normal; font-size: 13px; font-weight: 700; opacity: .85; }
+.ucell, .ucell-tank { display: flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #0003; }
+.ucell .uc, .ucell-tank .uc { font-size: 20px; font-weight: 400; } .ucell .ut { font-size: 22px; font-style: normal; } .ucell em, .ucell-tank em { font-style: normal; font-size: 13px; font-weight: 700; opacity: .85; }
 @media (max-height: 430px) { .trait b { font-size: 20px; } .topt { min-height: 50px; } .topt b { font-size: 24px; } .ucell .uc, .ucell .ut { font-size: 18px; } }
 
 /* ---------- v2.2: map picker, minimap, 5-post top bar ---------- */
@@ -227,3 +227,16 @@ body.touch #minimap { width: 160px; height: 96px; }
 .pwho { margin: 0 0 6px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 15px; flex-wrap: wrap; }
 .pwho canvas { width: 24px; height: 24px; border-radius: 5px; }
 @media (max-height: 430px) { .armyhead { margin: 4px 0 2px; padding: 3px 6px; } .ahflag canvas { width: 30px; height: 30px; } #pause .pwho { margin: 0 0 2px; font-size: 13px; } }
+
+/* ---------- v2.5: labeled HUD buttons, toast wraps, labeled perks on pause ---------- */
+.rb.lab { width: 56px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 21px; line-height: 1; }
+.rb.lab small { font-size: 11px; font-weight: 700; color: #f4ead6; letter-spacing: .2px; }
+#cpChip .lbl { font-size: 12px; font-weight: 700; color: #ffd65a; margin-left: -4px; }
+#cpChip i { font-size: 13px; opacity: .95; white-space: nowrap; }
+#toast { white-space: normal; max-width: calc(100vw - 24px); text-align: center; font-size: 17px; }
+.perkline small { font-size: 12px; opacity: .85; }
+.pside .none { font-style: normal; font-size: 14px; }
+.big2 { min-height: 48px; padding: 0 12px; font-size: 16px; font-weight: 700; }
+#play { font-size: 24px; }
+@media (max-width: 420px) { #cpChip { padding: 0 8px; gap: 4px; font-size: 18px; } #cpChip b { min-width: 36px; } }
+#pause .big, #pause .big2 { min-height: 48px; }

@@ -1,18 +1,19 @@
 // 🪖 Army picker for the Unit Brains editor. Reads + writes the shared BotCampus army (localStorage 'botcampus:army')
 // ONLY through the shared schema (games/shared/army/schema.js → load / save / checkUnitBrain / cleanSquadBrain).
-//   pick a unit → its brain opens in the 🧠 editor → 💾 saves it to units[].brain (preset id string or cc.unitBrain)
-//   👥 squads: tap a squad to put the picked unit in it (tap again = out), ➕ = new squad, 💾 in the Squad tab saves
-//   the squad brain to squads[].squadBrain ({ id, name, playerId, unitIds[], squadBrain }).
+//   pick a unit → its brain opens in the 🧠 editor → every edit saves it to units[].brain (a cc.unitBrain; ✓ Saved)
+//   every write re-reads the save first (fresh()), then applies only this page's change: other tabs' edits are never wiped
+//   👥 squads stay in the save untouched (the Squad UI is hidden until Conquest runs squad plans).
+//   Old saves: a preset id string (old brain) loads as "no brain" (the trooper keeps its trait AI).
 // Old keys stay as a fallback / migration: 'conquest-commander:army-brains' (old per-look brains) is shown for a unit
 // that has no army brain yet (saving moves it into the army); 'conquest-commander:brains' (💾 Save tab) is unchanged.
 // Loaded as a module only over http(s) (index.html skips it on file: pages).
-import * as Army from '../../shared/army/schema.js?v=8';
+import * as Army from '../../shared/army/schema.js?v=9';
 
 const UB = window.__ub, B = UB.B, $ = (id) => document.getElementById(id);
 const OLD_ARMY = 'conquest-commander:army-brains';
 const st = { army: null, sel: null, old: new Map(), savedKey: '' };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const CLASS_ICON = { trooper: '🪖', heavy: '🚀', engineer: '🔧', sniper: '🎯', commander: '⭐', jet: '🛩️' };
+const CLASS_ICON = { trooper: '🪖', heavy: '🚀', engineer: '🔧', sniper: '🔭', commander: '⭐', jet: '🛩️' };
 
 function readOld() {
   const m = new Map();
@@ -25,38 +26,36 @@ const unitById = (id) => st.army && st.army.units.find((u) => u.id === id);
 const squadOf = (id) => st.army.squads.find((q) => q.playerId === st.army.activePlayerId && q.unitIds.includes(id)) || null;
 const mySquads = () => st.army.squads.filter((q) => q.playerId === st.army.activePlayerId);
 const oldBrainOf = (u) => st.old.get(u.id) ?? (u.ext && st.old.get(u.ext.legacyLookId)) ?? null;
-const ANY_PRESET = Object.fromEntries(B.ALL_PRESETS.map((p) => [p.id, p]));
-const tier1Preset = (id) => !!(B.PRESET[id] && B.PRESET[id].tier === 1);
 
 function label(b) {
-  if (b == null) return { icon: '∅', text: 'Trait AI' };
-  if (typeof b === 'string') { const p = ANY_PRESET[b]; return { icon: p ? p.icon : '🧠', text: p ? p.name : b }; }
-  return { icon: b.icon || '🧠', text: b.name || 'Custom' };
+  if (b == null || typeof b === 'string') return { icon: '∅', text: 'No brain (battle trait)' };
+  return { icon: b.icon || '🧠', text: (b.name || 'My brain') + ' · ' + (b.rows || []).length + ' rows' };
 }
-// army brain → editor brain (tier 1 only: ⭐ presets / tier 2 rows open as the trait's tier-1 preset or Rusher)
+// army brain → editor brain. No brain (or an old preset id string) opens a new one-row brain; nothing is saved
+// until the player edits a row.
 function toEditor(u) {
-  const raw = u.brain != null ? u.brain : oldBrainOf(u), trait = Army.unitTrait(u);
-  if (typeof raw === 'string' && tier1Preset(raw)) return B.presetBrain(raw);
-  if (raw && typeof raw === 'object') { const v = B.validateUnitBrain(raw); if (v.ok && v.brain.tier === 1) return v.brain; }
-  return B.presetBrain(tier1Preset(trait) ? trait : 'rusher');
+  const raw = u.brain != null ? u.brain : oldBrainOf(u);
+  if (raw && typeof raw === 'object') { const v = B.validateUnitBrain(raw); if (v.ok) return v.brain; }
+  return B.newBrain(u.name + ' brain');
 }
-// editor brain → what goes in units[].brain: an untouched preset = its id string, else the cc.unitBrain object
+// editor brain → what goes in units[].brain (always a cc.unitBrain object)
 function fromEditor(b) {
-  const p = b.preset && B.PRESET[b.preset];
-  if (p && p.tier === 1 && JSON.stringify(p.rows.map((r) => [r.if, r.do, r.on !== false])) === JSON.stringify(b.rows.map((r) => [r.if, r.do, r.on !== false]))) return b.preset;
-  return { kind: 'cc.unitBrain', v: 1, name: (b.name || 'Custom').slice(0, 24), icon: b.icon || '🧠', preset: null, tier: 1, rows: b.rows.map((r) => ({ if: r.if, do: r.do, on: r.on !== false })) };
+  return { kind: 'cc.unitBrain', v: 1, name: (b.name || 'My brain').slice(0, 24), icon: b.icon || '🧠', rows: b.rows.map((r) => ({ if: r.if, do: r.do, on: r.on !== false })) };
 }
 function msg(ok, t) { const m = $('armyMsg'); m.className = 'msg ' + (ok ? 'ok' : 'bad'); m.textContent = (ok ? '✅ ' : '❌ ') + t; }
+// re-read the save right before every write, so an edit made in another tab / page since our last load is kept
+// (we may have missed its storage event, e.g. a frozen background tab); only this page's change is applied on top
+function fresh() { try { const a = Army.load(localStorage); if (a && a.players && a.players.length) st.army = a; } catch (e) { /* keep ours */ } }
 function persist(what) {
   const ok = Army.save(st.army, localStorage, 'unit-brains');
-  if (!ok) { msg(false, 'No storage'); return false; }
-  load(); msg(true, what); return true;
+  if (!ok) { msg(false, 'No storage'); UB.flashSaved(false, 'No storage'); return false; }
+  load(); msg(true, what); UB.flashSaved(true); return true;
 }
 
 function render() {
   if (!st.army) return;
   const list = units(), me = Army.activePlayer(st.army);
-  $('armyHead').innerHTML = list.length ? `🪖 ${esc(me.name)} <span class="muted">${list.length}</span>` : `🪖 No troopers yet · <a href="../trooper-custom/">Trooper Customizer</a>`;
+  $('armyHead').innerHTML = list.length ? `🪖 ${esc(me.name)}'s troopers <span class="muted">${list.length}</span>${st.sel ? '' : '<span class="firstrun">👆 Pick a trooper to give it a brain</span>'}` : `🪖 No troopers yet · <a href="../trooper-custom/">Make one in the Customizer</a>`;
   const el = $('armyUnits'); el.innerHTML = '';
   for (const u of list) {
     const lb = label(u.brain != null ? u.brain : oldBrainOf(u)), q = squadOf(u.id), old = u.brain == null && oldBrainOf(u) != null;
@@ -91,21 +90,24 @@ function pick(id) {
   st.sel = id; UB.setUnit(toEditor(u));
   st.savedKey = JSON.stringify(u.brain != null ? fromEditor(UB.unit()) : null);
   const q = squadOf(id); if (q && q.squadBrain) UB.setSquad(q.squadBrain);
-  render(); msg(true, `${u.name} → 🧠 Unit`);
+  render(); msg(true, `${u.name} → 🧠 Brain`); UB.showTab('unit');
   return u;
 }
 function saveUnit() {
+  fresh();
   const u = st.sel && unitById(st.sel); if (!u) { msg(false, 'Pick a unit'); return false; }
   const b = fromEditor(UB.unit()), chk = Army.checkUnitBrain(b);
   if (!chk.ok) { msg(false, chk.errors.slice(0, 2).join(' · ')); return false; }
   u.brain = chk.brain; st.savedKey = JSON.stringify(b);
-  return persist(`${u.name} 🧠 saved`);
+  return persist(`${u.name}: brain saved`);
 }
 function clearBrain() {
+  fresh();
   const u = st.sel && unitById(st.sel); if (!u) return false;
-  u.brain = null; st.savedKey = 'null'; return persist(`${u.name} ∅ trait AI`);
+  u.brain = null; st.savedKey = 'null'; UB.setUnit(B.newBrain(u.name + ' brain')); return persist(`${u.name}: no brain (uses its battle trait)`);
 }
 function saveSquad() {
+  fresh();
   const u = st.sel && unitById(st.sel); if (!u) { msg(false, 'Pick a unit'); return false; }
   const sb = Army.cleanSquadBrain(UB.squad()); if (!sb) { msg(false, 'Bad squad brain'); return false; }
   let q = squadOf(u.id);
@@ -114,6 +116,7 @@ function saveSquad() {
   return persist(`👥 ${q.name} saved`);
 }
 function toggleSquad(qid) {
+  fresh();
   const u = st.sel && unitById(st.sel); if (!u) { msg(false, 'Pick a unit'); return false; }
   const q = st.army.squads.find((s) => s.id === qid); if (!q) return false;
   if (q.unitIds.includes(u.id)) q.unitIds = q.unitIds.filter((x) => x !== u.id);
@@ -121,15 +124,16 @@ function toggleSquad(qid) {
   return persist(`👥 ${q.name} · ${q.unitIds.length}`);
 }
 function newSquad() {
+  fresh();
   const u = st.sel && unitById(st.sel); if (!u) return false;
   for (const s of mySquads()) s.unitIds = s.unitIds.filter((x) => x !== u.id);
   const q = { id: Army.newId('s'), name: 'Squad ' + (mySquads().length + 1), playerId: st.army.activePlayerId, unitIds: [u.id], squadBrain: Army.cleanSquadBrain(UB.squad()) };
   st.army.squads.push(q); return persist(`👥 ${q.name}`);
 }
 
-$('btnSaveUnit').onclick = saveUnit;
 $('btnClearBrain').onclick = clearBrain;
-$('btnSaveSquad').onclick = saveSquad;
+// every row edit saves onto the picked trooper (debounced in ui.js) → ✓ Saved
+UB.onEdit = () => { if (st.sel && unitById(st.sel)) saveUnit(); else { try { localStorage.setItem('conquest-commander:brains', UB.bundleText()); UB.flashSaved(true); } catch (e) { UB.flashSaved(false, 'No storage'); } } };
 window.addEventListener('storage', (e) => { if (e.key === Army.ARMY_KEY || e.key === OLD_ARMY) load(); });
 setInterval(bars, 400);
 load();

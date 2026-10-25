@@ -1,8 +1,11 @@
 // three.js view: terrain, rocks, walls, command posts, instanced armies (crouch in cover), tracers/rockets/booms/heal beams, mines, rally flag, RTS camera.
+// v2.5: 🚜 tanks (hull + aiming turret, dark tilted wreck), 💀 taken-out fall (flinch → knocked back onto the back → weapon drops →
+// ~3 s down → dither fade; nothing like a crawl), 🎒 gear in battle (turrets, recon droids, supply crates, rally rings, time bombs).
 // v2.2: the map scene lives in one group and is rebuilt by setMap() when the active map (map.js MAP) changes;
 // camera limits, far plane and fog follow MAP.view (the big map zooms out to see the whole valley).
 import * as THREE from 'three';
-import { TeamLook, buildMergedDef, TROOPER, drawSymbol, symbolColor } from './trooper.js';
+import { TeamLook, buildMergedDef, buildSplitDef, concat, TROOPER, drawSymbol, symbolColor } from './trooper.js';
+import { TANK, TANK_PIVOT } from './tank.js';
 import { MAP, heightAt } from './map.js';
 import { PICKUPS } from './pickups.js';
 import { syncPickups } from './pickups-view.js';     // ❤️/📦 packs + overhead icons (only while PICKUPS.on)
@@ -10,6 +13,20 @@ import { syncPickups } from './pickups-view.js';     // ❤️/📦 packs + over
 export const TEAM_COLOR = ['#3ab4ff', '#ff5a4a'];   // your side / enemy side (rings, tracers, HUD)
 const UNIT_SCALE = 1.8;
 const NEUTRAL = '#9aa1a8';
+const TANK_SCALE = 1.8;
+// 💀 taken out (s): flinch → fall onto the back with knockback → lie still → fade (the sim keeps the body 4.4 s)
+export const DOWN_T = Object.freeze({ flinch: 0.12, fall: 0.65, lie: 3.65, fade: 4.35, knock: 1.4 });
+// per-instance alpha via screen-door dither (instanced meshes can't blend per instance); attribute iAlpha (1 = solid)
+function fadeable(mat) {
+  if (mat.userData.fadeable) return mat; mat.userData.fadeable = true;
+  mat.onBeforeCompile = (sh) => {
+    // iPart (per instance) 0 = whole unit, 1 = body without its weapon, 2 = only the weapon (wpn = 1 on weapon vertices): hidden parts collapse to a point
+    sh.vertexShader = 'attribute float iAlpha;\nattribute float iPart;\nattribute float wpn;\nvarying float vIA;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vIA = iAlpha;\n  if ((iPart > 0.5 && iPart < 1.5 && wpn > 0.5) || (iPart > 1.5 && wpn < 0.5)) transformed = vec3(0.0);');
+    sh.fragmentShader = 'varying float vIA;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n  if (vIA < 0.999 && fract(dot(floor(gl_FragCoord.xy), vec2(0.7548776662, 0.56984029))) > vIA) discard;');
+  };
+  mat.customProgramCacheKey = () => 'cc-fade-2'; mat.needsUpdate = true;
+  return mat;
+}
 
 export function flagCanvas(nation, size = 64, letter = '') {
   const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
@@ -120,21 +137,43 @@ export class View {
     this.armies = teams.map((T, ti) => {
       const look = new TeamLook(); look._nat = T.nation; look.paint({ ...T.nation, skin: 1 });
       const meshes = T.looks.map((l) => {
-        const geo = buildMergedDef(TROOPER, l.st), out = {};
+        // one mesh per material (same draw calls as before); weapon vertices are tagged (wpn = 1) so a taken-out trooper
+        // is drawn as 'body only' + a second 'weapon only' instance lying beside it (see fadeable / iPart)
+        const [wpn, body] = buildSplitDef(TROOPER, l.st, (p) => p.tag === 'weapon'), out = {}, mat = (l.mat ||= this.lookMat(look, l));
+        const wb = (wpn.team || wpn.visor) && (wpn.team || wpn.visor).boundingBox, wc = out.wc = new THREE.Vector3();
+        if (wb) wb.getCenter(wc); out.hasW = !!wb;
         for (const k of ['team', 'visor']) {
-          if (!geo[k]) continue;
-          const im = new THREE.InstancedMesh(geo[k], k === 'team' ? (l.mat ||= this.lookMat(look, l)) : look.visor, cap);
-          im.count = 0; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-          if (k === 'team') { for (let i = 0; i < cap; i++) im.setColorAt(i, new THREE.Color(1, 1, 1)); }
-          this.scene.add(im); out[k] = im;
+          const parts = [body[k], wpn[k]].filter(Boolean); if (!parts.length) continue;
+          const g = parts.length === 1 ? parts[0] : concat(parts), flag = new Float32Array(g.attributes.position.count);
+          if (wpn[k]) flag.fill(1, body[k] ? body[k].attributes.position.count : 0);
+          g.setAttribute('wpn', new THREE.BufferAttribute(flag, 1));
+          if (parts.length > 1) for (const x of parts) x.dispose();
+          out[k] = this.inst(g, k === 'team' ? mat : look.visor, cap * 2);   // ×2: a corpse uses a 2nd instance for its dropped weapon
         }
         return out;
       });
-      const mk = new THREE.InstancedMesh(new THREE.RingGeometry(0.55, 0.85, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[ti], transparent: true, opacity: 0.85, depthWrite: false }), cap * T.looks.length);
+      // 🚜 tanks: hull + turret (aims at its target); ≤2 per side, a wreck can share the slot for a moment
+      const tanks = (T.tankLooks || []).map((l) => {
+        const [tur, hull] = buildSplitDef(TANK, l.st, (p) => p.bone === 'turret'), out = { hull: {}, tur: {} };
+        for (const k of ['team', 'visor']) { if (hull[k]) out.hull[k] = this.inst(hull[k], k === 'team' ? look.team : look.visor, 4); if (tur[k]) out.tur[k] = this.inst(tur[k], k === 'team' ? look.team : look.visor, 4); }
+        return out;
+      });
+      const mk = new THREE.InstancedMesh(new THREE.RingGeometry(0.55, 0.85, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: TEAM_COLOR[ti], transparent: true, opacity: 0.85, depthWrite: false }), cap * T.looks.length + 8);
       mk.count = 0; mk.frustumCulled = false; mk.renderOrder = 3; this.scene.add(mk);
-      return { look, meshes, mk };
+      return { look, meshes, tanks, mk };
     });
     try { this.renderer.compile(this.scene, this.camera); } catch (e) { /* optional warm-up */ }
+  }
+  // one instanced, fadeable mesh (iAlpha per instance, white instance colors)
+  inst(geo, mat, cap) {
+    fadeable(mat);
+    geo.setAttribute('iAlpha', new THREE.InstancedBufferAttribute(new Float32Array(cap).fill(1), 1).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('iPart', new THREE.InstancedBufferAttribute(new Float32Array(cap), 1).setUsage(THREE.DynamicDrawUsage));
+    if (!geo.attributes.wpn) geo.setAttribute('wpn', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count), 1));
+    const im = new THREE.InstancedMesh(geo, mat, cap);
+    im.count = 0; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const w = new THREE.Color(1, 1, 1); for (let i = 0; i < cap; i++) im.setColorAt(i, w);
+    this.scene.add(im); return im;
   }
   // each look shares the team atlas texture, but skin tone is per look → one material per distinct skin
   lookMat(look, l) {
@@ -148,7 +187,9 @@ export class View {
   disposeArmies() {
     if (!this.armies) return;
     for (const a of this.armies) {
-      for (const m of a.meshes) for (const im of Object.values(m)) { this.scene.remove(im); im.geometry.dispose(); im.dispose(); }
+      const drop = (im) => { this.scene.remove(im); im.geometry.dispose(); im.dispose(); };
+      for (const m of a.meshes) { for (const k of ['team', 'visor']) if (m[k]) drop(m[k]); }
+      for (const t of a.tanks) for (const part of [t.hull, t.tur]) for (const im of Object.values(part)) drop(im);
       this.scene.remove(a.mk); a.mk.geometry.dispose(); a.mk.dispose();
     }
     this.armies = null;
@@ -168,6 +209,29 @@ export class View {
     this.mineMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.5, 0.18, 10), new THREE.MeshBasicMaterial({ color: '#ffffff' }), 32);
     this.mineMesh.count = 0; this.mineMesh.frustumCulled = false; this.scene.add(this.mineMesh);
     for (let i = 0; i < 32; i++) this.mineMesh.setColorAt(i, new THREE.Color(1, 1, 1));
+    // 🎒 gear in battle: one small instanced mesh per kind, team-colored
+    const gm = (geo, n = 24, opts = {}) => { const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: '#ffffff', ...opts }), n); im.count = 0; im.frustumCulled = false; for (let i = 0; i < n; i++) im.setColorAt(i, new THREE.Color(1, 1, 1)); this.scene.add(im); return im; };
+    const tg = new THREE.CylinderGeometry(0.55, 0.75, 0.9, 8); tg.translate(0, 0.45, 0);
+    const bg = new THREE.BoxGeometry(0.22, 0.22, 1.3); bg.translate(0, 1.05, 0.45);
+    this.gearMesh = {
+      turretBase: gm(tg), turretGun: gm(bg),
+      droid: gm(new THREE.IcosahedronGeometry(0.38, 0)),
+      crate: gm(new THREE.BoxGeometry(0.9, 0.7, 0.9).translate(0, 0.35, 0)),
+      rally: gm(new THREE.RingGeometry(0.9, 1, 40).rotateX(-Math.PI / 2), 12, { transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }),
+      bomb: gm(new THREE.BoxGeometry(0.5, 0.3, 0.5).translate(0, 0.15, 0), 16, { emissive: '#330000' }),
+    };
+  }
+  syncGear(sim) {
+    const S = sim.__gear, G = this.gearMesh, m = this._gm ||= new THREE.Matrix4(), q = this._gq ||= new THREE.Quaternion(), v = this._gv ||= new THREE.Vector3(), sc = this._gs ||= new THREE.Vector3(), c = this._gc ||= new THREE.Color(), Y = this._Y ||= new THREE.Vector3(0, 1, 0);
+    const now = performance.now() / 1000, put = (im, i, x, y, z, yaw, s, col) => { q.setFromAxisAngle(Y, yaw); m.compose(v.set(x, y, z), q, sc.set(s, s, s)); im.setMatrixAt(i, m); im.setColorAt(i, col); };
+    const done = (im, n) => { im.count = n; im.visible = n > 0; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; };
+    if (!S) { for (const im of Object.values(G)) done(im, 0); return; }
+    let n = 0; for (const t of S.turrets) { if (t.done || n >= 24) continue; const y = heightAt(t.x, t.z); c.set(TEAM_COLOR[t.team]); put(G.turretBase, n, t.x, y, t.z, 0, 1, c); put(G.turretGun, n, t.x, y, t.z, t.yaw || 0, 1, c.multiplyScalar(0.7)); n++; }
+    done(G.turretBase, n); done(G.turretGun, n);
+    n = 0; for (const d of S.droids) { if (d.done || n >= 24) continue; put(G.droid, n++, d.x, heightAt(d.x, d.z) + 2.6 + Math.sin(now * 3 + d.x) * 0.15, d.z, now, 1, c.set(TEAM_COLOR[d.team])); } done(G.droid, n);
+    n = 0; for (const k of S.crates) { if (k.done || n >= 24) continue; put(G.crate, n++, k.x, heightAt(k.x, k.z), k.z, 0.4, 1, c.set(k.ammo ? '#d9b44a' : '#e8eef4')); } done(G.crate, n);
+    n = 0; for (const r of S.rallies) { if (r.done || n >= 12) continue; put(G.rally, n++, r.x, heightAt(r.x, r.z) + 0.25, r.z, 0, r.r || 6, c.set(TEAM_COLOR[r.team])); } done(G.rally, n);
+    n = 0; for (const b of S.bombs) { if (b.done || n >= 16) continue; const blink = Math.sin(now * (6 + 10 * Math.min(1, (sim.time - b.t) / (b.T || 8)))) > 0; put(G.bomb, n++, b.x, heightAt(b.x, b.z), b.z, 0, 1, c.set(blink ? '#ff3b30' : '#3a2a22')); } done(G.bomb, n);
   }
   consume(events, nations) {
     for (const e of events) {
@@ -175,13 +239,14 @@ export class View {
       else if (e.type === 'heal') { if (this.fx.tracers.length < this.tracerN) this.fx.tracers.push({ ...e, t: 0, T: 0.35 }); }
       else if (e.type === 'rocket') { if (this.fx.rockets.length < 48) this.fx.rockets.push({ ...e, t: 0 }); }
       else if (e.type === 'boom') { if (this.fx.booms.length < 32) this.fx.booms.push({ ...e, t: 0 }); }
+      else if (e.type === 'death' && e.tank) { if (this.fx.booms.length < 32) this.fx.booms.push({ type: 'boom', x: e.x, z: e.z, y: heightAt(e.x, e.z) + 1, team: e.team, t: 0, big: true }); }
     }
     void nations;
   }
   // ---------- per frame ----------
   update(sim, dt, now) {
     this.updateCamera(dt);
-    if (sim) { this.syncPosts(sim); this.syncUnits(sim); this.syncRally(sim); this.syncMines(sim); }
+    if (sim) { this.syncPosts(sim); this.syncUnits(sim); this.syncRally(sim); this.syncMines(sim); this.syncGear(sim); }
     if (PICKUPS.on) syncPickups(this, sim);
     this.syncFx(dt);
     this.renderer.render(this.scene, this.camera);
@@ -207,14 +272,18 @@ export class View {
   }
   syncUnits(sim) {
     if (!this.armies) return;
-    const m = this._m ||= new THREE.Matrix4(), q = this._q ||= new THREE.Quaternion(), q2 = this._q2 ||= new THREE.Quaternion(), v = this._v ||= new THREE.Vector3(), s = this._s ||= new THREE.Vector3(UNIT_SCALE, UNIT_SCALE, UNIT_SCALE);
+    const m = this._m ||= new THREE.Matrix4(), m2 = this._m2 ||= new THREE.Matrix4(), q = this._q ||= new THREE.Quaternion(), q2 = this._q2 ||= new THREE.Quaternion(), q3 = this._q3 ||= new THREE.Quaternion(), v = this._v ||= new THREE.Vector3(), v2 = this._v2 ||= new THREE.Vector3(), s = this._s ||= new THREE.Vector3(UNIT_SCALE, UNIT_SCALE, UNIT_SCALE);
     const Y = this._Y ||= new THREE.Vector3(0, 1, 0), X = this._X ||= new THREE.Vector3(1, 0, 0), Z = this._Z ||= new THREE.Vector3(0, 0, 1);
-    const white = this._w ||= new THREE.Color(1, 1, 1), red = this._r ||= new THREE.Color(1, 0.25, 0.2);
-    const counts = this.armies.map((a) => a.meshes.map(() => 0)), mks = [0, 0], sc = this._sc ||= new THREE.Vector3();
+    const white = this._w ||= new THREE.Color(1, 1, 1), red = this._r ||= new THREE.Color(1, 0.25, 0.2), wreck = this._wk ||= new THREE.Color(0.22, 0.2, 0.18), sc = this._sc ||= new THREE.Vector3(), D = DOWN_T;
+    const counts = this.armies.map((a) => a.meshes.map(() => 0)), tcounts = this.armies.map((a) => a.tanks.map(() => 0)), mks = [0, 0];
+    const set = (M, k, mat, col, alpha, part = 0) => { for (const im of Object.values(M)) { im.setMatrixAt(k, mat); if (im.instanceColor) im.setColorAt(k, col); im.geometry.attributes.iAlpha.setX(k, alpha); im.geometry.attributes.iPart.setX(k, part); } };
+    const alphaOf = (d) => (d < D.lie ? 1 : Math.max(0, 1 - (d - D.lie) / (D.fade - D.lie)));
     for (const pass of [true, false]) for (const u of sim.units) {  // living first, so corpses never steal a living unit's instance
       if (u.alive !== pass) continue;
-      const A = this.armies[u.team], M = A.meshes[u.look]; if (!M) continue;
-      let y = heightAt(u.x, u.z);
+      const A = this.armies[u.team];
+      if (u.kind === 'tank') { this.syncTank(sim, u, A, tcounts[u.team], mks); continue; }
+      const M = A.meshes[u.look]; if (!M) continue;
+      let y = heightAt(u.x, u.z), px = u.x, pz = u.z, alpha = 1, col = white;
       if (u.alive) {
         const limp = u.hp < (u.hpMax || u.s.hp) * 0.35;
         q.setFromAxisAngle(Y, u.yaw);
@@ -224,22 +293,64 @@ export class View {
         }
         if (limp) { q2.setFromAxisAngle(X, 0.18); q.multiply(q2); }
         if (u.crouch) { q2.setFromAxisAngle(X, 0.22); q.multiply(q2); }   // crouched behind cover / in a sniper nest
+        if (u.hurtT > 0) col = red;
       } else {
-        const f = Math.min(1, u.deadT / 0.5);
-        q.setFromAxisAngle(Y, u.fallYaw ?? u.yaw); q2.setFromAxisAngle(X, f * f * Math.PI / 2); q.multiply(q2);
-        y -= Math.max(0, u.deadT - 1) * 0.45;
+        // 💀 taken out: face the shooter, flinch back, get knocked back along fallYaw and land flat on the back
+        const d = u.deadT, fy = u.fallYaw ?? u.yaw; let tilt, kb;
+        if (d < D.flinch) { const f = d / D.flinch; tilt = 0.28 * f; kb = 0.12 * f; col = red; }
+        else { const f = Math.min(1, (d - D.flinch) / (D.fall - D.flinch)); tilt = 0.28 + (Math.PI / 2 - 0.28) * f * f; kb = 0.12 + (D.knock - 0.12) * (1 - (1 - f) * (1 - f)); }
+        px += Math.sin(fy) * kb; pz += Math.cos(fy) * kb; y = heightAt(px, pz) + 0.1 * Math.min(1, d / D.fall);
+        q.setFromAxisAngle(Y, fy + Math.PI); q2.setFromAxisAngle(X, -tilt); q.multiply(q2);
+        alpha = alphaOf(d);
       }
-      m.compose(v.set(u.x, y, u.z), q, u.alive && u.crouch ? sc.set(UNIT_SCALE, UNIT_SCALE * 0.62, UNIT_SCALE) : s);
-      if (counts[u.team][u.look] >= this.cap) continue;  // more bodies than instances: skip the extra corpses
-      const k = counts[u.team][u.look]++;
-      if (M.team) { M.team.setMatrixAt(k, m); M.team.setColorAt(k, u.alive && u.hurtT > 0 ? red : white); }
-      if (M.visor) M.visor.setMatrixAt(k, m);
+      m.compose(v.set(px, y, pz), q, u.alive && u.crouch ? sc.set(UNIT_SCALE, UNIT_SCALE * 0.62, UNIT_SCALE) : s);
+      const dropped = !u.alive && u.deadT > 0.2 && M.hasW;
+      if (counts[u.team][u.look] + (dropped ? 2 : 1) > this.cap * 2) continue;  // more bodies than instances: skip the extra corpses
+      const MM = { team: M.team, visor: M.visor }, wc = M.wc;
+      set(MM, counts[u.team][u.look]++, m, col, alpha, dropped ? 1 : 0);   // alive: whole unit, weapon in hand
+      // taken out → the weapon flies off and lands flat beside the body (its own 'weapon only' instance)
+      if (dropped) {
+        {
+          v2.copy(wc).applyMatrix4(m);
+          const d = u.deadT, f = Math.min(1, (d - 0.2) / 0.45), fy = u.fallYaw ?? u.yaw, sx = Math.cos(fy), sz = -Math.sin(fy);
+          const gx = u.x + sx * 0.9 + Math.sin(fy) * 0.5, gz = u.z + sz * 0.9 + Math.cos(fy) * 0.5;
+          v2.lerp(v.set(gx, heightAt(gx, gz) + 0.12, gz), f); v2.y += Math.sin(f * Math.PI) * 0.6;
+          q3.setFromAxisAngle(Y, fy + 2.2); q2.setFromAxisAngle(Z, Math.PI / 2); q3.multiply(q2);
+          m2.compose(v2, q2.copy(q).slerp(q3, f), s).multiply((this._mt ||= new THREE.Matrix4()).makeTranslation(-wc.x, -wc.y, -wc.z));
+        }
+        set(MM, counts[u.team][u.look]++, m2, col, alpha, 2);
+      }
       if (u.alive) { m.compose(v.set(u.x, heightAt(u.x, u.z) + 0.12, u.z), q.identity(), s); A.mk.setMatrixAt(mks[u.team]++, m); }
     }
     this.armies.forEach((A, t) => {
-      A.meshes.forEach((M, i) => { for (const im of Object.values(M)) { im.count = counts[t][i]; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; } });
+      A.meshes.forEach((M, i) => {
+        for (const im of [M.team, M.visor]) if (im) { im.count = counts[t][i]; this.dirty(im); }
+      });
+      A.tanks.forEach((T, i) => { for (const part of [T.hull, T.tur]) for (const im of Object.values(part)) { im.count = tcounts[t][i]; this.dirty(im); } });
       A.mk.count = mks[t]; A.mk.instanceMatrix.needsUpdate = true;
     });
+  }
+  dirty(im) { im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.geometry.attributes.iAlpha.needsUpdate = true; im.geometry.attributes.iPart.needsUpdate = true; im.visible = im.count > 0; }
+  // 🚜 one tank: hull follows the drive, the turret turns to its target; destroyed → dark tilted wreck, then fades
+  syncTank(sim, u, A, tcounts, mks) {
+    const T = A.tanks[u.tk]; if (!T || tcounts[u.tk] >= 4) return;
+    const m = this._tm ||= new THREE.Matrix4(), mt = this._tm2 ||= new THREE.Matrix4(), mr = this._tm3 ||= new THREE.Matrix4(), q = this._tq ||= new THREE.Quaternion(), q2 = this._tq2 ||= new THREE.Quaternion(), v = this._tv ||= new THREE.Vector3(), s = this._ts ||= new THREE.Vector3(TANK_SCALE, TANK_SCALE, TANK_SCALE);
+    const Y = this._Y, X = this._X, Z = this._Z, red = this._r, white = this._w, wreck = this._wk, D = DOWN_T;
+    let y = heightAt(u.x, u.z), col = white, alpha = 1;
+    q.setFromAxisAngle(Y, u.yaw);
+    if (u.alive) { if (u.moving) y += Math.sin(u.phase * 2) * 0.03; if (u.hurtT > 0) col = red; if (u.stunT > 0 && Math.sin(performance.now() / 60) > 0) col = this._stun ||= new THREE.Color(0.6, 0.85, 1.4); }
+    else { q2.setFromAxisAngle(X, 0.1); q.multiply(q2); q2.setFromAxisAngle(Z, 0.14); q.multiply(q2); y -= 0.15; col = wreck; alpha = u.deadT < D.lie ? 1 : Math.max(0, 1 - (u.deadT - D.lie) / (D.fade - D.lie)); }
+    m.compose(v.set(u.x, y, u.z), q, s);
+    // turret yaw (local): toward the target, eased; a wreck keeps its last angle
+    const want = u.alive && u.tgt && u.tgt.alive ? Math.atan2(u.tgt.x - u.x, u.tgt.z - u.z) - u.yaw : 0;
+    if (u.alive) { let d = want - (u._ty || 0); d = Math.atan2(Math.sin(d), Math.cos(d)); u._ty = (u._ty || 0) + d * 0.15; }
+    const P = TANK_PIVOT.turret, back = (this._tm4 ||= new THREE.Matrix4()).makeTranslation(-P[0], -P[1], -P[2]);
+    mt.makeTranslation(P[0], P[1], P[2]).multiply(mr.makeRotationY(u._ty || 0)).multiply(back);
+    const k = tcounts[u.tk]++;
+    for (const im of Object.values(T.hull)) { im.setMatrixAt(k, m); im.setColorAt(k, col); im.geometry.attributes.iAlpha.setX(k, alpha); }
+    mr.copy(m).multiply(mt);
+    for (const im of Object.values(T.tur)) { im.setMatrixAt(k, mr); im.setColorAt(k, col); im.geometry.attributes.iAlpha.setX(k, alpha); }
+    if (u.alive) { const s3 = this._ts3 ||= new THREE.Vector3(3.4, 3.4, 3.4); m.compose(v.set(u.x, heightAt(u.x, u.z) + 0.12, u.z), q.identity(), s3); A.mk.setMatrixAt(mks[u.team]++, m); }
   }
   syncMines(sim) {
     const M = this.mineMesh, list = sim.mines || [], m = this._mm ||= new THREE.Matrix4(), c = this._mc ||= new THREE.Color(), blink = Math.sin(performance.now() / 180) > 0;
@@ -266,7 +377,7 @@ export class View {
     F.rockets.forEach((r, i) => { const f = r.t / r.T; v.set(r.x0 + (r.x1 - r.x0) * f, r.y0 + (r.y1 - r.y0) * f + Math.sin(f * Math.PI) * 2.5, r.z0 + (r.z1 - r.z0) * f); m.compose(v, q, s.set(1, 1, 1)); this.rocketMesh.setMatrixAt(i, m); });
     this.rocketMesh.count = F.rockets.length; this.rocketMesh.instanceMatrix.needsUpdate = true;
     F.booms = F.booms.filter((b) => (b.t += dt) < 0.55);
-    F.booms.forEach((b, i) => { const f = b.t / 0.55, r = 0.8 + f * 3.4; m.compose(v.set(b.x, b.y + r * 0.3, b.z), q, s.set(r, r * 0.8, r)); this.boomMesh.setMatrixAt(i, m); });
+    F.booms.forEach((b, i) => { const f = b.t / 0.55, r = (0.8 + f * 3.4) * (b.big ? 1.8 : b.small ? 0.6 : 1); m.compose(v.set(b.x, b.y + r * 0.3, b.z), q, s.set(r, r * 0.8, r)); this.boomMesh.setMatrixAt(i, m); });
     this.boomMesh.count = F.booms.length; this.boomMesh.instanceMatrix.needsUpdate = true;
     this.boomMesh.material.opacity = 0.7;
   }

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=3c">
+<link rel="stylesheet" href="css/style.css?v=3d">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
 </head>
 <body>
@@ -23,13 +23,13 @@
 <div id="floats"></div>
 <div id="tip" class="hidden" role="tooltip"></div>
 <div id="top">
-  <button class="tb" id="bPause" title="Pause"></button>
-  <button class="tb" id="bSlow" title="Slow-mo"><span>🐢</span><small id="slowV">×1</small></button>
-  <button class="tb" id="bReset" title="Reset ship"></button>
-  <button class="tb on" id="bShield" title="Shield on/off"><span>🫧</span><small id="shieldV">ON</small></button>
-  <button class="tb" id="bBack" title="Ship fires back"><span id="backIc"></span><small id="backV">OFF</small></button>
-  <button class="tb" id="bLabels" title="Show labels"><span>🏷</span><small id="labelsV">OFF</small></button>
-  <button class="tb" id="bCount" title="Attackers per tap"><b id="countV">×1</b></button>
+  <button class="tb" id="bPause" title="Pause"><span class="ic" id="pauseIc"></span><small id="pauseL">Pause</small></button>
+  <button class="tb" id="bSlow" title="Slow-mo"><span class="ic">🐢<i id="slowV">×1</i></span><small>Speed</small></button>
+  <button class="tb" id="bReset" title="Reset ship"><span class="ic" id="resetIc"></span><small>Reset</small></button>
+  <button class="tb on" id="bShield" title="Shield on/off"><span class="ic">🫧<i id="shieldV">ON</i></span><small>Shield</small></button>
+  <button class="tb" id="bBack" title="Ship fires back"><span class="ic"><span id="backIc"></span><i id="backV">OFF</i></span><small>Guns</small></button>
+  <button class="tb" id="bLabels" title="Show part names on the ship"><span class="ic">🏷<i id="labelsV">OFF</i></span><small>Names</small></button>
+  <button class="tb" id="bCount" title="Attackers per tap"><b id="countV">×1</b><small>Per tap</small></button>
 </div>
 <div id="stats">
   <div id="army" title="Your army (from Trooper Customizer)"><canvas id="flagC" width="36" height="24"></canvas><span class="an"><b id="plName">Player</b><small id="natName">Home Fleet</small></span>
@@ -44,15 +44,15 @@
 <div id="dock">
   <div id="sheet" class="hidden"><div id="sheetBody"></div></div>
   <div id="tabs">
-    <button class="tab" data-tab="parts" title="Parts">🧩</button>
-    <button class="tab" data-tab="log" title="Log">📜</button>
-    <button class="tab" data-tab="matrix" title="Damage matrix">🔢</button>
+    <button class="tab" data-tab="parts" title="Parts">🧩<small>Parts</small></button>
+    <button class="tab" data-tab="log" title="Log">📜<small>Log</small></button>
+    <button class="tab" data-tab="matrix" title="Damage matrix">🔢<small>Damage</small></button>
   </div>
   <div id="palette"></div>
 </div>
 <div id="banner" class="hidden"><div class="card"><div class="big">💀</div><div id="bannerTxt">Ship lost</div><button id="bAgain">↺</button></div></div>
 <div id="updToast" class="hidden">⬆️ New version <button id="updGo">↻</button></div>
-<script type="module" src="js/main.js?v=3c"></script>
+<script type="module" src="js/main.js?v=3d"></script>
 <script>
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {

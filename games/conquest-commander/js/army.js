@@ -3,8 +3,8 @@
 // No save → one cheap 'Trooper 1' (basic gear). Nothing about the army is ever put in a URL.
 // Conquest only READS the army (edits happen in the customizer via 🪖 Edit army). The one exception is the shared
 // schema.js load(): on the first load of an old save it writes the migrated army to 'botcampus:army' (old key untouched).
-import * as Army from '../../shared/army/schema.js?v=8';
-import { BASIC_GEAR, TRAIT_IDS, NATION_ITEMS, toIndex, unitCost } from '../../shared/army/stats.js?v=8';
+import * as Army from '../../shared/army/schema.js?v=9';
+import { BASIC_GEAR, TRAIT_IDS, NATION_ITEMS, TANK_RULES, toIndex, unitCost } from '../../shared/army/stats.js?v=9';
 import { NATION_DEFAULT } from './trooper.js';
 
 export const ARMY_KEY = Army.ARMY_KEY;                    // 'botcampus:army'
@@ -20,6 +20,11 @@ export function lookOfUnit(u, nationId) {
   if (u.brain != null) l.brain = u.brain;   // brains.js (Dev C) reads look.brain when the 🧠 flag is on
   return l;
 }
+// 🚜 v2.5: a roster tank → a Conquest tank look { id, kind:'tank', nationId, name, gear, st, cost } (max TANK_RULES.maxPerTeam)
+export function tankLookOfUnit(u, nationId) {
+  return { id: String(u.id), unitId: String(u.id), kind: 'tank', nationId, name: clean(u.name, 16) || 'Tank', gear: { ...u.gear }, st: toIndex('tank', u.gear), cost: unitCost(u).cost };
+}
+export const tanksOf = (looks, nationId) => looks.filter((l) => l.nationId === nationId).slice(0, TANK_RULES.maxPerTeam);
 // army nation → the painter's nation fields (render.js / trooper.js) + names
 function nationOfPlayer(p) {
   const st = Army.nationState(p.nation);
@@ -28,7 +33,8 @@ function nationOfPlayer(p) {
 export const defaultUnitLook = (nationId) => ({ id: 'u-default-1', unitId: null, nationId, name: 'Trooper 1', icon: '', gear: { ...BASIC_GEAR.trooper }, st: toIndex('trooper', BASIC_GEAR.trooper), armyTrait: '', cost: unitCost({ kind: 'trooper', gear: BASIC_GEAR.trooper }).cost, isDefault: true });
 
 // Returns { army, source:'army'|'migrated'|'default', player, playerId, nations[], looks[], active, units, version:1 }
-//   nations[i].id = the army PLAYER id (one player = one nation). looks = each player's roster troopers by slot (tanks skipped).
+//   nations[i].id = the army PLAYER id (one player = one nation). looks = each player's roster troopers by slot.
+//   tanks = each player's roster tanks (v2.5: they drive into Conquest; max 2 per side).
 export function loadArmy(storage = globalThis.localStorage) {
   let had = null, legacy = null;
   try { had = storage && storage.getItem(ARMY_KEY); legacy = storage && storage.getItem(LEGACY_KEY); } catch (e) { /* private mode */ }
@@ -39,15 +45,16 @@ export function loadArmy(storage = globalThis.localStorage) {
   // read (customizer v1/v2: open the customizer once to convert it) · default = no save → one 'Trooper 1'
   let oldV = 0; try { oldV = (JSON.parse(legacy || 'null') || {}).v | 0; } catch (e) { oldV = 0; }
   const src = hadValid ? 'army' : army.migratedFrom ? 'migrated' : oldV ? 'old' : 'default';
-  const nations = army.players.map(nationOfPlayer), looks = [];
+  const nations = army.players.map(nationOfPlayer), looks = [], tanks = [];
   for (const p of army.players) {
     const mine = Army.playerUnits(army, p.id, { roster: true, kind: 'trooper' });
     looks.push(...mine.map((u) => lookOfUnit(u, p.id)));
+    tanks.push(...Army.playerUnits(army, p.id, { roster: true, kind: 'tank' }).slice(0, TANK_RULES.maxPerTeam).map((u) => tankLookOfUnit(u, p.id)));
   }
   const me = Army.activePlayer(army);
   if (!looks.some((l) => l.nationId === me.id)) looks.unshift(defaultUnitLook(me.id));
   const nUnits = looks.filter((l) => l.nationId === me.id && !l.isDefault).length;
-  return { army, source: src, player: clean(me.name) || 'Player 1', playerId: me.id, nations, looks, active: me.id, units: nUnits, version: army.version };
+  return { army, source: src, player: clean(me.name) || 'Player 1', playerId: me.id, nations, looks, tanks, active: me.id, units: nUnits, version: army.version };
 }
 
 // ---------- enemy: another player from the save, or a generated army ----------
@@ -70,6 +77,11 @@ export function generatedLooks(rng, nationId, n = 1) {
     out.push({ id: `gen-${i}`, unitId: null, nationId, name: k.name, icon: '', gear, st: toIndex('trooper', gear), armyTrait: '', cost: unitCost({ kind: 'trooper', gear }).cost });
   }
   return out;
+}
+// generated enemy tanks: as many as the player fields (so 1 tank meets 1 tank), basic-ish builds
+const ENEMY_TANKS = [{ name: 'Raider Tank', gear: {} }, { name: 'Raider Heavy Tank', gear: { hull: 'medium', gun: 'twin' } }];
+export function generatedTanks(nationId, n = 0) {
+  return ENEMY_TANKS.slice(0, Math.max(0, Math.min(TANK_RULES.maxPerTeam, n | 0))).map((k, i) => { const gear = { ...BASIC_GEAR.tank, ...k.gear }; return { id: `gen-tank-${i}`, unitId: null, kind: 'tank', nationId, name: k.name, gear, st: toIndex('tank', gear), cost: unitCost({ kind: 'tank', gear }).cost }; });
 }
 // random enemy nation that doesn't clash with the player's primary color
 const PALETTE = ['#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#5b7a3a', '#1abc9c', '#6c4bd1', '#d35b9f', '#2e343c', '#e8eef4'];

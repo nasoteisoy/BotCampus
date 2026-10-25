@@ -1,9 +1,9 @@
 // 👥 Team demo: the whole saved team (one player's roster) fights waves of training dummies on its own.
 // Each unit plays its Conquest trait (TRAIT_FX): 🏃 rusher charges, 🧱 cover fighter hugs cover, 🎯 sniper nest hangs back,
 // 🔁 retaker takes the enemy flag, ➕ supplier heals friends, 💣 mine layer plants mines, 🛡️ guard holds our flag.
-import { Arena, ENEMY_NAT, DEMO, SCALE, stateOf } from './arena.js?v=7';
-import { loadArmyData, S } from './army-data.js?v=7';
-import { $, h, params, drawFlag, backLink, playControls, markCam, toast } from './arena-ui.js?v=7';
+import { Arena, ENEMY_NAT, DEMO, SCALE, OUT_T, stateOf } from './arena.js?v=8';
+import { loadArmyData, S } from './army-data.js?v=8';
+import { $, h, params, drawFlag, backLink, playControls, markCam, toast } from './arena-ui.js?v=8';
 
 const data = loadArmyData();
 const players = data.players.filter((p) => data.entries.some((e) => e.playerId === p.id && e.roster));
@@ -38,11 +38,13 @@ function nextWave() {
   toast('🌊 Wave ' + wave + ' · 🤖×' + n);
 }
 arena.on('tick', (dt) => {
-  for (const u of team) if (u.down != null && u.down > 6) arena.respawn(u);
+  for (const u of team) if (u.down != null && u.down > Math.max(6, OUT_T.fade + 0.3)) arena.respawn(u);
   if (foes.length && foes.every((d) => d.down != null)) { waveT += dt; if (waveT > 0.01 && waveT - dt <= 0.01) { wins++; toast('🏆 Wave ' + wave + ' cleared'); } if (waveT > 3.5) nextWave(); }
 });
 arena.on('flag', (u) => toast('🚩 ' + u.name + ' took the flag'));
-arena.on('mine', (u) => { if (Math.random() < 0.5) toast('💣 ' + u.name); });
+arena.on('mine', (u) => { if (Math.random() < 0.5) toast('💣 ' + u.name + ' planted a mine'); });
+const GEAR_TOAST = { thermal: '🤾 threw a thermal', detpack: '🧨 placed a detpack', 'time-bomb': '⏰ planted a time bomb', turret: '🗼 deployed a turret', 'recon-droid': '🛰️ sent a recon droid', supply: '📦 dropped a supply crate', rally: '📣 rallied the team' };
+arena.on('gear', (u, what) => { if (!u.enemy && GEAR_TOAST[what]) toast(u.name + ' ' + GEAR_TOAST[what]); });
 
 function renderWho() {
   const p = data.players.find((x) => x.id === pid) || data.players[0], es = teamEntries(), nat = es[0] ? es[0].nat : { ...ENEMY_NAT, name: p.nation.name, player: p.name };
@@ -53,7 +55,7 @@ function renderWho() {
     sel.addEventListener('change', () => { pid = sel.value; build(); }); sm.append(sel);
   } else sm.textContent = `🪖×${es.length}`;
 }
-const STATE_ICON = { idle: '🧍', walk: '🚶', run: '🏃', aim: '🎯', cover: '🧱', nest: '🎯', reload: '🔄', plant: '💣', down: '💨' };
+const STATE_ICON = { idle: '🧍', walk: '🚶', run: '🏃', aim: '🎯', cover: '🧱', nest: '🔭', reload: '🔄', plant: '⬇️', down: '💀' };
 const WHY_ICON = { heal: '➕', guard: '🛡️', retake: '🚩', health: '❤️', ammo: '📦', weapon: '🔫', retreat: '↩️' };
 function renderUnits() {
   const box = $('#units'); box.replaceChildren();
@@ -66,7 +68,7 @@ function renderUnits() {
     b.addEventListener('click', () => { arena.setCam('follow', u); markCam(arena); refreshUnits(); });
     box.append(b);
   }
-  $('#legend').textContent = `traits from Conquest · 🤖 dummies aim at ${DEMO.dummyAim * 100}% · arena = ${SCALE}× Conquest metres · 🧪 mags, reload, packs, tank guns are demo-only`;
+  $('#legend').textContent = 'Top-left of a card = what it is doing · top-right = its battle trait · tap a card to follow it';
   refreshUnits();
 }
 function refreshUnits() {
@@ -74,14 +76,14 @@ function refreshUnits() {
     const u = team.find((x) => x.id === b.dataset.id); if (!u) continue;
     b.classList.toggle('down', u.down != null); b.classList.toggle('on', arena.cam === 'follow' && arena.follow === u);
     b.querySelector('.stt').textContent = WHY_ICON[u.goalWhy] && u.state !== 'down' ? WHY_ICON[u.goalWhy] : STATE_ICON[u.state] || '🧍';
-    b.querySelector('em').textContent = '❤️' + Math.round(u.hp) + ' 💥' + u.downs;
+    b.querySelector('em').textContent = u.down != null ? '💀 out' : '❤️' + Math.round(u.hp) + ' 💥' + u.downs;
   }
   const left = foes.filter((d) => d.down == null).length;
-  const hud = `<span title="Wave">🌊 ${wave}</span><span title="Dummies left">🤖×${left}</span><span title="Waves cleared">🏆 ${wins}</span><span title="Our flag">🚩${enemyFlag && enemyFlag.owner !== ENEMY_NAT ? '✅' : ''}</span>`;
+  const hud = `<span title="Wave">🌊 Wave ${wave}</span><span title="Dummies left">🤖 Left ${left}</span><span title="Waves cleared">🏆 Cleared ${wins}</span><span title="Enemy flag">🚩 Enemy flag ${enemyFlag && enemyFlag.owner !== ENEMY_NAT ? '✅ ours' : '❌'}</span>`;
   if ($('#hud').innerHTML !== hud) $('#hud').innerHTML = hud;
 }
-backLink(); playControls(arena, () => build());
+backLink('👥 Team'); playControls(arena, () => build());
 build();
 $('#stats').classList.add('hidden');
 let acc = 0; arena.on('tick', (dt) => { acc += dt; if (acc > 0.15) { acc = 0; refreshUnits(); } });
-window.__team = { arena, units: () => team.map(stateOf), foes: () => foes.map(stateOf), get wave() { return wave; }, get wins() { return wins; }, fast: (s) => { arena.fast(s); refreshUnits(); return { wave, wins, units: team.map(stateOf) }; }, player: (id) => { if (!players.some((p) => p.id === id)) return false; pid = id; build(); return true; } };
+window.__team = { arena, units: () => team.map(stateOf), foes: () => foes.map(stateOf), get wave() { return wave; }, get wins() { return wins; }, fast: (s) => { arena.fast(s); refreshUnits(); return { wave, wins, units: team.map(stateOf) }; }, player: (id) => { if (!players.some((p) => p.id === id)) return false; pid = id; build(); return true; }, gear: () => arena.gear.list(), gearUsed: () => ({ ...arena.gear.used }) };

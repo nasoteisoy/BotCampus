@@ -7,7 +7,7 @@ Play: `games/conquest-commander/` (next to `games/trooper-custom/` and `games/sh
 **v2.4: one army with the 🪖 Trooper Customizer.** Both games read the same save (`localStorage['botcampus:army']`) and the same gear numbers (`games/shared/army/stats.js`). What you build in the Customizer is what fights here, at the price the Customizer shows.
 
 ## How to play
-1. Pick your nation, up to 6 trooper looks, a **behaviour trait** for each look (the chip under it), an enemy nation, the **🗺️ map** (🏜️ Dust Ridge small / 🏞️ Grand Valley large) and the enemy brain (😠 Normal / 😈 Elite). Tap 🛒 ▶️. Your picks are remembered.
+1. Pick your nation, up to 6 trooper looks, a **behaviour trait** for each look (the chip under it), an enemy nation, the **🗺️ map** (🏜️ Dust Ridge small / 🏞️ Grand Valley large) and the enemy brain (😠 Normal / 😈 Elite). Tap **▶ Fight** (perk shop) → **⚔️ Start battle**. Your picks are remembered. Your saved roster **🚜 tanks** (max 2) drive in too.
 2. 🛒 **Perk shop**: tap cards to buy perks with campaign 💰 credits (tap again to refund), then ⚔️ Fight. Perks last one battle.
 3. Tap a post (A B C, or A–E on Grand Valley) and choose:
    - ⚔️ attack / 🛡️ defend / 🚫 ignore
@@ -35,7 +35,7 @@ Play: `games/conquest-commander/` (next to `games/trooper-custom/` and `games/sh
 
 ## Rules (Battlefront II 2005 Conquest; defaults in `CFG`, `js/sim.js`, a map's `cfg` overrides them)
 - 200 🎟️ per side, 20 live units per side (squads of 4) on Dust Ridge; 300 🎟️ and 32 live on Grand Valley. Each death costs 1 ticket.
-- Class mix per team (min/max): 🪖 trooper 9–25; 🚀 heavy, 🔧 engineer, 🎯 sniper, ⭐ commander, 🛩️ jet 1–4 each. Minimums first, then random up to the live count. A class missing from your roster gives its slots to troopers. ⭐ and 🛩️ join only after your side has held 2 posts (or with the ⭐ Elite perk).
+- Class mix per team (min/max): 🪖 trooper 9–25; 🚀 heavy, 🔧 engineer, 🎯 sniper, ⭐ commander, 🛩️ jet 1–4 each. Minimums first, then random up to the live count. A class missing from your roster gives its slots to troopers. ⭐ and 🛩️ are **earned**: they join after your side has held 2 posts (or from the start with the ⭐ *Elites from the start* perk).
 - Class from gear (Customizer v4 kit): rocket → heavy · sniper → sniper · jetpack or EMP → jet · rally or chaingun → commander · fusion or shotgun → engineer · else trooper. Each keeps its own weapon numbers. (Class abilities beyond weapons are not in yet.)
 - Capture: red → ⚪ neutral → blue. An enemy post must be neutralized first, and the enemy can still spawn there until it is. 10 s per step with 1 unit, up to 3x faster with more. Both sides in the ring = stalled.
 - Spawn only at your own posts. Majority of posts (2 of 3, or 3 of 5) → the enemy bleeds every 5 s by (your post value − theirs, at least 1); the middle post is worth 2, the others 1. Grand Valley: holding A B C vs D E = 4 − 2 = 2 per 5 s.
@@ -58,20 +58,20 @@ One trait per roster look. Tap the chip under the tile to get the popup: Auto + 
 |---|---|---|
 | 🏃 Rusher | trooper, commander, jet | Pushes the objective. Moves at 85% speed while shooting. 12% cover chance per 4 s, only spots ≤ 5 m away, leaves cover 1.5 s after the last enemy sighting, and never stays more than **4 s** (then it pushes on; no new cover try for 6 s). |
 | 🧱 Cover | heavy | Always looks for cover within 15 m when fighting and stays there until 7 s after the last sighting. Moves at 25% speed while shooting (holds position). |
-| 🎯 Nest (Sniper Nest) | sniper | Picks a spot 0.85–1.1 × (range × 0.8, clamped to 14–36 m) from its post, with a clear view of the post. It prefers high ground and its own side. Crouches there facing the post for **60–120 s** (the timer starts on arrival), then moves to a new nest. It leaves early if an enemy gets within **14 m**. |
+| 🔭 Sniper spot | sniper | Picks a spot 0.85–1.1 × (range × 0.8, clamped to 14–36 m) from its post, with a clear view of the post. It prefers high ground and its own side. Crouches there facing the post for **60–120 s** (the timer starts on arrival), then moves to a new nest. It leaves early if an enemy gets within **14 m**. |
 | 🔁 Retaker | – | Retake radius **100 m** instead of 60 m. Also turns back when an own post is merely **attacked** (enemy in the ring), not only when it falls. |
 | ➕ Supplier | engineer | Walks to the most-hurt ally within 28 m (HP < 95%). Heals every ally within 6 m by **5 HP/s** (green beam). Gives Mine Layers in range 1 mine back every 15 s. |
 | 💣 Mines (Mine Layer) | – | 3 mines per life. At its own post (attacked, or marked 🛡️, or any own post while unmarked) it plants them 5–11 m out toward the enemy, ≥ 3 m apart (1.2 s each). Skips a post that already has 6 own mines. A mine arms after 1 s and triggers at 1.8 m: 70 dmg, 3.2 m splash. Max 12 per team (the oldest goes). |
 | 🛡️ Guard | – | Ignores the marks and stays at the nearest post its side owns (inside the ring). Cover only within the ring + 6 m. If that post is lost, it guards the next nearest one. |
 
-All traits work the same on both maps (v2.3): cover spots, nests, retake radius and mines use each map's own props, nav grid and posts (`getCover` is cached per map id).
+All traits work the same on both maps (v2.3): cover spots, sniper spots, retake radius and mines use each map's own props, nav grid and posts (`getCover` is cached per map id).
 
 Base numbers for traits that don't say otherwise: 50% cover chance, 9 m reach, 3 s hold, 50% speed while shooting, 60 m retake.
 
 ## Campaign
 - Saved in `localStorage['conquest-commander:campaign']` `{v:1, credits, battle, wins, losses, streak, mapIndex}`. Starts at 💰 1500. 🆕 New campaign (tap twice) resets it.
 - Win: 1000 + 50 per post held + 2 per ticket left. Loss: 400 + 50 per post held. The end screen shows the breakdown.
-- Perks: 🎟️ Reinforcements +50 (400) · 🛡️ Combat Armor +25% HP (500) · 💥 Weapon Boost +20% dmg (500) · 🚩 Fast Capture +50% (300) · ⏩ Quick Deploy, waves 40% sooner (300) · 👥 Bigger Army, +4 live: 24 on Dust Ridge, 36 on Grand Valley (700) · ⭐ Elite Classes (400) · 🏰 Garrison: start owning the middle post (B on Dust Ridge, C on Grand Valley) with 4 guards (600) · 🧨 Sabotage: enemy −25 🎟️ (450) · 💰 War Chest +1000 CP (350).
+- Perks: 🎟️ Reinforcements +50 (400) · 🛡️ Combat Armor +25% HP (500) · 💥 Weapon Boost +20% dmg (500) · 🚩 Fast Capture +50% (300) · ⏩ Quick Deploy, waves 40% sooner (300) · 👥 Bigger Army, +4 live: 24 on Dust Ridge, 36 on Grand Valley (700) · ⭐ Elites from the start: ⭐ & 🛩️ join at once (400) · 🏰 Garrison: start owning the middle post (B on Dust Ridge, C on Grand Valley) with 4 guards (600) · 🧨 Sabotage: enemy −25 🎟️ (450) · 💰 War Chest +1000 CP (350).
 - The enemy buys 1 perk, +1 per win in your streak, −1 per loss (min 0, max 6). Both sides' perks show as icons at battle start (and in ⏸️).
 - Maps: `MAPS` in `js/campaign.js` = `MAP_LIST` from `js/map.js` (Dust Ridge, Grand Valley).
 - Quick battles started from test hooks don't touch the campaign. Leaving a campaign battle via 🏠 forfeits it (perks are spent, nothing is recorded).
@@ -95,7 +95,7 @@ Base numbers for traits that don't say otherwise: 50% cover chance, 9 m reach, 3
   - **No save:** you get one cheap basic **Trooper 1** (💰100), not a ready-made army.
 - **What you field:** the active player's roster troopers (up to 6 types, in slot order). Tanks and bench units aren't used yet.
 - **Who you fight:** another saved player (their roster troopers), or 🎲 a random nation with a generated army that has as many unit types as yours (trooper first, then heavy, sniper, engineer, jet, commander).
-- **Traits:** the first valid entry in a unit's `traits[]` is its behaviour. The chip shows 🪖 and is locked, so change it in the Customizer. Units with no trait use the setup picker (or the class default).
+- **Traits:** the first valid entry in a unit's `traits[]` is its behaviour. The chip shows 🪖 (set in the army); change it in the Customizer. Units with no trait use the setup picker (or the class default).
 - **Cost:** each spawn costs the unit's shared `unitCost()` in ⭐ CP (shown on every tile). The setup screen compares your average cost with the CP you earn per wave and warns ⚠️ when the army is too expensive to reinforce. Campaign 💰 credits still only buy perks.
 - **Header:** the setup screen and the ⏸️ pause menu show your player name, nation flag and name, and unit count.
 - **Jumps:**
@@ -134,3 +134,10 @@ node --import ./test/three-hook.mjs test/sim.mjs                              # 
 bash test/stage.sh                                                            # staging tree games/{shared/army,trooper-custom,conquest-commander} (run.mjs does this itself)
 PLAYWRIGHT_BROWSERS_PATH=<playwright browsers> node test/run.mjs              # browser: desktop (traits, cover, nests), campaign + shop, v2 save, no save, iPhone 13 landscape + portrait, map picker + Grand Valley desktop/phone incl. traits in a big battle, v2.4 army header/costs/pause/storage refresh + Customizer ⇄ Conquest round trip (→ test/perf.json, screenshots/unite-*.png)
 ```
+
+## v2.5: tanks, gear, taken out (army audit fixes)
+- **🚜 Tanks.** Each side fields its saved roster tanks (max 2; a generated enemy fields as many as you). A tank drives to the post its side wants most, fights on the way with its tank weapon (stats.js `TANK_WEAPONS`), can't capture posts or pick up packs, takes ×0.35 damage from small arms (rockets/explosives full, 🧨 detpacks ×2), is stunned 2.5 s by 🌩️ EMP-launcher hits, costs **1 ticket** when destroyed and respawns on the next wave if your side can pay its 💰 CP. Wrecks stay dark and tilted for ~3.6 s, then fade.
+- **🎒 Gear works in battle** (on in the browser; `?gear=0` turns it off; off in node tests so the seeded balance numbers stay the same). Each sidearm, explosive and gadget does what its one-line effect text (stats.js `GEAR_EFFECT`) says: 🔸 sidearms fire while the main weapon reloads; 🤾 thermals are thrown at a seen enemy; ⚠️ mines are planted at your post; 🧨 detpacks go on a tank or an enemy group; ⏰ time bombs are planted on an enemy post being taken; 🗼 turret, 🛰️ recon droid, 📦 supply crate and 📣 rally deploy once per life; 🎒 jetpack = faster on foot; 🔧 fusion cutter repairs allied tanks and turrets. Turrets, droids, crates, rally rings and blinking time bombs are drawn on the map.
+- **💀 Taken out ≠ crouch.** A downed trooper flinches, is knocked back along the hit direction onto its back, its weapon flies off and lands beside it, it lies ~3 s and then fades out (no blinking).
+- **HUD words.** Buttons have labels (Pause / Rally / Fight / Help), the chip reads `💰 CP · Wave ⏱ · Troops 🪖 live/max`, badges say "AI-held: no orders yet", perks are listed on the pause screen (Your perks / Enemy perks), and a one-time hint explains tapping a post.
+- **🧠 Brains** (Unit Brains save): no presets or tiers; the rows you saved run (default on; `?brains=0` turns them off). New rows: medic heals, mine planting, guard a post.

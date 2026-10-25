@@ -18,9 +18,10 @@ export const SYMBOLS = ['star', 'planet', 'comet', 'skull', 'wing', 'bolt', 'che
 // Unit-level: shape / gear only. Field order = code order; never reorder, only append.
 export const NATION_FIELDS = [['suit', 5], ['sym', 12], ['sc', 4], ['vis', 6], ['glow', 3]];
 export const NATION_DEFAULT = Object.freeze({ p: '#2f80ed', s: '#ffe14d', suit: 0, sym: 0, sc: 0, vis: 0, glow: 1 });
-// v4 trooper kit: armor (standard/heavy) + loadout (main weapon, award ⭐, sidearm, explosive, gadget) + cosmetics
+// v4 trooper kit: armor (standard/heavy) + loadout (main weapon, sidearm, explosive, gadget) + cosmetics.
+// 'award' is a retired slot kept only so old look digits / share codes still line up: always written as 0, never drawn.
 export const TROOPER_FIELDS = [['helm', 5], ['armor', 2], ['pads', 3], ['weapon', 6], ['award', 2], ['side', 2], ['expl', 4], ['gadget', 7], ['extra', 3], ['banner', 2], ['skin', 5]];
-export const TROOPER_DEFAULT = Object.freeze({ helm: 0, armor: 0, pads: 1, weapon: 0, award: 0, side: 0, expl: 0, gadget: 0, extra: 0, banner: 1, skin: 1 });
+export const TROOPER_DEFAULT = Object.freeze({ helm: 0, armor: 0, pads: 0, weapon: 0, award: 0, side: 0, expl: 0, gadget: 0, extra: 0, banner: 0, skin: 1 }); // = stats.js BASIC_GEAR (one default source)
 // v2/v3 trooper layout (TC1/TC2 codes, v2/v3 saves) and its mapping into the v4 kit
 export const TROOPER_FIELDS_V2 = [['helm', 5], ['armor', 3], ['pads', 3], ['pack', 4], ['rifle', 3], ['extra', 3], ['banner', 2], ['skin', 5]];
 export const TROOPER_DEFAULT_V2 = Object.freeze({ helm: 0, armor: 1, pads: 1, pack: 3, rifle: 0, extra: 0, banner: 1, skin: 1 });
@@ -57,6 +58,7 @@ export function sanitizeFields(o, fields, defaults) {
   const st = { ...defaults };
   if (!o || typeof o !== 'object') return st;
   for (const [k, n] of fields) { const v = Number(o[k]); if (o[k] !== '' && o[k] != null && Number.isInteger(v) && v >= 0 && v < n) st[k] = v; }
+  if ('award' in st) st.award = 0; // retired slot (old codes may say 1)
   return st;
 }
 export function sanitizeNation(o) {
@@ -64,7 +66,7 @@ export function sanitizeNation(o) {
   n.p = normHex(o && o.p, NATION_DEFAULT.p); n.s = normHex(o && o.s, NATION_DEFAULT.s);
   return n;
 }
-export const digits = (st, fields) => fields.map(([k]) => st[k].toString(36)).join('').toUpperCase();
+export const digits = (st, fields) => fields.map(([k]) => (k === 'award' ? 0 : st[k] | 0).toString(36)).join('').toUpperCase();
 export function undigits(str, fields, defaults) {
   str = String(str || '').toLowerCase();
   if (!/^[0-9a-z]*$/.test(str) || str.length > fields.length) return null;
@@ -235,7 +237,7 @@ export const sph = (r, ws = 8, hs = 6, ps = 0, pl = Math.PI * 2, ts = 0, tl = Ma
 export const HALF = Math.PI / 2;
 
 export class Builder {
-  constructor() { this.parts = []; this.stack = [new THREE.Matrix4()]; this.bone = 'torso'; }
+  constructor() { this.parts = []; this.stack = [new THREE.Matrix4()]; this.bone = 'torso'; this.tag = ''; } // tag: which loadout item a part belongs to (item-only thumbnails)
   get top() { return this.stack[this.stack.length - 1]; }
   push(m) { this.stack.push(this.top.clone().multiply(m)); }
   pop() { this.stack.pop(); }
@@ -256,7 +258,7 @@ export class Builder {
       for (let i = 0; i < uv.count; i++) if (!keep || !keep.has(i)) uv.setXY(i, u, 0.5);
     }
     g.applyMatrix4(m ? this.top.clone().multiply(m) : this.top);
-    this.parts.push({ geo: g, mat: base === 'V' ? 'visor' : 'team', bone: this.bone });
+    this.parts.push({ geo: g, mat: base === 'V' ? 'visor' : 'team', bone: this.bone, tag: this.tag });
     return g;
   }
   // box stretched between two points (limbs); returns its local matrix for attachments
@@ -318,12 +320,6 @@ function buildWeapon(b, st) {
       b.add(cyl(0.09, 0.05, 0.05, 8), 'S', M(0, 0.02, 0.445, HALF)); BAR(0.472, 0.03, 0.012, 'V');
       R(0, -0.08, 0.1, 0.05, 0.08, 0.1, 'S'); R(0, 0, -0.16, 0.05, 0.08, 0.18, 'D'); grip();
   }
-  if (st.award) { // ⭐ award version: gold rail + gold muzzle ring + star light
-    const w = st.weapon;
-    R(0, TOPY[w], 0.08, 0.03, 0.02, 0.24, 'A');
-    b.add(cyl(MUZZLE_R[w] + 0.01, MUZZLE_R[w] + 0.01, 0.03, 6), 'A', M(0, w === 1 ? 0.07 : 0.02, MUZZLE[w] - 0.03, HALF));
-    R(-0.04, TOPY[w] - 0.02, 0.0, 0.006, 0.03, 0.03, 'V');
-  }
 }
 
 export function buildParts(st) {
@@ -344,9 +340,11 @@ export function buildParts(st) {
   b.add(box(0.34, 0.2, 0.21), 'D', M(0, 0.9, 0));
   if (heavy) b.add(box(0.34, 0.13, 0.045), W, M(0, 0.86, 0.12, -0.15));
   // sidearm in a holster on the right thigh
+  b.tag = 'side';
   b.add(box(0.05, st.side ? 0.17 : 0.13, st.side ? 0.09 : 0.08), 'D', M(-0.215, 0.76, 0.0));
   b.add(box(0.035, 0.07, 0.05), st.side ? 'S' : 'G', M(-0.215, 0.87, -0.02, 0.3));
   if (st.side) b.add(box(0.012, 0.02, 0.02), 'V', M(-0.215, 0.91, -0.005));
+  b.tag = '';
   // ----- torso -----
   b.bone = 'torso';
   b.add(box(0.37, 0.06, 0.23), 'S', M(0, 1.0, 0));
@@ -381,6 +379,7 @@ export function buildParts(st) {
     }
   }
   // explosive on the belt
+  b.tag = 'expl';
   if (st.expl === 0) { // thermal detonator
     b.add(sph(0.048, 6, 4), 'S', M(0.15, 0.965, 0.125));
     b.add(box(0.02, 0.012, 0.012), 'V', M(0.15, 0.985, 0.155));
@@ -401,6 +400,7 @@ export function buildParts(st) {
     }
   }
   // gadget / special (back slot)
+  b.tag = 'gadget';
   let pd = 0, antenna = null;
   const g = st.gadget;
   if (g === 1) { // deployable auto turret, folded
@@ -446,6 +446,7 @@ export function buildParts(st) {
     if (!st.banner) b.add(box(0.03, 0.03, 0.03), 'V', M(antenna[0], 1.99, antenna[1]));
     pd = 0.11;
   }
+  b.tag = '';
   const backZ = bz - pd;
   if (st.banner) {
     let px = 0.1, pz = backZ - 0.02; const top = 1.97;
@@ -508,7 +509,7 @@ export function buildParts(st) {
   const fz = FOREGRIP[st.weapon] ?? 0.25;
   const gripW = new THREE.Vector3(0, -0.035, 0).applyMatrix4(R).toArray();
   const foreW = new THREE.Vector3(0, st.weapon === 1 ? 0.0 : -0.03, fz).applyMatrix4(R).toArray();
-  b.push(R); buildWeapon(b, st); b.pop();
+  b.push(R); b.tag = 'weapon'; buildWeapon(b, st); b.tag = ''; b.pop();
   const arm = (sx, hand, elbow) => {
     const sh = [0.225 * sx, 1.37, 0];
     const up = b.seg(sh, elbow, heavy ? 0.115 : 0.1, 0.11, 'D');
@@ -542,8 +543,9 @@ export function concat(geos) {
 export const disposeAll = (parts) => parts.forEach((p) => p.geo.dispose());
 
 // All parts merged per material at rest pose (RTS/squad/thumbnail path): 2 geometries.
-export function buildMergedDef(def, st) {
-  const parts = def.build(st);
+export function buildMergedDef(def, st, only = null) {
+  const all = def.build(st), parts = only ? all.filter((p) => p.tag === only) : all;
+  if (only) disposeAll(all.filter((p) => p.tag !== only));
   const out = {};
   for (const mat of ['team', 'visor']) { const g = parts.filter((p) => p.mat === mat).map((p) => p.geo); if (g.length) out[mat] = concat(g); }
   disposeAll(parts);

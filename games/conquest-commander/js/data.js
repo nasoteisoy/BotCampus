@@ -1,7 +1,7 @@
 // Battle numbers for a look: class + weapon + HP/speed/cost/accuracy, all from the ONE shared stats file
 // (games/shared/army/stats.js, the same numbers the 🪖 Trooper Customizer shows). v2.4: no local COST/STATS/ITEMS copies.
 // The army itself (who you are, your units, the enemy) is loaded in army.js.
-import { combatStats, classOf as sharedClassOf, toIndex, ITEMS, WEAPONS, CLASSES as SHARED_CLASSES, CLASS_INFO, BASIC_GEAR } from '../../shared/army/stats.js?v=8';
+import { combatStats, classOf as sharedClassOf, toIndex, ITEMS, WEAPONS, CLASSES as SHARED_CLASSES, CLASS_INFO, BASIC_GEAR } from '../../shared/army/stats.js?v=9';
 
 // ---------- class + stats from gear (SWBF2 classes) ----------
 // Class comes from the gear (shared classOf, first match wins):
@@ -17,7 +17,7 @@ export function classOf(g) { return sharedClassOf('trooper', gearOf(g)); }
 // sim stats: { cls, cost, power, hp, speed (battle m/s), acc, weapon:'rifle'|'rocket', weaponId, range, rof, dmg, splash, laser, dps }
 export function statsOf(x) {
   const g = gearOf(x), s = asGear(g) ? combatStats({ kind: 'trooper', gear: g }) : combatStats('trooper', g);
-  return { cls: s.cls, cost: s.cost, power: s.power, hp: s.hp, speed: s.speed, acc: s.acc, weapon: s.weapon, weaponId: s.id, range: s.range, rof: s.rof, dmg: s.dmg, splash: s.splash, laser: s.laser ? 1 : 0, dps: s.dps };
+  return { cls: s.cls, cost: s.cost, power: s.power, hp: s.hp, speed: s.speed, acc: s.acc, weapon: s.weapon, weaponId: s.id, range: s.range, rof: s.rof, dmg: s.dmg, splash: s.splash, laser: s.laser ? 1 : 0, emp: s.emp ? 1 : 0, dps: s.dps };
 }
 export const indexOf = (gear) => toIndex('trooper', gear);   // gear ids → index state for the 3D look builders (trooper.js)
 export { ITEMS, WEAPONS, BASIC_GEAR };
@@ -30,7 +30,7 @@ export const fmt = (n) => (n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) 
 // defaultLooksFor(): the old built-in 6-type roster (Trooper, Heavy, Sniper, Engineer, Jet, Commander) as looks.
 import { loadArmy, randomNation } from './army.js';
 import { DEFAULT_ROSTER } from './trooper.js';
-import { toGear } from '../../shared/army/stats.js?v=8';
+import { toGear } from '../../shared/army/stats.js?v=9';
 export function loadArmies(storage) {
   const a = loadArmy(storage); if (a.nations.length > 1) return a;
   return { ...a, nations: [...a.nations, randomNation(mulberry32(5), a.nations[0] && a.nations[0].p)] };

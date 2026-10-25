@@ -12,6 +12,8 @@ import { statsOf, mulberry32, CLASSES } from './data.js';
 import { perkMods } from './perks.js';
 import { TRAIT_FX, traitOf, normDiff, TRAIT_AI, getCover } from './traits.js';
 import { PICKUPS } from './pickups.js';                 // ❤️/📦 packs + magazines (ON by default; ?pickups=0 turns off)
+import { GEAR, TANK_RULES } from './gear.js';            // 🎒 sidearms, explosives, gadgets (ON in the browser; ?gear=0 turns off)
+import { combatStats } from '../../shared/army/stats.js?v=9';
 
 export const CFG = {
   dt: 0.05,
@@ -31,6 +33,13 @@ export const CFG = {
 };
 export const MARKS = ['attack', 'defend', 'ignore'];
 const LOCKABLE = ['commander', 'jet'];
+// 🚜 tanks (the player's saved tanks + one per side for the enemy): drive to their post, shoot, can be destroyed and come
+// back on a wave for CP + 1 ticket like everyone else. They never capture posts (TANK_RULES.capture = false).
+const TANK_TR = Object.freeze({ cover: 0, coverR: 0, hold: 2, fight: 0.6, retakeR: 60 });
+export function tankStats(l) {
+  const s = combatStats('tank', l.st || {});
+  return { cls: 'tank', cost: s.cost, power: s.power, hp: s.hp, speed: s.speed, acc: s.acc, weapon: s.weapon, weaponId: s.id, range: s.range, rof: s.rof, dmg: s.dmg, splash: s.splash || 0, laser: s.laser ? 1 : 0, dps: s.dps };
+}
 
 // v2.2 maps: nav grid + cover spots are built once per map (cached by MAP.id) and picked up on map switch
 const NAVS = {};
@@ -61,6 +70,7 @@ export class Sim {
         marks: this.posts.map(() => ({ mark: 'attack', stars: 1 })),
         squads: [], slots: [], plan: [], cursor: {}, kills: 0, losses: 0, spawned: 0, cpEarned: 0, bled: 0,
         unlocked: mods.elite, heldMax: 0, holdT: null, lastStand: false,
+        tankLooks: (t.tanks || []).slice(0, TANK_RULES.maxPerTeam).map((l) => ({ ...l, kind: 'tank', stats: tankStats(l) })), tankLosses: 0,
         cpT: C.cpEvery, bleedT: C.bleedEvery, waveT: C.waveEvery * mods.waveMul, aiT: 0,
       };
     });
@@ -68,6 +78,7 @@ export class Sim {
     for (const T of this.teams) this.teams[1 - T.idx].tickets -= T.mods.sabotage;
     for (const T of this.teams) {
       T.plan = this.makePlan(T);
+      for (let k = 0; k < T.tankLooks.length; k++) T.plan.push('tank');   // tank slots go last: troopers spawn first on a wave
       T.slots = T.plan.map(() => null);
       const nSq = Math.ceil(T.live / C.squadSize);
       for (let k = 0; k < nSq; k++) T.squads.push({ id: k, team: T.idx, members: [], size: Math.min(C.squadSize, T.live - k * C.squadSize), wiped: false });
@@ -236,6 +247,7 @@ export class Sim {
   }
   spawnUnit(T, slot, post, free = false) {
     const planCls = T.plan[slot];
+    if (planCls === 'tank') return this.spawnTank(T, slot, post, free);
     const cls = LOCKABLE.includes(planCls) && !T.unlocked ? 'trooper' : planCls;
     const look = this.lookFor(T, cls);
     if (!free) { if (T.cp < look.stats.cost) { T.cursor[cls]--; return null; } T.cp -= look.stats.cost; }
@@ -254,6 +266,26 @@ export class Sim {
     this.units.push(u); T.slots[slot] = u;
     sq.members = sq.members.filter((m) => m.alive); sq.members.push(u); sq.wiped = false; T.spawned++;
     if (u.mode === 'rally') { [u.gx, u.gz] = this.nav.freePoint(T.rally.x + (this.r() - 0.5) * 5, T.rally.z + (this.r() - 0.5) * 5); }
+    if (GEAR.on) GEAR.init(this, u);
+    return u;
+  }
+  spawnTank(T, slot, post, free) {
+    const k = T.plan.slice(0, slot + 1).filter((c) => c === 'tank').length - 1, look = T.tankLooks[k]; if (!look) return null;
+    const s = look.stats;
+    if (!free) { if (T.cp < s.cost) return null; T.cp -= s.cost; }
+    const a = this.r() * Math.PI * 2, d = 3 + this.r() * 3;
+    const [x, z] = this.nav.freePoint(post.x + Math.cos(a) * d, post.z + Math.sin(a) * d);
+    const hpMax = s.hp * T.mods.hpMul, u = {
+      id: this.nextId++, team: T.idx, squad: -1, slot, look: -1, tk: k, kind: 'tank', cls: 'tank', planCls: 'tank', s, trait: '', tr: TANK_TR,
+      hp: hpMax, hpMax, x, z, yaw: T.idx === 0 ? Math.PI / 2 : -Math.PI / 2, alive: true, deadT: 0, hurtT: 0, stunT: 0,
+      gx: x, gz: z, mx: x, mz: z, path: null, pgx: x, pgz: z, repath: 0, think: this.r() * 0.3, fireT: this.r() * s.rof, tgt: null,
+      mode: 'go', moving: false, phase: 0, kills: 0, firing: 0, born: this.time,
+      post: -1, hold: -1, retake: null, guardPost: null, cov: null, inCover: false, duck: false, crouch: false, popT: 0, coverRollT: 0,
+      lastSeen: -99, threat: null, nest: null, atNest: false, nestMoves: 0, mines: 0, mineSpot: null, plantT: 0, healT: 0,
+      shots: 0, hits: 0, coverT: 0,
+    };
+    this.units.push(u); T.slots[slot] = u; T.spawned++;
+    this.emit({ type: 'tank', team: T.idx, x, z });
     return u;
   }
   wave(T) {
@@ -297,6 +329,7 @@ export class Sim {
     this.capture(dt);
     this.updateUnits(dt);
     if (PICKUPS.on) PICKUPS.step(this, dt);
+    if (GEAR.on) GEAR.step(this, dt);
     this.updateShots(dt);
     for (const T of this.teams) {
       // last stand: tickets ≤ units on the field → no more bleed against this side and no more respawns
@@ -325,14 +358,14 @@ export class Sim {
       } else if (T.holdT != null) { T.holdT = null; this.emit({ type: 'countdownStop', team: T.idx }); }
     }
     if (Math.floor(this.time / 2) !== Math.floor((this.time - dt) / 2)) for (const T of this.teams) this.assign(T, false);
-    this.units = this.units.filter((u) => u.alive || (u.deadT += dt) < 3.5);
+    this.units = this.units.filter((u) => u.alive || (u.deadT += dt) < 4.4);
     this.checkWin();
   }
   capture(dt) {
     const C = this.cfg, R2 = MAP.postR * MAP.postR;
     for (const p of this.posts) {
       p.n[0] = p.n[1] = 0;
-      for (const u of this.units) if (u.alive && (u.x - p.x) ** 2 + (u.z - p.z) ** 2 < R2) p.n[u.team]++;
+      for (const u of this.units) if (u.alive && u.kind !== 'tank' && (u.x - p.x) ** 2 + (u.z - p.z) ** 2 < R2) p.n[u.team]++;   // 🚜 tanks never capture
       const prevOwner = p.owner;
       if (p.n[0] && p.n[1]) { /* contested: stalls */ }
       else if (p.n[0] || p.n[1]) {
@@ -362,6 +395,7 @@ export class Sim {
     this.pending = [];
     for (const u of alive) {
       u.hurtT = Math.max(0, u.hurtT - dt); u.firing = Math.max(0, u.firing - dt);
+      if (u.stunT > 0) { u.stunT -= dt; u.moving = false; continue; }   // 🌩️ EMP-stunned tank: no move, no fire
       const fx = u.tr;
       if ((u.think -= dt) <= 0) {
         u.think = 0.3;
@@ -388,7 +422,10 @@ export class Sim {
       u.atNest = !!u.nest && Math.hypot(u.nest.x - u.x, u.nest.z - u.z) < 1.8;
       if (u.atNest && u.nest.until === Infinity) u.nest.until = now + u.nest.dur;   // the nest timer starts on arrival
       u.crouch = u.duck || (u.atNest && !tg);
-      if ((u.fireT -= dt) <= 0 && tg && !u.duck && (!PICKUPS.on || PICKUPS.shoot(this, u))) { u.fireT = u.s.rof * this.rofMul(u) * (0.85 + 0.3 * this.r()); this.fire(u, tg); }
+      if ((u.fireT -= dt) <= 0 && tg && !u.duck) {
+        if (!PICKUPS.on || u.kind === 'tank' || PICKUPS.shoot(this, u)) { u.fireT = u.s.rof * this.rofMul(u) * (0.85 + 0.3 * this.r()); this.fire(u, tg); }
+        else if (GEAR.on) GEAR.sidearm(this, u, tg);   // 🔫 main weapon reloading / empty → the sidearm fires
+      }
       // mine laying: stand still on the spot for a moment
       if (u.mineSpot && Math.hypot(u.mineSpot.x - u.x, u.mineSpot.z - u.z) < 0.9) { if ((u.plantT += dt) >= this.cfg.mine.plant) this.plantMine(u); }
       else u.plantT = 0;
@@ -414,7 +451,7 @@ export class Sim {
       else if (u.atNest && u.post >= 0) { const p = this.posts[u.post]; u.yaw = turn(u.yaw, Math.atan2(p.x - u.x, p.z - u.z), dt * 4); }  // nest: face out over the post
       if (fx.heal) this.supplyAura(u, alive, dt);
     }
-    for (const [e, amt, by] of this.pending) this.damage(e, amt, by);
+    for (const [e, amt, by, kind] of this.pending) this.damage(e, amt, by, kind);
     this.pending = [];
     // separation (spatial hash keeps 20v20+ cheap)
     const CS = 1.2, cells = new Map(), key = (i, j) => i * 1000 + j;
@@ -441,20 +478,20 @@ export class Sim {
     const d = Math.hypot(tg.x - u.x, tg.z - u.z), dmg = u.s.dmg * this.teams[u.team].mods.dmgMul;
     u.firing = 0.25;
     const y0 = heightAt(u.x, u.z) + 1.9, y1 = heightAt(tg.x, tg.z) + 1.3;
-    if (u.s.weapon === 'rocket') {
+    if (u.s.weapon === 'rocket' || u.s.weapon === 'shell') {   // rockets + tank shells: splash rounds
       const miss = (1 - u.s.acc * this.accMul(u)) * 3.5 * (d / u.s.range);
       const tx = tg.x + (this.r() - 0.5) * 2 * miss, tz = tg.z + (this.r() - 0.5) * 2 * miss, T = Math.max(0.25, d / 32);
-      (this.shots ||= []).push({ tx, tz, ty: heightAt(tx, tz) + 0.5, t: 0, T, team: u.team, owner: u, dmg, splash: u.s.splash });
+      (this.shots ||= []).push({ tx, tz, ty: heightAt(tx, tz) + 0.5, t: 0, T, team: u.team, owner: u, dmg, splash: u.s.splash, emp: u.s.emp ? 1 : 0 });
       this.emit({ type: 'rocket', team: u.team, x0: u.x, z0: u.z, y0, x1: tx, z1: tz, y1: heightAt(tx, tz) + 0.5, T });
       return;
     }
     // partly covered (popped up behind a prop) or crouched in a nest = harder to hit
-    const p = u.s.acc * this.accMul(u) * (1 - 0.45 * d / u.s.range) * (tg.moving ? 0.9 : 1) * (tg.inCover ? 0.7 : tg.crouch ? 0.85 : 1);
+    const p = u.s.acc * this.accMul(u) * (1 - 0.45 * d / u.s.range) * (tg.moving ? 0.9 : 1) * (tg.inCover ? 0.7 : tg.crouch ? 0.85 : 1) + (GEAR.on ? GEAR.spotBonus(this, u) : 0);
     const hit = this.r() < p;
     u.shots++; if (hit) u.hits++;
     const ex = hit ? tg.x : tg.x + (this.r() - 0.5) * 3, ez = hit ? tg.z : tg.z + (this.r() - 0.5) * 3;
     this.emit({ type: 'tracer', team: u.team, laser: !!u.s.laser, x0: u.x, z0: u.z, y0, x1: ex, z1: ez, y1 });
-    if (hit) this.pending.push([tg, dmg * (0.85 + 0.3 * this.r()), u]); // applied after everyone acted (no first-mover edge)
+    if (hit) this.pending.push([tg, dmg * (0.85 + 0.3 * this.r()), u, u.kind === 'tank' ? 'heavy' : 'small']); // applied after everyone acted (no first-mover edge)
   }
   updateShots(dt) {
     if (!this.shots) return;
@@ -462,19 +499,26 @@ export class Sim {
       if ((s.t += dt) < s.T) continue;
       s.done = true;
       this.emit({ type: 'boom', x: s.tx, z: s.tz, y: s.ty, team: s.team });
-      for (const e of this.units) if (e.alive && e.team !== s.team) { const d = Math.hypot(e.x - s.tx, e.z - s.tz); if (d < s.splash) this.damage(e, s.dmg * (1 - 0.6 * d / s.splash) * (e.inCover && e.duck ? 0.5 : 1), s.owner); }
+      for (const e of this.units) if (e.alive && e.team !== s.team) {
+        const d = Math.hypot(e.x - s.tx, e.z - s.tz); if (d >= s.splash) continue;
+        if (s.emp && e.kind === 'tank') e.stunT = TANK_RULES.empStun;                                     // 🌩️ EMP stuns tanks
+        this.damage(e, s.dmg * (1 - 0.6 * d / s.splash) * (e.inCover && e.duck ? 0.5 : 1) * (e.kind === 'tank' ? s.tankMul || 1 : 1), s.owner, 'blast');
+      }
+      if (GEAR.on) GEAR.splash(this, s.tx, s.tz, s.team, s.dmg, s.splash);
     }
     this.shots = this.shots.filter((s) => !s.done);
   }
-  damage(e, amt, by) {
+  damage(e, amt, by, kind) {
     if (!e.alive) return;
+    if (e.kind === 'tank' && kind === 'small') amt *= TANK_RULES.armorMul;   // 🚜 armor: rifles / pistols / turrets barely scratch it
+    if (GEAR.on) amt *= GEAR.takenMul(this, e);                              // 📣 rally zone: less damage taken
     e.hp -= amt; e.hurtT = 0.2;
     if (e.hp > 0) return;
     e.alive = false; e.deadT = 0; e.hp = 0; this.leaveCover(e); e.crouch = false;
     e.fallYaw = by ? Math.atan2(e.x - by.x, e.z - by.z) : e.yaw;
-    const T = this.teams[e.team]; T.tickets = Math.max(0, T.tickets - 1); T.losses++;
+    const T = this.teams[e.team]; T.tickets = Math.max(0, T.tickets - 1); T.losses++; if (e.kind === 'tank') T.tankLosses++;
     if (by) { by.kills++; this.teams[by.team].kills++; }
-    this.emit({ type: 'death', team: e.team, x: e.x, z: e.z });
+    this.emit({ type: 'death', team: e.team, x: e.x, z: e.z, tank: e.kind === 'tank' });
     const sq = T.squads[e.squad];
     if (sq && !sq.members.some((m) => m.alive) && !sq.wiped) { sq.wiped = true; this.emit({ type: 'squadLost', team: e.team, x: e.x, z: e.z }); }
   }

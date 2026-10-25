@@ -3,12 +3,12 @@
 // 'trooper-custom:db' v3 so Conquest v2.3 keeps working. Stats/costs come from games/shared/army/stats.js.
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=6';
-import * as T from './trooper.js?v=6';
-import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=6';
-import { SLOT_ICONS, WEAPON_ICONS, NAME_MAX, templateById } from './templates.js?v=6'; // templates: only to read old saves (v5 has no preset units)
-import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=7';
-import * as S from '../../shared/army/stats.js?v=8';
-import * as Army from '../../shared/army/schema.js?v=8';
+import * as T from './trooper.js?v=7';
+import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=7';
+import { SLOT_ICONS, WEAPON_ICONS, NAME_MAX, templateById } from './templates.js?v=7'; // templates: only to read old saves (v5 has no preset units)
+import { COST, ITEMS, STATS, unitCost, unitStats, optionCost, fmt } from './cost.js?v=8';
+import * as S from '../../shared/army/stats.js?v=9';
+import * as Army from '../../shared/army/schema.js?v=9';
 
 const UNITS = { trooper: T.TROOPER, tank: TANK };
 const NATION_KEYS = new Set(['p', 's', ...T.NATION_FIELDS.map(([k]) => k)]);
@@ -24,7 +24,7 @@ const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
 // ---------- storage + data model ----------
-// db v3: player -> nations (colors, flag, 6-slot trooper roster) ; shared tank look ; looks ; award medals
+// db v3: player -> nations (colors, flag, 6-slot trooper roster) ; shared tank look ; looks. (Old saves' award / medal fields are dropped.)
 const LS_DB = 'trooper-custom:db', LS_DB_V2 = 'trooper-custom:db-v2', LS_CUR_V1 = 'trooper-custom:current', LS_LOOKS_V1 = 'trooper-custom:looks', MAX_LOOKS = 60, MAX_NATIONS = 12;
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
@@ -44,7 +44,7 @@ function cleanSlot(x, i) {
 function cleanRoster(r) { return Array.isArray(r) ? Array.from({ length: T.ROSTER_SIZE }, (_, i) => cleanSlot(r[i], i)) : blankRoster(); }
 const newNation = (name, colors, roster, playerName) => { const id = newId(); return { id, pid: 'p-' + id, playerName: clean(playerName) || '', name, ...T.sanitizeNation(colors), roster: cleanRoster(roster), tank: { ...BASIC_TANK }, tankId: 'k-' + id }; };
 function cleanDB(d) {
-  const db = { v: 3, player: { name: clean(d.player && d.player.name) || 'Player 1' }, nations: [], active: null, slot: 0, unit: d.unit === 'tank' ? 'tank' : 'trooper', tank: null, looks: [], medals: [], debugAward: d.debugAward === true };
+  const db = { v: 3, player: { name: clean(d.player && d.player.name) || 'Player 1' }, nations: [], active: null, slot: 0, unit: d.unit === 'tank' ? 'tank' : 'trooper', tank: null, looks: [] };
   if (d.migratedFrom) db.migratedFrom = String(d.migratedFrom);
   if (d.upgradedFrom) db.upgradedFrom = String(d.upgradedFrom);
   const tank0 = T.sanitizeFields(d.tank || BASIC_TANK, TANK_FIELDS, TANK_DEFAULT);
@@ -60,7 +60,6 @@ function cleanDB(d) {
   if (d._base && typeof d._base === 'object') db._base = d._base;
   db.slot = Number.isInteger(d.slot) && d.slot >= 0 && d.slot < T.ROSTER_SIZE ? d.slot : 0;
   db.tank = db.nations.find((n) => n.id === db.active).tank;
-  db.medals = Array.from({ length: 6 }, (_, i) => { const m = d.medals && d.medals[i]; return Number.isInteger(m) && m > 0 ? Math.min(m, 99999) : 0; });
   const ids = new Set(db.nations.map((n) => n.id));
   for (const l of d.looks || []) {
     if (!l || typeof l.id !== 'string' || !ids.has(l.nationId) || !UNITS[l.unit]) continue;
@@ -120,7 +119,7 @@ function armyToDb(a) {
   }
   const act = a.players.find((p) => p.id === a.activePlayerId) || a.players[0], cu = a.ext && a.ext['trooper-custom'] || {};
   const base = { ...a }; delete base.players; delete base.units; // squads[], ships[], ext + unknown keys ride along untouched
-  const d = cleanDB({ v: 3, player: { name: act.name }, nations, active: act.nation.id, slot: cu.slot, unit: cu.unit, looks, medals: cu.medals, _extra: extra, _base: base });
+  const d = cleanDB({ v: 3, player: { name: act.name }, nations, active: act.nation.id, slot: cu.slot, unit: cu.unit, looks, _extra: extra, _base: base });
   if (a.migratedFrom) d.migratedFrom = a.migratedFrom;
   return d;
 }
@@ -138,7 +137,7 @@ function dbToArmy(d) {
   const pids = new Set(Object.values(pidOf));
   for (const u of d._extra || []) if (pids.has(u.playerId) && !units.some((x) => x.id === u.id)) units.push(u);
   const base = d._base || {}, act = d.nations.find((n) => n.id === d.active) || d.nations[0];
-  return { ...base, version: Army.ARMY_VERSION, activePlayerId: act.pid, players, units, ships: base.ships || [], ext: { ...(base.ext || {}), 'trooper-custom': { slot: d.slot, unit: d.unit, medals: d.medals } } };
+  return { ...base, version: Army.ARMY_VERSION, activePlayerId: act.pid, players, units, ships: base.ships || [], ext: { ...(base.ext || {}), 'trooper-custom': { slot: d.slot, unit: d.unit } } };
 }
 // legacy mirror for Conquest v2.3 ('trooper-custom:db' v3): same shape as before, tank = active nation's tank
 function legacyDb(d) {
@@ -182,8 +181,9 @@ const flushDB = () => {
   clearTimeout(saveT); saveT = 0; if (wiped || !dirty) return true;
   const ok = Army.save(mergeArmy(dbToArmy(db)), undefined, 'trooper-custom');
   const r = lsSet(LS_DB, JSON.stringify(legacyDb(db))) && ok;
-  dirty = false; return r;
+  dirty = false; if (r && typeof onSaved === 'function') onSaved(); return r;
 };
+let onSaved = null; // set by the ✓ Saved chip below
 const saveDB = () => { dirty = true; clearTimeout(saveT); saveT = setTimeout(flushDB, 60); };
 addEventListener('pagehide', flushDB);
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushDB(); });
@@ -200,14 +200,12 @@ const cur = {
   },
   get tank() { return nation().tank; }, set tank(v) { nation().tank = v; db.tank = v; },
 };
-// v5: everything is unlocked (cost is still shown). Medal counters are kept in the save for later.
-const unlocked = () => true;
 // 'Trooper 1', 'Trooper 2', … : lowest number not used by this nation's roster
 function nextTrooperName(n = nation()) { const used = new Set(n.roster.filter((r) => !r.blank).map((r) => r.name)); for (let k = 1; ; k++) if (!used.has('Trooper ' + k)) return 'Trooper ' + k; }
 const fullState = (unit = db.unit, us = cur[unit], nat = nation()) => {
   const st = { ...nat, skin: unit === 'trooper' ? us.skin : cur.trooper.skin, ...us };
   delete st.roster;
-  if (unit === 'trooper') st.award = us.award && unlocked(us.weapon) ? 1 : 0; // ⭐ only shows/costs once unlocked
+  if (unit === 'trooper') st.award = 0; // retired slot (old saves): never drawn, never costed
   return st;
 };
 
@@ -395,16 +393,25 @@ const FRAMES = {
   holster: { t: [-0.2, 0.82, 0.0], r: 1.15, az: -1.05, pol: 1.5 },
   belt: { t: [0.1, 0.96, 0.04], r: 1.2, az: 0.85, pol: 1.5 },
   tank: { t: [0, 0.8, 0.3], r: 8.6, az: 0.7, pol: 1.15 },
+  // item alone, centred and large (only the parts tagged with that loadout slot; camera fits their bounds)
+  iweapon: { only: 'weapon', az: -1.45, pol: 1.4, fill: 1.15 }, iside: { only: 'side', az: -1.3, pol: 1.45, fill: 1.5 },
+  iexpl: { only: 'expl', az: 0.6, pol: 1.25, fill: 1.5 }, igadget: { only: 'gadget', az: Math.PI - 0.6, pol: 1.3, fill: 1.3 },
   tturret: { t: [0, 1.25, 0.1], r: 5.2, az: 0.75, pol: 1.1 },
   tgun: { t: [0, 1.15, 0.8], r: 6.2, az: 1.15, pol: 1.2 },
   tback: { t: [0, 1.25, -0.3], r: 7.0, az: 2.45, pol: 1.15 },
 };
 function renderThumb(unit, state, frame) {
   thumbLook.paint(state);
-  const geos = T.buildMergedDef(UNITS[unit], state), meshes = [];
+  const f = FRAMES[frame] || FRAMES.full;
+  const geos = T.buildMergedDef(UNITS[unit], state, f.only || null), meshes = [];
   for (const [mat, g] of Object.entries(geos)) { const m = new THREE.Mesh(g, mat === 'team' ? thumbLook.team : thumbLook.visor); thumbScene.add(m); meshes.push(m); }
-  const f = FRAMES[frame] || FRAMES.full, tgt = new THREE.Vector3(...f.t);
-  thumbCam.position.setFromSpherical(new THREE.Spherical(f.r, f.pol, f.az)).add(tgt); thumbCam.lookAt(tgt);
+  let tgt, r = f.r;
+  if (f.only) {
+    if (!meshes.length) return null; // e.g. 'No gadget': the tile shows its icon instead
+    const bb = new THREE.Box3(); for (const m of meshes) bb.expandByObject(m);
+    const sph = bb.getBoundingSphere(new THREE.Sphere()); tgt = sph.center; r = Math.max(0.08, sph.radius) / Math.tan((thumbCam.fov * Math.PI) / 360) / f.fill;
+  } else tgt = new THREE.Vector3(...f.t);
+  thumbCam.position.setFromSpherical(new THREE.Spherical(r, f.pol, f.az)).add(tgt); thumbCam.lookAt(tgt);
   renderer.setRenderTarget(thumbRT); renderer.clear(); renderer.render(thumbScene, thumbCam);
   renderer.readRenderTargetPixels(thumbRT, 0, 0, TS, TS, thumbPix);
   renderer.setRenderTarget(null);
@@ -422,7 +429,7 @@ const stateKey = (unit, st) => unit + '|' + T.nationCode(st) + st.skin + '|' + T
 function cachedThumb(unit, state, frame) {
   const key = frame + '|' + stateKey(unit, state);
   let img = thumbCache.get(key);
-  if (!img) { img = renderThumb(unit, state, frame); thumbCache.set(key, img); if (thumbCache.size > 300) thumbCache.delete(thumbCache.keys().next().value); }
+  if (img === undefined) { img = renderThumb(unit, state, frame); thumbCache.set(key, img); if (thumbCache.size > 300) thumbCache.delete(thumbCache.keys().next().value); }
   return img;
 }
 function thumbDataURL(unit, state) {
@@ -436,7 +443,10 @@ function pumpThumbs() {
   while ((thumbQueue.length || sheetThumbs.length) && n < 4) {
     const job = thumbQueue.length ? thumbQueue.shift() : sheetThumbs.shift();
     if (!job.canvas.isConnected) continue;
-    job.canvas.getContext('2d').putImageData(cachedThumb(job.unit, job.state, job.frame), 0, 0); n++;
+    const img = cachedThumb(job.unit, job.state, job.frame), g2 = job.canvas.getContext('2d');
+    if (img) g2.putImageData(img, 0, 0);
+    else { g2.clearRect(0, 0, TS, TS); g2.font = `${TS * 0.5}px system-ui, sans-serif`; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(job.icon || '∅', TS / 2, TS / 2); }
+    n++;
   }
 }
 function drawFlag(c, nat) {
@@ -451,9 +461,9 @@ function drawFlag(c, nat) {
 const TAB_DEF = {
   nation: { ico: '🏳️', name: 'Nation', sub: 'player, colors, flag' },
   head: { ico: '🪖', name: 'Helmet', sub: 'helmet, skin' }, armor: { ico: '🛡️', name: 'Armor', sub: 'armor, pads, ❤️ HP · 🏃 speed' },
-  weapon: { ico: '🔫', name: 'Weapons', sub: 'main weapon, ⭐ award' }, kit: { ico: '💣', name: 'Kit', sub: 'sidearm, explosive' },
-  gear: { ico: '🎒', name: 'Gear', sub: 'gadget, back flag, cape' },
-  hull: { ico: '⛓️', name: 'Hull', sub: 'hull, drive' }, turret: { ico: '🎯', name: 'Turret', sub: 'turret, main gun' }, tx: { ico: '📡', name: 'Extras', sub: 'antenna, skirts, smoke, MG' },
+  weapon: { ico: '🔫', name: 'Weapon', sub: 'main weapon' }, kit: { ico: '💣', name: 'Kit', sub: 'sidearm, explosive' },
+  gear: { ico: '🎒', name: 'Gear', sub: 'gadget, flag, cape' },
+  hull: { ico: '🧱', name: 'Hull', sub: 'hull, drive' }, turret: { ico: '🔘', name: 'Turret', sub: 'turret, main gun' }, tx: { ico: '📡', name: 'Extras', sub: 'antenna, skirts, smoke, MG' },
   looks: { ico: '💾', name: 'Saved', sub: 'save, load, share code' },
 };
 const tabLabel = (id) => TAB_DEF[id].ico + ' ' + TAB_DEF[id].name;
@@ -463,24 +473,24 @@ const UNIT_LABEL = { trooper: '🪖 Trooper', tank: '🚜 Tank' };
 // brief label next to whatever was tapped (tabs, roster slots, unit switch, view buttons)
 const tapEl = h('div', { id: 'taplabel', role: 'status', 'aria-live': 'polite' }); document.body.append(tapEl);
 let tapT = 0;
-function tapLabel(el, text) {
+function tapLabel(el, text, ms = 1200) {
   if (!el || !el.isConnected) return;
   tapEl.textContent = text; tapEl.classList.add('on');
   const r = el.getBoundingClientRect(), w = tapEl.offsetWidth, hh = tapEl.offsetHeight;
   let top = r.top - hh - 6; if (top < 4) top = r.bottom + 6;
   tapEl.style.left = Math.max(4, Math.min(innerWidth - w - 4, r.left + r.width / 2 - w / 2)) + 'px';
   tapEl.style.top = Math.min(innerHeight - hh - 4, top) + 'px';
-  clearTimeout(tapT); tapT = setTimeout(() => tapEl.classList.remove('on'), 1200);
+  clearTimeout(tapT); tapT = setTimeout(() => tapEl.classList.remove('on'), ms);
 }
 const UNIT_TABS = { trooper: ['nation', 'head', 'armor', 'weapon', 'kit', 'gear', 'looks'], tank: ['nation', 'hull', 'turret', 'tx', 'looks'] };
 const PARTS = {
   helm: { unit: 'trooper', frame: 'head', names: ['Dome', 'Angular', 'Crest', 'Goggles', 'Recon'] },
   armor: { unit: 'trooper', frame: 'torso', items: ITEMS.armor },
   pads: { unit: 'trooper', frame: 'arm', names: ['None', 'Round', 'Angular'] },
-  weapon: { unit: 'trooper', frame: 'weapon', items: ITEMS.weapon },
-  side: { unit: 'trooper', frame: 'holster', items: ITEMS.side },
-  expl: { unit: 'trooper', frame: 'belt', items: ITEMS.expl },
-  gadget: { unit: 'trooper', frame: 'back', items: ITEMS.gadget },
+  weapon: { unit: 'trooper', frame: 'iweapon', items: ITEMS.weapon },
+  side: { unit: 'trooper', frame: 'iside', items: ITEMS.side },
+  expl: { unit: 'trooper', frame: 'iexpl', items: ITEMS.expl },
+  gadget: { unit: 'trooper', frame: 'igadget', items: ITEMS.gadget },
   extra: { unit: 'trooper', frame: 'back', names: ['None', 'Cape', 'Scarf'] },
   banner: { unit: 'trooper', frame: 'back', names: ['Off', 'On'] },
   hull: { unit: 'tank', frame: 'tank', names: ['Light', 'Medium', 'Heavy'] },
@@ -492,7 +502,7 @@ const TOGGLES = [['antenna', 'tback', 'Antenna'], ['pennant', 'tback', 'Pennant'
 let tab = 'nation';
 const DEBUG = /[?&]debug=1\b/.test(location.search);
 const tabsEl = $('#tabs'), body = $('#pbody');
-tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) { if (sheet) closeSheet(); setTab(b.dataset.tab); tapLabel(b, tabLabel(b.dataset.tab)); } });
+tabsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) { if (sheet) closeSheet(); setTab(b.dataset.tab); } });
 
 const lab = (ico, txt) => h('div', { className: 'lab' }, [ico, txt ? h('small', { textContent: txt }) : null]);
 function swatchRow(key, palette, custom, glow = false) {
@@ -514,15 +524,8 @@ function partTiles(key) {
 }
 // one short icon line with the REAL battle numbers (games/shared/army/stats.js); cost is the badge, so drop 💰 here
 const gearLine = (unit, k, i) => S.gearLines(unit, k, i).filter((x) => !x.startsWith('💰')).join(' ') || '🎨 look only';
-// ⭐ award versions: one tile per main weapon (v5: all unlocked)
-function awardTiles() {
-  const row = h('div', { className: 'tiles award', 'data-key': 'award' });
-  ITEMS.weapon.forEach((it, w) => row.append(h('button', { type: 'button', title: `${ITEMS.award[w].tip} 🎖️×${MEDALS_NEEDED}`, 'aria-label': 'award ' + it.n, 'data-award': String(w), 'data-frame': 'weapon', 'data-unit': 'trooper' },
-    [h('canvas', { width: TS, height: TS }), h('i', { textContent: '⭐' + it.n }), h('b', { className: 'cb', textContent: '+' + awardCost(w) }), h('em', { className: 'gl', textContent: '💥 ' + S.fmt(S.WEAPONS[w].dmg * S.BATTLE.awardDmg) + ' (+10%)' })])));
-  row.classList.add('stat');
-  return row;
-}
-function costBadge(unit, k, v) { const c = optionCost(unit, k, v); return h('b', { className: 'cb' + (c ? '' : ' free'), textContent: c ? '+' + c : '' }); }
+// 💰 badge = what this tile changes in cost vs the part you have now (✓ = the part you have). Updated in refreshPanel().
+function costBadge(unit, k, v) { const c = optionCost(unit, k, v); return h('b', { className: 'cb' + (c ? '' : ' free'), 'data-cost': String(c), textContent: c ? '💰+' + c : '' }); }
 function toggleTiles() {
   const row = h('div', { className: 'tiles', 'data-key': 'toggles' });
   row.classList.add('stat');
@@ -556,12 +559,12 @@ const SECS = {
     lab('👁️', 'glow color'), swatchRow('vis', T.VISOR, false, true), lab('✨', 'glow'), iconTiles('glow', ['🌑', '🌓', '🌕'], ['Off', 'Soft', 'Bright']),
   ],
   head: () => [lab('🪖', 'helmet'), partTiles('helm'), lab('✋', 'skin (goggles)'), swatchRow('skin', T.SKIN, false)],
-  armor: () => [lab('🛡️', 'armor'), partTiles('armor'), h('div', { id: 'statPrev', className: 'statprev' }), lab('🔰', 'shoulders'), partTiles('pads')],
-  weapon: () => [lab('🔫', 'main weapon · 💥 damage 🎯 range ⏱️ reload'), partTiles('weapon'), lab('⭐', 'award weapons · all unlocked'), awardTiles()],
-  kit: () => [lab('🔫', 'sidearm'), partTiles('side'), lab('💣', 'explosive'), partTiles('expl')],
-  gear: () => [lab('🎒', 'gadget'), partTiles('gadget'), lab('🚩', 'back flag'), partTiles('banner'), lab('🧣', 'extra'), partTiles('extra')],
-  hull: () => [lab('⛓️', 'hull'), partTiles('hull'), lab('🛞', 'drive'), partTiles('drive')],
-  turret: () => [lab('🎯', 'turret'), partTiles('turret'), lab('💥', 'main gun'), partTiles('gun')],
+  armor: () => [lab('🛡️', 'Armor'), partTiles('armor'), lab('🔰', 'Shoulders'), partTiles('pads')],
+  weapon: () => [lab('🔫', 'Main weapon · 💥 damage · 📏 range · ⏱️ time between shots'), partTiles('weapon')],
+  kit: () => [lab('🔸', 'Sidearm · backup pistol, fires while the main weapon reloads'), partTiles('side'), lab('💣', 'Explosive · used in battle on its own'), partTiles('expl')],
+  gear: () => [lab('🎒', 'Gadget'), partTiles('gadget'), lab('🚩', 'Flag on the back · look only'), partTiles('banner'), lab('🧣', 'Cape or scarf · look only'), partTiles('extra')],
+  hull: () => [lab('🧱', 'Hull'), partTiles('hull'), lab('🛞', 'Drive'), partTiles('drive')],
+  turret: () => [lab('🔘', 'Turret'), partTiles('turret'), lab('🔶', 'Main gun · 💥 damage · 📏 range · ⏱️ time between shots'), partTiles('gun')],
   tx: () => [lab('📡', 'extras'), toggleTiles()],
   looks: () => [
     lab('💾', 'save this look → active nation'),
@@ -579,12 +582,15 @@ body.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-k]');
   if (b) {
     const k = b.dataset.k, v = b.dataset.v;
-    setValues(k === 'weapon' ? { weapon: Number(v), award: 0 } : { [k]: k === 'p' || k === 's' ? v : Number(v) });
-    const it = PARTS[k] && PARTS[k].items && PARTS[k].items[Number(v)]; if (it) toast(`${it.i} ${it.n} · ${gearLine(PARTS[k].unit, k, Number(v))}`, false, 2600);
+    const cls0 = S.classOf('trooper', cur.trooper);
+    setValues({ [k]: k === 'p' || k === 's' ? v : Number(v) });
+    hintDone();
+    const cls1 = S.classOf('trooper', cur.trooper), ci = S.CLASS_INFO[cls1];
+    const it = PARTS[k] && PARTS[k].items && PARTS[k].items[Number(v)];
+    if (PARTS[k] && PARTS[k].unit === 'trooper' && cls1 !== cls0) toast(`Class: ${ci.i} ${ci.n}`, false, 2600);
+    else if (it) toast(`${it.i} ${it.n} · ${gearLine(PARTS[k].unit, k, Number(v))}`, false, 2600);
     return;
   }
-  const a = e.target.closest('button[data-award]'); if (a) { awardPick(Number(a.dataset.award)); return; }
-  if (e.target.closest('#debugAward')) { debugUnlock(!db.debugAward); return; }
   const t = e.target.closest('button[data-toggle]');
   if (t) { const k = t.dataset.toggle; setValues({ [k]: cur.tank[k] ? 0 : 1 }); }
 });
@@ -609,18 +615,14 @@ function refreshPanel() {
   const sec = body.querySelector(`.sec[data-sec="${tab}"]`), nat = nation();
   for (const b of sec.querySelectorAll('button[data-k]')) {
     const k = b.dataset.k, v = b.dataset.v, src = NATION_KEYS.has(k) ? nat : cur[PARTS[k]?.unit || 'trooper'];
-    b.classList.toggle('on', k === 'p' || k === 's' ? src[k] === v : src[k] === Number(v) && !(k === 'weapon' && fullState('trooper').award));
-  }
-  const effAward = fullState('trooper').award;
-  for (const b of sec.querySelectorAll('button[data-award]')) {
-    const w = Number(b.dataset.award), un = unlocked(w);
-    b.classList.toggle('locked', !un); b.classList.toggle('on', !!effAward && cur.trooper.weapon === w);
-  }
-  const dbg = sec.querySelector('#debugAward'); if (dbg) dbg.classList.toggle('on', db.debugAward);
-  const sp = sec.querySelector('#statPrev');
-  if (sp) {
-    const st = unitStats('trooper', fullState('trooper')), bar = (ico, val, max, txt, cls) => h('div', { className: 'sp ' + cls }, [h('span', { textContent: ico }), h('i', {}, [h('u', { style: `width:${Math.max(4, Math.min(100, (val / max) * 100)).toFixed(0)}%` })]), h('b', { textContent: txt })]);
-    sp.replaceChildren(bar('❤️', st.hp, 180, String(st.hp), 'hp'), bar('🏃', st.speed, 7, st.speed.toFixed(1), 'spd'));
+    const on = k === 'p' || k === 's' ? src[k] === v : src[k] === Number(v);
+    b.classList.toggle('on', on);
+    const cb = b.querySelector('.cb');
+    if (cb && PARTS[k]) { // 💰 delta vs the part you have now
+      const d = optionCost(PARTS[k].unit, k, Number(v)) - optionCost(PARTS[k].unit, k, src[k] | 0);
+      cb.textContent = on ? '✓' : d ? '💰' + (d > 0 ? '+' : '−') + Math.abs(d) : '💰 same';
+      cb.className = 'cb' + (on ? ' cur' : d > 0 ? ' up' : d < 0 ? ' down' : ' same');
+    }
   }
   for (const b of sec.querySelectorAll('button[data-toggle]')) b.classList.toggle('on', !!cur.tank[b.dataset.toggle]);
   for (const l of sec.querySelectorAll('label[data-custom]')) {
@@ -637,13 +639,13 @@ function refreshPanel() {
   thumbTimer = setTimeout(() => {
     thumbQueue = [];
     for (const b of sec.querySelectorAll('button[data-frame]')) {
-      const unit = b.dataset.unit, aw = b.dataset.award != null;
-      const patch = aw ? { weapon: Number(b.dataset.award), award: 1 } : b.dataset.k ? { [b.dataset.k]: Number(b.dataset.v) } : { [b.dataset.toggle]: 1 };
-      if (b.dataset.k === 'weapon') patch.award = 0;
-      const s2 = fullState(unit, { ...cur[unit], ...patch }); if (aw) s2.award = 1; // locked ⭐ tiles still preview the award model
+      const unit = b.dataset.unit;
+      const patch = b.dataset.k ? { [b.dataset.k]: Number(b.dataset.v) } : { [b.dataset.toggle]: 1 };
+      const s2 = fullState(unit, { ...cur[unit], ...patch });
       const c = b.querySelector('canvas'), key = b.dataset.frame + '|' + stateKey(unit, s2);
       if (c.dataset.key === key) continue;
-      c.dataset.key = key; thumbQueue.push({ canvas: c, unit, state: s2, frame: b.dataset.frame });
+      const it = b.dataset.k && PARTS[b.dataset.k] && PARTS[b.dataset.k].items && PARTS[b.dataset.k].items[Number(b.dataset.v)];
+      c.dataset.key = key; thumbQueue.push({ canvas: c, unit, state: s2, frame: b.dataset.frame, icon: it && it.i });
     }
   }, 60);
   if (tab === 'looks') { renderLooks(); refreshCode(); }
@@ -905,7 +907,7 @@ function randomize() {
   }
   const d = UNITS[db.unit], o = {};
   for (const [k, n] of d.fields) o[k] = (Math.random() * n) | 0;
-  if (db.unit === 'trooper') { o.extra = Math.random() < 0.65 ? 0 : 1 + ((Math.random() * 2) | 0); o.banner = Math.random() < 0.7 ? 1 : 0; o.award = unlocked(o.weapon) && Math.random() < 0.5 ? 1 : 0; }
+  if (db.unit === 'trooper') { o.extra = Math.random() < 0.65 ? 0 : 1 + ((Math.random() * 2) | 0); o.banner = Math.random() < 0.7 ? 1 : 0; o.award = 0; }
   setValues(o);
 }
 // ---------- roster (6 trooper slots per nation) ----------
@@ -914,21 +916,28 @@ function randomize() {
 //   tpl: template id the slot came from (↺ resets to it) or null (blank trooper: ↺ resets to the base kit)
 const rosterEl = $('#roster'), sheetEl = $('#sheet'), panelEl = $('#panel');
 let sheet = null; // { mode: 'blank' | 'edit', tpl: bool, clear: bool, focus: bool }
-// section header: '🔫 Weapons · main weapon, ⭐ award' + the roster slot being edited (tap to rename / edit)
+// section header = breadcrumb: ✏️ 🏳️ Nation › 🎯 Trooper 1 ✏️ › 🔫 Weapon · main weapon (the unit crumb opens rename / edit)
 function renderSecHead() {
-  const d = TAB_DEF[tab], r = db.unit === 'trooper' ? nation().roster[db.slot] : null;
-  const chip = r ? h('button', { type: 'button', className: 'slotchip', id: 'slotChip', title: r.blank ? 'Fill this slot' : 'Rename / edit this slot' }, [h('em', { textContent: slotLabel(db.slot) }), h('i', { textContent: r.blank ? '' : '✏️' })]) : h('em', { textContent: UNIT_LABEL.tank });
-  $('#sechead').replaceChildren(h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }), chip);
+  const d = TAB_DEF[tab], n = nation(), r = db.unit === 'trooper' ? n.roster[db.slot] : null, sep = () => h('i', { className: 'crs', textContent: '›' });
+  const natCrumb = h('button', { type: 'button', className: 'crumb nat', id: 'crNation', title: 'Nation colors + flag' }, [h('em', { textContent: '🏳️ ' + n.name })]);
+  const kids = [h('i', { className: 'cre', textContent: '✏️' }), natCrumb];
+  if (tab !== 'nation') {
+    const unit = r ? h('button', { type: 'button', className: 'slotchip crumb', id: 'slotChip', title: r.blank ? 'Fill this slot' : 'Rename / edit this slot' }, [h('em', { textContent: slotLabel(db.slot) }), h('i', { textContent: r.blank ? '' : ' ✏️' })])
+      : h('em', { className: 'crumb', textContent: '🚜 ' + (n.tankName || 'Tank 1') });
+    kids.push(sep(), unit);
+  }
+  kids.push(sep(), h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }));
+  $('#sechead').replaceChildren(...kids);
 }
-$('#sechead').addEventListener('click', (e) => { if (e.target.closest('#slotChip')) openSheet(db.slot, true); });
+$('#sechead').addEventListener('click', (e) => { if (e.target.closest('#slotChip')) openSheet(db.slot, true); else if (e.target.closest('#crNation') && tab !== 'nation') setTab('nation'); });
 function renderRoster() { renderWho(); renderSecHead(); renderSheet(); renderStrip(); }
 // ---------- header: who is being edited, for which player + nation; switching; links to the other games ----------
 const unitName = () => { if (db.unit === 'tank') return '🚜 ' + (nation().tankName || 'Tank 1'); const r = nation().roster[db.slot]; return r.blank ? `➕ Slot ${db.slot + 1} (empty)` : r.icon + ' ' + r.name; };
 const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 function renderWho() {
   const n = nation(), who = $('#who');
-  $('#whoUnit').textContent = '✏️ ' + unitName();
-  $('#whoFor').textContent = `for 👤 ${n.playerName} · 🏳️ ${n.name}`;
+  $('#whoUnit').textContent = '👤 ' + n.playerName;
+  $('#whoFor').textContent = `🏳️ ${n.name} · tap to switch`;
   who.title = `Editing ${unitName()} for ${n.playerName}, ${n.name} · tap to switch`;
   who.style.borderColor = n.p; who.style.background = `linear-gradient(90deg, ${rgba(n.p, 0.5)}, ${rgba(n.s, 0.12)})`;
   drawFlag($('#whoFlag'), n);
@@ -945,11 +954,25 @@ $('#whoSel').addEventListener('change', (e) => {
 // ?from=<game> → back button to that game. Our own links pass ?from=custom.
 const FROM = new URLSearchParams(location.search).get('from');
 const FROM_PATH = { conquest: '../conquest-commander/', 'conquest-commander': '../conquest-commander/', ships: '../ship-sandbox/', 'ship-sandbox': '../ship-sandbox/', hub: '../', campus: '../../' };
-if (FROM) {
-  const b = $('#backBtn'); b.classList.remove('hidden');
-  b.href = FROM_PATH[FROM] || (/^[a-z0-9-]{1,40}$/.test(FROM) && FROM !== 'custom' ? '../' + FROM + '/' : 'javascript:history.back()');
-  b.title = '⬅️ Back' + (FROM_PATH[FROM] ? ' to ' + FROM : ''); b.addEventListener('click', () => flushDB());
+// ⬅️ Back is always top-left; ✅ Done (the one yellow button) is bottom-right. Both save first.
+// Inside Army HQ (same-origin frame) they return to the HQ menu; on their own they go to ?from=<game> or Army HQ.
+const HQ = (() => { try { return window.parent !== window && window.parent.__armyMenu ? window.parent.__armyMenu : null; } catch (e) { return null; } })();
+const BACK_HREF = FROM && FROM !== 'custom' ? FROM_PATH[FROM] || (/^[a-z0-9-]{1,40}$/.test(FROM) ? '../' + FROM + '/' : '../army/') : '../army/';
+function goBack() {
+  flushDB();
+  if (HQ) { HQ.goHome(); return; }
+  if (FROM === 'custom' && history.length > 1) { history.back(); return; }
+  location.href = BACK_HREF;
 }
+const navBack = h('a', { id: 'navBack', className: 'navback', href: BACK_HREF, title: '⬅️ Back' + (HQ ? ' to Army HQ' : FROM_PATH[FROM] ? ' to ' + FROM : ' to Army HQ'), 'aria-label': 'Back' }, [h('span', { textContent: '⬅️' }), h('small', { textContent: 'Back' })]);
+navBack.addEventListener('click', (e) => { e.preventDefault(); goBack(); });
+view.append(navBack);
+const savedChip = h('span', { id: 'savedChip', className: 'saved', role: 'status', 'aria-live': 'polite', textContent: '✓ Saved' });
+const doneBtn = h('button', { type: 'button', id: 'doneBtn', className: 'done', title: '✅ Done: save and go back', 'aria-label': 'Done' }, ['✅ ', h('b', { textContent: 'Done' })]);
+doneBtn.addEventListener('click', () => { dirty = true; flushDB(); setTimeout(goBack, 450); });
+$('#panel').append(h('div', { id: 'donebar' }, [h('small', { className: 'autos', textContent: '💾 Changes save by themselves' }), savedChip, doneBtn]));
+let savedT = 0;
+onSaved = () => { savedChip.classList.remove('on'); void savedChip.offsetWidth; savedChip.classList.add('on'); clearTimeout(savedT); savedT = setTimeout(() => savedChip.classList.remove('on'), 1600); };
 const goGame = (url) => { flushDB(); location.href = url; };
 $('#ccBtn').addEventListener('click', () => goGame('../conquest-commander/?from=custom'));
 $('#shipBtn').addEventListener('click', () => goGame('../ship-sandbox/?from=custom'));
@@ -967,7 +990,9 @@ function renderStrip() {
     const on = i === db.slot ? 'on' : '';
     if (r.blank) return h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: 'blank ' + on, title: `➕ Slot ${i + 1} · empty: tap to fill`, 'aria-label': `Roster slot ${i + 1}: empty` }, [h('span', { className: 'ri', textContent: '+' }), h('small', { textContent: 'Slot ' + (i + 1) })]);
     const c = fmt(unitCost('trooper', fullState('trooper', r.t)).cost);
-    return h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: on, title: r.icon + ' ' + r.name + ' · 💰' + c, 'aria-label': 'Roster: ' + r.name }, [h('span', { className: 'ri', textContent: r.icon }), h('small', { textContent: '💰' + c })]);
+    const cv = h('canvas', { width: TS, height: TS, className: 'rt' });
+    sheetThumbs.push({ canvas: cv, unit: 'trooper', state: fullState('trooper', r.t), frame: 'tpl' });
+    return h('button', { type: 'button', role: 'tab', 'data-slot': String(i), className: on, title: r.icon + ' ' + r.name + ' · 💰' + c, 'aria-label': 'Roster: ' + r.name }, [cv, h('span', { className: 'ri', textContent: r.icon }), h('small', { textContent: '💰' + c })]);
   }));
 }
 function setSlot(i) {
@@ -1077,15 +1102,6 @@ sheetEl.addEventListener('keydown', (e) => {
   if (e.target.id === 'newSlotName') makeBlankTrooper(e.target.value);
 });
 
-// ---------- ⭐ award weapons ----------
-function awardPick(w) {
-  const it = ITEMS.weapon[w];
-  const on = cur.trooper.weapon === w && fullState('trooper').award;
-  setValues({ weapon: w, award: on ? 0 : 1 });
-  toast(on ? `${it.i} ${it.n}` : ITEMS.award[w].tip, false, 2600); return true;
-}
-function debugUnlock(on) { db.debugAward = !!on; applyState(); toast(db.debugAward ? '🧪 ⭐🔓' : '🧪 ⭐🔒'); return db.debugAward; }
-
 // ---------- HUD ----------
 let fps = 0, frames = 0, fpsT = performance.now(), lastInfo = { calls: 0, triangles: 0 };
 function modelStats() {
@@ -1101,15 +1117,51 @@ function modelStats() {
   const u = units[db.unit], c = unitCost(db.unit, fullState());
   return { mode: 'single', unit: db.unit, count: 1, tris: u.tris, perTris: u.tris, calls: u.meshes.length, cost: c.cost, power: c.power, ...unitStats(db.unit, fullState()) };
 }
+// labeled stat pills (💰 Cost ⚡ Power ❤️ Health 🏃 Speed 💥 Damage 📏 Range) + bars + a +N / −N delta after each swap
+const PILLS = [
+  ['cost', 'cCost', '💰', 'Cost', 'Cost: points this unit costs to send into Conquest', 1200],
+  ['power', 'cPow', '⚡', 'Power', 'Power: how strong the unit is overall; more power = better aim', 120],
+  ['hp', 'cHp', '❤️', 'Health', 'Health: how much damage it takes before it is taken out', 400],
+  ['speed', 'cSpd', '🏃', 'Speed', 'Speed: how fast it moves', 7],
+  ['dmg', 'cDmg', '💥', 'Damage', 'Damage: per hit of the main weapon', 120],
+  ['range', 'cRng', '📏', 'Range', 'Range: how far the main weapon reaches, in metres', 60],
+];
+const DEV = /[?&]dev=1\b/.test(location.search);
+document.body.classList.toggle('dev', DEV);
+{
+  const chip = $('#costchip');
+  chip.setAttribute('role', 'button'); chip.tabIndex = 0; chip.title = 'Tap for what each number means';
+  chip.replaceChildren(...PILLS.map(([k, id, ic, name]) => h('span', { className: 'pill', 'data-k': k }, [h('span', { className: 'pi', textContent: ic }), h('span', { className: 'pt' }, [h('small', { textContent: name }), h('b', { id, textContent: '0' })]), h('em', { className: 'dl' }), h('i', { className: 'bar' }, [h('u')])])),
+    h('span', { className: 'pill cls', id: 'cCls' }));
+  const explain = () => tapLabel(chip, PILLS.filter(([k]) => chip.querySelector(`[data-k="${k}"]`).offsetParent).map((p) => p[2] + ' ' + p[4]).join('\n'), 5200);
+  chip.addEventListener('click', explain); chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); explain(); } });
+}
+let pillPrev = null;
+function updatePills() {
+  const st = fullState(), c = unitCost(db.unit, st), cs = S.combatStats(db.unit, st), key = db.unit + '|' + (db.unit === 'trooper' ? db.slot : '') + '|' + db.active;
+  const vals = { cost: c.cost, power: c.power, hp: cs.hp, speed: unitStats(db.unit, st).speed, dmg: cs.dmg, range: cs.range };
+  const chip = $('#costchip');
+  for (const [k, id, , , , max] of PILLS) {
+    const el = chip.querySelector(`[data-k="${k}"]`), v = vals[k];
+    $('#' + id).textContent = k === 'speed' ? v.toFixed(1) : k === 'cost' || k === 'power' ? fmt(v) : String(Math.round(v));
+    el.querySelector('u').style.width = Math.max(4, Math.min(100, (v / (db.unit === 'tank' && k !== 'speed' && k !== 'range' ? max * 2.5 : max)) * 100)).toFixed(0) + '%';
+    const dl = el.querySelector('.dl'), was = pillPrev && pillPrev.key === key ? pillPrev.vals[k] : v, d = Math.round((v - was) * 10) / 10;
+    if (d) {
+      const good = k === 'cost' ? d < 0 : d > 0;
+      dl.textContent = (d > 0 ? '+' : '−') + (k === 'speed' ? Math.abs(d).toFixed(1) : Math.abs(Math.round(d))) + (d > 0 ? '▲' : '▼');
+      dl.className = 'dl on ' + (good ? 'good' : 'bad'); clearTimeout(dl._t); dl._t = setTimeout(() => dl.classList.remove('on'), 2600);
+    }
+  }
+  const cls = db.unit === 'trooper' ? S.CLASS_INFO[S.classOf('trooper', cur.trooper)] : null, cc = $('#cCls');
+  cc.textContent = cls ? `${cls.i} ${cls.n} class` : '🚜 Tank'; cc.title = cls ? 'Class comes from the main weapon (and jetpack)' : '';
+  pillPrev = { key, vals };
+}
 function updateStatsText() {
   const m = modelStats();
+  updatePills();
   $('#sMode').textContent = m.mode === 'squad' ? '👥' + m.count : db.unit === 'tank' ? '🚜' : '🧍';
   $('#sTri').textContent = m.tris >= 10000 ? (m.tris / 1000).toFixed(1) + 'k' : String(m.tris);
   $('#sCalls').textContent = String(m.calls);
-  const c = unitCost(db.unit, fullState()), cc = $('#cCost'), prev = cc.textContent;
-  cc.textContent = fmt(c.cost); $('#cPow').textContent = String(c.power);
-  const us = unitStats(db.unit, fullState()); $('#cHp').textContent = String(us.hp); $('#cSpd').textContent = us.speed.toFixed(1);
-  if (prev !== cc.textContent && prev !== '0') { const chip = $('#costchip'); chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
   $('#squadCost').textContent = m.mode === 'squad' ? '💰' + fmt(m.cost) + ' ⚡' + fmt(m.power) : '';
 }
 let toastT = 0;
@@ -1150,6 +1202,19 @@ function loop() {
     $('#stats').classList.toggle('slow', fps < 30); $('#stats').classList.toggle('ok', fps >= 50);
   }
 }
+
+// ---------- first-run hint (once per browser) ----------
+const HINT_KEY = 'botcampus:army:hint:customizer';
+const hintEl = h('div', { id: 'coach', className: 'coach', role: 'note' }, [
+  h('b', { textContent: '👋 How it works' }),
+  h('ol', {}, [h('li', { textContent: 'Pick a tab below (Helmet, Armor, Weapon…)' }), h('li', { textContent: 'Tap a part: the trooper and the numbers change' }), h('li', { textContent: 'Tap ✅ Done when you are happy (it saves by itself)' })]),
+  h('button', { type: 'button', id: 'coachOk', className: 'btn go', textContent: '👍 Got it' })]);
+function hintDone() { if (!hintEl.isConnected) return; hintEl.remove(); lsSet(HINT_KEY, '1'); }
+hintEl.querySelector('#coachOk').addEventListener('click', hintDone);
+document.addEventListener('pointerdown', (e) => { if (hintEl.isConnected && !hintEl.contains(e.target)) hintDone(); }, true); // any tap elsewhere = understood
+if (!lsGet(HINT_KEY)) view.append(hintEl);
+// phone: the parts list grows (preview shrinks to ~35%) once you scroll it; back at the top it shrinks again
+body.addEventListener('scroll', () => { panelEl.classList.toggle('tall', body.scrollTop > 24); }, { passive: true });
 
 // ---------- boot ----------
 resize();
@@ -1194,9 +1259,7 @@ window.__tc = {
   defaultRoster: T.DEFAULT_ROSTER,
   get slot() { return db.slot; }, setSlot,
   items: ITEMS, statsTable: STATS, unitStats: (u = db.unit, o) => unitStats(u, o ? { ...fullState(u), ...o } : fullState(u)),
-  medals: (w, n) => { if (w != null && n != null) { db.medals[w] = Math.max(0, n | 0); applyState(); } return db.medals.slice(); },
-  unlocked, debugUnlock, awardPick, medalsNeeded: MEDALS_NEEDED,
-  thumb: (frame, o = {}, unit = 'trooper') => { const st = { ...fullState(unit, { ...cur[unit], ...o }), ...o }, c = h('canvas', { width: TS, height: TS }); c.getContext('2d').putImageData(renderThumb(unit, st, frame), 0, 0); return c.toDataURL('image/png'); },
+  thumb: (frame, o = {}, unit = 'trooper') => { const st = { ...fullState(unit, { ...cur[unit], ...o }), ...o }, c = h('canvas', { width: TS, height: TS }); const img = renderThumb(unit, st, frame); if (img) c.getContext('2d').putImageData(img, 0, 0); return c.toDataURL('image/png'); },
   randomize, reset: resetUnit,
   resetNation: () => { Object.assign(nation(), T.sanitizeNation(T.NATION_DEFAULT)); applyState(); },
   signature: (u = db.unit) => sigOf(u),
@@ -1206,7 +1269,7 @@ window.__tc = {
   trisFor: (u, o) => { const d = UNITS[u], g = T.buildMergedDef(d, { ...T.NATION_DEFAULT, skin: 1, ...T.sanitizeFields(o, d.fields, d.defaults) }); let n = 0; for (const x of Object.values(g)) { n += x.attributes.position.count / 3; x.dispose(); } return n; },
   stats: () => ({ ...modelStats(), fps, frame: { ...lastInfo }, materials: new Set(units[db.unit].meshes.map((m) => m.material.uuid)).size, sharedMaterials: units.trooper.meshes[0].material === units.tank.meshes[0].material }),
   squad: (on, n, mix) => { if (n) squadN = n; if (mix != null) squadMix = !!mix; setSquad(on); return modelStats(); },
-  tab: setTab, view: viewTo, flush: flushDB,
+  tab: setTab, view: viewTo, flush: flushDB, back: goBack, get backHref() { return BACK_HREF; }, hintDone,
   wipe: () => { wiped = true; clearTimeout(saveT); try { localStorage.clear(); } catch (e) { /* ignore */ } },
   player: (name) => { if (name != null) { db.player.name = clean(name) || 'Player'; saveDB(); refreshPanel(); } return db.player.name; },
   nations: {

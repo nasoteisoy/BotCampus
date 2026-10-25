@@ -8,7 +8,7 @@
 // the spares to reserveMags magazines (and starts a reload if the magazine is empty); a health pack heals +healthPack HP;
 // a taken pack comes back after respawn s. Packs sit on the capture ring of every command post (one ❤️, one 📦).
 import { MAP } from './map.js';
-import * as Stats from '../../shared/army/stats.js?v=8';   // same URL as data.js → one module instance
+import * as Stats from '../../shared/army/stats.js?v=9';   // same URL as data.js → one module instance
 
 export const PICKUPS_V = 1;
 export const LS_PICKUPS_FLAG = 'conquest-commander:pickups-flag';
@@ -84,7 +84,7 @@ export function createPickups(opts = {}) {
       const st = this.state(sim), now = sim.time;
       for (const k of st.packs) if (!k.active && now >= k.readyAt) k.active = true;
       for (const u of sim.units) {
-        if (!u.alive) continue;
+        if (!u.alive || u.kind === 'tank') continue;
         if (u.mag !== undefined) this.finishReload(sim, u);
         for (const k of st.packs) {
           if (!k.active || Math.abs(k.x - u.x) > PACK.takeR || Math.abs(k.z - u.z) > PACK.takeR || dist(k, u) > PACK.takeR) continue;

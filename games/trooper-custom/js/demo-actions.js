@@ -1,8 +1,8 @@
 // Demo Viewer actions: procedural, keyframed poses for the trooper + tank rigs (demo-rig.js) and their effects (demo-fx.js).
 // Every action is a pure pose(t) function (so speed, squad offsets and looping are exact) plus timed events.
 import * as THREE from 'three';
-import { TROOPER_POSE, TANK_POSE } from './demo-rig.js?v=7';
-import * as S from '../../shared/army/stats.js?v=8';
+import { TROOPER_POSE, TANK_POSE } from './demo-rig.js?v=8';
+import * as S from '../../shared/army/stats.js?v=9';
 
 // ---------- stage layout (shared with demo.js) ----------
 export const STAGE = { dummy: new THREE.Vector3(0, 0, 10), wall: new THREE.Vector3(3.2, 0, 3.6), wallSize: [3.4, 1.15, 0.35], flag: new THREE.Vector3(-5.5, 0, 6), coverSpot: [3.2, 3.0], tankLoop: [-4, 0, 4] };
@@ -152,7 +152,7 @@ A({ id: 'crouch', ico: '🧎', name: 'Crouch', dur: 4.4, pose(t) {
   return p;
 } });
 
-A({ id: 'prone', ico: '🐛', name: 'Crawl', dur: 7.6, pose(t) {
+A({ id: 'prone', ico: '🐛', name: 'Crawl', info: 'Belly-down crawl: elbows and knees pull it forward — still in the fight', dur: 7.6, pose(t) {
   const KNEEL = { ...CROUCH, py: -0.48, prx: 0.6, arx: 0.4, fRz: -0.36 };
   const HANDS = TP({ fk: 0.6, py: -0.62, prx: 1.15, pz: -0.05, tL: -0.5, kL: 1.2, tR: -0.1, kR: 0.5, fpL: 0.4, fpR: 0.6, arx: 0.1, trx: 0.1 });
   const crawlZ = 1.1;
@@ -162,12 +162,27 @@ A({ id: 'prone', ico: '🐛', name: 'Crawl', dur: 7.6, pose(t) {
     const w = sm(seg(t, 1.1, 1.3)) * (1 - sm(seg(t, 3.5, 3.7))), ph = (t - 1.1) * 1.6 * TAU;
     p.tL += w * (-0.35 - 0.35 * Math.sin(ph)); p.kL += w * (0.6 + 0.6 * Math.sin(ph)); p.sL += w * 0.25 * (0.5 + 0.5 * Math.sin(ph));
     p.tR += w * (-0.35 + 0.35 * Math.sin(ph)); p.kR += w * (0.6 - 0.6 * Math.sin(ph)); p.sR += w * 0.25 * (0.5 - 0.5 * Math.sin(ph));
+    p.lrx += w * 0.35 * Math.sin(ph); p.rrx -= w * 0.35 * Math.sin(ph); p.lrz += w * 0.08 * Math.sin(ph); p.rrz += w * 0.08 * Math.sin(ph); // elbow pulls (left elbow with right knee)
     p.pry += w * 0.12 * Math.sin(ph); p.prz += w * 0.08 * Math.sin(ph); p.ary += w * 0.12 * Math.sin(ph); p.arz += w * 0.1 * Math.sin(ph); p.apz += w * 0.04 * Math.sin(ph); p.hry -= w * 0.08 * Math.sin(ph);
   }
   const aim = sm(seg(t, 3.7, 4.0)) * (1 - sm(seg(t, 4.6, 4.8))); p.arx -= 0.12 * aim; p.hrx += 0.08 * aim;
   if (t > 5.85) p = gait(p, crawlZ * sm(seg(t, 5.9, 7.4)), WALK, Math.sin(Math.PI * seg(t, 5.9, 7.4)) * 1.2 > 1 ? 1 : Math.sin(Math.PI * seg(t, 5.9, 7.4)) * 1.2);
   return breathe(p, t, 0.6);
-}, ev: [[4.25, (c) => fireShot(c, { ...FIRE[c.st.weapon === 1 ? 0 : c.st.weapon], shots: [0] })]] });
+}, ev: [[4.25, (c) => fireShot(c, { ...FIRE[c.st.weapon === 1 ? 0 : c.st.weapon], shots: [0] })],
+  ...Array.from({ length: 8 }, (_, i) => [1.25 + i * 0.3125, (c) => c.fx.smoke(c.rig.world(i % 2 ? 'handR' : 'handL').setY(0.05), 1, 0.35, 0xa89c88, 0.15, 0.25, 0.7)])] });
+
+// 💀 taken out: shot → flinch → knocked back in the hit direction → falls onto the back, weapon drops → lies still → fades.
+// Clearly not the crawl (face-down, moving forward, weapon kept). Same motion as Conquest (render.js DOWN_T) + Combat/Team.
+A({ id: 'out', ico: '💀', name: 'Taken out', info: 'Hit hard: knocked back onto its back, drops its weapon, lies ~3 s, then fades out', dur: 6.2, pose(t) {
+  const H = 0.55;
+  if (t < H) return breathe(keys(t, [[0, READY], [0.35, AIM, back], [H, AIM]]), t, 0.6);
+  const d = t - H;
+  if (d < OUT_T.fade) return outPose(d, AIM);
+  const p = breathe(TP(), t, 0.6); p.fade = sm(seg(d, OUT_T.fade + 0.35, OUT_T.fade + 1.1)); return p; // back in for the next loop
+}, ev: [[0.42, (c) => c.fx.bolt(HIT().setY(1.3), c.rig.world('chest'), 0xff5a3c, 55, 0.6)],
+  [0.55, (c) => { c.fx.hitPuff(c.rig.world('chest'), 1.6); c.fx.light(c.rig.world('chest'), 0xff6040, 5, 0.12, 4); }],
+  [0.55 + 0.25, (c) => dropWeapon(c)],
+  [0.55 + 0.65, (c) => c.fx.smoke(c.rig.root.position.clone(), 5, 0.7, 0xa89c88, 0.2, 0.9, 1.1)]] });
 
 A({ id: 'aim', ico: '🎯', name: 'Aim', dur: 4, pose(t) {
   const p = keys(t, [[0, READY], [0.12, { ...READY, arx: 0.42, py: -0.04 }], [0.42, AIM, back], [3.3, AIM], [3.8, READY]]);
@@ -196,7 +211,7 @@ A({ id: 'reload', ico: '🔄', name: 'Reload', dur: 3.4, pose(t) {
 }, ev: [[0.45, (c) => { const p = c.rig.world('mag'); const m = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.09, 0.05), new THREE.MeshLambertMaterial({ color: 0x2b2f35 })); c.fx.solid(m, p, new THREE.Vector3(0, -0.5, 0), 2.2, 0.25, 0.03, 4); }],
   [1.25, (c) => c.fx.sparks(c.rig.world('mag'), 4, 0xffffff, 1, 0.15)], [1.95, (c) => c.fx.sparks(c.rig.world('eject'), 3, 0xffe0a0, 0.8, 0.12)]] });
 
-A({ id: 'grenade', ico: '💣', name: 'Grenade', dur: 3.6, pose(t) {
+const grenadeAct = A({ id: 'grenade', ico: '💣', name: 'Throw: Thermal', dur: 3.6, pose(t) {
   const LOW = { ...READY, arx: 0.75, ary: 0.7, arz: -0.3, try: 0.1, rrx: 0.25, rrz: -0.2, hrx: 0.1 };
   const PIN = { ...LOW, rrx: -0.6, rrz: 0.2, hry: -0.1 };
   const WIND = { ...LOW, fLz: 0.34, fRz: -0.2, pz: -0.08, py: -0.08, trx: -0.2, try: -0.55, pry: -0.2, rrx: -3.55, rrz: 0.25, rry: 0.2, lrx: -0.5, hry: 0.5, hrx: -0.05 };
@@ -316,7 +331,7 @@ const TRAITS = {
     return breathe(p, t, 1.4);
   }, ev: [[0.05, (c) => c.once && c.stage.flagState('neutral', 0)], [2.0, (c) => c.once && c.stage.flagState('ours', 1.4)]] },
   cover: { ico: '🧱', name: 'Cover Fighter', dur: 8, pose: (t, c) => coverAct.pose(t, c), evFor: (c) => coverAct.evFor(c) },
-  sniper: { ico: '🎯', name: 'Sniper Nest', dur: 7.6, pose(t, c) { return T_ACTIONS.find((a) => a.id === 'prone').pose(t, c); }, ev: [[4.25, (c) => fireShot(c, { ...FIRE[2], shots: [0] })], [3.9, (c) => c.fx.sprite({ p: c.rig.world('scope'), tex: 'glow', add: true, color: 0xbfe8ff, life: 0.4, s0: 0.05, s1: 0.45, a: 1, fadeIn: 0.2 })]] },
+  sniper: { ico: '🔭', name: 'Sniper Spot', dur: 7.6, pose(t, c) { return T_ACTIONS.find((a) => a.id === 'prone').pose(t, c); }, ev: [[4.25, (c) => fireShot(c, { ...FIRE[2], shots: [0] })], [3.9, (c) => c.fx.sprite({ p: c.rig.world('scope'), tex: 'glow', add: true, color: 0xbfe8ff, life: 0.4, s0: 0.05, s1: 0.45, a: 1, fadeIn: 0.2 })]] },
   retaker: { ico: '🔁', name: 'Retaker', dur: 6.4, pose(t, c) { return TRAITS.rusher.pose(t, c); }, ev: [[0.05, (c) => c.once && c.stage.flagState('enemy', 0)], [2.0, (c) => c.once && c.stage.flagState('ours', 1.4)]] },
   supplier: { ico: '➕', name: 'Supplier', dur: 4.6, pose(t) {
     const KN = { ...CROUCH, arx: 0.7, ary: 0.5, rrx: -0.9, rrz: 0.1, trx: 0.25, hrx: 0.35 };
@@ -324,7 +339,7 @@ const TRAITS = {
     return breathe(p, t, 1);
   }, ev: [[0.9, (c) => c.once && c.stage.showProp('crate', true, c)], [1.6, (c) => { c.fx.ring(c.rig.root.position, 0x5dff7a, 3, 0.9); c.fx.emit(() => c.fx.sprite({ p: c.rig.root.position.clone().add(c.fx.rv(1.4, 0, 1.4)).setY(0.3), tex: 'spark', add: true, color: 0x5dff7a, v: new THREE.Vector3(0, 1.3, 0), life: 1, s0: 0.14, s1: 0.05, a: 1, drag: 0, fadeIn: 0 }), 16, 1.8); }],
     [4.5, (c) => c.once && c.stage.showProp('crate', false)]] },
-  mines: { ico: '💣', name: 'Mine Layer', dur: 6.6, pose(t) {
+  mines: { ico: '⚠️', name: 'Mine Layer', dur: 6.6, pose(t) {
     const pts = [[0, 0.9], [0, 1.9], [0, 2.9]];
     const r = route(t, [[0.1, 0.6, [0, 0], [0, 0.5]], [1.6, 2.1, [0, 0.5], [0, 1.5]], [3.1, 3.6, [0, 1.5], [0, 2.5]], [4.6, 6.2, [0, 2.5], [0, 0]]]);
     const KN = { ...CROUCH, arx: 0.7, ary: 0.5, rrx: -0.7, rrz: 0.15, trx: 0.35, hrx: 0.4 };
@@ -374,7 +389,7 @@ const K_ACTIONS = [
     p.ty = 0.15 * Math.sin(t * 0.8);
     return hover(p, t, c);
   }, ev: Array.from({ length: 26 }, (_, i) => [0.3 + i * 0.3, (c) => tankDust(c)]) },
-  { id: 'turret', ico: '🎯', name: 'Turret', dur: 6, pose(t, c) {
+  { id: 'turret', ico: '↔️', name: 'Turn turret', dur: 6, pose(t, c) {
     const p = KP({ ty: keys(t, [[0, { v: 0 }], [0.3, { v: -0.06 }], [1.3, { v: 1.62 }, back], [2.3, { v: 1.57 }], [3.4, { v: -1.62 }, back], [4.4, { v: -1.57 }], [5.4, { v: 0 }, back]]).v });
     p.hrz = 0.02 * (wobble(t, 1.3, 2.2, 0.3) - wobble(t, 3.4, 2.2, 0.3)); return hover(p, t, c);
   } },
@@ -406,11 +421,157 @@ const K_ACTIONS = [
   ] },
 ];
 
+// ---------- 💀 taken out kit (Action "Taken out", Combat/Team arenaPose; Conquest render.js uses the same timing) ----------
+export const OUT_T = Object.freeze({ flinch: 0.12, fall: 0.65, drop: 0.25, lie: 3.65, fade: 4.35, knock: 0.75 });
+const eIn2 = (x) => { x = clamp01(x); return x * x; };
+const ON_BACK = TP({ fk: 1, lvl: 0, hlv: 0, py: -0.76, prx: -1.52, pz: 0, tL: -0.25, kL: 0.35, tR: 0.12, kR: 0.12, sL: 0.18, sR: 0.12, fpL: -0.6, fpR: -0.4,
+  trx: -0.04, hrx: -0.15, hry: 0.5, arx: -0.4, ary: 0.2, apz: 0, lrx: -1.9, lrz: 0.5, rrx: -2.2, rrz: -0.6, wpn: 0 });
+// d = seconds since the hit; from = the pose the unit was in. Knockback is along the unit's -z (it faces the shooter).
+export function outPose(d, from = READY) {
+  const FL = { ...from, trx: -0.55, hrx: -0.5, arx: from.arx - 0.4, prx: -0.15, py: from.py - 0.04, lrx: -0.5, rrx: -0.4 };
+  const fk = seg(d, OUT_T.flinch, OUT_T.fall);
+  const p = d < OUT_T.flinch ? mix(from, FL, eOut(d / OUT_T.flinch)) : mix(FL, ON_BACK, eIn2(fk));
+  p.pz = d < OUT_T.flinch ? -0.1 * eOut(d / OUT_T.flinch) : -(0.1 + (OUT_T.knock - 0.1) * eOut(fk));
+  if (d > OUT_T.fall) p.py += 0.035 * Math.max(0, wobble(d, OUT_T.fall, 3, 0.18)); // lands with a small bounce, then lies still
+  p.wpn = d < OUT_T.drop ? 1 : 0;
+  p.fade = d < OUT_T.lie ? 1 : 1 - sm(seg(d, OUT_T.lie, OUT_T.fade));
+  return p;
+}
+const _v3 = new THREE.Vector3(), _q = new THREE.Quaternion(), _s3 = new THREE.Vector3();
+// the hand-held weapon detaches and tumbles to the ground beside the body (own material copies; fades with the body)
+export function dropWeapon(c, life = OUT_T.fade - OUT_T.drop + 0.2) {
+  const rig = c.rig, arms = rig.b.arms; if (!arms) return null;
+  const parts = rig.meshes.filter((m) => m.name.startsWith('arms:')); if (!parts.length) return null;
+  const box = new THREE.Box3(); for (const m of parts) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrix)); }
+  const ctr = box.getCenter(new THREE.Vector3()), g = new THREE.Group();
+  for (const m of parts) { const k = new THREE.Mesh(m.geometry, (m.userData.mat === 'team' ? rig.look.team : rig.look.visor).clone()); k.position.copy(m.position).sub(ctr); k.quaternion.copy(m.quaternion); k.castShadow = true; g.add(k); }
+  arms.updateWorldMatrix(true, false); arms.matrixWorld.decompose(_v3, _q, _s3);
+  const p0 = arms.localToWorld(ctr.clone()), yaw = rig.root.rotation.y;
+  const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), fwd = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+  const p1 = rig.root.position.clone().addScaledVector(side, 0.75).addScaledVector(fwd, -0.5); p1.y = Math.max(0.04, (box.max.x - box.min.x) * 0.5 * _s3.x);
+  g.scale.copy(_s3);
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw + 1.1, Math.PI / 2, 'YXZ'));
+  return c.fx.tween(g, p0, _q, p1, q1, 0.45, life, 0.25);
+}
+
+// ---------- 🎒 gear actions: the chosen sidearm / explosive / gadget doing what it does in Conquest (stats.js numbers) ----------
+const GI = (f, i) => S.ITEMS.trooper[f][i] || S.ITEMS.trooper[f][0];
+const DUMMY_FWD = () => STAGE.dummy.clone();
+function propMat(c, o = {}) { return new THREE.MeshLambertMaterial({ color: c, ...o }); }
+export function pistolMesh(id) {
+  const g = new THREE.Group(), dark = id === 'commando-pistol' ? 0x3a3f2e : 0x2b2f35;
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.05), propMat(dark)).translateY(-0.1));
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.045, 0.1), propMat(0x1d2024)).translateY(-0.03).translateZ(-0.05));
+  if (id === 'commando-pistol') g.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.02), propMat(0xb8963a)).translateY(-0.16).translateZ(0.035));
+  const mz = new THREE.Object3D(); mz.position.set(0, -0.21, 0.01); g.add(mz); g.userData.muzzle = mz; return g;
+}
+function pistolShot(c, s) {
+  const gun = c.pistol; if (!gun) return;
+  const mz = gun.userData.muzzle.getWorldPosition(new THREE.Vector3()), hit = HIT().add(c.fx.rv(0.25, 0.3, 0.1)), dir = hit.clone().sub(mz).normalize();
+  c.fx.muzzle(mz, dir, c.bolt, 0.55); c.fx.bolt(mz, hit, c.bolt, 50, 0.4, (p) => c.stage.dummyHit(c, p, 0.25 + s.dmg / 40));
+}
+function sideAction(i) {
+  const s = S.SIDEARMS[i] || S.SIDEARMS[0], it = GI('side', i), shots = []; for (let x = 1.3; x < 3.2; x += s.rof) shots.push(+x.toFixed(3));
+  const EMPTY = { ...AIM, arx: 0.55, ary: 0.5, arz: -0.4, try: -0.06, hrx: 0.15 };             // rifle empty: lowered on the left arm
+  const PIST = { ...EMPTY, rrx: -2.05, rrz: 0.18, rry: -0.1, hrx: 0.02, hry: -0.12, try: 0.12, trx: 0.03 };
+  return { id: 'side', gear: 'side:' + it.id, ico: it.i, name: 'Pistol: ' + it.n, info: it.n + ': ' + S.GEAR_EFFECT.side(s), dur: 4.4, pose(t) {
+    const p = keys(t, [[0, READY], [0.3, AIM, back], [0.55, AIM], [0.8, EMPTY], [1.1, PIST, back], [3.3, PIST], [3.65, EMPTY], [4.05, AIM], [4.4, READY]]);
+    p.rrx += 0.22 * pulses(t, shots, 0.02, 0.1); p.hrx -= 0.03 * pulses(t, shots, 0.02, 0.1);
+    return breathe(p, t, 0.6);
+  }, ev: [[0.6, (c) => c.fx.sparks(c.rig.world('mag'), 3, 0xffffff, 0.6, 0.12)], // click: main weapon is reloading / empty
+    [0.95, (c) => { c.rig.clearProps(); c.pistol = c.rig.attach(pistolMesh(it.id), 'handR'); }],
+    ...shots.map((x) => [x, (c) => pistolShot(c, s)]),
+    [3.6, (c) => { c.rig.clearProps(); c.pistol = null; }]] };
+}
+// explosives (Action id 'grenade' = the explosive slot)
+const KNEEL_WORK = { ...CROUCH, arx: 0.7, ary: 0.5, rrx: -0.8, rrz: 0.15, trx: 0.35, hrx: 0.4 };
+export function chargeMesh(color, led) {
+  const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.22), propMat(color)).translateY(0.08));
+  const l = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), new THREE.MeshBasicMaterial({ color: led })); l.position.set(0.08, 0.18, 0); g.add(l); g.userData.led = l; return g;
+}
+function explAction(i) {
+  const e = S.EXPLOSIVES[i] || S.EXPLOSIVES[0], it = GI('expl', i), info = it.n + ': ' + S.GEAR_EFFECT.expl[e.id](e), base = { id: 'grenade', gear: 'expl:' + it.id, ico: it.i, info };
+  if (e.id === 'thermal') return { ...grenadeAct, ...base, name: 'Throw: ' + it.n };
+  if (e.id === 'mines') return { ...base, name: 'Plant: ' + it.n, dur: 5.6, pose(t) {
+    const r = route(t, [[0.1, 0.6, [0, 0], [0, 0.5]], [1.6, 2.1, [0, 0.5], [0, 1.5]], [3.3, 4.9, [0, 1.5], [0, 0]]]);
+    const p = keys(t, [[0, READY], [0.65, READY], [0.9, KNEEL_WORK], [1.35, KNEEL_WORK], [1.55, READY], [2.15, READY], [2.4, KNEEL_WORK], [2.85, KNEEL_WORK], [3.05, READY], [5.6, READY]]);
+    p.x = r.x; p.z = r.z; p.yaw = keys(t, [[3.2, { v: 0 }], [3.45, { v: Math.PI }], [4.8, { v: Math.PI }], [5.3, { v: 0 }]]).v;
+    gait(p, r.dist, WALK, clamp01(r.v / 1.2)); return breathe(p, t, 1);
+  }, ev: [[0.05, (c) => c.once && c.stage.clearMines()], [1.15, (c) => c.stage.dropMine(c)], [2.65, (c) => c.stage.dropMine(c)],
+    [4.2, (c) => { if (c.once) for (const m of c.stage.mineSpots()) c.fx.ring(m, 0xff5a3c, e.splash * 0.5, 0.9); }]] };
+  if (e.id === 'detpack') { const C = [0, STAGE.dummy.z - 0.9]; return { ...base, name: 'Place + set off: ' + it.n, dur: 7.2, pose(t) {
+    const r = route(t, [[0.2, 1.7, [0, 0], [0, C[1] - 0.7]], [2.6, 4.2, [0, C[1] - 0.7], [0, 2.6]], [5.9, 6.9, [0, 2.6], [0, 0]]]);
+    let p = keys(t, [[0, READY], [1.7, READY], [1.95, KNEEL_WORK], [2.4, KNEEL_WORK], [2.6, READY], [4.5, READY], [4.75, { ...READY, lrx: -1.35, lrz: -0.2, hrx: 0.05 }], [5.4, { ...READY, lrx: -1.35, lrz: -0.2 }], [5.7, READY], [7.2, READY]]);
+    p.x = r.x; p.z = r.z; p.yaw = keys(t, [[2.5, { v: 0 }], [2.75, { v: Math.PI }], [4.15, { v: Math.PI }], [4.45, { v: 0 }]]).v;
+    gait(p, r.dist, r.v > 2 ? RUN : WALK, clamp01(r.v / 2)); return breathe(p, t, 1);
+  }, ev: [[2.15, (c) => { if (!c.once) return; const m = chargeMesh(0x8a5a2b, 0xff3a2a); m.position.set(0, 0, C[1]); c.stage.addProp(m, 4); c.det = m; }],
+    [4.95, (c) => c.fx.sparks(c.rig.world('handL'), 4, 0xff6050, 1, 0.2)],
+    [5.0, (c) => { if (!c.once) return; const p = new THREE.Vector3(0, 0.3, C[1]); if (c.det) c.stage.removeProp(c.det); c.det = null; c.fx.explosion(p, 1.4); c.stage.dummyHit(c, HIT(), 1 + e.dmg / 50); }]] }; }
+  // time bomb: planted at an enemy post, a big blast after e.fuse seconds
+  const F = [STAGE.flag.x + 0.7, STAGE.flag.z - 0.7], fuse = e.fuse, T0 = 2.3, dur = T0 + fuse + 1.4;
+  return { ...base, name: 'Plant: ' + it.n, dur, pose(t) {
+    const r = route(t, [[0.2, 1.9, [0, 0], F], [2.9, 4.6, F, [0, 0]]]);
+    const p = keys(t, [[0, READY], [1.9, READY], [2.1, KNEEL_WORK], [2.65, KNEEL_WORK], [2.85, READY], [T0 + fuse - 0.3, READY], [T0 + fuse, { ...CROUCH, arx: 0.8, hrx: 0.2 }], [T0 + fuse + 0.8, { ...CROUCH, arx: 0.8 }], [dur, READY]]);
+    p.x = r.x; p.z = r.z; p.yaw = keys(t, [[0, { v: 0 }], [0.25, { v: Math.atan2(F[0], F[1]) }], [2.8, { v: Math.atan2(F[0], F[1]) }], [3.05, { v: Math.atan2(-F[0], -F[1]) }], [4.5, { v: Math.atan2(-F[0], -F[1]) }], [4.9, { v: Math.atan2(F[0], F[1]) }]]).v;
+    gait(p, r.dist, r.v > 2 ? RUN : WALK, clamp01(r.v / 2)); return breathe(p, t, 1);
+  }, ev: [[0.05, (c) => c.once && c.stage.flagState('enemy', 0)],
+    [T0, (c) => { if (!c.once) return; const m = chargeMesh(0x4a5058, 0xffd23a); m.position.set(STAGE.flag.x + 0.35, 0, STAGE.flag.z - 0.35); c.stage.addProp(m, (k) => 1.5 + 10 * k, T0, fuse); c.bomb = m; }],
+    [T0 + fuse, (c) => { if (!c.once) return; if (c.bomb) c.stage.removeProp(c.bomb); c.bomb = null; c.fx.explosion(STAGE.flag.clone().setY(0.3), 1.8); c.fx.ring(STAGE.flag, 0xffd28a, e.splash, 0.7); c.stage.flagState('neutral', 0); }]] };
+}
+// gadgets
+export function turretMesh() {
+  const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.32, 10), propMat(0x5a6470)).translateY(0.16));
+  const head = new THREE.Group(); head.position.y = 0.42; g.add(head);
+  head.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.3), propMat(0xe9edf1)));
+  head.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 6).rotateX(Math.PI / 2), propMat(0x2b2f35)).translateZ(0.3));
+  const mz = new THREE.Object3D(); mz.position.set(0, 0, 0.52); head.add(mz); g.userData = { head, mz }; return g;
+}
+export function droidMesh() {
+  const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), propMat(0xd7dde4)));
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: 0x6ff3ff })); eye.position.z = 0.13; g.add(eye);
+  for (const s of [-1, 1]) g.add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.06), propMat(0x5a6470)).translateX(s * 0.2));
+  const mz = new THREE.Object3D(); mz.position.z = 0.18; g.add(mz); g.userData = { mz }; return g;
+}
+function propShot(c, mz, dmg, color) { const a = mz.getWorldPosition(new THREE.Vector3()), b = HIT().add(c.fx.rv(0.25, 0.3, 0.1)); c.fx.muzzle(a, b.clone().sub(a).normalize(), color, 0.5); c.fx.bolt(a, b, color, 50, 0.45, (p) => c.stage.dummyHit(c, p, 0.2 + dmg / 30)); }
+function gadgetAction(i) {
+  const g = S.GADGETS[i] || S.GADGETS[0], it = GI('gadget', i); if (g.id === 'none') return null;
+  const info = it.n + ': ' + S.GEAR_EFFECT.gadget[g.id](g), base = { id: 'gadget', gear: 'gadget:' + it.id, ico: it.i, info, group: 'gear' };
+  if (g.id === 'jetpack') return { ...SPECIAL.jet, ...base, name: 'Jetpack', same: 'jet' };
+  if (g.id === 'fusion-cutter') return { ...SPECIAL.engineer, ...base, name: 'Fusion cutter: repair', same: 'engineer' };
+  if (g.id === 'rally') return { ...SPECIAL.commander, ...base, name: 'Rally call', same: 'commander' };
+  if (g.id === 'supply') return { ...TRAITS.supplier, ...base, name: 'Drop: Supply crate' };
+  if (g.id === 'turret') { const shots = []; for (let x = 2.0; x < 6.2; x += g.rof) shots.push(+x.toFixed(3)); return { ...base, name: 'Deploy: Turret', dur: 7.2, pose(t) {
+    const p = keys(t, [[0, READY], [0.5, KNEEL_WORK], [1.3, KNEEL_WORK], [1.6, READY], [1.9, AIM, back], [6.4, AIM], [6.9, READY], [7.2, READY]]);
+    p.hry += 0.25 * sm(seg(t, 1.1, 1.4)) * (1 - sm(seg(t, 1.6, 1.9))); return breathe(p, t, 0.8);
+  }, ev: [[0.95, (c) => { if (!c.once) return; const m = turretMesh(), r = c.rig.root; m.position.set(r.position.x + 0.9, 0, r.position.z + 0.8); m.scale.setScalar(0.01); c.stage.addProp(m); c.turret = m;
+      const tgt = DUMMY_FWD(); let k = 0; c.fx.emit(() => { k = Math.min(1, k + 1 / 18); m.scale.setScalar(Math.max(0.01, back(k))); m.userData.head.rotation.y = Math.atan2(tgt.x - m.position.x, tgt.z - m.position.z) * sm(seg(k, 0.5, 1)); }, 30, 0.7);
+      c.fx.smoke(m.position.clone(), 4, 0.5, 0xa89c88, 0.2, 0.5, 0.8); c.fx.ring(m.position, 0x6ff3ff, 1.2, 0.5); }],
+    ...shots.map((x) => [x, (c) => c.once && c.turret && propShot(c, c.turret.userData.mz, g.dmg, 0xffb060)]),
+    [7.0, (c) => { if (c.once && c.turret) { c.stage.removeProp(c.turret); c.turret = null; } }]] }; }
+  // recon droid: flies along, zaps, and marks the target so the team aims better
+  const shots = []; for (let x = 2.0; x < 5.4; x += g.rof) shots.push(+x.toFixed(3));
+  return { ...base, name: 'Deploy: Recon droid', dur: 6.4, pose(t) {
+    const p = keys(t, [[0, READY], [0.4, { ...READY, rrx: -1.2, rrz: 0.3, hry: 0.4, hrx: -0.2 }], [1.0, { ...READY, rrx: -1.9, rrz: 0.2, hrx: -0.35 }], [1.4, READY], [2.6, AIM, back], [5.6, AIM], [6.1, READY]]);
+    recoil(p, t, [3.6], FIRE[0]); return breathe(p, t, 0.8);
+  }, ev: [[0.7, (c) => { const m = droidMesh(), r = c.rig.root; c.stage.addProp(m); c.droid = m; const tgt = DUMMY_FWD(); let k = 0;
+      c.fx.emit(() => { k += 1 / 30; const off = new THREE.Vector3(0.75, 1.9 + 0.08 * Math.sin(k * 5), 0.35).applyAxisAngle(new THREE.Vector3(0, 1, 0), r.rotation.y);
+        const from = c.rig.world('back'), to = r.position.clone().add(off); m.position.lerpVectors(from, to, sm(k / 0.7)); m.lookAt(tgt.x, 1.2, tgt.z); }, 30, 5.6); }],
+    ...shots.map((x) => [x, (c) => c.droid && propShot(c, c.droid.userData.mz, g.dmg, 0x6ff3ff)]),
+    [2.4, (c) => { c.fx.ring(STAGE.dummy, 0x6ff3ff, 1.4, 0.9); c.fx.sprite({ p: HIT().setY(2.1), tex: 'glow', add: true, color: 0x6ff3ff, life: 0.8, s0: 0.2, s1: 0.6, a: 1, fadeIn: 0.1 }); }], // spotted: +aim for the team
+    [3.6, (c) => fireShot(c, { ...FIRE[c.st.weapon === 1 ? 0 : c.st.weapon] || FIRE[0], shots: [0] })],
+    [6.2, (c) => { if (c.droid) { c.stage.removeProp(c.droid); c.droid = null; } }]] };
+}
+export function gearActions(st) {
+  const side = { ...sideAction(st.side | 0), group: 'gear' }, expl = { ...explAction(st.expl | 0), group: 'gear' }, gadget = gadgetAction(st.gadget | 0);
+  return { side, expl, gadget };
+}
+export const GEAR_FIELDS_DEMO = ['side', 'expl', 'gadget'];
+
 // ---------- public ----------
 // class + trait defaults come from the ONE shared stats file (Conquest rule)
 export const classOf = (st) => S.classOf('trooper', st);
 export const CLASS_NAME = { trooper: 'Trooper', heavy: 'Heavy', sniper: 'Sniper', engineer: 'Engineer', commander: 'Commander', jet: 'Jet Trooper' };
-export const CLASS_ICON = { trooper: '🪖', heavy: '🚀', engineer: '🔧', sniper: '🎯', commander: '⭐', jet: '🛩️' };
+export const CLASS_ICON = Object.fromEntries(Object.entries(S.CLASS_INFO).map(([k, v]) => [k, v.i]));
 // Conquest Commander traits.js: TRAITS ids + CLASS_TRAIT defaults
 export const TRAIT_LIST = ['rusher', 'cover', 'sniper', 'retaker', 'supplier', 'mines', 'guard'].map((id) => ({ id, ...TRAITS[id] }));
 export const CLASS_TRAIT = S.CLASS_TRAIT;
@@ -418,8 +579,12 @@ export const CLASS_TRAIT = S.CLASS_TRAIT;
 export function actionsFor(kind, st) {
   if (kind === 'tank') return K_ACTIONS.map((a) => ({ ...a, group: 'act' }));
   const cls = classOf(st), sp = SPECIAL[cls];
-  const list = T_ACTIONS.map((a) => ({ ...a, group: 'act' }));
-  list.push({ id: 'special', ...sp, group: 'special', cls });
+  const list = T_ACTIONS.filter((a) => a.id !== 'grenade').map((a) => ({ ...a, group: 'act' }));
+  // 🎒 the chosen gear, each with its real effect (stats.js numbers): sidearm, explosive (id 'grenade'), gadget
+  const g = gearActions(st), special = { id: 'special', ...sp, group: 'special', cls };
+  if (g.gadget && g.gadget.same === cls) { special.gear = g.gadget.gear; special.info = g.gadget.info; g.gadget = null; } // class special = this gadget
+  list.push(g.side, g.expl); if (g.gadget) list.push(g.gadget);
+  list.push(special);
   return list;
 }
 export const traitAction = (id) => ({ id: 'trait-' + id, ...TRAITS[id], group: 'trait', trait: id });
@@ -429,8 +594,8 @@ export { TP, KP };
 // ---------- arena pose kit (combat.html / team.html): one blended pose from a unit's live state ----------
 // o: { t, aim 0..1, crouch 0..1, move 0..1, dist (m walked), run, shot (s since shot), fire (FIRE profile), hit (s since hit), reload 0..1, down (s since down), win (s) }
 const ACT = (id) => T_ACTIONS.find((a) => a.id === id);
-const DOWN = { ...CROUCH, py: -0.62, prx: 0.75, trx: 0.45, hrx: 0.55, arx: 0.95, ary: 0.4, fRz: -0.45 };
 export const FIRE_PROFILES = FIRE;
+let SIDE_POSE = null;
 export function arenaPose(o) {
   if (o.win != null) return ACT('victory').pose(o.win % 4);
   const aim = o.aim || 0, cr = o.crouch || 0;
@@ -440,7 +605,8 @@ export function arenaPose(o) {
   if (o.move > 0.01) gait(p, o.dist, o.run ? RUN : WALK, o.move * (1 - cr * 0.6));
   if (o.shot != null && o.shot < 0.6) recoil(p, o.shot, [0], o.fire || FIRE[0]);
   if (o.hit != null && o.hit < 1.4) { const k = o.hit < 0.7 ? 1 : 1 - sm((o.hit - 0.7) / 0.7); p = mix(p, ACT('hit').pose(Math.min(1.6, 0.55 + o.hit)), k * 0.75); }
-  if (o.down != null) p = mix(p, DOWN, sm(Math.min(1, o.down / 0.7)));
+  if (o.side != null) p = mix(p, (SIDE_POSE ||= sideAction(0).pose(1.6)), Math.min(1, o.side * 6) * 0.9); // 🔸 sidearm while the main weapon reloads
+  if (o.down != null) p = outPose(o.down, p);
   return p;
 }
 export function arenaTankPose(o) { // o: { t, turret (rad, hull-relative), move 0..1, shot, hit, wreck }

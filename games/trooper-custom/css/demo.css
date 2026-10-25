@@ -22,7 +22,7 @@ svg { display: block; }
 #cambar button.on, #playbar button.on { border-color: #6ff3ff; background: rgba(40,90,110,.7); }
 #playbar { left: 50%; bottom: 8px; transform: translateX(-50%); padding: 3px; gap: 4px; }
 #speedBtn { display: flex !important; flex-direction: column; gap: 0; line-height: 1; }
-#speedBtn span { font-size: 16px; } #speedBtn i { font-style: normal; font-size: 10px; font-weight: 800; }
+#speedBtn span { font-size: 16px; } #speedBtn i { font-style: normal; font-size: 11px; font-weight: 800; }
 #nowbar { left: 8px; top: 90px; font-size: 13px; max-width: calc(100% - 80px); }
 #nowbar span { font-size: 20px; }
 #nowbar .prog { width: 54px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; }
@@ -42,7 +42,7 @@ svg { display: block; }
   padding: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .unit img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; background: #1a2446; }
 .unit .ico { font-size: 28px; line-height: 46px; height: 46px; }
-.unit i { font-style: normal; font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
+.unit i { font-style: normal; font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
 .unit em { position: absolute; right: 3px; top: 2px; font-style: normal; font-size: 13px; }
 .unit.on { border-color: #6ff3ff; background: rgba(40,90,110,.6); box-shadow: 0 0 0 1px #6ff3ff inset; }
 .lab { font-size: 15px; opacity: .8; margin: 2px 0 -2px 2px; }
@@ -50,8 +50,9 @@ svg { display: block; }
 .act { position: relative; height: 64px; min-width: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06);
   padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .act .ico { font-size: 28px; line-height: 1.1; }
-.act i { font-style: normal; font-size: 10px; opacity: .8; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act i { font-style: normal; font-size: 11px; opacity: .8; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .act.special { border-color: rgba(255,200,80,.6); background: rgba(120,90,20,.25); }
+.act.gear { border-color: rgba(93,255,122,.55); background: rgba(30,90,50,.28); }
 .act.mine { border-color: rgba(255,214,90,.7); }
 .act .star { position: absolute; right: 4px; top: 2px; font-size: 13px; font-weight: 400; }
 .act.on { border-color: #6ff3ff; background: rgba(40,90,110,.7); box-shadow: 0 0 0 1px #6ff3ff inset; }
@@ -67,4 +68,10 @@ svg { display: block; }
 @media (min-width: 700px) and (max-height: 520px) { #panel { width: 300px; } .act { height: 58px; } .act .ico { font-size: 24px; } }
 
 
-#statline { left: 8px; top: 56px; height: 28px; font-size: 12px; font-weight: 700; color: #cfe6ff; pointer-events: auto; max-width: calc(100% - 70px); white-space: nowrap; overflow: hidden; }
+#statline { left: 8px; top: 56px; font-size: 12px; font-weight: 700; color: #cfe6ff; pointer-events: auto; max-width: calc(100% - 70px); flex-wrap: wrap; gap: 2px 8px; padding: 3px 8px; }
+#statline .st { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+#statline .st i { font-style: normal; font-weight: 500; font-size: 11px; opacity: .75; }
+#nowbar { top: 104px; }
+#nowbar .nowtxt { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+#nowbar .nowtxt i { font-style: normal; font-size: 11px; opacity: .8; white-space: normal; }
+.lab small { font-size: 11px; opacity: .75; }

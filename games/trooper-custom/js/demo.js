@@ -3,12 +3,13 @@
 // Models come from the customizer's own builders (trooper.js / tank.js) through demo-rig.js, so they look identical.
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=6';
-import * as T from './trooper.js?v=6';
-import { TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=6';
-import { RigTemplate, Rig } from './demo-rig.js?v=7';
-import { FX } from './demo-fx.js?v=7';
-import { loadArmyData, pickEntry, ARMY_KEY, S as Stats } from './army-data.js?v=7';
-import { STAGE, actionsFor, traitAction, TRAIT_LIST, CLASS_TRAIT, classOf, CLASS_NAME, CLASS_ICON, eventsOf } from './demo-actions.js?v=7';
+import * as T from './trooper.js?v=7';
+import { TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=7';
+import { RigTemplate, Rig } from './demo-rig.js?v=8';
+import { FX } from './demo-fx.js?v=8';
+import { loadArmyData, pickEntry, ARMY_KEY, S as Stats } from './army-data.js?v=8';
+import { pageChrome, setBtn } from './page-chrome.js?v=1';
+import { STAGE, actionsFor, traitAction, TRAIT_LIST, CLASS_TRAIT, classOf, CLASS_NAME, CLASS_ICON, eventsOf } from './demo-actions.js?v=8';
 
 const $ = (s, r = document) => r.querySelector(s);
 const h = (tag, attrs = {}, kids = []) => {
@@ -105,7 +106,7 @@ const crate = new THREE.Group(); crate.visible = false; stage.add(crate);
   crate.add(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.41), new THREE.MeshBasicMaterial({ color: 0x27ae60 })).translateY(0.2));
   crate.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.41), new THREE.MeshBasicMaterial({ color: 0x27ae60 })).translateY(0.2));
 }
-let mines = [];
+let mines = [], props = [];
 const mineGeo = new THREE.CylinderGeometry(0.16, 0.18, 0.06, 10), mineMat = mat(0x3b4047), mineLed = new THREE.MeshBasicMaterial({ color: 0xff3a2a });
 let dummySpring = { a: 0, v: 0, b: 0, w: 0 }, genSmoke = null;
 const stageApi = {
@@ -125,7 +126,12 @@ const stageApi = {
     m.add(shadowy(new THREE.Mesh(mineGeo, mineMat)).translateY(0.03)); const led = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), mineLed); led.position.y = 0.07; m.add(led);
     m.position.set(p.x, 0, p.z); stage.add(m); mines.push(m); fx.sparks(m.position.clone().setY(0.1), 4, 0xff6050, 1, 0.2);
   },
-  reset() { this.clearMines(); gen.visible = false; crate.visible = false; fx.stop('gen'); paintFlag('ours'); flagRaise = { from: 2.3, to: 2.3, t: 1, dur: 1 }; flagCloth.position.y = 2.3; },
+  mineSpots() { return mines.map((m) => m.position.clone()); },
+  // action props (turret, droid, charges): blink = Hz or fn(k of fuse) → Hz for the red/yellow LED
+  addProp(obj, blink = 0, t0 = 0, fuse = 1) { obj.traverse((m) => { if (m.isMesh) m.castShadow = true; }); obj.userData.blink = blink; obj.userData.age = 0; obj.userData.fuse = fuse; stage.add(obj); props.push(obj); return obj; },
+  removeProp(obj) { const i = props.indexOf(obj); if (i < 0) return; props.splice(i, 1); stage.remove(obj); obj.traverse((m) => { if (m.isMesh) { m.geometry.dispose(); m.material.dispose(); } }); },
+  clearProps() { for (const o of [...props]) this.removeProp(o); },
+  reset() { this.clearMines(); this.clearProps(); gen.visible = false; crate.visible = false; fx.stop('gen'); paintFlag('ours'); flagRaise = { from: 2.3, to: 2.3, t: 1, dur: 1 }; flagCloth.position.y = 2.3; },
 };
 function updateStage(dt, time) {
   // dummy: damped spring wobble (no health bars)
@@ -138,6 +144,7 @@ function updateStage(dt, time) {
   if (flagRaise.t < 1) { flagRaise.t = Math.min(1, flagRaise.t + dt / flagRaise.dur); const k = flagRaise.t;
     if (k < 0.5) flagCloth.position.y = 2.3 + (flagRaise.from - 2.3) * (k * 2); else { if (flagMode !== flagRaise.mode) paintFlag(flagRaise.mode); flagCloth.position.y = flagRaise.from + (2.3 - flagRaise.from) * ((k - 0.5) * 2); } }
   for (const m of mines) m.children[1].visible = (time * 2 % 1) < 0.5;
+  for (const o of props) { const u = o.userData; u.age += dt; if (!u.blink || !u.led) continue; const hz = typeof u.blink === 'function' ? u.blink(Math.min(1, u.age / u.fuse)) : u.blink; u.ph = (u.ph || 0) + dt * hz; u.led.visible = u.ph % 1 < 0.5; }
 }
 
 // ---------- unit + squad ----------
@@ -151,7 +158,7 @@ const OFFS = { trooper: 0.12, tank: 0.2 };
 function stateFor(e) { return { ...T.NATION_DEFAULT, ...e.nat, skin: e.kind === 'trooper' ? e.st.skin : 1, ...e.st }; }
 function selectUnit(e) {
   if (!e) return;
-  for (const r of rigs) scene.remove(r.root);
+  for (const r of rigs) { r.clearProps(); r.disposeFade(); scene.remove(r.root); }
   if (tpl) tpl.dispose(); if (look) { look.tex.dispose(); look.team.dispose(); look.visor.dispose(); }
   cur = e; look = new T.TeamLook(); look.paint(stateFor(e)); tpl = new RigTemplate(e.kind, e.st);
   actions = actionsFor(e.kind, e.st);
@@ -165,7 +172,7 @@ function selectUnit(e) {
   history.replaceState(null, '', u);
 }
 function buildRigs() {
-  for (const r of rigs) scene.remove(r.root);
+  for (const r of rigs) { r.clearProps(); r.disposeFade(); scene.remove(r.root); }
   rigs = []; const n = S.squad ? 4 : 1;
   for (let i = 0; i < n; i++) {
     const r = new Rig(tpl, look); r.wreckMat = wreckMat; const o = SQUAD[cur.kind][i]; r.off.set(o[0], 0, o[1]);
@@ -182,9 +189,9 @@ function play(id, quiet) {
   const a = id.startsWith('trait-') ? traitAction(id.slice(6)) : actions.find((x) => x.id === id);
   if (!a) return false;
   act = a; S.t = 0; fx.emitters = []; stageApi.reset(); scopeOn(false);
-  for (const r of rigs) { r.blend = r.raw ? { from: r.raw, t: 0 } : null; r.cyc = -1; r.lt = 0; r.events = eventsOf(a, r.ctx).slice().sort((x, y) => x[0] - y[0]); if (r.kind === 'tank') r.setWreck(false, wreckMat), r._wreck = 0; }
+  for (const r of rigs) { r.clearProps(); r.blend = r.raw ? { from: r.raw, t: 0 } : null; r.cyc = -1; r.lt = 0; r.events = eventsOf(a, r.ctx).slice().sort((x, y) => x[0] - y[0]); if (r.kind === 'tank') r.setWreck(false, wreckMat), r._wreck = 0; }
   for (const b of document.querySelectorAll('#acts button, #traits button')) b.classList.toggle('on', b.dataset.id === id);
-  $('#nowIco').textContent = a.ico; $('#nowName').textContent = a.name;
+  $('#nowIco').textContent = a.ico; $('#nowName').textContent = a.name; $('#nowInfo').textContent = a.info || '';
   if (!quiet) { const nb = $('#nowbar'); nb.classList.remove('pop'); void nb.offsetWidth; nb.classList.add('pop'); }
   return true;
 }
@@ -206,7 +213,7 @@ function tick(dt) {
     r.raw = raw; r.apply(finish(raw, cur.kind)); r.root.updateMatrixWorld(true);
     // events (fire once per cycle, also when a frame jumps past them)
     if (S.playing && lt > 0) {
-      if (cyc !== r.cyc) { if (r.cyc >= 0) { for (const [et, fn] of r.events) if (et > r.lt) fn(r.ctx); if (r.ctx.once) stageApi.reset(); if (cur.kind === 'tank') { fx.stop('fire' + r.ctx.i); fx.stop('wreck' + r.ctx.i); } r.blend = { from: r.raw, t: 0 }; } r.cyc = cyc; r.lt = -1e-6; }
+      if (cyc !== r.cyc) { if (r.cyc >= 0) { for (const [et, fn] of r.events) if (et > r.lt) fn(r.ctx); if (r.ctx.once) stageApi.reset(); r.clearProps(); if (cur.kind === 'tank') { fx.stop('fire' + r.ctx.i); fx.stop('wreck' + r.ctx.i); } r.blend = { from: r.raw, t: 0 }; } r.cyc = cyc; r.lt = -1e-6; }
       for (const [et, fn] of r.events) if (et > r.lt && et <= local) fn(r.ctx);
       r.lt = local;
     }
@@ -268,8 +275,10 @@ function renderWho() {
   $('#whoTag').title = cur.kind === 'tank' ? 'Tank' : CLASS_NAME[cls];
   const fl = $('#whoFlag'); drawFlagMini(fl, cur.nat);
   const c = cur.stats, sp = (c.speed).toFixed(1);
-  $('#statline').textContent = `❤️${Math.round(c.hp)} 🏃${sp} 💥${Stats.fmt ? +c.dmg.toFixed(1) : c.dmg} 🎯${c.range}m ⏱️${c.rof}s` + (c.splash ? ` 💫${c.splash}m` : '') + (c.planned ? ' 🧪' : '');
-  $('#statline').title = `Real battle stats (games/shared/army/stats.js) · 👤 ${cur.nat.player} · 🏳️ ${cur.nat.name}`;
+  // labelled battle stats (same numbers as Conquest): icon + value + word, so a phone needs no hover
+  const stat = (i, v, w) => h('span', { className: 'st' }, [h('b', { textContent: i + v }), h('i', { textContent: w })]);
+  $('#statline').replaceChildren(stat('❤️', Math.round(c.hp), 'Health'), stat('🏃', sp, 'Speed'), stat('💥', +c.dmg.toFixed(1), 'Damage'), stat('📏', c.range + ' m', 'Range'), stat('⏱️', c.rof + ' s', 'Reload'), ...(c.splash ? [stat('💫', c.splash + ' m', 'Blast')] : []));
+  $('#statline').title = `Battle stats · 👤 ${cur.nat.player} · 🏳️ ${cur.nat.name}`;
   $('#whoName').title = `${cur.name} · 👤 ${cur.nat.player} · 🏳️ ${cur.nat.name}`;
 }
 function drawFlagMini(c, n) { const x = c.getContext('2d'); x.fillStyle = n.s; x.fillRect(0, 0, 32, 32); x.strokeStyle = n.p; x.lineWidth = 4; x.strokeRect(2, 2, 28, 28); T.drawSymbol(x, n.sym, 16, 16, 10, T.symbolColor(n)); }
@@ -288,27 +297,29 @@ function renderUnits() {
   const on = box.querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 function actBtn(a, extra = '') {
-  const b = h('button', { type: 'button', className: 'act ' + extra, title: a.name, 'aria-label': a.name, 'data-id': a.id }, [h('span', { className: 'ico', textContent: a.ico }), h('i', { textContent: a.name })]);
+  const b = h('button', { type: 'button', className: 'act ' + extra, title: a.info || a.name, 'aria-label': a.name, 'data-id': a.id, ...(a.gear ? { 'data-gear': a.gear } : {}) }, [h('span', { className: 'ico', textContent: a.ico }), h('i', { textContent: a.name })]);
   b.addEventListener('click', () => { if (S.mode === 'all') setMode('loop'); play(a.id); });
   return b;
 }
 function renderActions() {
-  const box = $('#acts'); box.replaceChildren(...actions.map((a) => actBtn(a, a.group === 'special' ? 'special' : '')));
+  const box = $('#acts'); box.replaceChildren(...actions.map((a) => actBtn(a, a.group === 'special' ? 'special' : a.group === 'gear' ? 'gear' : '')));
   const tb = $('#traits'), tl = $('#traitLab');
   if (cur.kind !== 'trooper') { tb.replaceChildren(); tb.classList.add('hidden'); tl.classList.add('hidden'); return; }
   tb.classList.remove('hidden'); tl.classList.remove('hidden');
   const mine = cur.trait || CLASS_TRAIT[classOf(cur.st)];
   tb.replaceChildren(...TRAIT_LIST.map((t) => { const b = actBtn({ ...t, id: 'trait-' + t.id }, t.id === mine ? 'mine' : ''); if (t.id === mine) b.append(h('b', { className: 'star', textContent: cur.trait ? '⭐' : '☆', title: cur.trait ? 'Trait picked in Conquest Commander' : 'Class default trait' })); return b; }));
 }
-function setMode(m) { S.mode = m; const b = $('#modeBtn'); b.textContent = m === 'loop' ? '🔁' : '⏭️'; b.title = m === 'loop' ? 'Loop this action' : 'Play all actions'; b.classList.toggle('on', m === 'all'); if (m === 'all') { S.t = 0; play(SEQ()[0]); } }
-function setSpeed(v) { S.speed = v; const b = $('#speedBtn'); b.querySelector('i').textContent = v === 1 ? '1x' : '¼x'; b.querySelector('span').textContent = v === 1 ? '🐇' : '🐢'; b.classList.toggle('on', v !== 1); }
+function setMode(m) { S.mode = m; const b = $('#modeBtn'); setBtn(b, m === 'loop' ? '🔁' : '⏭️', m === 'loop' ? 'Loop' : 'Play all'); b.title = m === 'loop' ? 'Loop this action' : 'Play all actions'; b.classList.toggle('on', m === 'all'); if (m === 'all') { S.t = 0; play(SEQ()[0]); } }
+function setSpeed(v) { S.speed = v; const b = $('#speedBtn'); b.querySelector('i').textContent = v === 1 ? 'Speed 1x' : 'Speed ¼x'; b.querySelector('span').textContent = v === 1 ? '🐇' : '🐢'; b.classList.toggle('on', v !== 1); }
 function setSquad(on) { S.squad = on; $('#squadBtn').classList.toggle('on', on); if (cur) { const id = act && act.id; buildRigs(); play(id || 'idle', true); setCam(S.cam); } }
-function setPlaying(on) { S.playing = on; $('#playBtn').textContent = on ? '⏸️' : '▶️'; }
+function setPlaying(on) { S.playing = on; setBtn($('#playBtn'), on ? '⏸️' : '▶️', on ? 'Pause' : 'Play'); }
 $('#playBtn').addEventListener('click', () => setPlaying(!S.playing));
 $('#modeBtn').addEventListener('click', () => setMode(S.mode === 'loop' ? 'all' : 'loop'));
 $('#speedBtn').addEventListener('click', () => setSpeed(S.speed === 1 ? 0.25 : 1));
 $('#squadBtn').addEventListener('click', () => setSquad(!S.squad));
 for (const b of document.querySelectorAll('#cambar button')) { if (SVG[b.dataset.cam]) b.innerHTML = SVG[b.dataset.cam]; b.addEventListener('click', () => setCam(b.dataset.cam)); }
+setBtn($('#playBtn'), '⏸️', 'Pause'); setBtn($('#modeBtn'), '🔁', 'Loop'); setBtn($('#squadBtn'), '👥', 'Squad'); $('#speedBtn i').textContent = 'Speed 1x';
+pageChrome('🎬 Actions');
 
 // ---------- loop ----------
 function resize() {
@@ -330,13 +341,13 @@ renderer.setAnimationLoop(() => {
 selectUnit(pickStart());
 resize();
 // localStorage changes from the customizer in another tab
-addEventListener('storage', (e) => { if (e.key === ARMY_KEY) { const k = cur && cur.key; data = loadDB(); selectUnit(data.entries.find((x) => x.key === k) || pickStart()); } });
+addEventListener('storage', (e) => { if (e.key === ARMY_KEY) { const k = cur && cur.key; data = loadArmyData(); selectUnit(data.entries.find((x) => x.key === k) || pickStart()); } });
 
 // ---------- test hooks ----------
 window.__demo = {
   get state() { return { unit: cur && cur.key, kind: cur && cur.kind, action: act && act.id, t: S.t, speed: S.speed, squad: S.squad, mode: S.mode, cam: S.cam, playing: S.playing, rigs: rigs.length, scope: !!S.scope, fx: fx.count, fps, tris: tpl ? tpl.tris : 0, armsSplit: tpl ? tpl.armsSplit : null, dur: act && act.dur, evs: rigs[0] && rigs[0].events ? rigs[0].events.map((e) => e[0]) : [], wreck: !!(rigs[0] && rigs[0]._wreck), flag: flagMode } },
   units: () => data.entries.map((e) => ({ key: e.key, kind: e.kind, name: e.name, cls: e.kind === 'trooper' ? classOf(e.st) : 'tank', trait: e.trait })),
-  actions: () => actions.map((a) => ({ id: a.id, ico: a.ico, name: a.name, dur: a.dur, group: a.group })),
+  actions: () => actions.map((a) => ({ id: a.id, ico: a.ico, name: a.name, dur: a.dur, group: a.group, gear: a.gear || null, info: a.info || '' })),
   traits: () => (cur && cur.kind === 'trooper' ? TRAIT_LIST.map((t) => ({ id: 'trait-' + t.id, name: t.name, dur: t.dur })) : []),
   select: (k) => { const e = data.entries.find((x) => x.key === k); if (e) selectUnit(e); return !!e; },
   moveRate: () => moveRate(), stats: () => cur && { ...cur.stats }, // stat-driven playback (heavy armor walks slower)

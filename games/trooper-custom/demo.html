@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>🎬 Trooper Demo</title>
 <link rel="icon" href="icon.svg?v=7" type="image/svg+xml">
-<link rel="stylesheet" href="css/demo.css?v=7">
+<link rel="stylesheet" href="css/demo.css?v=8">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js?v=6" } }
 </script>
@@ -25,7 +25,7 @@
       <button data-cam="top" title="📷 Top" aria-label="Top camera">🗺️</button>
       <button data-cam="follow" title="🎥 Follow" aria-label="Follow camera">🎥</button>
     </div>
-    <div id="nowbar" class="chip"><span id="nowIco"></span><b id="nowName"></b><div class="prog"><div id="nowProg"></div></div></div>
+    <div id="nowbar" class="chip"><span id="nowIco"></span><span class="nowtxt"><b id="nowName"></b><i id="nowInfo"></i></span><div class="prog"><div id="nowProg"></div></div></div>
     <div id="playbar" class="chip">
       <button id="playBtn" title="Play / pause" aria-label="Play or pause">⏸️</button>
       <button id="modeBtn" title="Loop this action" aria-label="Loop or play all">🔁</button>
@@ -36,12 +36,12 @@
   </div>
   <div id="panel">
     <div id="units" role="listbox" aria-label="Saved looks"></div>
-    <div class="lab">🎬</div>
+    <div class="lab">🎬 Actions <small>· green = 🎒 your gear · gold = class move · tap one to play it</small></div>
     <div id="acts" class="grid"></div>
-    <div class="lab" id="traitLab">🧠</div>
+    <div class="lab" id="traitLab">🧠 Battle traits <small>(how it acts in Conquest)</small></div>
     <div id="traits" class="grid"></div>
   </div>
 </div>
-<script type="module" src="js/demo.js?v=7"></script>
+<script type="module" src="js/demo.js?v=8"></script>
 </body>
 </html>

@@ -11,7 +11,8 @@
 export const STATS_VERSION = 1;
 
 // ---------- item catalogue (id, name, icon, one-line tip) ----------
-// `ok: false` items are shown in the customizer but have no battle effect in any game yet (🎨 / 🚧 in gearLines).
+// Every loadout item (main weapon, sidearm, explosive, gadget) has a real battle effect in Conquest and the demos:
+// SIDEARMS / EXPLOSIVES / GADGETS below hold the numbers, gearLines() prints them. Cosmetic fields are 🎨 look only.
 const I = (id, n, i, tip = '') => Object.freeze({ id, n, i, tip });
 export const ITEMS = Object.freeze({
   trooper: Object.freeze({
@@ -20,38 +21,37 @@ export const ITEMS = Object.freeze({
     pads: [I('none', 'None', '∅'), I('round', 'Round', '🟠'), I('angular', 'Angular', '🔶')],
     weapon: [
       I('blaster', 'Blaster', '🔫', 'Reliable all-round rifle, good vs infantry.'),
-      I('rocket', 'Rocket', '🚀', 'Slow splash rockets that wreck tanks and turrets.'),
-      I('sniper', 'Sniper', '🎯', 'Very long range, high damage, slow to fire.'),
-      I('shotgun', 'Shotgun', '💥', 'Huge damage up close, weak at range.'),
-      I('chaingun', 'Chaingun', '🌀', 'Spins up into a bullet storm; slows you down.'),
-      I('emp', 'EMP', '⚡', 'Stuns droids, tanks and turrets in an area.'),
+      I('rocket', 'Rocket', '🚀', 'Slow splash rockets: full damage to tanks and turrets.'),
+      I('sniper', 'Sniper', '🔭', 'Very long range, high damage, slow to fire.'),
+      I('shotgun', 'Shotgun', '💢', 'Huge damage up close, weak at range.'),
+      I('chaingun', 'Chaingun', '🌀', 'Bullet storm; slows you down.'),
+      I('emp', 'EMP', '🌩️', 'Splash shots that also stun tanks, turrets and droids.'),
     ],
-    award: [I('none', 'Standard', '·'), I('star', '⭐ Award', '⭐', 'Gold award version of the main weapon.')],
-    side: [I('blaster-pistol', 'Blaster pistol', '🔫', 'Backup pistol when the main weapon reloads.'), I('commando-pistol', 'Commando pistol', '🎖️', 'Harder-hitting pistol with a quick draw.')],
+    side: [I('blaster-pistol', 'Blaster pistol', '🔸', 'Backup pistol: fires while the main weapon reloads.'), I('commando-pistol', 'Commando pistol', '🔹', 'Harder-hitting backup pistol, fires while the main weapon reloads.')],
     expl: [
-      I('thermal', 'Thermal', '💣', 'Thrown detonator: splash damage on a timer.'),
-      I('mines', 'Mines', '⚠️', 'Plant hidden mines that blow up enemies who step on them.'),
-      I('detpack', 'Detpack', '🧨', 'Remote charge that cracks buildings and tanks.'),
-      I('time-bomb', 'Time bomb', '⏱️', 'Big delayed blast: plant, run, boom.'),
+      I('thermal', 'Thermal', '💣', 'Thrown at close enemies: blows up after a short fuse.'),
+      I('mines', 'Mines', '⚠️', 'Planted at your post: blows up enemies who step on it.'),
+      I('detpack', 'Detpack', '🧨', 'Placed by tanks or groups of enemies, then set off: double damage to tanks.'),
+      I('time-bomb', 'Time bomb', '⏰', 'Planted at an enemy post: a big blast after a delay.'),
     ],
     gadget: [
       I('none', 'None', '∅', 'No gadget: cheapest.'),
-      I('turret', 'Turret', '🗼', 'Deploys an auto turret that guards an area.'),
-      I('recon-droid', 'Droid', '🛸', 'Remote recon droid scouts ahead and spots enemies.'),
-      I('jetpack', 'Jetpack', '🚀', 'Jump over walls and cliffs; +1.5 speed.'),
-      I('fusion-cutter', 'Fusion', '🔧', 'Fusion cutter repairs tanks, turrets and gates.'),
-      I('supply', 'Supply', '➕', 'Drops a health & ammo crate for nearby allies.'),
-      I('rally', 'Rally', '📣', 'Rally call: nearby allies take less damage for a while.'),
+      I('turret', 'Turret', '🗼', 'Deploys an auto turret that shoots enemies near it.'),
+      I('recon-droid', 'Droid', '🛰️', 'Recon droid flies with you, zaps enemies and helps your team aim.'),
+      I('jetpack', 'Jetpack', '🎒', 'Faster on foot; makes a Jet trooper.'),
+      I('fusion-cutter', 'Fusion', '🔧', 'Repairs friendly tanks and turrets nearby; makes an Engineer.'),
+      I('supply', 'Supply', '📦', 'Drops a crate that heals and re-arms allies nearby.'),
+      I('rally', 'Rally', '📣', 'Rally call: allies nearby take less damage for a while.'),
     ],
     extra: [I('none', 'None', '∅'), I('cape', 'Cape', '🧣'), I('scarf', 'Scarf', '🧣')],
     banner: [I('none', 'Off', '∅'), I('flag', 'Back flag', '🚩')],
     skin: [I('skin-1', 'Skin 1', '🖐️'), I('skin-2', 'Skin 2', '🖐️'), I('skin-3', 'Skin 3', '🖐️'), I('skin-4', 'Skin 4', '🖐️'), I('skin-5', 'Skin 5', '🖐️')],
   }),
   tank: Object.freeze({
-    hull: [I('light', 'Light', '⛓️'), I('medium', 'Medium', '⛓️'), I('heavy', 'Heavy', '🧱')],
+    hull: [I('light', 'Light', '🪶'), I('medium', 'Medium', '⚙️'), I('heavy', 'Heavy', '🧱')],
     drive: [I('treads', 'Treads', '⛓️'), I('hover', 'Hover', '🛸')],
     turret: [I('dome', 'Dome', '🔘'), I('wedge', 'Wedge', '🔺'), I('box', 'Box', '⬛')],
-    gun: [I('cannon', 'Cannon', '💥'), I('twin', 'Twin', '💥'), I('railgun', 'Rail', '⚡'), I('laser', 'Laser', '🔴')],
+    gun: [I('cannon', 'Cannon', '🔶'), I('twin', 'Twin', '🔷'), I('railgun', 'Rail', '☄️'), I('laser', 'Laser', '🔴')],
     antenna: [I('none', 'Off', '∅'), I('antenna', 'Antenna', '📡')],
     skirts: [I('none', 'Off', '∅'), I('skirts', 'Skirts', '🛡️')],
     smoke: [I('none', 'Off', '∅'), I('smoke', 'Smoke', '💨')],
@@ -68,9 +68,12 @@ export const NATION_ITEMS = Object.freeze({
   glow: ['off', 'soft', 'bright'],
 });
 export const GEAR_FIELDS = Object.freeze({ trooper: Object.keys(ITEMS.trooper), tank: Object.keys(ITEMS.tank) });
+// Old saves (customizer v3 'l.u' look strings, TC share codes) still carry an 'award' digit after the weapon. It was removed
+// (no award weapons any more): migrate() decodes old strings with this order and drops the award digit.
+export const LEGACY_GEAR_FIELDS = Object.freeze({ trooper: Object.freeze(['helm', 'armor', 'pads', 'weapon', 'award', 'side', 'expl', 'gadget', 'extra', 'banner', 'skin']), tank: GEAR_FIELDS.tank });
 // basic, cheapest figure every new unit starts with (Chumi: "no preset units")
 export const BASIC_GEAR = Object.freeze({
-  trooper: Object.freeze({ helm: 'dome', armor: 'standard', pads: 'none', weapon: 'blaster', award: 'none', side: 'blaster-pistol', expl: 'thermal', gadget: 'none', extra: 'none', banner: 'none', skin: 'skin-2' }),
+  trooper: Object.freeze({ helm: 'dome', armor: 'standard', pads: 'none', weapon: 'blaster', side: 'blaster-pistol', expl: 'thermal', gadget: 'none', extra: 'none', banner: 'none', skin: 'skin-2' }),
   tank: Object.freeze({ hull: 'light', drive: 'treads', turret: 'dome', gun: 'cannon', antenna: 'none', skirts: 'none', smoke: 'none', mg: 'none', pennant: 'none' }),
 });
 
@@ -105,7 +108,6 @@ export const COST = {
       banner: { cost: [0, 0], power: [0, 0] },
       skin: { cost: [0, 0, 0, 0, 0], power: [0, 0, 0, 0, 0] },
     },
-    award: { cost: [30, 40, 35, 25, 40, 35], power: [3, 4, 4, 3, 4, 4] }, // per main weapon, when award = star
   },
   tank: {
     base: 400, power: 50,
@@ -131,7 +133,6 @@ export const STATS = {
 export const BATTLE = Object.freeze({
   speedMul: 0.9,            // statsOf: speed * 0.9
   padsHp: [0, 5, 10],       // statsOf: hp + pads bonus
-  awardDmg: 1.1,            // statsOf: ⭐ award weapon = +10% damage
   accBase: 0.5, accPerPower: 0.002, accMaxBonus: 0.12, // acc = 0.5 + min(0.12, power * 0.002)
   hitInCover: 0.7,          // sim.fire: target popped up behind cover → hit chance ×0.7
   hitCrouch: 0.85,          // crouched (nest) → ×0.85
@@ -159,25 +160,53 @@ export const WEAPONS = Object.freeze([
 export const MAGS = Object.freeze({
   mag: Object.freeze([12, 2, 5, 6, 40, 4]),   // blaster, rocket, sniper, shotgun, chaingun, emp
   magDefault: 10,                             // unknown weapon
-  tankMag: 6,                                 // tank guns (demos only, planned)
+  tankMag: 6,                                 // tank guns (Conquest tanks + demos)
   reserveMags: 8,                             // spare magazines
   reload: 1.6,                                // seconds to reload
   healthPack: 50,                             // ❤️ pack heals +50 HP
   respawn: 10,                                // seconds until a taken ❤️ / 📦 pack comes back
 });
-// Tank guns: NOT in any game yet (Conquest has no tanks). PLANNED numbers used by the customizer demos only.
+// Tank guns: Conquest tanks (sim.js) + the customizer demos. shell = splash round, rail / beam = instant hit.
 export const TANK_WEAPONS = Object.freeze([
-  { id: 'cannon', kind: 'shell', range: 40, rof: 2.8, dmg: 60, splash: 2.5, planned: true },
-  { id: 'twin', kind: 'shell', range: 36, rof: 1.6, dmg: 38, splash: 2.0, planned: true },
-  { id: 'railgun', kind: 'rail', range: 60, rof: 4.0, dmg: 120, splash: 0.8, planned: true },
-  { id: 'laser', kind: 'beam', range: 45, rof: 0.5, dmg: 16, splash: 0, planned: true },
+  { id: 'cannon', kind: 'shell', range: 40, rof: 2.8, dmg: 60, splash: 2.5 },
+  { id: 'twin', kind: 'shell', range: 36, rof: 1.6, dmg: 38, splash: 2.0 },
+  { id: 'railgun', kind: 'rail', range: 60, rof: 4.0, dmg: 120, splash: 0.8 },
+  { id: 'laser', kind: 'beam', range: 45, rof: 0.5, dmg: 16, splash: 0 },
+].map(Object.freeze));
+// Tanks in Conquest (SWBF2 armor, kept simple): drive to the priority post, shoot, can be destroyed, respawn on waves for
+// tickets + CP. They do not capture posts. Rifle / pistol / turret hits do armorMul damage; rockets, EMP, explosives full.
+export const TANK_RULES = Object.freeze({ maxPerTeam: 2, armorMul: 0.35, empStun: 2.5, detpackMul: 2, capture: false });
+// Sidearm (index = side item order): fires while the main weapon reloads (or is out of ammo).
+export const SIDEARMS = Object.freeze([
+  { id: 'blaster-pistol', range: 18, rof: 0.6, dmg: 8 },
+  { id: 'commando-pistol', range: 20, rof: 0.45, dmg: 11 },
+].map(Object.freeze));
+// Explosive (index = expl item order). count = uses per life. Conquest + the demos use these numbers.
+//  thermal: thrown at an enemy within range, explodes after fuse · mines: planted at your own post (sim mine rules)
+//  detpack: placed at a tank / enemy group within range, set off after fuse (tank damage × TANK_RULES.detpackMul)
+//  time-bomb: planted while taking an enemy-held or neutral post, explodes after fuse
+export const EXPLOSIVES = Object.freeze([
+  { id: 'thermal', use: 'throw', count: 2, range: 14, fuse: 1.2, dmg: 60, splash: 3.5, cd: 6 },
+  { id: 'mines', use: 'plant', count: 2, range: 0, fuse: 0, dmg: 70, splash: 3.2, cd: 4 },
+  { id: 'detpack', use: 'place', count: 1, range: 8, fuse: 1.5, dmg: 110, splash: 4, cd: 8 },
+  { id: 'time-bomb', use: 'plant', count: 1, range: 0, fuse: 6, dmg: 150, splash: 5, cd: 10 },
+].map(Object.freeze));
+// Gadget (index = gadget item order). once = one deploy per life. Conquest + the demos.
+export const GADGETS = Object.freeze([
+  { id: 'none' },
+  { id: 'turret', use: 'deploy', once: true, hp: 150, life: 40, range: 26, rof: 0.5, dmg: 8 },
+  { id: 'recon-droid', use: 'deploy', once: true, hp: 40, life: 30, range: 16, rof: 0.8, dmg: 5, spotR: 18, spotAcc: 0.08 },
+  { id: 'jetpack', use: 'passive' },
+  { id: 'fusion-cutter', use: 'passive', repairR: 6, repairHp: 20 },
+  { id: 'supply', use: 'deploy', once: true, hp: 80, life: 30, r: 5, healHp: 8, ammo: true },
+  { id: 'rally', use: 'deploy', once: true, life: 8, r: 10, dmgTaken: 0.75 },
 ].map(Object.freeze));
 
 // ---------- classes + traits — Conquest v2.3 data.js classOf, traits.js ----------
 export const CLASSES = ['trooper', 'heavy', 'engineer', 'sniper', 'commander', 'jet'];
 export const CLASS_INFO = Object.freeze({
   trooper: { i: '🪖', n: 'Trooper' }, heavy: { i: '🚀', n: 'Heavy' }, engineer: { i: '🔧', n: 'Engineer' },
-  sniper: { i: '🎯', n: 'Sniper' }, commander: { i: '⭐', n: 'Commander' }, jet: { i: '🛩️', n: 'Jet' }, tank: { i: '🚜', n: 'Tank' },
+  sniper: { i: '🔭', n: 'Sniper' }, commander: { i: '⭐', n: 'Commander' }, jet: { i: '🛩️', n: 'Jet' }, tank: { i: '🚜', n: 'Tank' },
 });
 // rocket → heavy · sniper → sniper · jetpack or EMP → jet · rally or chaingun → commander · fusion or shotgun → engineer · else trooper
 export function classOf(kind, gear) {
@@ -193,10 +222,10 @@ export function classOf(kind, gear) {
 export const TRAITS = Object.freeze([
   { id: 'rusher', icon: '🏃', name: 'Rusher', long: 'Rusher' },
   { id: 'cover', icon: '🧱', name: 'Cover', long: 'Cover Fighter' },
-  { id: 'sniper', icon: '🎯', name: 'Nest', long: 'Sniper Nest' },
+  { id: 'sniper', icon: '🔭', name: 'Sniper', long: 'Sniper Spot' },
   { id: 'retaker', icon: '🔁', name: 'Retaker', long: 'Retaker' },
   { id: 'supplier', icon: '➕', name: 'Supplier', long: 'Supplier' },
-  { id: 'mines', icon: '💣', name: 'Mines', long: 'Mine Layer' },
+  { id: 'mines', icon: '⚠️', name: 'Mines', long: 'Mine Layer' },
   { id: 'guard', icon: '🛡️', name: 'Guard', long: 'Guard' },
 ].map(Object.freeze));
 export const TRAIT_IDS = TRAITS.map((t) => t.id);
@@ -221,7 +250,6 @@ const norm = (a, b) => (typeof a === 'string' ? [a, asIndex(a, b)] : [a.kind || 
 export function unitCost(a, b) {
   const [kind, st] = norm(a, b), c = COST[kind]; let cost = c.base, power = c.power;
   for (const [k, o] of Object.entries(c.options)) { cost += o.cost[st[k]] || 0; power += (o.power && o.power[st[k]]) || 0; }
-  if (c.award && st.award) { cost += c.award.cost[st.weapon] || 0; power += c.award.power[st.weapon] || 0; }
   return { cost, power };
 }
 export function unitStats(a, b) { // customizer HP / speed (before battle factors)
@@ -232,30 +260,50 @@ export function unitStats(a, b) { // customizer HP / speed (before battle factor
 // combatStats(unit): exactly what Conquest's battle uses (data.js statsOf) — hp, speed m/s, dmg, range m, rof s, splash m, acc 0..1
 export function combatStats(a, b) {
   const [kind, st] = norm(a, b), { cost, power } = unitCost(kind, st), { hp, speed } = unitStats(kind, st);
-  if (kind === 'tank') { const w = TANK_WEAPONS[st.gun] || TANK_WEAPONS[0]; return { kind, cls: 'tank', cost, power, hp, speed: speed * BATTLE.speedMul, acc: BATTLE.accBase + Math.min(BATTLE.accMaxBonus, power * BATTLE.accPerPower), weapon: w.kind, ...w, dps: w.dmg / w.rof }; }
-  const w = WEAPONS[st.weapon] || WEAPONS[0], dmg = w.dmg * (st.award ? BATTLE.awardDmg : 1);
-  return { kind, cls: classOf(kind, st), cost, power, hp: hp + (BATTLE.padsHp[st.pads || 0] || 0), speed: speed * BATTLE.speedMul, acc: BATTLE.accBase + Math.min(BATTLE.accMaxBonus, power * BATTLE.accPerPower), weapon: w.kind, id: w.id, range: w.range, rof: w.rof, splash: w.splash, laser: !!w.laser, dmg, dps: dmg / w.rof };
+  if (kind === 'tank') { const w = TANK_WEAPONS[st.gun] || TANK_WEAPONS[0]; return { kind, cls: 'tank', cost, power, hp, speed: speed * BATTLE.speedMul, acc: BATTLE.accBase + Math.min(BATTLE.accMaxBonus, power * BATTLE.accPerPower), weapon: w.kind, ...w, laser: w.kind === 'beam' || w.kind === 'rail', dps: w.dmg / w.rof }; }
+  const w = WEAPONS[st.weapon] || WEAPONS[0], dmg = w.dmg;
+  return { kind, cls: classOf(kind, st), cost, power, hp: hp + (BATTLE.padsHp[st.pads || 0] || 0), speed: speed * BATTLE.speedMul, acc: BATTLE.accBase + Math.min(BATTLE.accMaxBonus, power * BATTLE.accPerPower), weapon: w.kind, id: w.id, range: w.range, rof: w.rof, splash: w.splash, laser: !!w.laser, emp: w.id === 'emp', dmg, dps: dmg / w.rof,
+    side: SIDEARMS[st.side] || SIDEARMS[0], expl: EXPLOSIVES[st.expl] || EXPLOSIVES[0], gadget: GADGETS[st.gadget] || GADGETS[0] };
 }
 const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(d).replace(/\.0+$/, '');
-// gearLines(kind, field, index|id) → short icon strings describing what the item does in battle (real numbers)
+// gearLines(kind, field, index|id) → short icon strings describing what the item does in battle (real numbers).
+// Icons mean one thing each: 💥 damage · 📏 range · ⏱️ time between shots / fuse · 💫 blast radius · ❤️ HP · 🏃 speed · ⚡ power · 💰 cost
+export const GEAR_EFFECT = Object.freeze({
+  side: (s) => `🔄 fires while reloading · 💥 ${s.dmg} · 📏 ${s.range} m · ⏱️ ${s.rof} s`,
+  expl: {
+    thermal: (e) => `🤾 thrown ×${e.count} per life · 💥 ${e.dmg} · 💫 ${e.splash} m · 📏 ${e.range} m`,
+    mines: (e) => `⬇️ planted ×${e.count} at your post · 💥 ${e.dmg} · 💫 ${e.splash} m`,
+    detpack: (e) => `🧨 placed + set off ×${e.count} · 💥 ${e.dmg} (×${TANK_RULES.detpackMul} vs tanks) · 💫 ${e.splash} m`,
+    'time-bomb': (e) => `⏰ planted at enemy posts ×${e.count} · 💥 ${e.dmg} after ${e.fuse} s · 💫 ${e.splash} m`,
+  },
+  gadget: {
+    none: () => '∅ no gadget',
+    turret: (g) => `🗼 deploys a turret · ❤️ ${g.hp} · 💥 ${g.dmg} · 📏 ${g.range} m · ${g.life} s`,
+    'recon-droid': (g) => `🛰️ droid flies along · 💥 ${g.dmg} · 🎯 team aim +${Math.round(g.spotAcc * 100)}% near it · ${g.life} s`,
+    jetpack: () => '🎒 faster on foot',
+    'fusion-cutter': (g) => `🔧 repairs tanks + turrets · +${g.repairHp} HP/s · 📏 ${g.repairR} m`,
+    supply: (g) => `📦 crate heals +${g.healHp} HP/s and refills ammo · 📏 ${g.r} m · ${g.life} s`,
+    rally: (g) => `📣 allies within ${g.r} m take −${Math.round((1 - g.dmgTaken) * 100)}% damage for ${g.life} s`,
+  },
+});
 export function gearLines(kind, field, v) {
   const list = ITEMS[kind] && ITEMS[kind][field]; if (!list) return [];
   const i = typeof v === 'string' ? Math.max(0, list.findIndex((x) => x.id === v)) : v | 0, out = [];
   const m = STATS[kind].mods[field];
   if (m && m.hp && m.hp[i]) out.push('❤️ ' + sgn(m.hp[i], 0) + ' HP');
   if (m && m.speed && m.speed[i]) out.push('🏃 ' + sgn(m.speed[i] * BATTLE.speedMul, 2) + ' m/s');
+  const clsAfter = (f) => classOf('trooper', { ...toIndex('trooper', BASIC_GEAR.trooper), [f]: i });
   if (kind === 'trooper') {
     if (field === 'pads' && BATTLE.padsHp[i]) out.push('❤️ +' + BATTLE.padsHp[i] + ' HP');
-    if (field === 'weapon') { const w = WEAPONS[i]; out.unshift(`💥 ${w.dmg}`, `🎯 ${w.range} m`, `⏱️ ${w.rof} s`); if (w.splash) out.push(`💫 ${w.splash} m`); const cls = classOf('trooper', { ...toIndex('trooper', BASIC_GEAR.trooper), weapon: i }); if (cls !== 'trooper') out.push('→ ' + CLASS_INFO[cls].i + ' ' + CLASS_INFO[cls].n); }
-    if (field === 'award' && i) out.push('💥 +' + Math.round((BATTLE.awardDmg - 1) * 100) + '%');
-    if (field === 'gadget') { const cls = classOf('trooper', { ...toIndex('trooper', BASIC_GEAR.trooper), gadget: i }); if (cls !== 'trooper') out.push('→ ' + CLASS_INFO[cls].i + ' ' + CLASS_INFO[cls].n); if ([1, 2, 5].includes(i)) out.push('🚧 soon'); }
-    if (field === 'expl') out.push(i === 1 ? `🚧 soon (⚠️ trait mines: 💥 ${BATTLE.mine.dmg})` : '🚧 soon');
-    if (field === 'side') out.push('🚧 soon');
+    if (field === 'weapon') { const w = WEAPONS[i]; out.unshift(`💥 ${w.dmg}`, `📏 ${w.range} m`, `⏱️ ${w.rof} s`); if (w.splash) out.push(`💫 ${w.splash} m`); if (w.id === 'emp') out.push(`🌩️ stuns tanks ${TANK_RULES.empStun} s`); const cls = clsAfter('weapon'); if (cls !== 'trooper') out.push('→ ' + CLASS_INFO[cls].i + ' ' + CLASS_INFO[cls].n); }
+    if (field === 'side') out.unshift(GEAR_EFFECT.side(SIDEARMS[i] || SIDEARMS[0]));
+    if (field === 'expl') { const e = EXPLOSIVES[i] || EXPLOSIVES[0]; out.unshift(GEAR_EFFECT.expl[e.id](e)); }
+    if (field === 'gadget') { const g = GADGETS[i] || GADGETS[0]; if (i) out.unshift(GEAR_EFFECT.gadget[g.id](g)); const cls = clsAfter('gadget'); if (cls !== 'trooper') out.push('→ ' + CLASS_INFO[cls].i + ' ' + CLASS_INFO[cls].n); }
   }
-  if (kind === 'tank' && field === 'gun') { const w = TANK_WEAPONS[i]; out.push(`💥 ${w.dmg}`, `🎯 ${w.range} m`, `⏱️ ${w.rof} s`, '🧪 planned'); }
+  if (kind === 'tank' && field === 'gun') { const w = TANK_WEAPONS[i]; out.push(`💥 ${w.dmg}`, `📏 ${w.range} m`, `⏱️ ${w.rof} s`); if (w.splash) out.push(`💫 ${w.splash} m`); }
   const c = COST[kind].options[field]; const cost = c && c.cost[i];
-  const statField = (m && (m.hp || m.speed)) || (kind === 'trooper' && ['pads', 'weapon', 'award'].includes(field));
-  if (c && c.power && c.power[i]) out.push('⚡ +' + c.power[i] + ' aim');
+  const statField = (m && (m.hp || m.speed)) || (kind === 'trooper' && ['pads', 'weapon'].includes(field));
+  if (c && c.power && c.power[i]) out.push('⚡ +' + c.power[i] + ' power');
   if (!out.length) out.push(statField ? '✅ base' : '🎨 look only');
   if (cost) out.push('💰 +' + cost);
   return out;

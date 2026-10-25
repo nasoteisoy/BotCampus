@@ -41,3 +41,8 @@ button, select { font: inherit; color: inherit; cursor: pointer; touch-action: m
 #units .nflag { flex: none; width: 22px; height: 22px; align-self: center; border-radius: 4px; }
 #legend { font-size: 11px; opacity: .7; padding: 4px 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 900px) { #units .unit { width: 96px; } #hud { font-size: 15px; } }
+/* 🎒 Combat: the unit's gear (tap one for what it does) · Team: how to read a card */
+#legend { opacity: .85; white-space: normal; }
+#legend.gearrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; opacity: 1; font-size: 12px; }
+#legend .gearchip { min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #3c6b45; background: rgba(93,255,122,.1); font-size: 13px; font-weight: 700; }
+#legend #gearInfo { flex: 1 0 100%; font-style: normal; font-size: 12px; color: #cfe6ff; min-height: 16px; }

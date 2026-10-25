@@ -3,8 +3,8 @@
 // walk, crouch, throw and salute: pelvis, thigh/shin/foot x2, torso, head, arms (weapon), armL, armR.
 // Geometry is built once per look (RigTemplate) and shared by every squad copy (Rig).
 import * as THREE from 'three';
-import * as T from './trooper.js?v=6';
-import { buildTankParts, TANK_PIVOT, TANK_PARENT } from './tank.js?v=6';
+import * as T from './trooper.js?v=7';
+import { buildTankParts, TANK_PIVOT, TANK_PARENT } from './tank.js?v=7';
 
 const V = (a) => new THREE.Vector3(...a);
 // trooper skeleton: name -> [pivot (rest pose, model space), parent]. Pivots come from trooper.js buildParts.
@@ -105,7 +105,7 @@ export const TROOPER_POSE = Object.freeze({
   arx: 0.3, ary: 0.1, arz: 0, apx: 0, apy: 0, apz: 0,
   lrx: 0, lry: 0, lrz: 0, rrx: 0, rry: 0, rrz: 0,
   fLz: 0.06, fLy: 0, fRz: -0.04, fRy: 0, fpL: 0, fpR: 0, sL: 0, sR: 0,
-  fk: 0, tL: 0, kL: 0, tR: 0, kR: 0, wpn: 1,
+  fk: 0, tL: 0, kL: 0, tR: 0, kR: 0, wpn: 1, fade: 1,   // wpn < 0.5 hides the hand-held weapon (it was dropped) · fade 1 → 0 fades the body out
 });
 export const TANK_POSE = Object.freeze({ x: 0, y: 0, z: 0, yaw: 0, hy: 0, hrx: 0, hrz: 0, ty: 0, tpz: 0, tpy: 0, trx: 0, trz: 0, wreck: 0 });
 
@@ -168,5 +168,19 @@ export class Rig {
       B['shin' + S].rotation.set(shin, 0, 0);
       B['foot' + S].rotation.set(-(p.prx + thigh + shin) * (1 - f) + p['fp' + S], 0, 0);
     }
+    const wv = !(p.wpn < 0.5); for (const m of this.meshes) if (m.name.startsWith('arms:')) m.visible = wv;
+    this.setFade(p.fade ?? 1);
   }
+  // 💀 taken out: fade the whole body (per-rig material copies, so squad mates sharing the look stay solid)
+  setFade(a) {
+    if (a >= 0.999) { if (this._fading) { this._fading = false; for (const m of this.meshes) m.material = m.userData.mat === 'team' ? this.look.team : this.look.visor; } this.root.visible = true; return; }
+    if (!this._fadeMats) this._fadeMats = { team: Object.assign(this.look.team.clone(), { transparent: true }), visor: Object.assign(this.look.visor.clone(), { transparent: true }) };
+    if (!this._fading) { this._fading = true; for (const m of this.meshes) m.material = this._fadeMats[m.userData.mat]; }
+    this._fadeMats.team.opacity = this._fadeMats.visor.opacity = Math.max(0, a);
+    this.root.visible = a > 0.01;
+  }
+  // props held by the rig for one action (pistol in hand, …): removed when the action changes
+  attach(obj, mark) { (this.marks[mark] || this.root).add(obj); (this._props ||= []).push(obj); return obj; }
+  clearProps() { for (const o of this._props || []) { o.removeFromParent(); o.traverse((m) => { if (m.isMesh) { m.geometry.dispose(); m.material.dispose(); } }); } this._props = []; }
+  disposeFade() { if (this._fadeMats) { this._fadeMats.team.dispose(); this._fadeMats.visor.dispose(); this._fadeMats = null; } }
 }

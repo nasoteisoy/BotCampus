@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Particles } from './particles.js?v=3c';
 import * as C from './config.js?v=3c';
 import { ICON, svg } from './icons.js?v=3c';
-import { DEFAULT_ARMY, loadArmy, portrait, drawFlag, combatOf } from './army.js?v=3c';
+import { DEFAULT_ARMY, loadArmy, portrait, drawFlag, combatOf } from './army.js?v=3d';
 
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -552,9 +552,9 @@ function setTab(t) {
 function setTarget(id) { S.target = id && parts[id] ? id : null; ui.dirty = true; for (const a of S.atk) if (S.target) a.part = parts[S.target]; }
 
 // ---------- controls wiring ----------
-$('bPause').innerHTML = svg(ICON.pause); $('bReset').innerHTML = svg(ICON.reset); $('backIc').innerHTML = svg(ICON.back);
+$('pauseIc').innerHTML = svg(ICON.pause); $('resetIc').innerHTML = svg(ICON.reset); $('backIc').innerHTML = svg(ICON.back);
 function syncButtons() {
-  $('bPause').innerHTML = svg(S.paused ? ICON.play : ICON.pause); $('bPause').classList.toggle('paused', S.paused);
+  $('pauseIc').innerHTML = svg(S.paused ? ICON.play : ICON.pause); $('pauseL').textContent = S.paused ? 'Play' : 'Pause'; $('bPause').classList.toggle('paused', S.paused);
   $('slowV').textContent = '×' + C.SPEEDS[ui.speedI]; $('bSlow').classList.toggle('on', ui.speedI > 0);
   $('shieldV').textContent = S.shieldOn ? 'ON' : 'OFF'; $('bShield').classList.toggle('on', S.shieldOn); $('bShield').classList.toggle('warn', !S.shieldOn);
   $('backV').textContent = S.fireBack ? 'ON' : 'OFF'; $('bBack').classList.toggle('on', S.fireBack);

@@ -28,6 +28,7 @@ export class FX {
       const s = new THREE.Sprite(m); s.visible = false; s.renderOrder = 5; scene.add(s); this.free.push(s);
     }
     this.solids = []; // shell casings, mags, grenades, debris (meshes with gravity + bounce)
+    this.tweens = []; // dropped weapons: arc from the hand to lying flat on the ground, then fade (own material copies)
     this.lines = []; // tracers / beams
     this.lights = [];
     for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffc070, 0, 6, 2); scene.add(l); this.lights.push({ l, life: 0, max: 1, I: 0 }); }
@@ -66,6 +67,12 @@ export class FX {
     mesh.position.copy(p); this.scene.add(mesh);
     const o = { m: mesh, v: v.clone(), w: this.rv(w, w, w), life: 0, max, bounce, r }; this.solids.push(o); return o;
   }
+  // obj flies from (p0, q0) to (p1, q1) in dur s with an arc, lies still, then fades out over the last 0.7 s of life
+  tween(obj, p0, q0, p1, q1, dur, life, arc = 0.5) {
+    obj.position.copy(p0); obj.quaternion.copy(q0); this.scene.add(obj);
+    const o = { m: obj, p0: p0.clone(), q0: q0.clone(), p1: p1.clone(), q1: q1.clone(), dur, life: 0, max: life, arc }; this.tweens.push(o); return o;
+  }
+  dropTween(o) { o.m.parent && o.m.parent.remove(o.m); o.m.traverse((k) => { if (k.material && k.material.dispose) k.material.dispose(); }); }
   tracer(a, b, color = 0xfff0a0, life = 0.09, width = 0.025) {
     const m = new THREE.Mesh(this.lineGeo, new THREE.MeshBasicMaterial({ color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     const d = _v.copy(b).sub(a), len = d.length(); m.position.copy(a); m.quaternion.setFromUnitVectors(Z, d.normalize()); m.scale.set(width, width, len);
@@ -113,10 +120,11 @@ export class FX {
     for (const s of this.sprites) { s.visible = false; this.free.push(s); } this.sprites = [];
     for (const o of [...this.solids, ...this.lines, ...this.rings]) { o.m.parent && o.m.parent.remove(o.m); if (o.m.material !== this.casingMat && o.m.material !== this.debrisMat && o.m.material.dispose) o.m.material.dispose(); }
     for (const p of this.projectiles) { p.m.parent && p.m.parent.remove(p.m); if (p.glow) { p.glow.visible = false; } }
-    this.solids = []; this.lines = []; this.rings = []; this.projectiles = []; this.emitters = [];
+    for (const o of this.tweens) this.dropTween(o);
+    this.solids = []; this.lines = []; this.rings = []; this.projectiles = []; this.emitters = []; this.tweens = [];
     for (const L of this.lights) { L.life = L.max; L.l.intensity = 0; }
   }
-  get count() { return this.sprites.length + this.solids.length + this.lines.length + this.projectiles.length; }
+  get count() { return this.sprites.length + this.solids.length + this.lines.length + this.projectiles.length + this.tweens.length; }
   update(dt, cam) {
     this.t += dt;
     for (const e of this.emitters) { e.life += dt; e.acc += dt * e.rate; while (e.acc >= 1) { e.acc -= 1; e.fn(); } }
@@ -138,6 +146,15 @@ export class FX {
       if (o.m.position.y < o.r) { o.m.position.y = o.r; if (o.v.y < 0) { o.v.y *= -o.bounce; o.v.x *= 0.6; o.v.z *= 0.6; o.w.multiplyScalar(0.5); } }
       o.m.rotation.x += o.w.x * dt; o.m.rotation.y += o.w.y * dt; o.m.rotation.z += o.w.z * dt;
       if (o.life > o.max - 0.3) o.m.scale.multiplyScalar(0.9);
+    }
+    for (let i = this.tweens.length - 1; i >= 0; i--) {
+      const o = this.tweens[i]; o.life += dt;
+      if (o.life >= o.max) { this.dropTween(o); this.tweens.splice(i, 1); continue; }
+      const k = Math.min(1, o.life / o.dur), e = k * k * (3 - 2 * k);
+      o.m.position.lerpVectors(o.p0, o.p1, k); o.m.position.y += o.arc * Math.sin(Math.PI * k);
+      o.m.quaternion.slerpQuaternions(o.q0, o.q1, e);
+      const fade = Math.min(1, (o.max - o.life) / 0.7);
+      if (fade < 1) o.m.traverse((m) => { if (m.material) { m.material.transparent = true; m.material.opacity = fade; } });
     }
     for (let i = this.lines.length - 1; i >= 0; i--) {
       const o = this.lines[i]; o.life += dt; const k = o.life / o.max;

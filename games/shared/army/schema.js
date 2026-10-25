@@ -1,9 +1,9 @@
 // BotCampus army save — shared by every game. Pure ES module (no DOM): works in the browser and in Node tests.
-// Spec: ARMY_SCHEMA.md.   import * as Army from '../../shared/army/schema.js?v=8' (from games/<game>/js/);
+// Spec: ARMY_SCHEMA.md.   import * as Army from '../../shared/army/schema.js?v=9' (from games/<game>/js/);
 //   const army = Army.load();            // reads 'botcampus:army' (migrates 'trooper-custom:db' v3 on first load)
 //   Army.save(army);                     // sanitizes + writes
 //   Army.playerUnits(army, army.activePlayerId, { roster: true })
-import { ITEMS, NATION_ITEMS, GEAR_FIELDS, BASIC_GEAR, TRAIT_IDS, toIndex, toGear, classOf, combatStats, traitOf } from './stats.js?v=8';
+import { ITEMS, NATION_ITEMS, GEAR_FIELDS, LEGACY_GEAR_FIELDS, BASIC_GEAR, TRAIT_IDS, toIndex, toGear, classOf, combatStats, traitOf } from './stats.js?v=9';
 
 export const ARMY_KEY = 'botcampus:army';
 export const ARMY_VERSION = 1;
@@ -46,32 +46,32 @@ export function nationFromState(st = {}, id, name) {
 export const BRAIN = Object.freeze({
   v: 1, maxRows: 6,
   conds: Object.freeze(['lowHp', 'enemyNear', 'lowAmmo', 'pointNotOurs', 'allyHurt', 'always']),
-  acts: Object.freeze({ heal: 1, cover: 1, shoot: 1, capture: 1, ammo: 1, follow: 1, medic: 2, mine: 2, guard: 2 }), // action → tier
-  presets: TRAIT_IDS, // a string brain = preset id (same ids as Conquest traits)
+  acts: Object.freeze(['heal', 'cover', 'shoot', 'capture', 'ammo', 'follow', 'medic', 'mine', 'guard']), // every action works (no tiers / locks)
+  oldPresets: TRAIT_IDS, // old saves: a string brain was a preset id (same ids as Conquest traits) → now kept as the unit's trait
   plans: Object.freeze(['capture', 'hold', 'retake', 'push']), formations: Object.freeze(['line', 'wedge', 'blob']), spacings: Object.freeze([1, 2, 3]),
 });
-// unit brain: null | preset id string | {kind:'cc.unitBrain', v:1, ...}. Returns { ok, errors, brain } (brain normalized; unknown fields dropped).
+// unit brain: null | {kind:'cc.unitBrain', v:1, name, icon, rows}. Returns { ok, errors, brain } (brain normalized; unknown fields dropped).
+// Old saves: a preset id string loads as null (cleanUnit keeps it as the unit's trait); old 'preset' / 'tier' fields are ignored.
 export function checkUnitBrain(b) {
   if (b == null) return { ok: true, errors: [], brain: null };
-  if (typeof b === 'string') return BRAIN.presets.includes(b) ? { ok: true, errors: [], brain: b } : { ok: false, errors: ['unknown preset ' + b] };
+  if (typeof b === 'string') return BRAIN.oldPresets.includes(b) ? { ok: true, errors: [], brain: null, oldPreset: b } : { ok: false, errors: ['unknown brain ' + b] };
   const errors = [], E = (m) => errors.push(m);
   if (typeof b !== 'object' || Array.isArray(b)) return { ok: false, errors: ['brain must be null, a preset id or a cc.unitBrain object'] };
   if (b.kind !== 'cc.unitBrain') E('kind must be cc.unitBrain');
   if (typeof b.v !== 'number' || b.v < 1 || b.v > BRAIN.v) E('v must be 1..' + BRAIN.v);
-  const tier = b.tier === undefined ? 1 : b.tier; if (tier !== 1 && tier !== 2) E('tier must be 1 or 2');
   if (!Array.isArray(b.rows)) E('rows must be an array');
   else {
     if (b.rows.length < 1) E('need at least 1 row'); if (b.rows.length > BRAIN.maxRows) E('max ' + BRAIN.maxRows + ' rows');
     b.rows.forEach((r, i) => {
       if (!r || typeof r !== 'object') return E(`row ${i + 1} bad`);
       if (!BRAIN.conds.includes(r.if)) E(`row ${i + 1}: unknown IF ${r.if}`);
-      if (!BRAIN.acts[r.do]) E(`row ${i + 1}: unknown THEN ${r.do}`); else if (BRAIN.acts[r.do] > tier) E(`row ${i + 1}: ${r.do} is locked (tier ${BRAIN.acts[r.do]})`);
+      if (!BRAIN.acts.includes(r.do)) E(`row ${i + 1}: unknown THEN ${r.do}`);
       if (r.on !== undefined && typeof r.on !== 'boolean') E(`row ${i + 1}: on must be true/false`);
     });
   }
   if (b.name !== undefined && (typeof b.name !== 'string' || b.name.length > 24)) E('name: text ≤ 24');
   if (errors.length) return { ok: false, errors };
-  return { ok: true, errors, brain: { kind: 'cc.unitBrain', v: BRAIN.v, name: b.name || 'Custom', icon: typeof b.icon === 'string' ? b.icon.slice(0, 8) : '🧠', preset: BRAIN.presets.includes(b.preset) ? b.preset : null, tier, rows: b.rows.map((r) => ({ if: r.if, do: r.do, on: r.on !== false })) } };
+  return { ok: true, errors, brain: { kind: 'cc.unitBrain', v: BRAIN.v, name: b.name || 'Custom', icon: typeof b.icon === 'string' ? b.icon.slice(0, 8) : '🧠', rows: b.rows.map((r) => ({ if: r.if, do: r.do, on: r.on !== false })) } };
 }
 export function checkSquadBrain(sb) {
   if (sb == null) return { ok: true, errors: [], squadBrain: null };
@@ -104,7 +104,7 @@ export function cleanUnit(u = {}, playerId) {
     name: clean(u.name, LIMITS.unitName) || (kind === 'tank' ? 'Tank' : 'Trooper'),
     playerId: typeof u.playerId === 'string' ? u.playerId : playerId,
     kind, class: classOf(kind, gear), gear,
-    traits: (Array.isArray(u.traits) ? u.traits : []).filter((t) => TRAIT_IDS.includes(t)).filter((t, i, a) => a.indexOf(t) === i).slice(0, 3),
+    traits: (Array.isArray(u.traits) && u.traits.length ? u.traits : typeof u.brain === 'string' ? [u.brain] : []).filter((t) => TRAIT_IDS.includes(t)).filter((t, i, a) => a.indexOf(t) === i).slice(0, 3),
     brain: cleanUnitBrain(u.brain),
     roster: u.roster !== false,
     slot: Number.isInteger(u.slot) && u.slot >= 0 && u.slot < 64 ? u.slot : null,
@@ -231,8 +231,8 @@ export function migrate(old, setup) {
   const byNation = Object.fromEntries(nats.map((n, i) => [n.id, army.players[i].id]));
   for (const l of Array.isArray(old.looks) ? old.looks : []) {
     if (!l || !byNation[l.nationId] || (l.unit !== 'trooper' && l.unit !== 'tank') || typeof l.u !== 'string') continue;
-    const kind = l.unit, fields = GEAR_FIELDS[kind], st = {};
-    fields.forEach((f, i) => { const d = l.u.charCodeAt(i) - 48; st[f] = d >= 0 && d < ITEMS[kind][f].length ? d : undefined; });
+    const kind = l.unit, fields = LEGACY_GEAR_FIELDS[kind], st = {};
+    fields.forEach((f, i) => { if (!ITEMS[kind][f]) return; const d = l.u.charCodeAt(i) - 48; st[f] = d >= 0 && d < ITEMS[kind][f].length ? d : undefined; });   // old award digit: no item any more, skipped
     army.units.push(cleanUnit({ id: typeof l.id === 'string' ? 'l-' + l.id : undefined, name: l.name, playerId: byNation[l.nationId], kind, gear: toGear(kind, st), traits: tr(String(l.id)), roster: false, thumb: l.thumb, ext: { legacyLookId: String(l.id) } }));
   }
   army.activePlayerId = byNation[act && act.id] || (army.players[0] && army.players[0].id);

@@ -3,7 +3,7 @@ import { View, flagCanvas, lookThumb, disposeThumbs, TEAM_COLOR } from './render
 import { Sim, CFG } from './sim.js';
 import { MAP, heightAt, setMap, MAP_LIST, isMap } from './map.js';
 import { statsOf, mulberry32, CLASS_ICON } from './data.js';
-import { loadArmy, defaultUnitLook, randomNation, generatedLooks, armyBudget, ARMY_KEY, MAX_LOOKS } from './army.js';   // v2.4: shared army save
+import { loadArmy, defaultUnitLook, randomNation, generatedLooks, generatedTanks, armyBudget, ARMY_KEY, MAX_LOOKS } from './army.js';   // v2.4: shared army save (v2.5: + tanks)
 import { PERKS, PERK } from './perks.js';
 import { loadCampaign, saveCampaign, newCampaign, recordBattle, enemyPerks, enemyPerkCount, MAPS } from './campaign.js';
 import { TRAITS, TRAIT, TRAIT_LONG, traitOf, loadSetup, saveSetup, normDiff } from './traits.js';
@@ -11,7 +11,7 @@ import { TRAITS, TRAIT, TRAIT_LONG, traitOf, loadSetup, saveSetup, normDiff } fr
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const h = (tag, props = {}, kids = []) => { const e = Object.assign(document.createElement(tag), props); for (const k of [].concat(kids)) if (k != null) e.append(k); return e; };
 const MARK_ICON = { attack: '⚔️', defend: '🛡️', ignore: '🚫' };
-const CLASS_NAME = { trooper: 'Trooper', heavy: 'Heavy', engineer: 'Engineer', sniper: 'Sniper', commander: 'Commander', jet: 'Jet trooper' };
+const CLASS_NAME = { trooper: 'Trooper', heavy: 'Heavy', engineer: 'Engineer', sniper: 'Sniper', commander: 'Commander', jet: 'Jet trooper', tank: 'Tank' };
 
 // ---------- device profile ----------
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(pointer: fine)').matches);
@@ -33,6 +33,7 @@ function showMap(id) { setMap(id); view.setMap(); }   // active map for the menu
 showMap(pick.map);
 
 // ---------- start screen ----------
+const tanksOf = (nid) => (armies.tanks || []).filter((x) => x.nationId === nid);   // 🚜 v2.5: roster tanks (max 2) drive into Conquest
 const looksOf = (nid) => { const l = armies.looks.filter((x) => x.nationId === nid); return l.length ? l : [defaultUnitLook(nid)]; };   // a player with no troopers → one basic 'Trooper 1'
 const armyTraitOf = (l) => l.armyTrait || '';   // unit.traits[0] from the army save wins; '' → the setup picker below
 const traitPickOf = (l) => armyTraitOf(l) || (TRAIT[pick.traits[l.id]] ? pick.traits[l.id] : '');
@@ -52,13 +53,12 @@ function renderArmyHead(nat, looks) {
   $('#ahPlayer').textContent = nat.player || armies.player;
   $('#ahNation').textContent = nat.name;
   const n = looks.filter((l) => !l.isDefault).length;
-  $('#ahUnits').textContent = n ? `🪖 ×${n}` : '🪖 ×1 (basic)';
-  $('#ahUnits').title = n ? `${n} unit${n > 1 ? 's' : ''} in your army` : 'No units saved yet: you get 1 basic Trooper';
+  const nt = tanksOf(nat.id).length;
+  $('#ahUnits').textContent = (n ? `🪖 ${n} trooper${n > 1 ? 's' : ''}` : '🪖 1 basic trooper') + (nt ? ` · 🚜 ${nt} tank${nt > 1 ? 's' : ''}` : '');
+  $('#ahUnits').title = (n ? `${n} trooper type${n > 1 ? 's' : ''} in your army` : 'No troopers saved yet: you get 1 basic Trooper') + (nt ? ` · ${nt} tank${nt > 1 ? 's' : ''} drive into battle` : '');
   const picked = looks.filter((l) => pick.looks.has(l.id)), b = armyBudget(picked, { ...CFG, ...(mapCfgFull(pick.map)) });
   const el = $('#armyCost'); el.className = 'armycost ' + b.level; el.dataset.level = b.level;
-  const per = b.perWaveTroops >= 10 ? '10+' : b.perWaveTroops.toFixed(1);
-  el.replaceChildren(
-    h('span', { textContent: `💰 ${b.avg} CP avg per spawn · ⭐ +${b.perWave} CP per wave ≈ ${per} troops/wave` }),
+  el.replaceChildren(   // v2.5: no designer math, only a plain warning when the army is too pricey
     b.level === 'bad' ? h('b', { className: 'warn', textContent: `⚠️ Too expensive to field well: your troops cost too much CP, so reinforcements will trickle in${b.max > b.perWave ? ` (one costs 💰${b.max}, more than a whole wave)` : ''}. Cheaper gear = more troops.` })
       : b.level === 'warn' ? h('b', { className: 'warn', textContent: '⚠️ Pricey army: expect thin reinforcement waves.' }) : '');
 }
@@ -70,7 +70,7 @@ function renderStart() {
   if (!pick.looks.size) looks.slice(0, 6).forEach((l) => pick.looks.add(l.id));
   $('#myLooks').replaceChildren(...looks.map((l) => {
     const s = statsOf(l), url = thumbOf(nat, l), on = pick.looks.has(l.id);
-    const b = h('button', { className: 'look' + (on ? ' on' : ''), title: `${l.name} · ${CLASS_NAME[s.cls]} · 💰${s.cost} CP per spawn · ❤️${s.hp} 🏃${s.speed.toFixed(1)} m/s · ⚡${s.power}` }, [
+    const b = h('button', { className: 'look' + (on ? ' on' : ''), title: `${l.name} · ${CLASS_NAME[s.cls]} · costs ${s.cost} CP per spawn · ${s.hp} health · ${s.speed.toFixed(1)} m/s` }, [
       url ? h('img', { src: url, alt: '' }) : h('div', { className: 'noimg', textContent: '🪖' }),
       h('b', { className: 'cls', textContent: CLASS_ICON[s.cls], title: CLASS_NAME[s.cls] }),
       l.icon ? h('b', { className: 'ico', textContent: l.icon }) : null,
@@ -78,7 +78,7 @@ function renderStart() {
     b.dataset.id = l.id;
     b.addEventListener('click', () => {
       if (pick.looks.has(l.id)) { if (pick.looks.size > 1) pick.looks.delete(l.id); }
-      else if (pick.looks.size < MAX_LOOKS) pick.looks.add(l.id); else toast(MAX_LOOKS + ' max');
+      else if (pick.looks.size < MAX_LOOKS) pick.looks.add(l.id); else toast(`${MAX_LOOKS} trooper types max`);
       renderStart();
     });
     // behaviour trait chip: big icon + 1-2 words; tap → small icon popup
@@ -144,15 +144,15 @@ const mapCfgFull = (id) => { const was = MAP.id; setMap(id); const c = { ...(MAP
 const mapCfg = (id) => { const was = MAP.id; setMap(id); const c = { tickets: MAP.cfg.tickets ?? CFG.tickets, live: MAP.cfg.live ?? CFG.live }; setMap(was); return c; };
 function renderCamp() {
   const c = G.camp, m = mapInfo(pick.map), mc = mapCfg(m.id);
-  $('#campStat').innerHTML = `<b class="cr" title="Credits">💰 ${c.credits}</b><span title="Battle">⚔️ #${c.battle}</span><span title="Wins">🏆 ${c.wins}</span><span title="Losses">💀 ${c.losses}</span>${streakTxt(c) ? `<span title="Streak">${streakTxt(c)}</span>` : ''}<span title="Map">${m.icon} ${escapeHTML(m.name)}</span>`;
-  $('#mapLine').textContent = `${m.icon} ${m.name} · 🎟️ ${mc.tickets} · 🪖 ${mc.live} vs ${mc.live} · 🚩×${m.posts}`;
+  $('#campStat').innerHTML = `<b class="cr" title="Credits">💰 ${c.credits}</b><span title="Battle">⚔️ #${c.battle}</span><span title="Wins">🏆 ${c.wins}</span><span title="Losses">💀 ${c.losses}</span>${streakTxt(c) ? `<span title="Streak">${streakTxt(c)}</span>` : ''}`;
+  $('#mapLine').textContent = `${m.icon} ${m.name} · Tickets ${mc.tickets} · ${mc.live} vs ${mc.live} troops · ${m.posts} posts`;
 }
 let newCampArm = 0;
 $('#newCamp').addEventListener('click', () => {
   const b = $('#newCamp');
   if (!newCampArm) { newCampArm = setTimeout(() => { newCampArm = 0; b.classList.remove('arm'); b.textContent = '🆕 New campaign'; }, 3000); b.classList.add('arm'); b.textContent = '✔️ Sure? 💰→1500'; return; }
   clearTimeout(newCampArm); newCampArm = 0; b.classList.remove('arm'); b.textContent = '🆕 New campaign';
-  G.camp = newCampaign(); saveCampaign(G.camp); G.cart.clear(); renderCamp(); toast('🆕 💰 ' + G.camp.credits);
+  G.camp = newCampaign(); saveCampaign(G.camp); G.cart.clear(); renderCamp(); toast('🆕 New campaign · 💰 ' + G.camp.credits + ' credits');
 });
 const cartCost = () => [...G.cart].reduce((a, id) => a + PERK[id].price, 0);
 function openShop() {
@@ -175,12 +175,12 @@ function renderShop() {
     b.addEventListener('click', () => buyPerk(P.id));
     return b;
   }));
-  $('#fight').textContent = G.cart.size ? `⚔️ Fight · 🎁${G.cart.size}` : '⚔️ Fight';
+  $('#fight').textContent = G.cart.size ? `⚔️ Start battle · 🎁${G.cart.size} perk${G.cart.size > 1 ? 's' : ''}` : '⚔️ Start battle';
 }
 function buyPerk(id) {
   if (G.cart.has(id)) G.cart.delete(id);
   else if (PERK[id].price <= G.camp.credits - cartCost()) G.cart.add(id);
-  else { toast('💰 ❌'); return false; }
+  else { toast('💰 Not enough credits'); return false; }
   renderShop(); return G.cart.has(id);
 }
 function fight(o = {}) {
@@ -236,8 +236,10 @@ function buildTeams(o) {
   const enLooks = en ? armies.looks.filter((l) => l.nationId === en.id).slice(0, MAX_LOOKS) : [];
   if (en) { enemyNat = en; enemyLooks = enLooks.length ? enLooks.map((l) => { const { brain, ...x } = l; return { ...x, trait: l.armyTrait || '' }; }) : generatedLooks(rng, en.id, mine.length); }   // brains are player-only
   else { enemyNat = randomNation(rng, nat.p); enemyLooks = generatedLooks(rng, enemyNat.id, mine.length); }   // generated: as many unit types as you
+  // 🚜 v2.5: your saved roster tanks (max 2) drive in; the enemy fields its own saved tanks, else as many generated tanks as you
+  const myTanks = o.tanks === false ? [] : tanksOf(nat.id), enTanks = o.tanks === false ? [] : en && tanksOf(en.id).length ? tanksOf(en.id) : generatedTanks(enemyNat.id, myTanks.length);
   const perks = o.perks || [[], []];
-  return [{ nation: nat, looks: mine, perks: perks[0] || [] }, { nation: enemyNat, looks: enemyLooks, perks: perks[1] || [] }];
+  return [{ nation: nat, looks: mine, tanks: myTanks, perks: perks[0] || [] }, { nation: enemyNat, looks: enemyLooks, tanks: enTanks, perks: perks[1] || [] }];
 }
 
 // ---------- match ----------
@@ -260,18 +262,14 @@ function startMatch(o = {}) {
   view.cam.yaw = 0; view.cam.dist = view.w < view.h ? cs[1] : cs[0]; view.cam.x = home.x + cs[0] * 0.4; view.cam.z = home.z; view.cam.want = null;
   mm.id = null; $('#minimap').classList.toggle('hidden', !(MAP.view && MAP.view.minimap));
   [0, 1].forEach((t) => { const c = $(`.tix.t${t} canvas`); c.getContext('2d').drawImage(flagCanvas(G.sim.teams[t].nation, 32), 0, 0); });
-  buildBadges(); closeRadial(); showPerkBanner(); updateHUD(true);
+  buildBadges(); closeRadial(); showPerkBanner(); updateHUD(true); coachOnce();
 }
-const perkIcons = (ids) => (ids.length ? ids.map((id) => `<b title="${PERK[id].name}: ${PERK[id].short}">${PERK[id].icon}</b>`).join('') : '<b title="No perks" class="none">🚫</b>');
-let bannerT = 0;
+const perkIcons = (ids) => (ids.length ? ids.map((id) => `<b title="${PERK[id].name}: ${PERK[id].short}">${PERK[id].icon}</b>`).join('') : '<em class="none">none</em>');
+// v2.5: the fading in-battle perk bar is gone; the ⏸️ pause screen lists both sides' perks with words
 function showPerkBanner() {
-  const [A, B] = G.sim.teams, el = $('#perkBanner');
-  const html = `<div class="pside c0">${perkIcons(A.perks)}</div><span class="vs">⚔️</span><div class="pside c1">${perkIcons(B.perks)}</div>`;
-  el.innerHTML = html; $('#pausePerks').innerHTML = html;
-  el.classList.remove('hidden', 'fade'); clearTimeout(bannerT);
-  bannerT = setTimeout(() => { el.classList.add('fade'); bannerT = setTimeout(() => el.classList.add('hidden'), 600); }, 6000);
+  const [A, B] = G.sim.teams;
+  $('#pausePerks').innerHTML = `<small>Your perks</small><div class="pside c0">${perkIcons(A.perks)}</div><span class="vs">⚔️</span><div class="pside c1">${perkIcons(B.perks)}</div><small>Enemy perks</small>`;
 }
-$('#perkBanner').addEventListener('click', () => $('#perkBanner').classList.add('hidden'));
 function toMenu() {
   if (G.armyDirty) { G.armyDirty = false; armies = loadArmy(); thumbCache.clear(); if (!armies.nations.some((n) => n.id === pick.nation)) pick.nation = armies.active; }
   G.state = 'start'; G.sim = null; view.disposeArmies(); view.clearFx();
@@ -314,12 +312,16 @@ function renderPauseUnits() {
     const el = h('span', { className: 'ucell', title: `${l.name} · ${CLASS_NAME[l.stats.cls]} · ${TRAIT_LONG[l.trait]}${l.traitPick ? '' : ' (auto)'} · ${n} alive` },
       [h('b', { className: 'uc', textContent: l.icon || CLASS_ICON[l.stats.cls] }), h('i', { className: 'ut', textContent: tr.icon }), h('em', { textContent: '×' + n })]);
     el.dataset.trait = l.trait; return el;
-  }));
+  }).concat((T.tankLooks || []).map((l, k) => {   // 🚜 tanks in this battle
+    const n = S.units.filter((u) => u.alive && u.team === T.idx && u.kind === 'tank' && u.tk === k).length;
+    const el = h('span', { className: 'ucell-tank', title: `${l.name} · Tank · ${n ? 'on the field' : 'destroyed (back on a wave)'}` }, [h('b', { className: 'uc', textContent: '🚜' }), h('em', { textContent: '×' + n })]);
+    el.dataset.kind = 'tank'; return el;
+  })));
   $('#pauseUnits').replaceChildren(row(S.teams[0]), row(S.teams[1]));
 }
 function renderPauseWho() {
   const S = G.sim; if (!S) return; const n = S.teams[0].nation, mine = looksOf(n.id).filter((l) => !l.isDefault).length;
-  $('#pauseWho').replaceChildren(flagCanvas(n, 32), h('b', { textContent: n.player || armies.player }), h('span', { textContent: ' · ' + n.name + ' · ' }), h('span', { textContent: `🪖 ×${mine || 1}` }));
+  $('#pauseWho').replaceChildren(flagCanvas(n, 32), h('b', { textContent: n.player || armies.player }), h('span', { textContent: ' · ' + n.name }));
 }
 $('#pauseBtn').addEventListener('click', () => setPause(true));
 $('#resume').addEventListener('click', () => setPause(false));
@@ -338,12 +340,15 @@ function centerOnFight() {
 }
 function toggleRally() {
   const S = G.sim; if (!S) return;
-  if (S.teams[0].rally) { S.setRally(0, null); G.rallyMode = false; toast('🚩 ✖'); }
-  else { G.rallyMode = !G.rallyMode; if (G.rallyMode) { closeRadial(); toast('🚩 👇'); } }
+  if (S.teams[0].rally) { S.setRally(0, null); G.rallyMode = false; toast('🚩 Rally point cleared'); }
+  else { G.rallyMode = !G.rallyMode; if (G.rallyMode) { closeRadial(); toast('🚩 Tap the map to set the rally point'); } }
   updateHUD(true);
 }
 let toastT = 0;
-function toast(s) { const t = $('#toast'); t.textContent = s; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1400); }
+function toast(s, ms = 1800) { const t = $('#toast'); t.textContent = s; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+// v2.5 first-run hint (once per device): how to give orders
+const LS_COACH = 'conquest-commander:coach';
+function coachOnce() { let seen = '1'; try { seen = localStorage.getItem(LS_COACH); localStorage.setItem(LS_COACH, '1'); } catch (e) { /* private mode */ } if (!seen) toast('👆 Tap a post (A B C) to give orders · 🤖 = AI picks for now', 6000); }
 
 // ---------- post badges + radial ----------
 function buildBadges() {
@@ -428,7 +433,9 @@ function handleEvents(evs) {
     else if (e.type === 'squadLost' && e.team === 0) ping('💀', e.x, e.z, TEAM_COLOR[1]);
     else if (e.type === 'retake' && e.team === 0 && post) ping('🔁', post.x, post.z, TEAM_COLOR[0], post.id);
     else if (e.type === 'lastStand') toast(e.team === 0 ? '☠️ 🔵 last stand' : '☠️ 🔴 last stand');
-    else if (e.type === 'unlock' && e.team === 0) toast('⭐ 🛩️ unlocked');
+    else if (e.type === 'unlock' && e.team === 0) toast('⭐ Commander & 🛩️ Jet earned: they join the fight!');
+    else if (e.type === 'tank' && e.team === 0) ping('🚜', e.x, e.z, TEAM_COLOR[0]);
+    else if (e.type === 'death' && e.tank) ping('💥', e.x, e.z, TEAM_COLOR[e.team ? 0 : 1], e.team === 0 ? 'Tank lost' : 'Tank down');
   }
 }
 
@@ -443,11 +450,11 @@ function updateHUD(force) {
   $('.tix.t0 b').textContent = A.tickets; $('.tix.t1 b').textContent = B.tickets;
   $('.tix.t0').classList.toggle('low', A.tickets <= 20); $('.tix.t1').classList.toggle('low', B.tickets <= 20);
   $('.tix.t0').classList.toggle('ls', A.lastStand); $('.tix.t1').classList.toggle('ls', B.lastStand);
-  $('#alive').textContent = `🪖${S.alive(0)}/${A.live}`;
+  $('#alive').textContent = `Troops 🪖${S.alive(0)}/${A.live}`;
   const cdEl = $('#countdown');
   if (cd && G.state === 'playing') { cdEl.classList.remove('hidden'); cdEl.className = 'cd' + cd[0]; cdEl.querySelector('span').textContent = cd[0] === 0 ? '🏆' : '⚠️'; cdEl.querySelector('b').textContent = Math.max(0, Math.ceil(cd[1])); }
   else cdEl.classList.add('hidden');
-  $('#cpChip b').textContent = Math.floor(A.cp); $('#wave').textContent = '⏱' + Math.max(0, Math.ceil(A.waveT));
+  $('#cpChip b').textContent = Math.floor(A.cp); $('#wave').textContent = 'Wave ⏱' + Math.max(0, Math.ceil(A.waveT));
   const pis = $('#postIcons').children, badges = $('#badges').children;
   S.posts.forEach((p, i) => {
     const m = A.marks[i], oc = p.owner >= 0 ? TEAM_COLOR[p.owner] : '#6b7077';
@@ -455,12 +462,13 @@ function updateHUD(force) {
     const icon = A.marked ? MARK_ICON[m.mark] : '🤖';   // 🤖 = no orders yet: bots go for the nearest post they don't own
     el.querySelector('i').textContent = icon;
     const b = badges[i]; b.style.setProperty('--o', oc); b.querySelector('i').textContent = icon;
+    b.title = `Post ${p.id} · ${A.marked ? { attack: 'Attack', defend: 'Defend', ignore: 'Ignore' }[m.mark] : 'AI-held: no orders yet'} · tap for orders`;
     b.querySelector('u').textContent = !A.marked || m.mark === 'ignore' ? '' : '★'.repeat(m.stars);
     b.classList.toggle('hot', p.n[0] > 0 && p.n[1] > 0);
   });
   $('#rallyBtn').classList.toggle('on', G.rallyMode || !!A.rally);
-  $('#rallyBtn').textContent = A.rally ? '🚩✖' : '🚩';
-  $('#rallyBtn').style.fontSize = A.rally ? '15px' : '';
+  $('#rallyBtn').querySelector('span').textContent = A.rally ? '🚩✖' : '🚩';
+  $('#rallyBtn').querySelector('small').textContent = A.rally ? 'Clear' : G.rallyMode ? 'Tap map' : 'Rally';
 }
 
 // ---------- input: mouse + touch + keys ----------
@@ -495,7 +503,7 @@ cv.addEventListener('wheel', (e) => { e.preventDefault(); view.cam.dist *= 1 + M
 function tap(x, y) {
   const S = G.sim; if (!S || G.state !== 'playing') return;
   const g = view.pick(x, y); if (!g) return;
-  if (G.rallyMode) { S.setRally(0, g.x, g.z); G.rallyMode = false; toast('🚩 ✔'); updateHUD(true); return; }
+  if (G.rallyMode) { S.setRally(0, g.x, g.z); G.rallyMode = false; toast('🚩 Rally point set'); updateHUD(true); return; }
   let bi = -1, bd = MAP.postR + 3; S.posts.forEach((p, i) => { const d = Math.hypot(p.x - g.x, p.z - g.z); if (d < bd) { bd = d; bi = i; } });
   if (bi >= 0) openRadial(bi); else closeRadial();
 }
@@ -598,7 +606,7 @@ requestAnimationFrame(frame);
 window.__game = {
   ready: true,
   get state() { return G.state; }, get sim() { return G.sim; }, G, view, get armies() { return armies; }, pick,
-  version: '2.4', reloadArmy: () => reloadArmy(), editArmy: () => editArmy(), from: FROM, maps: () => MAP_LIST.map((m) => ({ ...m })), get map() { return MAP.id; },
+  version: '2.5', reloadArmy: () => reloadArmy(), editArmy: () => editArmy(), from: FROM, maps: () => MAP_LIST.map((m) => ({ ...m })), get map() { return MAP.id; },
   pickMap: (id) => { pick.map = id; renderStart(); return pick.map; }, minimapDraws: () => mm.draws,
   lowProfile: view.low, pixelRatio: () => view.pixelRatio,
   start: (o) => startMatch(o),
@@ -617,7 +625,7 @@ window.__game = {
   screenOfPost: (i) => { const p = G.sim.posts[i]; return view.project(p.x, heightAt(p.x, p.z), p.z); },
   posts: () => G.sim.posts.map((p) => ({ id: p.id, owner: p.owner, ctrl: +p.ctrl.toFixed(3), n: [...p.n] })),
   teams: () => G.sim.teams.map((T) => ({ tickets: T.tickets, cp: Math.floor(T.cp), kills: T.kills, losses: T.losses, bled: T.bled || 0, rally: T.rally, perks: [...T.perks], live: T.live, alive: G.sim.alive(T.idx), lastStand: T.lastStand, holdT: T.holdT, unlocked: T.unlocked, plan: [...T.plan], marked: T.marked, marks: T.marks.map((m) => ({ ...m })), squads: T.squads.map((s) => s.members.filter((u) => u.alive).length), healed: T.healed, minesLaid: T.minesLaid, retakes: T.retakes, nation: T.nation.name, p: T.nation.p, s: T.nation.s, looks: T.looks.map((l) => ({ id: l.id, name: l.name, cls: l.stats.cls, cost: l.stats.cost, trait: l.trait, traitPick: l.traitPick })) })),
-  units: (t) => G.sim.units.filter((u) => u.alive && (t == null || u.team === t)).map((u) => ({ id: u.id, team: u.team, squad: u.squad, cls: u.cls, x: u.x, z: u.z, gx: u.gx, gz: u.gz, hp: u.hp, hpMax: u.hpMax, look: u.look, trait: u.trait, post: u.post, inCover: u.inCover, duck: u.duck, crouch: u.crouch, atNest: u.atNest })),
+  units: (t) => G.sim.units.filter((u) => u.alive && (t == null || u.team === t)).map((u) => ({ id: u.id, kind: u.kind || 'trooper', team: u.team, squad: u.squad, cls: u.cls, x: u.x, z: u.z, gx: u.gx, gz: u.gz, hp: u.hp, hpMax: u.hpMax, look: u.look, trait: u.trait, post: u.post, inCover: u.inCover, duck: u.duck, crouch: u.crouch, atNest: u.atNest })),
   traitPop: (id) => { const l = looksOf(pick.nation).find((x) => x.id === id), b = document.querySelector(`#myLooks .trait[data-id="${id}"]`); if (l && b) openTraitPop(l, statsOf(l).cls, b); },
   reloadSetup: () => Object.assign(pick, (() => { const d = loadSetup(); return { nation: d.nation || pick.nation, looks: new Set(d.looks), enemy: d.enemy, diff: d.diff, traits: d.traits, map: isMap(d.map) ? d.map : pick.map }; })()),
   frameStats: () => { const f = [...G.frames].sort((a, b) => a - b); return { n: f.length, avg: f.reduce((a, b) => a + b, 0) / (f.length || 1), p95: f[Math.floor(f.length * 0.95)] || 0, max: f[f.length - 1] || 0, long: G.longFrames }; },
@@ -625,4 +633,6 @@ window.__game = {
   renderStats: () => view.stats(),
   atlasHash: (t) => view.armies && view.armies[t].look.hash(),
   pings: () => G.pings.map((p) => p.icon),
+  tanks: (t) => G.sim.units.filter((u) => u.kind === 'tank' && (t == null || u.team === t)).map((u) => ({ id: u.id, team: u.team, alive: u.alive, hp: u.hp, hpMax: u.hpMax, x: u.x, z: u.z, post: u.post, stunT: u.stunT || 0 })),
+  gearUsed: () => (G.sim && G.sim.__gear ? { ...G.sim.__gear.used } : null),
 };

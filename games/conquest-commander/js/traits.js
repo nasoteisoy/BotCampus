@@ -1,19 +1,19 @@
 import { MAP, heightAt, lineClear, solidDist } from './map.js';
-import { BRAINS } from './brains.js';   // 🧠 player brains (flag, default OFF: ?brains=1)
+import { BRAINS } from './brains.js';   // 🧠 player brains (on in the game; ?brains=0 turns them off; off in Node tests)
 
 // Behaviour traits (v2.1). The player picks ONE trait per roster look on the setup screen; '' = class default.
 // Every trooper runs the same Battlefront II core AI (sim.js); a trait only changes the numbers / extra jobs below.
 export const TRAITS = [
   { id: 'rusher', icon: '🏃', name: 'Rusher' },
   { id: 'cover', icon: '🧱', name: 'Cover' },
-  { id: 'sniper', icon: '🎯', name: 'Nest' },
+  { id: 'sniper', icon: '🔭', name: 'Sniper spot' },
   { id: 'retaker', icon: '🔁', name: 'Retaker' },
   { id: 'supplier', icon: '➕', name: 'Supplier' },
   { id: 'mines', icon: '💣', name: 'Mines' },
   { id: 'guard', icon: '🛡️', name: 'Guard' },
 ];
 export const TRAIT = Object.fromEntries(TRAITS.map((t) => [t.id, t]));
-export const TRAIT_LONG = { rusher: 'Rusher', cover: 'Cover Fighter', sniper: 'Sniper Nest', retaker: 'Retaker', supplier: 'Supplier', mines: 'Mine Layer', guard: 'Guard' };
+export const TRAIT_LONG = { rusher: 'Rusher', cover: 'Cover Fighter', sniper: 'Sniper spot', retaker: 'Retaker', supplier: 'Supplier', mines: 'Mine Layer', guard: 'Guard' };
 // SWBF2 unit types: trooper pushes, assault (heavy) takes cover, scout nests, support/repair supplies
 export const CLASS_TRAIT = { trooper: 'rusher', heavy: 'cover', sniper: 'sniper', engineer: 'supplier', commander: 'rusher', jet: 'rusher' };
 export const traitOf = (choice, cls) => (TRAIT[choice] ? choice : CLASS_TRAIT[cls] || 'rusher');
@@ -88,7 +88,7 @@ export function getCover(nav) {
 export const TRAIT_AI = {
   // where does this bot walk right now? (every 0.3 s) supply > mines > cover > sniper nest > its post slot
   decide(u, now) {
-    if (BRAINS.on) { const b = BRAINS.decide(this, u, now, MAP.postR); if (b) { u.mx = b.x; u.mz = b.z; return; } }   // brain fired → walk there; else the trait AI below
+    if (BRAINS.on && u.kind !== 'tank') { const b = BRAINS.decide(this, u, now, MAP.postR); if (b) { u.mx = b.x; u.mz = b.z; return; } }   // brain fired → walk there; else the trait AI below
     const fx = u.tr, fighting = now - u.lastSeen < fx.hold;
     let dest = null;
     if (fx.heal) dest = this.supplyTarget(u);
@@ -161,7 +161,7 @@ export const TRAIT_AI = {
   supplyTarget(u) {
     const fx = u.tr; let best = null, bs = Infinity;
     for (const a of this.units) {
-      if (!a.alive || a === u || a.team !== u.team || a.hp > a.hpMax * 0.95) continue;
+      if (!a.alive || a === u || a.team !== u.team || a.kind === 'tank' || a.hp > a.hpMax * 0.95) continue;
       const d = Math.hypot(a.x - u.x, a.z - u.z); if (d > fx.seekR) continue;
       const sc = a.hp / a.hpMax * 30 + d; if (sc < bs) { bs = sc; best = a; }
     }
@@ -215,7 +215,7 @@ export const TRAIT_AI = {
     // ➕ Supplier: heal-over-time aura for hurt allies close by (+ hands Mine Layers a new mine now and then)
     let healing = null;
     for (const a of alive) {
-      if (a === u || a.team !== u.team || (a.x - u.x) ** 2 + (a.z - u.z) ** 2 > fx.healR * fx.healR) continue;
+      if (a === u || a.team !== u.team || a.kind === 'tank' || (a.x - u.x) ** 2 + (a.z - u.z) ** 2 > fx.healR * fx.healR) continue;
       if (a.hp < a.hpMax) { const h = Math.min(a.hpMax - a.hp, fx.healHp * dt); a.hp += h; this.teams[u.team].healed += h; u.healed = (u.healed || 0) + h; healing ||= a; }
       if (a.tr.mines && a.mines < a.tr.mines && (a.resT = (a.resT || 0) + dt) > 15) { a.resT = 0; a.mines++; }
     }

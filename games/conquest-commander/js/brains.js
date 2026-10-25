@@ -1,6 +1,7 @@
 // 🧠 Player brains for Conquest Commander (prototype port, v1). ES module; imports only the shared army schema
 // (games/shared/army/schema.js, same instance as army.js) and pickups.js (new). No globals.
-// OFF by default. Turn on with ?brains=1 (or localStorage 'conquest-commander:brains-flag' = '1'); ?brains=0 forces off.
+// ON in the game (v2.5): a unit with a brain saved in 🧠 Unit Brains follows it. Off switch: ?brains=0 (or localStorage
+// 'conquest-commander:brains-flag' = '0'). No page URL (Node tests) = off, so seeded test battles stay identical.
 // ❤️/📦 pickups + magazines are ON by default since v2.4 (pickups.js; ?pickups=0 = off), separate from ?brains=1.
 // When on, a PLAYER unit (team 0) that has a brain walks where its brain says; everything else falls through to the
 // trait AI (TRAIT_AI.decide) unchanged. Enemy units never use brains. With pickups on, units WITHOUT a brain (both teams)
@@ -11,11 +12,13 @@
 // Brain = { kind:'cc.unitBrain', v:1, rows:[{ if, do, on }] } — rows run top → bottom, the first enabled row whose IF is
 // true AND whose THEN can run fires (Gambit rule). A row that starts firing is kept ≥ minHold s (default 1.0) unless
 // the unit took damage since the last think, or the held row's action can no longer run.
-// Attach points (BRAIN_FORMAT.md): units[].brain on a saved look (object or preset id string), squads[] =
-// { id, name, unitIds[], squadBrain } (unitIds = look ids). ⭐ actions (medic / mine / guard) are cut for v1.
+// Attach points (BRAIN_FORMAT.md): units[].brain on a saved look, squads[] = { id, name, unitIds[], squadBrain }
+// (unitIds = look ids). v2.5: no presets, no tiers — an old preset id string (or tier field) loads as no brain / is ignored
+// (schema.js already moved the old preset onto the unit's trait). Every action works: medic / mine / guard included.
 
-import * as Army from '../../shared/army/schema.js?v=8';
+import * as Army from '../../shared/army/schema.js?v=9';
 import { PICKUPS } from './pickups.js';
+import { heightAt } from './map.js';
 
 export const BRAINS_V = 1;
 export const MAX_ROWS = 6;
@@ -25,34 +28,21 @@ export const LS_ARMY = 'conquest-commander:army-brains';      // { v:1, units:[{
 export const LS_BUNDLE = 'conquest-commander:brains';         // what the Unit Brains prototype saves ({ kind:'cc.brains', unit, squad })
 
 export const CONDS = ['lowHp', 'enemyNear', 'lowAmmo', 'pointNotOurs', 'allyHurt', 'always'];
-export const ACTS = ['heal', 'cover', 'shoot', 'capture', 'ammo', 'follow'];
-export const CUT_ACTS = ['medic', 'mine', 'guard'];
+export const ACTS = ['heal', 'cover', 'shoot', 'capture', 'ammo', 'follow', 'medic', 'mine', 'guard'];
+export const MEDIC = Object.freeze({ seekR: 28, reach: 3, healHp: 5 });   // ➕ medic row: walk to the most hurt ally, heal +5 HP/s in reach
 export const PLANS = ['capture', 'hold', 'retake', 'push'];
 export const FORMS = ['line', 'wedge', 'blob'];
 
-const r = (c, a) => ({ if: c, do: a, on: true });
-// v2.3 traits (traits.js TRAITS ids) → brain rows. supplier / mines / guard need ⭐ actions (cut) → null = keep the trait AI.
-export const TRAIT_PRESETS = {
-  rusher: { name: 'Rusher', icon: '🏃', rows: [r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'shoot'), r('always', 'capture')] },
-  cover: { name: 'Cover Fighter', icon: '🧱', rows: [r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'cover'), r('always', 'capture')] },
-  sniper: { name: 'Sniper Nest', icon: '🎯', rows: [r('enemyNear', 'cover'), r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('always', 'follow')] },
-  retaker: { name: 'Retaker', icon: '🔁', squadPlan: 'retake', rows: [r('lowHp', 'heal'), r('pointNotOurs', 'capture'), r('enemyNear', 'shoot'), r('always', 'follow')] },
-  supplier: null, mines: null, guard: null,
-};
-export function presetBrain(id) {
-  const p = TRAIT_PRESETS[id]; if (!p) return null;
-  return { kind: 'cc.unitBrain', v: BRAINS_V, name: p.name, icon: p.icon, preset: id, tier: 1, rows: p.rows.map((x) => ({ ...x })) };
-}
 export const defaultSquad = () => ({ kind: 'cc.squadBrain', v: BRAINS_V, plan: 'capture', formation: 'wedge', follow: true, spacing: 2 });
 
 // ---------- validation (returns a clean copy or null) ----------
 export function cleanUnitBrain(b, trait) {
-  if (typeof b === 'string') return presetBrain(b === 'auto' ? trait : b);       // preset id shorthand ('auto' = the look's trait)
+  void trait;
+  if (typeof b === 'string') return null;                                          // old preset id: no presets any more (trait AI)
   if (!b || typeof b !== 'object' || b.kind !== 'cc.unitBrain' || typeof b.v !== 'number' || b.v < 1 || b.v > BRAINS_V) return null;
-  if (b.tier !== undefined && b.tier !== 1) return null;                          // ⭐ tier 2 is cut
   if (!Array.isArray(b.rows) || !b.rows.length || b.rows.length > MAX_ROWS) return null;
   for (const x of b.rows) if (!x || !CONDS.includes(x.if) || !ACTS.includes(x.do) || (x.on !== undefined && typeof x.on !== 'boolean')) return null;
-  return { kind: 'cc.unitBrain', v: BRAINS_V, name: typeof b.name === 'string' ? b.name.slice(0, 24) : 'Custom', preset: typeof b.preset === 'string' ? b.preset : null, tier: 1, rows: b.rows.map((x) => ({ if: x.if, do: x.do, on: x.on !== false })) };
+  return { kind: 'cc.unitBrain', v: BRAINS_V, name: typeof b.name === 'string' ? b.name.slice(0, 24) : 'Custom', rows: b.rows.map((x) => ({ if: x.if, do: x.do, on: x.on !== false })) };
 }
 export function cleanSquadBrain(s) {
   if (!s || typeof s !== 'object' || s.kind !== 'cc.squadBrain' || typeof s.v !== 'number' || s.v < 1 || s.v > BRAINS_V) return null;
@@ -90,8 +80,9 @@ export function evaluateHeld(brain, test, can, mem, now, hp, minHold = MIN_HOLD)
 
 // ---------- flag + data ----------
 export function readFlag(loc = globalThis.location, storage = globalThis.localStorage) {
-  try { const q = loc && loc.search ? new URLSearchParams(loc.search).get('brains') : null; if (q === '1' || q === 'on') return true; if (q === '0' || q === 'off') return false; } catch (e) { /* no URL */ }
-  try { return !!storage && storage.getItem(LS_FLAG) === '1'; } catch (e) { return false; }
+  if (!loc) return false;                                                          // Node / headless: off
+  try { const q = loc.search ? new URLSearchParams(loc.search).get('brains') : null; if (q === '1' || q === 'on') return true; if (q === '0' || q === 'off') return false; } catch (e) { /* no URL */ }
+  try { return !(storage && storage.getItem(LS_FLAG) === '0'); } catch (e) { return true; }
 }
 // The shared army save → { units:[{ id, ids[], brain }], squads:[{ id, name, unitIds[], squadBrain }] } or null.
 // Read-only: only when 'botcampus:army' exists (never migrates / writes; army.js / the customizer do that).
@@ -161,9 +152,9 @@ export function createBrains(opts = {}) {
       const entry = D.units.find((x) => x.id === look.id);
       const raw = look.brain != null ? look.brain : aEntry && aEntry.brain != null ? aEntry.brain : entry ? entry.brain : D.teamBrain;
       const brain = raw == null ? null : cleanUnitBrain(raw, look.trait);
-      // NOT WIRED YET: squads / squadBrain are read here but only used behind the ?brains=1 flag; no squad plan drives units in v2.4.
+      // a saved squad (old saves / console) sets the plan + formation; otherwise the default squad (capture, wedge)
       const sq = (AR && AR.squads.find((s) => s.unitIds.includes(look.id))) || D.squads.find((s) => s.unitIds.includes(look.id)) || null;
-      const squad = (sq && cleanSquadBrain(sq.squadBrain)) || D.teamSquad || (brain && brain.preset && TRAIT_PRESETS[brain.preset] && TRAIT_PRESETS[brain.preset].squadPlan ? { ...defaultSquad(), plan: TRAIT_PRESETS[brain.preset].squadPlan } : defaultSquad());
+      const squad = (sq && cleanSquadBrain(sq.squadBrain)) || D.teamSquad || defaultSquad();
       const out = { brain, squad, sq };
       C.set(key, out); return out;
     },
@@ -226,6 +217,20 @@ export function createBrains(opts = {}) {
         if (!s) return null;
         const d = d2(s, u) || 1, k = Math.max(0, d - 2.5) / d; return { x: u.x + (s.x - u.x) * k, z: u.z + (s.z - u.z) * k, pack: false };
       };
+      const hurtAlly = () => {   // ➕ medic: the most hurt ally close by (troopers only)
+        if (scratch.hurt !== undefined) return scratch.hurt;
+        let best = null, bs = Infinity;
+        for (const a of sim.units) { if (!a.alive || a === u || a.team !== u.team || a.kind === 'tank' || a.hp > a.hpMax * 0.95) continue; const d = d2(a, u); if (d > MEDIC.seekR) continue; const sc = a.hp / a.hpMax * 30 + d; if (sc < bs) { bs = sc; best = a; } }
+        return (scratch.hurt = best);
+      };
+      const guardSpot = () => {  // 🛡️ guard: stay on the nearest post we own
+        if (scratch.guard !== undefined) return scratch.guard;
+        const gi = sim.nearestOwn ? sim.nearestOwn(u.team, u.x, u.z) : -1; if (gi < 0) return (scratch.guard = null);
+        const G = sim.posts[gi]; if (u.guardAt && u.guardAt.i === gi) return (scratch.guard = u.guardAt);
+        const a = (u.slot || 0) * 2.4, rr = postR * 0.5; let x = G.x + Math.cos(a) * rr, z = G.z + Math.sin(a) * rr;
+        if (sim.nav && sim.nav.freePoint) [x, z] = sim.nav.freePoint(x, z);
+        return (scratch.guard = u.guardAt = { i: gi, x, z });
+      };
       const leader = () => scratch.L !== undefined ? scratch.L : (scratch.L = this.leader(sim, u, info));
       const test = (c) => {
         if (c === 'lowHp') return u.hp < u.hpMax * 0.35;
@@ -247,14 +252,21 @@ export function createBrains(opts = {}) {
         if (a === 'capture') return !!P || u.gx !== undefined;
         if (a === 'follow') { const L = leader(); return !!L && L !== u; }
         if (a === 'ammo') return !!pk && (pk.mag(sim, u), u.reserve < u.mag * pk.ammoCfg.reserveMags) && !!pack('ammo');
-        return false;                                          // cut ⭐ actions
+        if (a === 'medic') return !!hurtAlly();
+        if (a === 'mine') {   // 💣 plant a mine at the nearest post we own, on the enemy's way in (sim mine rules)
+          if (!(u.mines > 0) || !sim.mineTarget || u.mode === 'rally') return false;
+          if (scratch.mine === undefined) { const keep = u.post, own = sim.nearestOwn ? sim.nearestOwn(u.team, u.x, u.z) : -1; if (own >= 0) u.post = own; scratch.mine = own >= 0 ? sim.mineTarget(u) : null; u.post = keep; }
+          return !!scratch.mine;
+        }
+        if (a === 'guard') return !!guardSpot();
+        return false;
       };
       if (!u.__bm) u.__bm = newMem();
       const res = evaluateHeld(info.brain, test, can, u.__bm, now, u.hp, this.minHold);
       u.brainRow = res.row; u.brainAct = res.act; u.pkGoal = null;
       if (res.row < 0) return null;                            // nothing fired → the trait AI (squad default)
       if (res.act !== 'cover' && u.cov && sim.leaveCover) sim.leaveCover(u);
-      u.atNest = false; u.mineSpot = null;
+      u.atNest = false; if (res.act !== 'mine') u.mineSpot = null;
       let dest = null;
       if (res.act === 'cover') {
         if (!u.cov && scratch.cov) { const sp = scratch.cov; sp.by = u.id; u.cov = sp; u.covAt = now; u.popT = 0.6; }
@@ -263,6 +275,12 @@ export function createBrains(opts = {}) {
       else if (res.act === 'ammo') { const A = pack('ammo'); if (A) { dest = { x: A.pack.x, z: A.pack.z }; u.pkGoal = 'ammo'; } }
       else if (res.act === 'shoot') dest = { x: u.x, z: u.z };
       else if (res.act === 'follow') dest = this.slotOf(sim, u, leader(), info);
+      else if (res.act === 'medic') {
+        const a = hurtAlly(), d = d2(a, u);
+        if (d <= MEDIC.reach) { const h = Math.min(a.hpMax - a.hp, MEDIC.healHp * 0.3); a.hp += h; if (sim.teams[u.team]) sim.teams[u.team].healed += h; if (sim.emit) sim.emit({ type: 'heal', team: u.team, x0: u.x, z0: u.z, x1: a.x, z1: a.z, y0: heightAt(u.x, u.z) + 1.2, y1: heightAt(a.x, a.z) + 1.2, medic: true }); }
+        const k = Math.max(0, d - 2) / (d || 1); dest = { x: u.x + (a.x - u.x) * k, z: u.z + (a.z - u.z) * k };
+      } else if (res.act === 'mine') dest = scratch.mine || u.mineSpot;
+      else if (res.act === 'guard') dest = guardSpot();
       else if (res.act === 'capture') {
         const L = info.squad.follow ? leader() : null;
         if (L && L !== u && P && d2(L, P) > postR + 4) dest = this.slotOf(sim, u, L, info);       // travel in formation, then spread on the post

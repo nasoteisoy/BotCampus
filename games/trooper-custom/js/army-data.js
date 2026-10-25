@@ -1,11 +1,11 @@
 // Demo pages' view of the army save: one flat list of "entries" (units with painter state + real battle stats).
 // Source of truth: 'botcampus:army' via games/shared/army/schema.js (migrates the old 'trooper-custom:db' on first load).
-import * as Army from '../../shared/army/schema.js?v=8';
-import * as S from '../../shared/army/stats.js?v=8';
-import * as T from './trooper.js?v=6';
+import * as Army from '../../shared/army/schema.js?v=9';
+import * as S from '../../shared/army/stats.js?v=9';
+import * as T from './trooper.js?v=7';
 
 const clean = (x, max = 24) => String(x ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, max);
-export const WEAPON_ICONS = ['🔫', '🚀', '🎯', '💥', '🌀', '⚡'];
+export const WEAPON_ICONS = S.ITEMS.trooper.weapon.map((w) => w.i); // one icon per weapon (stats.js)
 // entry: { key, id, kind, name, icon, st (index state), nat (painter nation + id, name, player), trait, thumb, roster, playerId, cls, stats }
 export function entryOf(u, p) {
   const st = Army.unitState(u), cls = S.classOf(u.kind, u.gear);
@@ -44,7 +44,8 @@ export function pickEntry(data, params) {
   const lk = params.get('look'); if (lk) { const e = E.find((x) => x.id === lk || x.id === 'l-' + lk || x.legacyLookId === lk); if (e) return e; }
   const sl = params.get('slot'); if (sl) { const [nid, i] = sl.split('.'); const e = E.find((x) => x.nat.id === nid && x.kind === 'trooper' && x.roster && x.unit.slot === +i); if (e) return e; }
   const pl = params.get('player') || act;
-  if (params.get('tank') != null || u === 'tank' || (!params.toString() && data.unitKind === 'tank')) { const e = E.find((x) => x.kind === 'tank' && x.playerId === (params.get('tank') ? E.find((y) => y.nat.id === params.get('tank'))?.playerId || pl : pl)); if (e) return e; }
+  if (params.get('tank') != null || u === 'tank') { const e = E.find((x) => x.kind === 'tank' && x.playerId === (params.get('tank') ? E.find((y) => y.nat.id === params.get('tank'))?.playerId || pl : pl)); if (e) return e; }
+  // otherwise: the trooper being edited (not the last tank)
   return E.find((x) => x.playerId === pl && x.kind === 'trooper' && x.roster && x.unit.slot === data.slot) || E.find((x) => x.playerId === pl && x.kind === 'trooper') || E.find((x) => x.kind === 'trooper') || E[0];
 }
 export const ARMY_KEY = Army.ARMY_KEY;

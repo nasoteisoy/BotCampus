@@ -286,7 +286,7 @@
    "maker": "Dev A",
    "makerSource": "MERGE.md: v2.2 map by Dev A + traits merge (other bot unknown); v2.4 army/costs/packs unite by Dev A",
    "section": "live",
-   "updated": "2026-10-24",
+   "updated": "2026-10-25",
    "url": "games/conquest-commander/",
    "extras": [
     {
@@ -294,7 +294,7 @@
      "url": "games/trooper-custom/"
     }
    ],
-   "note": "v2.4: battles with your Trooper Customizer army, unit costs and health/ammo packs",
+   "note": "v2.5: your army fights with its real gear (pistols, explosives, gadgets) and your saved tanks",
    "thumb": "thumbs/conquest-commander.webp",
    "gitAuthors": [
     "CampusDev"
@@ -306,10 +306,10 @@
    "type": "tool",
    "maker": "Dev C",
    "section": "live",
-   "updated": "2026-10-24",
+   "updated": "2026-10-25",
    "url": "games/unit-brains/",
    "extras": [],
-   "note": "IF→THEN icon brains for Conquest Commander troops",
+   "note": "IF→THEN icon brains for Conquest Commander troops, saved for each unit",
    "thumb": "thumbs/unit-brains.webp"
   },
   {
@@ -319,7 +319,7 @@
    "maker": "Dev A",
    "makerSource": "memory: built by Dev A",
    "section": "live",
-   "updated": "2026-10-24",
+   "updated": "2026-10-25",
    "url": "games/trooper-custom/",
    "extras": [
     {
@@ -335,7 +335,7 @@
      "url": "games/trooper-custom/team.html"
     }
    ],
-   "note": "Build your army: basic troopers, all gear unlocked with cost + real battle stats, player & nation header",
+   "note": "Build your army: troopers and a tank, every part with its cost and real battle stats; watch the gear in Actions, Combat and Team",
    "thumb": "thumbs/trooper-custom.webp",
    "gitAuthors": [
     "CampusDev"
@@ -515,7 +515,7 @@
    "maker": "Dev B",
    "makerSource": "v1-v3 built by Dev B (commits 80b2d4b, 606456e, 8cfaf6c)",
    "section": "live",
-   "updated": "2026-10-24",
+   "updated": "2026-10-25",
    "url": "games/ship-sandbox/",
    "extras": [
     {
@@ -523,11 +523,35 @@
      "url": "games/trooper-custom/"
     }
    ],
-   "note": "Break a ship part by part, crewed by your troopers",
+   "note": "Break a ship part by part, crewed by your troopers (labeled toolbar)",
    "thumb": "thumbs/ship-sandbox.webp",
    "gitAuthors": [
     "CampusDev"
    ]
+  },
+  {
+   "id": "spaceship-custom",
+   "title": "🛸 SpaceShip Editor",
+   "type": "game",
+   "maker": "Dev B",
+   "makerSource": "Dev B built it (Lead: Dev brief, 2026-10-25)",
+   "section": "live",
+   "updated": "2026-10-25",
+   "url": "games/spaceship-custom/",
+   "note": "Army HQ: build SpaceShips your troopers ride into ground AND space battles. Pick hull, wings, engines, guns, shield and seats, watch the stats change, then run the demo.",
+   "thumb": "thumbs/spaceship-custom.webp"
+  },
+  {
+   "id": "battleship-custom",
+   "title": "BattleShip Editor",
+   "type": "tool",
+   "maker": "Dev C",
+   "section": "live",
+   "updated": "2026-10-25",
+   "url": "games/battleship-custom/",
+   "extras": [],
+   "note": "Build capital BattleShips for space battles: size, armor, shields, guns, hangar, engines + 3D demo",
+   "thumb": "thumbs/battleship-custom.webp"
   },
   {
    "id": "squad-fsm",

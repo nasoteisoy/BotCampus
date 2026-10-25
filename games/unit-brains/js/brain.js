@@ -4,9 +4,9 @@
   const VERSION = 1;
   const MAX_ROWS = 6;
   const MIN_HOLD = 1.0;          // hysteresis: a row that starts firing is kept ≥ this many seconds (unless the unit takes damage)
-  const TIER2_ENABLED = false;   // ⭐ actions (medic / mine / guard) are CUT for v1 (Lead decision 2026-10-24). Data kept for later.
+  // v2.5: no tiers, no locks, no presets — every action works (Conquest brains.js runs medic / mine / guard too).
 
-  // Palette. tier 1 = available at first (5 conditions + the always fallback, 6 actions). tier 2 = later unlocks.
+  // Palette: 5 conditions + the always fallback, 9 actions.
   const CONDS = [
     { id: 'lowHp', icon: '❤️', label: 'Low HP' },
     { id: 'enemyNear', icon: '👀', label: 'Enemy' },
@@ -16,15 +16,15 @@
     { id: 'always', icon: '✅', label: 'Always', fallback: true },
   ];
   const ACTS = [
-    { id: 'heal', icon: '💊', label: 'Heal', tier: 1 },
-    { id: 'cover', icon: '🧱', label: 'Cover', tier: 1 },
-    { id: 'shoot', icon: '🎯', label: 'Shoot', tier: 1 },
-    { id: 'capture', icon: '🏳️', label: 'Capture', tier: 1 },
-    { id: 'ammo', icon: '📦', label: 'Ammo', tier: 1 },
-    { id: 'follow', icon: '🧭', label: 'Follow', tier: 1 },
-    { id: 'medic', icon: '➕', label: 'Medic', tier: 2 },
-    { id: 'mine', icon: '💣', label: 'Mine', tier: 2 },
-    { id: 'guard', icon: '🛡️', label: 'Guard', tier: 2 },
+    { id: 'heal', icon: '💊', label: 'Heal' },
+    { id: 'cover', icon: '🧱', label: 'Cover' },
+    { id: 'shoot', icon: '🎯', label: 'Shoot' },
+    { id: 'capture', icon: '🏳️', label: 'Capture' },
+    { id: 'ammo', icon: '📦', label: 'Ammo' },
+    { id: 'follow', icon: '🧭', label: 'Follow' },
+    { id: 'medic', icon: '➕', label: 'Medic' },
+    { id: 'mine', icon: '💣', label: 'Mine' },
+    { id: 'guard', icon: '🛡️', label: 'Guard' },
   ];
   const PLANS = [
     { id: 'capture', icon: '🏳️', label: 'Capture' },
@@ -42,28 +42,14 @@
   const ACT = Object.fromEntries(ACTS.map((a) => [a.id, a]));
   const PLAN = Object.fromEntries(PLANS.map((p) => [p.id, p]));
   const FORM = Object.fromEntries(FORMS.map((f) => [f.id, f]));
-  const actsForTier = (tier) => ACTS.filter((a) => a.tier <= (TIER2_ENABLED ? tier : 1));
-  const ACTS_ON = actsForTier(2);   // what the palette shows (6 while ⭐ is cut)
+  const ACTS_ON = ACTS;   // the palette shows every action
 
   const r = (c, a, on = true) => ({ if: c, do: a, on });
-  // Presets = the v2.3 traits (traits.js TRAITS ids/icons/names) mapped into rows.
-  const ALL_PRESETS = [
-    { id: 'rusher', icon: '🏃', name: 'Rusher', tier: 1, rows: [r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'shoot'), r('always', 'capture')] },
-    { id: 'cover', icon: '🧱', name: 'Cover Fighter', tier: 1, rows: [r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'cover'), r('always', 'capture')] },
-    { id: 'sniper', icon: '🎯', name: 'Sniper Nest', tier: 1, rows: [r('enemyNear', 'cover'), r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('always', 'follow')] },
-    { id: 'retaker', icon: '🔁', name: 'Retaker', tier: 1, squadPlan: 'retake', rows: [r('lowHp', 'heal'), r('pointNotOurs', 'capture'), r('enemyNear', 'shoot'), r('always', 'follow')] },
-    { id: 'supplier', icon: '➕', name: 'Supplier', tier: 2, rows: [r('allyHurt', 'medic'), r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'shoot'), r('always', 'follow')] },
-    { id: 'mines', icon: '💣', name: 'Mine Layer', tier: 2, rows: [r('lowHp', 'heal'), r('enemyNear', 'shoot'), r('lowAmmo', 'ammo'), r('always', 'mine'), r('always', 'capture')] },
-    { id: 'guard', icon: '🛡️', name: 'Guard', tier: 2, squadPlan: 'hold', rows: [r('lowHp', 'heal'), r('enemyNear', 'cover'), r('lowAmmo', 'ammo'), r('always', 'guard')] },
-  ];
-  // ⭐ presets (supplier / mines / guard) need cut actions → hidden while TIER2_ENABLED is false
-  const PRESETS = ALL_PRESETS.filter((p) => TIER2_ENABLED || p.tier === 1);
-  const PRESET = Object.fromEntries(PRESETS.map((p) => [p.id, p]));
-
-  function presetBrain(id) {
-    const p = PRESET[id] || PRESETS[0];
-    return { kind: 'cc.unitBrain', v: VERSION, name: p.name, icon: p.icon, preset: p.id, tier: p.tier, rows: p.rows.map((x) => ({ ...x })) };
-  }
+  // A new brain starts with one plain row (Always ➜ Capture) and the player builds the rest.
+  function newBrain(name) { return { kind: 'cc.unitBrain', v: VERSION, name: name || 'My brain', icon: '🧠', rows: [r('always', 'capture')] }; }
+  // The red test-arena opponents run a fixed brain (not offered to the player).
+  const ENEMY_BRAIN = Object.freeze({ kind: 'cc.unitBrain', v: VERSION, name: 'Enemy', icon: '🔴', rows: [r('lowHp', 'heal'), r('lowAmmo', 'ammo'), r('enemyNear', 'shoot'), r('always', 'capture')] });
+  const enemyBrain = () => JSON.parse(JSON.stringify(ENEMY_BRAIN));
   function defaultSquad() { return { kind: 'cc.squadBrain', v: VERSION, plan: 'capture', formation: 'wedge', follow: true, spacing: 2 }; }
 
   // ---- evaluator: top → bottom, skip toggled-off rows, first row whose condition is true AND whose action can run fires.
@@ -114,9 +100,7 @@
     if (!b || typeof b !== 'object') return { ok: false, errors: ['not an object'] };
     if (b.kind !== 'cc.unitBrain') errors.push('kind must be cc.unitBrain');
     if (typeof b.v !== 'number' || b.v < 1 || b.v > VERSION) errors.push('v must be 1..' + VERSION);
-    const tier = b.tier === undefined ? 1 : b.tier;
-    if (tier !== 1 && tier !== 2) errors.push('tier must be 1 or 2');
-    else if (tier === 2 && !TIER2_ENABLED) errors.push('⭐ tier 2 is cut for now');
+    // old saves may carry 'tier' / 'preset' fields: ignored
     if (!Array.isArray(b.rows)) errors.push('rows must be an array');
     else {
       if (b.rows.length < 1) errors.push('need at least 1 row');
@@ -125,14 +109,12 @@
         if (!row || typeof row !== 'object') { errors.push('row ' + (i + 1) + ' bad'); return; }
         if (!COND[row.if]) errors.push('row ' + (i + 1) + ': unknown IF ' + row.if);
         if (!ACT[row.do]) errors.push('row ' + (i + 1) + ': unknown THEN ' + row.do);
-        else if (ACT[row.do].tier > 1 && !TIER2_ENABLED) errors.push('row ' + (i + 1) + ': ' + row.do + ' is cut for now (⭐)');
-        else if (ACT[row.do].tier > tier) errors.push('row ' + (i + 1) + ': ' + row.do + ' is locked (tier ' + ACT[row.do].tier + ')');
         if (row.on !== undefined && typeof row.on !== 'boolean') errors.push('row ' + (i + 1) + ': on must be true/false');
       });
     }
     if (b.name !== undefined && (typeof b.name !== 'string' || b.name.length > 24)) errors.push('name: text ≤ 24');
     if (errors.length) return { ok: false, errors };
-    return { ok: true, errors, brain: { kind: 'cc.unitBrain', v: VERSION, name: b.name || 'Custom', icon: typeof b.icon === 'string' ? b.icon.slice(0, 8) : '🧠', preset: typeof b.preset === 'string' ? b.preset : null, tier, rows: b.rows.map((x) => ({ if: x.if, do: x.do, on: x.on !== false })) } };
+    return { ok: true, errors, brain: { kind: 'cc.unitBrain', v: VERSION, name: b.name || 'Custom', icon: typeof b.icon === 'string' ? b.icon.slice(0, 8) : '🧠', rows: b.rows.map((x) => ({ if: x.if, do: x.do, on: x.on !== false })) } };
   }
   function validateSquadBrain(s) {
     const errors = [];
@@ -160,6 +142,6 @@
   }
   function makeBundle(unit, squad) { return { kind: 'cc.brains', v: VERSION, unit, squad }; }
 
-  const api = { VERSION, MAX_ROWS, MIN_HOLD, TIER2_ENABLED, ALL_PRESETS, ACTS_ON, newMem, evaluateHeld, CONDS, ACTS, PLANS, FORMS, SPACINGS, COND, ACT, PLAN, FORM, PRESETS, PRESET, actsForTier, presetBrain, defaultSquad, evaluate, shadowedRows, validateUnitBrain, validateSquadBrain, parseBundle, makeBundle };
+  const api = { VERSION, MAX_ROWS, MIN_HOLD, ACTS_ON, newMem, evaluateHeld, CONDS, ACTS, PLANS, FORMS, SPACINGS, COND, ACT, PLAN, FORM, newBrain, enemyBrain, defaultSquad, evaluate, shadowedRows, validateUnitBrain, validateSquadBrain, parseBundle, makeBundle };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Brain = api;
 })(typeof window !== 'undefined' ? window : globalThis);

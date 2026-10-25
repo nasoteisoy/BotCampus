@@ -84,8 +84,8 @@ function fromTrooperCustom(db) {
 // shared modules are optional until games/shared/army ships
 export async function loadShared() {
   const out = { stats: null, schema: null };
-  try { out.stats = await import('../../shared/army/stats.js?v=8'); } catch (e) { out.stats = null; }
-  if (out.stats) { try { out.schema = await import('../../shared/army/schema.js?v=8'); } catch (e) { out.schema = null; } }
+  try { out.stats = await import('../../shared/army/stats.js?v=9'); } catch (e) { out.stats = null; }
+  if (out.stats) { try { out.schema = await import('../../shared/army/schema.js?v=9'); } catch (e) { out.schema = null; } }
   return out;
 }
 export async function loadArmy(shared) {

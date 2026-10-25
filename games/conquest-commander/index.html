@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Conquest Commander</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=2.4">
+<link rel="stylesheet" href="css/style.css?v=2.5">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
@@ -21,19 +21,18 @@
 <div id="hud" class="hidden">
   <div id="topbar">
     <div id="score">
-      <div class="tix t0" title="Your tickets"><canvas width="32" height="32"></canvas><b>200</b><i class="lsI" title="Last stand: no more reinforcements">☠️</i></div>
+      <div class="tix t0" title="Your tickets: 0 = you lose"><canvas width="32" height="32"></canvas><b>200</b><i class="lsI" title="Last stand: no more reinforcements">☠️</i></div>
       <div id="postIcons"></div>
-      <div class="tix t1" title="Enemy tickets"><i class="lsI" title="Last stand: no more reinforcements">☠️</i><b>200</b><canvas width="32" height="32"></canvas></div>
+      <div class="tix t1" title="Enemy tickets: 0 = they lose"><i class="lsI" title="Last stand: no more reinforcements">☠️</i><b>200</b><canvas width="32" height="32"></canvas></div>
     </div>
-    <button id="pauseBtn" class="rb" aria-label="Pause" title="Pause (Esc)">⏸️</button>
+    <button id="pauseBtn" class="rb lab" aria-label="Pause" title="Pause (Esc)"><span>⏸️</span><small>Pause</small></button>
   </div>
-  <div id="cpChip" title="Command Points: buy reinforcements"><span>⭐</span><b>0</b><i id="wave" title="Next wave">⏱10</i><i id="alive" title="Troops on the field">🪖20/20</i></div>
+  <div id="cpChip" title="Command Points: pay for reinforcements"><span>⭐</span><b>0</b><small class="lbl">CP</small><i id="wave" title="Next reinforcement wave">Wave ⏱10</i><i id="alive" title="Your troops on the field">Troops 🪖20/20</i></div>
   <div id="countdown" class="hidden" title="Holding every post: victory countdown"><span>🏆</span><b>20</b></div>
-  <div id="perkBanner" class="hidden"></div>
-  <div id="side">
-    <button id="rallyBtn" class="rb" aria-label="Rally point" title="Rally point (R)">🚩</button>
-    <button id="camBtn" class="rb" aria-label="Center camera" title="Center on the fight (Space)">🎯</button>
-    <button id="helpBtn" class="rb" aria-label="Help" title="Help (H)">❓</button>
+    <div id="side">
+    <button id="rallyBtn" class="rb lab" aria-label="Rally point" title="Rally point: new troops walk here first (R)"><span>🚩</span><small>Rally</small></button>
+    <button id="camBtn" class="rb lab" aria-label="Go to the fight" title="Camera to the fight (Space)"><span>🔍</span><small>Fight</small></button>
+    <button id="helpBtn" class="rb lab" aria-label="Help" title="Help (H)"><span>❓</span><small>Help</small></button>
   </div>
   <div id="radial" class="hidden" role="menu">
     <button class="rd mk" data-mark="attack" aria-label="Attack" title="Attack (1)">⚔️</button>
@@ -53,17 +52,17 @@
     <h1>⚔️ Conquest Commander</h1>
     <div id="armyHead" class="armyhead" aria-live="polite"><span id="ahFlag" class="ahflag"></span><span class="ahtxt"><b id="ahPlayer"></b><small id="ahNation"></small></span><span id="ahUnits" class="ahunits" title="Units in your army"></span>
       <span class="ahbtns"><a id="backArmy" class="chip hidden" href="../trooper-custom/" title="Back to the Trooper Customizer">↩ Back to army</a><button id="editArmy" class="chip" title="Edit your army in the Trooper Customizer">🪖 Edit army</button></span></div>
-    <p class="sub" id="mapLine">🏜️ Dust Ridge · 🎟️ 200 · 🪖 20 vs 20</p>
+    <p class="sub" id="mapLine">Tickets 200 · 20 vs 20 troops · 3 posts</p>
     <div class="sec camp"><div id="campStat" class="campstat"></div><button id="newCamp" class="chip" title="Start over with 💰1500">🆕 New campaign</button></div>
     <div class="sec"><h2>🏳️ You</h2><div id="myNations" class="chips"></div></div>
-    <div class="sec"><h2>🪖 Army <small id="lookCount"></small> <small class="hint" title="Tap the chip under a trooper to pick how it fights">· 🧠 👇</small></h2><div id="myLooks" class="looks"></div><p id="armyCost" class="armycost"></p></div>
+    <div class="sec"><h2>🪖 Army <small id="lookCount"></small> <small class="hint">· tap the chip under a trooper to pick how it fights</small></h2><div id="myLooks" class="looks"></div><p id="armyCost" class="armycost"></p></div>
     <div class="sec"><h2>🎯 Enemy</h2><div id="enemyNations" class="chips"></div></div>
     <div class="duo">
     <div class="sec"><h2>🗺️ Map</h2><div id="mapPick" class="chips"></div></div>
     <div class="sec"><h2>🧠 Enemy brain</h2><div class="chips" id="diff">
       <button class="chip on" data-diff="normal" title="Normal">😠 Normal</button><button class="chip" data-diff="elite" title="Elite: better aim (snipers most), faster fire">😈 Elite</button></div></div>
     </div>
-    <button id="play" aria-label="Play">🛒 ▶️</button>
+    <button id="play" aria-label="Fight">▶ Fight</button>
     <p id="src" class="src"></p>
   </div>
 </div>
@@ -71,19 +70,19 @@
 <div id="traitPop" class="hidden"><div id="traitCard"><p id="traitHead"></p><div id="traitOpts"></div></div></div>
 
 <div id="shop" class="screen hidden"><div class="card">
-  <div class="shophead"><button id="shopBack" class="big2 sq" aria-label="Back" title="Back (Esc)">⬅️</button><h1>🛒</h1><div id="shopCredits" class="credits" title="Credits left">💰 <b>1500</b></div></div>
+  <div class="shophead"><button id="shopBack" class="big2 sq" aria-label="Back" title="Back (Esc)">⬅️</button><h1>🛒 Perks</h1><div id="shopCredits" class="credits" title="Credits left">💰 <b>1500</b></div></div>
   <p class="sub" id="shopInfo"></p>
   <div id="perkGrid" class="perks"></div>
-  <button id="fight" title="Fight (Enter)">⚔️ Fight</button>
+  <button id="fight" title="Start the battle (Enter)">⚔️ Start battle</button>
 </div></div>
 
 <div id="pause" class="screen hidden"><div class="card small">
-  <h1>⏸️</h1>
+  <h1>⏸️ Paused</h1>
   <p id="pauseWho" class="pwho"></p>
   <div id="pausePerks" class="perkline"></div>
   <div id="pauseUnits" class="units"></div>
-  <button id="resume" class="big">▶️</button>
-  <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button><button id="pauseEdit" class="big2" aria-label="Edit army" title="🪖 Edit army (leaves this battle)">🪖</button></div>
+  <button id="resume" class="big">▶ Resume</button>
+  <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄 Restart</button><button id="toMenu" class="big2" aria-label="Quit to setup">⬅ Quit</button><button id="pauseEdit" class="big2" aria-label="Edit army" title="Edit army (leaves this battle)">🪖 Edit army</button></div>
 </div></div>
 
 <div id="end" class="screen hidden"><div class="card small">
@@ -92,11 +91,11 @@
   <div id="endStats" class="stats"></div>
   <div id="endCredits" class="credlist hidden"></div>
   <p id="endBal" class="bal hidden"></p>
-  <div class="row"><button id="again" class="big2" aria-label="Play again">🔄</button><button id="endMenu" class="big2" aria-label="Menu">🏠</button></div>
+  <div class="row"><button id="again" class="big2" aria-label="Play again">🔄 Again</button><button id="endMenu" class="big2" aria-label="Back to setup">⬅ Setup</button></div>
 </div></div>
 
 <div id="help" class="screen hidden"><div class="card small">
-  <h1>❓</h1>
+  <h1>❓ How to play</h1>
   <ul class="legend">
     <li><b>👆 A B C</b><span>tap a post</span></li>
     <li><b>🗺️</b><span>big map: tap the minimap to look there</span></li>
@@ -108,18 +107,20 @@
     <li><b>⚪</b><span>enemy post: make it white first, then yours</span></li>
     <li><b>☠️</b><span>last stand: no more reinforcements</span></li>
     <li><b>🪖🚀🔧🎯⭐🛩️</b><span>trooper · heavy · engineer · sniper · commander · jet</span></li>
-    <li><b>🤖</b><span>no orders: bots take the nearest post</span></li>
+    <li><b>🤖</b><span>AI-held post: no orders yet, bots take the nearest post</span></li>
     <li><b>🔁</b><span>post lost: troops near it go back</span></li>
-    <li><b>🏃 🧱 🎯</b><span>rusher · cover · sniper nest</span></li>
+    <li><b>🏃 🧱 🔭</b><span>rusher · cover · sniper spot</span></li>
     <li><b>🔁 ➕ 💣 🛡️</b><span>retaker · supplier · mines · guard</span></li>
-    <li><b>⭐</b><span>pays for new troops (auto, every 10 s)</span></li>
+    <li><b>⭐ CP</b><span>pays for new troops (auto, every 10 s)</span></li>
+    <li><b>🚜</b><span>your saved tanks drive to the top post; rifles barely scratch them, rockets and explosives hurt</span></li>
+    <li><b>🔍</b><span>camera to the fight</span></li>
     <li class="pc"><b>🖱️ / WASD</b><span>drag = move · wheel = zoom · Q E = turn</span></li>
     <li class="pc"><b>1 2 3 · + −</b><span>marks · stars · Tab = next post</span></li>
     <li class="tc"><b>✌️</b><span>pinch = zoom · twist = turn</span></li>
   </ul>
-  <button id="helpClose" class="big">👍</button>
+  <button id="helpClose" class="big">👍 Got it</button>
 </div></div>
 
-<script type="module" src="js/main.js?v=2.4"></script>
+<script type="module" src="js/main.js?v=2.5"></script>
 </body>
 </html>
