@@ -673,6 +673,196 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-banner-foresight",
+      "question": "Does Alaric's Banner know the enemy is coming their way?",
+      "answer": "After studying maps, technology, enemy habits and previous war conduct, Alaric sees something can very likely happen. The High Lord also sees something, but the other commanders don't see it or don't see it as likely. Other Black Guard Banners want to be where they will be the most help; some Banner commanders are noble and want glory, some just feel they need to be smart about it and be where the enemy will be.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-hl-foresight",
+      "question": "Which High Lord also sees the canyon attack coming?",
+      "answer": "Cassian will see it but likes how Alaric is choosing it. Rashid sees something but is overruled by his confident advisors and division commanders.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-forces",
+      "question": "Does Alaric's Banner face the canyon attack alone?",
+      "answer": "The canyon city has a division.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-division",
+      "question": "Whose division is in the canyon city?",
+      "answer": "The general is a desert kingdom general. 3/4 of his division is desert kingdom regiments and the rest are Imperial regiments, which this general favors.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-morale",
+      "question": "How do the general's desert regiments feel about him favoring the Imperial ones?",
+      "answer": "The desert regiments resent it, and morale is low.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-general-attitude",
+      "question": "How does the canyon city's general treat Alaric's Banner when they arrive?",
+      "answer": "He sees them as outsiders meddling in his command, and he ignores Alaric's warning that the enemy will come through the canyon.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-alaric-response",
+      "question": "With the general ignoring him, what does Alaric do?",
+      "answer": "He wins over the desert regiment he is under, and slowly the other desert regiments.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-winning-over",
+      "question": "How does Alaric win the desert regiments over?",
+      "answer": "He treats them as equals (unlike the general), learns their ways and language, and wins them with his recon and intelligence.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-battle-start",
+      "question": "When the enemy hits the canyon, how does the battle start?",
+      "answer": "All three: Alaric's preparations hold the first wave; the general is caught off guard and the city nearly falls; the enemy uses spirit-tech or something nobody expected.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-surprise",
+      "question": "What's the unexpected thing the enemy brings to the canyon?",
+      "answer": "Spirit-heavy creatures or fighters, and tunnels or a hidden route through the canyon.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-tunnel-finders",
+      "question": "Who finds the tunnels or hidden route?",
+      "answer": "Seraphina's recon, and desert soldiers who know the canyon tell Alaric about it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-battle-end",
+      "question": "How does the canyon battle end?",
+      "answer": "They hold the city, but the general takes the credit. It's a costly win with heavy losses.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-canyon-who-knows",
+      "question": "Who knows the truth that Alaric really saved the canyon city?",
+      "answer": "The desert regiments and Cassian. Rashid somewhat knows, but he needs to keep the armies united.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-cassian-response",
+      "question": "What does Cassian do with what he knows about Alaric saving the canyon city?",
+      "answer": "Cassian praises Alaric privately, pulls Alaric closer as his protégé, and uses Alaric's win to push his own ideas.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-seraphina-reaction",
+      "question": "How does Seraphina react to her father pulling Alaric closer?",
+      "answer": "She's proud of Alaric and happy for him, and a little uneasy but can't say why yet.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-general-fate",
+      "question": "What happens to the general who took the credit for the canyon?",
+      "answer": "The general is promoted or rewarded.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-spirit-creatures-reveal",
+      "question": "What does the canyon fight reveal about the spirit-heavy creatures or fighters?",
+      "answer": "They found out there are such things as spirit creatures and that they can be used.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-spirit-creatures-who-learns",
+      "question": "Who learns that spirit creatures can be used?",
+      "answer": "Only Alaric, Seraphina and their Banner learn it, plus Cassian, who learns it and connects it to the spirit-tech power he's chasing.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-spirit-creatures-secrecy",
+      "question": "Does Cassian tell them to keep the spirit creatures secret?",
+      "answer": "No, they keep it quiet on their own.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

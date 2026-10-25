@@ -644,7 +644,7 @@
         {
           "id": "hl-cassian-23",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "What makes Seraphina first sense that something is off with her father's ideas?",
+          "prompt": "What makes Seraphina first sense that something is off with her father's ideas? (After the canyon she is a little uneasy but can't say why yet.)",
           "options": [
             "Something he says to Alaric",
             "Something she sees on a mission",
@@ -1016,6 +1016,17 @@
           ]
         },
         {
+          "id": "hl-rashid-13",
+          "group": "Mid-East Desert Kingdom – High Lord Rashid al-Zahir",
+          "prompt": "Rashid somewhat knows Alaric saved the canyon city, but he needs to keep the armies united. What does he do about it?",
+          "options": [
+            "Nothing openly; he keeps quiet",
+            "Quietly acknowledges Alaric in private",
+            "Keeps a closer eye on Alaric from then on",
+            "Decide later"
+          ]
+        },
+        {
           "id": "hl-bjorn-03",
           "group": "Northern Mountain Kingdoms – High Lord Bjorn Halvard",
           "prompt": "What do the mountains trade and lack?",
@@ -1251,6 +1262,26 @@
           ]
         },
         {
+          "id": "enemy-spirit-creatures-what-01",
+          "prompt": "What are the spirit creatures the enemy used in the canyon?",
+          "options": [
+            "Beasts changed by spirit-tech",
+            "Spirit beings given bodies",
+            "Creatures from beyond the desert",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "enemy-spirit-creatures-control-01",
+          "prompt": "Who controls the spirit creatures in the canyon?",
+          "options": [
+            "The rival kingdom beyond the desert",
+            "The unconquered desert holdouts",
+            "No one fully controls them",
+            "Decide later"
+          ]
+        },
+        {
           "id": "enemy-final-boss-01",
           "prompt": "Final boss 'Ashar-Kan'? The Letters call Ashar-Kan a mistaken title, and who or what the fallen are is still open. Who is the real final enemy?",
           "options": [
@@ -1369,7 +1400,7 @@
         },
         {
           "id": "spine-canyon-city-01",
-          "prompt": "The canyon path has one major city. What is it like?",
+          "prompt": "The canyon path has one major city, held by a desert kingdom general's division (3/4 desert regiments, 1/4 Imperial). What is the city itself like?",
           "options": [
             "A trade city at the desert crossing",
             "A fortress city guarding the canyon",
@@ -1388,22 +1419,42 @@
           ]
         },
         {
-          "id": "spine-canyon-hit-01",
-          "prompt": "What happens when the enemy hits Alaric's Banner in the canyon?",
+          "id": "spine-canyon-general-name-01",
+          "prompt": "What is the canyon city's general called?",
           "options": [
-            "The Banner holds the canyon",
-            "The Banner falls back to the city",
-            "They hold until help arrives",
+            "General Hakim Barakat",
+            "General Yusuf Darwish",
+            "General Zayd al-Harith",
+            "General Nasir Qadiri"
+          ]
+        },
+        {
+          "id": "spine-canyon-general-char-01",
+          "prompt": "What is the canyon general like as a person?",
+          "options": [
+            "Proud and ambitious",
+            "Loyal to the Empire above his own people",
+            "Capable, but blind to anyone from outside",
             "Decide later"
           ]
         },
         {
-          "id": "spine-canyon-recon-01",
-          "prompt": "What is Seraphina's Recon Arm doing in the canyon?",
+          "id": "spine-canyon-losses-01",
+          "prompt": "It was a costly win with heavy losses. What did it cost Alaric's Banner?",
           "options": [
-            "Spotting the enemy first",
-            "Scouting the desert crossing",
-            "Working behind enemy lines",
+            "Many guardsmen, but no one close to Alaric or Seraphina",
+            "Someone close to Alaric or Seraphina",
+            "A whole Wing or Company",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-desert-regiments-after-01",
+          "prompt": "After the canyon, what happens between Alaric and the desert regiments?",
+          "options": [
+            "They stay loyal to him",
+            "Some later join or follow the Black Guard",
+            "They go back under the general",
             "Decide later"
           ]
         },
