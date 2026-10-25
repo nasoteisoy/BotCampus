@@ -207,6 +207,28 @@
     {
       "section": "lords",
       "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "chat-cassian-flame-order-view",
+      "question": "How does Cassian feel about the Flame Order being independent?",
+      "answer": "Cassian respects them publicly but resents them privately, sees them as an obstacle to his spirit-tech plans, and tolerates them for his wife's sake.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "Black Guard – High Lord Cassian Thorne",
+      "question_id": "chat-flame-order-view-of-cassian",
+      "question": "Does the Flame Order suspect Cassian of anything?",
+      "answer": "They are indifferent to him.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
       "group": "West Island Exploration – High Lord Corin Saltmere",
       "question_id": "hl-corin-01",
       "question": "Keep the name High Lord Corin Saltmere?",
@@ -523,6 +545,17 @@
       "answer": "Alaric's farmer sister lives in his land",
       "custom_text": "",
       "locked": "2026-10-24"
+    },
+    {
+      "section": "lords",
+      "section_title": "High Lords",
+      "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+      "question_id": "chat-tomas-receives-banner",
+      "question": "How does High Lord Tomas Greaves receive Alaric's Banner?",
+      "answer": "Grateful that 1 Banner was sent to help try to understand the weird things that are happening.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     },
     {
       "section": "lords",
@@ -860,6 +893,156 @@
       "question_id": "chat-desert-spirit-creatures-secrecy",
       "question": "Does Cassian tell them to keep the spirit creatures secret?",
       "answer": "No, they keep it quiet on their own.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-spirit-creatures-why-quiet",
+      "question": "Why do Alaric, Seraphina and the Banner keep the spirit creatures quiet?",
+      "answer": "Because nobody would believe them, to avoid panic, and because they want to understand it before telling anyone.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-spirit-creatures-investigate",
+      "question": "What do Alaric and Seraphina do next to understand the spirit creatures?",
+      "answer": "They can find dead ones, and they do try to question the Flame Order.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-flame-order-response",
+      "question": "How does the Flame Order respond when Alaric and Seraphina question them about the spirit creatures?",
+      "answer": "They are cautious and don't fully have answers, but a team of their members was there to help towards the end of the battle.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-flame-order-help",
+      "question": "How does the Flame Order team help near the end of the canyon battle?",
+      "answer": "They fight the spirit creatures directly.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-flame-order-why-there",
+      "question": "Why was a Flame Order team at the canyon at all?",
+      "answer": "They sensed the spirit creatures coming, and they were already tracking the enemy for their own reasons.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-order-purpose",
+      "question": "What is the Flame Order's purpose (and its own reason for tracking the enemy)?",
+      "answer": "The Flame Order is to understand what is spirit, to hold the teaching of it, and to pass down traditions on how to handle spirits, especially with force.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-order-public-view",
+      "question": "How do ordinary people see the Flame Order?",
+      "answer": "Like holders of the Empire's spiritual traditions.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-flame-order-authority",
+      "question": "How does the Flame Order relate to the Emperor and the Council?",
+      "answer": "The Flame Order is independent and answers to no one.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-flame-order-after",
+      "question": "What happens between Alaric and the Flame Order team after the canyon?",
+      "answer": "They form a cautious alliance; they part ways but keep in touch.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-desert-banner-next",
+      "question": "Where does Alaric's Banner go after the canyon?",
+      "answer": "Alaric's Banner is sent to a new front.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-banner-second-front",
+      "question": "Which front is Alaric's Banner sent to after the canyon?",
+      "answer": "The North-East Farm Kingdom, where the colony is being attacked by elves.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-elves-why",
+      "question": "Why are the elves attacking the Farm Kingdom colony?",
+      "answer": "The colony was built on land the elves see as theirs, and something is driving or corrupting the elves.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-sister-danger",
+      "question": "Is Alaric's sister in danger when the Banner arrives in the Farm Kingdom?",
+      "answer": "The war is happening in the outskirts, though there are things that happen. (What happens is undecided.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-weird-things",
+      "question": "What kind of weird things are happening in the Farm Kingdom?",
+      "answer": "Crops and animals are sickening or changing; people are vanishing near the forest; there are strange lights or sounds at night; and attacks.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-attackers",
+      "question": "Who is behind the attacks in the Farm Kingdom?",
+      "answer": "The elves; spirit creatures, like the ones in the canyon; and unknown forces nobody can identify yet.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"

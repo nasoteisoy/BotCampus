@@ -106,6 +106,16 @@
             "It is mostly a quiet difference, until something forces it",
             "Decide later"
           ]
+        },
+        {
+          "id": "world-flame-org-01",
+          "prompt": "How is the Flame Order organized?",
+          "options": [
+            "Small teams spread across the Empire",
+            "Big halls in each kingdom",
+            "One hidden centre with travelling members",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -273,11 +283,11 @@
         },
         {
           "id": "empire-flame-01",
-          "prompt": "Relationship between the Empire and the Order of the Living Flame?",
+          "prompt": "The Flame Order is independent and answers to no one. How does the Empire get along with it?",
           "options": [
-            "Close allies, but the Flame keeps its independence",
-            "The Flame serves the Empire",
-            "Old rivals who need each other",
+            "Close allies who need each other",
+            "Uneasy old rivals",
+            "The Empire leans on it but can't command it",
             "The Flame quietly opposes the census"
           ]
         },
@@ -631,13 +641,13 @@
           ]
         },
         {
-          "id": "hl-cassian-22",
+          "id": "hl-cassian-24",
           "group": "Black Guard – High Lord Cassian Thorne",
-          "prompt": "His wife's faith keeps him tied to the Flame Order's teachings, and the Flame Order forbade the device. How does he handle that?",
+          "prompt": "His wife's faith keeps him tied to the Flame Order's teachings. He tolerates the Order for her sake but resents it privately. Does that tension ever show?",
           "options": [
-            "He tells himself the teachings are wrong about this one thing",
-            "He feels guilty and keeps delaying",
-            "He doesn't see a conflict",
+            "She notices he goes quiet whenever the Order comes up",
+            "He slips once in front of Seraphina",
+            "He hides it completely",
             "Decide later"
           ]
         },
@@ -1126,25 +1136,14 @@
           ]
         },
         {
-          "id": "hl-tomas-10",
+          "id": "hl-tomas-13",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "What are the 'unknown' attackers?",
+          "prompt": "Besides the elves and spirit creatures, there are unknown forces nobody can identify yet. What are they really?",
           "options": [
             "Corrupted things from the Twinskull and Deadveil ranges",
-            "Something coming out of the forests",
-            "No one knows — few survive to tell",
-            "Something that leaves no trace"
-          ]
-        },
-        {
-          "id": "hl-tomas-11",
-          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "Why are wood and mountain elves attacking?",
-          "options": [
-            "The colony took land that was theirs",
-            "Some of those elves are stained",
-            "Someone is turning them against humans",
-            "A misunderstanding that talk could fix"
+            "Something coming out of the forest itself",
+            "Something tied to the stained colonists",
+            "Decide later"
           ]
         },
         {
@@ -1156,6 +1155,17 @@
             "Wanting more land for the farms",
             "Charging the Empire too much",
             "He resists it, but his people don't"
+          ]
+        },
+        {
+          "id": "hl-tomas-14",
+          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
+          "prompt": "Tomas is grateful the Banner was sent. What does he give them?",
+          "options": [
+            "Guides who know the forest",
+            "Supplies and a base",
+            "His own small militia",
+            "Decide later"
           ]
         },
         {
@@ -1263,20 +1273,20 @@
         },
         {
           "id": "enemy-spirit-creatures-what-01",
-          "prompt": "What are the spirit creatures the enemy used in the canyon?",
+          "prompt": "Spirit creatures have appeared in the canyon and in the Farm Kingdom. What are they?",
           "options": [
             "Beasts changed by spirit-tech",
             "Spirit beings given bodies",
-            "Creatures from beyond the desert",
+            "Wild creatures from remote places",
             "Decide later"
           ]
         },
         {
           "id": "enemy-spirit-creatures-control-01",
-          "prompt": "Who controls the spirit creatures in the canyon?",
+          "prompt": "Spirit creatures have appeared in the canyon and in the Farm Kingdom. Who controls them?",
           "options": [
-            "The rival kingdom beyond the desert",
-            "The unconquered desert holdouts",
+            "The same hidden power in both places",
+            "Different groups in each place",
             "No one fully controls them",
             "Decide later"
           ]
@@ -1450,7 +1460,7 @@
         },
         {
           "id": "spine-desert-regiments-after-01",
-          "prompt": "After the canyon, what happens between Alaric and the desert regiments?",
+          "prompt": "After the canyon (the Banner is sent on to a new front), what happens between Alaric and the desert regiments?",
           "options": [
             "They stay loyal to him",
             "Some later join or follow the Black Guard",
@@ -1526,7 +1536,8 @@
             "Late — family is revealed slowly",
             "Book 2",
             "Only in mentions",
-            "When the Flame Order is needed in Book 1"
+            "When the Flame Order is needed in Book 1",
+            "In the Flame Order team at the canyon"
           ]
         },
         {
@@ -1537,6 +1548,36 @@
             "The Empire is humbled, not destroyed",
             "Alaric and Seraphina build their life — quietly happy",
             "Bittersweet — victory with a cost"
+          ]
+        },
+        {
+          "id": "spine-farm-elves-driver-01",
+          "prompt": "Something is driving or corrupting the elves attacking the Farm Kingdom. What is it?",
+          "options": [
+            "The same power behind the spirit creatures",
+            "Something in the forest itself",
+            "Someone among the humans",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-farm-sister-01",
+          "prompt": "\"Things happen\" near Alaric's farmer sister during the Farm Kingdom fighting. What happens?",
+          "options": [
+            "Her village is attacked",
+            "Someone she knows vanishes near the forest",
+            "Her crops or animals start changing",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-farm-forest-name-01",
+          "prompt": "What is the forest next to the Farm Kingdom called?",
+          "options": [
+            "The Greywood",
+            "The Mirkhollow",
+            "The Fenwild",
+            "The Wending Wood"
           ]
         }
       ]
