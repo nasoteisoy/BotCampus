@@ -1392,7 +1392,7 @@
       "section_title": "Enemies",
       "question_id": "chat-enemy-warrior-king-wants",
       "question": "What does the warrior king want from the Desert Kingdom?",
-      "answer": "Land and resources. To push the Empire back out. Something spirit-related hidden there.",
+      "answer": "Land and resources. To push the Empire back out.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
@@ -3211,8 +3211,138 @@
       "section": "guard",
       "section_title": "The Black Guard",
       "question_id": "chat-anvil-what-fixing",
-      "question": "What was Hakon fixing in the middle of battle?",
-      "answer": "A siege engine. Brynja's latest invention.",
+      "question": "What did Hakon fix with the anvil in that pre-Guard battle?",
+      "answer": "A siege engine, the imperial army's own engine.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-anvil-story-correction",
+      "question": "When did Hakon's anvil story happen?",
+      "answer": "It happened before the Black Guard.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-volunteers",
+      "question": "Who makes up the Black Guard?",
+      "answer": "Black Guard is made up of imperial soldiers who volunteered.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-anvil-pre-guard-unit",
+      "question": "What was Hakon doing during the pre-Guard anvil battle?",
+      "answer": "He was in a heavy unit in the regular imperial army.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-anvil-why-volunteer",
+      "question": "Why did Hakon volunteer for the Black Guard?",
+      "answer": "For better forges and harder work.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-why-volunteer",
+      "question": "Why do most soldiers volunteer for the Black Guard?",
+      "answer": "Glory and honor. Better pay and gear.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-entry-difficulty",
+      "question": "How hard is it to get into the Black Guard?",
+      "answer": "Very hard; most volunteers are turned away.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-selection",
+      "question": "How are volunteers chosen for the Black Guard?",
+      "answer": "A brutal trial or test.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-trial-parts",
+      "question": "What is the Black Guard trial like?",
+      "answer": "Days of endurance with no sleep or food. Real combat against Guard veterans. A survival march through dangerous land. A test of loyalty and nerve.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-trial-failure",
+      "question": "What happens to volunteers who fail the Black Guard trial?",
+      "answer": "They go back to their old units, no shame. They can try again later.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-trial-classes",
+      "question": "Did any of the main characters fail the trial before passing?",
+      "answer": "If you fail you have to wait for the next class. All the main characters passed, since they are in the same class.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-class-timing",
+      "question": "How often does a new class take the trial?",
+      "answer": "When the last class is ending.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-class-ending",
+      "question": "What does it mean when a class is ending?",
+      "answer": "Their training is finished and they deploy.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-warrior-king-spirit-source",
+      "question": "Where did the warrior king get the spirit-heavy creatures or fighters for the canyon attack?",
+      "answer": "Mercenaries or a cult he hired.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
