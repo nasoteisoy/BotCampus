@@ -2546,6 +2546,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-old-hand-private",
+      "question": "Can the Mute and Speaker talk to each other in Old Hand without anyone else understanding, even other Black Guard soldiers?",
+      "answer": "Only other Recon would understand.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-seraphina",
+      "question": "What is the Mute and Speaker's relationship with Lady Seraphina?",
+      "answer": "Her most trusted scouts. She trained them herself. Close like family.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-origin",
+      "question": "How did the Mute and Speaker first come to Lady Seraphina?",
+      "answer": "They joined the Guard and she picked them out.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-met",
+      "question": "Did the Mute and Speaker know each other before joining the Guard?",
+      "answer": "No, they met in the Guard.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-why-silent",
+      "question": "Was the Mute born unable to speak, or did something happen?",
+      "answer": "Chooses not to speak.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-ever-speaks",
+      "question": "Does the Mute ever speak?",
+      "answer": "Never, not even once.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-speaker-personality",
+      "question": "What is the Speaker like as a person?",
+      "answer": "A jokester and talkative.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-personality",
+      "question": "What is the Mute like as a person?",
+      "answer": "Stone-faced and hard to read.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-dynamic",
+      "question": "How do the jokester Speaker and the stone-faced Mute get along?",
+      "answer": "The Speaker jokes and the Mute never reacts; it's their running bit. The Mute secretly finds him funny. They bicker like brothers.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-bicker",
+      "question": "How do the Mute and Speaker bicker if the Mute never speaks?",
+      "answer": "The Speaker argues both sides out loud.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-names",
+      "question": "Do the Mute and Speaker have names yet?",
+      "answer": "You pick placeholders. Story picked: the Mute is Brann and the Speaker is Joss (placeholders, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-older",
+      "question": "Who is older, Brann or Joss?",
+      "answer": "Brann (the Mute).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-skills",
+      "question": "What are Brann and Joss best at in Recon?",
+      "answer": "Brann tracks and moves unseen; Joss talks his way past people. Both are top scouts and fighters. Joss gathers info from locals while Brann watches.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mute-speaker-weapons",
+      "question": "What weapons do Brann and Joss favor?",
+      "answer": "Knives and short blades. Bows or crossbows.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-main-and-side-characters",
+      "question": "Who are the main and side characters?",
+      "answer": "Commander Alaric and Captain Seraphina are the main characters. The Strategist captain, 2 infantry captains, and heavy captain are side main characters. Lieutenants can be side main characters at times.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }
