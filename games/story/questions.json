@@ -331,6 +331,16 @@
             "Strong and rules firmly",
             "Decide later"
           ]
+        },
+        {
+          "id": "empire-common-tongue-name-01",
+          "prompt": "The Empire has a common tongue plus each kingdom's own. What is the common tongue called? (Options are suggestions.)",
+          "options": [
+            "Imperial",
+            "the Common Tongue",
+            "High Vorashi",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -680,6 +690,17 @@
             "Yes, on the page",
             "Only in mentions or letters",
             "Not until a later book",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "chars-alaric-rival-languages-01",
+          "prompt": "Alaric speaks a few other languages. Does he speak the rival southern or mountain kingdoms' languages?",
+          "options": [
+            "The southern rivals'",
+            "The mountain rivals'",
+            "Both",
+            "Neither",
             "Decide later"
           ]
         }

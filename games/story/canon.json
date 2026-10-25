@@ -2252,7 +2252,147 @@
       "section_title": "Main Characters",
       "question_id": "chat-rowan-why-closer-cael",
       "question": "Why is Rowan naturally closer to Cael?",
-      "answer": "They have similar personalities.",
+      "answer": "They have similar personalities. Same likes.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-personality",
+      "question": "How would you describe Cael's personality?",
+      "answer": "Calm and thoughtful. Serious and duty-bound. Curious and searching.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-personality",
+      "question": "How does Rowan's personality compare to Cael's?",
+      "answer": "Rowan doesn't have serious and duty-bound. (Chumi: \"A b and d but Rowen doesnt have d\", then corrected: \"Oops i meant rowen doesnt have b not d.\" Rowan shares calm and thoughtful, curious and searching.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-cael-likes",
+      "question": "What do Rowan and Cael both like?",
+      "answer": "They both like the outdoors and books.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-personality-vs-brothers",
+      "question": "How would you describe Alaric's personality next to his brothers?",
+      "answer": "More driven and intense. More outgoing and bold.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-off-duty",
+      "question": "What does Alaric like to do when he's off duty?",
+      "answer": "Study military tactics, other cultures, and play military games. Spend time with his soldiers.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-games",
+      "question": "What kind of military game does Alaric play?",
+      "answer": "A board game like chess. A war game with maps and pieces. A card or dice game soldiers play.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-game-opponents",
+      "question": "Who does Alaric usually play the strategy games against?",
+      "answer": "His Deputy (the Strategist) and whichever soldiers are around, and sometimes Lady Seraphina. (Chumi: \"B and c and sometimes a\")",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-vs-deputy-wins",
+      "question": "Who usually wins when Alaric plays his Deputy?",
+      "answer": "Alaric, most of the time.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-vs-seraphina-wins",
+      "question": "And when Alaric plays Lady Seraphina?",
+      "answer": "Alaric usually wins.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-cultures",
+      "question": "Which other cultures does Alaric study most?",
+      "answer": "Any and all.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-cultures-sources",
+      "question": "Where does Alaric learn about other cultures?",
+      "answer": "All and books: books and records; talking to soldiers from other places; prisoners and captured enemies; traders and travelers.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-languages",
+      "question": "Does Alaric speak any other languages?",
+      "answer": "Yes, a few.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-languages-normal-two",
+      "question": "Does Alaric speak any other languages? (Chumi's \"But\" follow-up)",
+      "answer": "Its normal to know at least 2.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-empire-languages",
+      "question": "Does the Empire have one common language everyone shares?",
+      "answer": "Both: a common tongue plus each kingdom's own.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
