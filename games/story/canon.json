@@ -2892,7 +2892,7 @@
       "section_title": "The Black Guard",
       "question_id": "chat-infantry-captain-names",
       "question": "Should I pick placeholder names for the Iron and Ash captains too?",
-      "answer": "Yes, you pick placeholders. Story picked Captain Garrick (Iron Company) and Captain Rowan (Ash Company), renamable placeholders.",
+      "answer": "Yes, you pick placeholders. Story picked Captain Garrick (Iron Company) and Captain Mathis (Ash Company), renamable placeholders.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
@@ -2901,7 +2901,7 @@
       "section": "guard",
       "section_title": "The Black Guard",
       "question_id": "chat-infantry-captains-contrast",
-      "question": "How are Garrick and Rowan different from each other?",
+      "question": "How are Garrick and Mathis different from each other?",
       "answer": "One is always laughing and lazy; the other is organized and proper. (Which captain is which not yet assigned.)",
       "custom_text": "",
       "locked": "2026-10-24",
@@ -2912,7 +2912,157 @@
       "section_title": "The Black Guard",
       "question_id": "chat-infantry-captains-which",
       "question": "Which captain is the laughing, lazy one?",
-      "answer": "You pick. Story picked Garrick (Iron Company) as always laughing and lazy; Rowan (Ash Company) is organized and proper. Swappable.",
+      "answer": "You pick. Story picked Garrick (Iron Company) as always laughing and lazy; Mathis (Ash Company) is organized and proper. Swappable.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-alaric-garrick",
+      "question": "How does Alaric handle lazy, laughing Garrick?",
+      "answer": "Alaric is closer to Garrick. Alaric and Garrick trained together before Alaric was chosen to lead the Banner.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-garrick-on-alaric-leading",
+      "question": "How does Garrick feel about Alaric being chosen to lead instead of him?",
+      "answer": "Happy for him, never wanted it. Glad, it means less work for him.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chars-rowan-name-clash-01",
+      "question": "Two placeholders share the name Rowan: Alaric's brother (Rowan Vaelen) and the Ash Company captain. Rename one?",
+      "answer": "Rename the captain, you pick. Story picked Captain Mathis (Ash Company), renamable placeholder; Rowan stays Alaric's brother.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mathis-on-garrick",
+      "question": "How does proper, organized Mathis feel about lazy Garrick?",
+      "answer": "Drives him crazy, but he likes him. Secretly envies how relaxed he is.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-garrick-in-fight",
+      "question": "Is lazy Garrick still good in a real fight?",
+      "answer": "Yes, he turns serious when it counts. He's a great fighter, just lazy off the field. He wins through luck and charm.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mathis-fighting",
+      "question": "How does Mathis fight?",
+      "answer": "By the book, perfect formation.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mathis-origin",
+      "question": "Where did Mathis come from before the Guard?",
+      "answer": "A noble or officer family.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-garrick-origin",
+      "question": "Where did Garrick come from before the Guard?",
+      "answer": "A common or poor family. Came up from the ranks.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-alaric-garrick-training",
+      "question": "Where did Alaric and Garrick train together?",
+      "answer": "In the Black Guard's training camp.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mathis-camp",
+      "question": "Did Mathis train at the same camp with Alaric and Garrick?",
+      "answer": "They all trained together (officers trained as one before banners were established), but Mathis joined Alaric's friend group later. (Corrects the earlier 'No, he came in later.')",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-officers-trained-as-one",
+      "question": "How did Mathis come into the Banner?",
+      "answer": "Before banners were established officers trained as one.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-mathis-friend-group",
+      "question": "What brought Mathis into Alaric's friend group?",
+      "answer": "Alaric respected his discipline.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-all-officers-shared-training",
+      "question": "Did Seraphina and Corvin also train in that shared officer group?",
+      "answer": "All officers.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-why-alaric-chosen",
+      "question": "Why was Alaric the one chosen to lead the Banner?",
+      "answer": "Among the best in training (not the very top). Higher command saw something in him. The other officers backed him. He also had more seniority than some.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-banner-rivals",
+      "question": "Did anyone else want to lead the Banner?",
+      "answer": "Yes, another officer wanted it and still resents him. Seraphina was the other top pick.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
