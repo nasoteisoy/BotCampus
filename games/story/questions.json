@@ -115,6 +115,26 @@
             "Change the name",
             "Decide later"
           ]
+        },
+        {
+          "id": "world-flame-metal-place-01",
+          "prompt": "The Flame hilt is made of a rare metal from a sacred place. Where is that place?",
+          "options": [
+            "A sacred place the Order guards",
+            "A place few people know about",
+            "Somewhere outside the Empire",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "world-flame-metal-name-01",
+          "prompt": "What is the hilt's rare metal called? (Options are suggestions.)",
+          "options": [
+            "Emberite",
+            "Hallowsteel",
+            "Solsteel",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -475,6 +495,16 @@
             "Never, it stays spread out",
             "Decide later"
           ]
+        },
+        {
+          "id": "guard-hilt-metal-01",
+          "prompt": "Cassian's craftsmen can't forge a hilt without the sacred metal. What do they do about it?",
+          "options": [
+            "They try to get the metal",
+            "They look for another way",
+            "They keep failing",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -611,16 +641,6 @@
             "Swap — Humility as his goal, Pride as his flaw",
             "Keep, but add Patience as what he learns",
             "Keep, and make Sloth his hidden second temptation"
-          ]
-        },
-        {
-          "id": "chars-alaric-older-brother-name-01",
-          "prompt": "What is Alaric's older brother's name? (Options are suggestions.)",
-          "options": [
-            "Edmund",
-            "Caleb",
-            "Bastian",
-            "Decide later"
           ]
         },
         {

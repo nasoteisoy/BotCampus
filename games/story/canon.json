@@ -1806,6 +1806,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-older-brother-name",
+      "question": "What's Alaric's older Flame Order brother's name?",
+      "answer": "You pick. Story picked Cael Vaelen (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-experience",
+      "question": "What's Cael's rank or role in the Flame Order?",
+      "answer": "At the start of the story he only has 2-3 years of actual experience, but he has been in training for 8 years.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-work",
+      "question": "What kind of work does Cael do in the Flame Order?",
+      "answer": "He hunts and seals spirit creatures.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-team",
+      "question": "Does Cael work alone or with a team?",
+      "answer": "With a small Flame team.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-sealing",
+      "question": "How does Cael seal a spirit creature?",
+      "answer": "With sacred flame. With prayers or chants. With marked seals or talismans.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sword-pure-fire",
+      "question": "What else is the Flame Order known for? (Chumi's \"Also\", added to how Cael seals a spirit creature.)",
+      "answer": "They are known to have a sword of pure fire that others cannot mimic.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sword-who",
+      "question": "Who can wield the sword of pure fire?",
+      "answer": "Every full Flame Order member. But people who leave and some evils do know. But one who leaves \"leaves behind\" the hilt the sword forms from.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sword-no-hilt",
+      "question": "Without the hilt, what can someone who left the Order still do with the flame?",
+      "answer": "A weaker, unstable version. They can if they steal or forge another hilt.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-forge-hilt",
+      "question": "Do any former Flame members at Nightwatch Keep have a stolen or forged hilt?",
+      "answer": "Cassian's craftsmen are trying to forge one.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-hilt-special",
+      "question": "What is the hilt made of, or what makes it special?",
+      "answer": "A rare metal from a sacred place. It holds a bound spirit.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-hilt-spirit",
+      "question": "What kind of spirit is bound in the hilt?",
+      "answer": "A willing fire spirit that chose to serve.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-hilt-spirit-freed",
+      "question": "When someone leaves the Order and gives up the hilt, what happens to its fire spirit?",
+      "answer": "It's set free.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-hilt-how-spirit",
+      "question": "How does a new Flame member get their hilt and fire spirit?",
+      "answer": "Actually the Flame Order is not fully aware of how exactly a spirit(s) gets involved, but they know that they do.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-hilt-forged-by-member",
+      "question": "So what does the Order do to give a new member their hilt?",
+      "answer": "The new member forges or shapes it themselves.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-hilt-no-metal",
+      "question": "Why can't Cassian's craftsmen just forge a hilt the same way?",
+      "answer": "They don't have the sacred metal.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }
