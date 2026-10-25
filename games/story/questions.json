@@ -495,6 +495,16 @@
             "Somewhere no one is looking",
             "Decide later"
           ]
+        },
+        {
+          "id": "guard-other-tech-01",
+          "prompt": "Cassian's people are trying out a lot of tech. What else are they trying?",
+          "options": [
+            "Spirit-tech weapons",
+            "Ways to sense spirit without training",
+            "Gear that copies Flame abilities",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -651,6 +661,25 @@
             "Seraphina",
             "Both",
             "Neither",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "chars-cael-tender-01",
+          "prompt": "Does Cael's team have a Tender with it?",
+          "options": [
+            "Yes",
+            "No",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "chars-rowan-book1-01",
+          "prompt": "Does Rowan appear in Book 1?",
+          "options": [
+            "Yes, on the page",
+            "Only in mentions or letters",
+            "Not until a later book",
             "Decide later"
           ]
         }
@@ -1699,7 +1728,7 @@
           "id": "spine-flame-team-leader-01",
           "prompt": "Who leads the Flame Order team at the canyon? (Name not decided; options are suggestions.)",
           "options": [
-            "Oren Vask",
+            "Dorian Pell",
             "Lysa Morrow",
             "Tavish Rhee",
             "Decide later"

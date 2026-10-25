@@ -2106,6 +2106,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-alaric-best-feel",
+      "question": "When it came up, how did Cael and Alaric feel about both chasing the best of the best?",
+      "answer": "Proud of each other. They laughed it off.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-support-role-name",
+      "question": "What do Flame Order members call the support role for trainees who have not found their metal yet?",
+      "answer": "You pick. Story picked: Tenders (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-tenders-work",
+      "question": "What do Tenders do in the Order?",
+      "answer": "Keep the temples and sacred fires. Help with research and records. Support hunting teams in the field. Make seals and talismans.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-team-size",
+      "question": "How many people are on Cael's Flame team?",
+      "answer": "2 to 4.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-team-leader",
+      "question": "Who leads Cael's team?",
+      "answer": "A senior Flame member.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-team-leader-name",
+      "question": "What is the senior Flame member who leads Cael's team called?",
+      "answer": "You pick. Story picked: Brother Oren (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-oren-relationship",
+      "question": "How does Cael get along with Brother Oren?",
+      "answer": "cordial",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-flame-view-of-guard",
+      "question": "What does the Flame Order think of the Black Guard?",
+      "answer": "Wary of it. Mostly ignore it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-flame-knows-hilt-forging",
+      "question": "Does the Flame Order know Cassian's craftsmen are trying to forge a hilt?",
+      "answer": "They've heard rumors.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-heard-rumors",
+      "question": "Has Cael heard those rumors (that Cassian's craftsmen are trying to forge a hilt)?",
+      "answer": "Yes, and it adds to his caution.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-alaric-knows-hilt-forging",
+      "question": "Does Alaric know Cassian's craftsmen are trying to forge a Flame hilt?",
+      "answer": "Rumors. There is alot of tech they are trying out.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-knows-alaric-guard",
+      "question": "Does Cael know Alaric is in the Black Guard?",
+      "answer": "Yes.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-knows-cael-work",
+      "question": "Does Rowan know what Cael does in the Flame Order?",
+      "answer": "Yes, roughly.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-closeness",
+      "question": "How should Rowan's closeness to his brothers read? (Chumi's \"But\" after Rowan in Book 1: \"Rowan is natural closer to cael then alaric\")",
+      "answer": "Rowan is close to both brothers, but naturally closer to Cael than Alaric.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-why-closer-cael",
+      "question": "Why is Rowan naturally closer to Cael?",
+      "answer": "They have similar personalities.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }
