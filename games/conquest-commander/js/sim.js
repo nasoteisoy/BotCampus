@@ -11,6 +11,7 @@ import { Nav } from './nav.js';
 import { statsOf, mulberry32, CLASSES } from './data.js';
 import { perkMods } from './perks.js';
 import { TRAIT_FX, traitOf, normDiff, TRAIT_AI, getCover } from './traits.js';
+import { PICKUPS } from './pickups.js';                 // ❤️/📦 packs + magazines (ON by default; ?pickups=0 turns off)
 
 export const CFG = {
   dt: 0.05,
@@ -54,7 +55,7 @@ export class Sim {
     this.teams = teams.map((t, i) => {
       const perks = (t.perks || []).slice(), mods = perkMods(perks);
       return {
-        idx: i, nation: t.nation, perks, mods, looks: t.looks.map((l) => { const stats = statsOf(l.st); return { ...l, stats, trait: traitOf(l.trait, stats.cls), traitPick: l.trait || '' }; }),
+        idx: i, nation: t.nation, perks, mods, looks: t.looks.map((l) => { const stats = statsOf(l.gear || l.st); return { ...l, stats, trait: traitOf(l.trait, stats.cls), traitPick: l.trait || '' }; }),
         marked: false, healed: 0, minesLaid: 0, mineKills: 0, retakes: 0,
         live: mods.live ? C.live + mods.live - CFG.live : C.live, tickets: C.tickets + mods.tickets, cp: C.startCP + mods.cp, rally: null,   // v2.2: 👥 Bigger Army = +4 over the map's live count (20 → 24, 32 → 36)
         marks: this.posts.map(() => ({ mark: 'attack', stars: 1 })),
@@ -295,6 +296,7 @@ export class Sim {
     if (this.mines.length) this.updateMines();
     this.capture(dt);
     this.updateUnits(dt);
+    if (PICKUPS.on) PICKUPS.step(this, dt);
     this.updateShots(dt);
     for (const T of this.teams) {
       // last stand: tickets ≤ units on the field → no more bleed against this side and no more respawns
@@ -386,7 +388,7 @@ export class Sim {
       u.atNest = !!u.nest && Math.hypot(u.nest.x - u.x, u.nest.z - u.z) < 1.8;
       if (u.atNest && u.nest.until === Infinity) u.nest.until = now + u.nest.dur;   // the nest timer starts on arrival
       u.crouch = u.duck || (u.atNest && !tg);
-      if ((u.fireT -= dt) <= 0 && tg && !u.duck) { u.fireT = u.s.rof * this.rofMul(u) * (0.85 + 0.3 * this.r()); this.fire(u, tg); }
+      if ((u.fireT -= dt) <= 0 && tg && !u.duck && (!PICKUPS.on || PICKUPS.shoot(this, u))) { u.fireT = u.s.rof * this.rofMul(u) * (0.85 + 0.3 * this.r()); this.fire(u, tg); }
       // mine laying: stand still on the spot for a moment
       if (u.mineSpot && Math.hypot(u.mineSpot.x - u.x, u.mineSpot.z - u.z) < 0.9) { if ((u.plantT += dt) >= this.cfg.mine.plant) this.plantMine(u); }
       else u.plantT = 0;

@@ -7,9 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Trooper Customizer</title>
-<link rel="icon" href="icon.svg?v=6" type="image/svg+xml">
-<link rel="manifest" href="manifest.webmanifest?v=6">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="icon" href="icon.svg?v=7" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest?v=7">
+<link rel="stylesheet" href="css/style.css?v=7">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js?v=6" } }
 </script>
@@ -37,6 +37,18 @@
     <div id="toast"></div>
   </div>
   <div id="panel">
+    <div id="whobar" aria-live="polite">
+      <a id="backBtn" class="nb hidden" href="./" title="Back" aria-label="Back">⬅️</a>
+      <label id="who" title="Switch player / nation"><canvas id="whoFlag" width="64" height="64"></canvas><span id="whoTxt"><b id="whoUnit"></b><small id="whoFor"></small></span><span class="dd">▾</span><select id="whoSel" aria-label="Switch player and nation"></select></label>
+      <button id="demoBtn" class="nb" type="button" title="🎬 Demos: moves · combat · team" aria-label="Demos" aria-expanded="false">🎬</button>
+      <button id="ccBtn" class="nb" type="button" title="⚔️ Play Conquest" aria-label="Play Conquest">⚔️</button>
+      <button id="shipBtn" class="nb" type="button" title="🚢 Ship Sandbox" aria-label="Ship Sandbox">🚢</button>
+    </div>
+    <div id="demomenu" class="hidden" role="menu">
+      <button type="button" data-demo="moves" role="menuitem" title="Watch this unit move">🎬 <span>Moves</span></button>
+      <button type="button" data-demo="combat" role="menuitem" title="This unit vs targets: cover, pickups">🎯 <span>Combat</span></button>
+      <button type="button" data-demo="team" role="menuitem" title="Whole team vs dummy enemies">👥 <span>Team</span></button>
+    </div>
     <div id="roster" role="tablist" aria-label="Roster"></div>
     <div id="sheet" class="hidden" role="dialog" aria-label="Roster slot"></div>
     <div id="tabs" role="tablist"></div>
@@ -44,6 +56,6 @@
     <div id="pbody"></div>
   </div>
 </div>
-<script type="module" src="js/main.js?v=6"></script>
+<script type="module" src="js/main.js?v=8"></script>
 </body>
 </html>

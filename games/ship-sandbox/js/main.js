@@ -2,9 +2,10 @@
 // three.js setup / particles / attack-level rules reused from Front Line (games/tank-2v2) and Space Defense (games/space-defense).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Particles } from './particles.js?v=2';
-import * as C from './config.js?v=2';
-import { ICON, svg } from './icons.js?v=2';
+import { Particles } from './particles.js?v=3c';
+import * as C from './config.js?v=3c';
+import { ICON, svg } from './icons.js?v=3c';
+import { DEFAULT_ARMY, loadArmy, portrait, drawFlag, combatOf } from './army.js?v=3c';
 
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -44,9 +45,9 @@ const fxSmoke = new Particles(scene, 1600, false, 1.2); // smoke
 
 // ---------- materials ----------
 const M = {
-  hull: () => new THREE.MeshStandardMaterial({ color: 0x8a97ad, metalness: 0.55, roughness: 0.5 }),
+  hull: () => { const m = new THREE.MeshStandardMaterial({ color: 0x8a97ad, metalness: 0.55, roughness: 0.5 }); m.userData.k = 'hull'; return m; },
   dark: () => new THREE.MeshStandardMaterial({ color: 0x4a5266, metalness: 0.5, roughness: 0.6 }),
-  glow: (c) => new THREE.MeshStandardMaterial({ color: 0x111111, emissive: c, emissiveIntensity: 1.6 }),
+  glow: (c) => { const m = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: c, emissiveIntensity: 1.6 }); m.userData.k = c === 0x6ff3ff ? 'trim' : 'glow'; return m; },
 };
 const SOOT = new THREE.Color(0x1c1a1a);
 
@@ -117,12 +118,13 @@ function reset() {
   for (const f of S?.friends || []) scene.remove(f.mesh);
   for (const d of S?.debris || []) scene.remove(d);
   S = { t: 0, paused: false, timeScale: C.SPEEDS[ui.speedI], atk: [], proj: [], beams: [], friends: [], debris: [], log: [], shieldHp: C.SHIP.shieldHp, shieldOn: true,
-    shieldHitT: -99, fireBack: !!S?.fireBack, target: null, hangarT: 2, launched: 0, lost: false, lastCell: null, stats: { dmg: 0, shd: 0, hits: 0 } };
+    board: null, shieldHitT: -99, fireBack: !!S?.fireBack, target: null, hangarT: 2, launched: 0, lost: false, lastCell: null, stats: { dmg: 0, shd: 0, hits: 0 } };
   for (const id in parts) {
-    const p = parts[id]; p.hp = p.def.hp; p.broken = false; p.cd = rr(0, 1);
+    const p = parts[id]; p.hp = p.def.hp; p.broken = false; p.cd = rr(0, 1); p.captured = null; p.boardRepelled = null;
     p.grp.position.set(...p.def.pos); p.grp.rotation.set(0, 0, 0); p.grp.scale.set(1, 1, 1);
     p.grp.traverse((m) => { if (m.isMesh) { m.material.color.copy(m.userData.col0); if (m.material.emissive) m.material.emissiveIntensity = m.userData.em0; } });
   }
+  for (const id in crew) for (const c of crew[id]) { c.hp = c.t.stats.hp; c.ko = false; }
   fxAdd.clear(); fxSmoke.clear();
   $('banner').classList.add('hidden');
   log({ ev: '↺ Ship ready' });
@@ -205,6 +207,7 @@ function breakPart(p, akey) {
   for (let i = 0; i < 10; i++) debris(pos);
   floatNum(pos, '💥' + p.def.icon, 'ev');
   log({ ev: `💥 ${p.def.icon} ${p.def.name} destroyed`, a: akey });
+  hurtCrew(p.def.id, C.CREW_HIT);
   // cascades
   const fn = p.def.fn;
   if (p.def.id === 'reactor') log({ ev: '☢️ → ⚡ Power lost: weapons, shield, hangar offline; engines 25%' });
@@ -222,6 +225,7 @@ function breakPart(p, akey) {
 function repairPart(id) {
   const p = parts[id]; if (!p) return;
   const was = p.broken;
+  if (p.captured) { log({ ev: `🔧 ${p.def.icon} ${p.def.name} retaken` }); p.captured = null; }
   p.hp = p.def.hp; p.broken = false;
   p.grp.position.set(...p.def.pos); p.grp.rotation.set(0, 0, 0); p.grp.scale.set(1, 1, 1);
   p.grp.traverse((m) => { if (m.isMesh) { m.material.color.copy(m.userData.col0); if (m.material.emissive) m.material.emissiveIntensity = m.userData.em0; } });
@@ -384,12 +388,15 @@ const tmp = V();
 function nearestAttacker(from, range) { let best = null, bd = range; for (const a of S.atk) { if (a.gone) continue; const d = a.pos.distanceTo(from); if (d < bd) { bd = d; best = a; } } return best; }
 function updShip(dt) {
   // shield regen
-  if (!parts.shield.broken && power() && S.shieldOn && S.t - S.shieldHitT > C.SHIP.shieldDelay) S.shieldHp = Math.min(C.SHIP.shieldHp, S.shieldHp + C.SHIP.shieldRegen * dt);
+  if (!parts.shield.broken && power() && S.shieldOn && S.t - S.shieldHitT > C.SHIP.shieldDelay) S.shieldHp = Math.min(C.SHIP.shieldHp, S.shieldHp + C.SHIP.shieldRegen * shieldBoost() * dt);
+  // crew repair: working crew slowly patch their own (not broken) part
+  for (const id in crew) { const p = parts[id]; if (p.broken || p.hp >= p.def.hp) continue; const r = crewRepair(id); if (r > 0) { p.hp = Math.min(p.def.hp, p.hp + r * dt); if (Math.random() < dt * 2) ui.dirty = true; } }
   // weapons fire back
   const spread = 0.035 * aimMul(), range = C.SHIP.fireRange * (parts.sensors.broken ? .6 : 1);
   for (const id of ['gun1', 'gun2', 'launcher', 'laser']) {
     const p = parts[id]; if (!working(p)) continue;
     const from = partWorld(p).add(V(0, 1, 0));
+    const spreadP = spread * aimBoost(id);
     const tgt = S.fireBack ? nearestAttacker(from, range) : null;
     if (p.aim) { // turn toward target (or idle sweep)
       const look = tgt ? tgt.pos : from.clone().add(V(Math.cos(S.t * .3 + p.cd * 6) * 10, 0, Math.sin(S.t * .3 + p.cd * 6) * 10));
@@ -400,10 +407,10 @@ function updShip(dt) {
     p.cd -= dt; if (!tgt || p.cd > 0) continue;
     const wpn = p.def.wpn;
     const lead = tgt.pos.clone().addScaledVector(tgt.vel, from.distanceTo(tgt.pos) / 80);
-    const miss = V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(from.distanceTo(lead) * spread);
+    const miss = V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(from.distanceTo(lead) * spreadP);
     if (wpn === 'cannon') { p.cd = .45 * (parts.bridge.broken ? 1.6 : 1); for (const o of [-.4, .4]) { const st = from.clone().add(V(0, 0, o)); const m = new THREE.Mesh(AG.shell, PM.blue); m.position.copy(st); scene.add(m); S.proj.push({ team: 's', pos: st, vel: lead.clone().add(miss).sub(st).normalize().multiplyScalar(80), mesh: m, life: 2, dmg: 22 }); } }
     else if (wpn === 'rocket') { p.cd = 1.4; const m = new THREE.Mesh(AG.rocket, PM.rocket); m.position.copy(from); scene.add(m); S.proj.push({ team: 's', kind: 'rocket', pos: from.clone(), vel: V(0, 18, 0), homing: tgt, spd: 40 / Math.sqrt(aimMul()), mesh: m, life: 5, dmg: 70 }); }
-    else if (wpn === 'laser') { p.cd = .5; const hit = Math.random() < 0.85 / aimMul(); beam(from, hit ? tgt.pos.clone() : lead.clone().add(miss.multiplyScalar(3)), 0x6ff3ff, null, null, () => { if (hit) hitAttacker(tgt, 16); }); }
+    else if (wpn === 'laser') { p.cd = .5; const hit = Math.random() < 0.85 / aimMul() / aimBoost(id); beam(from, hit ? tgt.pos.clone() : lead.clone().add(miss.multiplyScalar(3)), 0x6ff3ff, null, null, () => { if (hit) hitAttacker(tgt, 16); }); }
   }
   // hangar launches fighters while it works
   if (working(parts.hangar)) {
@@ -451,7 +458,7 @@ function updShip(dt) {
 let last = performance.now();
 function step(dt) {
   S.t += dt;
-  updShip(dt); updAttackers(dt); updProjectiles(dt);
+  updShip(dt); updAttackers(dt); updProjectiles(dt); updBoard(dt);
   for (const b of S.beams) { b.t -= dt; b.l.material.opacity = Math.max(0, b.t * 10); }
   S.beams = S.beams.filter((b) => { if (b.t <= 0) { scene.remove(b.l); b.l.geometry.dispose(); b.l.material.dispose(); } return b.t > 0; });
   for (const d of S.debris) { const u = d.userData; d.position.addScaledVector(u.v, dt); d.rotation.x += u.w.x * dt; d.rotation.y += u.w.y * dt; u.life -= dt; if (Math.random() < dt * 6) fxSmoke.spawn(d.position.x, d.position.y, d.position.z, 0, 0, 0, 1, .3, .9, .2, .2, .2, .5); }
@@ -474,7 +481,7 @@ function frame(now) {
   controls.update();
   updHover(); shipRoot.updateMatrixWorld(); applyHighlight();
   if (!window.__noRender) renderer.render(scene, camera);
-  drawFloats(); drawTags(); if (!card.id && !$('tip').classList.contains('hidden')) $('tip').classList.add('hidden'); if (card.id && (now - (ui.cardT || 0) > 150 || !card.pinned)) { ui.cardT = now; drawCard(); }
+  drawFloats(); drawTags(); drawCrewTags(); drawBoard(); waveFlag(now / 1000); if (!card.id && !$('tip').classList.contains('hidden')) $('tip').classList.add('hidden'); if (card.id && (now - (ui.cardT || 0) > 150 || !card.pinned)) { ui.cardT = now; drawCard(); }
   hud(now);
 }
 const pv = V();
@@ -517,7 +524,7 @@ function renderSheet() {
       `<div class="row ${shieldUp() ? '' : 'off'}"><span class="pi">🫧</span><span class="nm">Bubble</span><span class="ar">🫧</span><span class="bar"><i style="width:${100 * S.shieldHp / C.SHIP.shieldHp}%"></i></span><span class="hpn">${Math.round(S.shieldHp)}</span><span class="stt">${shieldUp() ? '✅' : '✖'}</span></div>`];
     for (const d of C.PARTS) {
       const p = parts[d.id], f = p.hp / d.hp;
-      rows.push(`<div class="row ${S.target === d.id ? 'sel' : ''} ${ui.hl === d.id ? 'hl' : ''} ${p.broken ? 'broken' : !working(p) ? 'off' : ''}" data-tgt="${d.id}" data-part="${d.id}"><span class="pi">${d.icon}</span><span class="nm">${d.name}</span><span class="ar">${C.ARMOR[d.armor].icon}</span>` +
+      rows.push(`<div class="row ${S.target === d.id ? 'sel' : ''} ${ui.hl === d.id ? 'hl' : ''} ${p.broken ? 'broken' : !working(p) ? 'off' : ''}" data-tgt="${d.id}" data-part="${d.id}"><span class="pi">${d.icon}</span><span class="nm">${d.name}</span>${crew[d.id] ? `<span class="crw">${crewMini(d.id)}</span>` : ''}<span class="ar">${C.ARMOR[d.armor].icon}</span>` +
         `<span class="bar"><i class="${barCls(f)}" style="width:${100 * f}%"></i></span><span class="hpn">${Math.ceil(p.hp)}</span><span class="stt">${partStatus(p)}</span>` +
         `<button class="rb fix" data-fix="${d.id}" ${p.hp >= d.hp ? 'disabled' : ''} title="Repair">🔧</button></div>`);
     }
@@ -561,8 +568,9 @@ $('bShield').onclick = () => { S.shieldOn = !S.shieldOn; log({ ev: S.shieldOn ? 
 $('bBack').onclick = () => { S.fireBack = !S.fireBack; log({ ev: S.fireBack ? '↩ Ship fires back' : '↩ Ship holds fire' }); syncButtons(); };
 $('bCount').onclick = () => { ui.count = (ui.count + 1) % C.COUNTS.length; syncButtons(); };
 $('tgt').onclick = () => setTarget(null);
-$('palette').innerHTML = C.ATTACK_KEYS.map((k) => `<button class="atk" data-atk="${k}" title="${C.ATTACKS[k].name}"><span class="ai">${C.ATTACKS[k].icon}</span><small>${C.ATTACKS[k].name}</small></button>`).join('');
-$('palette').onclick = (e) => { const b = e.target.closest('.atk'); if (!b) return; fire(b.dataset.atk); b.classList.add('fired'); setTimeout(() => b.classList.remove('fired'), 200); };
+$('palette').innerHTML = C.ATTACK_KEYS.map((k) => `<button class="atk" data-atk="${k}" title="${C.ATTACKS[k].name}"><span class="ai">${C.ATTACKS[k].icon}</span><small>${C.ATTACKS[k].name}</small></button>`).join('') +
+  '<button class="atk board" id="bBoard" data-board="1" title="Boarding: your troopers board the targeted part"><span class="ai">🪖</span><small>Boarding</small></button>';
+$('palette').onclick = (e) => { const b = e.target.closest('.atk'); if (!b) return; if (b.dataset.board) board(); else fire(b.dataset.atk); b.classList.add('fired'); setTimeout(() => b.classList.remove('fired'), 200); };
 document.querySelectorAll('.tab').forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
 $('sheetBody').onclick = (e) => {
   const fx = e.target.closest('[data-fix]'); if (fx) { repairPart(fx.dataset.fix); ui.dirty = true; return; }
@@ -681,7 +689,9 @@ function partInfo(id) {
     case 'aim': if (p.broken) fx.push(id === 'bridge' ? '🎯 ship aim ×2.5 worse, slower cannons' : '🎯 ship aim ×2 worse, range −40%'); break;
     case 'hull': if (!pwr && !p.broken) fx.push('🌑 lights out: reactor down'); { const left = ['bow', 'mid', 'stern'].filter((k) => !parts[k].broken).length; if (left < 3) fx.push(`🧱 ${left}/3 hull sections left`); } break;
   }
-  return { id, icon: d.icon, name: d.name, desc: d.desc, hp: Math.ceil(p.hp), mhp: d.hp, armor: d.armor, status: st.map((x) => x[1]), effects: fx, st };
+  if (p.captured) st.unshift(['🏳️', 'Captured', 'bad']);
+  fx.push(...boardInfo(id));
+  return { id, icon: d.icon, name: d.name, desc: d.desc, hp: Math.ceil(p.hp), mhp: d.hp, armor: d.armor, status: st.map((x) => x[1]), effects: fx, st, crew: crewInfo(id) };
 }
 function cardHtml(i) {
   const f = i.hp / i.mhp, A = C.ARMOR[i.armor];
@@ -690,7 +700,7 @@ function cardHtml(i) {
     `<div class="thp"><span class="bar"><i class="${barCls(f)}" style="width:${100 * f}%"></i></span><b>${i.hp}</b>/${i.mhp}</div>` +
     `<div class="tar">${A.icon} ${A.name} armor</div>` +
     `<div class="tst">${i.st.map(([ic, t, c]) => `<span class="chip ${c}">${ic} ${t}</span>`).join('')}</div>` +
-    (i.effects.length ? `<ul class="tfx">${i.effects.map((e) => `<li>${e}</li>`).join('')}</ul>` : '');
+    (i.effects.length ? `<ul class="tfx">${i.effects.map((e) => `<li>${e}</li>`).join('')}</ul>` : '') + crewHtml(i);
 }
 function showCard(id, x, y, pinned) {
   card.id = id; card.pinned = !!pinned; card.x = x; card.y = y;
@@ -775,6 +785,202 @@ function fit(resetDist = true) {
 }
 addEventListener('resize', () => fit(true));
 
+// ---------- v3: army (nation look + crew) — read-only from localStorage, see js/army.js ----------
+let ARMY = DEFAULT_ARMY, armyReady = false;
+const crew = {}; // partId -> [{ t, hp, ko }]
+const FROM = Q.get('from');
+function crewMul(c) { return c.ko ? 0 : c.hp < c.t.stats.hp * 0.5 ? 0.5 : 1; } // hurt = half boost, KO = none
+function crewAcc(id) { return (crew[id] || []).reduce((a, c) => a + c.t.stats.acc * crewMul(c), 0); }
+function crewRepair(id) { return (crew[id] || []).reduce((a, c) => a + c.t.stats.repair * crewMul(c), 0); }
+// weapon spread multiplier: own gunner + half of the bridge crew's accuracy, capped
+function aimBoost(id) { return 1 - Math.min(C.AIM_CAP, (crewAcc(id) + crewAcc('bridge') * 0.5) / 100); }
+function shieldBoost() { return 1 + crewRepair('shield') * 0.1; }
+function hurtCrew(id, dmg) {
+  for (const c of crew[id] || []) {
+    if (c.ko) continue;
+    c.hp = Math.max(0, c.hp - dmg);
+    if (c.hp <= 0) { c.ko = true; log({ ev: `😵 ${c.t.name} knocked out (${parts[id].def.icon})` }); }
+    else log({ ev: `🤕 ${c.t.name} hurt (${parts[id].def.icon} ❤️${Math.round(c.hp)})` });
+  }
+}
+function crewState(c) { return c.ko ? 'ko' : c.hp < c.t.stats.hp ? 'hurt' : 'ok'; }
+function crewInfo(id) {
+  const fn = parts[id].def.fn;
+  return (crew[id] || []).map((c) => {
+    const m = crewMul(c), b = [];
+    if (fn === 'weapon') b.push(`🎯 +${Math.round(c.t.stats.acc * m)}% aim`);
+    if (id === 'bridge') b.push(`🎯 +${Math.round(c.t.stats.acc * m * 0.5)}% all guns`);
+    if (id === 'shield') b.push(`🫧 +${Math.round(c.t.stats.repair * m * 10)}% regen`);
+    b.push(`🔧 +${(c.t.stats.repair * m).toFixed(1)} HP/s`);
+    return { name: c.t.name, icon: c.t.icon, img: portrait(c.t), gear: c.t.gear, hp: Math.round(c.hp), max: c.t.stats.hp, state: crewState(c), boosts: b };
+  });
+}
+function crewHtml(i) {
+  if (!i.crew || !i.crew.length) return '';
+  return '<div class="tcrew">' + i.crew.map((c) => `<div class="cr ${c.state}"><img src="${c.img}" alt=""><div>${c.icon} <b>${c.name}</b> <span class="cg">${c.gear.join('')}</span>` +
+    `<div class="chp">${c.state === 'ko' ? '😵 KO' : `❤️ ${c.hp}/${c.max}${c.state === 'hurt' ? ' 🤕' : ''}`}</div><div class="cb">${c.boosts.join(' · ')}</div></div></div>`).join('') + '</div>';
+}
+function crewMini(id) { return (crew[id] || []).map((c) => `<img class="cm ${crewState(c)}" src="${portrait(c.t, 32)}" title="${c.t.name}" alt="">`).join(''); }
+function assignCrew() {
+  for (const k in crew) delete crew[k];
+  const used = {}; let i = 0;
+  for (const id of C.CREW_ORDER) {
+    if (i >= ARMY.troopers.length) break;
+    if ((used[id] = (used[id] || 0) + 1) > C.CREW_SLOTS[id]) continue;
+    const t = ARMY.troopers[i++]; (crew[id] = crew[id] || []).push({ t, hp: t.stats.hp, ko: false });
+  }
+}
+let flagMesh = null;
+function applyArmy(a) {
+  ARMY = a;
+  const prim = new THREE.Color(a.nation.colors.primary), sec = new THREE.Color(a.nation.colors.secondary), base = new THREE.Color(0x8a97ad);
+  for (const m of partMeshes) {
+    const k = m.material.userData.k;
+    if (k === 'hull') { m.material.color.copy(base).lerp(prim, 0.55); m.userData.col0 = m.material.color.clone(); }
+    if (k === 'trim') m.material.emissive.copy(sec.getHSL({}).l < 0.3 ? new THREE.Color(0x6ff3ff) : sec); // dark secondary -> keep cyan trim
+  }
+  // flag on the bridge mast (breaks / sways with the bridge)
+  const fc = document.createElement('canvas'); fc.width = 128; fc.height = 80; drawFlag(fc, a.nation.flag);
+  const tex = new THREE.CanvasTexture(fc); tex.colorSpace = THREE.SRGBColorSpace;
+  if (!flagMesh) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, 2.6, 6), M.dark()); pole.position.set(-1, 6.6, 0); parts.bridge.grp.add(pole);
+    flagMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.9, 8, 1), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+    flagMesh.geometry.translate(-1.5, 0, 0); flagMesh.position.set(-1.05, 7.0, 0); parts.bridge.grp.add(flagMesh);
+    for (const m of [pole, flagMesh]) { m.userData.part = 'bridge'; m.userData.col0 = m.material.color.clone(); m.userData.em0 = 0; partMeshes.push(m); }
+  } else { flagMesh.material.map = tex; flagMesh.material.needsUpdate = true; }
+  // header
+  const hc = $('flagC'); hc.getContext('2d').clearRect(0, 0, hc.width, hc.height); drawFlag(hc, a.nation.flag);
+  ui.flagURL = hc.toDataURL();
+  $('plName').textContent = a.player.name; $('natName').textContent = a.nation.name;
+  $('army').style.setProperty('--np', a.nation.colors.primary); $('army').dataset.src = a.src;
+  assignCrew(); ui.dirty = true;
+}
+function waveFlag(t) {
+  if (!flagMesh) return; const pos = flagMesh.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i); pos.setZ(i, Math.sin(t * 4 + x * 2) * 0.18 * (-x / 3)); }
+  pos.needsUpdate = true;
+}
+// 👥 crew toggle: portraits over their parts
+ui.crew = false;
+function drawCrewTags() {
+  const box = $('crewTags'); box.classList.toggle('hidden', !ui.crew); if (!ui.crew) return;
+  let html = '';
+  for (const id in crew) {
+    const w = partWorld(parts[id], pv); w.y += (TAG_UP[id] ?? 2.6) + 1.2; w.project(camera); if (w.z > 1) continue;
+    html += `<div class="ct" data-part="${id}" style="transform:translate(${((w.x + 1) / 2 * innerWidth).toFixed(0)}px,${((1 - w.y) / 2 * innerHeight).toFixed(0)}px) translate(-50%,-50%)">${crewMini(id)}</div>`;
+  }
+  if (html !== box._h) { box.innerHTML = html; box._h = html; }
+}
+$('bCrew').onclick = () => { ui.crew = !ui.crew; $('bCrew').classList.toggle('on', ui.crew); };
+// jump links (Trooper Customizer)
+$('bTroop').href = '../trooper-custom/?from=ship-sandbox';
+if (FROM === 'custom' || FROM === 'trooper-custom') { $('bHome').classList.remove('hidden'); $('bHome').href = '../trooper-custom/'; }
+applyArmy(DEFAULT_ARMY);
+loadArmy().then((a) => { applyArmy(a); armyReady = true; }).catch(() => { armyReady = true; });
+addEventListener('storage', (e) => { if (e.key === 'botcampus:army' || e.key === 'trooper-custom:db') loadArmy().then(applyArmy).catch(() => {}); });
+
+// ---------- v3b: 🪖 boarding — your army's troopers board a part and fight its crew + deck guards ----------
+// state lives in S.board (one action at a time) and part.captured; reset() rebuilds S so it clears with the ship.
+const BD = C.BOARD;
+function boarderOf(t, i) { const c = t.combat || combatOf({ gear: {} }); return { side: 'b', name: t.name, img: portrait(t, 32), hp: c.hp, max: c.hp, acc: c.acc, dmg: c.dmg, rof: c.rof, cd: 0.2 + i * 0.15, src: c.src }; }
+function squadOf() {
+  const tr = ARMY.troopers.slice(0, BD.squad);
+  const list = tr.length >= 3 || ARMY.src !== 'default' ? tr : [0, 1, 2].map((i) => ({ ...tr[0], name: 'Trooper 1' })); // no save: a squad of Trooper 1s
+  return list.map(boarderOf);
+}
+function defendersOf(id, guards) {
+  const out = (crew[id] || []).filter((c) => !c.ko).map((c, i) => { const k = c.t.combat || combatOf({ gear: {} }); return { side: 'd', name: c.t.name, img: portrait(c.t, 32), hp: c.hp, max: c.t.stats.hp, acc: k.acc, dmg: k.dmg, rof: k.rof, cd: 0.3 + i * 0.2, crew: c }; });
+  const n = guards ?? (BD.guards[id] ?? BD.guards.default);
+  for (let i = 0; i < n; i++) out.push({ side: 'd', name: BD.guard.name, icon: '🛡️', hp: BD.guard.hp, max: BD.guard.hp, acc: BD.guard.acc, dmg: BD.guard.dmg, rof: BD.guard.rof, cd: 0.4 + i * 0.25 });
+  return out;
+}
+function board(id, o = {}) {
+  id = id || S.target;
+  if (S.board && S.board.phase !== 'done') { log({ ev: '🪖 A boarding party is already out' }); return false; }
+  if (!id || !parts[id]) { // no part chosen: board the first intact crewed part, else any intact part
+    id = Object.keys(crew).find((k) => !parts[k].broken && !parts[k].captured) || C.PARTS.map((d) => d.id).find((k) => !parts[k].broken && !parts[k].captured);
+    if (!id) return false;
+  }
+  const p = parts[id];
+  if (p.broken || p.captured) { log({ ev: `🪖 ${p.def.icon} ${p.def.name} is already ${p.captured ? 'captured' : 'wrecked'}: pick another part` }); return false; }
+  const b = S.board = { id, phase: 'fly', t: 0, ft: 0, sq: squadOf(), df: defendersOf(id, o.guards), side: Math.random() < 0.5 ? -1 : 1, res: null };
+  log({ ev: `🪖 ×${b.sq.length} Boarding → ${p.def.icon} ${p.def.name} (vs ${b.df.length} defenders)` });
+  ui.dirty = true; return true;
+}
+function bAlive(l) { return l.filter((x) => x.hp > 0); }
+function updBoard(dt) {
+  const b = S.board; if (!b) return;
+  b.t += dt; const p = parts[b.id];
+  if (b.phase === 'fly' && b.t >= BD.fly) { b.phase = 'dock'; floatNum(partWorld(p), '🪖⚓', 'ev'); log({ ev: `⚓ Boarders docked at ${p.def.icon} ${p.def.name}` }); }
+  if (b.phase === 'dock' && b.t >= BD.fly + BD.dock) b.phase = 'fight';
+  if (b.phase === 'fight') {
+    if (p.broken) return endBoard('repelled', 'part destroyed under them');
+    const fdt = dt * BD.speed; b.ft += dt;
+    for (const f of [...b.sq, ...b.df]) {
+      if (f.hp <= 0) continue; f.cd -= fdt; if (f.cd > 0) continue; f.cd += f.rof * rr(0.85, 1.15);
+      const foes = bAlive(f.side === 'b' ? b.df : b.sq); if (!foes.length) break;
+      const tgt = foes[(Math.random() * foes.length) | 0];
+      if (Math.random() < f.acc * (f.side === 'b' ? BD.coverMul : 1)) { tgt.hp = Math.max(0, tgt.hp - f.dmg * rr(0.85, 1.15)); if (tgt.crew) { tgt.crew.hp = tgt.hp; if (tgt.hp <= 0) tgt.crew.ko = true; } }
+    }
+    const a = bAlive(b.sq), d = bAlive(b.df);
+    if (!d.length) return endBoard('captured');
+    if (!a.length) return endBoard('repelled');
+    if (b.ft >= BD.maxFight) { // time's up: whoever kept more of their HP holds the deck
+      const fr = (l) => l.reduce((s, x) => s + x.hp, 0) / l.reduce((s, x) => s + x.max, 0);
+      return endBoard(fr(b.sq) > fr(b.df) ? 'captured' : 'repelled', 'time');
+    }
+  }
+  if (b.phase === 'done' && b.t - b.endT > BD.show) { S.board = null; ui.dirty = true; }
+}
+function endBoard(res, why) {
+  const b = S.board, p = parts[b.id]; b.phase = 'done'; b.res = res; b.endT = b.t;
+  const ko = b.sq.filter((x) => x.hp <= 0).length, hurt = b.sq.filter((x) => x.hp > 0 && x.hp < x.max).length;
+  b.summary = `${b.sq.length - ko}/${b.sq.length} standing${hurt ? ` · ${hurt} 🤕` : ''}${ko ? ` · ${ko} 😵` : ''}`;
+  for (const f of b.df) if (f.crew && f.hp <= 0) log({ ev: `😵 ${f.name} knocked out defending ${p.def.icon}` });
+  if (res === 'captured') {
+    p.captured = { by: ARMY.nation.name, flag: ui.flagURL, t: S.t };
+    log({ ev: `✅ ${p.def.icon} ${p.def.name} captured by ${ARMY.nation.name} (${b.summary})` });
+    breakPart(p, 'board'); // a captured part stops working for the ship
+  } else {
+    p.boardRepelled = { t: S.t, summary: b.summary };
+    log({ ev: `❌ Boarding repelled at ${p.def.icon} ${p.def.name}${why ? ` (${why})` : ''}: ${b.summary}` });
+    floatNum(partWorld(p), '❌🪖', 'ev');
+  }
+  ui.dirty = true;
+}
+function boardInfo(id) {
+  const fx = [], b = S.board, p = parts[id];
+  if (b && b.id === id && b.phase !== 'done') { const a = bAlive(b.sq).length, d = bAlive(b.df).length; fx.push(b.phase === 'fight' ? `🪖 boarders fighting: ${a} 🆚 ${d} defenders` : `🪖 boarding party inbound (${b.sq.length} vs ${b.df.length})`); }
+  if (p.captured) fx.push(`🏳️ captured by ${p.captured.by} (🔧 repair to retake)`);
+  else if (p.boardRepelled) fx.push(`❌ boarders repelled: ${p.boardRepelled.summary}`);
+  return fx;
+}
+const pips = (l) => l.map((f) => `<span class="bf ${f.hp <= 0 ? 'ko' : f.hp < f.max ? 'hurt' : ''}">${f.img ? `<img src="${f.img}" alt="">` : `<i>${f.icon}</i>`}<b style="width:${Math.round(100 * Math.max(0, f.hp) / f.max)}%"></b></span>`).join('');
+function drawBoard() {
+  const box = $('boardFx'); let html = '';
+  const scr = (p, up) => { const w = partWorld(p, pv); w.y += up; w.project(camera); return w.z > 1 ? null : [(w.x + 1) / 2 * innerWidth, (1 - w.y) / 2 * innerHeight]; };
+  for (const id in parts) { const p = parts[id]; if (!p.captured) continue; const q = scr(p, (TAG_UP[id] ?? 2.6) + 0.6); if (q) html += `<div class="bcap" data-part="${id}" style="transform:translate(${q[0].toFixed(0)}px,${q[1].toFixed(0)}px) translate(-50%,-100%)">${p.captured.flag ? `<img src="${p.captured.flag}" alt="">` : '🏳️'}</div>`; }
+  const b = S.board;
+  if (b) {
+    const p = parts[b.id], q = scr(p, (TAG_UP[b.id] ?? 2.6) + 1.4);
+    if (q) {
+      if (b.phase === 'fly') { // portraits fly in from the side of the screen and dock on the part
+        const k = Math.min(1, b.t / BD.fly), e = 1 - (1 - k) * (1 - k), sx = b.side < 0 ? -40 : innerWidth + 40, sy = q[1] - innerHeight * 0.25;
+        const x = sx + (q[0] - sx) * e, y = sy + (q[1] - sy) * e - Math.sin(k * Math.PI) * 40;
+        html += `<div class="bfly" style="transform:translate(${x.toFixed(0)}px,${y.toFixed(0)}px) translate(-50%,-50%)">${b.side < 0 ? '' : '<i class="fl">🚀</i>'}${b.sq.map((f) => `<img src="${f.img}" alt="">`).join('')}${b.side < 0 ? '<i>🚀</i>' : ''}</div>`;
+      } else {
+        const res = b.phase === 'done' ? (b.res === 'captured' ? '<div class="bres ok">✅ Captured</div>' : '<div class="bres bad">❌ Repelled</div>') : b.phase === 'dock' ? '<div class="bres">⚓ Docking…</div>' : '';
+        // result box: beside the part, on the side away from screen centre (never over its 🏳️ flag), fading out over the last 0.4 s of BD.show
+        const done = b.phase === 'done', left = q[0] < innerWidth / 2 ? q[0] > 168 : q[0] + 168 > innerWidth, fade = done ? Math.max(0, Math.min(1, (BD.show - (b.t - b.endT)) / 0.4)) : 1;
+        const W2 = innerWidth / 2, H2 = innerHeight / 2, side = left ? q[0] - 18 - 168 > W2 || q[0] - 18 < W2 : q[0] + 18 + 168 < W2 || q[0] + 18 > W2; // sideways box clears the centre?
+        const up = q[1] - 18 < H2 || q[1] - 120 > H2, qf = !side && !up && scr(p, (TAG_UP[b.id] ?? 2.6) + 0.6); // else above the part, or below its flag
+        const tf = !done ? `translate(${q[0].toFixed(0)}px,${q[1].toFixed(0)}px) translate(-50%,-100%)` : side ? `translate(${(q[0] + (left ? -18 : 18)).toFixed(0)}px,${q[1].toFixed(0)}px) translate(${left ? '-100%' : '0'},-50%)` : up || !qf ? `translate(${q[0].toFixed(0)}px,${(q[1] - 18).toFixed(0)}px) translate(-50%,-100%)` : `translate(${qf[0].toFixed(0)}px,${(qf[1] + 8).toFixed(0)}px) translate(-50%,0)`;
+        html += `<div class="bbox ${b.phase}" data-part="${b.id}" style="transform:${tf};opacity:${fade.toFixed(2)}">${res}<div class="brow">${pips(b.sq)}</div><div class="bvs">⚔️</div><div class="brow">${pips(b.df)}</div></div>`;
+      }
+    }
+  }
+  if (html !== box._h) { box.innerHTML = html; box._h = html; }
+}
 // ---------- test / debug hooks ----------
 window.__ss = {
   get S() { return S; }, parts, fire, setTarget, repairPart, reset,
@@ -786,6 +992,11 @@ window.__ss = {
   free: () => ui.free,
   hover: () => ({ hl: ui.hl, from: ui.hlFrom, card: card.id, pinned: card.pinned, labels: ui.labels, light: +hemi.intensity.toFixed(2) }),
   info: (id) => partInfo(id),
+  army: () => ARMY, crew: () => Object.fromEntries(Object.entries(crew).map(([k, v]) => [k, v.map((c) => ({ name: c.t.name, hp: Math.round(c.hp), max: c.t.stats.hp, ko: c.ko }))])),
+  armyReady: () => armyReady, crewShown: () => ui.crew,
+  board: (id, o) => board(id, o), boarding: () => S.board && { id: S.board.id, phase: S.board.phase, res: S.board.res, sq: S.board.sq.map((f) => ({ name: f.name, hp: Math.round(f.hp), max: f.max, src: f.src })), df: S.board.df.map((f) => ({ name: f.name, hp: Math.round(f.hp), max: f.max })) },
+  captured: () => Object.keys(parts).filter((k) => parts[k].captured),
+  hull: () => '#' + parts.mid.grp.children[0].material.color.getHexString(),
   pickPoint: (id) => { // a screen point whose ray hits this part first
     for (const m of partMeshes) { if (m.userData.part !== id) continue; const bb = new THREE.Box3().setFromObject(m); const c = bb.getCenter(V());
       for (const off of [[0, 0, 0], [0, .4, 0], [.5, 0, 0], [-.5, 0, 0], [0, 0, .5], [0, 0, -.5]]) { const q = c.clone().add(V(...off)).project(camera); const x = (q.x + 1) / 2 * innerWidth, y = (1 - q.y) / 2 * innerHeight;

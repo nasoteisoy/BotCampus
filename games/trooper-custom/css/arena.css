@@ -1,0 +1,43 @@
+/* 🥊 Combat + 👥 Team demos: arena on top, unit strip below. Icon HUD only: no bars. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #070a1c; color: #e8edf2;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+button, select { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+.hidden { display: none !important; }
+#wrap { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#view { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0b1029; }
+#app, #app canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.chip { position: absolute; display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 10px; z-index: 2;
+  background: rgba(16,20,26,.8); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(4px); font-size: 12px; white-space: nowrap; }
+#backBtn { left: 8px; top: calc(8px + env(safe-area-inset-top)); height: 42px; min-width: 42px; text-decoration: none; color: inherit; font-size: 18px; padding: 0 8px; justify-content: center; }
+#who { left: 58px; top: calc(8px + env(safe-area-inset-top)); height: 42px; max-width: calc(100% - 118px); font-size: 14px; overflow: hidden; }
+#who canvas { width: 22px; height: 22px; border-radius: 4px; flex: none; }
+#who b { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#who small { opacity: .75; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#who select { background: #1b2230; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 2px 4px; max-width: 46vw; font-size: 13px; }
+#cambar { right: 8px; top: calc(8px + env(safe-area-inset-top)); padding: 3px; gap: 3px; flex-direction: column; }
+#cambar button, #playbar button { width: 42px; height: 42px; border-radius: 9px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); font-size: 18px; display: grid; place-items: center; padding: 0; line-height: 1; }
+#cambar button.on, #playbar button.on { background: rgba(111,243,255,.22); border-color: #6ff3ff; }
+#playbar { left: 50%; transform: translateX(-50%); bottom: 8px; padding: 3px; gap: 4px; }
+#playbar button i { font-style: normal; font-size: 10px; display: block; }
+#hudcol { position: absolute; left: 8px; top: calc(56px + env(safe-area-inset-top)); z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: calc(100% - 70px); pointer-events: none; }
+#hudcol .chip { position: static; pointer-events: auto; }
+#hud { flex-wrap: wrap; white-space: normal; max-width: 100%; font-size: 14px; font-weight: 700; gap: 4px 10px; }
+#hud span { display: inline-flex; align-items: center; gap: 2px; }
+#hud .warn { color: #ffb43a; } #hud .bad { color: #ff7a6a; } #hud .good { color: #7dffa0; }
+#stats { font-size: 12px; color: #cfe6ff; font-weight: 600; max-width: 100%; white-space: normal; flex-wrap: wrap; gap: 2px 8px; }
+#toast { left: 50%; top: 40%; transform: translate(-50%, -50%) scale(.8); font-size: 20px; font-weight: 800; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; padding: 8px 14px; }
+#toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#panel { flex: none; background: #0d1222; border-top: 1px solid rgba(255,255,255,.08); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
+#units { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; padding-bottom: 2px; }
+#units .unit { flex: none; width: 84px; min-height: 74px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; }
+#units .unit.on { border-color: #6ff3ff; background: rgba(111,243,255,.14); }
+#units .unit.down { opacity: .45; }
+#units .unit .ico { font-size: 24px; line-height: 1.1; }
+#units .unit i { font-style: normal; font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#units .unit em { font-style: normal; font-size: 11px; font-weight: 700; }
+#units .unit .tr { position: absolute; top: 2px; right: 4px; font-size: 13px; }
+#units .unit .stt { position: absolute; top: 2px; left: 4px; font-size: 13px; }
+#units .nflag { flex: none; width: 22px; height: 22px; align-self: center; border-radius: 4px; }
+#legend { font-size: 11px; opacity: .7; padding: 4px 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 900px) { #units .unit { width: 96px; } #hud { font-size: 15px; } }

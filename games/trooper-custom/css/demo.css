@@ -1,0 +1,70 @@
+/* 🎬 Demo viewer: phone = stage on top + icon panel below; wide screens = icon panel on the right */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #070a1c; color: #e8edf2;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+svg { display: block; }
+.hidden { display: none !important; }
+#wrap { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#view { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0b1029; }
+#app, #app canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.chip { position: absolute; display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 10px; z-index: 2;
+  background: rgba(16,20,26,.78); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(4px); font-size: 12px; }
+#backBtn { left: 8px; top: 8px; height: 42px; min-width: 42px; text-decoration: none; color: inherit; font-size: 18px; padding: 0 8px; }
+#who { left: 58px; top: 8px; height: 42px; max-width: calc(100% - 130px); font-size: 14px; }
+#who canvas { width: 22px; height: 22px; border-radius: 4px; flex: none; }
+#who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#who span { font-size: 18px; flex: none; }
+#cambar { right: 8px; top: 8px; padding: 3px; gap: 3px; flex-direction: column; }
+#cambar button, #playbar button { width: 42px; height: 40px; border-radius: 9px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06);
+  padding: 0; font-size: 19px; display: grid; place-items: center; }
+#cambar button svg { width: 22px; height: 22px; fill: #cfe3ff; }
+#cambar button.on, #playbar button.on { border-color: #6ff3ff; background: rgba(40,90,110,.7); }
+#playbar { left: 50%; bottom: 8px; transform: translateX(-50%); padding: 3px; gap: 4px; }
+#speedBtn { display: flex !important; flex-direction: column; gap: 0; line-height: 1; }
+#speedBtn span { font-size: 16px; } #speedBtn i { font-style: normal; font-size: 10px; font-weight: 800; }
+#nowbar { left: 8px; top: 90px; font-size: 13px; max-width: calc(100% - 80px); }
+#nowbar span { font-size: 20px; }
+#nowbar .prog { width: 54px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.15); overflow: hidden; }
+#nowProg { height: 100%; width: 100%; background: #6ff3ff; transform-origin: left; transform: scaleX(0); }
+#nowbar.pop { animation: pop .35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+#scope { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 0, transparent 34vmin, #000 34.5vmin); }
+#scope .cross { position: absolute; left: 50%; top: 50%; width: 68vmin; height: 68vmin; transform: translate(-50%, -50%);
+  background: linear-gradient(#000, #000) center / 1.5px 100% no-repeat, linear-gradient(#000, #000) center / 100% 1.5px no-repeat; border-radius: 50%; opacity: .8; }
+
+#panel { flex: none; height: 44%; display: flex; flex-direction: column; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: #0d1226; border-top: 1px solid rgba(255,255,255,.1); overflow-y: auto; overflow-x: hidden; }
+#units { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; flex: none; padding-bottom: 2px; scrollbar-width: thin; }
+#units .nflag { width: 22px; height: 22px; border-radius: 4px; align-self: center; flex: none; margin-left: 4px; }
+.unit { position: relative; flex: none; width: 66px; height: 74px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05);
+  padding: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.unit img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; background: #1a2446; }
+.unit .ico { font-size: 28px; line-height: 46px; height: 46px; }
+.unit i { font-style: normal; font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
+.unit em { position: absolute; right: 3px; top: 2px; font-style: normal; font-size: 13px; }
+.unit.on { border-color: #6ff3ff; background: rgba(40,90,110,.6); box-shadow: 0 0 0 1px #6ff3ff inset; }
+.lab { font-size: 15px; opacity: .8; margin: 2px 0 -2px 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+.act { position: relative; height: 64px; min-width: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06);
+  padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.act .ico { font-size: 28px; line-height: 1.1; }
+.act i { font-style: normal; font-size: 10px; opacity: .8; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act.special { border-color: rgba(255,200,80,.6); background: rgba(120,90,20,.25); }
+.act.mine { border-color: rgba(255,214,90,.7); }
+.act .star { position: absolute; right: 4px; top: 2px; font-size: 13px; font-weight: 400; }
+.act.on { border-color: #6ff3ff; background: rgba(40,90,110,.7); box-shadow: 0 0 0 1px #6ff3ff inset; }
+.act:active, .unit:active { transform: scale(.95); }
+
+@media (min-width: 700px) {
+  #wrap { flex-direction: row; }
+  #panel { height: auto; width: 360px; border-top: 0; border-left: 1px solid rgba(255,255,255,.1); padding: 10px; }
+  #units { flex-wrap: wrap; overflow: visible; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+  .act { height: 74px; } .act .ico { font-size: 32px; } .act i { font-size: 11px; }
+}
+@media (min-width: 700px) and (max-height: 520px) { #panel { width: 300px; } .act { height: 58px; } .act .ico { font-size: 24px; } }
+
+
+#statline { left: 8px; top: 56px; height: 28px; font-size: 12px; font-weight: 700; color: #cfe6ff; pointer-events: auto; max-width: calc(100% - 70px); white-space: nowrap; overflow: hidden; }

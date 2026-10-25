@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Conquest Commander</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=2.3">
+<link rel="stylesheet" href="css/style.css?v=2.4">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
@@ -51,10 +51,12 @@
 <div id="start" class="screen">
   <div class="card">
     <h1>⚔️ Conquest Commander</h1>
+    <div id="armyHead" class="armyhead" aria-live="polite"><span id="ahFlag" class="ahflag"></span><span class="ahtxt"><b id="ahPlayer"></b><small id="ahNation"></small></span><span id="ahUnits" class="ahunits" title="Units in your army"></span>
+      <span class="ahbtns"><a id="backArmy" class="chip hidden" href="../trooper-custom/" title="Back to the Trooper Customizer">↩ Back to army</a><button id="editArmy" class="chip" title="Edit your army in the Trooper Customizer">🪖 Edit army</button></span></div>
     <p class="sub" id="mapLine">🏜️ Dust Ridge · 🎟️ 200 · 🪖 20 vs 20</p>
     <div class="sec camp"><div id="campStat" class="campstat"></div><button id="newCamp" class="chip" title="Start over with 💰1500">🆕 New campaign</button></div>
     <div class="sec"><h2>🏳️ You</h2><div id="myNations" class="chips"></div></div>
-    <div class="sec"><h2>🪖 Army <small id="lookCount"></small> <small class="hint" title="Tap the chip under a trooper to pick how it fights">· 🧠 👇</small></h2><div id="myLooks" class="looks"></div></div>
+    <div class="sec"><h2>🪖 Army <small id="lookCount"></small> <small class="hint" title="Tap the chip under a trooper to pick how it fights">· 🧠 👇</small></h2><div id="myLooks" class="looks"></div><p id="armyCost" class="armycost"></p></div>
     <div class="sec"><h2>🎯 Enemy</h2><div id="enemyNations" class="chips"></div></div>
     <div class="duo">
     <div class="sec"><h2>🗺️ Map</h2><div id="mapPick" class="chips"></div></div>
@@ -77,10 +79,11 @@
 
 <div id="pause" class="screen hidden"><div class="card small">
   <h1>⏸️</h1>
+  <p id="pauseWho" class="pwho"></p>
   <div id="pausePerks" class="perkline"></div>
   <div id="pauseUnits" class="units"></div>
   <button id="resume" class="big">▶️</button>
-  <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button></div>
+  <div class="row"><button id="restart" class="big2" aria-label="Restart">🔄</button><button id="toMenu" class="big2" aria-label="Menu">🏠</button><button id="pauseEdit" class="big2" aria-label="Edit army" title="🪖 Edit army (leaves this battle)">🪖</button></div>
 </div></div>
 
 <div id="end" class="screen hidden"><div class="card small">
@@ -117,6 +120,6 @@
   <button id="helpClose" class="big">👍</button>
 </div></div>
 
-<script type="module" src="js/main.js?v=2.3"></script>
+<script type="module" src="js/main.js?v=2.4"></script>
 </body>
 </html>

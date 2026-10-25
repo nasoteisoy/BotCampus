@@ -1,103 +1,38 @@
-// Army data: reads the Trooper Customizer save (localStorage 'trooper-custom:db', same origin on GitHub Pages),
-// falls back to built-in armies, and turns a look's gear into a class + combat stats.
-// Supports the Customizer v4 save (db v:3, 6-slot roster per nation, v4 kit) and the older v2/v3 save (db v:2).
-import { sanitizeNation, sanitizeFields, undigits, undigitsV2Trooper, mapV2Trooper, defaultRoster, TROOPER_FIELDS, TROOPER_FIELDS_V2, TROOPER_DEFAULT, TROOPER_DEFAULT_V2, NATION_DEFAULT } from './trooper.js';
-import { unitCost, unitStats } from './cost.js';
-
-export const LS_DB = 'trooper-custom:db';
-
-const DEFAULT_NATIONS = [
-  { id: 'def-blue', name: 'Azure League', p: '#2f80ed', s: '#ffe14d', suit: 0, sym: 0, sc: 0, vis: 0, glow: 1 },
-  { id: 'def-red', name: 'Crimson Pact', p: '#c0392b', s: '#1b1f24', suit: 1, sym: 3, sc: 0, vis: 1, glow: 1 },
-];
-
-const clean = (x, max = 24) => String(x ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, max);
-const rosterLooks = (nid, roster) => roster.map((r, i) => ({ id: `r-${nid}-${i}`, nationId: nid, name: clean(r.name, 16) || 'Trooper', icon: clean(r.icon, 4), st: sanitizeFields(r.t, TROOPER_FIELDS, TROOPER_DEFAULT), roster: true }));
-
-// Returns { player, nations, looks:[{id,nationId,name,icon,st}], active, source:'customizer'|'default', version }
-export function loadArmies(storage = globalThis.localStorage) {
-  let d = null;
-  try { d = JSON.parse(storage.getItem(LS_DB) || 'null'); } catch (e) { d = null; }
-  const out = { player: 'Player', nations: [], looks: [], source: 'default', version: 0 };
-  if (d && (d.v === 3 || d.v === 2) && Array.isArray(d.nations)) {
-    out.version = d.v;
-    out.player = clean(d.player && d.player.name) || 'Player';
-    for (const n of d.nations) if (n && typeof n.id === 'string') out.nations.push({ id: n.id, name: clean(n.name) || 'Nation', ...sanitizeNation(n), _roster: n.roster });
-    const ids = new Set(out.nations.map((n) => n.id));
-    // v4 save: each nation's 6-slot roster comes first
-    if (d.v === 3) for (const n of out.nations) { const filled = Array.isArray(n._roster) ? n._roster.filter((r) => r && !r.blank) : []; out.looks.push(...rosterLooks(n.id, filled.length ? filled : defaultRoster())); }
-    for (const l of d.looks || []) {
-      if (!l || l.unit !== 'trooper' || !ids.has(l.nationId)) continue;
-      const st = d.v === 3 ? undigits(l.u, TROOPER_FIELDS, TROOPER_DEFAULT) : undigitsV2Trooper(l.u); if (!st) continue;
-      out.looks.push({ id: String(l.id), nationId: l.nationId, name: clean(l.name) || 'Look', icon: '', st });
-    }
-    // v2 save: the active nation's current trooper counts as a look when it has none saved
-    if (d.v === 2 && d.cur && d.cur.trooper && ids.has(d.active) && !out.looks.some((l) => l.nationId === d.active))
-      out.looks.push({ id: 'cur-' + d.active, nationId: d.active, name: 'Current', icon: '', st: mapV2Trooper(sanitizeFields(d.cur.trooper, TROOPER_FIELDS_V2, TROOPER_DEFAULT_V2)) });
-    out.nations.forEach((n) => delete n._roster);
-    out.active = ids.has(d.active) ? d.active : (out.nations[0] && out.nations[0].id);
-    if (out.nations.length) out.source = 'customizer';
-  }
-  if (!out.nations.length) {
-    out.nations = DEFAULT_NATIONS.map((n) => ({ ...n }));
-    out.active = out.nations[0].id;
-  }
-  return out;
-}
-
-// built-in army = the Customizer's default 6-type roster (Trooper, Heavy, Sniper, Engineer, Jet Trooper, Commander)
-export function defaultLooksFor(nationId) { return rosterLooks(nationId, defaultRoster()).map((l) => ({ ...l, id: 'def-' + l.id })); }
-
-// random nation (enemy fallback) that doesn't clash with the player's primary color
-const PALETTE = ['#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#5b7a3a', '#1abc9c', '#6c4bd1', '#d35b9f', '#2e343c', '#e8eef4'];
-const SEC = ['#1b1f24', '#ffe14d', '#f4f6f8', '#ff9f1a', '#00d4ff', '#4cd964'];
-export function randomNation(rng, avoidHex) {
-  const hexDist = (a, b) => { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16); return Math.abs((x >> 16) - (y >> 16)) + Math.abs(((x >> 8) & 255) - ((y >> 8) & 255)) + Math.abs((x & 255) - (y & 255)); };
-  const opts = PALETTE.filter((c) => !avoidHex || hexDist(c, avoidHex) > 180);
-  const p = opts[(rng() * opts.length) | 0] || '#c0392b';
-  return { id: 'rnd-enemy', name: 'Raiders', ...sanitizeNation({ ...NATION_DEFAULT, p, s: SEC[(rng() * SEC.length) | 0], suit: (rng() * 5) | 0, sym: (rng() * 12) | 0, vis: (rng() * 6) | 0, glow: 1 + ((rng() * 2) | 0) }) };
-}
-export function randomLooks(rng, nationId, n = 4) {
-  const base = defaultRoster(), out = [];
-  for (let i = 0; i < n; i++) {
-    const st = { ...base[i % base.length].t };
-    for (const k of ['helm', 'pads', 'extra', 'banner', 'skin', 'side', 'expl']) { const f = TROOPER_FIELDS.find(([q]) => q === k); st[k] = (rng() * f[1]) | 0; }
-    if (rng() < 0.3) st.armor = 1;
-    out.push({ id: `rnd-${i}`, nationId, name: base[i % base.length].name, icon: base[i % base.length].icon, st });
-  }
-  return out;
-}
+// Battle numbers for a look: class + weapon + HP/speed/cost/accuracy, all from the ONE shared stats file
+// (games/shared/army/stats.js, the same numbers the 🪖 Trooper Customizer shows). v2.4: no local COST/STATS/ITEMS copies.
+// The army itself (who you are, your units, the enemy) is loaded in army.js.
+import { combatStats, classOf as sharedClassOf, toIndex, ITEMS, WEAPONS, CLASSES as SHARED_CLASSES, CLASS_INFO, BASIC_GEAR } from '../../shared/army/stats.js?v=8';
 
 // ---------- class + stats from gear (SWBF2 classes) ----------
-// Class comes from the look's gear (v4 kit), in this order:
-//   rocket → heavy · sniper rifle → sniper · jetpack or EMP → jet (special) · rally or chaingun → commander
-//   fusion cutter or shotgun → engineer · everything else → trooper
-// Each class keeps its own weapon numbers below (abilities beyond the weapon come later).
-export const CLASSES = ['trooper', 'heavy', 'engineer', 'sniper', 'commander', 'jet'];
-export const CLASS_ICON = { trooper: '🪖', heavy: '🚀', engineer: '🔧', sniper: '🎯', commander: '⭐', jet: '🛩️' };
-export function classOf(st) {
-  if (st.weapon === 1) return 'heavy';
-  if (st.weapon === 2) return 'sniper';
-  if (st.gadget === 3 || st.weapon === 5) return 'jet';
-  if (st.gadget === 6 || st.weapon === 4) return 'commander';
-  if (st.gadget === 4 || st.weapon === 3) return 'engineer';
-  return 'trooper';
-}
+// Class comes from the gear (shared classOf, first match wins):
+//   rocket → heavy · sniper → sniper · jetpack or EMP → jet · rally or chaingun → commander · fusion cutter or shotgun → engineer · else trooper
+export const CLASSES = [...SHARED_CLASSES];                     // trooper, heavy, engineer, sniper, commander, jet (sim class mix)
+export const CLASS_ICON = Object.fromEntries(CLASSES.map((c) => [c, CLASS_INFO[c].i]));
+export const SIM_WEAPONS = ['rifle', 'rocket'];                 // weapon kinds sim.fire() knows (rocket = splash)
 
-const WEAPONS = [
-  { weapon: 'rifle', range: 28, rof: 0.55, dmg: 11, splash: 0 },        // blaster
-  { weapon: 'rocket', range: 30, rof: 2.6, dmg: 55, splash: 3.2 },      // rocket launcher (Heavy)
-  { weapon: 'rifle', range: 42, rof: 1.6, dmg: 34, splash: 0, laser: 1 }, // sniper
-  { weapon: 'rifle', range: 15, rof: 0.9, dmg: 24, splash: 0 },         // shotgun
-  { weapon: 'rifle', range: 24, rof: 0.16, dmg: 4.2, splash: 0 },       // chaingun
-  { weapon: 'rocket', range: 22, rof: 2.0, dmg: 24, splash: 2.4 },      // EMP launcher
-];
-export function statsOf(st) {
-  const { cost, power } = unitCost('trooper', st);
-  const { hp, speed } = unitStats('trooper', st);
-  const w = WEAPONS[st.weapon] || WEAPONS[0];
-  const acc = 0.5 + Math.min(0.12, power * 0.002);   // a bit better with more ⚡
-  return { cls: classOf(st), cost, power, hp: hp + [0, 5, 10][st.pads || 0], speed: speed * 0.9, acc, ...w, dmg: w.dmg * (st.award ? 1.1 : 1) };
+// gear = item-id object ({ weapon: 'rocket', … }) OR the customizer's index state ({ weapon: 1, … })
+const asGear = (g) => (g && Object.values(g).some((v) => typeof v === 'string') ? g : null);
+export const gearOf = (x) => (x && x.gear ? x.gear : x || {});
+export function classOf(g) { return sharedClassOf('trooper', gearOf(g)); }
+// sim stats: { cls, cost, power, hp, speed (battle m/s), acc, weapon:'rifle'|'rocket', weaponId, range, rof, dmg, splash, laser, dps }
+export function statsOf(x) {
+  const g = gearOf(x), s = asGear(g) ? combatStats({ kind: 'trooper', gear: g }) : combatStats('trooper', g);
+  return { cls: s.cls, cost: s.cost, power: s.power, hp: s.hp, speed: s.speed, acc: s.acc, weapon: s.weapon, weaponId: s.id, range: s.range, rof: s.rof, dmg: s.dmg, splash: s.splash, laser: s.laser ? 1 : 0, dps: s.dps };
 }
+export const indexOf = (gear) => toIndex('trooper', gear);   // gear ids → index state for the 3D look builders (trooper.js)
+export { ITEMS, WEAPONS, BASIC_GEAR };
 
 export function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+export const fmt = (n) => (n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k' : n.toLocaleString('en-US'));
+
+// ---------- v2.3 names kept for older test scripts (test/brains, test/pickups). The game itself uses army.js. ----------
+// loadArmies(): the shared army (army.js loadArmy) with a 2nd (random) nation when the save has only one.
+// defaultLooksFor(): the old built-in 6-type roster (Trooper, Heavy, Sniper, Engineer, Jet, Commander) as looks.
+import { loadArmy, randomNation } from './army.js';
+import { DEFAULT_ROSTER } from './trooper.js';
+import { toGear } from '../../shared/army/stats.js?v=8';
+export function loadArmies(storage) {
+  const a = loadArmy(storage); if (a.nations.length > 1) return a;
+  return { ...a, nations: [...a.nations, randomNation(mulberry32(5), a.nations[0] && a.nations[0].p)] };
+}
+export const defaultLooksFor = (nid) => DEFAULT_ROSTER.map((r, i) => ({ id: `def-${nid}-${i}`, nationId: nid, name: r.name, icon: r.icon, st: { ...r.t }, gear: toGear('trooper', r.t), armyTrait: '' }));

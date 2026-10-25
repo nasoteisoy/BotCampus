@@ -39,3 +39,25 @@ Same rule as Front Line (`games/tank-2v2`) and Space Defense (`games/space-defen
 - `js/icons.js`: SVG button icons
 - `vendor/`: three.js r-module and OrbitControls, vendored so it works offline
 - `sw.js`, `manifest.webmanifest`, `icon-*.png`: PWA. The cache is `ship-sandbox-v2` (scripts load with `?v=2`), cleanup only deletes `ship-sandbox-*` caches, and fetches are network-first with `cache: 'no-cache'`. An update toast shows when a new version is ready.
+
+## v3 — your army on board (Trooper Customizer link)
+- **Read-only** army bridge in `js/army.js`: imports `../shared/army/stats.js` + `schema.js` (ARMY_SCHEMA.md v1) with a dynamic `import()`;
+  `Army.load()` gets a no-op storage so the legacy `trooper-custom:db` migration happens in memory only. Ship Sandbox never writes localStorage.
+  Without the shared modules it parses `botcampus:army` v1 / `trooper-custom:db` v3 itself; with no save: **Home Fleet** + **Trooper 1**.
+  `adaptArmy()` is the single swap point.
+- Hull tinted in the nation's primary colour, trim glows in the secondary, nation flag (symbol) waves on the bridge mast.
+- Corner header: flag · player · nation, 👥 crew overlay toggle, 🪖 **Troopers** → `../trooper-custom/?from=ship-sandbox`,
+  ↩ back to `../trooper-custom/` when opened with `?from=custom` (or `?from=trooper-custom`).
+- Crew slots (bridge ×2, guns, reactor, laser, launcher, sensors, shield, hangar, engines) filled by roster troopers in slot order.
+  2D portraits (helmet type, nation armour colour, visor, skin, class/gear emoji) in the tooltip, the parts list and the 👥 overlay.
+- Boosts (shown per crew member in the tooltip): 🎯 less weapon spread (own gun + half of bridge crew, capped at 50%; from `combatStats().acc`, snipers +6),
+  🔧 HP/s self-repair on their part (engineers 3), 🫧 shield regen (+10%/repair point). Hurt (<50% HP) crew give half, KO crew nothing.
+- A part breaking hurts its crew (−65 HP → 🤕, 0 → 😵 KO); ↻ reset heals everyone.
+- Next: 🪖 boarding attack; ships designed in the customizer (`army.ships`) are out of scope for v3.
+
+## v3b — 🪖 Boarding
+- 🪖 **Boarding** (last palette button) sends up to 4 roster troopers (no save: 3× Trooper 1) to the targeted part (tap a part first; none targeted → first crewed intact part).
+- Pod flies in from the screen edge (portraits), docks, then a small fight box above the part shows boarders vs defenders (that part's crew + deck guards) with HP pips.
+  Fight uses shared `combatStats()` (hp, acc, dmg, rof) or the same numbers from a fallback table; defenders get cover (boarders hit ×0.85); max 9 s, then HP share decides.
+- ✅ Captured → part breaks (stops working) and carries your nation's flag; 🔧 repair retakes it. ❌ Repelled → boarders hurt/😵 KO. Crew hurt in the fight stay hurt.
+- Logged, shown in the tooltip, cleared by ↻ reset. Never writes localStorage.

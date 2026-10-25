@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070a1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>🥊 Combat Demo</title>
+<link rel="icon" href="icon.svg?v=7" type="image/svg+xml">
+<link rel="stylesheet" href="css/arena.css?v=7">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js?v=6" } }
+</script>
+</head>
+<body>
+<div id="wrap">
+  <div id="view">
+    <div id="app"></div>
+    <a id="backBtn" class="chip" href="./" title="Back to the customizer" aria-label="Back to the customizer">⬅️</a>
+    <div id="who" class="chip"><canvas id="whoFlag" width="32" height="32"></canvas><span id="whoIco"></span><b id="whoName"></b><small id="whoFor"></small></div>
+    <div id="hudcol"><div id="hud" class="chip" aria-live="polite"></div><div id="stats" class="chip"></div></div>
+    <div id="cambar" class="chip">
+      <button data-cam="orbit" class="on" title="🔄 Orbit" aria-label="Orbit camera">🔄</button>
+      <button data-cam="top" title="🗺️ Top" aria-label="Top camera">🗺️</button>
+      <button data-cam="side" title="📷 Side" aria-label="Side camera">📷</button>
+      <button data-cam="follow" title="🎥 Follow" aria-label="Follow camera">🎥</button>
+    </div>
+    <div id="toast" class="chip"></div>
+    <div id="playbar" class="chip">
+      <button id="playBtn" title="Play / pause" aria-label="Play or pause">⏸️</button>
+      <button id="speedBtn" title="Speed" aria-label="Speed"><span>🐇</span><i>1x</i></button>
+      <button id="restartBtn" title="Restart" aria-label="Restart">🔁</button>
+    </div>
+  </div>
+  <div id="panel">
+    <div id="units" role="listbox" aria-label="Units"></div>
+    <div id="legend"></div>
+  </div>
+</div>
+<script type="module" src="js/combat.js?v=7"></script>
+</body>
+</html>

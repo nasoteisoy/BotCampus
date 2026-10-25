@@ -1,8 +1,10 @@
-# ⚔️ Conquest Commander (v2.3)
+# ⚔️ Conquest Commander (v2.4)
 
 A Battlefront-style Conquest battle where **you are the commander**. Your troopers from the 🪖 Trooper Customizer fight on their own. You decide which command posts matter.
 
-Play: `games/conquest-commander/` (next to `games/trooper-custom/`)
+Play: `games/conquest-commander/` (next to `games/trooper-custom/` and `games/shared/army/`)
+
+**v2.4: one army with the 🪖 Trooper Customizer.** Both games read the same save (`localStorage['botcampus:army']`) and the same gear numbers (`games/shared/army/stats.js`). What you build in the Customizer is what fights here, at the price the Customizer shows.
 
 ## How to play
 1. Pick your nation, up to 6 trooper looks, a **behaviour trait** for each look (the chip under it), an enemy nation, the **🗺️ map** (🏜️ Dust Ridge small / 🏞️ Grand Valley large) and the enemy brain (😠 Normal / 😈 Elite). Tap 🛒 ▶️. Your picks are remembered.
@@ -86,13 +88,22 @@ Base numbers for traits that don't say otherwise: 50% cover chance, 9 m reach, 3
 | center | Space / 🎯 | 🎯 |
 | pause / help | Esc / H | ⏸️ / ❓ |
 
-## Customizer import
-- Reads `localStorage['trooper-custom:db']`. Same origin on GitHub Pages, so it is shared with the Customizer.
-  - **Customizer v4 save** `{v:3, player, nations[{…colors, roster[6]{name, icon, t}}], looks, tank, …}`: each nation's 6-slot roster plus its saved trooper looks (`u` = v4 digits)
-  - **older save** `{v:2, …, cur, looks}`: trooper looks are mapped into the v4 kit with the Customizer's own `undigitsV2Trooper`
-- Tank looks are skipped until v2.
-- If nothing is saved, two built-in default armies are used.
-- Read-only: this game never writes to that key.
+## Your army (v2.4, `js/army.js`)
+- **Where it comes from:** the shared BotCampus army save `localStorage['botcampus:army']` (v1, spec: `games/shared/army/ARMY_SCHEMA.md`), loaded with the shared `games/shared/army/schema.js`. Everything is sanitized there (names, ids, gear, traits, brains).
+  - An **old Customizer save** (`'trooper-custom:db'` v3) is converted once by the shared `migrate()`, which writes `botcampus:army`. The old key is left alone, and old Conquest trait picks move onto the units.
+  - An even older save (v1/v2) isn't converted here. The setup screen asks you to open the Customizer once.
+  - **No save:** you get one cheap basic **Trooper 1** (💰100), not a ready-made army.
+- **What you field:** the active player's roster troopers (up to 6 types, in slot order). Tanks and bench units aren't used yet.
+- **Who you fight:** another saved player (their roster troopers), or 🎲 a random nation with a generated army that has as many unit types as yours (trooper first, then heavy, sniper, engineer, jet, commander).
+- **Traits:** the first valid entry in a unit's `traits[]` is its behaviour. The chip shows 🪖 and is locked, so change it in the Customizer. Units with no trait use the setup picker (or the class default).
+- **Cost:** each spawn costs the unit's shared `unitCost()` in ⭐ CP (shown on every tile). The setup screen compares your average cost with the CP you earn per wave and warns ⚠️ when the army is too expensive to reinforce. Campaign 💰 credits still only buy perks.
+- **Header:** the setup screen and the ⏸️ pause menu show your player name, nation flag and name, and unit count.
+- **Jumps:**
+  - **🪖 Edit army** (on the setup screen, or 🪖 in pause) saves your setup and opens `../trooper-custom/?from=conquest`. The Customizer's ⬅️ brings you back.
+  - The Customizer's ⚔️ opens Conquest with `?from=custom`, which shows **↩ Back to army**.
+  - No army data is ever put in a URL.
+  - Conquest listens for `storage` events on `botcampus:army`, so an edit in another tab updates the setup screen (or the next menu visit, mid-battle).
+- **Conquest never writes `botcampus:army`** (only the shared one-time migration does).
 
 ## Files
 - `index.html`, `css/style.css`
@@ -101,13 +112,15 @@ Base numbers for traits that don't say otherwise: 50% cover chance, 9 m reach, 3
 - `js/render.js`: three.js view, instanced armies, map scene rebuilt per map
 - `js/map.js`: the maps (Dust Ridge, Grand Valley), `MAP` + `setMap`, props grid for fast line-of-sight
 - `js/nav.js`: grid A* pathfinding (per map; unreachable pockets are blocked)
-- `js/data.js`: import, class, stats
+- `js/army.js`: loads the shared army (above), unit → look, generated enemy, cost check
+- `js/data.js`: class + battle stats from the shared `stats.js` (no local copies; `cost.js` is gone)
 - `js/traits.js`: the 7 behaviour traits, class defaults, their numbers, setup save, difficulty mapping, cover spots (`getCover`) and the trait jobs (`TRAIT_AI`: cover/pop-up, sniper nest, supplier aura, mines), mixed into `Sim`
 - `js/perks.js`: the 10 perks + their effect numbers
 - `js/campaign.js`: campaign save, rewards, enemy perk scaling, map list
-- `js/trooper.js`, `js/cost.js`: **copied unchanged** from `trooper-custom/js` (Customizer v4 snapshot, Oct 18 2026 19:3x). Re-copy them if the Customizer changes its kit.
+- `js/trooper.js`: **copied unchanged** from `trooper-custom/js` (Customizer v4 snapshot, Oct 18 2026), used for the 3D look builders.
+- `../shared/army/stats.js` + `schema.js`: shared with the Customizer (imported as `../../shared/army/…?v=8` from `js/`, the same module URLs the Customizer uses). Don't copy them in.
 - three.js r169 from jsDelivr (import map). No build step.
-- Don't publish: `test/`, `screenshots/`.
+- Don't publish: `test/`, `screenshots/`, `PROGRESS*.md`.
 
 ## Performance (v2.2)
 - Same renderer for both maps: one instanced mesh for all rocks, one for all walls, instanced troopers (one mesh per look and part), so the big map costs about the same number of draw calls (~35 at normal zoom, ~55 zoomed all the way out). Terrain is coarser per meter on the big map (190×118 segments desktop, 116×72 phone).
@@ -117,6 +130,7 @@ Base numbers for traits that don't say otherwise: 50% cover chance, 9 m reach, 3
 
 ## Tests
 ```
-node --import ./test/three-hook.mjs test/sim.mjs                              # rules, perks, campaign, bot AI, traits, 24-match balance, maps + Grand Valley (5 posts, mirror, nav, 8 big matches, no stuck bots, traits on the big map: retake, cover, nest, mines) (→ test/balance.txt)
-PLAYWRIGHT_BROWSERS_PATH=/workspace/pw-runner/browsers node test/run.mjs      # browser: desktop (traits, cover, nests), campaign + shop, v2 save, no save, iPhone 13 landscape + portrait, map picker + Grand Valley desktop/phone incl. traits in a big battle (→ test/perf.json)
+node --import ./test/three-hook.mjs test/sim.mjs                              # rules, perks, campaign, bot AI, traits, 24-match balance, maps + Grand Valley (5 posts, mirror, nav, 8 big matches, no stuck bots, traits on the big map: retake, cover, nest, mines), v2.4 shared army (every gear id resolves, no save, v3 migration, mixed-gear army, spawn cost, cost check) (→ test/balance.txt; set SHARED_ARMY=<path to games/shared/army> if it isn't the default)
+bash test/stage.sh                                                            # staging tree games/{shared/army,trooper-custom,conquest-commander} (run.mjs does this itself)
+PLAYWRIGHT_BROWSERS_PATH=<playwright browsers> node test/run.mjs              # browser: desktop (traits, cover, nests), campaign + shop, v2 save, no save, iPhone 13 landscape + portrait, map picker + Grand Valley desktop/phone incl. traits in a big battle, v2.4 army header/costs/pause/storage refresh + Customizer ⇄ Conquest round trip (→ test/perf.json, screenshots/unite-*.png)
 ```

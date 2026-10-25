@@ -1,4 +1,5 @@
 import { MAP, heightAt, lineClear, solidDist } from './map.js';
+import { BRAINS } from './brains.js';   // 🧠 player brains (flag, default OFF: ?brains=1)
 
 // Behaviour traits (v2.1). The player picks ONE trait per roster look on the setup screen; '' = class default.
 // Every trooper runs the same Battlefront II core AI (sim.js); a trait only changes the numbers / extra jobs below.
@@ -87,6 +88,7 @@ export function getCover(nav) {
 export const TRAIT_AI = {
   // where does this bot walk right now? (every 0.3 s) supply > mines > cover > sniper nest > its post slot
   decide(u, now) {
+    if (BRAINS.on) { const b = BRAINS.decide(this, u, now, MAP.postR); if (b) { u.mx = b.x; u.mz = b.z; return; } }   // brain fired → walk there; else the trait AI below
     const fx = u.tr, fighting = now - u.lastSeen < fx.hold;
     let dest = null;
     if (fx.heal) dest = this.supplyTarget(u);

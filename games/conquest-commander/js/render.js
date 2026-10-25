@@ -4,6 +4,8 @@
 import * as THREE from 'three';
 import { TeamLook, buildMergedDef, TROOPER, drawSymbol, symbolColor } from './trooper.js';
 import { MAP, heightAt } from './map.js';
+import { PICKUPS } from './pickups.js';
+import { syncPickups } from './pickups-view.js';     // ❤️/📦 packs + overhead icons (only while PICKUPS.on)
 
 export const TEAM_COLOR = ['#3ab4ff', '#ff5a4a'];   // your side / enemy side (rings, tracers, HUD)
 const UNIT_SCALE = 1.8;
@@ -180,6 +182,7 @@ export class View {
   update(sim, dt, now) {
     this.updateCamera(dt);
     if (sim) { this.syncPosts(sim); this.syncUnits(sim); this.syncRally(sim); this.syncMines(sim); }
+    if (PICKUPS.on) syncPickups(this, sim);
     this.syncFx(dt);
     this.renderer.render(this.scene, this.camera);
   }

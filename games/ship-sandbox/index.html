@@ -12,12 +12,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=3c">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
 </head>
 <body>
 <canvas id="cv"></canvas>
 <div id="tags" class="hidden"></div>
+<div id="crewTags" class="hidden"></div>
+<div id="boardFx"></div>
 <div id="floats"></div>
 <div id="tip" class="hidden" role="tooltip"></div>
 <div id="top">
@@ -30,6 +32,8 @@
   <button class="tb" id="bCount" title="Attackers per tap"><b id="countV">×1</b></button>
 </div>
 <div id="stats">
+  <div id="army" title="Your army (from Trooper Customizer)"><canvas id="flagC" width="36" height="24"></canvas><span class="an"><b id="plName">Player</b><small id="natName">Home Fleet</small></span>
+    <button id="bCrew" title="Show crew on the ship">👥</button><a id="bTroop" class="lk" href="../trooper-custom/?from=ship-sandbox" title="Troopers">🪖<small>Troopers</small></a><a id="bHome" class="lk hidden" href="../trooper-custom/" title="Back to Trooper Customizer">↩</a></div>
   <button id="tgt" title="Target (tap to aim at whole ship)"><span>🎯</span><b id="tgtIc">🚢</b><span id="tgtName">Whole ship</span></button>
   <span class="st" title="Shield"><i>🫧</i><span class="bar"><i id="shBar"></i></span></span>
   <span class="st" title="Speed"><i>🚀</i><b id="spdV">14</b></span>
@@ -48,7 +52,7 @@
 </div>
 <div id="banner" class="hidden"><div class="card"><div class="big">💀</div><div id="bannerTxt">Ship lost</div><button id="bAgain">↺</button></div></div>
 <div id="updToast" class="hidden">⬆️ New version <button id="updGo">↻</button></div>
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3c"></script>
 <script>
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {

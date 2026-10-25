@@ -218,7 +218,7 @@ The service worker only registers over https. Its cache is `trooper-custom-v6`, 
 
 ## Tests
 ```
-PLAYWRIGHT_BROWSERS_PATH=/workspace/pw-runner/browsers node test/run.mjs
+PLAYWRIGHT_BROWSERS_PATH=<playwright browsers> node test/run.mjs
 ```
 The tests check the following at 390×844, 390×664, 360×740, 844×390 and 1280×800:
 - 0 console errors and no overflow on every tab of both units, touch targets of 36 px or more

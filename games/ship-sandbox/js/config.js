@@ -62,3 +62,14 @@ export const SHIP = {
 };
 export const COUNTS = [1, 3, 5, 10];
 export const SPEEDS = [1, 0.5, 0.25];
+
+// v3 crew: slots per part, filled in this order from the army's troopers (one trooper per slot)
+export const CREW_SLOTS = { bridge: 2, gun1: 1, gun2: 1, reactor: 1, laser: 1, launcher: 1, sensors: 1, shield: 1, hangar: 1, engL: 1, engR: 1 };
+export const CREW_ORDER = ['bridge', 'gun1', 'gun2', 'reactor', 'laser', 'launcher', 'sensors', 'shield', 'hangar', 'engL', 'engR', 'bridge'];
+export const CREW_HIT = 65;          // crew hp lost when their part breaks (twice = knocked out for most)
+export const AIM_CAP = 0.5;          // crew can cut weapon spread by at most 50%
+
+// v3b boarding: squad of up to 4 roster troopers vs the part's crew + deck guards
+export const BOARD = { squad: 4, fly: 2.2, dock: 0.5, maxFight: 9, show: 1.5, speed: 2.5, // speed = fight time compression
+  guard: { name: 'Deck guard', hp: 80, acc: 0.5, dmg: 9, rof: 0.6 },
+  guards: { bridge: 3, reactor: 3, shield: 2, hangar: 2, default: 2 }, coverMul: 0.85 }; // defenders fight from cover: boarders hit ×0.85

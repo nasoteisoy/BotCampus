@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-24 15:31 MST",
+ "generated": "2026-10-24 17:15 MST",
  "items": [
   {
    "id": "story",
@@ -271,16 +271,33 @@
    "title": "Conquest Commander",
    "type": "game",
    "maker": "Dev A",
-   "makerSource": "MERGE.md: v2.2 map by Dev A + traits merge (other bot unknown)",
+   "makerSource": "MERGE.md: v2.2 map by Dev A + traits merge (other bot unknown); v2.4 army/costs/packs unite by Dev A",
    "section": "live",
-   "updated": "2026-10-19",
+   "updated": "2026-10-24",
    "url": "games/conquest-commander/",
-   "extras": [],
-   "note": "Battlefront-style command posts",
+   "extras": [
+    {
+     "label": "🪖 Trooper Customizer",
+     "url": "games/trooper-custom/"
+    }
+   ],
+   "note": "v2.4: battles with your Trooper Customizer army, unit costs and health/ammo packs",
    "thumb": "thumbs/conquest-commander.webp",
    "gitAuthors": [
     "CampusDev"
    ]
+  },
+  {
+   "id": "unit-brains",
+   "title": "Unit Brains",
+   "type": "tool",
+   "maker": "Dev C",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/unit-brains/",
+   "extras": [],
+   "note": "IF→THEN icon brains for Conquest Commander troops",
+   "thumb": "thumbs/unit-brains.webp"
   },
   {
    "id": "trooper-custom",
@@ -289,14 +306,66 @@
    "maker": "Dev A",
    "makerSource": "memory: built by Dev A",
    "section": "live",
-   "updated": "2026-10-18",
+   "updated": "2026-10-24",
    "url": "games/trooper-custom/",
-   "extras": [],
-   "note": "Design your army looks",
+   "extras": [
+    {
+     "label": "🎬 Demo viewer",
+     "url": "games/trooper-custom/demo.html"
+    },
+    {
+     "label": "⚔️ Combat",
+     "url": "games/trooper-custom/combat.html"
+    },
+    {
+     "label": "👥 Team",
+     "url": "games/trooper-custom/team.html"
+    }
+   ],
+   "note": "Build your army: basic troopers, all gear unlocked with cost + real battle stats, player & nation header",
    "thumb": "thumbs/trooper-custom.webp",
    "gitAuthors": [
     "CampusDev"
    ]
+  },
+  {
+   "id": "trooper-demo",
+   "title": "Trooper Demo Viewer",
+   "type": "game",
+   "maker": "Lead: Dev",
+   "makerSource": "built in the Trooper Customizer demo task routed by Leader (Chumi brief); builder bot not named",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/trooper-custom/demo.html",
+   "extras": [],
+   "note": "Watch your troopers & tanks walk, shoot, take cover, drive and wreck",
+   "thumb": "thumbs/trooper-demo.webp"
+  },
+  {
+   "id": "trooper-combat",
+   "title": "Trooper Combat Demo",
+   "type": "game",
+   "maker": "Lead: Dev",
+   "makerSource": "built in the Trooper Customizer demo task routed by Leader (Chumi brief); builder bot not named",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/trooper-custom/combat.html",
+   "extras": [],
+   "note": "One trooper vs dummies: cover, pickups, icon HUD, real stats",
+   "thumb": "thumbs/trooper-combat.webp"
+  },
+  {
+   "id": "trooper-team",
+   "title": "Trooper Team Demo",
+   "type": "game",
+   "maker": "Lead: Dev",
+   "makerSource": "built in the Trooper Customizer demo task routed by Leader (Chumi brief); builder bot not named",
+   "section": "live",
+   "updated": "2026-10-24",
+   "url": "games/trooper-custom/team.html",
+   "extras": [],
+   "note": "Your saved team with Conquest traits vs waves of dummies",
+   "thumb": "thumbs/trooper-team.webp"
   },
   {
    "id": "tank-2v2",
@@ -430,13 +499,18 @@
    "id": "ship-sandbox",
    "title": "Ship Sandbox",
    "type": "game",
-   "maker": "unknown",
-   "makerSource": "",
+   "maker": "Dev B",
+   "makerSource": "v1-v3 built by Dev B (commits 80b2d4b, 606456e, 8cfaf6c)",
    "section": "live",
-   "updated": "2026-10-18",
+   "updated": "2026-10-24",
    "url": "games/ship-sandbox/",
-   "extras": [],
-   "note": "Break a ship part by part",
+   "extras": [
+    {
+     "label": "Trooper Customizer",
+     "url": "games/trooper-custom/"
+    }
+   ],
+   "note": "Break a ship part by part, crewed by your troopers",
    "thumb": "thumbs/ship-sandbox.webp",
    "gitAuthors": [
     "CampusDev"

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conquest Commander — Unit Brains</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="top">
+  <div class="title">🧠 <b>Brains</b></div>
+  <div id="score" aria-label="score"><span class="b">🔵 <i id="sb">1</i></span><span class="r">🔴 <i id="sr">1</i></span></div>
+  <div class="ctrl">
+    <button id="btnPause" class="ib" title="Pause / play" aria-label="pause">⏸️</button>
+    <button id="btnSpeed" class="ib" title="Speed" aria-label="speed">⏩<small id="spd">1</small></button>
+    <button id="btnReset" class="ib" title="Reset" aria-label="reset">🔄</button>
+  </div>
+</header>
+<main id="layout">
+  <section id="arenaWrap">
+    <canvas id="arena"></canvas>
+    <div id="selChip" class="chip hide" aria-live="polite"></div>
+    <div id="hint" class="hint">👆 🔵</div>
+  </section>
+  <section id="panel">
+    <nav id="tabs" role="tablist">
+      <button class="tab hide" id="tabArmy" data-tab="army" role="tab" title="Your army units">🪖<span>Army</span></button>
+      <button class="tab on" data-tab="unit" role="tab" title="Unit brain">🧠<span>Unit</span></button>
+      <button class="tab" data-tab="squad" role="tab" title="Squad brain">👥<span>Squad</span></button>
+      <button class="tab" data-tab="json" role="tab" title="Save / load">💾<span>Save</span></button>
+    </nav>
+    <div id="tab-army" class="pane">
+      <div id="armyHead" class="armyhead"></div>
+      <div id="armyUnits" class="ulist" aria-label="army units"></div>
+      <div id="armySquadSoon" class="soon" role="note" title="Conquest does not run squad plans yet. Squads still save to your army; the plans only run here in the test arena.">🚧<b>soon in Conquest</b><span>👥 saved, not used yet</span></div>
+      <div class="grp sqgrp2"><div class="gl" title="Squads">👥</div><div id="armySquads" class="opts"></div></div>
+      <div id="armyMsg" class="msg"></div>
+    </div>
+    <div id="tab-unit" class="pane on">
+      <div id="unitBar" class="abar hide"><span id="unitBarName" class="aname"></span><button id="btnClearBrain" class="ib" title="No brain: keep the trait AI" aria-label="no brain">∅</button><button id="btnSaveUnit" class="ib save" title="Save this brain to the unit" aria-label="save to unit">💾</button></div>
+      <div id="presets" class="strip" aria-label="presets"></div>
+      <div id="rows" class="rows"></div>
+      <div class="rowbar">
+        <button id="btnAdd" class="ib wide" title="Add row">➕</button>
+        <button id="btnTier" class="ib" title="Unlock ⭐ actions" aria-pressed="false">⭐</button>
+        <span id="rowCount" class="muted"></span>
+      </div>
+    </div>
+    <div id="tab-squad" class="pane">
+      <div id="squadSoon" class="soon" role="note" title="Conquest does not run squad plans yet. Squads still save to your army; the plans only run here in the test arena.">🚧<b>soon in Conquest</b><span>🧪 test arena only</span></div>
+      <div id="squadBar" class="abar hide"><span id="squadBarName" class="aname"></span><button id="btnSaveSquad" class="ib save" title="Save this squad brain to the unit's squad" aria-label="save squad">💾</button></div>
+      <div class="grp"><div class="gl">🎯</div><div id="plans" class="opts"></div></div>
+      <div class="grp"><div class="gl">🔷</div><div id="forms" class="opts"></div></div>
+      <div class="grp"><div class="gl">🧭</div><div class="opts"><button id="btnFollow" class="opt" aria-pressed="true">🧭<span>Follow ★</span></button></div></div>
+      <div class="grp"><div class="gl">↔️</div><div id="spaces" class="opts"></div></div>
+      <div id="goalLine" class="goal"></div>
+    </div>
+    <div id="tab-json" class="pane">
+      <div class="opts jbtn">
+        <button id="btnCopy" class="opt" title="Copy">📋<span>Copy</span></button>
+        <button id="btnDown" class="opt" title="Download">⬇️<span>File</span></button>
+        <label class="opt" title="Upload">⬆️<span>Open</span><input id="fileIn" type="file" accept=".json,application/json" hidden></label>
+        <button id="btnSave" class="opt" title="Save in browser">💾<span>Save</span></button>
+        <button id="btnLoad" class="opt" title="Load from browser">📂<span>Load</span></button>
+        <button id="btnApply" class="opt" title="Use text below">✔️<span>Use</span></button>
+      </div>
+      <div id="jsonMsg" class="msg"></div>
+      <textarea id="jsonBox" spellcheck="false" aria-label="brain JSON"></textarea>
+    </div>
+  </section>
+</main>
+<div id="sheet" class="sheet hide" role="dialog" aria-modal="true">
+  <div class="sheetIn"><div id="sheetGrid" class="sgrid"></div><button id="sheetX" class="ib" aria-label="close">✖️</button></div>
+</div>
+<script src="js/brain.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/ui.js"></script>
+<!-- 🪖 army picker: ES module (shared schema.js), skipped on file: pages (browsers block modules there) -->
+<script>if (location.protocol !== 'file:') { const s = document.createElement('script'); s.type = 'module'; s.src = 'js/army-picker.js'; document.body.appendChild(s); }</script>
+</body>
+</html>

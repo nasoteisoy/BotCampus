@@ -205,3 +205,25 @@ body.touch #minimap { width: 160px; height: 96px; }
   #pause .units { gap: 3px; margin-bottom: 4px; } #pause .urow { padding: 2px; gap: 3px; }
   #pause .big { min-height: 46px; margin: 3px; } #pause .big2 { min-height: 46px; margin: 3px; }
 }
+
+/* ---------- v2.4: shared army header, cost check, jumps to the 🪖 Trooper Customizer ---------- */
+.armyhead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 6px 0 4px; padding: 6px 8px; border-radius: 14px; background: #ffffff10; }
+.ahflag canvas { width: 40px; height: 40px; border-radius: 8px; display: block; }
+.ahtxt { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; }
+.ahtxt b { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ahtxt small { font-size: 13px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ahunits { font-weight: 700; font-size: 15px; white-space: nowrap; }
+.ahbtns { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.ahbtns .chip { padding: 4px 12px; font-weight: 700; color: inherit; text-decoration: none; }
+#editArmy { background: #f0b42933; border-color: #f0b429; }
+.chip.hidden, .armyhead .hidden { display: none; }
+.armycost { margin: 6px 0 0; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.armycost span { opacity: .85; }
+.armycost .warn { font-weight: 700; padding: 5px 8px; border-radius: 10px; }
+.armycost.warn .warn { background: #f0b42933; color: #ffd65a; }
+.armycost.bad .warn { background: #e74c3c40; color: #ffb3a8; border: 2px solid #e74c3c; }
+.trait.army { border-style: solid; border-color: #6cc8ff; background: #6cc8ff22; position: relative; }
+.trait .tarmy { position: absolute; top: -6px; right: -4px; font-size: 12px; font-style: normal; }
+.pwho { margin: 0 0 6px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 15px; flex-wrap: wrap; }
+.pwho canvas { width: 24px; height: 24px; border-radius: 5px; }
+@media (max-height: 430px) { .armyhead { margin: 4px 0 2px; padding: 3px 6px; } .ahflag canvas { width: 30px; height: 30px; } #pause .pwho { margin: 0 0 2px; font-size: 13px; } }

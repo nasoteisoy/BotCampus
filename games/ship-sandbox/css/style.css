@@ -129,3 +129,45 @@ svg { display: block; width: 26px; height: 21px; }
 .tag.off { color: #9aa3b5; }
 .tag.hl { border-color: #ffd65a; color: #fff; opacity: 1; z-index: 2; }
 @media (max-width: 400px) { #top { gap: 3px; padding-left: 3px; padding-right: 3px; } .tb { width: 45px; } }
+
+/* v3: army header, crew portraits */
+#army { pointer-events: auto; display: flex; align-items: center; gap: 5px; background: #0b1024d9; border: 1px solid var(--np, #2f80ed); border-radius: 10px; padding: 2px 4px 2px 5px; font-weight: 700; }
+#army canvas { width: 30px; height: 20px; border-radius: 3px; box-shadow: 0 0 0 1px #0008; }
+#army .an { display: flex; flex-direction: column; line-height: 1.05; max-width: 92px; overflow: hidden; }
+#army .an b { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#army .an small { font-size: 10px; color: #b8c2d4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+#army button, #army .lk { min-width: 32px; height: 30px; padding: 0 5px; border-radius: 8px; background: #1b2442; border: 1px solid #ffffff22; color: #fff; font-size: 15px; display: inline-flex; align-items: center; gap: 3px; text-decoration: none; cursor: pointer; }
+#army .lk small { font-size: 10px; }
+#army button.on { background: #2e6a4a; border-color: #5fd39a; }
+#crewTags { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+#crewTags .ct { position: absolute; left: 0; top: 0; display: flex; gap: 1px; }
+.cm { width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; margin-left: 2px; box-shadow: 0 0 0 1.5px #5fd39a; }
+#crewTags .cm { width: 24px; height: 24px; }
+.cm.hurt { box-shadow: 0 0 0 2px #ffb84a; } .cm.ko { box-shadow: 0 0 0 2px #ff5a5a; filter: grayscale(1) brightness(.6); }
+#tip .tcrew { margin-top: 6px; border-top: 1px solid #ffffff1f; padding-top: 5px; display: flex; flex-direction: column; gap: 5px; }
+#tip .cr { display: flex; gap: 6px; align-items: flex-start; }
+#tip .cr img { width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 0 0 2px #5fd39a; flex: none; }
+#tip .cr.hurt img { box-shadow: 0 0 0 2px #ffb84a; } #tip .cr.ko img { box-shadow: 0 0 0 2px #ff5a5a; filter: grayscale(1) brightness(.6); }
+#tip .cr .chp { font-size: 12px; color: #c9d2e0; } #tip .cr.ko .chp { color: #ff8f80; } #tip .cr.hurt .chp { color: #ffc84a; }
+#tip .cr .cb { font-size: 11.5px; color: #8ff7ff; line-height: 1.25; }
+#army { margin-right: auto; }
+.row .crw { flex: none; display: inline-flex; } .row .crw .cm { margin-left: -5px; } .row .crw .cm:first-child { margin-left: 0; }
+
+/* v3b: boarding */
+.atk.board { border-color: #8fd18f66; }
+#boardFx { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+#boardFx > div { position: absolute; left: 0; top: 0; }
+.bfly { display: flex; align-items: center; gap: 1px; filter: drop-shadow(0 2px 4px #000c); }
+.bfly img { width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1.5px #8fd18f; margin-left: -6px; }
+.bfly i { font-style: normal; font-size: 18px; margin-left: 2px; transform: rotate(45deg); }
+.bbox { background: #0b1024e0; border: 1px solid #8fd18f88; border-radius: 9px; padding: 3px 5px; display: flex; flex-direction: column; align-items: center; gap: 1px; max-width: 46vw; }
+.bbox.done { border-color: #ffffff55; }
+.brow { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.bvs { font-size: 11px; line-height: 1; }
+.bf { position: relative; width: 22px; height: 26px; display: inline-flex; flex-direction: column; align-items: center; }
+.bf img { width: 20px; height: 20px; border-radius: 50%; } .bf i { font-style: normal; font-size: 15px; line-height: 20px; }
+.bf b { position: absolute; left: 1px; bottom: 0; height: 4px; border-radius: 2px; background: #4dff88; max-width: 20px; }
+.bf.hurt b { background: #ffc84a; } .bf.ko { filter: grayscale(1) brightness(.55); } .bf.ko::after { content: '😵'; position: absolute; top: 2px; font-size: 13px; }
+.bres { font-size: 12px; font-weight: 800; white-space: nowrap; } .bres.ok { color: #4dff88; } .bres.bad { color: #ff8f80; }
+.bcap img { width: 24px; height: 16px; border-radius: 2px; box-shadow: 0 0 0 1.5px #fff, 0 2px 4px #000a; }
+.bfly i.fl { transform: scaleX(-1) rotate(45deg); margin: 0 8px 0 0; }

@@ -1,10 +1,14 @@
-// Trooper Customizer v4: Player -> Nation (colors + flag + 6-slot trooper roster with loadouts) -> unit looks (trooper, tank).
+// Trooper Customizer v5: Player + Nation (colors + flag + 6-slot trooper roster + tank) -> saved looks.
+// v5: saves to the shared BotCampus army ('botcampus:army', games/shared/army/schema.js) and mirrors the legacy
+// 'trooper-custom:db' v3 so Conquest v2.3 keeps working. Stats/costs come from games/shared/army/stats.js.
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/addons/controls/OrbitControls.js?v=6';
 import * as T from './trooper.js?v=6';
 import { TANK, TANK_FIELDS, TANK_DEFAULT } from './tank.js?v=6';
-import { TEMPLATES, ROLES, STARTER_IDS, SLOT_ICONS, WEAPON_ICONS, NAME_MAX, templateById } from './templates.js?v=6';
-import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=6';
+import { SLOT_ICONS, WEAPON_ICONS, NAME_MAX, templateById } from './templates.js?v=6'; // templates: only to read old saves (v5 has no preset units)
+import { COST, ITEMS, STATS, MEDALS_NEEDED, unitCost, unitStats, optionCost, awardCost, fmt } from './cost.js?v=7';
+import * as S from '../../shared/army/stats.js?v=8';
+import * as Army from '../../shared/army/schema.js?v=8';
 
 const UNITS = { trooper: T.TROOPER, tank: TANK };
 const NATION_KEYS = new Set(['p', 's', ...T.NATION_FIELDS.map(([k]) => k)]);
@@ -26,34 +30,42 @@ const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { retur
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
 // roster slot: { blank, name, icon, ia (auto icon), tpl (template id | null), t (v4 kit) }. New nations start with 6 blanks.
 const weaponIcon = (t) => WEAPON_ICONS[t.weapon] || '🔫';
-const blankSlot = () => ({ blank: true, name: '', icon: '', ia: true, tpl: null, t: { ...T.TROOPER_DEFAULT } });
-const tplSlot = (tp) => ({ blank: false, name: tp.name, icon: tp.icon, ia: false, tpl: tp.id, t: { ...tp.t } });
+const BASIC_T = Object.freeze(S.toIndex('trooper', S.BASIC_GEAR.trooper)), BASIC_TANK = Object.freeze(S.toIndex('tank', S.BASIC_GEAR.tank));
+const blankSlot = () => ({ blank: true, name: '', icon: '', ia: true, tpl: null, t: { ...BASIC_T } });
 const blankRoster = () => Array.from({ length: T.ROSTER_SIZE }, blankSlot);
-const starterRoster = () => STARTER_IDS.map((id) => tplSlot(templateById(id)));
 function cleanSlot(x, i) {
   if (!x || typeof x !== 'object' || x.blank === true) return blankSlot();
   const t = T.sanitizeFields(x.t, T.TROOPER_FIELDS, T.TROOPER_DEFAULT);
-  const tpl = 'tpl' in x ? (templateById(x.tpl) ? x.tpl : null) : STARTER_IDS[i]; // v4 (pre-4.2) slots were the 6 starter types
+  const tpl = 'tpl' in x ? (templateById(x.tpl) ? x.tpl : null) : (['trooper', 'heavy', 'sniper', 'engineer', 'jet', 'commander'][i] || null); // v4 (pre-4.2) slots were the 6 starter types
   const ia = x.ia === true, tp = templateById(tpl);
-  return { blank: false, name: clean(x.name, NAME_MAX) || (tp ? tp.name : 'Slot ' + (i + 1)), icon: ia ? weaponIcon(t) : clean(x.icon, 4) || (tp ? tp.icon : weaponIcon(t)), ia, tpl, t };
+  const traits = (Array.isArray(x.traits) ? x.traits : []).filter((k) => S.TRAIT_IDS.includes(k)).slice(0, 3);
+  return { blank: false, id: typeof x.id === 'string' && x.id ? x.id : Army.newId('u'), name: clean(x.name, NAME_MAX) || (tp ? tp.name : 'Trooper ' + (i + 1)), icon: ia ? weaponIcon(t) : clean(x.icon, 4) || (tp ? tp.icon : weaponIcon(t)), ia, tpl, t, traits, brain: Army.cleanUnitBrain(x.brain) };
 }
 function cleanRoster(r) { return Array.isArray(r) ? Array.from({ length: T.ROSTER_SIZE }, (_, i) => cleanSlot(r[i], i)) : blankRoster(); }
-const newNation = (name, colors, roster) => ({ id: newId(), name, ...T.sanitizeNation(colors), roster: cleanRoster(roster) });
+const newNation = (name, colors, roster, playerName) => { const id = newId(); return { id, pid: 'p-' + id, playerName: clean(playerName) || '', name, ...T.sanitizeNation(colors), roster: cleanRoster(roster), tank: { ...BASIC_TANK }, tankId: 'k-' + id }; };
 function cleanDB(d) {
-  const db = { v: 3, player: { name: clean(d.player && d.player.name) || 'Player' }, nations: [], active: null, slot: 0, unit: d.unit === 'tank' ? 'tank' : 'trooper', tank: null, looks: [], medals: [], debugAward: d.debugAward === true };
+  const db = { v: 3, player: { name: clean(d.player && d.player.name) || 'Player 1' }, nations: [], active: null, slot: 0, unit: d.unit === 'tank' ? 'tank' : 'trooper', tank: null, looks: [], medals: [], debugAward: d.debugAward === true };
   if (d.migratedFrom) db.migratedFrom = String(d.migratedFrom);
   if (d.upgradedFrom) db.upgradedFrom = String(d.upgradedFrom);
-  for (const n of d.nations || []) if (n && typeof n.id === 'string') db.nations.push({ id: n.id, name: clean(n.name) || 'Nation', ...T.sanitizeNation(n), roster: cleanRoster(n.roster) });
+  const tank0 = T.sanitizeFields(d.tank || BASIC_TANK, TANK_FIELDS, TANK_DEFAULT);
+  for (const n of d.nations || []) if (n && typeof n.id === 'string') db.nations.push({ id: n.id, pid: typeof n.pid === 'string' && n.pid ? n.pid : 'p-' + n.id, playerName: clean(n.playerName), name: clean(n.name) || 'Nation', ...T.sanitizeNation(n), roster: cleanRoster(n.roster), tank: n.tank ? T.sanitizeFields(n.tank, TANK_FIELDS, TANK_DEFAULT) : { ...tank0 }, tankId: typeof n.tankId === 'string' && n.tankId ? n.tankId : 'k-' + n.id, tankName: clean(n.tankName, NAME_MAX) || 'Tank 1', tankBrain: Army.cleanUnitBrain(n.tankBrain) });
   if (!db.nations.length) db.nations.push(newNation('Nation 1', T.NATION_DEFAULT));
   db.active = db.nations.some((n) => n.id === d.active) ? d.active : db.nations[0].id;
+  // every nation = one player: the old single player name goes to the active nation, the others become 'Player N'
+  db.nations.forEach((n, i) => { if (!n.playerName) n.playerName = n.id === db.active ? (db.player.name === 'Player' ? 'Player ' + (i + 1) : db.player.name) : 'Player ' + (i + 1); });
+  // db.player.name = the active nation's player (kept for share codes + the legacy v3 mirror)
+  const actN = () => db.nations.find((n) => n.id === db.active) || db.nations[0];
+  Object.defineProperty(db.player, 'name', { enumerable: true, get: () => actN().playerName, set: (v) => { actN().playerName = clean(v) || actN().playerName; } });
+  if (Array.isArray(d._extra)) db._extra = d._extra;
+  if (d._base && typeof d._base === 'object') db._base = d._base;
   db.slot = Number.isInteger(d.slot) && d.slot >= 0 && d.slot < T.ROSTER_SIZE ? d.slot : 0;
-  db.tank = T.sanitizeFields(d.tank, TANK_FIELDS, TANK_DEFAULT);
+  db.tank = db.nations.find((n) => n.id === db.active).tank;
   db.medals = Array.from({ length: 6 }, (_, i) => { const m = d.medals && d.medals[i]; return Number.isInteger(m) && m > 0 ? Math.min(m, 99999) : 0; });
   const ids = new Set(db.nations.map((n) => n.id));
   for (const l of d.looks || []) {
     if (!l || typeof l.id !== 'string' || !ids.has(l.nationId) || !UNITS[l.unit]) continue;
     const u = T.undigits(l.u, UNITS[l.unit].fields, UNITS[l.unit].defaults); if (!u) continue;
-    db.looks.push({ id: l.id, nationId: l.nationId, unit: l.unit, name: clean(l.name) || 'Look', u: T.digits(u, UNITS[l.unit].fields), thumb: typeof l.thumb === 'string' ? l.thumb : '', tk: typeof l.tk === 'string' ? l.tk : '' });
+    db.looks.push({ id: l.id, nationId: l.nationId, unit: l.unit, name: clean(l.name) || 'Look', u: T.digits(u, UNITS[l.unit].fields), thumb: typeof l.thumb === 'string' ? l.thumb : '', tk: typeof l.tk === 'string' ? l.tk : '', traits: Array.isArray(l.traits) ? l.traits.filter((k) => S.TRAIT_IDS.includes(k)) : [], brain: Army.cleanUnitBrain(l.brain) });
   }
   return db;
 }
@@ -61,9 +73,9 @@ function cleanDB(d) {
 // into slot 0 of the active nation; saved trooper looks are converted to the v4 kit (see T.mapV2Trooper)
 function upgradeV2(d) {
   const t2 = d.cur && d.cur.trooper ? T.mapV2Trooper(T.sanitizeFields(d.cur.trooper, T.TROOPER_FIELDS_V2, T.TROOPER_DEFAULT_V2)) : null;
-  const nations = (Array.isArray(d.nations) ? d.nations : []).filter((n) => n && typeof n === 'object').map((n) => ({ ...n, roster: T.defaultRoster() }));
+  const nations = (Array.isArray(d.nations) ? d.nations : []).filter((n) => n && typeof n === 'object').map((n) => ({ ...n, roster: blankRoster() }));
   const act = nations.find((n) => n.id === d.active) || nations[0];
-  if (act && t2) act.roster[0].t = t2;
+  if (act && t2) act.roster[0] = { blank: false, name: 'Trooper 1', icon: '', ia: true, tpl: null, t: t2 }; // v5: no preset units
   const looks = (Array.isArray(d.looks) ? d.looks : []).map((l) => {
     if (!l || l.unit !== 'trooper') return l;
     const u = T.undigitsV2Trooper(l.u); return u ? { ...l, u: T.digits(u, T.TROOPER_FIELDS), tk: '' } : null;
@@ -74,9 +86,9 @@ function upgradeV2(d) {
 function migrateV1() {
   const d = { player: { name: 'Player' }, nations: [], looks: [], unit: 'trooper' };
   const combos = new Map();
-  const nationFor = (nat) => { const key = T.nationCode(nat); if (!combos.has(key)) { const n = newNation('Nation ' + (combos.size + 1), nat, starterRoster()); combos.set(key, n); d.nations.push(n); } return combos.get(key); };
+  const nationFor = (nat) => { const key = T.nationCode(nat); if (!combos.has(key)) { const n = newNation('Nation ' + (combos.size + 1), nat); combos.set(key, n); d.nations.push(n); } return combos.get(key); };
   const cur = T.decodeTC1(lsGet(LS_CUR_V1)); // TC1 decode already maps into the v4 kit
-  if (cur) { const n = nationFor(cur.nation); d.active = n.id; n.roster[0].t = cur.trooper; }
+  if (cur) { const n = nationFor(cur.nation); d.active = n.id; n.roster[0] = { blank: false, name: 'Trooper 1', icon: '', ia: true, tpl: null, t: cur.trooper }; }
   let old = []; try { old = JSON.parse(lsGet(LS_LOOKS_V1) || '[]'); } catch (e) { old = []; }
   if (Array.isArray(old)) for (const l of old) {
     const dec = l && T.decodeTC1(l.code); if (!dec) continue;
@@ -86,19 +98,93 @@ function migrateV1() {
   if (cur || d.looks.length) d.migratedFrom = 'v1';
   return cleanDB(d);
 }
+// ---------- army save (botcampus:army) <-> in-memory db ----------
+// The editor keeps its v3-shaped db in memory (nations = players). It loads from / saves to the shared army save.
+function armyToDb(a) {
+  const nations = [], looks = [], extra = [];
+  for (const p of a.players) {
+    const st = Army.nationState(p.nation), roster = blankRoster(), mine = Army.playerUnits(a, p.id);
+    const n = { id: p.nation.id, pid: p.id, playerName: p.name, name: p.nation.name, ...st, roster, tank: null, tankId: '', tankName: '' };
+    for (const u of mine.filter((x) => x.roster && x.kind === 'trooper')) {
+      let i = Number.isInteger(u.slot) && u.slot < T.ROSTER_SIZE && roster[u.slot].blank ? u.slot : roster.findIndex((r) => r.blank);
+      if (i < 0) { extra.push(u); continue; }
+      roster[i] = { blank: false, id: u.id, name: u.name, icon: u.icon, ia: !u.icon, tpl: null, t: Army.unitState(u), traits: u.traits, brain: u.brain };
+    }
+    for (const u of mine.filter((x) => x.roster && x.kind === 'tank')) {
+      if (n.tank) { extra.push(u); continue; }
+      Object.assign(n, { tank: Army.unitState(u), tankId: u.id, tankName: u.name, tankBrain: u.brain ?? null });
+    }
+    if (!n.tank) Object.assign(n, { tank: { ...BASIC_TANK }, tankId: 'k-' + n.id, tankName: 'Tank 1' });
+    for (const u of mine.filter((x) => !x.roster)) looks.push({ id: u.id, nationId: n.id, unit: u.kind, name: u.name, u: T.digits(Army.unitState(u), UNITS[u.kind].fields), thumb: u.thumb || '', tk: '', traits: u.traits, brain: u.brain ?? null });
+    nations.push(n);
+  }
+  const act = a.players.find((p) => p.id === a.activePlayerId) || a.players[0], cu = a.ext && a.ext['trooper-custom'] || {};
+  const base = { ...a }; delete base.players; delete base.units; // squads[], ships[], ext + unknown keys ride along untouched
+  const d = cleanDB({ v: 3, player: { name: act.name }, nations, active: act.nation.id, slot: cu.slot, unit: cu.unit, looks, medals: cu.medals, _extra: extra, _base: base });
+  if (a.migratedFrom) d.migratedFrom = a.migratedFrom;
+  return d;
+}
+function dbToArmy(d) {
+  const units = [], pidOf = {};
+  const players = d.nations.map((n) => { pidOf[n.id] = n.pid; return { id: n.pid, name: n.playerName, nation: Army.nationFromState(n, n.id, n.name) }; });
+  for (const n of d.nations) {
+    n.roster.forEach((r, i) => { if (!r.blank) units.push({ id: r.id, name: r.name, playerId: n.pid, kind: 'trooper', gear: S.toGear('trooper', r.t), traits: r.traits || [], brain: r.brain ?? null, roster: true, slot: i, icon: r.ia ? '' : r.icon }); });
+    units.push({ id: n.tankId, name: n.tankName || 'Tank 1', playerId: n.pid, kind: 'tank', gear: S.toGear('tank', n.tank), traits: [], brain: n.tankBrain ?? null, roster: true, slot: 0 });
+  }
+  for (const l of d.looks) {
+    const def = UNITS[l.unit], u = T.undigits(l.u, def.fields, def.defaults); if (!u || !pidOf[l.nationId]) continue;
+    units.push({ id: l.id, name: l.name, playerId: pidOf[l.nationId], kind: l.unit, gear: S.toGear(l.unit, u), traits: l.traits || [], brain: l.brain ?? null, roster: false, thumb: l.thumb });
+  }
+  const pids = new Set(Object.values(pidOf));
+  for (const u of d._extra || []) if (pids.has(u.playerId) && !units.some((x) => x.id === u.id)) units.push(u);
+  const base = d._base || {}, act = d.nations.find((n) => n.id === d.active) || d.nations[0];
+  return { ...base, version: Army.ARMY_VERSION, activePlayerId: act.pid, players, units, ships: base.ships || [], ext: { ...(base.ext || {}), 'trooper-custom': { slot: d.slot, unit: d.unit, medals: d.medals } } };
+}
+// legacy mirror for Conquest v2.3 ('trooper-custom:db' v3): same shape as before, tank = active nation's tank
+function legacyDb(d) {
+  const o = { ...d, tank: (d.nations.find((n) => n.id === d.active) || d.nations[0]).tank };
+  delete o._extra; delete o._base; return o;
+}
 function loadDB() {
+  const rawArmy = lsGet(Army.ARMY_KEY);
+  if (rawArmy) { const a = Army.load(); if (a && a.players && a.players.length) return armyToDb(a); }
   const raw = lsGet(LS_DB); let d = null;
   try { d = JSON.parse(raw || 'null'); } catch (e) { d = null; }
-  if (d && d.v === 3) return cleanDB(d);
+  if (d && d.v === 3) { // Army.load() migrates v3 + Conquest traits; keep the editor's active slot / unit
+    const m = armyToDb(Army.load());
+    if (Number.isInteger(d.slot) && d.slot >= 0 && d.slot < T.ROSTER_SIZE) m.slot = d.slot;
+    if (d.unit === 'tank' || d.unit === 'trooper') m.unit = d.unit;
+    return m;
+  }
   if (d && d.v === 2) { lsSet(LS_DB_V2, raw); return cleanDB(upgradeV2(d)); } // keep a copy of the old save
-  const m = migrateV1(); justMigrated = !!m.migratedFrom; return m;
+  const m = migrateV1(); justMigrated = !!m.migratedFrom;
+  if (!justMigrated) { const t = { ...BASIC_T }; m.nations[0].roster[0] = { blank: false, id: Army.newId('u'), name: 'Trooper 1', icon: weaponIcon(t), ia: true, tpl: null, t, traits: [], brain: null }; } // fresh start: one basic trooper
+  return m;
 }
 let justMigrated = false;
 let db = loadDB();
 let saveT = 0;
 let wiped = false;
-const flushDB = () => { clearTimeout(saveT); saveT = 0; return wiped || lsSet(LS_DB, JSON.stringify(db)); };
-const saveDB = () => { clearTimeout(saveT); saveT = setTimeout(flushDB, 60); };
+// dirty = this tab has user edits not yet written. Only then does flushDB() touch 'botcampus:army', so edits made in
+// another tab (Conquest units[].brain, squads, ...) are not overwritten when this tab hides / closes.
+let dirty = !lsGet(Army.ARMY_KEY); // no army save yet (fresh start / legacy migration) -> write it once at startup
+// merge on write: start from the stored army and replace only what this page owns (players, units' look fields,
+// activePlayerId, ext['trooper-custom']); keep units[].brain / ext / unknown unit keys, squads, ships, other ext + top-level keys.
+function mergeArmy(mine) {
+  let st = null; try { st = JSON.parse(lsGet(Army.ARMY_KEY) || 'null'); } catch (e) { st = null; }
+  if (!st || typeof st !== 'object' || !Array.isArray(st.units)) return mine;
+  const old = new Map(st.units.filter((u) => u && typeof u.id === 'string').map((u) => [u.id, u]));
+  const units = mine.units.map((u) => { const o = old.get(u.id); if (!o) return u; const m = { ...o, ...u, brain: o.brain ?? null }; if ('ext' in o) m.ext = o.ext; else delete m.ext; return m; });
+  const ext = { ...(st.ext && typeof st.ext === 'object' ? st.ext : {}), 'trooper-custom': mine.ext['trooper-custom'] };
+  return { ...st, version: mine.version, activePlayerId: mine.activePlayerId, players: mine.players, units, squads: Array.isArray(st.squads) ? st.squads : [], ships: Array.isArray(st.ships) ? st.ships : [], ext };
+}
+const flushDB = () => {
+  clearTimeout(saveT); saveT = 0; if (wiped || !dirty) return true;
+  const ok = Army.save(mergeArmy(dbToArmy(db)), undefined, 'trooper-custom');
+  const r = lsSet(LS_DB, JSON.stringify(legacyDb(db))) && ok;
+  dirty = false; return r;
+};
+const saveDB = () => { dirty = true; clearTimeout(saveT); saveT = setTimeout(flushDB, 60); };
 addEventListener('pagehide', flushDB);
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushDB(); });
 flushDB();
@@ -109,12 +195,15 @@ const cur = {
   get trooper() { return nation().roster[db.slot].t; },
   set trooper(v) { // editing a blank slot turns it into a (base) trooper named 'Slot N'
     const s = nation().roster[db.slot];
-    if (s.blank) Object.assign(s, { blank: false, name: 'Slot ' + (db.slot + 1), ia: true, tpl: null });
+    if (s.blank) Object.assign(s, { blank: false, id: Army.newId('u'), name: nextTrooperName(), ia: true, tpl: null, traits: [], brain: null });
     s.t = v; if (s.ia) s.icon = weaponIcon(v);
   },
-  get tank() { return db.tank; }, set tank(v) { db.tank = v; },
+  get tank() { return nation().tank; }, set tank(v) { nation().tank = v; db.tank = v; },
 };
-const unlocked = (w) => db.debugAward || (db.medals[w] | 0) >= MEDALS_NEEDED;
+// v5: everything is unlocked (cost is still shown). Medal counters are kept in the save for later.
+const unlocked = () => true;
+// 'Trooper 1', 'Trooper 2', … : lowest number not used by this nation's roster
+function nextTrooperName(n = nation()) { const used = new Set(n.roster.filter((r) => !r.blank).map((r) => r.name)); for (let k = 1; ; k++) if (!used.has('Trooper ' + k)) return 'Trooper ' + k; }
 const fullState = (unit = db.unit, us = cur[unit], nat = nation()) => {
   const st = { ...nat, skin: unit === 'trooper' ? us.skin : cur.trooper.skin, ...us };
   delete st.roster;
@@ -418,21 +507,26 @@ function swatchRow(key, palette, custom, glow = false) {
 }
 function partTiles(key) {
   const p = PARTS[key], row = h('div', { className: 'tiles', 'data-key': key });
-  (p.items ? p.items.map((it) => it.n) : p.names).forEach((n, i) => row.append(h('button', { type: 'button', title: p.items ? `${p.items[i].i} ${n}: ${p.items[i].tip}` : n, 'aria-label': key + ' ' + n, 'data-k': key, 'data-v': String(i), 'data-frame': p.frame, 'data-unit': p.unit },
-    [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge(p.unit, key, i)])));
+  row.classList.add('stat');
+  (p.items ? p.items.map((it) => it.n) : p.names).forEach((n, i) => { const gl = gearLine(p.unit, key, i); row.append(h('button', { type: 'button', title: (p.items ? `${p.items[i].i} ${n}: ${p.items[i].tip}` : n) + ' · ' + gl, 'aria-label': key + ' ' + n, 'data-k': key, 'data-v': String(i), 'data-frame': p.frame, 'data-unit': p.unit },
+    [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge(p.unit, key, i), h('em', { className: 'gl', textContent: gl })])); });
   return row;
 }
-// ⭐ award versions: one locked tile per main weapon with its medal counter (0/64)
+// one short icon line with the REAL battle numbers (games/shared/army/stats.js); cost is the badge, so drop 💰 here
+const gearLine = (unit, k, i) => S.gearLines(unit, k, i).filter((x) => !x.startsWith('💰')).join(' ') || '🎨 look only';
+// ⭐ award versions: one tile per main weapon (v5: all unlocked)
 function awardTiles() {
   const row = h('div', { className: 'tiles award', 'data-key': 'award' });
   ITEMS.weapon.forEach((it, w) => row.append(h('button', { type: 'button', title: `${ITEMS.award[w].tip} 🎖️×${MEDALS_NEEDED}`, 'aria-label': 'award ' + it.n, 'data-award': String(w), 'data-frame': 'weapon', 'data-unit': 'trooper' },
-    [h('canvas', { width: TS, height: TS }), h('i', { textContent: '⭐' + it.n }), h('b', { className: 'cb', textContent: '+' + awardCost(w) }), h('span', { className: 'lock', textContent: '🔒' }), h('em', { className: 'medal', textContent: '🎖️0/' + MEDALS_NEEDED })])));
+    [h('canvas', { width: TS, height: TS }), h('i', { textContent: '⭐' + it.n }), h('b', { className: 'cb', textContent: '+' + awardCost(w) }), h('em', { className: 'gl', textContent: '💥 ' + S.fmt(S.WEAPONS[w].dmg * S.BATTLE.awardDmg) + ' (+10%)' })])));
+  row.classList.add('stat');
   return row;
 }
 function costBadge(unit, k, v) { const c = optionCost(unit, k, v); return h('b', { className: 'cb' + (c ? '' : ' free'), textContent: c ? '+' + c : '' }); }
 function toggleTiles() {
   const row = h('div', { className: 'tiles', 'data-key': 'toggles' });
-  for (const [k, frame, n] of TOGGLES) row.append(h('button', { type: 'button', title: n, 'aria-label': 'toggle ' + n, 'data-toggle': k, 'data-frame': frame, 'data-unit': 'tank' }, [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge('tank', k, 1)]));
+  row.classList.add('stat');
+  for (const [k, frame, n] of TOGGLES) { const gl = gearLine('tank', k, 1); row.append(h('button', { type: 'button', title: n + ' · ' + gl, 'aria-label': 'toggle ' + n, 'data-toggle': k, 'data-frame': frame, 'data-unit': 'tank' }, [h('canvas', { width: TS, height: TS }), h('i', { textContent: n }), costBadge('tank', k, 1), h('em', { className: 'gl', textContent: gl })])); }
   return row;
 }
 function symTiles() {
@@ -452,11 +546,10 @@ function iconTiles(key, icons, titles) {
 }
 const SECS = {
   nation: () => [
-    lab('👤', 'player'),
+    lab('👤', 'player name (this nation)'),
     h('div', { className: 'saverow' }, [h('input', { id: 'playerName', type: 'text', maxLength: 24, placeholder: '👤', 'aria-label': 'Player name', autocomplete: 'off' })]),
-    lab('🏳️', 'nations'), h('div', { id: 'nations', className: 'rows' }),
-    lab('🪖', 'roster of the active nation'), h('div', { id: 'fillRow', className: 'acts' }),
-    h('button', { id: 'addNation', type: 'button', className: 'btn go wide', title: 'New nation', textContent: '➕ 🏳️' }),
+    lab('🏳️', 'players · nations (tap to switch)'), h('div', { id: 'nations', className: 'rows' }),
+    h('button', { id: 'addNation', type: 'button', className: 'btn go wide', title: 'New player + nation', textContent: '➕ 👤 🏳️' }),
     lab('🎨 1', 'main'), swatchRow('p', T.PRIMARY, true), lab('🎨 2', 'trim'), swatchRow('s', T.SECONDARY, true),
     lab('🧥', 'suit'), swatchRow('suit', T.SUIT, false),
     lab('🏳️', 'symbol'), symTiles(), lab('◐', 'symbol color'), scTiles(),
@@ -464,8 +557,7 @@ const SECS = {
   ],
   head: () => [lab('🪖', 'helmet'), partTiles('helm'), lab('✋', 'skin (goggles)'), swatchRow('skin', T.SKIN, false)],
   armor: () => [lab('🛡️', 'armor'), partTiles('armor'), h('div', { id: 'statPrev', className: 'statprev' }), lab('🔰', 'shoulders'), partTiles('pads')],
-  weapon: () => [lab('🔫', 'main weapon'), partTiles('weapon'), lab('⭐', 'award weapons · 🎖️×' + MEDALS_NEEDED + ' to unlock'), awardTiles(),
-    DEBUG ? h('button', { id: 'debugAward', type: 'button', className: 'btn wide', title: 'Debug: unlock all award weapons', textContent: '🧪 ⭐🔓' }) : null],
+  weapon: () => [lab('🔫', 'main weapon · 💥 damage 🎯 range ⏱️ reload'), partTiles('weapon'), lab('⭐', 'award weapons · all unlocked'), awardTiles()],
   kit: () => [lab('🔫', 'sidearm'), partTiles('side'), lab('💣', 'explosive'), partTiles('expl')],
   gear: () => [lab('🎒', 'gadget'), partTiles('gadget'), lab('🚩', 'back flag'), partTiles('banner'), lab('🧣', 'extra'), partTiles('extra')],
   hull: () => [lab('⛓️', 'hull'), partTiles('hull'), lab('🛞', 'drive'), partTiles('drive')],
@@ -480,7 +572,7 @@ const SECS = {
   ],
 };
 for (const id of Object.keys(TAB_DEF)) body.append(h('div', { className: 'sec', 'data-sec': id }, SECS[id]()));
-$('#playerName').addEventListener('input', (e) => { db.player.name = clean(e.target.value) || 'Player'; saveDB(); });
+$('#playerName').addEventListener('input', (e) => { const v = clean(e.target.value); if (v) { nation().playerName = v; saveDB(); renderWho(); } });
 $('#playerName').addEventListener('change', (e) => { e.target.value = db.player.name; refreshCode(); });
 
 body.addEventListener('click', (e) => {
@@ -488,7 +580,7 @@ body.addEventListener('click', (e) => {
   if (b) {
     const k = b.dataset.k, v = b.dataset.v;
     setValues(k === 'weapon' ? { weapon: Number(v), award: 0 } : { [k]: k === 'p' || k === 's' ? v : Number(v) });
-    const it = PARTS[k] && PARTS[k].items && PARTS[k].items[Number(v)]; if (it) toast(`${it.i} ${it.n} · ${it.tip}`, false, 2600);
+    const it = PARTS[k] && PARTS[k].items && PARTS[k].items[Number(v)]; if (it) toast(`${it.i} ${it.n} · ${gearLine(PARTS[k].unit, k, Number(v))}`, false, 2600);
     return;
   }
   const a = e.target.closest('button[data-award]'); if (a) { awardPick(Number(a.dataset.award)); return; }
@@ -523,7 +615,6 @@ function refreshPanel() {
   for (const b of sec.querySelectorAll('button[data-award]')) {
     const w = Number(b.dataset.award), un = unlocked(w);
     b.classList.toggle('locked', !un); b.classList.toggle('on', !!effAward && cur.trooper.weapon === w);
-    b.querySelector('.medal').textContent = un && db.debugAward && db.medals[w] < MEDALS_NEEDED ? '🧪' : '🎖️' + Math.min(db.medals[w], MEDALS_NEEDED) + '/' + MEDALS_NEEDED;
   }
   const dbg = sec.querySelector('#debugAward'); if (dbg) dbg.classList.toggle('on', db.debugAward);
   const sp = sec.querySelector('#statPrev');
@@ -541,7 +632,7 @@ function refreshPanel() {
     const s2 = { ...nat }; if (c.dataset.sym) s2.sym = +c.dataset.sym; if (c.dataset.sc) s2.sc = +c.dataset.sc;
     drawFlag(c, s2);
   }
-  if (tab === 'nation') { const pn = $('#playerName'); if (document.activeElement !== pn) pn.value = db.player.name; renderNations(); renderFill(); }
+  if (tab === 'nation') { const pn = $('#playerName'); if (document.activeElement !== pn) pn.value = db.player.name; renderNations(); }
   clearTimeout(thumbTimer);
   thumbTimer = setTimeout(() => {
     thumbQueue = [];
@@ -559,19 +650,6 @@ function refreshPanel() {
 }
 function refreshCode() { const ci = $('#codeIn'); if (ci && document.activeElement !== ci) ci.value = currentCode(); }
 
-// nation-level convenience: fill the roster from the 6 starter templates (asks first if it would replace filled slots)
-function renderFill() {
-  const filled = nation().roster.filter((r) => !r.blank).length, row = $('#fillRow');
-  row.replaceChildren(...(fillConfirm
-    ? [h('span', { className: 'q', textContent: `📋 Replace ${filled} filled?` }), h('button', { type: 'button', id: 'fillOk', className: 'btn bad', title: 'Replace with the 6 starter templates', textContent: '✔️' }), h('button', { type: 'button', id: 'fillNo', className: 'btn', title: 'Keep', textContent: '✖️' })]
-    : [h('button', { type: 'button', id: 'fillStarter', className: 'btn go wide', title: 'Fill roster from 6 starter templates (Trooper, Heavy, Sniper, Engineer, Jet Trooper, Commander)', textContent: `📋 Fill roster: 6 starter templates · ${filled}/6 filled` })]));
-}
-body.addEventListener('click', (e) => {
-  if (e.target.closest('#fillStarter')) { if (nation().roster.some((r) => !r.blank)) { fillConfirm = true; renderFill(); } else fillStarter(); }
-  else if (e.target.closest('#fillOk')) fillStarter();
-  else if (e.target.closest('#fillNo')) { fillConfirm = false; renderFill(); }
-});
-
 // ---------- nations ----------
 let nEdit = null, nDel = null;
 function renderNations() {
@@ -588,7 +666,7 @@ function renderNations() {
     } else if (nDel === n.id) {
       row.append(flag, h('span', { className: 'q', textContent: `🗑️ ?${cnt ? ' +' + cnt + '💾' : ''}` }), h('button', { type: 'button', className: 'ib btn bad', 'data-nact': 'delok', title: 'Delete nation and its looks', textContent: '✔️' }), h('button', { type: 'button', className: 'ib', 'data-nact': 'cancel', title: 'Keep', textContent: '✖️' }));
     } else {
-      row.append(...[h('button', { type: 'button', className: 'ld', 'data-nact': 'activate', title: 'Use ' + n.name }, [flag, h('span', { className: 'nm', textContent: n.name }), cnt ? h('small', { className: 'cnt', textContent: '💾' + cnt }) : null]),
+      row.append(...[h('button', { type: 'button', className: 'ld', 'data-nact': 'activate', title: 'Use ' + n.playerName + ' · ' + n.name }, [flag, h('span', { className: 'nm' }, [n.name, h('small', { className: 'pl', textContent: '👤 ' + n.playerName + ' · 🪖' + n.roster.filter((r) => !r.blank).length })]), cnt ? h('small', { className: 'cnt', textContent: '💾' + cnt }) : null]),
         h('button', { type: 'button', className: 'ib', 'data-nact': 'rename', title: 'Rename nation', textContent: '✏️' }),
         db.nations.length > 1 ? h('button', { type: 'button', className: 'ib', 'data-nact': 'del', title: 'Delete nation', textContent: '🗑️' }) : null].filter(Boolean));
     }
@@ -604,13 +682,14 @@ function createNation(name, colors) {
     do { s = pick(T.SECONDARY); } while (s === p);
     colors = { p, s, suit: (Math.random() * 5) | 0, sym: (Math.random() * 12) | 0, sc: 0, vis: (Math.random() * 6) | 0, glow: 1 };
   }
-  const n = newNation(clean(name) || 'Nation ' + (db.nations.length + 1), colors);
+  const names = new Set(db.nations.map((x) => x.playerName)); let k = db.nations.length + 1; while (names.has('Player ' + k)) k++;
+  const n = newNation(clean(name) || 'Nation ' + (db.nations.length + 1), colors, null, 'Player ' + k);
   db.nations.push(n); db.active = n.id; nEdit = nDel = null;
-  applyState(); toast('🏳️ ' + n.name); return n.id;
+  applyState(); toast('👤 ' + n.playerName + ' · 🏳️ ' + n.name); return n.id;
 }
 function nationAct(act, id, arg) {
   const n = db.nations.find((x) => x.id === id); if (!n) return false;
-  if (act === 'activate') { db.active = id; nEdit = nDel = null; sheet = null; fillConfirm = false; applyState(); toast('🏳️ ' + n.name); return true; }
+  if (act === 'activate') { db.active = id; nEdit = nDel = null; sheet = null; applyState(); toast('👤 ' + n.playerName + ' · 🏳️ ' + n.name); return true; }
   if (act === 'rename') { nEdit = id; nDel = null; }
   else if (act === 'renok') { const v = clean(arg ?? $(`[data-nid="${id}"] input.rn`)?.value); if (v) n.name = v; nEdit = null; saveDB(); refreshCode(); }
   else if (act === 'del') { if (db.nations.length < 2) return false; nDel = id; nEdit = null; }
@@ -661,6 +740,7 @@ function renderLooks() {
         row.append(img, h('span', { className: 'q', textContent: '🗑️ ?' }), h('button', { type: 'button', className: 'ib btn bad', 'data-act': 'delok', title: 'Delete', textContent: '✔️' }), h('button', { type: 'button', className: 'ib', 'data-act': 'cancel', title: 'Keep', textContent: '✖️' }));
       } else {
         row.append(h('button', { type: 'button', className: 'ld', 'data-act': 'load', title: 'Load ' + l.name }, [h('span', { className: 'tw' }, [img, badge]), h('span', { className: 'nm' }, [l.name, h('small', { className: 'lc' }, ['💰' + fmt(lc.cost), h('i', { textContent: '⚡' + lc.power })])])]),
+          h('button', { type: 'button', className: 'ib', 'data-act': 'demo', title: '🎬 Demo', 'aria-label': 'Demo', textContent: '🎬' }),
           h('button', { type: 'button', className: 'ib', 'data-act': 'copy', title: 'Copy share code', textContent: '🔗' }),
           h('button', { type: 'button', className: 'ib', 'data-act': 'update', title: 'Overwrite with current look', textContent: '🔁' }),
           h('button', { type: 'button', className: 'ib', 'data-act': 'rename', title: 'Rename', textContent: '✏️' }),
@@ -677,6 +757,7 @@ function saveLook(name) {
   const l = { id: newId(), nationId: n.id, unit, name, u: T.digits(cur[unit], UNITS[unit].fields), thumb: '', tk: '' };
   ensureThumb(l);
   db.looks.unshift(l);
+  dirty = true;
   if (!flushDB()) { db.looks.shift(); toast('⚠️ storage full', true); return null; }
   toast('💾 ' + name); return l.id;
 }
@@ -692,6 +773,7 @@ function lookAct(act, id, arg) {
     if (wasBlank) nation().roster[db.slot].name = clean(l.name, NAME_MAX) || nation().roster[db.slot].name;
     switchUnit(l.unit, false); applyState(); toast('✅ ' + l.name); return true;
   }
+  if (act === 'demo') { flushDB(); location.href = 'demo.html?unit=' + encodeURIComponent(l.id); return true; }
   if (act === 'copy') copyText(lookCode(l));
   else if (act === 'update') { l.u = T.digits(cur[l.unit], UNITS[l.unit].fields); ensureThumb(l); saveDB(); toast('🔁 ' + l.name); }
   else if (act === 'rename') { editId = id; delId = null; }
@@ -762,7 +844,9 @@ function importNation(nat, name) {
 }
 function loadCode(c) {
   const d = parseCode(c); if (!d) return false;
-  importNation(d.nation, d.nationName);
+  const n = importNation(d.nation, d.nationName);
+  if (d.player) n.playerName = clean(d.player) || n.playerName; // shared code carries the player of that nation
+  if (!n.playerName) n.playerName = 'Player ' + (db.nations.indexOf(n) + 1);
   if (d.roster) { nation().roster = d.roster.map((r) => ({ ...r, t: { ...r.t } })); db.slot = d.slot; sheet = null; }
   else cur.trooper = d.trooper;
   if (d.tank) cur.tank = d.tank;
@@ -795,14 +879,14 @@ function setValues(patch) {
   if (Object.keys(up).length) { const d = UNITS[db.unit]; cur[db.unit] = T.sanitizeFields({ ...cur[db.unit], ...up }, d.fields, d.defaults); }
   applyState();
 }
-function applyState() {
+function applyState(save = true) {
   look.paint(fullState('trooper'));
   renderRoster();
   for (const [id, u] of Object.entries(units)) { u.build(fullState(id)); u.root.visible = id === db.unit; }
   const tank = db.unit === 'tank';
   padGroup.scale.setScalar(tank ? 2.6 : 1); blob.scale.set(tank ? 2.4 : 1, tank ? 4.0 : 1, 1);
   if (squadOn) buildSquad();
-  saveDB();
+  if (save) saveDB();
   refreshPanel(); updateStatsText();
 }
 function switchUnit(u, apply = true) {
@@ -830,7 +914,6 @@ function randomize() {
 //   tpl: template id the slot came from (↺ resets to it) or null (blank trooper: ↺ resets to the base kit)
 const rosterEl = $('#roster'), sheetEl = $('#sheet'), panelEl = $('#panel');
 let sheet = null; // { mode: 'blank' | 'edit', tpl: bool, clear: bool, focus: bool }
-let fillConfirm = false;
 // section header: '🔫 Weapons · main weapon, ⭐ award' + the roster slot being edited (tap to rename / edit)
 function renderSecHead() {
   const d = TAB_DEF[tab], r = db.unit === 'trooper' ? nation().roster[db.slot] : null;
@@ -838,7 +921,46 @@ function renderSecHead() {
   $('#sechead').replaceChildren(h('b', { textContent: tabLabel(tab) }), h('span', { textContent: '· ' + d.sub }), chip);
 }
 $('#sechead').addEventListener('click', (e) => { if (e.target.closest('#slotChip')) openSheet(db.slot, true); });
-function renderRoster() { renderSecHead(); renderSheet(); renderStrip(); }
+function renderRoster() { renderWho(); renderSecHead(); renderSheet(); renderStrip(); }
+// ---------- header: who is being edited, for which player + nation; switching; links to the other games ----------
+const unitName = () => { if (db.unit === 'tank') return '🚜 ' + (nation().tankName || 'Tank 1'); const r = nation().roster[db.slot]; return r.blank ? `➕ Slot ${db.slot + 1} (empty)` : r.icon + ' ' + r.name; };
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+function renderWho() {
+  const n = nation(), who = $('#who');
+  $('#whoUnit').textContent = '✏️ ' + unitName();
+  $('#whoFor').textContent = `for 👤 ${n.playerName} · 🏳️ ${n.name}`;
+  who.title = `Editing ${unitName()} for ${n.playerName}, ${n.name} · tap to switch`;
+  who.style.borderColor = n.p; who.style.background = `linear-gradient(90deg, ${rgba(n.p, 0.5)}, ${rgba(n.s, 0.12)})`;
+  drawFlag($('#whoFlag'), n);
+  const sel = $('#whoSel');
+  sel.replaceChildren(...db.nations.map((x) => h('option', { value: x.id, textContent: `👤 ${x.playerName} · 🏳️ ${x.name}`, selected: x.id === db.active })),
+    h('option', { value: '+', textContent: '➕ New player + nation' }));
+  sel.value = n.id;
+}
+$('#whoSel').addEventListener('change', (e) => {
+  const v = e.target.value;
+  if (v === '+') createNation(); else nationAct('activate', v);
+  renderWho();
+});
+// ?from=<game> → back button to that game. Our own links pass ?from=custom.
+const FROM = new URLSearchParams(location.search).get('from');
+const FROM_PATH = { conquest: '../conquest-commander/', 'conquest-commander': '../conquest-commander/', ships: '../ship-sandbox/', 'ship-sandbox': '../ship-sandbox/', hub: '../', campus: '../../' };
+if (FROM) {
+  const b = $('#backBtn'); b.classList.remove('hidden');
+  b.href = FROM_PATH[FROM] || (/^[a-z0-9-]{1,40}$/.test(FROM) && FROM !== 'custom' ? '../' + FROM + '/' : 'javascript:history.back()');
+  b.title = '⬅️ Back' + (FROM_PATH[FROM] ? ' to ' + FROM : ''); b.addEventListener('click', () => flushDB());
+}
+const goGame = (url) => { flushDB(); location.href = url; };
+$('#ccBtn').addEventListener('click', () => goGame('../conquest-commander/?from=custom'));
+$('#shipBtn').addEventListener('click', () => goGame('../ship-sandbox/?from=custom'));
+$('#demoBtn').addEventListener('click', (e) => { const m = $('#demomenu'), open = m.classList.toggle('hidden') === false; e.currentTarget.classList.toggle('on', open); e.currentTarget.setAttribute('aria-expanded', String(open)); });
+// demos take the unit being edited (army unit id); a blank slot falls back to the first filled one
+function demoUrl(kind) {
+  const n = nation(); let id = db.unit === 'tank' ? n.tankId : (n.roster[db.slot].blank ? (n.roster.find((r) => !r.blank) || {}).id : n.roster[db.slot].id);
+  const q = id ? '?unit=' + encodeURIComponent(id) : '?player=' + encodeURIComponent(n.pid);
+  return { moves: 'demo.html', combat: 'combat.html', team: 'team.html' }[kind] + (kind === 'team' ? '?player=' + encodeURIComponent(n.pid) : q);
+}
+for (const b of document.querySelectorAll('#demomenu [data-demo]')) b.addEventListener('click', () => goGame(demoUrl(b.dataset.demo)));
 function renderStrip() {
   const show = db.unit === 'trooper'; rosterEl.classList.toggle('hidden', !show); if (!show) return;
   rosterEl.replaceChildren(...nation().roster.map((r, i) => {
@@ -869,18 +991,15 @@ function openSheet(i = db.slot, focus = false) {
 function closeSheet() { sheet = null; renderSheet(); }
 // slot edits
 const slotAt = (i = db.slot) => nation().roster[i];
-function applyTemplate(id, i = db.slot) {
-  const tp = templateById(id); if (!tp) return false;
-  nation().roster[i] = tplSlot(tp); db.slot = i; sheet = null; applyState(); toast('📋 ' + tp.icon + ' ' + tp.name); return true;
-}
+// v5: every new unit is the same cheap basic trooper, auto-named 'Trooper N' (name editable)
 function makeBlankTrooper(name, i = db.slot) {
-  const t = { ...T.TROOPER_DEFAULT };
-  nation().roster[i] = { blank: false, name: clean(name, NAME_MAX) || 'Slot ' + (i + 1), icon: weaponIcon(t), ia: true, tpl: null, t };
+  const t = { ...BASIC_T };
+  nation().roster[i] = { blank: false, id: Army.newId('u'), name: clean(name, NAME_MAX) || nextTrooperName(), icon: weaponIcon(t), ia: true, tpl: null, t, traits: [], brain: null };
   db.slot = i; sheet = null; applyState(); toast('➕ ' + slotLabel(i)); return true;
 }
 function renameSlot(name, i = db.slot) {
   const s = slotAt(i), v = clean(name, NAME_MAX); if (s.blank || !v) return false;
-  s.name = v; saveDB(); renderSecHead(); renderStrip(); return true; // keeps the sheet (and its input focus) as is
+  s.name = v; saveDB(); renderWho(); renderSecHead(); renderStrip(); return true; // keeps the sheet (and its input focus) as is
 }
 function setSlotIcon(icon, i = db.slot) {
   const s = slotAt(i); if (s.blank) return false;
@@ -888,28 +1007,23 @@ function setSlotIcon(icon, i = db.slot) {
   applyState(); return true;
 }
 function clearSlot(i = db.slot) { nation().roster[i] = blankSlot(); if (sheet) sheet = { mode: 'blank', tpl: true, clear: false }; applyState(); toast('🗑️ Slot ' + (i + 1)); return true; }
-function fillStarter() { nation().roster = starterRoster(); fillConfirm = false; applyState(); toast('📋 6 starter templates'); return true; }
-// ↺ trooper: back to the slot's template, or to the base kit if it was made as a blank trooper
+// fill every empty slot with a basic trooper (test hook; no presets)
+function fillStarter() { const n = nation(); n.roster.forEach((r, i) => { if (r.blank) { const t = { ...BASIC_T }; n.roster[i] = { blank: false, id: Army.newId('u'), name: nextTrooperName(n), icon: weaponIcon(t), ia: true, tpl: null, t, traits: [], brain: null }; } }); applyState(); toast('➕ ' + n.roster.length + ' 🪖'); return true; }
+function setTraits(list, i = db.slot) { const s = slotAt(i); if (s.blank) return false; s.traits = (list || []).filter((k) => S.TRAIT_IDS.includes(k)).slice(0, 3); applyState(); return true; }
+// ↺ back to the basic kit (v5: no templates)
 function resetUnit() {
-  if (db.unit === 'tank') cur.tank = { ...UNITS.tank.defaults };
-  else { const s = slotAt(); if (!s.blank) { const tp = templateById(s.tpl); s.t = { ...(tp ? tp.t : T.TROOPER_DEFAULT) }; if (s.ia) s.icon = weaponIcon(s.t); } }
+  if (db.unit === 'tank') cur.tank = { ...BASIC_TANK };
+  else { const s = slotAt(); if (!s.blank) { s.t = { ...BASIC_T }; s.tpl = null; if (s.ia) s.icon = weaponIcon(s.t); } }
   applyState();
 }
-// template library: grouped by role, thumbnails in the nation's colors, cost + one-line description
 let sheetThumbs = [];
-function templateList() {
-  const box = h('div', { className: 'tpls', id: 'tplList' });
-  for (const r of ROLES) {
-    box.append(h('div', { className: 'tplrole' }, [r.ico + ' ' + r.name]));
-    for (const tp of TEMPLATES.filter((x) => x.role === r.id)) {
-      const st = fullState('trooper', tp.t), c = unitCost('trooper', st), sx = unitStats('trooper', st), cv = h('canvas', { width: TS, height: TS });
-      sheetThumbs.push({ canvas: cv, unit: 'trooper', state: st, frame: 'tpl' });
-      box.append(h('button', { type: 'button', className: 'tpl', 'data-tpl': tp.id, title: `${tp.icon} ${tp.name}: ${tp.desc}` }, [cv,
-        h('span', { className: 'nm' }, [h('b', { textContent: tp.icon + ' ' + tp.name }), h('small', { textContent: tp.desc })]),
-        h('span', { className: 'tc' }, ['💰' + fmt(c.cost), h('i', { textContent: '⚡' + c.power + ' ❤️' + sx.hp })])]));
-    }
-  }
-  return box;
+// trait picker: auto (= class default) + the 7 Conquest traits
+function traitTiles(s) {
+  const def = S.CLASS_TRAIT[S.classOf('trooper', s.t)] || 'rusher', cur0 = (s.traits || [])[0] || '';
+  const ti = (id) => S.TRAITS.find((x) => x.id === id);
+  return h('div', { className: 'tiles small traits', 'data-key': 'trait' }, [
+    h('button', { type: 'button', 'data-trait': '', className: cur0 ? '' : 'on', title: 'Auto: class default · ' + ti(def).long, 'aria-label': 'Auto trait' }, [h('span', { className: 'ico', textContent: ti(def).icon }), h('i', { textContent: 'auto' })]),
+    ...S.TRAITS.map((x) => h('button', { type: 'button', 'data-trait': x.id, className: cur0 === x.id ? 'on' : '', title: x.long, 'aria-label': 'Trait ' + x.long }, [h('span', { className: 'ico', textContent: x.icon }), h('i', { textContent: x.name })]))]);
 }
 function renderSheet() {
   const open = !!sheet && db.unit === 'trooper';
@@ -918,39 +1032,37 @@ function renderSheet() {
   if (!open) { sheetEl.replaceChildren(); return; }
   const i = db.slot, s = slotAt(i);
   if (s.blank && sheet.mode !== 'blank') sheet = { mode: 'blank', tpl: true, clear: false };
-  const head = h('div', { className: 'shhead' }, [h('b', { textContent: s.blank ? `➕ Slot ${i + 1}` : `${s.icon} Slot ${i + 1}` }),
-    h('small', { textContent: s.blank ? 'empty' : s.tpl ? '📋 ' + templateById(s.tpl).name : '➕ blank trooper' }), h('button', { type: 'button', id: 'shClose', className: 'ib', title: 'Close', 'aria-label': 'Close', textContent: '✖️' })]);
+  const cls = s.blank ? null : S.classOf('trooper', s.t), ci = cls && S.CLASS_INFO[cls];
+  const head = h('div', { className: 'shhead' }, [h('b', { textContent: s.blank ? `➕ Slot ${i + 1}` : `${s.icon} ${s.name}` }),
+    h('small', { textContent: s.blank ? 'empty' : (ci ? ci.i + ' ' + ci.n : '') + ' · 💰' + fmt(unitCost('trooper', fullState('trooper', s.t)).cost) }), h('button', { type: 'button', id: 'shClose', className: 'ib', title: 'Close', 'aria-label': 'Close', textContent: '✖️' })]);
   const kids = [head];
   if (sheet.mode === 'blank') {
-    kids.push(lab('➕', 'blank trooper · base kit, name it'),
-      h('div', { className: 'saverow' }, [h('input', { id: 'newSlotName', type: 'text', maxLength: NAME_MAX, placeholder: `🏷️ Slot ${i + 1}`, 'aria-label': 'New slot name', autocomplete: 'off', enterKeyHint: 'done' }),
-        h('button', { id: 'mkBlank', type: 'button', className: 'btn go', title: 'Make a blank trooper', textContent: '➕' })]),
-      lab('📋', `from template · ${TEMPLATES.length}`), templateList());
+    kids.push(lab('➕', 'new trooper · basic kit 💰' + S.unitCost({ kind: 'trooper', gear: S.BASIC_GEAR.trooper }).cost),
+      h('div', { className: 'saverow' }, [h('input', { id: 'newSlotName', type: 'text', maxLength: NAME_MAX, placeholder: '🏷️ ' + nextTrooperName(), 'aria-label': 'New trooper name', autocomplete: 'off', enterKeyHint: 'done' }),
+        h('button', { id: 'mkBlank', type: 'button', className: 'btn go', title: 'Add a basic trooper', textContent: '➕' })]));
   } else {
     const icons = h('div', { className: 'tiles small icons', 'data-key': 'icon' }, [h('button', { type: 'button', 'data-icon': '', className: s.ia ? 'on' : '', title: 'Auto: main weapon icon', 'aria-label': 'Auto icon' }, [h('span', { className: 'ico', textContent: weaponIcon(s.t) }), h('i', { textContent: 'auto' })]),
       ...SLOT_ICONS.map((ic) => h('button', { type: 'button', 'data-icon': ic, className: !s.ia && s.icon === ic ? 'on' : '', title: ic, 'aria-label': 'Icon ' + ic }, [h('span', { className: 'ico', textContent: ic })]))]);
     const acts = sheet.clear
       ? h('div', { className: 'acts' }, [h('span', { className: 'q', textContent: '🗑️ Clear slot?' }), h('button', { type: 'button', id: 'clearOk', className: 'btn bad', title: 'Clear to blank', textContent: '✔️' }), h('button', { type: 'button', id: 'clearNo', className: 'btn', title: 'Keep', textContent: '✖️' })])
-      : h('div', { className: 'acts' }, [h('button', { type: 'button', id: 'shTpl', className: 'btn' + (sheet.tpl ? ' on' : ''), title: 'Replace with a template', textContent: '📋 Template' }),
-        h('button', { type: 'button', id: 'shReset', className: 'btn', title: s.tpl ? 'Reset to ' + templateById(s.tpl).name : 'Reset to the base kit', textContent: '↺ Reset' }),
+      : h('div', { className: 'acts' }, [
+        h('button', { type: 'button', id: 'shReset', className: 'btn', title: 'Reset to the basic kit', textContent: '↺ Reset' }),
         h('button', { type: 'button', id: 'shClear', className: 'btn', title: 'Clear back to blank', textContent: '🗑️ Clear' })]);
     kids.push(lab('🏷️', 'name'),
       h('div', { className: 'saverow' }, [h('input', { id: 'slotName', type: 'text', value: s.name, maxLength: NAME_MAX, 'aria-label': 'Slot name', autocomplete: 'off', enterKeyHint: 'done' }),
         h('button', { id: 'nameOk', type: 'button', className: 'btn go', title: 'Done', textContent: '✔️' })]),
-      lab('🙂', 'icon'), icons, acts);
-    if (sheet.tpl) kids.push(lab('📋', `replace with template · ${TEMPLATES.length}`), templateList());
+      lab('🙂', 'icon'), icons, lab('🧠', 'trait in battle (Conquest + 👥 team demo)'), traitTiles(s), acts);
   }
   sheetEl.replaceChildren(...kids);
   if (sheet.focus) { sheet.focus = false; const inp = $('#slotName') || $('#newSlotName'); setTimeout(() => { inp.focus(); inp.select(); }, 0); }
 }
 sheetEl.addEventListener('click', (e) => {
   const t = e.target.closest('button'); if (!t) return;
-  if (t.dataset.tpl) return applyTemplate(t.dataset.tpl);
+  if (t.dataset.trait != null) return setTraits(t.dataset.trait ? [t.dataset.trait] : []);
   if (t.dataset.icon != null) return setSlotIcon(t.dataset.icon);
   switch (t.id) {
     case 'shClose': case 'nameOk': { const v = $('#slotName'); if (v) renameSlot(v.value); closeSheet(); break; }
     case 'mkBlank': makeBlankTrooper($('#newSlotName').value); break;
-    case 'shTpl': sheet.tpl = !sheet.tpl; renderSheet(); break;
     case 'shReset': resetUnit(); toast('↺ ' + slotLabel(db.slot)); break;
     case 'shClear': sheet.clear = true; renderSheet(); break;
     case 'clearOk': clearSlot(); break;
@@ -968,7 +1080,6 @@ sheetEl.addEventListener('keydown', (e) => {
 // ---------- ⭐ award weapons ----------
 function awardPick(w) {
   const it = ITEMS.weapon[w];
-  if (!unlocked(w)) { toast(`🔒 ⭐${it.n} · 🎖️${Math.min(db.medals[w], MEDALS_NEEDED)}/${MEDALS_NEEDED}`, true, 2200); return false; }
   const on = cur.trooper.weapon === w && fullState('trooper').award;
   setValues({ weapon: w, award: on ? 0 : 1 });
   toast(on ? `${it.i} ${it.n}` : ITEMS.award[w].tip, false, 2600); return true;
@@ -1043,7 +1154,17 @@ function loop() {
 // ---------- boot ----------
 resize();
 buildTabs();
-applyState();
+applyState(false); // boot render only: not a user edit
+// another tab changed the army save: when clean, reload + re-render keeping this tab's selection; when dirty, mergeArmy() merges on write
+addEventListener('storage', (e) => {
+  if (e.key !== Army.ARMY_KEY || dirty || wiped || e.newValue == null) return;
+  const keep = { active: db.active, slot: db.slot, unit: db.unit };
+  const next = loadDB(); if (!next || !next.nations.length) return;
+  db = next;
+  if (db.nations.some((n) => n.id === keep.active)) { db.active = keep.active; db.slot = keep.slot; db.tank = nation().tank; }
+  if (keep.unit !== db.unit) switchUnit(keep.unit, false);
+  sheet = null; applyState(false); setTab(tab);
+});
 setTab(justMigrated && db.looks.length ? 'looks' : UNIT_TABS[db.unit][1]);
 camHome();
 loop();
@@ -1069,8 +1190,7 @@ window.__tc = {
     tc3v4: () => T.encodeTC3({ player: db.player.name, nationName: nation().name, nation: nation(), roster: nation().roster.map((r, i) => ({ name: r.name || 'Old ' + (i + 1), icon: r.icon || '🪖', t: r.t })), slot: db.slot, tank: cur.tank, unit: db.unit }, TANK_FIELDS),
   },
   roster: () => nation().roster.map((r, i) => ({ ...r, t: { ...r.t }, slot: i, active: i === db.slot, ...unitCost('trooper', fullState('trooper', r.t)), ...unitStats('trooper', fullState('trooper', r.t)) })),
-  templates: TEMPLATES, roles: ROLES, starterIds: STARTER_IDS,
-  fillStarter, applyTemplate, makeBlankTrooper, renameSlot, setSlotIcon, clearSlot, openSheet, closeSheet, get sheet() { return sheet && { ...sheet }; },
+  fillStarter, setTraits, nextName: () => nextTrooperName(), army: () => dbToArmy(db), makeBlankTrooper, renameSlot, setSlotIcon, clearSlot, openSheet, closeSheet, get sheet() { return sheet && { ...sheet }; },
   defaultRoster: T.DEFAULT_ROSTER,
   get slot() { return db.slot; }, setSlot,
   items: ITEMS, statsTable: STATS, unitStats: (u = db.unit, o) => unitStats(u, o ? { ...fullState(u), ...o } : fullState(u)),
