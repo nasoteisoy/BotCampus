@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Creature Arena</title>
+<meta name="theme-color" content="#2a1d10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<!-- HUD: corners only, the centre stays clear -->
+<div id="hud" class="hide">
+  <div id="tl"><canvas id="face" width="96" height="96"></canvas>
+    <div class="bars">
+      <div class="bar hp"><i></i><b id="hpT">160/160</b><span>❤️</span></div>
+      <div class="bar en"><i></i><b id="enT">100</b><span>⚡</span></div>
+      <div class="bar ul"><i></i><span>⭐</span></div>
+    </div>
+  </div>
+  <div id="tr">
+    <div class="row"><div id="score">000000</div><button id="bMenu" aria-label="Menu">≡</button></div>
+    <div class="row"><div id="wave">🌊1</div><canvas id="mini" width="120" height="120"></canvas></div>
+  </div>
+  <div id="joy"><div id="joyBase"><div id="joyKnob"></div></div><div id="joyLbl">✥ Move</div></div>
+  <div id="pad">
+    <div id="grid"></div>
+    <div id="row2"><button id="bDodge" class="act"><span class="ic">💨</span><small>Dodge</small><i class="cd"></i><em></em></button>
+      <button id="bUlt" class="act"><span class="ic">⭐</span><small>ULTIMATE</small><i class="fill"></i></button></div>
+  </div>
+  <div id="banner"></div>
+</div>
+
+<!-- screens -->
+<div id="pick" class="scr">
+  <h1>🏟️ Creature Arena</h1>
+  <div id="cards"></div>
+  <div id="types" title="Type matchups">🔥▶🍃 · 🍃▶💧 · 💧▶🔥 · 🪨🛡️🔥</div>
+  <button id="bGo" class="big">▶</button>
+</div>
+<div id="menu" class="scr hide"><h2>⏸️</h2>
+  <div class="btns"><button id="mResume" class="big">▶</button><button id="mRestart" class="big">🔁</button><button id="mHome" class="big">🏠</button><button id="mSound" class="big">🔊</button></div>
+</div>
+<div id="end" class="scr hide"><h2 id="endT">🏆</h2><div id="endScore">000000</div><div id="endMsg"></div>
+  <div class="btns"><button id="eAgain" class="big">🔁</button><button id="eHome" class="big">🏠</button></div>
+</div>
+
+<script type="module" src="js/game.js?v=1"></script>
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=1').catch(() => {}));
+</script>
+</body>
+</html>
