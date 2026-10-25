@@ -1356,6 +1356,166 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-flame-knows-exmembers",
+      "question": "Does the Flame Order know its former members work for the Guard?",
+      "answer": "Yes, and they resent it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-rival-ruler",
+      "question": "Who rules the enemy kingdoms?",
+      "answer": "Each enemy kingdom has a different kind of ruler: one a warrior king, one a spirit queen or sorceress, one a council of warlords. (Tentative: Chumi said 'One of each maybe'.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-desert-rival-ruler",
+      "question": "Which kind of ruler leads the rival kingdom beyond the desert?",
+      "answer": "The warrior king.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-warrior-king-wants",
+      "question": "What does the warrior king want from the Desert Kingdom?",
+      "answer": "Land and resources. To push the Empire back out. Something spirit-related hidden there.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-warrior-king-creatures",
+      "question": "Does the warrior king know about the spirit creatures his army used at the canyon?",
+      "answer": "Yes, he ordered their use. Someone else in his army brought them. He's being used by a hidden power.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-creature-bringer",
+      "question": "Who is the person in the warrior king's army who brought the spirit creatures?",
+      "answer": "A foreign advisor.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-advisor-origin",
+      "question": "Where does the foreign advisor come from?",
+      "answer": "Somewhere no one has heard of.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-advisor-farm-link",
+      "question": "Is the foreign advisor connected to the unknown forces attacking the Farm Kingdom?",
+      "answer": "Yes, they come from the same source.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-source-wants",
+      "question": "What does that shared source want?",
+      "answer": "To weaken the Empire from many sides. To spread corruption into the world. The same ancient device Cassian is chasing.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-source-named",
+      "question": "Should the shared source have a name readers learn early, or stay unnamed for a while?",
+      "answer": "It stays unnamed for most of Book 1.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-spirit-queen-kingdom",
+      "question": "Which enemy kingdom does the spirit queen or sorceress rule?",
+      "answer": "A kingdom not met yet in Book 1.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-warlords-where",
+      "question": "And the council of warlords: where do readers meet them?",
+      "answer": "Southern kingdoms. And mountain kingdoms.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-south-mountain-war",
+      "question": "Are the southern and mountain kingdoms at war with the Empire during Book 1?",
+      "answer": "Yes, open war. But like the 100 years war.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-joined-guard",
+      "question": "How did Alaric end up in the Black Guard?",
+      "answer": "He volunteered and passed selection like everyone else.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-before-guard",
+      "question": "What was Alaric before he volunteered?",
+      "answer": "A regular Imperial soldier. A farmer's son.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-why-volunteer",
+      "question": "Why did Alaric volunteer for the Black Guard?",
+      "answer": "To make a bigger difference in the war.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

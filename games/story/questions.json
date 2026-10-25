@@ -457,6 +457,15 @@
             "Losing the Emperor's or Council's trust",
             "Decide later"
           ]
+        },
+        {
+          "id": "guard-south-mountain-banners-01",
+          "prompt": "Do other Black Guard Banners fight on the southern and mountain fronts?",
+          "options": [
+            "Yes, some Banners are there",
+            "No, the regular armies hold those fronts",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -487,12 +496,11 @@
         },
         {
           "id": "chars-alaric-home-01",
-          "prompt": "Where is Alaric from?",
+          "prompt": "Where is Alaric from? (He is a farmer's son.)",
           "options": [
             "The Farm Kingdom (Tomas Greaves's colony), where his farmer sister still lives",
             "A frontier town near the fort where his father died",
-            "The Southern Kingdoms",
-            "The capital, Vorash"
+            "The Southern Kingdoms"
           ]
         },
         {
@@ -1300,11 +1308,11 @@
           ]
         },
         {
-          "id": "enemy-spirit-creatures-control-01",
-          "prompt": "Spirit creatures have appeared in the canyon and in the Farm Kingdom. Who controls them?",
+          "id": "enemy-spirit-creatures-control-02",
+          "prompt": "At the canyon, the warrior king ordered the spirit creatures' use and a foreign advisor brought them. Who controls the spirit creatures in the Farm Kingdom?",
           "options": [
-            "The same hidden power in both places",
-            "Different groups in each place",
+            "The same source the advisor comes from",
+            "Someone else entirely",
             "No one fully controls them",
             "Decide later"
           ]
@@ -1397,6 +1405,36 @@
             "Replace the minions with the new list",
             "Minions are spiritual only; the new list is physical",
             "Merge them into one list"
+          ]
+        },
+        {
+          "id": "enemy-warrior-king-name-01",
+          "prompt": "What is the warrior king's name? (Options are suggestions.)",
+          "options": [
+            "King Orvath",
+            "King Tarvos",
+            "King Hadrak",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "enemy-advisor-look-01",
+          "prompt": "What does the foreign advisor look like, and what name do they go by?",
+          "options": [
+            "Ordinary — nothing stands out",
+            "Clearly from far away",
+            "Hidden — hood, robes or mask",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "enemy-south-mountain-which-01",
+          "prompt": "The council of warlords is met in the southern and mountain kingdoms, at open war with the Empire. Which kingdoms are these?",
+          "options": [
+            "Rival kingdoms beyond the Imperial Southern Kingdoms and Northern Mountains",
+            "Parts of the Southern and Mountain Kingdoms that rebel against the Empire",
+            "Both",
+            "Decide later"
           ]
         }
       ]
