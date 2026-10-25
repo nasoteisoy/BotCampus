@@ -1956,6 +1956,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sacred-metal-source",
+      "question": "Where does the sacred metal come from?",
+      "answer": "A place where the spirit world touches ours, and it's left over from an ancient time, and they have to be found. And they have to know and be able to know what they found.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sacred-metal-finder",
+      "question": "Who usually finds the sacred metal?",
+      "answer": "Flame Order members on a pilgrimage or trial.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-metal-own-find",
+      "question": "Does a new member have to find their own sacred metal before forging their hilt?",
+      "answer": "Yes, finding it is part of their trial.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-metal-not-found",
+      "question": "What happens to a trainee who can not find the sacred metal?",
+      "answer": "They can try again later. They stay in a support role in the Order.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-sacred-places-where",
+      "question": "Where are the sacred places the metal comes from? (asked as: Does the Black Guard know where the sacred places are?)",
+      "answer": "Its not in one place. They are everywhere hidden in plain sight.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-why-no-metal",
+      "question": "If the places are hidden in plain sight, why have not Cassian's people found any metal?",
+      "answer": "A little bit of all: they do not know how to recognize it; only someone the spirit world accepts can find it; they have found some but do not know it yet.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-metal-name",
+      "question": "What is the sacred metal called?",
+      "answer": "You pick. Story picked: Hallowsteel (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-metal-look",
+      "question": "What does raw Hallowsteel look like when someone finds it?",
+      "answer": "Like ordinary rock or rusty ore.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-metal-recognize",
+      "question": "How does a Flame trainee recognize Hallowsteel if it looks like ordinary rock?",
+      "answer": "They sense the spirit world near it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-spirit-sense-outsiders",
+      "question": "Can anyone outside the Flame Order sense the spirit world like that?",
+      "answer": "Some people can but unless you are trained the some that can have no idea they can.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-seek-sensers",
+      "question": "Does the Flame Order look for people who can sense the spirit world without knowing it?",
+      "answer": "All: they quietly seek them out; people have to feel called and come to them; sometimes, if they stumble on one.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-how-joined",
+      "question": "Was Cael sought out by the Order, or did he come on his own?",
+      "answer": "On his own but some have suggested and at first he didnt think anything of it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-who-suggested",
+      "question": "Who suggested the Flame Order to Cael?",
+      "answer": "A Flame Order member passing through.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-what-called",
+      "question": "What finally made Cael feel called?",
+      "answer": "He started sensing things he couldn't explain. Also, he also saw it as if he can help the world through it and he kinda considered it as being the best of the best.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-cael-alaric-best-of-best",
+      "question": "Do Cael and Alaric know they both chased the \"best of the best\"?",
+      "answer": "Yeah it got mentioned.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

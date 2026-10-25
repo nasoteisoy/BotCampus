@@ -115,26 +115,6 @@
             "Change the name",
             "Decide later"
           ]
-        },
-        {
-          "id": "world-flame-metal-place-01",
-          "prompt": "The Flame hilt is made of a rare metal from a sacred place. Where is that place?",
-          "options": [
-            "A sacred place the Order guards",
-            "A place few people know about",
-            "Somewhere outside the Empire",
-            "Decide later"
-          ]
-        },
-        {
-          "id": "world-flame-metal-name-01",
-          "prompt": "What is the hilt's rare metal called? (Options are suggestions.)",
-          "options": [
-            "Emberite",
-            "Hallowsteel",
-            "Solsteel",
-            "Decide later"
-          ]
         }
       ]
     },
@@ -498,11 +478,21 @@
         },
         {
           "id": "guard-hilt-metal-01",
-          "prompt": "Cassian's craftsmen can't forge a hilt without the sacred metal. What do they do about it?",
+          "prompt": "Cassian's craftsmen can't forge a hilt without the sacred metal (they don't know how to recognize it, only someone the spirit world accepts can find it, and they have found some but don't know it yet). What do they do about it?",
           "options": [
             "They try to get the metal",
             "They look for another way",
             "They keep failing",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "guard-found-metal-01",
+          "prompt": "Cassian's people have found some Hallowsteel but don't know it yet. Where is it?",
+          "options": [
+            "In the Keep's workshops",
+            "Among Cassian's private things",
+            "Somewhere no one is looking",
             "Decide later"
           ]
         }
@@ -650,6 +640,17 @@
             "Through work or a trade",
             "Through service at court",
             "Through learning or study",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "chars-sense-spirit-01",
+          "prompt": "Some people can sense the spirit world without knowing it. Can Alaric or Seraphina?",
+          "options": [
+            "Alaric",
+            "Seraphina",
+            "Both",
+            "Neither",
             "Decide later"
           ]
         }
