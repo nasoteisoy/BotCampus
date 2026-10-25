@@ -1232,7 +1232,7 @@
       "section_title": "The Black Guard",
       "question_id": "chat-guard-banner-count",
       "question": "How many Banners does the Black Guard have when the story starts?",
-      "answer": "Just a few, around 3 to 5.",
+      "answer": "There can be 5 to 8 Banners.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
@@ -1513,6 +1513,146 @@
       "question_id": "chat-alaric-why-volunteer",
       "question": "Why did Alaric volunteer for the Black Guard?",
       "answer": "To make a bigger difference in the war.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-soldier-years",
+      "question": "How long was Alaric a regular soldier before he volunteered?",
+      "answer": "4 or 5 years.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-why-bigger-role",
+      "question": "What did Alaric see or do as a soldier that made him want a bigger role?",
+      "answer": "The Black Guard wasn't a thing before him. But he saw it as the best of the best.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brother",
+      "question": "Alaric's younger brother",
+      "answer": "He and his younger brother became officers, but his brother was happy where he stayed.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-selection-class",
+      "question": "Since the Black Guard was new, was Alaric in its very first selection class?",
+      "answer": "He was in one of the first few classes.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brother-now",
+      "question": "How do Alaric and his younger brother get along now?",
+      "answer": "Very close but forget to communicate to each other.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-first-class-size",
+      "question": "How big was the Black Guard's first selection class?",
+      "answer": "The first \"class\" was a division size.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-unit-ladder",
+      "question": "How did a division-sized first class end up as just a few Banners?",
+      "answer": "2 to 3 banners is a regiment, a few regiments is a division. But since it is just one division there are no formal regiments, since the Black Guard is spread out. The next \"class\" is bigger and maybe getting more formal.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-next-class-when",
+      "question": "When does the bigger next selection class happen?",
+      "answer": "As they finish training the first class, the next class is already starting training.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-new-class-trainers",
+      "question": "Who trains the new class while the first class is out fighting?",
+      "answer": "All: veterans from the first class rotate back to train them; former Flame Order members at Nightwatch Keep train them; Imperial army instructors train them.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-rotate-back",
+      "question": "Does Alaric ever rotate back to Nightwatch Keep to train recruits?",
+      "answer": "No, he stays at the front.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brother-where",
+      "question": "Where is Alaric's younger brother serving when Book 1 starts?",
+      "answer": "In the regular army on another front. But: I guess it's worth exploring that maybe you have to join your local kingdom's army then transfer to the Imperial, and both him and his brother went all the way to the Imperial army.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-empire-army-path",
+      "question": "How do soldiers get into the Imperial army?",
+      "answer": "Worth exploring (tentative): maybe you have to join your local kingdom's army, then transfer to the Imperial army.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-empire-transfer-needs",
+      "question": "What does it take to transfer from a kingdom's army to the Imperial army?",
+      "answer": "Years of service and a good record. You have to pass a test or trial.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-first-army",
+      "question": "Which kingdom's army did Alaric and his brother start in?",
+      "answer": "The Farm Kingdom's army.",
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"

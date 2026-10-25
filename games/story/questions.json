@@ -341,11 +341,10 @@
       "questions": [
         {
           "id": "guard-ladder-keep-01",
-          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)? (A Banner is a few hundred soldiers.)",
+          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)? (A Banner is a few hundred soldiers. 2 to 3 Banners is a regiment and a few regiments is a division; the Guard is one division with no formal regiments.)",
           "options": [
             "Keep it as drafted",
             "Keep it, but rename some units",
-            "Go back to the bible ladder (Lance → Band → Banner → Host → Army)",
             "Mix the two"
           ]
         },
@@ -466,6 +465,16 @@
             "No, the regular armies hold those fronts",
             "Decide later"
           ]
+        },
+        {
+          "id": "guard-regiments-formal-01",
+          "prompt": "When does the Black Guard get formal regiments?",
+          "options": [
+            "When the next class finishes training",
+            "Later in the series",
+            "Never, it stays spread out",
+            "Decide later"
+          ]
         }
       ]
     },
@@ -496,7 +505,7 @@
         },
         {
           "id": "chars-alaric-home-01",
-          "prompt": "Where is Alaric from? (He is a farmer's son.)",
+          "prompt": "Where is Alaric from? (He is a farmer's son and started in the Farm Kingdom's army.)",
           "options": [
             "The Farm Kingdom (Tomas Greaves's colony), where his farmer sister still lives",
             "A frontier town near the fort where his father died",
@@ -602,6 +611,26 @@
             "Swap — Humility as his goal, Pride as his flaw",
             "Keep, but add Patience as what he learns",
             "Keep, and make Sloth his hidden second temptation"
+          ]
+        },
+        {
+          "id": "chars-alaric-brother-name-01",
+          "prompt": "What is Alaric's younger brother's name? (Options are suggestions.)",
+          "options": [
+            "Tobin",
+            "Rowan",
+            "Garrett",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "chars-alaric-brother-front-01",
+          "prompt": "Which front is Alaric's younger brother on when Book 1 starts?",
+          "options": [
+            "The southern front",
+            "The mountain front",
+            "The desert front",
+            "Decide later"
           ]
         }
       ]
