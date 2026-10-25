@@ -2696,6 +2696,76 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-brann-joss-rank",
+      "question": "Are Brann and Joss lieutenants under Captain Seraphina?",
+      "answer": "Yes, both are lieutenants. And each Lieutenant is in charge of a platoon.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-banner-structure",
+      "question": "How is Alaric's banner organized?",
+      "answer": "Alaric is in charge of a banner, and under the banner are 2 infantry, 1 recon, and 1 heavy formations.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-banner-ranks",
+      "question": "Go with Commander for the Banner, Captains for the companies, and Lieutenants for the platoons?",
+      "answer": "Yes, use that and update the pages. (Commander leads the Banner; Captains lead the 4 companies: Recon, Infantry A, Infantry B, Heavy; Lieutenants lead platoons.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-platoons-per-company",
+      "question": "How many platoons are in each company?",
+      "answer": "3 platoons per infantry company, 2 for recon, and 1 for heavy.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-heavy-platoon-leader",
+      "question": "Who leads the Heavy company's one platoon?",
+      "answer": "A lieutenant under the heavy captain.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-under-lieutenant",
+      "question": "What is under a Lieutenant?",
+      "answer": "Sergeants leading squads.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-strategist-role",
+      "question": "Does the Strategist captain lead troops or serve on Alaric's staff?",
+      "answer": "Staff only, as Alaric's second-in-command and planner. Leads a small staff or messenger group.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

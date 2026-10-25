@@ -340,12 +340,13 @@
       "blurb": "Ranks, kit and role",
       "questions": [
         {
-          "id": "guard-ladder-keep-01",
-          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)? (A Banner is a few hundred soldiers. 2 to 3 Banners is a regiment and a few regiments is a division; the Guard is one division with no formal regiments.)",
+          "id": "guard-ladder-keep-02",
+          "prompt": "Banner ranks are set: Commander (Banner) → Captain (company) → Lieutenant (platoon) → Sergeant (squad). Below that, keep the draft small units (Guardsman, File of 5, Lance of 10 led by a Lance Sergeant)?",
           "options": [
-            "Keep it as drafted",
-            "Keep it, but rename some units",
-            "Mix the two"
+            "Keep them as drafted",
+            "Keep them, but rename some",
+            "Drop File and Lance",
+            "Decide later"
           ]
         },
         {
@@ -355,7 +356,7 @@
             "Keep exactly",
             "Keep, with more gold for officers",
             "Black and blue only on duty; home colours off duty",
-            "Keep, plus a sign for each Arm"
+            "Keep, plus a sign for each company"
           ]
         },
         {
@@ -386,16 +387,6 @@
             "They share missions but don't trust each other",
             "Some guardsmen are also Flame members",
             "They mostly work apart"
-          ]
-        },
-        {
-          "id": "guard-mute-speaker-01",
-          "prompt": "The Recon Mute and Speaker leads: are they Wing Leads in the draft ladder?",
-          "options": [
-            "Yes — two Wing Leads under Recon",
-            "No — they are lance-level scouts",
-            "One Wing with two leads",
-            "Undecided rank, special role"
           ]
         },
         {
@@ -1580,7 +1571,7 @@
           "options": [
             "Many guardsmen, but no one close to Alaric or Seraphina",
             "Someone close to Alaric or Seraphina",
-            "A whole Wing or Company",
+            "A whole platoon or company",
             "Decide later"
           ]
         },
