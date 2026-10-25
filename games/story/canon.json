@@ -1656,6 +1656,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-why-farm-army",
+      "question": "Why did Alaric and his brother join the Farm Kingdom's army in the first place?",
+      "answer": "Kingdom needed more soldiers and their father died as a drafted officer.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-farm-who-runs",
+      "question": "Who runs the family farm now that the father is gone and both sons are soldiers?",
+      "answer": "Brother-in-law, sister and mom took over.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-sisters",
+      "question": "How many sisters does Alaric have?",
+      "answer": "Two sisters: one runs the farm with her husband, the other is married to the Capital High Lord.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brothers",
+      "question": "Besides the younger brother, does Alaric also have an older brother in the Flame Order?",
+      "answer": "Yes, he has an older brother in the Flame Order and a younger brother in the army.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-older-brother-flame",
+      "question": "How did a farmer's son (Alaric's older brother) end up joining the Flame Order?",
+      "answer": "He passed the trials as a young man. He felt called to it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-older-brother-relation",
+      "question": "Since Flame Order members give up family and home, how does the older brother relate to Alaric now?",
+      "answer": "They rarely speak; he's distant, but he still wants to know how the family is doing. It's more like he is busy and needs to be away. He is cautious about the Black Guard but doesn't fully understand it.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-older-brother-book1",
+      "question": "Does Alaric's older brother show up in Book 1?",
+      "answer": "Yes, but somewhere else in the story (not on the canyon Flame team).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-mom-where",
+      "question": "Is Alaric's mom still living on the family farm?",
+      "answer": "Yes, she still lives on the farm.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-sister-highlord-how",
+      "question": "How did the other sister, a farmer's daughter, come to marry the Capital High Lord?",
+      "answer": "They met by chance and fell in love. She earned her own place in the Capital first.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "empire",
+      "section_title": "The Empire",
+      "question_id": "chat-sir-officer-term",
+      "question": "Some pages call him \"Sir Alaric.\" Does a farmer's son get that title?",
+      "answer": "Sir could be an officer term. (Tentative)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-south-mountain-which",
+      "question": "Which southern and mountain kingdoms are at war with the Empire?",
+      "answer": "Rival kingdoms beyond the Empire's southern and mountain borders, not Davian's or Bjorn's.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "enemies",
+      "section_title": "Enemies",
+      "question_id": "chat-enemy-south-mountain-who-fights",
+      "question": "Whose soldiers mostly fight the rival kingdoms at the southern and mountain borders?",
+      "answer": "Both together (Davian's and Bjorn's own kingdom armies and the Imperial army).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brother-front",
+      "question": "Which front is Alaric's younger brother on?",
+      "answer": "The southern border.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-alaric-brother-name",
+      "question": "What's the younger brother's name?",
+      "answer": "You pick. Story picked Rowan Vaelen (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "chars",
+      "section_title": "Main Characters",
+      "question_id": "chat-rowan-rank",
+      "question": "What's Rowan's rank on the southern border?",
+      "answer": "A junior officer.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

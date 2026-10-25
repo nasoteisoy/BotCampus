@@ -504,12 +504,12 @@
           ]
         },
         {
-          "id": "chars-alaric-home-01",
-          "prompt": "Where is Alaric from? (He is a farmer's son and started in the Farm Kingdom's army.)",
+          "id": "chars-alaric-home-02",
+          "prompt": "Alaric's family farm is run by his sister, her husband and his mom, and his farmer sister lives in Tomas Greaves's land. Is the Farm Kingdom where Alaric grew up?",
           "options": [
-            "The Farm Kingdom (Tomas Greaves's colony), where his farmer sister still lives",
-            "A frontier town near the fort where his father died",
-            "The Southern Kingdoms"
+            "Yes",
+            "No, somewhere else",
+            "Decide later"
           ]
         },
         {
@@ -614,22 +614,22 @@
           ]
         },
         {
-          "id": "chars-alaric-brother-name-01",
-          "prompt": "What is Alaric's younger brother's name? (Options are suggestions.)",
+          "id": "chars-alaric-older-brother-name-01",
+          "prompt": "What is Alaric's older brother's name? (Options are suggestions.)",
           "options": [
-            "Tobin",
-            "Rowan",
-            "Garrett",
+            "Edmund",
+            "Caleb",
+            "Bastian",
             "Decide later"
           ]
         },
         {
-          "id": "chars-alaric-brother-front-01",
-          "prompt": "Which front is Alaric's younger brother on when Book 1 starts?",
+          "id": "chars-capital-sister-place-01",
+          "prompt": "Alaric's sister earned her own place in the Capital before she married the High Lord. How?",
           "options": [
-            "The southern front",
-            "The mountain front",
-            "The desert front",
+            "Through work or a trade",
+            "Through service at court",
+            "Through learning or study",
             "Decide later"
           ]
         }
@@ -1159,16 +1159,6 @@
           ]
         },
         {
-          "id": "hl-tomas-07",
-          "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
-          "prompt": "So Alaric has (at least) two sisters: one married to the Capital lord, one a farmer here. Right?",
-          "options": [
-            "Yes — two sisters",
-            "Yes, and other siblings too",
-            "No — I want to change this"
-          ]
-        },
-        {
           "id": "hl-tomas-08",
           "group": "North-East Farm/Flatland Kingdom – High Lord Tomas Greaves",
           "prompt": "Who founded the colony?",
@@ -1455,16 +1445,6 @@
             "Hidden — hood, robes or mask",
             "Decide later"
           ]
-        },
-        {
-          "id": "enemy-south-mountain-which-01",
-          "prompt": "The council of warlords is met in the southern and mountain kingdoms, at open war with the Empire. Which kingdoms are these?",
-          "options": [
-            "Rival kingdoms beyond the Imperial Southern Kingdoms and Northern Mountains",
-            "Parts of the Southern and Mountain Kingdoms that rebel against the Empire",
-            "Both",
-            "Decide later"
-          ]
         }
       ]
     },
@@ -1615,14 +1595,13 @@
           ]
         },
         {
-          "id": "spine-flame-brother-01",
-          "prompt": "Alaric's older brother in the Flame Order — when does he appear?",
+          "id": "spine-flame-brother-02",
+          "prompt": "Alaric's older brother in the Flame Order shows up in Book 1, but not on the canyon Flame team. Where does he show up?",
           "options": [
-            "Late — family is revealed slowly",
-            "Book 2",
-            "Only in mentions",
-            "When the Flame Order is needed in Book 1",
-            "In the Flame Order team at the canyon"
+            "In the Farm Kingdom",
+            "In the Capital",
+            "On another front",
+            "Decide later"
           ]
         },
         {
