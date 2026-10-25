@@ -1046,6 +1046,166 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-alaric-approach",
+      "question": "How does Alaric first approach the Farm Kingdom problem?",
+      "answer": "He sends Seraphina's recon into the forest, talks to the farmers and his sister to learn what's happening, and tries to make contact with the elves.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-elves-contact",
+      "question": "When Alaric tries to contact the elves, how do they respond?",
+      "answer": "Cant be found",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "spine",
+      "section_title": "Story Spine & Plot",
+      "question_id": "chat-farm-recon-forest-finds",
+      "question": "What does Seraphina's recon find in the forest?",
+      "answer": "Signs of the elves, but no elves. Dead or changed animals. Traces of spirit creatures. Some of the missing people.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "world-flame-org-01",
+      "question": "How is the Flame Order organized?",
+      "answer": "A strict ranked hierarchy.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-leadership",
+      "question": "Who leads the Flame Order at the top?",
+      "answer": "A small circle leads it (not necessarily elders). Chumi doesn't care about the name; Story named it the Ember Circle (renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-joining",
+      "question": "How does someone join the Flame Order?",
+      "answer": "Anyone can join if they pass trials. But the trials are vague and few pass, and joining them is not the life everyone wants to live.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "world",
+      "section_title": "World & Cosmology",
+      "question_id": "chat-flame-life-cost",
+      "question": "What makes the Flame Order life one most people don't want?",
+      "answer": "They give up family and home. Strict vows and discipline.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-banner-job",
+      "question": "What is a Black Guard Banner's main job in the Empire?",
+      "answer": "Both an elite force sent to the hardest fronts and Cassian's personal army, kinda like the airborne when they first started but with spirit instead of air.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-spirit-use",
+      "question": "Spirit instead of air: how does the Black Guard use spirit?",
+      "answer": "Spirit-tech gear and weapons. Soldiers trained to sense or fight spirit. Spirit lets them move or strike in ways others can't.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-flame-view",
+      "question": "How does the Flame Order feel about the Black Guard using spirit this way?",
+      "answer": "They don't approve but don't stop it. They don't know how much the Guard uses. They trained some of the Guard themselves.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-soldier-view",
+      "question": "How do regular Imperial soldiers see the Black Guard?",
+      "answer": "The same as the airborne.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-joining",
+      "question": "How does someone get into the Black Guard?",
+      "answer": "Volunteers who pass hard selection.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-volunteer-origin",
+      "question": "Where do Black Guard volunteers come from?",
+      "answer": "From any kingdom in the Empire.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-selection-tests",
+      "question": "What does the Black Guard selection test the most?",
+      "answer": "Physical endurance. Whether they can handle spirit. Loyalty and character.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-loyalty-first",
+      "question": "When a Black Guard soldier's loyalty is tested, who are they loyal to first?",
+      "answer": "The Emperor.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-cassian-emperor-loyalty",
+      "question": "The Guard is Cassian's army but loyal to the Emperor first. Does Cassian see that as a problem?",
+      "answer": "No, he's loyal to the Emperor too.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

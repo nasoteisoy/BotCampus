@@ -108,12 +108,11 @@
           ]
         },
         {
-          "id": "world-flame-org-01",
-          "prompt": "How is the Flame Order organized?",
+          "id": "world-flame-circle-name-01",
+          "prompt": "A small circle leads the Flame Order. Story named it 'the Ember Circle' as a placeholder. Keep that name?",
           "options": [
-            "Small teams spread across the Empire",
-            "Big halls in each kingdom",
-            "One hidden centre with travelling members",
+            "Keep 'the Ember Circle'",
+            "Change the name",
             "Decide later"
           ]
         }
@@ -372,42 +371,32 @@
         },
         {
           "id": "guard-spirittech-kit-01",
-          "prompt": "What spirit-tech does a normal guardsman carry?",
+          "prompt": "The Guard uses spirit-tech gear and weapons. What does a normal guardsman carry?",
           "options": [
-            "None — only officers and specialists",
             "A small corruption detector",
             "Comm-stones to talk to the Banner",
-            "Armour that resists corruption"
+            "Armour that resists corruption",
+            "Decide later"
           ]
         },
         {
-          "id": "guard-recruit-01",
-          "prompt": "How are guardsmen chosen?",
+          "id": "guard-answers-to-02",
+          "prompt": "The Guard is Cassian's army, but its soldiers are loyal to the Emperor first. How does the chain of command work day to day?",
           "options": [
-            "Selection and training from every kingdom (where Book 1 opens)",
-            "Nominated by their kingdom's High Lord",
-            "Volunteers from the regular army",
-            "Chosen after surviving something spiritual"
-          ]
-        },
-        {
-          "id": "guard-answers-to-01",
-          "prompt": "Who does the Black Guard answer to?",
-          "options": [
-            "The Black Guard High Lord only",
-            "The Emperor or Council, through its High Lord",
-            "Whichever theatre commander they are attached to",
-            "It's unclear — and that causes trouble"
+            "Cassian commands; the Emperor can overrule him",
+            "Cassian commands; the Council can review his orders",
+            "Banner commanders have wide freedom in the field",
+            "Decide later"
           ]
         },
         {
           "id": "guard-flame-01",
-          "prompt": "How does the Black Guard work with the Flame Order?",
+          "prompt": "How does the Black Guard work with the Flame Order? (The Flame Order doesn't approve of the Guard's spirit use but doesn't stop it, and trained some of the Guard.)",
           "options": [
-            "Each Banner has a Flame member attached",
             "They call the Flame when needed",
             "They share missions but don't trust each other",
-            "Some guardsmen are also Flame members"
+            "Some guardsmen are also Flame members",
+            "They mostly work apart"
           ]
         },
         {
@@ -1578,6 +1567,46 @@
             "The Mirkhollow",
             "The Fenwild",
             "The Wending Wood"
+          ]
+        },
+        {
+          "id": "spine-farm-told-01",
+          "prompt": "What do the farmers and Alaric's sister tell him about what's happening?",
+          "options": [
+            "What they've seen at night",
+            "Who has gone missing and where",
+            "When the trouble started",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-farm-elves-hidden-01",
+          "prompt": "When Alaric tries to make contact, the elves can't be found. Why?",
+          "options": [
+            "They are hiding on purpose",
+            "They have left the forest",
+            "Something has happened to them",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-farm-missing-01",
+          "prompt": "Seraphina's recon finds some of the missing people in the forest. What state are they in?",
+          "options": [
+            "Alive and unharmed",
+            "Alive but changed",
+            "Dead",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "spine-flame-team-leader-01",
+          "prompt": "Who leads the Flame Order team at the canyon? (Name not decided; options are suggestions.)",
+          "options": [
+            "Oren Vask",
+            "Lysa Morrow",
+            "Tavish Rhee",
+            "Decide later"
           ]
         }
       ]
