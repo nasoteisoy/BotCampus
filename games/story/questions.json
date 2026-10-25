@@ -341,22 +341,12 @@
       "questions": [
         {
           "id": "guard-ladder-keep-01",
-          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)?",
+          "prompt": "Keep the draft rank ladder (Guardsman → File → Lance → Company → Wing → Arm → Banner → High Lord)? (A Banner is a few hundred soldiers.)",
           "options": [
             "Keep it as drafted",
             "Keep it, but rename some units",
             "Go back to the bible ladder (Lance → Band → Banner → Host → Army)",
             "Mix the two"
-          ]
-        },
-        {
-          "id": "guard-banner-size-01",
-          "prompt": "The Guard is brand new and Alaric's Banner is part of its very first division. How big is it?",
-          "options": [
-            "About 1,200 (draft ladder)",
-            "About 50–70, small but full of leaders (bible)",
-            "About 300",
-            "Starts small and grows over the series"
           ]
         },
         {
@@ -426,6 +416,45 @@
             "Yes, something about the night",
             "Yes, something about duty",
             "No motto",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "guard-keep-name-01",
+          "prompt": "Story named the Black Guard's fortress 'Nightwatch Keep' as a placeholder. Keep that name?",
+          "options": [
+            "Keep 'Nightwatch Keep'",
+            "Change the name",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "guard-rival-commander-name-01",
+          "prompt": "What is the name of the glory-seeking Banner commander who openly dislikes Alaric? (Options are suggestions.)",
+          "options": [
+            "Varric Hale",
+            "Desmond Crowe",
+            "Bram Kessler",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "guard-cassian-rooms-01",
+          "prompt": "What does Cassian keep in his private rooms at Nightwatch Keep?",
+          "options": [
+            "Records and letters",
+            "Spirit-tech he hasn't shown anyone",
+            "Things from his past",
+            "Decide later"
+          ]
+        },
+        {
+          "id": "guard-experiment-fail-01",
+          "prompt": "What would count as the Black Guard experiment 'failing'?",
+          "options": [
+            "A big defeat in the field",
+            "Losing control of its spirit use",
+            "Losing the Emperor's or Council's trust",
             "Decide later"
           ]
         }

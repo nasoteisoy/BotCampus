@@ -1206,6 +1206,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-emperor-view",
+      "question": "How does the Emperor see the Black Guard?",
+      "answer": "As an experiment.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-experiment-fails",
+      "question": "What happens to the Black Guard if the experiment fails?",
+      "answer": "It gets disbanded. It's folded into the regular army. Cassian takes the fall.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-banner-count",
+      "question": "How many Banners does the Black Guard have when the story starts?",
+      "answer": "Just a few, around 3 to 5.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-banner-size",
+      "question": "About how many soldiers are in one Black Guard Banner?",
+      "answer": "A few hundred, like a company or battalion.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-banner-makeup",
+      "question": "How is a Black Guard Banner split up inside?",
+      "answer": "Mainly infantry with recon and heavy support.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-banners-share",
+      "question": "Do the Black Guard Banners know about each other's missions?",
+      "answer": "They share up the chain of command and command delegates, and they know what others are delegated.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-commanders-relations",
+      "question": "Do the Banner commanders get along with each other?",
+      "answer": "There's a rivalry between the glory-seekers and the careful ones. One commander openly dislikes Alaric. They are also brothers in arms.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-rival-commander-why",
+      "question": "Why does that commander openly dislike Alaric?",
+      "answer": "A glory-seeker who thinks Alaric is too cautious.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-home-base",
+      "question": "Where is the Black Guard's home base?",
+      "answer": "A fortress of its own.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-fortress-name",
+      "question": "What's the Black Guard's fortress called?",
+      "answer": "Chumi said 'You pick'; Story named it Nightwatch Keep (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-fortress-location",
+      "question": "Where is Nightwatch Keep?",
+      "answer": "Hidden Mountain range somewhere between the farm and desert kingdoms.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-fortress-who-knows",
+      "question": "Who knows where Nightwatch Keep is?",
+      "answer": "Only the Black Guard and Cassian. The Emperor and Council too. The Flame Order knows.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-fortress-inside",
+      "question": "What's inside Nightwatch Keep besides barracks?",
+      "answer": "Training grounds for the selection. Workshops where spirit-tech is made. Cassian's private rooms and secrets.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-spirittech-makers",
+      "question": "Who makes the spirit-tech in the Keep's workshops?",
+      "answer": "Imperial engineers. Former Flame Order members. Craftsmen Cassian recruited himself.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-guard-exflame-why",
+      "question": "Why would Flame Order members leave the Order to work for the Guard?",
+      "answer": "They failed or quit the Order's strict life. They believe spirit should be used, not just guarded. Cassian pays or promises them a lot.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }
