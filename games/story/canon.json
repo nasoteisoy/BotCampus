@@ -2766,6 +2766,156 @@
       "custom_text": "",
       "locked": "2026-10-24",
       "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-strategist-name",
+      "question": "Does the Strategist captain have a name yet?",
+      "answer": "You pick a placeholder. Story picked: Corvin (placeholder, renamable).",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-personality",
+      "question": "What is Corvin like as a person?",
+      "answer": "Calm and calculating. Dry and blunt with Alaric. Bookish and quiet. Loyal to Alaric above all.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-alaric-met",
+      "question": "How did Corvin and Alaric first meet?",
+      "answer": "Corvin was assigned to him by higher command.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-alaric-first-impression",
+      "question": "Did Alaric want Corvin at first?",
+      "answer": "They clicked right away.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-age",
+      "question": "Is Corvin older or younger than Alaric?",
+      "answer": "About the same age.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-fighting",
+      "question": "Can Corvin fight?",
+      "answer": "Only enough to defend himself.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-corvin-in-battle",
+      "question": "Where is Corvin during a battle?",
+      "answer": "Behind the lines, running messengers. Wherever Alaric sends him.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-captains-relationship",
+      "question": "How do the two infantry captains get along?",
+      "answer": "Friendly rivals. Close friends.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-captains-compete",
+      "question": "What do the two infantry captains compete over?",
+      "answer": "Whose company wins more fights. Alaric's approval. Silly bets and dares. Chumi hasn't decided whether one company is Shield and the other Spear; he kinda wants them the same.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-same-job",
+      "question": "Should the two infantry companies have the same job instead of Spear and Shield?",
+      "answer": "Yes, make them the same. (Page edit needed: drop Spear attacking line / Shield holding line split on ranks.html, characters.html, lore.html.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-shared-job",
+      "question": "What job do both infantry companies share?",
+      "answer": "Whatever Alaric needs that day.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-company-names",
+      "question": "Now that both do the same job, should the infantry companies keep the names Spear and Shield?",
+      "answer": "You pick new placeholder names. Story picked Iron Company (was Spear / Infantry A) and Ash Company (was Shield / Infantry B), renamable placeholders. (Page edit needed: rename Spear and Shield on ranks.html, characters.html, lore.html.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-captain-names",
+      "question": "Should I pick placeholder names for the Iron and Ash captains too?",
+      "answer": "Yes, you pick placeholders. Story picked Captain Garrick (Iron Company) and Captain Rowan (Ash Company), renamable placeholders.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-captains-contrast",
+      "question": "How are Garrick and Rowan different from each other?",
+      "answer": "One is always laughing and lazy; the other is organized and proper. (Which captain is which not yet assigned.)",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
+    },
+    {
+      "section": "guard",
+      "section_title": "The Black Guard",
+      "question_id": "chat-infantry-captains-which",
+      "question": "Which captain is the laughing, lazy one?",
+      "answer": "You pick. Story picked Garrick (Iron Company) as always laughing and lazy; Rowan (Ash Company) is organized and proper. Swappable.",
+      "custom_text": "",
+      "locked": "2026-10-24",
+      "source": "chat"
     }
   ]
 }

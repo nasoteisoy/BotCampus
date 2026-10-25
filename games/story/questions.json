@@ -684,6 +684,16 @@
             "Neither",
             "Decide later"
           ]
+        },
+        {
+          "id": "chars-rowan-name-clash-01",
+          "prompt": "Two placeholders share the name Rowan: Alaric's brother (Rowan Vaelen) and the Ash Company captain (Captain Rowan). Rename one?",
+          "options": [
+            "Rename the captain",
+            "Rename the brother",
+            "Keep both",
+            "Decide later"
+          ]
         }
       ]
     },
