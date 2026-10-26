@@ -1681,6 +1681,19 @@
    "extras": [],
    "note": "Top-down creature battler: dodge red warnings, win 5 waves, unlock creatures",
    "thumb": "thumbs/creature-arena.webp"
+  },
+  {
+   "id": "harmony-hands",
+   "title": "Harmony Hands",
+   "type": "tool",
+   "maker": "Lead: Dev",
+   "makerSource": "built by Lead: Dev for Chumi",
+   "section": "live",
+   "updated": "2026-10-25",
+   "url": "games/harmony-hands/",
+   "extras": [],
+   "note": "Hand picks the chord, live vocal harmonies (🎧 + camera + mic)",
+   "thumb": "thumbs/harmony-hands.webp"
   }
  ]
 }
