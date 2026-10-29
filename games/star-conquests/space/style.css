@@ -1,0 +1,100 @@
+/* STAR CONQUESTS — space battle HUD. Icons + short labels. 48px taps.
+   Banner classes match Dev B ground module: .sc-banner / .sc-ban-card / .sc-ban-big / .sc-ban-pts / .sc-ban-sub */
+.sc-space-root {
+  position: absolute; inset: 0; overflow: hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #e8f0ff; background: #05060f; touch-action: none; user-select: none;
+  -webkit-user-select: none;
+}
+.sc-space-root canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.sc-space-hud {
+  position: absolute; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between; z-index: 4;
+}
+.sc-space-top {
+  display: flex; gap: 8px; padding: 8px; align-items: flex-start; flex-wrap: wrap;
+  pointer-events: none;
+}
+.sc-space-pill {
+  pointer-events: auto; min-height: 48px; min-width: 48px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 12px;
+  background: rgba(8, 12, 28, 0.82); border: 1px solid rgba(140, 170, 255, 0.35);
+  font-size: 13px; font-weight: 600; color: #e8f0ff; backdrop-filter: blur(6px);
+}
+.sc-space-pill .lab { opacity: 0.9; letter-spacing: 0.02em; }
+.sc-space-legend {
+  pointer-events: none; display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  background: rgba(8, 12, 28, 0.75); border: 1px solid rgba(140, 170, 255, 0.25);
+  margin-left: auto;
+}
+.sc-space-legend span { display: inline-flex; align-items: center; gap: 4px; opacity: 0.95; }
+.sc-space-bottom {
+  display: flex; gap: 8px; padding: 10px; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; pointer-events: none; position: relative; z-index: 9;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.sc-space-btn {
+  pointer-events: auto; min-height: 48px; min-width: 48px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 14px; border-radius: 14px; border: 2px solid rgba(255, 220, 80, 0.55);
+  background: rgba(20, 18, 8, 0.88); color: #ffe14d; font-size: 15px; font-weight: 700;
+  cursor: pointer; backdrop-filter: blur(6px);
+}
+.sc-space-btn:active { transform: scale(0.97); }
+.sc-space-btn.on { background: rgba(80, 60, 0, 0.95); border-color: #ffe14d; box-shadow: 0 0 12px rgba(255, 210, 60, 0.45); }
+.sc-space-btn.danger { border-color: rgba(255, 120, 100, 0.6); color: #ffb0a0; background: rgba(40, 10, 10, 0.88); }
+.sc-space-sel {
+  pointer-events: none; padding: 8px 12px; border-radius: 12px;
+  background: rgba(8, 12, 28, 0.85); border: 1px solid rgba(140, 170, 255, 0.35);
+  font-size: 13px; max-width: min(320px, 90vw);
+}
+.sc-space-sel .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.sc-space-sel .stat { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.sc-space-hint {
+  pointer-events: none; position: absolute; left: 50%; top: 14%;
+  transform: translateX(-50%); padding: 10px 14px; border-radius: 14px;
+  background: rgba(8, 12, 28, 0.9); border: 1px solid rgba(255, 220, 80, 0.5);
+  font-size: 14px; font-weight: 600; white-space: nowrap; max-width: 92vw;
+  overflow: hidden; text-overflow: ellipsis; z-index: 5;
+}
+.sc-space-hint.hide { display: none; }
+
+/* Match Dev B ground banners */
+.sc-banner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; background: rgba(5, 10, 20, 0.55); z-index: 8; }
+.sc-banner[hidden] { display: none !important; }
+.sc-ban-card { pointer-events: auto; cursor: pointer; background: rgba(12, 18, 32, 0.92); border: 2px solid #6ff3ff66; border-radius: 18px;
+  padding: 22px 28px; text-align: center; min-width: min(280px, 80vw); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); }
+.sc-ban-big { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+.sc-ban-pts { font-size: 20px; font-weight: 700; margin: 6px 0 10px; color: #ffe66d; }
+.sc-ban-sub { font-size: 12px; opacity: 0.7; }
+
+.sc-space-float {
+  position: absolute; pointer-events: none; font-weight: 900; font-size: 15px;
+  letter-spacing: 0.02em; transform: translate(-50%, -50%);
+  -webkit-text-stroke: 3px #0a0c14;
+  paint-order: stroke fill;
+  text-shadow: 0 0 2px #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;
+  z-index: 6; white-space: nowrap;
+}
+.sc-space-bars {
+  position: absolute; pointer-events: none; transform: translate(-50%, -100%);
+  width: 40px; z-index: 3; transition: opacity 0.25s ease;
+}
+.sc-space-bars.faded { opacity: 0; }
+.sc-space-bars .bar {
+  height: 5px; border-radius: 2px; background: rgba(0, 0, 0, 0.7);
+  overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.22); margin-bottom: 2px;
+}
+.sc-space-bars .bar.sh { height: 3px; margin-bottom: 0; }
+.sc-space-bars .bar > i { display: block; height: 100%; }
+.sc-space-bars .hp > i { background: #3dce6a; }
+.sc-space-bars .sh > i { background: #5cf0ff; }
+.sc-space-out {
+  position: absolute; pointer-events: none; transform: translate(-50%, -50%);
+  font-size: 16px; font-weight: 900; color: #ff6b5a;
+  -webkit-text-stroke: 2px #0a0c14; paint-order: stroke fill;
+  text-shadow: 0 2px 4px #000; z-index: 6; white-space: nowrap;
+}

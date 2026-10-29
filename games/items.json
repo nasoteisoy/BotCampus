@@ -1694,6 +1694,19 @@
    "extras": [],
    "note": "Hand picks the chord, live vocal harmonies (🎧 + camera + mic)",
    "thumb": "thumbs/harmony-hands.webp"
+  },
+  {
+   "id": "star-conquests",
+   "title": "Star Conquests",
+   "type": "game",
+   "maker": "Dev A, B, C, D",
+   "makerSource": "built by Dev A, B, C, D for Chumi",
+   "section": "live",
+   "updated": "2026-10-28",
+   "url": "games/star-conquests/",
+   "extras": [],
+   "note": "Ground and space battles: win, earn points, buy new units",
+   "thumb": "thumbs/star-conquests.webp"
   }
  ]
 }
