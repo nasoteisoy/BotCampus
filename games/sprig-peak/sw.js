@@ -1,4 +1,4 @@
-const CACHE = 'sprig-peak-v3-public';
+const CACHE = 'sprig-peak-r4e';
 const ASSETS = [
   './',
   './index.html',

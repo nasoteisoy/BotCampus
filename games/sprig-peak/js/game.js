@@ -186,9 +186,9 @@ export async function boot(opts) {
     if (p.invuln > HIT_INVULN * 0.7) p.pose = 'hurt';
     else if (!p.grounded) {
       if (p.vy < -40) p.pose = 'jump';
-      else if (p.vy > 60) p.pose = 'fall';
+      else if (p.vy > 60) p.pose = 'fall' + (Math.floor(animT * 10) % 2);
       else if (Math.abs(p.vy) < 40) p.pose = 'apex';
-      else p.pose = p.vy < 0 ? 'jump' : 'fall';
+      else p.pose = p.vy < 0 ? 'jump' : ('fall' + (Math.floor(animT * 10) % 2));
     } else if (landSquash > 0) p.pose = 'land';
     else if (Math.abs(p.vx) > 20) {
       p.frame += Math.abs(p.vx) * dt * 0.14;
@@ -379,11 +379,12 @@ export async function boot(opts) {
   }
 
   function snapCam() {
-    // Instant framing: hero always in view; prefer floor when near ground / low jumps
+    // Instant framing: hero ~25% into view, clear of left touch pad at phone sizes
     const px = player.x + player.w / 2;
     const py = player.y + player.h / 2;
-    const look = player.facing * 36;
-    cam.x = px + look - VIEW_W / 2;
+    const touchL = Math.ceil(140 / Math.max(1, ZOOM));
+    const prefer = Math.max(VIEW_W * 0.25, touchL + 20);
+    cam.x = px - prefer;
     if (player.grounded || player.coyote > 0) {
       cam.y = player.y + player.h - VIEW_H * 0.78;
     } else {
@@ -401,21 +402,26 @@ export async function boot(opts) {
     const py = player.y + player.h / 2;
     // Look-ahead on X (facing + speed)
     const look = player.facing * (28 + Math.min(24, Math.abs(player.vx) * 0.12));
-    // Horizontal deadzone ~ middle 40% (keeps hero in middle ~70% overall)
+    // Horizontal deadzone — keep clear of phone touch pads (CSS ~136 left / ~158 right)
+    const touchL = Math.ceil(140 / Math.max(1, ZOOM));
+    const touchR = Math.ceil(160 / Math.max(1, ZOOM));
     let targetX = cam.x;
     const sx = px - cam.x;
-    const dzL = VIEW_W * 0.30;
-    const dzR = VIEW_W * 0.70;
+    const dzL = Math.max(VIEW_W * 0.30, touchL + 12);
+    const dzR = Math.min(VIEW_W * 0.70, VIEW_W - touchR - 12);
     if (sx < dzL) targetX = px - dzL;
     else if (sx > dzR) targetX = px - dzR;
-    // Blend toward look-ahead center
+    // Blend toward look-ahead center, then re-assert touch-safe margins
     const lookTarget = px + look - VIEW_W / 2;
     targetX = targetX * 0.55 + lookTarget * 0.45;
+    if (px - targetX < dzL) targetX = px - dzL;
+    if (px - targetX > dzR) targetX = px - dzR;
 
-    // Vertical deadzone
+    // Vertical deadzone — stay below top HUD / pause-fs row (~56px CSS)
     let targetY = cam.y;
     const sy = py - cam.y;
-    const dzT = VIEW_H * 0.28;
+    const hudClear = Math.ceil(56 / Math.max(1, ZOOM));
+    const dzT = Math.max(VIEW_H * 0.28, hudClear + player.h);
     const dzB = VIEW_H * 0.72;
     if (sy < dzT) targetY = py - dzT;
     else if (sy > dzB) targetY = py - dzB;
@@ -550,49 +556,120 @@ export async function boot(opts) {
       }
     }
 
-    // NEAR: irregular leaf-mass silhouettes with notches + varied trunk heights
-    const near = Math.floor(cam.x * 0.55);
-    for (let i = -1; i < 10; i++) {
-      const bx = Math.floor(((i * 62 - near) % (VIEW_W + 62) + (VIEW_W + 62)) % (VIEW_W + 62));
-      const ground = VIEW_H - 8;
-      const trunkH = 16 + (i % 5) * 4; // varied heights
-      const trunkX = bx + 12 + (i % 3);
-      // trunk
-      ctx.fillStyle = PALETTE.woodSh || '#4a3018';
-      ctx.fillRect(trunkX, ground - trunkH, 3, trunkH);
-      ctx.fillStyle = PALETTE.wood || '#8a5a30';
-      ctx.fillRect(trunkX, ground - trunkH, 1, trunkH);
-      // irregular canopy polygons with notches (not circles)
-      const top = ground - trunkH - 6;
-      const shapes = [
-        // main mass
-        [[0, 8], [4, 0], [10, -2], [14, 2], [18, -1], [22, 4], [24, 10], [20, 14], [12, 16], [4, 14]],
-        // side notch clump
-        [[-4, 12], [0, 6], [6, 8], [8, 14], [2, 18], [-2, 16]],
-        // upper puff with bite
-        [[6, -2], [10, -8], [16, -6], [18, 0], [14, 4], [8, 2]],
-      ];
-      for (let s = 0; s < shapes.length; s++) {
-        const pts = shapes[s];
-        ctx.fillStyle = s === 0 ? (PALETTE.mtNear || '#2f4a38') : (s === 1 ? (PALETTE.grassSh || '#2a6a28') : (PALETTE.mtNearDk || '#1e3226'));
+    // NEAR: 2 overlapping sub-layers (darker back, brighter front). Snap after factor.
+    // Variety: broadleaf / pine / birch / bush. Trunks with bark shading; 3-tone leaves + rim.
+    function drawNearTree(bx, ground, kind, darker) {
+      const leafLo = darker ? (PALETTE.mtNearDk || '#1e3226') : (PALETTE.mtNear || '#2f4a38');
+      const leafMid = darker ? (PALETTE.mtNear || '#2f4a38') : (PALETTE.grassSh || '#2a6a28');
+      const leafHi = darker ? (PALETTE.grassSh || '#2a6a28') : (PALETTE.grassHi || '#78d058');
+      const barkSh = PALETTE.woodSh || '#4a3018';
+      const bark = darker ? (PALETTE.woodSh || '#4a3018') : (PALETTE.wood || '#8a5a30');
+      const barkHi = darker ? (PALETTE.wood || '#8a5a30') : (PALETTE.woodHi || '#c49058');
+      const trunkH = 14 + (kind % 5) * 4 + (darker ? 4 : 0);
+      const trunkX = bx + 10 + (kind % 3);
+      // bark: 3-tone trunk
+      ctx.fillStyle = barkSh;
+      ctx.fillRect(trunkX, ground - trunkH, 4, trunkH);
+      ctx.fillStyle = bark;
+      ctx.fillRect(trunkX + 1, ground - trunkH, 2, trunkH);
+      ctx.fillStyle = barkHi;
+      ctx.fillRect(trunkX + 1, ground - trunkH, 1, trunkH);
+      // bark notches
+      ctx.fillStyle = barkSh;
+      ctx.fillRect(trunkX, ground - trunkH + 4, 1, 2);
+      ctx.fillRect(trunkX + 3, ground - trunkH + 9, 1, 2);
+      const top = ground - trunkH - 4;
+      const k = kind % 4;
+      if (k === 1) {
+        // pine — stacked triangles
+        for (let tier = 0; tier < 3; tier++) {
+          const tw = 18 - tier * 4;
+          const ty = top + 2 + tier * 6;
+          ctx.fillStyle = tier === 0 ? leafHi : (tier === 1 ? leafMid : leafLo);
+          ctx.beginPath();
+          ctx.moveTo(bx + 12, ty - 8);
+          ctx.lineTo(bx + 12 - tw / 2, ty + 4);
+          ctx.lineTo(bx + 12 + tw / 2, ty + 4);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.fillStyle = leafHi;
+        ctx.fillRect(bx + 11, top - 6, 2, 2);
+      } else if (k === 2) {
+        // birch — pale thin trunk already; oval canopy with notch
+        ctx.fillStyle = PALETTE.cloud || '#e8f4fc';
+        ctx.fillRect(trunkX, ground - trunkH, 3, trunkH);
+        ctx.fillStyle = barkSh;
+        ctx.fillRect(trunkX + 1, ground - trunkH + 3, 1, 2);
+        ctx.fillRect(trunkX + 1, ground - trunkH + 8, 1, 2);
+        ctx.fillStyle = leafMid;
         ctx.beginPath();
-        ctx.moveTo(bx + pts[0][0] + 6, top + pts[0][1]);
-        for (let p = 1; p < pts.length; p++) ctx.lineTo(bx + pts[p][0] + 6, top + pts[p][1]);
-        ctx.closePath();
-        ctx.fill();
-      }
-      // bright rim pixels on top-left of canopy
-      ctx.fillStyle = PALETTE.grassHi || '#78d058';
-      ctx.fillRect(bx + 10, top - 6, 3, 2);
-      ctx.fillRect(bx + 8, top - 3, 2, 2);
-      ctx.fillRect(bx + 14, top - 8, 2, 2);
-      // notch bite — dark void in canopy (not a sky-colored rectangle)
-      ctx.fillStyle = PALETTE.mtNearDk || '#1e3226';
-      if (i % 2 === 0) {
-        ctx.fillRect(bx + 18, top + 2, 4, 3);
-        ctx.fillRect(bx + 16, top + 4, 3, 2);
+        ctx.moveTo(bx + 4, top + 10);
+        ctx.lineTo(bx + 8, top + 0); ctx.lineTo(bx + 14, top - 4);
+        ctx.lineTo(bx + 20, top + 2); ctx.lineTo(bx + 22, top + 12);
+        ctx.lineTo(bx + 16, top + 16); ctx.lineTo(bx + 8, top + 14);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = leafHi;
+        ctx.fillRect(bx + 9, top - 2, 3, 2);
+        ctx.fillStyle = leafLo;
+        ctx.fillRect(bx + 17, top + 6, 3, 3); // notch
+      } else if (k === 3) {
+        // bush — low wide irregular
+        ctx.fillStyle = leafLo;
+        ctx.beginPath();
+        ctx.moveTo(bx + 2, ground - 4);
+        ctx.lineTo(bx + 6, ground - 14); ctx.lineTo(bx + 12, ground - 18);
+        ctx.lineTo(bx + 18, ground - 12); ctx.lineTo(bx + 22, ground - 16);
+        ctx.lineTo(bx + 26, ground - 6); ctx.lineTo(bx + 20, ground - 2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = leafMid;
+        ctx.fillRect(bx + 8, ground - 16, 6, 4);
+        ctx.fillStyle = leafHi;
+        ctx.fillRect(bx + 10, ground - 18, 3, 2);
+        ctx.fillRect(bx + 16, ground - 14, 2, 2);
+      } else {
+        // broadleaf irregular masses, 3 tones + rim
+        const shapes = [
+          [[0, 8], [4, 0], [10, -2], [14, 2], [18, -1], [22, 4], [24, 10], [20, 14], [12, 16], [4, 14]],
+          [[-4, 12], [0, 6], [6, 8], [8, 14], [2, 18], [-2, 16]],
+          [[6, -2], [10, -8], [16, -6], [18, 0], [14, 4], [8, 2]],
+        ];
+        const cols = [leafLo, leafMid, leafHi];
+        for (let s = 0; s < shapes.length; s++) {
+          const pts = shapes[s];
+          ctx.fillStyle = cols[s];
+          ctx.beginPath();
+          ctx.moveTo(bx + pts[0][0] + 6, top + pts[0][1]);
+          for (let p = 1; p < pts.length; p++) ctx.lineTo(bx + pts[p][0] + 6, top + pts[p][1]);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.fillStyle = leafHi;
+        ctx.fillRect(bx + 10, top - 6, 3, 2);
+        ctx.fillRect(bx + 8, top - 3, 2, 2);
+        ctx.fillStyle = leafLo;
+        if (kind % 2 === 0) {
+          ctx.fillRect(bx + 18, top + 2, 4, 3);
+          ctx.fillRect(bx + 16, top + 4, 3, 2);
+        }
       }
     }
+    // Ground line ≈ where grass sits under play camera (~feet at 0.78 VIEW_H).
+    // Trunks extend into that band so tiles drawn later hide lower trunk.
+    const grassLine = Math.floor(VIEW_H * 0.82);
+    // back row (darker, slower) — denser, full width
+    const nearBack = Math.floor(cam.x * 0.48);
+    for (let i = -2; i < 14; i++) {
+      const bx = Math.floor(((i * 48 - nearBack) % (VIEW_W + 48) + (VIEW_W + 48)) % (VIEW_W + 48));
+      drawNearTree(bx, grassLine + 2, i + 1, true);
+    }
+    // front row (brighter, faster) — snap after its own factor
+    const nearFront = Math.floor(cam.x * 0.62);
+    for (let i = -2; i < 12; i++) {
+      const bx = Math.floor(((i * 42 + 18 - nearFront) % (VIEW_W + 42) + (VIEW_W + 42)) % (VIEW_W + 42));
+      drawNearTree(bx, grassLine, i + 3, false);
+    }
+
 
     // falling leaves (sparse)
     ctx.fillStyle = PALETTE.leaf;
@@ -653,15 +730,18 @@ export async function boot(opts) {
 
     // entities
     const bob = Math.floor(animT * 4) % 2;
-    const coinSpin = Math.floor(animT * 5) % 10;
-    const coinFrame = [0,0,1,2,3,4,4,5,1,3][coinSpin];
+    const coinSpinBase = Math.floor(animT * 5);
+    const coinLut = [0, 0, 1, 2, 3, 4, 4, 5, 1, 3];
     lastDraw.sprites = [];
     for (const e of ents) {
       // cull
       if (e.x < cam.x - 40 || e.x > cam.x + VIEW_W + 40) continue;
       if (e.type === 'coin' && e.alive) {
         const dx = Math.floor(e.x), dy = Math.floor(e.y - bob);
-        lastDraw.sprites.push({ kind: 'coin', x: dx, y: dy });
+        // Stable per-coin phase from world position (avoids all edge-on together)
+        const phase = (Math.floor(e.x) * 7 + Math.floor(e.y) * 13) % 10;
+        const coinFrame = coinLut[(coinSpinBase + phase + 10) % 10];
+        lastDraw.sprites.push({ kind: 'coin', x: dx, y: dy, frame: coinFrame, phase });
         sheets.pickups.draw(ctx, 'coin' + coinFrame, dx, dy);
       } else if (e.type === 'spike') {
         sheets.hazards.draw(ctx, 'spike' + bob, e.x, e.y);
@@ -707,7 +787,7 @@ export async function boot(opts) {
 
     // player
     if (player.invuln > 0 && Math.floor(player.invuln * 20) % 2 === 0) {
-      /* blink */
+      /* blink off */
     } else {
       let sx = 1, sy = 1;
       if (jumpStretch > 0) { sx = 0.85; sy = 1.2; }
@@ -719,10 +799,29 @@ export async function boot(opts) {
       lastDraw.heroY = py;
       lastDraw.sprites.push({ kind: 'hero', x: px, y: py });
       ctx.translate(px, py);
-      // squash/stretch stays float-ish but draw offset integer; no smear on normal run
       ctx.scale(sx * (player.facing < 0 ? -1 : 1), sy);
-      // 28x28 sprite; feet near bottom of frame
-      sheets.player.draw(ctx, player.pose, -14, -26, { flip: false });
+      // Draw hero; optional 1-frame white flash via offscreen tint (not baked)
+      const flash = player.pose === 'hurt' || (player.invuln > HIT_INVULN * 0.85);
+      if (flash) {
+        if (!testHooks._heroTint) {
+          testHooks._heroTint = document.createElement('canvas');
+          testHooks._heroTint.width = 28; testHooks._heroTint.height = 28;
+        }
+        const tc = testHooks._heroTint;
+        const tctx = tc.getContext('2d');
+        tctx.imageSmoothingEnabled = false;
+        tctx.clearRect(0, 0, 28, 28);
+        sheets.player.draw(tctx, player.pose, 0, 0, { flip: false });
+        tctx.globalCompositeOperation = 'source-atop';
+        tctx.fillStyle = '#fff8f0';
+        tctx.globalAlpha = 0.65;
+        tctx.fillRect(0, 0, 28, 28);
+        tctx.globalAlpha = 1;
+        tctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(tc, -14, -26);
+      } else {
+        sheets.player.draw(ctx, player.pose, -14, -26, { flip: false });
+      }
       ctx.restore();
     }
 
@@ -1052,6 +1151,32 @@ export async function boot(opts) {
         time,
         projectiles: projectiles.length,
       };
+    },
+    viewInfo() { return { VIEW_W, VIEW_H, ZOOM, camX: cam.x, camY: cam.y, spawn: { ...spawnPoint } }; },
+    heroCssRect() {
+      // Sprite 28x28 anchored feet at (px,py); CSS px = view * ZOOM (canvas fills stage)
+      const px = player.x + player.w / 2;
+      const py = player.y + player.h;
+      const left = (px - 14 - cam.x) * ZOOM;
+      const top = (py - 26 - cam.y) * ZOOM;
+      return { x: left, y: top, w: 28 * ZOOM, h: 28 * ZOOM, cx: (px - cam.x) * ZOOM, cy: (py - cam.y) * ZOOM };
+    },
+    forceCheckpoint() {
+      const cp = ents.find((e) => e.type === 'checkpoint');
+      if (!cp) return false;
+      checkpointOn = true;
+      spawnPoint = { x: cp.x, y: cp.y - 8 };
+      return true;
+    },
+    respawnAtSpawn() {
+      player.x = spawnPoint.x;
+      player.y = spawnPoint.y;
+      player.vx = 0; player.vy = 0;
+      player.grounded = true;
+      player.invuln = 0.5;
+      player.pose = 'idle';
+      if (mode === 'dead') mode = 'play';
+      snapCam();
     },
     lastDraw() { return { ...lastDraw, sprites: lastDraw.sprites.slice() }; },
     integerDrawPositions() {

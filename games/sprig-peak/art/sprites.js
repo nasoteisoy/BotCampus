@@ -6,12 +6,12 @@
 const PLAYER_POSES = [
   'idle0', 'idle1', 'idle2', 'idle3',
   'run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7',
-  'jump', 'apex', 'fall', 'land', 'hurt',
+  'jump', 'apex', 'fall0', 'fall1', 'land', 'hurt',
 ];
 const ENEMY_FRAMES = ['move0', 'move1', 'move2', 'move3', 'move4', 'move5', 'idle0', 'hit', 'death'];
 const SHEET_PAD = 1;
 
-const CACHE_BUST = 'a2r2';
+const CACHE_BUST = 'r4fix5';
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -46,6 +46,8 @@ function makeSheet(img, frameW, frameH, names, pad = SHEET_PAD) {
         if (name === 'idle') f = map.idle0 || map.idle1;
         else if (/^run\d+$/.test(name) && !map[name]) {
           f = map['run' + (parseInt(name.slice(3), 10) % 8)];
+        } else if (name === 'fall') {
+          f = map.fall0 || map.fall1;
         }
       }
       if (!f) f = map[names[0]];
