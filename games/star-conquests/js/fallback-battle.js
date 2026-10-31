@@ -1,6 +1,7 @@
 import { unitIconHtml } from './shop.js';
-// Fallback auto-resolve battle: animated icon-vs-icon, honors CONTRACT.md.
+// Fallback auto-resolve battle: animated icon-vs-icon, honors CONTRACT.md v1.1.
 // Used when ground/battle.js or space/battle.js is missing or fails to load.
+// Honors sc-pause / sc-resume / sc-quit + mount.dataset.paused.
 
 function mulberry32(a) {
   return function () {
@@ -30,7 +31,6 @@ export function startBattle(opts, onDone) {
   let attackers = (opts.attacker.units || []).map(cloneUnit).filter((u) => u.hpNow > 0);
   let defenders = (opts.defender.units || []).map(cloneUnit).filter((u) => u.hpNow > 0);
 
-  // Ignore wrong-role types (shell filters, but we still guard)
   const ground = new Set(['rifle', 'heavy', 'recon', 'tank']);
   const space = new Set(['spaceship', 'battleship']);
   const ok = type === 'space' ? space : ground;
@@ -38,6 +38,7 @@ export function startBattle(opts, onDone) {
   defenders = defenders.filter((u) => ok.has(u.type));
 
   let done = false;
+  let paused = mount.dataset.paused === '1';
   const FB_SPEEDS = [1, 2, 3];
   let speedIdx = 1; // start at 2×
   let speed = FB_SPEEDS[speedIdx];
@@ -49,11 +50,11 @@ export function startBattle(opts, onDone) {
   root.className = 'fb-root';
   root.innerHTML = `
     <div class="fb-top">
-      <div class="fb-title"><span>${type === 'space' ? '🚀' : '⚔️'}</span><b>${type === 'space' ? 'Space' : 'Ground'}</b>
-        <small>${opts.planet?.icon || ''} ${opts.planet?.name || ''}</small></div>
+      <div class="fb-title"><span>${type === 'space' ? 'SPACE' : 'GROUND'}</span><b>${type === 'space' ? 'Space' : 'Ground'}</b>
+        <small>${opts.planet?.name || ''}</small></div>
       <div class="fb-actions">
-        <button type="button" class="fb-btn" data-act="speed" aria-label="Speed" title="Speed">⏩ <small>×2</small></button>
-        <button type="button" class="fb-btn" data-act="retreat" aria-label="Retreat" title="Retreat">🏳️ <small>Retreat</small></button>
+        <button type="button" class="fb-btn" data-act="speed" aria-label="Speed" title="Speed"><small>×2</small></button>
+        <button type="button" class="fb-btn" data-act="retreat" aria-label="Retreat" title="Retreat"><small>Retreat</small></button>
       </div>
     </div>
     <div class="fb-arena" data-biome="${opts.planet?.biome || 'rock'}">
@@ -62,8 +63,8 @@ export function startBattle(opts, onDone) {
       <div class="fb-side fb-def" style="--side:${opts.defender.color || '#e04848'}"></div>
     </div>
     <div class="fb-hud">
-      <div class="fb-chip atk"><span>${opts.attacker.side === 'player' ? '👤' : '💀'}</span><b class="fb-acount">0</b></div>
-      <div class="fb-chip def"><span>${opts.defender.side === 'player' ? '👤' : '💀'}</span><b class="fb-dcount">0</b></div>
+      <div class="fb-chip atk"><span>${opts.attacker.side === 'player' ? 'YOU' : 'AI'}</span><b class="fb-acount">0</b></div>
+      <div class="fb-chip def"><span>${opts.defender.side === 'player' ? 'YOU' : 'AI'}</span><b class="fb-dcount">0</b></div>
     </div>`;
   mount.appendChild(root);
 
@@ -73,11 +74,10 @@ export function startBattle(opts, onDone) {
   const speedBtn = root.querySelector('[data-act="speed"]');
   const retreatBtn = root.querySelector('[data-act="retreat"]');
 
-  // Combatant runtime state
   function wrap(list, side) {
     return list.map((u, i) => ({
       u, side,
-      downed: false, // crawling / blinking
+      downed: false,
       dead: false,
       cd: rng() * 0.6,
       el: null,
@@ -96,9 +96,9 @@ export function startBattle(opts, onDone) {
       d.innerHTML = `
         <div class="fb-icon">${unitIconHtml(c.u)}</div>
         <div class="fb-hp"><i style="width:${Math.max(0, (c.u.hpNow / c.u.stats.hp) * 100)}%"></i></div>
-        <div class="fb-tag"><small>❤️ HP</small> <b>${Math.ceil(c.u.hpNow)}</b></div>
-        <div class="fb-cross" hidden>✚</div>
-        <div class="fb-wreck" hidden>💥</div>`;
+        <div class="fb-tag"><small>HP</small> <b>${Math.ceil(c.u.hpNow)}</b></div>
+        <div class="fb-cross" hidden>X</div>
+        <div class="fb-wreck" hidden>*</div>`;
       box.appendChild(d);
       c.el = d;
     });
@@ -128,7 +128,7 @@ export function startBattle(opts, onDone) {
   function flash(from, to, dmg) {
     const bolt = document.createElement('div');
     bolt.className = 'fb-bolt';
-    bolt.textContent = type === 'space' ? '✨' : '•';
+    bolt.textContent = type === 'space' ? '*' : '•';
     fxEl.appendChild(bolt);
     const a = from.el?.getBoundingClientRect();
     const b = to.el?.getBoundingClientRect();
@@ -157,20 +157,28 @@ export function startBattle(opts, onDone) {
 
   function power(c) {
     const s = c.u.stats;
-    return (s.attack || 10) * (0.85 + rng() * 0.3) / Math.max(1, 1 + (0));
+    return (s.attack || 10) * (0.85 + rng() * 0.3);
   }
 
   function living(arr) { return arr.filter((c) => !c.dead); }
+
+  function detachListeners() {
+    mount.removeEventListener('sc-pause', onPause);
+    mount.removeEventListener('sc-resume', onResume);
+    mount.removeEventListener('sc-quit', onQuit);
+    speedBtn.onclick = null;
+    retreatBtn.onclick = null;
+  }
 
   function finish(winner, retreated = false) {
     if (done) return;
     done = true;
     cancelAnimationFrame(raf);
+    detachListeners();
     const survivors = {
       attacker: A.filter((c) => !c.dead).map((c) => ({ ...c.u, hpNow: Math.max(1, Math.ceil(c.u.hpNow)) })),
       defender: D.filter((c) => !c.dead).map((c) => ({ ...c.u, hpNow: Math.max(1, Math.ceil(c.u.hpNow)) })),
     };
-    // points for PLAYER side only
     let destroyed = 0;
     if (playerSide === 'attacker') {
       destroyed = (opts.defender.units || []).length - survivors.defender.length;
@@ -181,36 +189,49 @@ export function startBattle(opts, onDone) {
     }
     const playerWon = (playerSide === 'attacker' && winner === 'attacker')
       || (playerSide === 'defender' && winner === 'defender');
-    const pointsEarned = playerWon ? 10 + 5 * Math.max(0, destroyed) : 0;
+    const pointsEarned = (playerWon && !retreated) ? 10 + 5 * Math.max(0, destroyed) : 0;
 
-    speedBtn.onclick = null;
-    retreatBtn.onclick = null;
     mount.innerHTML = '';
     onDone({ winner, survivors, pointsEarned, retreated: !!retreated });
   }
 
-  // Instant win if one side empty
+  function onPause() {
+    paused = true;
+  }
+  function onResume() {
+    paused = mount.dataset.paused === '1' ? true : false;
+    if (!paused && !done) {
+      last = performance.now();
+      if (!raf) raf = requestAnimationFrame(loop);
+    }
+  }
+  function onQuit() {
+    finish('defender', true);
+  }
+
+  mount.addEventListener('sc-pause', onPause);
+  mount.addEventListener('sc-resume', onResume);
+  mount.addEventListener('sc-quit', onQuit);
+
   if (!A.length && !D.length) { finish('defender'); return; }
   if (!A.length) { finish('defender'); return; }
   if (!D.length) { finish('attacker'); return; }
 
   speedBtn.addEventListener('click', () => {
+    if (paused || done) return;
     speedIdx = (speedIdx + 1) % FB_SPEEDS.length;
     speed = FB_SPEEDS[speedIdx];
-    speedBtn.innerHTML = `⏩ <small>×${speed}</small>`;
+    speedBtn.innerHTML = `<small>×${speed}</small>`;
   });
   retreatBtn.addEventListener('click', () => {
-    // retreat = defender wins, attacker survivors kept
     finish('defender', true);
   });
 
   function tick(dt) {
-    // Downed units crawl / blink; chance to get taken out or recover briefly then die from next hits
     for (const c of [...A, ...D]) {
       if (c.dead) continue;
       if (c.downed) {
         c.downTimer = (c.downTimer || 0) + dt;
-        // After crawling ~1.2s, taken out
         if (c.downTimer > 1.2) {
           c.dead = true;
           c.downed = false;
@@ -224,7 +245,6 @@ export function startBattle(opts, onDone) {
       const foes = living(c.side === 'attacker' ? D : A).filter((f) => !f.downed);
       const pool = foes.length ? foes : living(c.side === 'attacker' ? D : A);
       if (!pool.length) continue;
-      // Prefer closest "range" — pick by index proximity + speed bias
       pool.sort((a, b) => (b.u.stats.speed || 1) - (a.u.stats.speed || 1));
       const target = pool[(rng() * Math.min(3, pool.length)) | 0];
       const atk = power(c);
@@ -232,13 +252,11 @@ export function startBattle(opts, onDone) {
       const dmg = Math.max(1, atk - armor * 0.6);
       flash(c, target, dmg);
       target.u.hpNow -= dmg;
-      // Range affects cooldown
       const rof = 0.55 + (6 - Math.min(6, c.u.stats.range || 3)) * 0.12;
       c.cd = rof * (0.7 + rng() * 0.5);
 
       if (target.u.hpNow <= 0) {
         target.u.hpNow = 0;
-        // Enter downed/crawling first (distinct from taken out)
         target.downed = true;
         target.downTimer = 0;
       }
@@ -252,13 +270,17 @@ export function startBattle(opts, onDone) {
   }
 
   function loop(now) {
-    if (done) return;
+    if (done) { raf = 0; return; }
+    raf = requestAnimationFrame(loop);
+    paused = mount.dataset.paused === '1' || paused;
+    if (paused) {
+      last = now;
+      return;
+    }
     const dt = Math.min(0.05, (now - last) / 1000) * speed;
     last = now;
     acc += dt;
-    // step sim at ~20hz logical
     while (acc >= 0.05) { tick(0.05); acc -= 0.05; if (done) return; }
-    raf = requestAnimationFrame(loop);
   }
   raf = requestAnimationFrame(loop);
 }

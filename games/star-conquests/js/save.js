@@ -1,5 +1,6 @@
 // Own save key only. Shell owns all localStorage writes.
 export const SAVE_KEY = 'star-conquests:save';
+export const SETTINGS_KEY = 'star-conquests:settings';
 
 export function hasSave(storage = globalThis.localStorage) {
   try { return !!storage.getItem(SAVE_KEY); } catch { return false; }
@@ -28,4 +29,27 @@ export function writeSave(state, storage = globalThis.localStorage) {
 
 export function clearSave(storage = globalThis.localStorage) {
   try { storage.removeItem(SAVE_KEY); return true; } catch { return false; }
+}
+
+/** Shell settings (sibling key). soundOn: true = unmuted. */
+export function loadSettings(storage = globalThis.localStorage) {
+  try {
+    const raw = storage.getItem(SETTINGS_KEY);
+    if (!raw) return { soundOn: true };
+    const d = JSON.parse(raw);
+    return { soundOn: d?.soundOn !== false };
+  } catch {
+    return { soundOn: true };
+  }
+}
+
+export function writeSettings(settings, storage = globalThis.localStorage) {
+  try {
+    storage.setItem(SETTINGS_KEY, JSON.stringify({
+      soundOn: settings.soundOn !== false,
+    }));
+    return true;
+  } catch {
+    return false;
+  }
 }

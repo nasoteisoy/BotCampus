@@ -3,17 +3,17 @@
 // Shell UI uses unitIconHtml() so Rifle/Heavy/Tank render as crisp SVGs.
 
 export const CATALOG = Object.freeze([
-  Object.freeze({ type: 'rifle', name: 'Rifle Trooper', icon: '🪖', cost: 50,
+  Object.freeze({ type: 'rifle', name: 'Rifle Trooper', icon: 'rifle', cost: 50,
     stats: Object.freeze({ hp: 100, attack: 12, range: 3, speed: 4, armor: 1 }), role: 'ground' }),
-  Object.freeze({ type: 'heavy', name: 'Heavy Trooper', icon: '🛡️', cost: 80,
+  Object.freeze({ type: 'heavy', name: 'Heavy Trooper', icon: 'heavy', cost: 80,
     stats: Object.freeze({ hp: 160, attack: 22, range: 2, speed: 2, armor: 3 }), role: 'ground' }),
-  Object.freeze({ type: 'recon', name: 'Recon Trooper', icon: '📡', cost: 60,
+  Object.freeze({ type: 'recon', name: 'Recon Trooper', icon: 'rifle', cost: 60,
     stats: Object.freeze({ hp: 80, attack: 14, range: 5, speed: 5, armor: 0 }), role: 'ground' }),
-  Object.freeze({ type: 'tank', name: 'Tank', icon: '🚛', cost: 200,
+  Object.freeze({ type: 'tank', name: 'Tank', icon: 'tank', cost: 200,
     stats: Object.freeze({ hp: 400, attack: 40, range: 4, speed: 2, armor: 8 }), role: 'ground' }),
-  Object.freeze({ type: 'spaceship', name: 'SpaceShip', icon: '🚀', cost: 150,
+  Object.freeze({ type: 'spaceship', name: 'SpaceShip', icon: 'ship', cost: 150,
     stats: Object.freeze({ hp: 200, attack: 25, range: 4, speed: 6, armor: 3 }), role: 'space' }),
-  Object.freeze({ type: 'battleship', name: 'BattleShip', icon: '🛸', cost: 350,
+  Object.freeze({ type: 'battleship', name: 'BattleShip', icon: 'battleship', cost: 350,
     stats: Object.freeze({ hp: 500, attack: 55, range: 6, speed: 3, armor: 10 }), role: 'space' }),
 ]);
 
@@ -41,11 +41,19 @@ export function makeUnit(type, nameExtra = '') {
 }
 
 export const STAT_LABELS = [
-  { key: 'hp', icon: '❤️', word: 'HP' },
-  { key: 'attack', icon: '⚔️', word: 'Attack' },
-  { key: 'range', icon: '🎯', word: 'Range' },
-  { key: 'speed', icon: '💨', word: 'Speed' },
-  { key: 'armor', icon: '🛡️', word: 'Armor' },
+  { key: 'hp', icon: 'heart', word: 'HP' },
+  { key: 'attack', icon: 'swords', word: 'Attack' },
+  { key: 'range', icon: 'crosshair', word: 'Range' },
+  { key: 'speed', icon: 'gauge', word: 'Speed' },
+  { key: 'armor', icon: 'shield', word: 'Armor' },
+];
+
+/** 3–4 icon bars for shop cards (Deploy-card look). */
+export const BAR_STATS = [
+  { key: 'hp', icon: 'heart', max: 500, color: '#3ecf8e' },
+  { key: 'attack', icon: 'swords', max: 55, color: '#f5a623' },
+  { key: 'speed', icon: 'gauge', max: 6, color: '#5bbcff' },
+  { key: 'armor', icon: 'shield', max: 10, color: '#c9d2e8' },
 ];
 
 export function filterForBattle(units, battleType) {
@@ -82,6 +90,20 @@ const SVG_HEAVY = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height=
 </svg>`;
 
 /** Side-view tank: hull, turret, long barrel — readable at small size. */
+/** Scout trooper: same helmet family + antenna scout mark (not a dish alone). */
+const SVG_RECON = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height="1em" aria-hidden="true" focusable="false">
+  <circle cx="12" cy="8" r="5.5" fill="#d8e0f4"/>
+  <path d="M6.2 8.2c0-3.4 2.5-5.8 5.8-5.8s5.8 2.4 5.8 5.8" fill="none" stroke="#1a2438" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M7.2 6.8h9.6" stroke="#3ecf8e" stroke-width="2" stroke-linecap="round"/>
+  <path d="M8 14s1.5 10.5 4.1 10.5S16.2 14 16.2 14" fill="#4a5f8a"/>
+  <path d="M9.1 16h5.8v8c0 1.6-1.3 2.8-2.9 2.8S9.1 25.6 9.1 24z" fill="#3aa0ff"/>
+  <rect x="15.5" y="15.5" width="12" height="2.2" rx=".6" fill="#1a2438" stroke="#9aa8c7" stroke-width=".8"/>
+  <rect x="26.5" y="15" width="2.2" height="3.2" rx=".4" fill="#3ecf8e"/>
+  <!-- scout antenna -->
+  <line x1="17.5" y1="8" x2="17.5" y2="2" stroke="#f5c518" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="17.5" cy="1.5" r="1.6" fill="#3ecf8e" stroke="#fff" stroke-width=".6"/>
+</svg>`;
+
 const SVG_TANK = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height="1em" aria-hidden="true" focusable="false">
   <rect x="0.5" y="20.5" width="26" height="8.5" rx="2.2" fill="#2a3348" stroke="#e8eefc" stroke-width="1.6"/>
   <circle cx="6" cy="24.8" r="3" fill="#0e141e" stroke="#fff" stroke-width="1.2"/>
@@ -97,13 +119,128 @@ const SVG_TANK = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height="
  * Shell UI icon for a unit type or unit object.
  * Rifle/Heavy/Tank → inline SVG; others → catalog emoji. Battles still get emoji via unit.icon.
  */
+const SVG_SPACESHIP = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height="1em" aria-hidden="true" focusable="false">
+  <path d="M4 16 L14 12 L26 14 L30 16 L26 18 L14 20 Z" fill="#c9d2e8" stroke="#e8eefc" stroke-width="1.2"/>
+  <path d="M10 16 L16 8 L20 14 L14 16 Z" fill="#7a88a8"/>
+  <path d="M10 16 L16 24 L20 18 L14 16 Z" fill="#7a88a8"/>
+  <ellipse cx="22" cy="16" rx="4" ry="3" fill="#3aa0ff" stroke="#fff" stroke-width="1"/>
+  <path d="M2 16 L8 14 L8 18 Z" fill="#e04848"/>
+</svg>`;
+
+const SVG_BATTLESHIP = `<svg class="unit-svg" viewBox="0 0 32 32" width="1em" height="1em" aria-hidden="true" focusable="false">
+  <path d="M2 18 L8 12 L24 10 L30 16 L24 22 L8 20 Z" fill="#b8c4dc" stroke="#fff" stroke-width="1.2"/>
+  <rect x="10" y="8" width="12" height="6" rx="1.5" fill="#5b6f9a" stroke="#e8eefc" stroke-width="1"/>
+  <circle cx="16" cy="11" r="2" fill="#3aa0ff"/>
+  <rect x="22" y="12" width="8" height="2.5" rx="1" fill="#f5c518"/>
+  <circle cx="6" cy="16" r="2" fill="#e04848"/>
+  <circle cx="10" cy="15" r="1.5" fill="#e04848"/>
+</svg>`;
+
+
 export function unitIconHtml(typeOrUnit) {
   const type = typeof typeOrUnit === 'string' ? typeOrUnit : typeOrUnit?.type;
   if (type === 'rifle') return `<span class="u-ic-svg" data-type="rifle">${SVG_RIFLE}</span>`;
   if (type === 'heavy') return `<span class="u-ic-svg" data-type="heavy">${SVG_HEAVY}</span>`;
+  if (type === 'recon') return `<span class="u-ic-svg" data-type="recon">${SVG_RECON}</span>`;
   if (type === 'tank') return `<span class="u-ic-svg" data-type="tank">${SVG_TANK}</span>`;
-  const emoji = typeof typeOrUnit === 'string'
-    ? (byType(type)?.icon || '')
-    : (typeOrUnit?.icon || byType(type)?.icon || '');
-  return `<span class="u-ic-emoji">${emoji}</span>`;
+  if (type === 'spaceship') return `<span class="u-ic-svg" data-type="spaceship">${SVG_SPACESHIP}</span>`;
+  if (type === 'battleship') return `<span class="u-ic-svg" data-type="battleship">${SVG_BATTLESHIP}</span>`;
+  // No emoji art in shell — blank placeholder if type unknown
+  return `<span class="u-ic-svg" data-type="unknown" aria-hidden="true"></span>`;
+}
+
+
+/** Cached PNG dataURLs for unit types (Army HQ low-poly via ground/models3d). */
+const _thumbCache = new Map();
+
+/**
+ * Render a unit thumbnail. Prefer 3D from ../ground/models3d.js; fall back to unitIconHtml SVG.
+ * endcard.js (Dev B) should call this: unitThumbHtml(unit|type, size).
+ * @param {string|object} typeOrUnit
+ * @param {number} [size=64]
+ * @returns {string} HTML string (img or svg span)
+ */
+export function unitThumbHtml(typeOrUnit, size = 64) {
+  const type = typeof typeOrUnit === 'string' ? typeOrUnit : typeOrUnit?.type;
+  const key = `${type || 'x'}:${size}:v3`;
+  const cached = _thumbCache.get(key);
+  if (cached) return `<img class="u-thumb" width="${size}" height="${size}" alt="" src="${cached}" draggable="false"/>`;
+  // Sync fallback while async bake runs
+  queueMicrotask(() => { bakeThumb(type, size).catch(() => {}); });
+  return `<span class="u-thumb-fall" style="width:${size}px;height:${size}px">${unitIconHtml(typeOrUnit)}</span>`;
+}
+
+async function bakeThumb(type, size) {
+  const key = `${type}:${size}:v3`;
+  if (_thumbCache.has(key)) return _thumbCache.get(key);
+  try {
+    const THREE = await import('../vendor/three.module.min.js');
+    const T = THREE.default || THREE;
+    let root = null;
+    const team = '#3aa0ff';
+    if (type === 'spaceship' || type === 'battleship') {
+      try {
+        const ships = await import('../space/ships3d.js');
+        root = type === 'battleship'
+          ? ships.buildBattleShip('corvette', team)
+          : ships.buildSpaceShip('fighter', team);
+      } catch {
+        root = null;
+      }
+    } else {
+      const m = await import('../ground/models3d.js');
+      if (type === 'tank') root = m.makeTank(team);
+      else root = m.makeTrooper(type === 'heavy' || type === 'recon' ? type : 'rifle', team);
+    }
+    if (!root) return null;
+    const scene = new T.Scene();
+    scene.add(root);
+    root.updateMatrixWorld(true);
+    const box = new T.Box3().setFromObject(root);
+    const sizeV = new T.Vector3();
+    const center = new T.Vector3();
+    box.getSize(sizeV);
+    box.getCenter(center);
+    const maxDim = Math.max(sizeV.x, sizeV.y, sizeV.z, 0.05);
+    const fovDeg = 32;
+    const fov = (fovDeg * Math.PI) / 180;
+    // Fit whole model with padding so torsos/tanks aren't cropped
+    const fitDist = (maxDim * 0.5) / Math.tan(fov / 2) * 1.45;
+    const cam = new T.PerspectiveCamera(fovDeg, 1, 0.05, 80);
+    cam.position.set(
+      center.x + fitDist * 0.55,
+      center.y + fitDist * 0.28,
+      center.z + fitDist * 0.78,
+    );
+    cam.lookAt(center.x, center.y + sizeV.y * 0.02, center.z);
+    scene.add(new T.AmbientLight(0xffffff, 0.9));
+    const d = new T.DirectionalLight(0xffffff, 0.95); d.position.set(3, 5, 2); scene.add(d);
+    const fill = new T.DirectionalLight(0x88aaff, 0.35); fill.position.set(-2, 1, -2); scene.add(fill);
+    const renderer = new T.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(size, size, false);
+    renderer.setClearColor(0x000000, 0);
+    renderer.render(scene, cam);
+    const url = renderer.domElement.toDataURL('image/png');
+    _thumbCache.set(key, url);
+    renderer.dispose();
+    try {
+      const m = await import('../ground/models3d.js');
+      if (m.disposeObject3D) m.disposeObject3D(root);
+    } catch { /* */ }
+    // notify UI
+    document.dispatchEvent(new CustomEvent('sc-thumbs-ready', { detail: { type, size } }));
+    return url;
+  } catch (err) {
+    return null;
+  }
+}
+
+/** Warm cache for fleets + class trooper types (call once from shell). */
+export function warmUnitThumbs(size = 64) {
+  const types = new Set(CATALOG.map((c) => c.type));
+  for (const t of ['rifle', 'heavy', 'recon']) types.add(t);
+  for (const t of types) bakeThumb(t, size).catch(() => {});
+  // Shop cards use 72; deploy strip uses 48 — warm both common sizes
+  if (size !== 72) for (const t of types) bakeThumb(t, 72).catch(() => {});
+  if (size !== 48) for (const t of types) bakeThumb(t, 48).catch(() => {});
 }

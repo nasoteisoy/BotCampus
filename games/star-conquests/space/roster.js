@@ -8,23 +8,23 @@ export const SPACE_TYPES = new Set(['spaceship', 'battleship']);
 /** Fixed roster shown in README / shop hints. Keys match unit.type (+ optional name). */
 export const ROSTER = Object.freeze({
   scout: Object.freeze({
-    kind: 'spaceship', type: 'spaceship', id: 'scout', name: 'Scout', icon: '🛸',
+    kind: 'spaceship', type: 'spaceship', id: 'scout', name: 'Scout', icon: 'scout',
     // defaults when shell does not pass stats
     stats: Object.freeze({ hp: 120, attack: 12, range: 28, speed: 9, armor: 5 }),
     extras: Object.freeze({ shield: 30, shieldRegen: 3, dps: 12, turn: 120, scale: 0.9, role: 'scout' }),
   }),
   fighter: Object.freeze({
-    kind: 'spaceship', type: 'spaceship', id: 'fighter', name: 'Fighter', icon: '✈️',
+    kind: 'spaceship', type: 'spaceship', id: 'fighter', name: 'Fighter', icon: 'fighter',
     stats: Object.freeze({ hp: 180, attack: 18, range: 32, speed: 7, armor: 10 }),
     extras: Object.freeze({ shield: 50, shieldRegen: 4, dps: 18, turn: 100, scale: 1.0, role: 'fighter' }),
   }),
   interceptor: Object.freeze({
-    kind: 'spaceship', type: 'spaceship', id: 'interceptor', name: 'Interceptor', icon: '🚀',
+    kind: 'spaceship', type: 'spaceship', id: 'interceptor', name: 'Interceptor', icon: 'interceptor',
     stats: Object.freeze({ hp: 100, attack: 14, range: 26, speed: 12, armor: 0 }),
     extras: Object.freeze({ shield: 20, shieldRegen: 2, dps: 14, turn: 160, scale: 0.85, role: 'interceptor' }),
   }),
   corvette: Object.freeze({
-    kind: 'battleship', type: 'battleship', id: 'corvette', name: 'Corvette', icon: '🔹',
+    kind: 'battleship', type: 'battleship', id: 'corvette', name: 'Corvette', icon: 'corvette',
     stats: Object.freeze({ hp: 500, attack: 40, range: 70, speed: 4, armor: 15 }),
     extras: Object.freeze({
       shield: 200, shieldRegen: 8, dps: 40, turn: 40, turrets: 2,
@@ -32,7 +32,7 @@ export const ROSTER = Object.freeze({
     }),
   }),
   cruiser: Object.freeze({
-    kind: 'battleship', type: 'battleship', id: 'cruiser', name: 'Cruiser', icon: '🟦',
+    kind: 'battleship', type: 'battleship', id: 'cruiser', name: 'Cruiser', icon: 'cruiser',
     stats: Object.freeze({ hp: 900, attack: 70, range: 90, speed: 3, armor: 25 }),
     extras: Object.freeze({
       shield: 400, shieldRegen: 14, dps: 70, turn: 28, turrets: 4,
@@ -99,7 +99,7 @@ export function makeHangarCraft(parent, index, seedRand) {
     id: `${parent.id}-craft-${index}`,
     type: 'spaceship',
     name: 'Scout',
-    icon: '🛸',
+    icon: 'scout',
     role: 'scout',
     kind: 'spaceship',
     hpMax: hp,

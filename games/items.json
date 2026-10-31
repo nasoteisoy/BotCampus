@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-25 09:27 MST",
+ "generated": "2026-10-31 09:30 MST",
  "items": [
   {
    "id": "story",
@@ -1702,10 +1702,10 @@
    "maker": "Dev A, B, C, D",
    "makerSource": "built by Dev A, B, C, D for Chumi",
    "section": "live",
-   "updated": "2026-10-28",
+   "updated": "2026-10-31",
    "url": "games/star-conquests/",
    "extras": [],
-   "note": "Ground and space battles: win, earn points, buy new units",
+   "note": "Ground and space battles: win, earn points, buy new units. Tank feel, Lead cam, Command mode, results.",
    "thumb": "thumbs/star-conquests.webp"
   }
  ]

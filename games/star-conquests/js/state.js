@@ -1,6 +1,6 @@
 // Game state: ownership, garrisons, turns, AI, win/lose.
 import { PLANETS, HOME_PLAYER, CAPTURE_BONUS, neighbors, areLinked, planetById } from './galaxy.js';
-import { makeUnit, resetUid, peekUid, filterForBattle, byType } from './shop.js';
+import { makeUnit, resetUid, peekUid, filterForBattle, byType, SPACE_TYPES, GROUND_TYPES } from './shop.js';
 import { writeSave, loadSave } from './save.js';
 
 export const PLAYER = 'player';
@@ -54,12 +54,16 @@ export function newGame() {
     v: 1,
     turn: 1,
     phase: 'player',
-    points: 180,
+    points: 180, // credits
     owners,
     garrisons,
     uid: peekUid(),
-    selected: HOME_PLAYER,
-    log: ['⭐ New game'],
+    selected: null, // pick fleet first
+    movedFleets: [], // planet ids whose fleet already acted this turn
+    unlockedClasses: ['rifle', 'heavy', 'sniper', 'engineer'], // 4 base; buy officer/special
+    activeBonus: null,     // { id: 'reinforce'|'hero'|'medical'|... } ground applies itself
+    tickets: null,         // optional { attacker, defender } override
+    log: ['New game'],
     result: null,
   };
 }
@@ -82,7 +86,11 @@ export function restoreGame(data) {
     owners: { ...emptyOwner(), ...(data.owners || {}) },
     garrisons,
     uid: peekUid(),
-    selected: data.selected || HOME_PLAYER,
+    selected: data.selected || null,
+    movedFleets: Array.isArray(data.movedFleets) ? data.movedFleets.slice() : [],
+    unlockedClasses: Array.isArray(data.unlockedClasses) ? data.unlockedClasses.slice() : null,
+    activeBonus: data.activeBonus && data.activeBonus.id ? { id: data.activeBonus.id } : null,
+    tickets: data.tickets && typeof data.tickets === 'object' ? { ...data.tickets } : null,
     log: Array.isArray(data.log) ? data.log.slice(-40) : [],
     result: data.result || null,
   };
@@ -103,6 +111,10 @@ export function serialize(state) {
     ),
     uid: peekUid(),
     selected: state.selected,
+    movedFleets: Array.isArray(state.movedFleets) ? state.movedFleets.slice() : [],
+    unlockedClasses: Array.isArray(state.unlockedClasses) ? state.unlockedClasses.slice() : null,
+    activeBonus: state.activeBonus && state.activeBonus.id ? { id: state.activeBonus.id } : null,
+    tickets: state.tickets && typeof state.tickets === 'object' ? { ...state.tickets } : null,
     log: (state.log || []).slice(-40),
     result: state.result,
   };
@@ -138,32 +150,75 @@ export function buyUnit(state, type, planetId) {
   };
   const u = makeUnit(type, labels[type] || `${c.name} ${count}`);
   state.garrisons[planetId].push(u);
-  state.log.push(`🛒 ${u.icon} ${u.name} → ${planetById(planetId).icon}`);
+  state.log.push(`Bought ${u.name} → ${planetById(planetId).name}`);
   autosave(state);
   return { ok: true, unit: u };
+}
+
+export function fleetAlreadyMoved(state, planetId) {
+  return (state.movedFleets || []).includes(planetId);
+}
+
+export function markFleetMoved(state, fromId, toId) {
+  if (!state.movedFleets) state.movedFleets = [];
+  // from is spent; if all units left, from stays marked; destination gets the fleet for next turns
+  if (!state.movedFleets.includes(fromId)) state.movedFleets.push(fromId);
+  if (toId && !state.movedFleets.includes(toId)) state.movedFleets.push(toId);
 }
 
 export function moveUnits(state, fromId, toId, unitIds) {
   if (!areLinked(fromId, toId)) return { ok: false, reason: 'link' };
   if (state.owners[fromId] !== PLAYER) return { ok: false, reason: 'from' };
   if (state.owners[toId] !== PLAYER) return { ok: false, reason: 'to' };
+  if (fleetAlreadyMoved(state, fromId)) return { ok: false, reason: 'moved' };
+  if (!planetHasFleet(state, fromId)) return { ok: false, reason: 'nofleet' };
   const set = new Set(unitIds);
-  const moving = state.garrisons[fromId].filter((u) => set.has(u.id));
+  let moving = state.garrisons[fromId].filter((u) => set.has(u.id));
+  if (!moving.some((u) => SPACE_TYPES.has(u.type))) {
+    const ship = state.garrisons[fromId].find((u) => SPACE_TYPES.has(u.type));
+    if (ship) moving = [ship, ...moving];
+  }
   if (!moving.length) return { ok: false, reason: 'none' };
+  if (!moving.some((u) => SPACE_TYPES.has(u.type))) return { ok: false, reason: 'nofleet' };
   state.garrisons[fromId] = state.garrisons[fromId].filter((u) => !set.has(u.id));
   state.garrisons[toId].push(...moving);
-  state.log.push(`➡️ ${moving.length} → ${planetById(toId).icon}`);
+  markFleetMoved(state, fromId, toId);
+  state.log.push(`Moved ${moving.length} → ${planetById(toId).name}`);
   autosave(state);
   return { ok: true, moved: moving };
+}
+
+
+/** A fleet = at least one spaceship/battleship at the planet. Needed to move/attack. */
+export function planetHasFleet(state, planetId) {
+  return (state.garrisons[planetId] || []).some((u) => SPACE_TYPES.has(u.type));
+}
+
+export function fleetShipType(state, planetId) {
+  const g = state.garrisons[planetId] || [];
+  if (g.some((u) => u.type === 'battleship')) return 'battleship';
+  if (g.some((u) => u.type === 'spaceship')) return 'spaceship';
+  return null;
+}
+
+export function groundCargo(state, planetId) {
+  return (state.garrisons[planetId] || []).filter((u) => GROUND_TYPES.has(u.type));
 }
 
 export function prepareAttack(state, fromId, toId, unitIds) {
   if (!areLinked(fromId, toId)) return { ok: false, reason: 'link' };
   if (state.owners[fromId] !== PLAYER) return { ok: false, reason: 'from' };
   if (state.owners[toId] === PLAYER) return { ok: false, reason: 'friendly' };
+  if (fleetAlreadyMoved(state, fromId)) return { ok: false, reason: 'moved' };
+  if (!planetHasFleet(state, fromId)) return { ok: false, reason: 'nofleet' };
   const set = new Set(unitIds);
-  const attackers = state.garrisons[fromId].filter((u) => set.has(u.id));
+  let attackers = state.garrisons[fromId].filter((u) => set.has(u.id));
+  if (!attackers.some((u) => SPACE_TYPES.has(u.type))) {
+    const ship = state.garrisons[fromId].find((u) => SPACE_TYPES.has(u.type));
+    if (ship) attackers = [ship, ...attackers];
+  }
   if (!attackers.length) return { ok: false, reason: 'none' };
+  if (!attackers.some((u) => SPACE_TYPES.has(u.type))) return { ok: false, reason: 'nofleet' };
   const defenders = state.garrisons[toId].map((u) => ({ ...u, stats: { ...u.stats } }));
   const planet = planetById(toId);
   return {
@@ -215,15 +270,15 @@ export function resolveAttackEnd(state, ctx, finalWinner) {
     state.garrisons[ctx.toId] = attLive;
     if (attackerSide === PLAYER) {
       state.points += CAPTURE_BONUS;
-      state.log.push(`🏁 ${planetById(ctx.toId).icon} captured (+${CAPTURE_BONUS})`);
+      state.log.push(`Captured ${planetById(ctx.toId).name} (+${CAPTURE_BONUS} credits)`);
     } else {
-      state.log.push(`💀 Lost ${planetById(ctx.toId).icon}`);
+      state.log.push(`Lost ${planetById(ctx.toId).name}`);
     }
   } else {
     state.garrisons[ctx.fromId].push(...attLive);
     state.garrisons[ctx.toId] = defLive;
-    if (attackerSide === PLAYER) state.log.push(`❌ Attack failed`);
-    else state.log.push(`🛡️ Held ${planetById(ctx.toId).icon}`);
+    if (attackerSide === PLAYER) state.log.push(`Attack failed`);
+    else state.log.push(`Held ${planetById(ctx.toId).name}`);
   }
   autosave(state);
   return checkEnd(state);
@@ -287,14 +342,33 @@ export function prepareEnemyAttack(state, attack) {
   };
 }
 
+export function turnIncome(state) {
+  let credits = 0;
+  const parts = [];
+  for (const p of PLANETS) {
+    if (state.owners[p.id] !== PLAYER) continue;
+    const c = p.passive?.credits | 0;
+    if (c) { credits += c; parts.push(`${p.name} +${c}`); }
+  }
+  // Small win bonus already in points; show base income only
+  return { credits, parts, total: credits };
+}
+
 export function endPlayerTurn(state) {
+  // Income + passives apply when the player ends their turn (credits rise immediately)
+  const inc = turnIncome(state);
+  if (inc.total > 0) state.points += inc.total;
+  state._lastIncome = inc;
   state.phase = 'enemy';
   state.turn += 1;
+  state.movedFleets = [];
   autosave(state);
+  return inc;
 }
 
 export function endEnemyTurn(state) {
   state.phase = 'player';
+  // Income already granted at endPlayerTurn — do not double-apply
   autosave(state);
   return checkEnd(state);
 }
