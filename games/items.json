@@ -1707,6 +1707,19 @@
    "extras": [],
    "note": "Ground and space battles: win, earn points, buy new units. Tank feel, Lead cam, Command mode, results.",
    "thumb": "thumbs/star-conquests.webp"
+  },
+  {
+   "id": "sprig-peak",
+   "title": "Sprig Peak",
+   "type": "game",
+   "maker": "Dev C",
+   "makerSource": "built by Dev C for Chumi; Dev A public push",
+   "section": "live",
+   "updated": "2026-10-31",
+   "url": "games/sprig-peak/",
+   "extras": [],
+   "note": "Tiny handmade 2D pixel platformer: jump, dash, collect, reach the peak",
+   "thumb": "thumbs/sprig-peak.webp"
   }
  ]
 }
