@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-10-31 09:30 MST",
+ "generated": "2026-10-31 20:19 MST",
  "items": [
   {
    "id": "story",
@@ -27,6 +27,22 @@
    ],
    "note": "Our fantasy comic world: decide what's canon, plus letters you can listen to, lore, characters, comics",
    "thumb": "thumbs/story.webp"
+  },
+  {
+   "id": "seraphina",
+   "title": "Seraphina Forest",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "Chumi OK 2026-10-31 8:19 PM Phoenix: Seraphina go live",
+   "section": "live",
+   "updated": "2026-10-31",
+   "url": "games/seraphina/",
+   "extras": [],
+   "note": "Cozy forest pixel - walk and shoot arrows at slimes",
+   "thumb": "thumbs/seraphina.webp",
+   "gitAuthors": [
+    "CampusDev"
+   ]
   },
   {
    "id": "seraphina-fortnite",

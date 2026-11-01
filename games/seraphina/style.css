@@ -1,0 +1,53 @@
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a2818;touch-action:none;overscroll-behavior:none}
+#app{width:100%;height:100%;position:relative}
+#stage{position:absolute;inset:0;width:100%;height:100%}
+#game{
+  position:absolute;inset:0;width:100%!important;height:100%!important;
+  image-rendering:pixelated;image-rendering:crisp-edges;background:#5a8f4a;display:block;border:0;
+}
+#touch{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}
+.joy{
+  pointer-events:auto;position:absolute;
+  left:max(12px,env(safe-area-inset-left));
+  bottom:max(12px,env(safe-area-inset-bottom));
+  width:96px;height:96px;min-width:96px;min-height:96px;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,.45);
+  background:rgba(20,30,18,.35);touch-action:none;
+}
+.joy-knob{
+  position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;
+  border-radius:50%;background:rgba(230,190,70,.75);
+  border:2px solid rgba(255,255,255,.7);pointer-events:none;
+  will-change:transform;
+}
+.tb.fire{
+  pointer-events:auto;position:absolute;
+  right:max(12px,env(safe-area-inset-right));
+  bottom:max(12px,env(safe-area-inset-bottom));
+  width:72px;height:72px;min-width:72px;min-height:72px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.6);
+  background:rgba(180,90,40,.38);touch-action:none;
+  background-repeat:no-repeat;background-position:center;background-size:46%;
+}
+.tb.pressed{transform:scale(.94);border-color:#e6be46;background-color:rgba(230,190,70,.45)}
+#btnPause,#btnFs{
+  position:absolute;top:max(10px,env(safe-area-inset-top));z-index:6;
+  width:56px;height:56px;min-width:56px;min-height:56px;
+  border:2px solid rgba(255,255,255,.65);border-radius:12px;
+  background:rgba(20,30,18,.5) center/55% no-repeat;pointer-events:auto;
+}
+#btnPause{right:max(66px,calc(env(safe-area-inset-right) + 58px))}
+#btnFs{right:max(10px,env(safe-area-inset-right))}
+@media (min-width:900px){
+  #btnPause,#btnFs{width:64px;height:64px;min-width:64px;min-height:64px}
+  #btnPause{right:74px}
+}
+@media (pointer:coarse){
+  #touch{display:block}
+}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:420px){
+  .joy{width:84px;height:84px;min-width:84px;min-height:84px;left:8px;bottom:8px}
+  .tb.fire{width:64px;height:64px;min-width:64px;min-height:64px;right:8px;bottom:8px}
+}

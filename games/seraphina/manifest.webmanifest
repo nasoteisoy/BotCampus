@@ -1,0 +1,15 @@
+{
+  "name": "Seraphina Forest",
+  "short_name": "Seraphina",
+  "description": "Cozy top-down forest — walk and shoot arrows at slimes",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#1a2818",
+  "theme_color": "#3d6b38",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
