@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>The Last Toast at Rookwood Inn</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1 id="game-title">Mystery</h1>
+        <p id="crumb"></p>
+        <p id="player-chip" class="player-chip" hidden></p>
+      </div>
+      <div class="top-actions">
+        <button type="button" class="btn btn-compact btn-evidence" id="evidence-toggle" aria-expanded="false" aria-controls="evidence-drawer" aria-label="Evidence log">
+          <span class="evidence-label">Evidence</span>
+          <span id="evidence-count" class="evidence-pill">0</span>
+        </button>
+        <button type="button" class="btn btn-compact btn-ghost" id="restart-btn">Restart</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main>
+        <section id="intro-view" class="panel" hidden>
+          <p class="section-label" id="intro-tone"></p>
+          <h2 id="intro-title"></h2>
+          <p id="intro-text"></p>
+          <div class="intro-card" id="intro-player"></div>
+          <div class="intro-card" id="intro-lore"></div>
+          <div id="intro-actions" class="action-row" style="margin-top:16px"></div>
+        </section>
+
+        <section id="explore-view" class="panel" hidden>
+          <h2 id="scene-title"></h2>
+          <p id="scene-text"></p>
+          <div id="roll-panel" class="roll-panel" hidden>
+            <p class="section-label">Skill check</p>
+            <p id="roll-math" class="roll-math"></p>
+            <p id="roll-text"></p>
+          </div>
+          <div id="choices" class="choices" aria-label="Choices"></div>
+          <div id="explore-extra" class="action-row" style="margin-top:12px"></div>
+        </section>
+
+        <section id="accuse-view" class="panel" hidden>
+          <h2>Accusation desk</h2>
+          <p class="accuse-lead">Name the killer and their motive. You can go back if you need more evidence.</p>
+          <div class="accuse-block">
+            <p class="section-label">Suspect</p>
+            <div id="suspect-pick" class="pick-grid"></div>
+          </div>
+          <div class="accuse-block">
+            <p class="section-label">Motive</p>
+            <div id="motive-pick" class="pick-grid"></div>
+          </div>
+          <div id="accuse-actions" class="action-row" style="margin-top:16px"></div>
+        </section>
+
+        <section id="result-view" class="panel result-view" hidden>
+          <h2 id="result-title"></h2>
+          <p id="result-text"></p>
+          <p id="result-detail"></p>
+          <div id="result-actions" class="action-row"></div>
+        </section>
+      </main>
+
+      <aside id="evidence-drawer" class="panel evidence-drawer" aria-label="Evidence log">
+        <h2>
+          <span>Evidence log</span>
+          <button type="button" class="btn btn-compact btn-ghost" id="evidence-close">Close</button>
+        </h2>
+        <ul id="evidence-list"></ul>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" hidden role="status" aria-live="polite"></div>
+
+  <!-- Content: swap this script src to load another mystery (file:// friendly). -->
+  <script src="mysteries/sample/mystery.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
