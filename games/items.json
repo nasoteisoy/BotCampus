@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-11-03 18:29 MST",
+ "generated": "2026-11-03 19:01 MST",
  "items": [
   {
    "id": "story",
@@ -1760,7 +1760,7 @@
    "updated": "2026-11-03",
    "url": "games/coop-mystery/",
    "extras": [],
-   "note": "Phone co-op mystery — hear phrases, ask maze spaces, fog map, vote who has the key",
+   "note": "Phone co-op mystery — hear phrases, pick doors, dodge false trails, vote who has the key",
    "thumb": "thumbs/coop-mystery.png"
   }
  ]

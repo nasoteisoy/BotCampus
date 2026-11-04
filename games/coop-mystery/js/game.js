@@ -75,7 +75,8 @@
       tokens: mystery.tokensPerRound || 4,
       tokensSpent: 0,
       lockedResponseIds: [],
-      lastWall: null
+      lastWall: null,
+      falseDoorIds: []
     };
   }
 
@@ -254,7 +255,10 @@
       };
     }
 
-    // Success path
+    // Success path (false-trail doors look identical; tracked privately for reveal)
+    if (resp.trail === 'false' && priv.falseDoorIds.indexOf(resp.id) < 0) {
+      priv.falseDoorIds.push(resp.id);
+    }
     if (resp.clueId && priv.unlockedClueIds.indexOf(resp.clueId) < 0) {
       priv.unlockedClueIds.push(resp.clueId);
     }
@@ -370,10 +374,37 @@
       tie: tie,
       correctId: mystery.solution.suspectId,
       win: win,
-      board: leaderboard(state, mystery)
+      board: leaderboard(state, mystery),
+      players: revealDetails(state, mystery)
     };
     pushLog(state, win ? 'Win' : 'Lose');
     return { ok: true, reveal: state.reveal };
+  }
+
+  /** Final reveal: each player's clues as real / herring / dead end, and false doors passed. */
+  function revealDetails(state, mystery) {
+    const key = new Set(mystery.solution.keyClueIds);
+    return state.players.map((p) => {
+      const priv = state.private[p.id];
+      return {
+        id: p.id,
+        name: p.name,
+        clues: priv.unlockedClueIds.map((id) => {
+          const c = clueById(mystery, id) || {};
+          const kind = c.deadEnd ? 'deadend' : c.herring ? 'herring' : key.has(id) ? 'key' : 'real';
+          return { id: id, text: c.text || id, kind: kind };
+        }),
+        falseDoors: (priv.falseDoorIds || []).map((rid) => {
+          let label = rid;
+          mystery.maze.cells.forEach((cell) => {
+            (cell.responses || []).forEach((r) => {
+              if (r.id === rid) label = cell.label + ' › ' + r.text;
+            });
+          });
+          return { id: rid, label: label };
+        })
+      };
+    });
   }
 
   function neighborCell(mystery, fromCell, dir) {

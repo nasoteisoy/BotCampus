@@ -57,7 +57,7 @@
     const wrap = document.createDocumentFragment();
     const panel = el('<div class="panel"></div>');
     panel.appendChild(el('<h1>' + I().icon('key') + ' Who Has the Key</h1>'));
-    panel.appendChild(el('<p class="hint">Hear lines. Ask spaces. Fog hides the rest.</p>'));
+    panel.appendChild(el('<p class="hint">Hear lines. Pick doors. Not every door is right.</p>'));
     panel.appendChild(
       el(
         '<div class="field"><label for="name">Your name</label>' +
@@ -180,14 +180,14 @@
       el(
         '<h2>' +
           I().icon('key') +
-          ' Tokens · ' +
+          ' Guesses · ' +
           view.tokens +
           ' <span class="uses">spent ' +
           view.tokensSpent +
           '</span></h2>'
       )
     );
-    tok.appendChild(el('<p class="hint">Ask costs 1. Wall costs +1. Wrong hear costs 1.</p>'));
+    tok.appendChild(el('<p class="hint">Each door pick 1. Wall +1. Wrong hear 1.</p>'));
     frag.appendChild(tok);
 
     // Talking points
@@ -204,7 +204,7 @@
     if (view.botLines && view.botLines.length) {
       const bots = el('<div class="panel"></div>');
       bots.appendChild(el('<h2>' + I().icon('users') + ' Bots said</h2>'));
-      bots.appendChild(el('<p class="hint">Match a line, then ask a space.</p>'));
+      bots.appendChild(el('<p class="hint">Match a line, then pick a door.</p>'));
       view.botLines.forEach((b) => {
         const c = el('<div class="card"><span class="tag">' + escapeHtml(b.name) + '</span></div>');
         b.lines.forEach((line) => c.appendChild(el('<div>' + escapeHtml(line) + '</div>')));
@@ -303,11 +303,11 @@
     }
 
     // Responses (ask)
-    map.appendChild(el('<h2 style="margin-top:12px">Ask this space</h2>'));
+    map.appendChild(el('<h2 style="margin-top:12px">Pick a door</h2>'));
     const respList = el('<div class="list"></div>');
     const resps = maze.responses || [];
     if (!resps.length) {
-      respList.appendChild(el('<div class="card">No open asks — hear a line first.</div>'));
+      respList.appendChild(el('<div class="card">No open doors. Hear a line first.</div>'));
     }
     resps.forEach((r) => {
       const b = el(
@@ -420,7 +420,7 @@
         .map((l) => {
           const kc = l.keyClues != null ? l.keyClues : '?';
           const ts = l.tokensSpent != null ? l.tokensSpent : '?';
-          return l.name + ' (' + kc + ' keys / ' + ts + ' tok)';
+          return l.name + ' (' + kc + ' keys / ' + ts + ' guesses)';
         })
         .join(' · ') || '—';
     panel.appendChild(el('<div class="who">' + escapeHtml(names) + '</div>'));
@@ -533,6 +533,18 @@
     });
     panel.appendChild(board);
     frag.appendChild(panel);
+    (r.players || []).forEach((pl) => {
+      const card = el('<div class="panel reveal-player"><h2>' + escapeHtml(pl.name) + '</h2></div>');
+      if (!pl.clues.length) card.appendChild(el('<div class="tag">No clues</div>'));
+      pl.clues.forEach((c) => {
+        const tag = { key: 'Key', real: 'Real', herring: 'Herring', deadend: 'Dead end' }[c.kind];
+        card.appendChild(el('<div class="card kind-' + c.kind + '"><span class="tag">' + tag + '</span><div>' + escapeHtml(c.text) + '</div></div>'));
+      });
+      pl.falseDoors.forEach((d) => {
+        card.appendChild(el('<div class="card kind-false"><span class="tag">False trail door</span><div>' + escapeHtml(d.label) + '</div></div>'));
+      });
+      frag.appendChild(card);
+    });
     const foot = el('<div class="footer-actions"></div>');
     const again = el('<button type="button" class="btn btn-primary btn-block">Home</button>');
     again.addEventListener('click', handlers.home);

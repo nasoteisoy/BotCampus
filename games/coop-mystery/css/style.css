@@ -378,3 +378,9 @@ input[type="text"] {
   border-style: dashed;
   color: var(--text);
 }
+
+.card.kind-key { border-color: var(--good); }
+.card.kind-herring, .card.kind-false { border-color: var(--bad); }
+.card.kind-herring .tag, .card.kind-false .tag { color: var(--bad); font-weight: 700; }
+.card.kind-deadend { border-color: var(--wall); }
+.reveal-player .card { margin-top: 6px; }

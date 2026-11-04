@@ -1,7 +1,7 @@
 {
   "id": "sample-key",
   "title": "Who Has the Key",
-  "tagline": "Hear a line. Ask the space. Map your path.",
+  "tagline": "Hear a line. Pick a door. Not every open door is right.",
   "rounds": 3,
   "tokensPerRound": 4,
   "deadEndExtraCost": 1,
@@ -121,42 +121,74 @@
     {
       "id": "c_desk",
       "text": "Key sat on desk at noon",
-      "deadEnd": false
+      "deadEnd": false,
+      "herring": false
     },
     {
       "id": "c_drawer",
       "text": "Drawer empty",
-      "deadEnd": true
+      "deadEnd": true,
+      "herring": false
     },
     {
       "id": "c_camera",
       "text": "Camera caught Person 2 near desk",
-      "deadEnd": false
+      "deadEnd": false,
+      "herring": false
     },
     {
       "id": "c_hall_dead",
       "text": "Dead end",
-      "deadEnd": true
+      "deadEnd": true,
+      "herring": false
     },
     {
       "id": "c_bag",
       "text": "Person 2 bag held a key ring",
-      "deadEnd": false
+      "deadEnd": false,
+      "herring": false
     },
     {
       "id": "c_bag_dead",
       "text": "Dead end",
-      "deadEnd": true
+      "deadEnd": true,
+      "herring": false
     },
     {
       "id": "c_mug",
       "text": "Mug print was Person 1",
-      "deadEnd": false
+      "deadEnd": false,
+      "herring": false
     },
     {
       "id": "c_break_dead",
       "text": "Dead end",
-      "deadEnd": true
+      "deadEnd": true,
+      "herring": false
+    },
+    {
+      "id": "c_stairs",
+      "text": "Person 3 was on the stairs at noon",
+      "deadEnd": false,
+      "herring": true
+    },
+    {
+      "id": "c_stairs_dead",
+      "text": "Dead end",
+      "deadEnd": true,
+      "herring": false
+    },
+    {
+      "id": "c_spare",
+      "text": "Person 1 had a spare key",
+      "deadEnd": false,
+      "herring": true
+    },
+    {
+      "id": "c_roof_dead",
+      "text": "Dead end",
+      "deadEnd": true,
+      "herring": false
     }
   ],
   "maze": {
@@ -176,7 +208,8 @@
             "to": "s_desk",
             "dir": "N",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           },
           {
             "id": "s0_b",
@@ -185,16 +218,18 @@
             "to": "s_hall",
             "dir": "E",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           },
           {
             "id": "s0_c",
             "text": "Stairs",
-            "deadEnd": true,
-            "to": null,
+            "deadEnd": false,
+            "to": "s_stairs",
             "dir": "S",
-            "clueId": "c_break_dead",
-            "requiresPhraseId": null
+            "clueId": null,
+            "requiresPhraseId": null,
+            "trail": "false"
           },
           {
             "id": "s0_d",
@@ -203,7 +238,8 @@
             "to": "s_break",
             "dir": "W",
             "clueId": null,
-            "requiresPhraseId": "ph_mug"
+            "requiresPhraseId": "ph_mug",
+            "trail": "true"
           }
         ]
       },
@@ -221,7 +257,8 @@
             "to": "s_cam",
             "dir": "E",
             "clueId": "c_desk",
-            "requiresPhraseId": "ph_desk"
+            "requiresPhraseId": "ph_desk",
+            "trail": "true"
           },
           {
             "id": "sd_b",
@@ -230,7 +267,8 @@
             "to": null,
             "dir": "W",
             "clueId": "c_drawer",
-            "requiresPhraseId": "ph_drawer"
+            "requiresPhraseId": "ph_drawer",
+            "trail": "true"
           },
           {
             "id": "sd_c",
@@ -239,7 +277,8 @@
             "to": "s0",
             "dir": "S",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           }
         ]
       },
@@ -257,7 +296,8 @@
             "to": "s_bag",
             "dir": "E",
             "clueId": "c_camera",
-            "requiresPhraseId": "ph_camera"
+            "requiresPhraseId": "ph_camera",
+            "trail": "true"
           },
           {
             "id": "sh_b",
@@ -266,7 +306,8 @@
             "to": null,
             "dir": "N",
             "clueId": "c_hall_dead",
-            "requiresPhraseId": "ph_hall"
+            "requiresPhraseId": "ph_hall",
+            "trail": "true"
           },
           {
             "id": "sh_c",
@@ -275,7 +316,8 @@
             "to": "s0",
             "dir": "W",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           }
         ]
       },
@@ -293,7 +335,8 @@
             "to": "s_bag",
             "dir": "S",
             "clueId": null,
-            "requiresPhraseId": "ph_camera"
+            "requiresPhraseId": "ph_camera",
+            "trail": "true"
           },
           {
             "id": "sc_b",
@@ -302,7 +345,8 @@
             "to": null,
             "dir": "E",
             "clueId": "c_hall_dead",
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           },
           {
             "id": "sc_c",
@@ -311,7 +355,8 @@
             "to": "s_desk",
             "dir": "W",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           }
         ]
       },
@@ -329,16 +374,18 @@
             "to": "s_end",
             "dir": "E",
             "clueId": "c_bag",
-            "requiresPhraseId": "ph_bag"
+            "requiresPhraseId": "ph_bag",
+            "trail": "true"
           },
           {
             "id": "sb_b",
-            "text": "Zipper only",
-            "deadEnd": true,
-            "to": null,
+            "text": "Zipper bag",
+            "deadEnd": false,
+            "to": "s_locker",
             "dir": "N",
-            "clueId": "c_bag_dead",
-            "requiresPhraseId": "ph_bag_noise"
+            "clueId": null,
+            "requiresPhraseId": "ph_bag_noise",
+            "trail": "false"
           },
           {
             "id": "sb_c",
@@ -347,7 +394,8 @@
             "to": "s_hall",
             "dir": "W",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
           }
         ]
       },
@@ -365,7 +413,8 @@
             "to": "s0",
             "dir": "E",
             "clueId": "c_mug",
-            "requiresPhraseId": "ph_mug"
+            "requiresPhraseId": "ph_mug",
+            "trail": "true"
           },
           {
             "id": "sk_b",
@@ -374,7 +423,8 @@
             "to": null,
             "dir": "W",
             "clueId": "c_break_dead",
-            "requiresPhraseId": "ph_break"
+            "requiresPhraseId": "ph_break",
+            "trail": "true"
           }
         ]
       },
@@ -392,7 +442,105 @@
             "to": "s_end",
             "dir": "W",
             "clueId": null,
-            "requiresPhraseId": null
+            "requiresPhraseId": null,
+            "trail": "true"
+          }
+        ]
+      },
+      {
+        "id": "s_stairs",
+        "x": 1,
+        "y": 2,
+        "label": "Stairs",
+        "question": "Who was here?",
+        "responses": [
+          {
+            "id": "st_a",
+            "text": "Person 3 at noon",
+            "deadEnd": false,
+            "to": "s_stairs",
+            "dir": "E",
+            "clueId": "c_stairs",
+            "requiresPhraseId": null,
+            "trail": "false"
+          },
+          {
+            "id": "st_b",
+            "text": "Basement",
+            "deadEnd": true,
+            "to": null,
+            "dir": "S",
+            "clueId": "c_stairs_dead",
+            "requiresPhraseId": null,
+            "trail": "false"
+          },
+          {
+            "id": "st_c",
+            "text": "Back",
+            "deadEnd": false,
+            "to": "s0",
+            "dir": "N",
+            "clueId": null,
+            "requiresPhraseId": null,
+            "trail": "true"
+          }
+        ]
+      },
+      {
+        "id": "s_locker",
+        "x": 3,
+        "y": 0,
+        "label": "Locker",
+        "question": "Whose locker?",
+        "responses": [
+          {
+            "id": "lk_a",
+            "text": "Spare key tag",
+            "deadEnd": false,
+            "to": "s_roof",
+            "dir": "E",
+            "clueId": "c_spare",
+            "requiresPhraseId": null,
+            "trail": "false"
+          },
+          {
+            "id": "lk_b",
+            "text": "Back",
+            "deadEnd": false,
+            "to": "s_bag",
+            "dir": "S",
+            "clueId": null,
+            "requiresPhraseId": null,
+            "trail": "true"
+          }
+        ]
+      },
+      {
+        "id": "s_roof",
+        "x": 4,
+        "y": 0,
+        "label": "Roof door",
+        "question": "Roof log?",
+        "responses": [
+          {
+            "id": "rf_a",
+            "text": "Up the ladder",
+            "deadEnd": true,
+            "to": null,
+            "dir": "N",
+            "clueId": "c_roof_dead",
+            "requiresPhraseId": null,
+            "trail": "false"
+          },
+          {
+            "id": "rf_b",
+            "text": "Back",
+            "deadEnd": false,
+            "to": "s_locker",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": null,
+            "trail": "true"
           }
         ]
       }

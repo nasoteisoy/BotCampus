@@ -62,7 +62,7 @@ No puzzle gates beyond phrase-gated exits (V2). No fantasy content.
     { "id": "peek", "label": "Peek", "icon": "eye", "usesPerRound": 1, "hint": "…" }
   ]}],
   "phrases": [{ "id": "ph_desk", "text": "Saw it on the desk" }],
-  "clues": [{ "id": "c_desk", "text": "Key sat on desk at noon", "deadEnd": false }],
+  "clues": [{ "id": "c_desk", "text": "Key sat on desk at noon", "deadEnd": false, "herring": false }],
   "maze": {
     "startId": "s0",
     "walledDirs": { "s0": [] },
@@ -70,7 +70,8 @@ No puzzle gates beyond phrase-gated exits (V2). No fantasy content.
       "id": "s0", "x": 1, "y": 1, "label": "Lobby", "question": "Where first?",
       "responses": [{
         "id": "s0_a", "text": "Desk row", "deadEnd": false, "to": "s_desk",
-        "dir": "N", "clueId": null, "requiresPhraseId": null
+        "dir": "N", "clueId": null, "requiresPhraseId": null,
+        "trail": "true"
       }]
     }]
   },
@@ -78,6 +79,14 @@ No puzzle gates beyond phrase-gated exits (V2). No fantasy content.
   "bots": [{ "name": "Bot 1", "roleId": "role-b" }]
 }
 ```
+
+### Doors, false trails, herrings
+
+- Each maze cell is a **door** with 1–4 exits (responses). Each pick spends 1 guess; a wrong pick (dead end) costs +1 and **locks that door for the round**.
+- `trail: "false"` on a response marks a **false-trail door**. It opens like any other and looks identical. Cells reached only through false doors are a false branch.
+- `herring: true` on a clue = red herring. Players never see the flag; it reads like a real clue.
+- False branches must **never** hold key clues. `node tools/validate.js data/<file>.json` checks this.
+- Closest callout scores only real key clues per guess spent. The final reveal shows each player's clues as Key / Real / Herring / Dead end, plus the false doors they passed.
 
 Ability ids: `peek`, `force`, `swap`, `check`.
 
@@ -90,15 +99,12 @@ python3 -m http.server 8765
 
 ## Tests
 
-E2E loads the app with `?test=1` to enable `window.__coopMystery` hooks (off by default).
-
-
 ```bash
-node tests/e2e.mjs
+PLAYWRIGHT_BROWSERS_PATH=<repo> node tests/e2e.mjs
 ```
 
 Checks: fog hides non-adjacent cells, tokens decrement, dead-end extra cost, wrong hear costs, wrong response locks, receiver-only phrase, callout efficiency, final reveal, PeerJS probe.
 
 ## Ship
 
-Dev A copies this folder to games/coop-mystery/ with hub thumb + items.json entry.
+`ship/coop-mystery/` + `ship/thumb.png` + `ship/hub-card.json`. Dev A pushes — do not commit from this tree.
