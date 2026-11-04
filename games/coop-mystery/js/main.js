@@ -454,6 +454,11 @@
           if (mode === 'solo') hostAction('botTick');
         });
       },
+      hear: (phraseId, fromId) => {
+        clientAction('hear', { phraseId: phraseId, fromId: fromId });
+        if (mode === 'solo') hostAction('botTick');
+      },
+      rerender: () => render(),
       askResponse: (responseId) => clientAction('ask', { responseId: responseId }),
       ability: (a) => openAbility(a, view)
     };
@@ -475,6 +480,8 @@
       screen = elWait();
     }
 
+    root.classList.toggle('in-game', phase === 'round');
+    document.body.classList.toggle('in-game', phase === 'round');
     const nodes = [];
     if (lastError && phase !== 'lobby') nodes.push(UI.errorBanner(lastError));
     // fragment children

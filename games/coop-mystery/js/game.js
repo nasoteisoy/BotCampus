@@ -492,6 +492,8 @@
       .map((r) => ({
         id: r.id,
         text: r.text,
+        act: r.act || r.text,
+        kind: r.kind || 'act',
         dir: r.dir,
         locked: priv.lockedResponseIds.indexOf(r.id) >= 0,
         needsPhrase: !!r.requiresPhraseId,
@@ -528,7 +530,8 @@
         // geometric neighbor but no response that way — wall
         kind = 'wall';
       }
-      return { dir: dir, kind: kind, label: label, cellId: cellId };
+      const ac = (cur.actions || {})[dir];
+      return { dir: dir, kind: kind, label: label, cellId: cellId, action: ac ? ac.text : null, actionKind: ac ? ac.kind : 'act' };
     });
 
     // Visible cells: current + visited (as trail dots) + peeked; NOT full fog-clear
@@ -659,6 +662,9 @@
       maze: mazeViewFor(mystery, priv),
       clues: clues,
       tokens: priv.tokens,
+      tokensPerRound: mystery.tokensPerRound,
+      roleIcon: ((role.abilities || [])[0] || {}).icon || 'star',
+      roundIndexKey: state.roundIndex,
       tokensSpent: priv.tokensSpent,
       lastWall: priv.lastWall,
       abilities: abilities,

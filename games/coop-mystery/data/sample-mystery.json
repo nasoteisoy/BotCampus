@@ -209,7 +209,9 @@
             "dir": "N",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Look over the desks"
           },
           {
             "id": "s0_b",
@@ -219,7 +221,9 @@
             "dir": "E",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Follow the hall"
           },
           {
             "id": "s0_c",
@@ -229,7 +233,9 @@
             "dir": "S",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "false"
+            "trail": "false",
+            "kind": "act",
+            "act": "Climb the stairs"
           },
           {
             "id": "s0_d",
@@ -239,9 +245,29 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": "ph_mug",
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go into the break room"
           }
-        ]
+        ],
+        "actions": {
+          "N": {
+            "kind": "act",
+            "text": "Search the desks"
+          },
+          "E": {
+            "kind": "act",
+            "text": "Walk the hall"
+          },
+          "S": {
+            "kind": "act",
+            "text": "Try the stairs"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Check the break room"
+          }
+        }
       },
       {
         "id": "s_desk",
@@ -258,7 +284,9 @@
             "dir": "E",
             "clueId": "c_desk",
             "requiresPhraseId": "ph_desk",
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Say the key sat here"
           },
           {
             "id": "sd_b",
@@ -268,7 +296,9 @@
             "dir": "W",
             "clueId": "c_drawer",
             "requiresPhraseId": "ph_drawer",
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Pull the drawer"
           },
           {
             "id": "sd_c",
@@ -278,9 +308,25 @@
             "dir": "S",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "topic",
+            "text": "Ask about the key"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Open the drawer"
+          },
+          "S": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_hall",
@@ -297,7 +343,9 @@
             "dir": "E",
             "clueId": "c_camera",
             "requiresPhraseId": "ph_camera",
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Say the cam caught Person 2"
           },
           {
             "id": "sh_b",
@@ -307,7 +355,9 @@
             "dir": "N",
             "clueId": "c_hall_dead",
             "requiresPhraseId": "ph_hall",
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Say the hall was quiet"
           },
           {
             "id": "sh_c",
@@ -317,9 +367,25 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "topic",
+            "text": "Bring up the camera"
+          },
+          "N": {
+            "kind": "topic",
+            "text": "Ask who passed"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_cam",
@@ -336,7 +402,9 @@
             "dir": "S",
             "clueId": null,
             "requiresPhraseId": "ph_camera",
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Match the noon window"
           },
           {
             "id": "sc_b",
@@ -346,7 +414,9 @@
             "dir": "E",
             "clueId": "c_hall_dead",
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Blame the wrong hour"
           },
           {
             "id": "sc_c",
@@ -356,9 +426,25 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "S": {
+            "kind": "topic",
+            "text": "Ask about the time"
+          },
+          "E": {
+            "kind": "topic",
+            "text": "Bring up the clock"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_bag",
@@ -375,7 +461,9 @@
             "dir": "E",
             "clueId": "c_bag",
             "requiresPhraseId": "ph_bag",
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Pull out the key ring"
           },
           {
             "id": "sb_b",
@@ -385,7 +473,9 @@
             "dir": "N",
             "clueId": null,
             "requiresPhraseId": "ph_bag_noise",
-            "trail": "false"
+            "trail": "false",
+            "kind": "act",
+            "act": "Unzip the side pocket"
           },
           {
             "id": "sb_c",
@@ -395,9 +485,25 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "act",
+            "text": "Search the bag"
+          },
+          "N": {
+            "kind": "act",
+            "text": "Open the zipper"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_break",
@@ -414,7 +520,9 @@
             "dir": "E",
             "clueId": "c_mug",
             "requiresPhraseId": "ph_mug",
-            "trail": "true"
+            "trail": "true",
+            "kind": "topic",
+            "act": "Ask whose mug it is"
           },
           {
             "id": "sk_b",
@@ -424,9 +532,21 @@
             "dir": "W",
             "clueId": "c_break_dead",
             "requiresPhraseId": "ph_break",
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Hit the switch"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "topic",
+            "text": "Ask about the mug"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Flip the lights"
+          }
+        }
       },
       {
         "id": "s_end",
@@ -443,9 +563,17 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Hold here"
           }
-        ]
+        ],
+        "actions": {
+          "W": {
+            "kind": "act",
+            "text": "Wait here"
+          }
+        }
       },
       {
         "id": "s_stairs",
@@ -462,7 +590,9 @@
             "dir": "E",
             "clueId": "c_stairs",
             "requiresPhraseId": null,
-            "trail": "false"
+            "trail": "false",
+            "kind": "topic",
+            "act": "Ask about noon"
           },
           {
             "id": "st_b",
@@ -472,7 +602,9 @@
             "dir": "S",
             "clueId": "c_stairs_dead",
             "requiresPhraseId": null,
-            "trail": "false"
+            "trail": "false",
+            "kind": "act",
+            "act": "Head to the basement"
           },
           {
             "id": "st_c",
@@ -482,9 +614,25 @@
             "dir": "N",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "topic",
+            "text": "Ask who was here"
+          },
+          "S": {
+            "kind": "act",
+            "text": "Go down"
+          },
+          "N": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_locker",
@@ -501,7 +649,9 @@
             "dir": "E",
             "clueId": "c_spare",
             "requiresPhraseId": null,
-            "trail": "false"
+            "trail": "false",
+            "kind": "act",
+            "act": "Flip the key tag"
           },
           {
             "id": "lk_b",
@@ -511,9 +661,21 @@
             "dir": "S",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "E": {
+            "kind": "act",
+            "text": "Read the tag"
+          },
+          "S": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       },
       {
         "id": "s_roof",
@@ -530,7 +692,9 @@
             "dir": "N",
             "clueId": "c_roof_dead",
             "requiresPhraseId": null,
-            "trail": "false"
+            "trail": "false",
+            "kind": "act",
+            "act": "Climb up"
           },
           {
             "id": "rf_b",
@@ -540,9 +704,21 @@
             "dir": "W",
             "clueId": null,
             "requiresPhraseId": null,
-            "trail": "true"
+            "trail": "true",
+            "kind": "act",
+            "act": "Go back"
           }
-        ]
+        ],
+        "actions": {
+          "N": {
+            "kind": "act",
+            "text": "Climb the ladder"
+          },
+          "W": {
+            "kind": "act",
+            "text": "Step back"
+          }
+        }
       }
     ],
     "walledDirs": {

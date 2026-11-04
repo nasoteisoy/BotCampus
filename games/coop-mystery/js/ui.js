@@ -162,252 +162,242 @@
   }
 
 
-  function roundScreen(view, handlers) {
-    const frag = document.createDocumentFragment();
-    const crumb =
-      view.mysteryTitle +
-      ' · R' +
-      (view.roundIndex + 1) +
-      '/' +
-      view.totalRounds +
-      ' · ' +
-      view.me.roleName;
-    frag.appendChild(topbar(crumb, handlers.home));
+  // ---- Round UI: one action per screen (Talk > Listen > Door), tabs, top bar ----
+  const RS = { round: -1, step: 'talk', tab: 'play', door: null, pending: null, snap: null, fb: null, menu: false, doneDoor: false };
 
-    // Tokens
-    const tok = el('<div class="panel tok-bar"></div>');
-    tok.appendChild(
-      el(
-        '<h2>' +
-          I().icon('key') +
-          ' Guesses · ' +
-          view.tokens +
-          ' <span class="uses">spent ' +
-          view.tokensSpent +
-          '</span></h2>'
-      )
-    );
-    tok.appendChild(el('<p class="hint">Each door pick 1. Wall +1. Wrong hear 1.</p>'));
-    frag.appendChild(tok);
-
-    // Talking points
-    const talk = el('<div class="panel"></div>');
-    talk.appendChild(el('<h2>' + I().icon('talk') + ' Say these</h2>'));
-    talk.appendChild(el('<p class="hint">Read them out. Not labeled as clues.</p>'));
-    const talkList = el('<div class="list"></div>');
-    (view.talkingPoints || []).forEach((t) => {
-      talkList.appendChild(el('<div class="card"><strong>' + escapeHtml(t.text) + '</strong></div>'));
-    });
-    talk.appendChild(talkList);
-    frag.appendChild(talk);
-
-    if (view.botLines && view.botLines.length) {
-      const bots = el('<div class="panel"></div>');
-      bots.appendChild(el('<h2>' + I().icon('users') + ' Bots said</h2>'));
-      bots.appendChild(el('<p class="hint">Match a line, then pick a door.</p>'));
-      view.botLines.forEach((b) => {
-        const c = el('<div class="card"><span class="tag">' + escapeHtml(b.name) + '</span></div>');
-        b.lines.forEach((line) => c.appendChild(el('<div>' + escapeHtml(line) + '</div>')));
-        bots.appendChild(c);
-      });
-      frag.appendChild(bots);
-    }
-
-    // Hear
-    const hear = el('<div class="panel"></div>');
-    hear.appendChild(el('<h2>' + I().icon('hear') + ' I heard…</h2>'));
-    hear.appendChild(el('<p class="hint">Opens gated exits. Wrong pick costs a token.</p>'));
-    const hearBtn = el('<button type="button" class="btn btn-primary btn-block">I heard…</button>');
-    hearBtn.addEventListener('click', () => handlers.openHear(view.hearOptions));
-    hear.appendChild(hearBtn);
-    if (view.heardPhraseIds && view.heardPhraseIds.length) {
-      hear.appendChild(
-        el('<div class="tag" style="margin-top:8px">Heard ' + view.heardPhraseIds.length + ' line(s)</div>')
-      );
-    }
-    if (view.forcedShow && view.forcedShow.text) {
-      hear.appendChild(
-        el(
-          '<div class="card good" style="margin-top:8px"><span class="tag">Forced ask</span><div><strong>' +
-            escapeHtml(view.forcedShow.text) +
-            '</strong></div></div>'
-        )
-      );
-    }
-    frag.appendChild(hear);
-
-    // Maze
-    const maze = view.maze || {};
-    const map = el('<div class="panel"></div>');
-    map.appendChild(el('<h2>' + I().icon('map') + ' Your maze</h2>'));
-    map.appendChild(
-      el(
-        '<p class="hint">Fog hides the rest · ' +
-          (maze.fogHiddenCount || 0) +
-          ' hidden</p>'
-      )
-    );
-
-    const cur = maze.current || { label: '?', question: '' };
-    map.appendChild(
-      el(
-        '<div class="card good"><span class="tag">Here · ' +
-          escapeHtml(cur.label) +
-          '</span><div><strong>' +
-          escapeHtml(cur.question) +
-          '</strong></div></div>'
-      )
-    );
-
-    // Compass exits
-    const pad = el('<div class="compass" aria-label="Exits"></div>');
-    const byDir = {};
-    (maze.exits || []).forEach((e) => {
-      byDir[e.dir] = e;
-    });
-    ['N', 'W', 'E', 'S'].forEach((d) => {
-      const e = byDir[d] || { kind: 'wall', label: null };
-      const cls =
-        'compass-cell dir-' +
-        d +
-        (e.kind === 'wall' ? ' is-wall' : '') +
-        (e.kind === 'fog' ? ' is-fog' : '') +
-        (e.kind === 'locked' ? ' is-locked' : '');
-      let label = d;
-      if (e.kind === 'wall') label = d + ' · Wall';
-      else if (e.kind === 'fog') label = d + ' · ???';
-      else if (e.kind === 'locked') label = d + ' · Locked';
-      else label = d + ' · ' + (e.label || 'Exit');
-      pad.appendChild(el('<div class="' + cls + '">' + escapeHtml(label) + '</div>'));
-    });
-    map.appendChild(pad);
-
-    // Mini trail (visited only)
-    if (maze.visibleCells && maze.visibleCells.length) {
-      const trail = el('<div class="trail"></div>');
-      maze.visibleCells.forEach((c) => {
-        trail.appendChild(
-          el(
-            '<span class="trail-dot' +
-              (c.here ? ' here' : '') +
-              (c.peeked ? ' peeked' : '') +
-              '" title="' +
-              escapeHtml(c.label) +
-              '">' +
-              escapeHtml(c.label) +
-              '</span>'
-          )
-        );
-      });
-      map.appendChild(trail);
-    }
-
-    // Responses (ask)
-    map.appendChild(el('<h2 style="margin-top:12px">Pick a door</h2>'));
-    const respList = el('<div class="list"></div>');
-    const resps = maze.responses || [];
-    if (!resps.length) {
-      respList.appendChild(el('<div class="card">No open doors. Hear a line first.</div>'));
-    }
-    resps.forEach((r) => {
-      const b = el(
-        '<button type="button" class="btn btn-block' +
-          (r.locked ? '' : '') +
-          '" ' +
-          (r.locked || view.tokens < 1 ? 'disabled' : '') +
-          '>' +
-          (r.dir ? r.dir + ' · ' : '') +
-          escapeHtml(r.text) +
-          (r.locked ? ' · Locked' : '') +
-          '</button>'
-      );
-      b.addEventListener('click', () => handlers.askResponse(r.id));
-      respList.appendChild(b);
-    });
-    map.appendChild(respList);
-
-    if (view.lastWall) {
-      map.appendChild(
-        el(
-          '<div class="card wall" style="margin-top:8px">' +
-            I().icon('wall') +
-            ' <span class="tag wall">Dead end</span><div>' +
-            escapeHtml(view.lastWall.clueText || view.lastWall.text) +
-            '</div></div>'
-        )
-      );
-    }
-    frag.appendChild(map);
-
-    // Clues found
-    const cl = el('<div class="panel"></div>');
-    cl.appendChild(el('<h2>Clues on your map</h2>'));
-    cl.appendChild(el('<p class="hint">Only what you unlocked.</p>'));
-    if (!(view.clues || []).length) {
-      cl.appendChild(el('<div class="tag">None yet</div>'));
-    }
-    (view.clues || []).forEach((c) => {
-      if (c.deadEnd) {
-        cl.appendChild(
-          el(
-            '<div class="card wall">' +
-              I().icon('wall') +
-              ' <span class="tag wall">Dead end</span><div>' +
-              escapeHtml(c.text) +
-              '</div></div>'
-          )
-        );
-      } else {
-        cl.appendChild(
-          el(
-            '<div class="card good"><span class="tag' +
-              (c.verified ? ' verified' : '') +
-              '">' +
-              (c.verified ? 'Verified' : 'Clue') +
-              '</span><div>' +
-              escapeHtml(c.text) +
-              '</div></div>'
-          )
-        );
-      }
-    });
-    frag.appendChild(cl);
-
-    // Abilities
-    const ab = el('<div class="panel"></div>');
-    ab.appendChild(el('<h2>Abilities</h2>'));
-    ab.appendChild(el('<p class="hint">One use each this round.</p>'));
-    const row = el('<div class="ability-row"></div>');
-    (view.abilities || []).forEach((a) => {
-      const b = el(
-        '<button type="button" class="btn" ' +
-          (a.usesLeft < 1 ? 'disabled' : '') +
-          '>' +
-          I().icon(a.icon || 'star') +
-          ' ' +
-          escapeHtml(a.label) +
-          ' · ' +
-          a.usesLeft +
-          '</button>'
-      );
-      b.title = a.hint || '';
-      b.addEventListener('click', () => handlers.ability(a));
-      row.appendChild(b);
-    });
-    ab.appendChild(row);
-    frag.appendChild(ab);
-
-    const foot = el('<div class="footer-actions"></div>');
-    if (view.me.isHost) {
-      const end = el('<button type="button" class="btn btn-block">End round</button>');
-      end.addEventListener('click', handlers.endRound);
-      foot.appendChild(end);
-    } else {
-      foot.appendChild(el('<p class="hint">Host ends the round.</p>'));
-    }
-    frag.appendChild(foot);
-    return frag;
+  function snapOf(view) {
+    return {
+      tokens: view.tokens,
+      heard: (view.heardPhraseIds || []).length,
+      clues: (view.clues || []).length,
+      here: view.maze && view.maze.current ? view.maze.current.id : null,
+      wall: view.lastWall ? JSON.stringify(view.lastWall) : ''
+    };
   }
+
+  function resolvePending(view) {
+    if (!RS.pending) return;
+    const a = RS.snap, b = snapOf(view);
+    if (RS.pending === 'hear') {
+      if (b.heard > a.heard) RS.fb = { kind: 'good', icon: 'door', title: 'New door opened', step: 'door' };
+      else if (b.tokens < a.tokens) RS.fb = { kind: 'bad', icon: 'alert', title: 'Wrong · -1 guess', step: 'listen' };
+      else return;
+    } else if (RS.pending === 'ask') {
+      if (b.wall !== a.wall && view.lastWall) {
+        RS.fb = { kind: 'wall', icon: 'wall', title: 'Dead end', text: view.lastWall.clueText || view.lastWall.text, step: 'door' };
+      } else if (b.clues > a.clues) {
+        const c = view.clues[view.clues.length - 1];
+        RS.fb = { kind: 'good', icon: 'key', title: 'New clue', text: c.text, step: 'door' };
+      } else if (b.here !== a.here) {
+        RS.fb = { kind: 'good', icon: 'check', title: 'Something new', step: 'door' };
+      } else if (b.tokens < a.tokens) {
+        RS.fb = { kind: 'bad', icon: 'lock', title: 'Locked this round', step: 'door' };
+      } else return;
+    }
+    RS.pending = null;
+  }
+
+  function stepDots(step) {
+    const steps = [['talk', 'talk', 'Talk'], ['listen', 'hear', 'Listen'], ['door', 'door', 'Door']];
+    const bar = el('<div class="steps" data-step="' + step + '"></div>');
+    steps.forEach((s, i) => {
+      bar.appendChild(el('<div class="step' + (s[0] === step ? ' on' : '') + '">' + I().icon(s[1]) + '<span>' + s[2] + '</span></div>'));
+      if (i < 2) bar.appendChild(el('<div class="step-sep"></div>'));
+    });
+    return bar;
+  }
+
+  function gameTopbar(view, handlers, rerender) {
+    const bar = el('<div class="gbar"></div>');
+    const keys = el('<div class="keys" aria-label="' + view.tokens + ' guesses"></div>');
+    const max = Math.max(view.tokensPerRound || 4, view.tokens);
+    for (let i = 0; i < max; i++) keys.appendChild(el('<span class="k' + (i < view.tokens ? ' on' : '') + '">' + I().icon(i < view.tokens ? 'key' : 'keyEmpty') + '</span>'));
+    bar.appendChild(keys);
+    bar.appendChild(el('<div class="rnd">R' + (view.roundIndex + 1) + '/' + view.totalRounds + '</div>'));
+    bar.appendChild(el('<div class="role" title="' + escapeHtml(view.me.roleName) + '">' + I().icon(view.roleIcon || 'star') + '</div>'));
+    const m = el('<button type="button" class="btn btn-icon" data-act="menu" aria-label="Menu">' + I().icon('menu') + '</button>');
+    m.addEventListener('click', () => { RS.menu = !RS.menu; rerender(); });
+    bar.appendChild(m);
+    return bar;
+  }
+
+  function tabBar(rerender) {
+    const tabs = [['play', 'play', 'Play'], ['clues', 'list', 'Clues'], ['map', 'map', 'Map'], ['ability', 'star', 'Ability']];
+    const bar = el('<nav class="tabbar"></nav>');
+    tabs.forEach((t) => {
+      const b = el('<button type="button" class="tab' + (RS.tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + I().icon(t[1]) + '<span>' + t[2] + '</span></button>');
+      b.addEventListener('click', () => { RS.tab = t[0]; RS.menu = false; rerender(); });
+      bar.appendChild(b);
+    });
+    return bar;
+  }
+
+  function bigBtn(label, cls, onClick, attrs) {
+    const b = el('<button type="button" class="btn big ' + (cls || '') + '" ' + (attrs || '') + '>' + label + '</button>');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function talkStep(view, rerender) {
+    const s = el('<section class="stage"></section>');
+    s.appendChild(el('<h1 class="prompt">Say this out loud</h1>'));
+    const box = el('<div class="say-list"></div>');
+    (view.talkingPoints || []).forEach((t) => box.appendChild(el('<div class="say">' + escapeHtml(t.text) + '</div>')));
+    s.appendChild(box);
+    s.appendChild(bigBtn('Done', 'btn-primary', () => { RS.step = 'listen'; rerender(); }, 'data-act="talk-done"'));
+    return s;
+  }
+
+  function listenStep(view, handlers, rerender) {
+    const s = el('<section class="stage"></section>');
+    s.appendChild(el('<h1 class="prompt">What did you hear?</h1>'));
+    if (view.botLines && view.botLines.length) {
+      const bub = el('<div class="bubbles"></div>');
+      view.botLines.forEach((b) => bub.appendChild(el('<div class="bubble"><b>' + escapeHtml(b.name) + '</b> ' + b.lines.map(escapeHtml).join(' · ') + '</div>')));
+      s.appendChild(bub);
+    }
+    const grid = el('<div class="tiles"></div>');
+    const heard = new Set(view.heardPhraseIds || []);
+    (view.hearOptions || []).filter((o) => !heard.has(o.phraseId)).forEach((o) => {
+      const b = bigBtn(escapeHtml(o.text), 'tile', () => {
+        RS.pending = 'hear'; RS.snap = snapOf(view);
+        handlers.hear(o.phraseId, o.fromId);
+      }, 'data-act="hear-tile" data-phrase="' + o.phraseId + '"' + (view.tokens < 1 ? ' disabled' : ''));
+      grid.appendChild(b);
+    });
+    s.appendChild(grid);
+    s.appendChild(bigBtn('Nothing', '', () => { RS.step = 'door'; rerender(); }, 'data-act="hear-none"'));
+    return s;
+  }
+
+  function kindIcon(k) { return I().icon(k === 'topic' ? 'talk' : 'hand'); }
+
+  function doorStep(view, handlers, rerender) {
+    const s = el('<section class="stage"></section>');
+    const maze = view.maze || {};
+    const resps = maze.responses || [];
+    const exits = {};
+    (maze.exits || []).forEach((e) => { exits[e.dir] = e; });
+    if (RS.door) {
+      const d = RS.door;
+      const list = resps.filter((r) => (r.dir || '*') === d);
+      s.appendChild(el('<h1 class="prompt">How?</h1>'));
+      const col = el('<div class="choices"></div>');
+      list.forEach((r) => {
+        col.appendChild(bigBtn((r.locked ? I().icon('lock') : kindIcon(r.kind)) + '<span>' + escapeHtml(r.act || r.text) + '</span>', 'act act-' + r.kind + (r.locked ? ' is-locked' : ''), () => {
+          RS.pending = 'ask'; RS.snap = snapOf(view); RS.door = null;
+          handlers.askResponse(r.id);
+        }, 'data-act="resp" data-resp="' + r.id + '"' + (r.locked || view.tokens < 1 ? ' disabled' : '')));
+      });
+      s.appendChild(col);
+      s.appendChild(bigBtn('Back', 'btn-ghost', () => { RS.door = null; rerender(); }, 'data-act="door-back"'));
+      return s;
+    }
+    s.appendChild(el('<h1 class="prompt">What now?</h1>'));
+    const col = el('<div class="choices"></div>');
+    const dirs = [];
+    resps.forEach((r) => { const k = r.dir || '*'; if (dirs.indexOf(k) < 0) dirs.push(k); });
+    dirs.forEach((d) => {
+      const group = resps.filter((r) => (r.dir || '*') === d);
+      const allLocked = group.every((r) => r.locked);
+      const ex = exits[d] || {};
+      const label = ex.action || group[0].act || group[0].text;
+      const kind = ex.action ? ex.actionKind : group[0].kind;
+      col.appendChild(bigBtn((allLocked ? I().icon('lock') : kindIcon(kind)) + '<span>' + escapeHtml(label) + '</span>', 'act act-' + kind + (allLocked ? ' is-locked' : ''), () => { RS.door = d; rerender(); },
+        'data-door="' + d + '"' + (allLocked || view.tokens < 1 ? ' disabled' : '')));
+    });
+    const hidden = (maze.exits || []).filter((e) => e.kind === 'fog').length;
+    if (hidden) col.appendChild(el('<div class="hint center">' + I().icon('fog') + ' ' + hidden + ' more need a line</div>'));
+    s.appendChild(col);
+    s.appendChild(bigBtn('Listen again', 'btn-ghost', () => { RS.step = 'listen'; rerender(); }, 'data-act="to-listen"'));
+    return s;
+  }
+
+  function feedbackCard(rerender) {
+    const f = RS.fb;
+    const s = el('<section class="stage"></section>');
+    s.appendChild(el('<div class="fb fb-' + f.kind + '" data-fb="' + f.kind + '">' + I().icon(f.icon) + '<h1>' + escapeHtml(f.title) + '</h1>' + (f.text && f.text !== f.title ? '<p>' + escapeHtml(f.text) + '</p>' : '') + '</div>'));
+    s.appendChild(bigBtn('OK', 'btn-primary', () => { RS.step = f.step; RS.fb = null; rerender(); }, 'data-act="fb-ok"'));
+    return s;
+  }
+
+  function cluesTab(view) {
+    const s = el('<section class="stage scroll"></section>');
+    s.appendChild(el('<h1 class="prompt">Your clues</h1>'));
+    if (!(view.clues || []).length) s.appendChild(el('<p class="hint center">None yet</p>'));
+    (view.clues || []).forEach((c) => {
+      s.appendChild(el('<div class="card ' + (c.deadEnd ? 'wall' : 'good') + '">' + I().icon(c.deadEnd ? 'wall' : c.verified ? 'check' : 'key') + ' ' + escapeHtml(c.text) + '</div>'));
+    });
+    return s;
+  }
+
+  function mapTab(view) {
+    const s = el('<section class="stage"></section>');
+    s.appendChild(el('<h1 class="prompt">Your map</h1>'));
+    if (view.maze && view.maze.current) s.appendChild(el('<p class="hint center">Here: ' + escapeHtml(view.maze.current.label) + '</p>'));
+    const cells = (view.maze && view.maze.visibleCells) || [];
+    if (!cells.length) { s.appendChild(el('<p class="hint center">Fog</p>')); return s; }
+    const xs = cells.map((c) => c.x), ys = cells.map((c) => c.y);
+    const minX = Math.min.apply(null, xs), minY = Math.min.apply(null, ys);
+    const w = Math.max.apply(null, xs) - minX + 1, h = Math.max.apply(null, ys) - minY + 1;
+    const grid = el('<div class="mapgrid" style="grid-template-columns:repeat(' + w + ',1fr)"></div>');
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const c = cells.find((k) => k.x - minX === x && k.y - minY === y);
+      grid.appendChild(el('<div class="mcell' + (c ? (c.here ? ' here' : c.peeked ? ' peeked' : ' seen') : ' fog') + '">' + (c ? escapeHtml(c.label) : '') + '</div>'));
+    }
+    s.appendChild(grid);
+    s.appendChild(el('<p class="hint center">' + I().icon('fog') + ' ' + ((view.maze && view.maze.fogHiddenCount) || 0) + ' hidden</p>'));
+    return s;
+  }
+
+  function abilityTab(view, handlers) {
+    const s = el('<section class="stage"></section>');
+    s.appendChild(el('<h1 class="prompt">' + escapeHtml(view.me.roleName) + '</h1>'));
+    (view.abilities || []).forEach((a) => {
+      const b = bigBtn(I().icon(a.icon || 'star') + ' ' + escapeHtml(a.label) + ' <span class="uses">' + a.usesLeft + ' left</span>', 'btn-primary', () => handlers.ability(a), 'data-act="ability"' + (a.usesLeft < 1 ? ' disabled' : ''));
+      s.appendChild(b);
+      if (a.hint) s.appendChild(el('<p class="hint center">' + escapeHtml(a.hint) + '</p>'));
+    });
+    return s;
+  }
+
+  function menuSheet(view, handlers, rerender) {
+    const m = el('<div class="sheet" data-sheet="menu"></div>');
+    if (view.me.isHost) m.appendChild(bigBtn('End round', 'btn-primary', () => { RS.menu = false; handlers.endRound(); }, 'data-act="end-round"'));
+    else m.appendChild(el('<p class="hint center">Host ends the round</p>'));
+    m.appendChild(bigBtn(I().icon('home') + ' Home', '', () => { RS.menu = false; handlers.home(); }, 'data-act="back"'));
+    m.appendChild(bigBtn('Close', '', () => { RS.menu = false; rerender(); }, 'data-act="menu-close"'));
+    return m;
+  }
+
+  function roundScreen(view, handlers) {
+    const rerender = handlers.rerender || function () {};
+    if (RS.round !== view.roundIndex) {
+      Object.assign(RS, { round: view.roundIndex, step: 'talk', tab: 'play', door: null, pending: null, fb: null, menu: false });
+    }
+    resolvePending(view);
+    const frag = document.createElement('div');
+    frag.className = 'game';
+    frag.appendChild(gameTopbar(view, handlers, rerender));
+    const body = el('<main class="gbody"></main>');
+    if (RS.menu) body.appendChild(menuSheet(view, handlers, rerender));
+    else if (RS.tab === 'clues') body.appendChild(cluesTab(view));
+    else if (RS.tab === 'map') body.appendChild(mapTab(view));
+    else if (RS.tab === 'ability') body.appendChild(abilityTab(view, handlers));
+    else {
+      body.appendChild(stepDots(RS.fb ? RS.fb.step === 'listen' ? 'listen' : 'door' : RS.step));
+      if (RS.fb) body.appendChild(feedbackCard(rerender));
+      else if (RS.step === 'talk') body.appendChild(talkStep(view, rerender));
+      else if (RS.step === 'listen') body.appendChild(listenStep(view, handlers, rerender));
+      else body.appendChild(doorStep(view, handlers, rerender));
+    }
+    frag.appendChild(body);
+    frag.appendChild(tabBar(rerender));
+    const out = document.createDocumentFragment();
+    out.appendChild(frag);
+    return out;
+  }
+  roundScreen._state = RS;
 
   function calloutScreen(view, handlers) {
     const frag = document.createDocumentFragment();
