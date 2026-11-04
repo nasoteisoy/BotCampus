@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-11-03 08:36 MST",
+ "generated": "2026-11-03 18:29 MST",
  "items": [
   {
    "id": "story",
@@ -1749,6 +1749,19 @@
    "extras": [],
    "note": "d20 text mystery — play as Riley, roll checks, gather clues, accuse the killer",
    "thumb": "thumbs/last-toast.png"
+  },
+  {
+   "id": "coop-mystery",
+   "title": "Who Has the Key",
+   "type": "game",
+   "maker": "Dev F",
+   "makerSource": "Chumi co-op mystery V1 brief; staged for Dev A push",
+   "section": "live",
+   "updated": "2026-11-03",
+   "url": "games/coop-mystery/",
+   "extras": [],
+   "note": "Phone co-op mystery — hear phrases, ask maze spaces, fog map, vote who has the key",
+   "thumb": "thumbs/coop-mystery.png"
   }
  ]
 }

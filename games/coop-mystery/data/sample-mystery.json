@@ -1,0 +1,488 @@
+{
+  "id": "sample-key",
+  "title": "Who Has the Key",
+  "tagline": "Hear a line. Ask the space. Map your path.",
+  "rounds": 3,
+  "tokensPerRound": 4,
+  "deadEndExtraCost": 1,
+  "minPlayers": 2,
+  "maxPlayers": 4,
+  "suspects": [
+    {
+      "id": "p1",
+      "name": "Person 1"
+    },
+    {
+      "id": "p2",
+      "name": "Person 2"
+    },
+    {
+      "id": "p3",
+      "name": "Person 3"
+    }
+  ],
+  "solution": {
+    "suspectId": "p2",
+    "keyClueIds": [
+      "c_desk",
+      "c_camera",
+      "c_bag"
+    ]
+  },
+  "roles": [
+    {
+      "id": "role-a",
+      "name": "Role A",
+      "abilities": [
+        {
+          "id": "peek",
+          "label": "Peek",
+          "icon": "eye",
+          "usesPerRound": 1,
+          "hint": "Reveal one fog neighbor label"
+        }
+      ]
+    },
+    {
+      "id": "role-b",
+      "name": "Role B",
+      "abilities": [
+        {
+          "id": "force",
+          "label": "Ask",
+          "icon": "megaphone",
+          "usesPerRound": 1,
+          "hint": "Force one player to show a talk line"
+        }
+      ]
+    },
+    {
+      "id": "role-c",
+      "name": "Role C",
+      "abilities": [
+        {
+          "id": "swap",
+          "label": "Swap",
+          "icon": "swap",
+          "usesPerRound": 1,
+          "hint": "Swap one talk line with another player"
+        }
+      ]
+    },
+    {
+      "id": "role-d",
+      "name": "Role D",
+      "abilities": [
+        {
+          "id": "check",
+          "label": "Check",
+          "icon": "check",
+          "usesPerRound": 1,
+          "hint": "Verify one unlocked clue"
+        }
+      ]
+    }
+  ],
+  "phrases": [
+    {
+      "id": "ph_desk",
+      "text": "Saw it on the desk"
+    },
+    {
+      "id": "ph_drawer",
+      "text": "Checked the drawer"
+    },
+    {
+      "id": "ph_camera",
+      "text": "Hall cam blinked twice"
+    },
+    {
+      "id": "ph_hall",
+      "text": "Hall was quiet"
+    },
+    {
+      "id": "ph_bag",
+      "text": "Bag jingled"
+    },
+    {
+      "id": "ph_bag_noise",
+      "text": "Heard a zipper"
+    },
+    {
+      "id": "ph_mug",
+      "text": "Cold mug by the sink"
+    },
+    {
+      "id": "ph_break",
+      "text": "Break room light off"
+    }
+  ],
+  "clues": [
+    {
+      "id": "c_desk",
+      "text": "Key sat on desk at noon",
+      "deadEnd": false
+    },
+    {
+      "id": "c_drawer",
+      "text": "Drawer empty",
+      "deadEnd": true
+    },
+    {
+      "id": "c_camera",
+      "text": "Camera caught Person 2 near desk",
+      "deadEnd": false
+    },
+    {
+      "id": "c_hall_dead",
+      "text": "Dead end",
+      "deadEnd": true
+    },
+    {
+      "id": "c_bag",
+      "text": "Person 2 bag held a key ring",
+      "deadEnd": false
+    },
+    {
+      "id": "c_bag_dead",
+      "text": "Dead end",
+      "deadEnd": true
+    },
+    {
+      "id": "c_mug",
+      "text": "Mug print was Person 1",
+      "deadEnd": false
+    },
+    {
+      "id": "c_break_dead",
+      "text": "Dead end",
+      "deadEnd": true
+    }
+  ],
+  "maze": {
+    "startId": "s0",
+    "cells": [
+      {
+        "id": "s0",
+        "x": 1,
+        "y": 1,
+        "label": "Lobby",
+        "question": "Where first?",
+        "responses": [
+          {
+            "id": "s0_a",
+            "text": "Desk row",
+            "deadEnd": false,
+            "to": "s_desk",
+            "dir": "N",
+            "clueId": null,
+            "requiresPhraseId": null
+          },
+          {
+            "id": "s0_b",
+            "text": "Hall",
+            "deadEnd": false,
+            "to": "s_hall",
+            "dir": "E",
+            "clueId": null,
+            "requiresPhraseId": null
+          },
+          {
+            "id": "s0_c",
+            "text": "Stairs",
+            "deadEnd": true,
+            "to": null,
+            "dir": "S",
+            "clueId": "c_break_dead",
+            "requiresPhraseId": null
+          },
+          {
+            "id": "s0_d",
+            "text": "Break room",
+            "deadEnd": false,
+            "to": "s_break",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": "ph_mug"
+          }
+        ]
+      },
+      {
+        "id": "s_desk",
+        "x": 1,
+        "y": 0,
+        "label": "Desk",
+        "question": "Desk check?",
+        "responses": [
+          {
+            "id": "sd_a",
+            "text": "Key was here",
+            "deadEnd": false,
+            "to": "s_cam",
+            "dir": "E",
+            "clueId": "c_desk",
+            "requiresPhraseId": "ph_desk"
+          },
+          {
+            "id": "sd_b",
+            "text": "Open drawer",
+            "deadEnd": true,
+            "to": null,
+            "dir": "W",
+            "clueId": "c_drawer",
+            "requiresPhraseId": "ph_drawer"
+          },
+          {
+            "id": "sd_c",
+            "text": "Back",
+            "deadEnd": false,
+            "to": "s0",
+            "dir": "S",
+            "clueId": null,
+            "requiresPhraseId": null
+          }
+        ]
+      },
+      {
+        "id": "s_hall",
+        "x": 2,
+        "y": 1,
+        "label": "Hall",
+        "question": "Hall cam?",
+        "responses": [
+          {
+            "id": "sh_a",
+            "text": "Cam caught Person 2",
+            "deadEnd": false,
+            "to": "s_bag",
+            "dir": "E",
+            "clueId": "c_camera",
+            "requiresPhraseId": "ph_camera"
+          },
+          {
+            "id": "sh_b",
+            "text": "Hall quiet",
+            "deadEnd": true,
+            "to": null,
+            "dir": "N",
+            "clueId": "c_hall_dead",
+            "requiresPhraseId": "ph_hall"
+          },
+          {
+            "id": "sh_c",
+            "text": "Back",
+            "deadEnd": false,
+            "to": "s0",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": null
+          }
+        ]
+      },
+      {
+        "id": "s_cam",
+        "x": 2,
+        "y": 0,
+        "label": "Cam link",
+        "question": "Link desk to cam?",
+        "responses": [
+          {
+            "id": "sc_a",
+            "text": "Same noon window",
+            "deadEnd": false,
+            "to": "s_bag",
+            "dir": "S",
+            "clueId": null,
+            "requiresPhraseId": "ph_camera"
+          },
+          {
+            "id": "sc_b",
+            "text": "Wrong hour",
+            "deadEnd": true,
+            "to": null,
+            "dir": "E",
+            "clueId": "c_hall_dead",
+            "requiresPhraseId": null
+          },
+          {
+            "id": "sc_c",
+            "text": "Back desk",
+            "deadEnd": false,
+            "to": "s_desk",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": null
+          }
+        ]
+      },
+      {
+        "id": "s_bag",
+        "x": 3,
+        "y": 1,
+        "label": "Bag",
+        "question": "Whose bag?",
+        "responses": [
+          {
+            "id": "sb_a",
+            "text": "Person 2 key ring",
+            "deadEnd": false,
+            "to": "s_end",
+            "dir": "E",
+            "clueId": "c_bag",
+            "requiresPhraseId": "ph_bag"
+          },
+          {
+            "id": "sb_b",
+            "text": "Zipper only",
+            "deadEnd": true,
+            "to": null,
+            "dir": "N",
+            "clueId": "c_bag_dead",
+            "requiresPhraseId": "ph_bag_noise"
+          },
+          {
+            "id": "sb_c",
+            "text": "Back hall",
+            "deadEnd": false,
+            "to": "s_hall",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": null
+          }
+        ]
+      },
+      {
+        "id": "s_break",
+        "x": 0,
+        "y": 1,
+        "label": "Break",
+        "question": "Break room?",
+        "responses": [
+          {
+            "id": "sk_a",
+            "text": "Mug was Person 1",
+            "deadEnd": false,
+            "to": "s0",
+            "dir": "E",
+            "clueId": "c_mug",
+            "requiresPhraseId": "ph_mug"
+          },
+          {
+            "id": "sk_b",
+            "text": "Lights off",
+            "deadEnd": true,
+            "to": null,
+            "dir": "W",
+            "clueId": "c_break_dead",
+            "requiresPhraseId": "ph_break"
+          }
+        ]
+      },
+      {
+        "id": "s_end",
+        "x": 4,
+        "y": 1,
+        "label": "Lock box",
+        "question": "Done?",
+        "responses": [
+          {
+            "id": "se_a",
+            "text": "Hold here",
+            "deadEnd": false,
+            "to": "s_end",
+            "dir": "W",
+            "clueId": null,
+            "requiresPhraseId": null
+          }
+        ]
+      }
+    ],
+    "walledDirs": {
+      "s0": [],
+      "s_desk": [
+        "N"
+      ],
+      "s_hall": [
+        "S"
+      ],
+      "s_bag": [
+        "S"
+      ],
+      "s_end": [
+        "N",
+        "S",
+        "E"
+      ]
+    }
+  },
+  "roundTalkingPoints": [
+    {
+      "role-a": [
+        "ph_desk",
+        "ph_hall"
+      ],
+      "role-b": [
+        "ph_camera",
+        "ph_drawer"
+      ],
+      "role-c": [
+        "ph_bag",
+        "ph_break"
+      ],
+      "role-d": [
+        "ph_mug",
+        "ph_bag_noise"
+      ]
+    },
+    {
+      "role-a": [
+        "ph_bag",
+        "ph_mug"
+      ],
+      "role-b": [
+        "ph_desk",
+        "ph_break"
+      ],
+      "role-c": [
+        "ph_camera",
+        "ph_hall"
+      ],
+      "role-d": [
+        "ph_drawer",
+        "ph_bag_noise"
+      ]
+    },
+    {
+      "role-a": [
+        "ph_camera",
+        "ph_bag_noise"
+      ],
+      "role-b": [
+        "ph_bag",
+        "ph_hall"
+      ],
+      "role-c": [
+        "ph_desk",
+        "ph_mug"
+      ],
+      "role-d": [
+        "ph_drawer",
+        "ph_break"
+      ]
+    }
+  ],
+  "bots": [
+    {
+      "name": "Bot 1",
+      "roleId": "role-b"
+    },
+    {
+      "name": "Bot 2",
+      "roleId": "role-c"
+    },
+    {
+      "name": "Bot 3",
+      "roleId": "role-d"
+    }
+  ]
+}
