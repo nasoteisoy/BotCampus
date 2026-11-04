@@ -437,3 +437,18 @@ body {
 .btn-check {
   border-color: rgba(255, 210, 63, 0.55);
 }
+
+/* Read aloud toggle */
+.btn-tts[aria-pressed="true"] {
+  background: var(--acc);
+  color: var(--acc-ink);
+  border-color: var(--acc);
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  max-width: 100%;
+}

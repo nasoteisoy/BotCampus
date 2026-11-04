@@ -20,6 +20,10 @@
           <span class="evidence-label">Evidence</span>
           <span id="evidence-count" class="evidence-pill">0</span>
         </button>
+        <button type="button" class="btn btn-compact btn-tts" id="tts-toggle" aria-pressed="false" title="Read aloud (British narration)">
+          Read aloud
+        </button>
+        <button type="button" class="btn btn-compact btn-ghost" id="tts-replay" hidden title="Replay narration">Replay</button>
         <button type="button" class="btn btn-compact btn-ghost" id="restart-btn">Restart</button>
       </div>
     </header>
@@ -85,6 +89,7 @@
   <script src="mysteries/sample/mystery.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/engine.js"></script>
+  <script src="js/speech.js"></script>
   <script src="js/ui.js"></script>
 </body>
 </html>

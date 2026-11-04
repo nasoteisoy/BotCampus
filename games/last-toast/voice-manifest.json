@@ -1,0 +1,275 @@
+{
+  "voice": "en_GB-alan-medium",
+  "format": "mp3",
+  "bitrate": "40k",
+  "mysteryId": "rookwood-inn",
+  "clipCount": 53,
+  "totalBytes": 2890660,
+  "byId": {
+    "intro:body": {
+      "hash": "7a08658fa7305e586233a4306750dfd5795b4700",
+      "file": "audio/7a08658fa7305e586233a4306750dfd5795b4700.mp3",
+      "chars": 339
+    },
+    "intro:setting": {
+      "hash": "7c5d9bc9cdd2ab5a0d847420716c286e9710d040",
+      "file": "audio/7c5d9bc9cdd2ab5a0d847420716c286e9710d040.mp3",
+      "chars": 191
+    },
+    "intro:history": {
+      "hash": "7d8200fad0045931f90a32f007ca5e63dec8af65",
+      "file": "audio/7d8200fad0045931f90a32f007ca5e63dec8af65.mp3",
+      "chars": 169
+    },
+    "intro:player": {
+      "hash": "8e7748e32bf659f9ba1abd7633b709ca5cf4ca1d",
+      "file": "audio/8e7748e32bf659f9ba1abd7633b709ca5cf4ca1d.mp3",
+      "chars": 390
+    },
+    "scene:foyer": {
+      "hash": "255bf43082bdcd4bfe9e43101be69f1df48e8084",
+      "file": "audio/255bf43082bdcd4bfe9e43101be69f1df48e8084.mp3",
+      "chars": 286
+    },
+    "scene:dining": {
+      "hash": "4fc12e3ac8bd62d75c6e13f4bf64b16f62b4ca93",
+      "file": "audio/4fc12e3ac8bd62d75c6e13f4bf64b16f62b4ca93.mp3",
+      "chars": 279
+    },
+    "check:napkin-sleight:success": {
+      "hash": "cdb7560e4626768e94dbc47d8587b4d65a2345fc",
+      "file": "audio/cdb7560e4626768e94dbc47d8587b4d65a2345fc.mp3",
+      "chars": 139
+    },
+    "check:napkin-sleight:fail": {
+      "hash": "446ef2f353ff24357dc59a5c2ef75bf621ddb792",
+      "file": "audio/446ef2f353ff24357dc59a5c2ef75bf621ddb792.mp3",
+      "chars": 120
+    },
+    "check:napkin-sleight:critSuccess": {
+      "hash": "82706ca7a549cab9fc58314bdab22839d6b02a61",
+      "file": "audio/82706ca7a549cab9fc58314bdab22839d6b02a61.mp3",
+      "chars": 119
+    },
+    "check:napkin-sleight:critFail": {
+      "hash": "ff7e7c690423d1534bf63dae2c023b41b2d98f8e",
+      "file": "audio/ff7e7c690423d1534bf63dae2c023b41b2d98f8e.mp3",
+      "chars": 177
+    },
+    "check:sideboard-invest:success": {
+      "hash": "45d02405758927aee9dd29c5151b5502d45d67fd",
+      "file": "audio/45d02405758927aee9dd29c5151b5502d45d67fd.mp3",
+      "chars": 121
+    },
+    "check:sideboard-invest:fail": {
+      "hash": "fc089baba325a8537e043afdb8a8ae745f9842bd",
+      "file": "audio/fc089baba325a8537e043afdb8a8ae745f9842bd.mp3",
+      "chars": 125
+    },
+    "check:sideboard-invest:critSuccess": {
+      "hash": "93d66856f6a2d460a516dd797343e0dcea0dd49c",
+      "file": "audio/93d66856f6a2d460a516dd797343e0dcea0dd49c.mp3",
+      "chars": 114
+    },
+    "check:sideboard-invest:critFail": {
+      "hash": "7d07b55b70bd331b0d9e85e0ac3db7922c74f90e",
+      "file": "audio/7d07b55b70bd331b0d9e85e0ac3db7922c74f90e.mp3",
+      "chars": 120
+    },
+    "scene:lounge": {
+      "hash": "68d831cf783f2b36e9937863e6fc4b143c7ca2f0",
+      "file": "audio/68d831cf783f2b36e9937863e6fc4b143c7ca2f0.mp3",
+      "chars": 133
+    },
+    "scene:kitchen": {
+      "hash": "4a21d609c05d48778d994233efe4192635fe7fa3",
+      "file": "audio/4a21d609c05d48778d994233efe4192635fe7fa3.mp3",
+      "chars": 165
+    },
+    "check:chalk-insight:success": {
+      "hash": "f5aa984eb79df539e159b8796cd979cc7b57abec",
+      "file": "audio/f5aa984eb79df539e159b8796cd979cc7b57abec.mp3",
+      "chars": 141
+    },
+    "check:chalk-insight:fail": {
+      "hash": "58a3887734e841e5f270b4bd0e9efcb06b8aa89c",
+      "file": "audio/58a3887734e841e5f270b4bd0e9efcb06b8aa89c.mp3",
+      "chars": 113
+    },
+    "check:chalk-insight:critFail": {
+      "hash": "20eb30c39836d7910ec46d4e44f324aad4503089",
+      "file": "audio/20eb30c39836d7910ec46d4e44f324aad4503089.mp3",
+      "chars": 114
+    },
+    "scene:upstairs": {
+      "hash": "a9cbe30ceb72b761f4557315ea1568d9a954f610",
+      "file": "audio/a9cbe30ceb72b761f4557315ea1568d9a954f610.mp3",
+      "chars": 112
+    },
+    "scene:cellar": {
+      "hash": "620cc38b0e2d0f4795ce098ff3f27b1943eeb4bc",
+      "file": "audio/620cc38b0e2d0f4795ce098ff3f27b1943eeb4bc.mp3",
+      "chars": 171
+    },
+    "scene:talk-clara": {
+      "hash": "30206195c75cb7ee8628fc670dde9088b2ddcfa2",
+      "file": "audio/30206195c75cb7ee8628fc670dde9088b2ddcfa2.mp3",
+      "chars": 221
+    },
+    "scene:talk-clara-will": {
+      "hash": "6182ad315da5297e3f7471cb2183cf4f56379af7",
+      "file": "audio/6182ad315da5297e3f7471cb2183cf4f56379af7.mp3",
+      "chars": 139
+    },
+    "scene:talk-marcus": {
+      "hash": "cb1f2487e9abf6d92b711e85a16eb2e29848138f",
+      "file": "audio/cb1f2487e9abf6d92b711e85a16eb2e29848138f.mp3",
+      "chars": 197
+    },
+    "scene:talk-marcus-debt": {
+      "hash": "38e49600b0953c4f433ce7d62939d8109144883b",
+      "file": "audio/38e49600b0953c4f433ce7d62939d8109144883b.mp3",
+      "chars": 178
+    },
+    "scene:talk-marcus-mud": {
+      "hash": "668ff15d0868226d4e13a4966fde53a2900fd723",
+      "file": "audio/668ff15d0868226d4e13a4966fde53a2900fd723.mp3",
+      "chars": 107
+    },
+    "scene:talk-helen": {
+      "hash": "8c04f9a1decbc56615e8cdf664af89da36643879",
+      "file": "audio/8c04f9a1decbc56615e8cdf664af89da36643879.mp3",
+      "chars": 158
+    },
+    "scene:talk-helen-vials": {
+      "hash": "11ee2d76e0c53c452b460ac284c1d31cbe949399",
+      "file": "audio/11ee2d76e0c53c452b460ac284c1d31cbe949399.mp3",
+      "chars": 153
+    },
+    "scene:talk-helen-secret": {
+      "hash": "79c5bf8d5ccf28000c101f307e8094f636e8feaf",
+      "file": "audio/79c5bf8d5ccf28000c101f307e8094f636e8feaf.mp3",
+      "chars": 113
+    },
+    "scene:talk-theo": {
+      "hash": "7823eff9a685d0c98dc0ed8a7ccf9b645d00e33a",
+      "file": "audio/7823eff9a685d0c98dc0ed8a7ccf9b645d00e33a.mp3",
+      "chars": 212
+    },
+    "check:theo-persuade:success": {
+      "hash": "1701b5fc50a09f5c1577c55976a3a447b4832623",
+      "file": "audio/1701b5fc50a09f5c1577c55976a3a447b4832623.mp3",
+      "chars": 167
+    },
+    "check:theo-persuade:fail": {
+      "hash": "4bf13dd7d7bc3fd962099a04d593e45161149fe1",
+      "file": "audio/4bf13dd7d7bc3fd962099a04d593e45161149fe1.mp3",
+      "chars": 104
+    },
+    "check:theo-persuade:critSuccess": {
+      "hash": "5f2595741a91a7cc52244a7dcd636937a1822f59",
+      "file": "audio/5f2595741a91a7cc52244a7dcd636937a1822f59.mp3",
+      "chars": 130
+    },
+    "check:theo-persuade:critFail": {
+      "hash": "c84cb28b701744f404f61e2aa8655d66b5f19a49",
+      "file": "audio/c84cb28b701744f404f61e2aa8655d66b5f19a49.mp3",
+      "chars": 120
+    },
+    "scene:talk-theo-cork": {
+      "hash": "9cb0d9db948ce3b85239abfd2814d59b128697e4",
+      "file": "audio/9cb0d9db948ce3b85239abfd2814d59b128697e4.mp3",
+      "chars": 88
+    },
+    "scene:talk-theo-spill": {
+      "hash": "559fc28663f890caef01fff0bcbc79b4fdcbae8e",
+      "file": "audio/559fc28663f890caef01fff0bcbc79b4fdcbae8e.mp3",
+      "chars": 174
+    },
+    "scene:talk-iris": {
+      "hash": "0d9c70436bd22c66bce49be90dff6fc2414e1910",
+      "file": "audio/0d9c70436bd22c66bce49be90dff6fc2414e1910.mp3",
+      "chars": 137
+    },
+    "check:iris-insight:success": {
+      "hash": "9d49fae28b3d4d53a0ff57b41e03a88c268bc13c",
+      "file": "audio/9d49fae28b3d4d53a0ff57b41e03a88c268bc13c.mp3",
+      "chars": 149
+    },
+    "check:iris-insight:fail": {
+      "hash": "3dfd6080fe234e1d554598ed3782624b6aa7ff4c",
+      "file": "audio/3dfd6080fe234e1d554598ed3782624b6aa7ff4c.mp3",
+      "chars": 57
+    },
+    "evidence:poisoned-glass": {
+      "hash": "7ee48339354026b2496c3de31d0855d1742b4d4f",
+      "file": "audio/7ee48339354026b2496c3de31d0855d1742b4d4f.mp3",
+      "chars": 134
+    },
+    "evidence:debt-ledger": {
+      "hash": "0d0fc2998995f40ff5c8c294df387abbf40a6170",
+      "file": "audio/0d0fc2998995f40ff5c8c294df387abbf40a6170.mp3",
+      "chars": 152
+    },
+    "evidence:empty-vial": {
+      "hash": "532eaca7f32257ff7f65a7338e002bf3ae29a1bd",
+      "file": "audio/532eaca7f32257ff7f65a7338e002bf3ae29a1bd.mp3",
+      "chars": 126
+    },
+    "evidence:garden-mud": {
+      "hash": "4850a4a65e1ba6133f44b8e75de96b6b4b2c7900",
+      "file": "audio/4850a4a65e1ba6133f44b8e75de96b6b4b2c7900.mp3",
+      "chars": 143
+    },
+    "evidence:helen-kit": {
+      "hash": "4bb9b99fdd1e0e2db87885683e11bf7033e197f5",
+      "file": "audio/4bb9b99fdd1e0e2db87885683e11bf7033e197f5.mp3",
+      "chars": 115
+    },
+    "evidence:theo-corkscrew": {
+      "hash": "13fa35f53e51871a10378482348991ce86df4141",
+      "file": "audio/13fa35f53e51871a10378482348991ce86df4141.mp3",
+      "chars": 127
+    },
+    "evidence:will-draft": {
+      "hash": "cce6d0b4f76309eed044f39b396d7dd6004d7567",
+      "file": "audio/cce6d0b4f76309eed044f39b396d7dd6004d7567.mp3",
+      "chars": 113
+    },
+    "evidence:marcus-ask": {
+      "hash": "ae249b9f21c0554ce00c395d3793de0704ee897b",
+      "file": "audio/ae249b9f21c0554ce00c395d3793de0704ee897b.mp3",
+      "chars": 138
+    },
+    "evidence:cellar-bribe": {
+      "hash": "f024502fef391ad86ab9f423bdca8e14e3d33528",
+      "file": "audio/f024502fef391ad86ab9f423bdca8e14e3d33528.mp3",
+      "chars": 147
+    },
+    "ending:win": {
+      "hash": "467571a10fb06bc6832e1d77f1de79d7fcb72198",
+      "file": "audio/467571a10fb06bc6832e1d77f1de79d7fcb72198.mp3",
+      "chars": 353
+    },
+    "ending:lose": {
+      "hash": "24ef187264325142cf920956f63058e4434ae757",
+      "file": "audio/24ef187264325142cf920956f63058e4434ae757.mp3",
+      "chars": 295
+    },
+    "accuse:lead": {
+      "hash": "79ed31f83be3ae991028837b49b4ff574f7563a2",
+      "file": "audio/79ed31f83be3ae991028837b49b4ff574f7563a2.mp3",
+      "chars": 76
+    },
+    "ending:title:win": {
+      "hash": "62ffdaa5bc44d2756a322aab12962a0b8738e845",
+      "file": "audio/62ffdaa5bc44d2756a322aab12962a0b8738e845.mp3",
+      "chars": 25
+    },
+    "ending:title:lose": {
+      "hash": "cda91b061241ede69a5ec27db722e06dee5b07a7",
+      "file": "audio/cda91b061241ede69a5ec27db722e06dee5b07a7.mp3",
+      "chars": 17
+    }
+  }
+}
