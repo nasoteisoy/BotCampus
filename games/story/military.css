@@ -1,134 +1,111 @@
-/* Military Organization v2 — roomy explorer (no fit-to-force SVG) */
-:root {
-  --mil-gold: #d4af5a;
-  --mil-gold2: #f0d78c;
-  --mil-navy: #14213d;
-  --mil-panel: #10131c;
-  --mil-line: #2a2f3d;
-  --mil-dim: #a7a99f;
-  --mil-ok: #2fbf8a;
-  --mil-rel: #7aa2ff;
-  --mil-prop: #e0b85a;
-}
-
-.mil-lede { color: #d8d3c3; max-width: 42rem; font-size: 1.05rem; line-height: 1.55; }
-.mil-section { margin: 2.5rem 0 1rem; }
-
-.mil-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
-.mil-tabs [role="tab"] {
-  flex: 1 1 9rem; min-height: 48px; padding: 12px 16px; border-radius: 999px;
-  border: 1px solid var(--mil-line); background: var(--mil-panel); color: #ece8dc;
-  font: 700 16px system-ui, sans-serif; cursor: pointer;
-}
-.mil-tabs [role="tab"][aria-selected="true"] {
-  background: var(--mil-gold); border-color: var(--mil-gold); color: #1a1405;
-}
-
-.mil-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 1rem; color: var(--mil-dim); font-size: 14px; }
-.mil-legend i { display: inline-block; width: 28px; height: 0; border-top: 3px solid var(--mil-gold); vertical-align: middle; margin-right: 6px; }
-.mil-legend i.rel { border-top-style: dashed; border-top-color: var(--mil-rel); }
-
-.sticky-tools {
-  position: sticky; top: calc(var(--hdr, 96px)); z-index: 15;
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  padding: 10px 0; background: rgba(8,9,13,.94); backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--mil-line); margin-bottom: 12px;
-}
-.sticky-tools h2 { flex: 1 1 auto; margin: 0; font-size: clamp(20px, 4vw, 28px); border: 0; padding: 0; }
-.sticky-tools button {
-  min-height: 44px; padding: 10px 14px; border-radius: 12px;
-  border: 1px solid var(--mil-gold); background: var(--mil-navy); color: var(--mil-gold2);
-  font-weight: 700; cursor: pointer;
-}
-
-.badge {
-  display: inline-block; font: 800 11px system-ui, sans-serif; letter-spacing: .05em;
-  text-transform: uppercase; border-radius: 6px; padding: 3px 8px; vertical-align: middle; margin-left: 6px;
-}
-.badge.confirmed { background: #0f2a22; color: var(--mil-ok); border: 1px solid #1f8a63; }
-.badge.proposed { background: #2a220c; color: var(--mil-prop); border: 1px solid var(--mil-gold); }
-
-.edge-pill {
-  display: inline-block; font: 800 11px system-ui, sans-serif; letter-spacing: .04em;
-  text-transform: uppercase; border-radius: 999px; padding: 3px 10px; margin-bottom: 6px;
-}
-.edge-pill.cmd { background: #2a220c; color: var(--mil-gold2); border: 1px solid var(--mil-gold); }
-.edge-pill.rel { background: #121a2e; color: #b7c8ff; border: 1px solid #3a5080; }
-
-.explorer-host { max-width: 1100px; }
-.view-blurb { color: #d8d3c3; margin: 0 0 1rem; font-size: 1.05rem; }
-
-.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0 0 1rem; align-items: center; }
-.crumbs li { display: flex; align-items: center; gap: 6px; color: var(--mil-dim); font-size: 14px; }
-.crumbs li:not(:last-child)::after { content: "›"; margin-left: 6px; color: var(--mil-gold); }
-.crumb-btn, .text-drill {
-  background: transparent; border: 0; color: var(--mil-gold2); font: inherit; font-weight: 700;
-  text-decoration: underline; cursor: pointer; min-height: 44px; padding: 4px 2px;
-}
-
-.focus-card {
-  background: linear-gradient(160deg, #182338, var(--mil-panel));
-  border: 1px solid #3a3220; border-radius: 16px; padding: 20px 22px; margin-bottom: 1.25rem;
-}
-.focus-card .kicker { margin: 0 0 6px; color: var(--mil-dim); font-size: 14px; }
-.focus-card h3 { margin: 0 0 14px; color: var(--mil-gold2); font-size: clamp(22px, 5vw, 30px); }
-.focus-grid { display: grid; gap: 10px; margin-bottom: 12px; }
-.focus-card h4 { margin: 1rem 0 .35rem; color: var(--mil-gold); font-size: 1.05rem; border: 0; }
-.focus-card .prose { margin: 0; color: #e8e4d6; font-size: 1.08rem; line-height: 1.6; }
-
-.branches-h { margin: 0 0 .75rem; color: var(--mil-gold2); border: 0; font-size: 1.15rem; }
-
-.branch-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 720px) {
-  .branch-grid { grid-template-columns: 1fr 1fr; }
-  .focus-grid { grid-template-columns: 1fr 1fr; }
-}
-@media (min-width: 1100px) {
-  .branch-grid { grid-template-columns: 1fr 1fr 1fr; }
-}
-
-.unit-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
-  width: 100%; min-height: 140px; padding: 16px 18px; border-radius: 14px; cursor: pointer;
-  background: var(--mil-panel); border: 1px solid var(--mil-line); color: #ece8dc;
-  font: inherit; transition: border-color .15s, transform .15s;
-}
-.unit-card:hover, .unit-card:focus-visible { border-color: var(--mil-gold); transform: translateY(-1px); outline: none; }
-.unit-card .card-type { font-size: 13px; color: var(--mil-dim); }
-.unit-card .card-name { font: 700 1.2rem Georgia, serif; color: var(--mil-gold2); }
-.unit-card .card-lead, .unit-card .card-str { font-size: 0.98rem; color: #d8d3c3; line-height: 1.4; }
-.unit-card .card-hint { margin-top: auto; color: var(--mil-gold); font-weight: 700; font-size: 14px; }
-
-.unit-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 1rem; }
-.unit-filter {
-  min-height: 44px; padding: 8px 12px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--mil-line); background: #0c1018; color: #d8d3c3; font-weight: 600;
-}
-.unit-filter.is-on { background: var(--mil-gold); color: #1a1405; border-color: var(--mil-gold); }
-
-.type-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
-@media (min-width: 800px) { .type-grid { grid-template-columns: 1fr 1fr; } }
-
-.type-card {
-  background: var(--mil-panel); border: 1px solid var(--mil-line); border-radius: 16px; padding: 18px;
-}
-.type-card header { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
-.type-card h3 { margin: 0; color: var(--mil-gold2); font-size: 1.25rem; }
-.type-card h4 { margin: 0.9rem 0 0.25rem; color: var(--mil-gold); font-size: 0.95rem; border: 0; }
-.type-card p, .type-card li { color: #e8e4d6; font-size: 1.02rem; line-height: 1.55; margin: 0; }
-.type-card ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
-.type-icon { color: var(--mil-gold); flex: 0 0 auto; }
-
-.glossary { background: #0c1018; border: 1px solid var(--mil-line); border-radius: 16px; padding: 18px 20px; }
-.glossary h3 { margin-top: 0; color: var(--mil-gold2); border: 0; }
-.glossary dt { color: var(--mil-gold); font-weight: 700; margin-top: 0.7rem; }
-.glossary dd { margin: 0.2rem 0 0; color: #d8d3c3; line-height: 1.5; }
-
+/* Military Organization v3 — Danish-style symbol chart */
 .mil-marker { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* Hide any leftover v1 graph hooks if present */
+.mil-main { max-width: none; padding-inline: clamp(0.75rem, 2vw, 1.5rem); }
+.mil-lede { max-width: 62rem; line-height: 1.55; font-size: 1.05rem; }
 
+.mil-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.75rem; }
+.mil-tabs [role="tab"] {
+  font: inherit; font-size: 1rem; padding: 0.55rem 1rem; border-radius: 999px;
+  border: 1px solid #c9c2b0; background: #fffef8; color: #1a1a1a; cursor: pointer;
+}
+.mil-tabs [role="tab"][aria-selected="true"] {
+  background: #1a1a1a; color: #f7f4ea; border-color: #1a1a1a;
+}
+
+.mil-toolbar.sticky-tools {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
+  position: sticky; top: 0; z-index: 5;
+  padding: 0.55rem 0; background: rgba(247,244,234,0.94); backdrop-filter: blur(6px);
+  border-bottom: 1px solid #ddd6c4;
+}
+.mil-toolbar h2 { font-size: 1.15rem; margin: 0 0.5rem 0 0; flex: 1 1 auto; }
+.mil-toolbar button {
+  font: inherit; font-size: 0.92rem; padding: 0.4rem 0.7rem;
+  border: 1px solid #b8b09c; border-radius: 8px; background: #fff; cursor: pointer;
+}
+.mil-toolbar button:hover { background: #efe9da; }
+
+/* Paper chart viewport — native large SVG, pan/zoom, NO auto shrink */
+.chart-viewport.mil-chart-host {
+  position: relative;
+  width: 100%;
+  height: min(78vh, 920px);
+  min-height: 420px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: none; /* custom pan/pinch */
+  background: #f7f4ea; /* paper / ivory */
+  border: 1px solid #cfc7b4;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px #fff8;
+  cursor: grab;
+}
+.chart-viewport.mil-chart-host.is-panning { cursor: grabbing; }
+.chart-viewport .mil-chart-svg {
+  display: block;
+  /* actual pixel size from width/height attrs — not max-width 100% */
+  max-width: none;
+  height: auto;
+  transform-origin: 0 0;
+  user-select: none;
+}
+.chart-hint { font-size: 0.95rem; color: #444; max-width: 56rem; }
+
+.mil-node { cursor: pointer; }
+.mil-node:focus .tac-frame,
+.mil-node:hover .tac-frame { stroke: #0b57d0; stroke-width: 2.6; }
+
+.detail-slot {
+  position: relative; margin-top: 0.75rem;
+}
+.detail-overlay {
+  position: relative;
+  background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px;
+  padding: 1rem 1.1rem 1.1rem; max-width: 40rem;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+}
+.detail-overlay .detail-close {
+  position: absolute; top: 0.4rem; right: 0.5rem;
+  border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; line-height: 1;
+}
+.detail-overlay .kicker { font-size: 0.85rem; color: #555; margin: 0 0 0.25rem; }
+.detail-overlay h3 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.detail-overlay .prose { line-height: 1.5; }
+
+.badge { display: inline-block; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px; vertical-align: middle; }
+.badge.confirmed { background: #d9ead3; color: #1b4332; }
+.badge.proposed { background: #fce5cd; color: #7a4a00; }
+
+.mil-section { margin-top: 2rem; max-width: 70rem; }
+.chart-legend { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.leg-block h3 { font-size: 1.05rem; margin: 0 0 0.4rem; }
+.leg-list, .leg-roles { list-style: none; padding: 0; margin: 0; }
+.leg-list li, .leg-roles li { display: flex; align-items: center; gap: 0.55rem; margin: 0.35rem 0; font-size: 0.95rem; }
+.ech-sym { font-family: Georgia, serif; font-weight: 700; min-width: 2.5rem; }
+
+/* Gallery retained */
+.unit-filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0 1rem; }
+.unit-filter {
+  font: inherit; font-size: 0.88rem; padding: 0.35rem 0.65rem; border-radius: 999px;
+  border: 1px solid #c9c2b0; background: #fff; cursor: pointer;
+}
+.unit-filter.is-on { background: #1a1a1a; color: #f7f4ea; border-color: #1a1a1a; }
+.type-grid { display: grid; gap: 0.85rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.type-card {
+  background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px; padding: 0.85rem 1rem;
+}
+.type-card header { display: flex; gap: 0.65rem; align-items: flex-start; }
+.type-icon { color: #5a4630; flex: 0 0 auto; }
+.type-card h3 { margin: 0; font-size: 1.05rem; }
+.type-card h4 { margin: 0.65rem 0 0.2rem; font-size: 0.9rem; }
+.type-card p, .type-card li { font-size: 0.92rem; line-height: 1.45; }
+
+.glossary dt { font-weight: 700; margin-top: 0.5rem; }
+.glossary dd { margin: 0.15rem 0 0.4rem; }
+.note { font-size: 0.92rem; color: #444; }
+
+@media (max-width: 640px) {
+  .chart-viewport.mil-chart-host { height: 70vh; min-height: 360px; }
+  .mil-toolbar h2 { flex: 1 1 100%; }
+}

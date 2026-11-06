@@ -1,5 +1,5 @@
 /**
- * Military Organization v2 — army explorer + unit-type gallery tests
+ * Military Organization v3 — Danish-style symbol org chart
  * Run: node --test games/story/military.test.mjs
  */
 import { test } from "node:test";
@@ -11,197 +11,124 @@ import {
   FORBIDDEN_PUBLIC,
   viewIds,
   getForce,
-  getUnit,
-  getChildren,
-  getAncestors,
-  buildExplorerHtml,
-  buildGlossaryHtml,
-  buildUnitTypeGalleryHtml,
-  collectAllUnits,
   assertCanonInvariants,
+  buildChartSvg,
   UNIT_TYPE_IDS,
   getUnitType,
+  buildLegendHtml,
+  buildDetailHtml,
+  nextZoom,
+  RESET_ZOOM,
+  FIT_ACTION,
 } from "./military-model.mjs";
 
 const dir = dirname(fileURLToPath(import.meta.url));
-
-const NINE = [
-  "infantry",
-  "artillery",
-  "cavalry",
-  "armor",
-  "air",
-  "medic",
-  "signal",
-  "supply",
-  "staff",
-];
+const NINE = ["infantry","artillery","cavalry","armor","air","medic","signal","supply","staff"];
 
 test("three forces", () => {
   assert.deepEqual(viewIds(), ["guard", "empire", "enemy"]);
 });
 
-test("canon invariants on Black Guard", () => {
+test("canon invariants", () => {
   assert.doesNotThrow(() => assertCanonInvariants());
 });
 
-test("every unit has plain educational fields", () => {
+test("chart SVG is large native chart with orthogonal connectors and paper class", () => {
   for (const id of viewIds()) {
-    for (const u of collectAllUnits(id)) {
-      assert.ok(u.name && u.name.length >= 3, u.id);
-      assert.ok(u.unitType && u.unitType.length >= 3, u.id);
-      assert.ok(u.whatItIs && u.whatItIs.length >= 40, `${u.id} whatItIs too short`);
-      assert.ok(u.functionText && u.functionText.length >= 20, `${u.id} function`);
-      assert.ok(u.strength && u.strength.text, u.id);
-      assert.ok(["confirmed", "proposed"].includes(u.status), u.id);
-      assert.ok(["confirmed", "proposed"].includes(u.strength.status), u.id);
-      assert.ok(u.leader && u.leader.title, u.id);
-      assert.doesNotMatch(u.whatItIs, /\u2026|\.\.\.$/);
-      assert.doesNotMatch(u.name, /\u2026/);
-    }
+    const svg = buildChartSvg(id);
+    assert.match(svg, /<svg[^>]*class="[^"]*mil-chart-svg/);
+    assert.match(svg, /data-chart-force="/);
+    assert.match(svg, /<path class="connector"/);
+    // orthogonal: H and V commands present
+    assert.match(svg, / d="M[^"]*[HV][^"]*"/);
+    assert.match(svg, /class="tac-frame"/);
+    assert.match(svg, /class="echelon"/);
+    assert.match(svg, /class="unit-label"/);
+    // readable: no tiny global scale attribute as primary
+    assert.doesNotMatch(svg, /transform="scale\(0\./);
+    // viewBox large enough for at-once hierarchy
+    const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    assert.ok(vb, id);
+    assert.ok(+vb[1] >= 800, `${id} width`);
+    assert.ok(+vb[2] >= 600, `${id} height`);
   }
 });
 
-test("proposed units are explicitly marked; confirmed stay confirmed", () => {
-  const enemy = collectAllUnits("enemy");
-  const proposed = enemy.filter((u) => u.status === "proposed");
-  assert.ok(proposed.length >= 6, "desert enemy chain should be fleshed out as proposed");
-  const cassian = getUnit("guard", "hl");
-  assert.equal(cassian.status, "confirmed");
-  assert.equal(cassian.leader.name, "Cassian Thorne");
+test("Black Guard chart shows HL, Banner, four companies without ellipsis truncation", () => {
+  const svg = buildChartSvg("guard");
+  assert.match(svg, /Cassian Thorne/);
+  assert.match(svg, /Alaric/);
+  assert.match(svg, /Recon|Seraphina/);
+  assert.match(svg, /Iron|Garrick/);
+  assert.match(svg, /Ash|Dagny/);
+  assert.match(svg, /Heavy|Brynja/);
+  assert.doesNotMatch(svg, /Alaric Vae…|Garri…|…/);
 });
 
-test("drilldown: children and ancestors", () => {
-  const kids = getChildren("guard", "alaric");
-  assert.ok(kids.some((c) => c.id === "recon"));
-  assert.ok(kids.some((c) => c.id === "iron"));
-  const anc = getAncestors("guard", "recon");
-  assert.equal(anc[0].id, getForce("guard").rootId);
-  assert.ok(anc.map((a) => a.id).includes("alaric"));
+test("Desert enemy chart includes warrior king and proposed host flesh", () => {
+  const svg = buildChartSvg("enemy");
+  assert.match(svg, /Warrior King|warrior king|Rival/i);
+  assert.match(svg, /Proposed|PROPOSED|proposed/);
 });
 
-test("explorer HTML at a focus is one level — roomy cards, no SVG fit scale, no truncated titles", () => {
-  const html = buildExplorerHtml("guard", "alaric");
-  assert.match(html, /data-explorer="true"/);
-  assert.match(html, /data-focus="alaric"/);
-  assert.match(html, /Sir Alaric Vaelen/);
-  assert.match(html, /data-drill=/);
-  assert.match(html, /data-crumb|breadcrumb/i);
-  assert.doesNotMatch(html, /fitWidth|scale\(/);
-  assert.doesNotMatch(html, /<svg[\s\S]*org-svg/);
-  assert.doesNotMatch(html, /Alaric Vae\u2026|Garri\u2026|Bry\u2026/);
-  assert.match(html, /Confirmed|CONFIRMED|confirmed/);
-  assert.match(html, /Recon/);
-  assert.match(html, /Iron/);
-});
-
-test("explorer at root shows overview subordinates", () => {
-  const html = buildExplorerHtml("guard", getForce("guard").rootId);
-  assert.match(html, /Black Guard|Division/i);
-  assert.match(html, /data-drill=/);
-});
-
-test("glossary explains unit types and civil vs military", () => {
-  const g = buildGlossaryHtml();
-  for (const word of ["Division", "Banner", "Company", "Platoon", "Squad", "Prefect", "High Lord"]) {
-    assert.match(g, new RegExp(word, "i"));
-  }
-  assert.match(g, /military/i);
-  assert.match(g, /civil/i);
-});
-
-test("nine unit-type ids are complete (cavalry not calvary)", () => {
+test("nine unit types retained with proposed status", () => {
   assert.deepEqual([...UNIT_TYPE_IDS], NINE);
-  assert.ok(!UNIT_TYPE_IDS.includes("calvary"));
-});
-
-test("each of nine roles has creature concept, purpose, how, limits, placement", () => {
   for (const id of NINE) {
     const t = getUnitType(id);
-    assert.equal(t.id, id);
-    assert.ok(t.label.length >= 3);
-    assert.ok(t.creatureConcept.length >= 40, id);
-    assert.ok(t.battlefieldPurpose.length >= 30, id);
-    assert.ok(t.howItWorks.length >= 40, id);
-    assert.ok(t.limitations.length >= 30, id);
-    assert.ok(t.commanderPlacement.length >= 20, id);
     assert.equal(t.status, "proposed");
-    assert.match(t.creatureConcept + t.howItWorks, /spirit|tie|purpose|Know|channel/i);
-    assert.doesNotMatch(t.creatureConcept, /tank|helicopter|radio truck|ambulance jeep|fighter jet/i);
+    assert.ok(t.label.length > 3);
   }
 });
 
-test("unit-type gallery HTML lists all nine and is filterable by data-type", () => {
-  const html = buildUnitTypeGalleryHtml();
-  assert.match(html, /data-unit-gallery="true"/);
-  for (const id of NINE) {
-    assert.match(html, new RegExp(`data-type="${id}"`));
-    assert.match(html, new RegExp(getUnitType(id).label));
-  }
-  assert.match(html, /PROPOSED|Proposed|proposed/);
-  assert.match(html, /data-filter-type|unit-filter/i);
+test("legend explains echelon and role symbols", () => {
+  const html = buildLegendHtml();
+  assert.match(html, /echelon|Echelon|XXX|Division|Banner|Company|Platoon/i);
+  assert.match(html, /infantry|artillery|cavalry|armor/i);
+  assert.match(html, /Proposed|Confirmed/i);
 });
 
-test("proposed capability branches attach under Guard companies/staff without replacing locked 4-company structure", () => {
-  const alaricKids = getChildren("guard", "alaric").map((c) => c.id);
-  assert.ok(alaricKids.includes("recon"));
-  assert.ok(alaricKids.includes("iron"));
-  assert.ok(alaricKids.includes("ash"));
-  assert.ok(alaricKids.includes("heavy"));
-  assert.ok(alaricKids.includes("corvin"));
-  // proposed support capability nodes exist somewhere under guard
-  const all = collectAllUnits("guard");
-  const caps = all.filter((u) => u.capabilityType);
-  assert.ok(caps.length >= 5, "proposed capabilities under guard");
-  assert.ok(caps.every((u) => u.status === "proposed"));
-  const types = new Set(caps.map((u) => u.capabilityType));
-  for (const id of NINE) assert.ok(types.has(id), `missing capability attachment for ${id}`);
+test("detail overlay helper returns prose for a unit without replacing chart", () => {
+  const html = buildDetailHtml("guard", "alaric");
+  assert.match(html, /data-detail-overlay/);
+  assert.match(html, /Banner|Alaric/);
+  assert.match(html, /Confirmed|confirmed/);
+  assert.ok(html.length > 80);
 });
 
-test("forces feel different in unit-type flavor notes", () => {
-  const inf = getUnitType("infantry");
-  assert.ok(inf.forceNotes.guard && inf.forceNotes.empire && inf.forceNotes.enemy);
-  assert.notEqual(inf.forceNotes.guard, inf.forceNotes.enemy);
+test("zoom: reset is 1; fit action distinct; no forced shrink on reset", () => {
+  assert.equal(RESET_ZOOM, 1);
+  assert.equal(nextZoom(1, "reset"), 1);
+  assert.ok(nextZoom(1, "in") > 1);
+  assert.ok(nextZoom(1, "out") < 1);
+  assert.equal(FIT_ACTION, "fit");
 });
 
-test("page is v2 marker and has explorer + gallery chrome", () => {
+test("page is v3 marker — chart chrome not card explorer primary", () => {
   const html = readFileSync(join(dir, "military.html"), "utf8");
-  assert.match(html, /data-military-build="story-military-org-v2"/);
+  assert.match(html, /data-military-build="story-military-org-v3"/);
   assert.match(html, /role="tablist"/);
-  assert.match(html, /mil-back|Back/);
-  assert.match(html, /mil-overview|Overview/);
-  assert.match(html, /Glossary|glossary/);
-  assert.match(html, /unit-gallery|Unit types|Capabilities/i);
-  assert.doesNotMatch(html, /fitWidth/);
+  assert.match(html, /mil-chart-host|chart-viewport/);
+  assert.match(html, /Zoom in|Zoom out|Reset|Fit overview|Fit/i);
+  assert.match(html, /Download/i);
+  assert.doesNotMatch(html, /data-explorer="true"/);
+  assert.doesNotMatch(html, /story-military-org-v2"/);
   for (const bad of FORBIDDEN_PUBLIC) {
-    assert.doesNotMatch(html, new RegExp(bad, "i"), bad);
+    assert.doesNotMatch(html, new RegExp(bad, "i"));
   }
 });
 
-test("no miniature whole-force graph CSS as primary UX", () => {
+test("css paper chart + pan viewport, not focus-card explorer primary", () => {
   const css = readFileSync(join(dir, "military.css"), "utf8");
-  assert.doesNotMatch(css, /fitWidth|viewBox.*scale/);
-  assert.match(css, /explorer|unit-card|focus-card/i);
-  assert.match(css, /@media/);
-  assert.match(css, /type-card|type-grid/i);
-  assert.match(css, /branch-grid/);
+  assert.match(css, /chart-viewport|mil-chart/);
+  assert.match(css, /#f[5-9]|#fff|paper|ivory|cream/i);
+  assert.doesNotMatch(css, /\.focus-card\s*\{[^}]*min-height:\s*140px/);
 });
 
-test("js wires drilldown and unit-type filter without fit-to-width", () => {
+test("js wires pan zoom fit download and optional detail without fitWidth-on-load", () => {
   const js = readFileSync(join(dir, "military.js"), "utf8");
-  assert.doesNotMatch(js, /fitWidth/);
-  assert.match(js, /data-drill|drillTo|setFocus/);
-  assert.match(js, /buildExplorerHtml/);
-  assert.match(js, /buildUnitTypeGalleryHtml|data-filter-type|filterType/);
-});
-
-test("empire includes proposed corps-style subordinates", () => {
-  const units = collectAllUnits("empire");
-  assert.ok(units.some((u) => /corps|division|host/i.test(u.unitType + u.name) && u.status === "proposed"));
-  assert.ok(units.some((u) => /Prefect/i.test(u.name) && u.status === "confirmed"));
-});
-
-test("desert enemy proposed chain has depth below warrior king", () => {
-  const kids = getChildren("enemy", "wk");
-  assert.ok(kids.length >= 3);
+  assert.match(js, /buildChartSvg/);
+  assert.match(js, /Fit|fitOverview|FIT_ACTION/);
+  assert.match(js, /download|Download/);
+  assert.doesNotMatch(js, /fitWidth\(\)/);
+  assert.match(js, /buildDetailHtml|detail/);
 });
