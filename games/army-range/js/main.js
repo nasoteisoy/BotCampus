@@ -84,6 +84,9 @@ const player = { x: 0, z: 8 };
 let playerTrooper = null;
 let playerPose = 'idle';
 let playerPoseT = 0;
+// Adventure body heading (HQ root.rotation.y). Not locked to camera look.
+let bodyYaw = Math.PI;
+const BODY_TURN_RATE = 12; // exp approach; Opsive Adventure turn-to-travel
 let shootPoseLeft = 0;
 let shots = 0, hits = 0;
 let hitFlash = 0;
@@ -100,6 +103,17 @@ const PITCH_MAX = THREE.MathUtils.degToRad(42);
 const POS_RATE = 12.5;
 // HQ trooper rest forward is +Z; lookDir at yaw=0 is -Z → offset π so back faces camera
 const BODY_YAW_OFFSET = Math.PI;
+/** Shortest signed angle delta into (-π, π]. */
+function shortestAngleDelta(from, to) {
+  let d = to - from;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+function approachYaw(from, to, dt, rate) {
+  const t = 1 - Math.exp(-rate * dt);
+  return from + shortestAngleDelta(from, to) * t;
+}
 
 const camPos = new THREE.Vector3(0, 2.2, 11);
 const _lookDir = new THREE.Vector3();
@@ -126,11 +140,13 @@ function spawnPlayer() {
   }
   playerTrooper = createHqTrooper({ side: 'attacker', cls: 'rifle' });
   playerTrooper.root.position.set(player.x, 0, player.z);
-  playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+  bodyYaw = yaw + BODY_YAW_OFFSET;
+  playerTrooper.root.rotation.y = bodyYaw;
   scene.add(playerTrooper.root);
   playerPose = 'idle';
   playerPoseT = 0;
   poseTrooper(playerTrooper, 'idle', 0, 0.016);
+  playerTrooper.root.rotation.y = bodyYaw;
 }
 
 // Targets
@@ -348,6 +364,7 @@ function restart() {
   shots = 0; hits = 0; updateHud();
   player.x = 0; player.z = 8;
   yaw = 0; pitch = 0.12;
+  bodyYaw = Math.PI;
   shootPoseLeft = 0;
   ignoreFireUntil = performance.now() + 350;
   fireHeld = false; firePressed = false;
@@ -480,29 +497,41 @@ if (params.get('test') === '1') {
       ignoreFireUntil = 0; restart();
     },
     setLook: (y, p) => {
+      // Adventure: camera orbit must not turn the body
       yaw = y;
       pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, p));
-      if (playerTrooper) {
-        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
-        playerTrooper.root.updateMatrixWorld(true);
-      }
+      if (playerTrooper) playerTrooper.root.updateMatrixWorld(true);
       updateCamera(1 / 30, true);
     },
     walkForward: (dist = 2) => {
       const sy = Math.sin(yaw), cy = Math.cos(yaw);
-      const n = collidePlayer(player.x - sy * dist, player.z - cy * dist);
+      const wx = -sy * dist, wz = -cy * dist;
+      const n = collidePlayer(player.x + wx, player.z + wz);
       player.x = n.x; player.z = n.z;
+      bodyYaw = Math.atan2(wx, wz);
       if (playerTrooper) {
         playerTrooper.root.position.x = player.x;
         playerTrooper.root.position.z = player.z;
-        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+        playerTrooper.root.rotation.y = bodyYaw;
         playerPose = 'run'; playerPoseT = 0.2;
         poseTrooper(playerTrooper, 'run', playerPoseT, 0.05);
-        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+        playerTrooper.root.rotation.y = bodyYaw;
         playerTrooper.root.updateMatrixWorld(true);
       }
       updateCamera(1 / 30, true);
     },
+    setPlayerPos: (x, z, faceYaw = null) => {
+      player.x = x; player.z = z;
+      if (faceYaw != null) bodyYaw = faceYaw;
+      if (playerTrooper) {
+        playerTrooper.root.position.x = player.x;
+        playerTrooper.root.position.z = player.z;
+        playerTrooper.root.rotation.y = bodyYaw;
+        playerTrooper.root.updateMatrixWorld(true);
+      }
+      updateCamera(1 / 30, true);
+    },
+
     /** Live scene orientation (actual playerTrooper), not a rebuilt probe. */
     getOrient: () => {
       if (!playerTrooper) return null;
@@ -530,7 +559,7 @@ if (params.get('test') === '1') {
       const rifleDotLook = rifleFlat.dot(lookFlat);
       const rifleDotCam = rifleFlat.dot(camToPlayer);
       return {
-        yaw, pitch, bodyYaw: yaw + BODY_YAW_OFFSET, bodyYawOffset: BODY_YAW_OFFSET,
+        yaw, pitch, bodyYaw, bodyYawOffset: BODY_YAW_OFFSET,
         lookDir: [_lookDir.x, _lookDir.y, _lookDir.z],
         localFwd: [localFwd.x, localFwd.y, localFwd.z],
         rifleDir: [rifleDir.x, rifleDir.y, rifleDir.z],
@@ -567,27 +596,44 @@ function frame(now) {
     const moving = mlen > 0.12;
     const speed = (keys.ShiftLeft || keys.ShiftRight) ? 6.2 : 4.0;
     const s = Math.sin(yaw), c = Math.cos(yaw);
-    // camera-relative: forward = look XZ (-sin yaw, -cos yaw), right = (cos yaw, -sin yaw)
-    const dx = (c * mx - s * my) * speed * dt;
-    const dz = (-s * mx - c * my) * speed * dt;
+    // camera-relative intent (Opsive Adventure): travel relative to look, body turns into travel
+    const moveWx = c * mx - s * my;
+    const moveWz = -s * mx - c * my;
+    const dx = moveWx * speed * dt;
+    const dz = moveWz * speed * dt;
     const n = collidePlayer(player.x + dx, player.z + dz);
     player.x = n.x; player.z = n.z;
+
+    const aimingFire = shootPoseLeft > 0 || fireHeld;
+    if (aimingFire) {
+      // Face reticle for muzzle alignment. HQ has no strafe clips — use shoot pose (not forward run)
+      // while firing so A/D+fire does not moonwalk. Lateral slide without run gait is a documented limit.
+      bodyYaw = approachYaw(bodyYaw, yaw + BODY_YAW_OFFSET, dt, BODY_TURN_RATE * 1.4);
+    } else if (moving) {
+      // Adventure: turn body toward camera-relative travel; HQ +Z forward = atan2(wx,wz)
+      const want = Math.atan2(moveWx, moveWz);
+      bodyYaw = approachYaw(bodyYaw, want, dt, BODY_TURN_RATE);
+    }
+    // else idle: keep bodyYaw; camera orbit alone does not turn body
 
     if (playerTrooper) {
       playerTrooper.root.position.x = player.x;
       playerTrooper.root.position.z = player.z;
-      playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+      playerTrooper.root.rotation.y = bodyYaw;
       playerPoseT += dt;
-      if (shootPoseLeft > 0) {
-        shootPoseLeft -= dt;
+      if (aimingFire) {
+        if (shootPoseLeft > 0) shootPoseLeft -= dt;
+        if (playerPose !== 'shoot') { playerPose = 'shoot'; playerPoseT = 0; }
         poseTrooper(playerTrooper, 'shoot', playerPoseT, dt);
-        playerPose = 'shoot';
+        playerTrooper.root.rotation.y = bodyYaw;
       } else if (moving) {
         if (playerPose !== 'run') { playerPose = 'run'; playerPoseT = 0; }
         poseTrooper(playerTrooper, 'run', playerPoseT, dt);
+        playerTrooper.root.rotation.y = bodyYaw;
       } else {
         if (playerPose !== 'idle') { playerPose = 'idle'; playerPoseT = 0; }
         poseTrooper(playerTrooper, 'idle', playerPoseT, dt);
+        playerTrooper.root.rotation.y = bodyYaw;
       }
     }
 
