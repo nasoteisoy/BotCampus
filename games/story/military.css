@@ -1,111 +1,111 @@
-/* Military Organization v3 — Danish-style symbol chart */
+/* Military Organization v4 — twelve one-sheet charts */
 .mil-marker { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-
 .mil-main { max-width: none; padding-inline: clamp(0.75rem, 2vw, 1.5rem); }
-.mil-lede { max-width: 62rem; line-height: 1.55; font-size: 1.05rem; }
+.mil-lede { max-width: 62rem; line-height: 1.5; font-size: 1.05rem; }
 
-.mil-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.75rem; }
-.mil-tabs [role="tab"] {
-  font: inherit; font-size: 1rem; padding: 0.55rem 1rem; border-radius: 999px;
+.mil-tabs, .mil-ranges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0 0.5rem; }
+.mil-tabs [role="tab"], .mil-ranges [role="tab"] {
+  font: inherit; font-size: 0.95rem; padding: 0.5rem 0.9rem; border-radius: 999px;
   border: 1px solid #c9c2b0; background: #fffef8; color: #1a1a1a; cursor: pointer;
 }
-.mil-tabs [role="tab"][aria-selected="true"] {
+.mil-tabs [role="tab"][aria-selected="true"],
+.mil-ranges [role="tab"][aria-selected="true"] {
   background: #1a1a1a; color: #f7f4ea; border-color: #1a1a1a;
 }
+.mil-ranges [role="tab"] { border-radius: 8px; font-size: 0.9rem; }
 
 .mil-toolbar.sticky-tools {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
   position: sticky; top: 0; z-index: 5;
-  padding: 0.55rem 0; background: rgba(247,244,234,0.94); backdrop-filter: blur(6px);
-  border-bottom: 1px solid #ddd6c4;
+  padding: 0.5rem 0; background: rgba(247,244,234,0.95); border-bottom: 1px solid #ddd6c4;
 }
-.mil-toolbar h2 { font-size: 1.15rem; margin: 0 0.5rem 0 0; flex: 1 1 auto; }
+.mil-toolbar h2 { font-size: 1.1rem; margin: 0 0.4rem 0 0; flex: 1 1 auto; }
 .mil-toolbar button {
-  font: inherit; font-size: 0.92rem; padding: 0.4rem 0.7rem;
+  font: inherit; font-size: 0.88rem; padding: 0.35rem 0.65rem;
   border: 1px solid #b8b09c; border-radius: 8px; background: #fff; cursor: pointer;
 }
-.mil-toolbar button:hover { background: #efe9da; }
 
-/* Paper chart viewport — native large SVG, pan/zoom, NO auto shrink */
-.chart-viewport.mil-chart-host {
-  position: relative;
+/* One-sheet artboard: SVG fits width of region; no scroll of the art itself at default */
+.chart-artboard.mil-artboard {
   width: 100%;
-  height: min(78vh, 920px);
-  min-height: 420px;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: none; /* custom pan/pinch */
-  background: #f7f4ea; /* paper / ivory */
+  max-width: 1100px;
+  margin: 0.5rem 0 1rem;
+  background: #e8e2d4;
   border: 1px solid #cfc7b4;
   border-radius: 10px;
-  box-shadow: inset 0 0 0 1px #fff8;
-  cursor: grab;
+  padding: 0.5rem;
+  overflow: hidden; /* sheet contained — not a panning canvas by default */
 }
-.chart-viewport.mil-chart-host.is-panning { cursor: grabbing; }
-.chart-viewport .mil-chart-svg {
+.chart-sheet-host {
+  width: 100%;
+  background: #f7f4ea;
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.chart-sheet-host .mil-chart-svg {
   display: block;
-  /* actual pixel size from width/height attrs — not max-width 100% */
-  max-width: none;
+  width: 100%;
   height: auto;
+  max-width: 100%;
   transform-origin: 0 0;
-  user-select: none;
 }
-.chart-hint { font-size: 0.95rem; color: #444; max-width: 56rem; }
+.chart-sheet-host.is-zoomed {
+  overflow: auto;
+  max-height: min(78vh, 820px);
+  touch-action: none;
+}
+.chart-hint { font-size: 0.92rem; color: #444; max-width: 56rem; }
 
 .mil-node { cursor: pointer; }
-.mil-node:focus .tac-frame,
-.mil-node:hover .tac-frame { stroke: #0b57d0; stroke-width: 2.6; }
+.mil-node:hover .tac-frame, .mil-node:focus .tac-frame { stroke: #0b57d0; stroke-width: 2.4; }
 
-.detail-slot {
-  position: relative; margin-top: 0.75rem;
-}
 .detail-overlay {
-  position: relative;
-  background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px;
-  padding: 1rem 1.1rem 1.1rem; max-width: 40rem;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+  position: relative; background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px;
+  padding: 1rem 1.1rem; max-width: 40rem; margin-top: 0.75rem;
 }
-.detail-overlay .detail-close {
-  position: absolute; top: 0.4rem; right: 0.5rem;
-  border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; line-height: 1;
-}
-.detail-overlay .kicker { font-size: 0.85rem; color: #555; margin: 0 0 0.25rem; }
-.detail-overlay h3 { margin: 0 0 0.5rem; font-size: 1.25rem; }
-.detail-overlay .prose { line-height: 1.5; }
-
-.badge { display: inline-block; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px; vertical-align: middle; }
+.detail-close { position: absolute; top: 0.35rem; right: 0.5rem; border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; }
+.badge { display: inline-block; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px; }
 .badge.confirmed { background: #d9ead3; color: #1b4332; }
 .badge.proposed { background: #fce5cd; color: #7a4a00; }
 
 .mil-section { margin-top: 2rem; max-width: 70rem; }
-.chart-legend { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.leg-block h3 { font-size: 1.05rem; margin: 0 0 0.4rem; }
+.chart-legend { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .leg-list, .leg-roles { list-style: none; padding: 0; margin: 0; }
-.leg-list li, .leg-roles li { display: flex; align-items: center; gap: 0.55rem; margin: 0.35rem 0; font-size: 0.95rem; }
-.ech-sym { font-family: Georgia, serif; font-weight: 700; min-width: 2.5rem; }
+.leg-list li, .leg-roles li { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; font-size: 0.92rem; }
+.ech-sym { font-family: Georgia, serif; font-weight: 700; min-width: 2.6rem; }
+.unit-filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 1rem; }
+.unit-filter { font: inherit; font-size: 0.85rem; padding: 0.3rem 0.6rem; border-radius: 999px; border: 1px solid #c9c2b0; background: #fff; cursor: pointer; }
+.unit-filter.is-on { background: #1a1a1a; color: #f7f4ea; }
+.type-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.type-card { background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px; padding: 0.75rem 0.9rem; }
+.glossary dt { font-weight: 700; margin-top: 0.45rem; }
+.note { font-size: 0.9rem; color: #444; }
 
-/* Gallery retained */
-.unit-filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0 1rem; }
-.unit-filter {
-  font: inherit; font-size: 0.88rem; padding: 0.35rem 0.65rem; border-radius: 999px;
-  border: 1px solid #c9c2b0; background: #fff; cursor: pointer;
+.print-all-root .print-sheet {
+  page-break-after: always;
+  break-after: page;
+  margin-bottom: 1rem;
 }
-.unit-filter.is-on { background: #1a1a1a; color: #f7f4ea; border-color: #1a1a1a; }
-.type-grid { display: grid; gap: 0.85rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.type-card {
-  background: #fffef8; border: 1px solid #c9c2b0; border-radius: 12px; padding: 0.85rem 1rem;
-}
-.type-card header { display: flex; gap: 0.65rem; align-items: flex-start; }
-.type-icon { color: #5a4630; flex: 0 0 auto; }
-.type-card h3 { margin: 0; font-size: 1.05rem; }
-.type-card h4 { margin: 0.65rem 0 0.2rem; font-size: 0.9rem; }
-.type-card p, .type-card li { font-size: 0.92rem; line-height: 1.45; }
-
-.glossary dt { font-weight: 700; margin-top: 0.5rem; }
-.glossary dd { margin: 0.15rem 0 0.4rem; }
-.note { font-size: 0.92rem; color: #444; }
+.print-all-root .print-sheet svg { width: 100%; height: auto; }
 
 @media (max-width: 640px) {
-  .chart-viewport.mil-chart-host { height: 70vh; min-height: 360px; }
+  .chart-artboard.mil-artboard { padding: 0.35rem; }
   .mil-toolbar h2 { flex: 1 1 100%; }
+}
+
+@media print {
+  @page { size: landscape; margin: 0.4in; }
+  body { background: #fff !important; }
+  .no-print, .top, footer, .mil-tabs, .mil-ranges, .mil-toolbar, .chart-hint, .detail-slot,
+  #legend, #unit-types, #glossary, .crumb { display: none !important; }
+  .chart-artboard.mil-artboard {
+    max-width: none; border: 0; padding: 0; background: #fff; overflow: visible;
+  }
+  .chart-sheet-host { overflow: visible; max-height: none; }
+  .mil-chart-svg { width: 100% !important; max-width: 100% !important; }
+  .print-all-root { display: block !important; }
+  .print-all-root[hidden] { display: block !important; }
+  body.is-print-all .mil-artboard { display: none !important; }
+  body.is-print-all .print-all-root { display: block !important; }
 }

@@ -1,104 +1,90 @@
 import {
-  viewIds,
-  getForce,
+  FACTION_IDS,
+  RANGE_IDS,
+  getFaction,
+  getRange,
   buildChartSvg,
+  buildChartMeta,
   buildLegendHtml,
   buildDetailHtml,
   buildGlossaryHtml,
   buildUnitTypeGalleryHtml,
-  nextZoom,
-  RESET_ZOOM,
-  FIT_ACTION,
+  chartUrlQuery,
+  parseChartState,
+  chartCombos,
 } from "./military-model.mjs";
 
-const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+const factionTabs = Array.from(document.querySelectorAll("[data-faction]"));
+const rangeTabs = Array.from(document.querySelectorAll("[data-range]"));
 const host = document.getElementById("mil-chart-host");
+const artboard = document.getElementById("mil-artboard");
 const detailSlot = document.getElementById("mil-detail");
-const legendHost = document.getElementById("mil-legend");
-const galleryHost = document.getElementById("mil-gallery");
-const glossaryHost = document.getElementById("mil-glossary");
 const titleEl = document.getElementById("mil-view-title");
+const printAllRoot = document.getElementById("mil-print-all-root");
 
-let view = "guard";
-let zoom = RESET_ZOOM; // actual size — never auto fitWidth on load
-let panX = 0;
-let panY = 0;
-let dragging = false;
-let lastX = 0;
-let lastY = 0;
-let pointers = new Map();
-let pinchStartDist = 0;
-let pinchStartZoom = 1;
+let { faction, range } = parseChartState(location.search);
+let zoom = 1;
 
-function applyTransform() {
-  const svg = host?.querySelector(".mil-chart-svg");
-  if (!svg) return;
-  svg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+function syncTabs() {
+  for (const t of factionTabs) {
+    const on = t.dataset.faction === faction;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  }
+  for (const t of rangeTabs) {
+    const on = t.dataset.range === range;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  }
 }
 
-/** Keep zoom at actual size but pan so the command symbol is in view (not empty left margin). */
-function centerOnRoot() {
+function applyZoom() {
   const svg = host?.querySelector(".mil-chart-svg");
-  if (!svg || !host) return;
-  const rx = Number(svg.getAttribute("data-root-x")) || 80;
-  const ry = Number(svg.getAttribute("data-root-y")) || 60;
-  panX = Math.round(host.clientWidth / 2 - rx * zoom);
-  panY = Math.round(48 - ry * zoom);
+  if (!svg) return;
+  if (zoom === 1) {
+    host.classList.remove("is-zoomed");
+    svg.style.transform = "";
+  } else {
+    host.classList.add("is-zoomed");
+    svg.style.transform = `scale(${zoom})`;
+  }
 }
 
 function renderChart() {
   if (!host) return;
-  host.innerHTML = buildChartSvg(view);
-  if (titleEl) titleEl.textContent = getForce(view).title;
-  for (const tab of tabs) {
-    const on = tab.dataset.view === view;
-    tab.setAttribute("aria-selected", on ? "true" : "false");
-    tab.tabIndex = on ? 0 : -1;
+  const meta = buildChartMeta(faction, range);
+  host.innerHTML = buildChartSvg(faction, range);
+  if (titleEl) titleEl.textContent = meta.shortTitle;
+  syncTabs();
+  zoom = 1;
+  applyZoom();
+  const q = chartUrlQuery(faction, range);
+  const url = `${location.pathname}?${q}`;
+  if (location.search.replace(/^\?/, "") !== q) {
+    history.replaceState({ faction, range }, meta.shortTitle, url);
   }
-  centerOnRoot();
-  applyTransform();
 }
 
-function setView(next) {
-  if (!viewIds().includes(next)) return;
-  view = next;
-  zoom = RESET_ZOOM;
-  panX = 0;
-  panY = 0;
-  if (detailSlot) {
-    detailSlot.hidden = true;
-    detailSlot.innerHTML = "";
-  }
+function setFaction(next) {
+  if (!FACTION_IDS.includes(next)) return;
+  faction = next;
+  if (detailSlot) { detailSlot.hidden = true; detailSlot.innerHTML = ""; }
+  renderChart();
+}
+function setRange(next) {
+  if (!RANGE_IDS.includes(next)) return;
+  range = next;
+  if (detailSlot) { detailSlot.hidden = true; detailSlot.innerHTML = ""; }
   renderChart();
 }
 
-function fitOverview() {
-  const svg = host?.querySelector(".mil-chart-svg");
-  if (!svg || !host) return;
-  nextZoom(zoom, FIT_ACTION); // acknowledge fit action
-  const vb = svg.viewBox.baseVal;
-  const pad = 16;
-  const sx = (host.clientWidth - pad * 2) / vb.width;
-  const sy = (host.clientHeight - pad * 2) / vb.height;
-  zoom = Math.max(0.15, Math.min(sx, sy, 1));
-  panX = pad + (host.clientWidth - pad * 2 - vb.width * zoom) / 2;
-  panY = pad + (host.clientHeight - pad * 2 - vb.height * zoom) / 2;
-  applyTransform();
-}
-
-function showDetail(unitId) {
-  if (!detailSlot || !unitId) return;
-  detailSlot.innerHTML = buildDetailHtml(view, unitId);
-  detailSlot.hidden = false;
-  detailSlot.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
+for (const t of factionTabs) t.addEventListener("click", () => setFaction(t.dataset.faction));
+for (const t of rangeTabs) t.addEventListener("click", () => setRange(t.dataset.range));
 
 host?.addEventListener("click", (e) => {
   const node = e.target.closest?.(".mil-node");
-  if (!node) return;
-  showDetail(node.getAttribute("data-unit-id"));
+  if (!node || !detailSlot) return;
+  detailSlot.innerHTML = buildDetailHtml(faction, range, node.getAttribute("data-unit-id"));
+  detailSlot.hidden = false;
 });
-
 detailSlot?.addEventListener("click", (e) => {
   if (e.target.closest("[data-detail-close]")) {
     detailSlot.hidden = true;
@@ -106,24 +92,39 @@ detailSlot?.addEventListener("click", (e) => {
   }
 });
 
-for (const tab of tabs) {
-  tab.addEventListener("click", () => setView(tab.dataset.view));
-}
-
 document.getElementById("mil-zoom-in")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "in");
-  applyTransform();
+  zoom = Math.min(2.5, +(zoom * 1.2).toFixed(2));
+  applyZoom();
 });
 document.getElementById("mil-zoom-out")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "out");
-  applyTransform();
+  zoom = Math.max(1, +(zoom / 1.2).toFixed(2));
+  applyZoom();
 });
 document.getElementById("mil-zoom-reset")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "reset");
-  centerOnRoot();
-  applyTransform();
+  zoom = 1;
+  applyZoom();
 });
-document.getElementById("mil-fit")?.addEventListener("click", () => fitOverview());
+
+document.getElementById("mil-print")?.addEventListener("click", () => {
+  document.body.classList.remove("is-print-all");
+  if (printAllRoot) { printAllRoot.hidden = true; printAllRoot.innerHTML = ""; }
+  window.print();
+});
+
+document.getElementById("mil-print-all")?.addEventListener("click", () => {
+  if (!printAllRoot) return;
+  printAllRoot.innerHTML = chartCombos().map(({ faction: f, range: r }) => {
+    const meta = buildChartMeta(f, r);
+    return `<section class="print-sheet"><h2>${meta.title}</h2>${buildChartSvg(f, r)}</section>`;
+  }).join("");
+  printAllRoot.hidden = false;
+  document.body.classList.add("is-print-all");
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove("is-print-all");
+    printAllRoot.hidden = true;
+  }, 500);
+});
 
 document.getElementById("mil-download")?.addEventListener("click", () => {
   const svg = host?.querySelector(".mil-chart-svg");
@@ -131,66 +132,19 @@ document.getElementById("mil-download")?.addEventListener("click", () => {
   const blob = new Blob([svg.outerHTML], { type: "image/svg+xml;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `military-${view}-v3.svg`;
+  a.download = `military-${faction}-${range}-v4.svg`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
 
-/* Pointer pan + pinch */
-host?.addEventListener("pointerdown", (e) => {
-  if (e.target.closest?.(".mil-node")) return; // let click select
-  host.setPointerCapture(e.pointerId);
-  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pointers.size === 1) {
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    host.classList.add("is-panning");
-  } else if (pointers.size === 2) {
-    dragging = false;
-    const pts = [...pointers.values()];
-    pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-    pinchStartZoom = zoom;
-  }
+window.addEventListener("popstate", () => {
+  ({ faction, range } = parseChartState(location.search));
+  renderChart();
 });
 
-host?.addEventListener("pointermove", (e) => {
-  if (!pointers.has(e.pointerId)) return;
-  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pointers.size === 2) {
-    const pts = [...pointers.values()];
-    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-    if (pinchStartDist > 0) {
-      zoom = Math.min(4, Math.max(0.2, pinchStartZoom * (dist / pinchStartDist)));
-      applyTransform();
-    }
-    return;
-  }
-  if (!dragging) return;
-  panX += e.clientX - lastX;
-  panY += e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  applyTransform();
-});
-
-function endPointer(e) {
-  pointers.delete(e.pointerId);
-  if (pointers.size < 2) pinchStartDist = 0;
-  if (pointers.size === 0) {
-    dragging = false;
-    host?.classList.remove("is-panning");
-  }
-}
-host?.addEventListener("pointerup", endPointer);
-host?.addEventListener("pointercancel", endPointer);
-
-host?.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  zoom = nextZoom(zoom, e.deltaY < 0 ? "in" : "out");
-  applyTransform();
-}, { passive: false });
-
+const legendHost = document.getElementById("mil-legend");
+const galleryHost = document.getElementById("mil-gallery");
+const glossaryHost = document.getElementById("mil-glossary");
 if (legendHost) legendHost.innerHTML = buildLegendHtml();
 if (glossaryHost) glossaryHost.innerHTML = buildGlossaryHtml();
 if (galleryHost) {
@@ -199,20 +153,11 @@ if (galleryHost) {
     const filter = e.target.closest("[data-filter-type]");
     if (!filter) return;
     const type = filter.getAttribute("data-filter-type");
-    galleryHost.querySelectorAll(".unit-filter").forEach((b) => {
-      b.classList.toggle("is-on", b === filter);
-    });
+    galleryHost.querySelectorAll(".unit-filter").forEach((b) => b.classList.toggle("is-on", b === filter));
     galleryHost.querySelectorAll(".type-card").forEach((card) => {
-      const show = type === "all" || card.getAttribute("data-type") === type;
-      card.hidden = !show;
+      card.hidden = !(type === "all" || card.getAttribute("data-type") === type);
     });
   });
 }
 
-const params = new URLSearchParams(location.search);
-if (params.get("view") && viewIds().includes(params.get("view"))) {
-  view = params.get("view");
-}
-
 renderChart();
-// Explicit: do NOT call fitOverview on load — actual size default readable

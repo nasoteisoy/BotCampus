@@ -1,5 +1,5 @@
 /**
- * Military Organization v3 — Danish-style symbol org chart
+ * Military Organization v4 — 12 one-sheet charts (4 factions × 3 ranges)
  * Run: node --test games/story/military.test.mjs
  */
 import { test } from "node:test";
@@ -9,126 +9,163 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   FORBIDDEN_PUBLIC,
-  viewIds,
-  getForce,
-  assertCanonInvariants,
+  FACTION_IDS,
+  RANGE_IDS,
+  chartCombos,
+  getFaction,
+  getRange,
   buildChartSvg,
+  buildChartMeta,
+  assertCanonInvariants,
   UNIT_TYPE_IDS,
   getUnitType,
   buildLegendHtml,
   buildDetailHtml,
-  nextZoom,
-  RESET_ZOOM,
-  FIT_ACTION,
+  parseChartState,
+  chartUrlQuery,
 } from "./military-model.mjs";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const NINE = ["infantry","artillery","cavalry","armor","air","medic","signal","supply","staff"];
 
-test("three forces", () => {
-  assert.deepEqual(viewIds(), ["guard", "empire", "enemy"]);
+test("four factions including Desert Kingdom separate from enemy", () => {
+  assert.deepEqual(FACTION_IDS, ["empire", "guard", "kingdom", "enemy"]);
+  assert.match(getFaction("kingdom").title, /Desert Kingdom/i);
+  assert.match(getFaction("enemy").title, /Desert [Ee]nemy|Enemy/i);
+  assert.notEqual(getFaction("kingdom").id, getFaction("enemy").id);
 });
 
-test("canon invariants", () => {
+test("three range views", () => {
+  assert.deepEqual(RANGE_IDS, ["high-div", "hl-banner", "div-plt"]);
+  assert.match(getRange("high-div").label, /Division/i);
+  assert.match(getRange("hl-banner").label, /Banner/i);
+  assert.match(getRange("div-plt").label, /Platoon/i);
+});
+
+test("exactly 12 chart combinations", () => {
+  const c = chartCombos();
+  assert.equal(c.length, 12);
+  assert.ok(c.every((x) => x.faction && x.range));
+});
+
+test("canon invariants still hold on Guard locked structure", () => {
   assert.doesNotThrow(() => assertCanonInvariants());
 });
 
-test("chart SVG is large native chart with orthogonal connectors and paper class", () => {
-  for (const id of viewIds()) {
-    const svg = buildChartSvg(id);
-    assert.match(svg, /<svg[^>]*class="[^"]*mil-chart-svg/);
-    assert.match(svg, /data-chart-force="/);
+test("each of 12 charts is compact one-sheet SVG with orthogonal connectors", () => {
+  for (const { faction, range } of chartCombos()) {
+    const svg = buildChartSvg(faction, range);
+    const meta = buildChartMeta(faction, range);
+    assert.match(svg, /class="[^"]*mil-chart-svg/);
+    assert.match(svg, /data-chart-faction="/);
+    assert.match(svg, /data-chart-range="/);
+    assert.match(svg, /data-sheet="1"/);
     assert.match(svg, /<path class="connector"/);
-    // orthogonal: H and V commands present
     assert.match(svg, / d="M[^"]*[HV][^"]*"/);
     assert.match(svg, /class="tac-frame"/);
     assert.match(svg, /class="echelon"/);
     assert.match(svg, /class="unit-label"/);
-    // readable: no tiny global scale attribute as primary
-    assert.doesNotMatch(svg, /transform="scale\(0\./);
-    // viewBox large enough for at-once hierarchy
+    // one-sheet bounds — not a multi-thousand-px pan canvas
     const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
-    assert.ok(vb, id);
-    assert.ok(+vb[1] >= 800, `${id} width`);
-    assert.ok(+vb[2] >= 600, `${id} height`);
+    assert.ok(vb, `${faction}/${range}`);
+    assert.ok(+vb[1] <= 1400, `${faction}/${range} width ${vb[1]}`);
+    assert.ok(+vb[2] <= 1000, `${faction}/${range} height ${vb[2]}`);
+    assert.ok(+vb[1] >= 640, `${faction}/${range} min width`);
+    assert.ok(+vb[2] >= 420, `${faction}/${range} min height`);
+    // all node boxes inside viewBox
+    for (const m of svg.matchAll(/class="tac-frame"[^>]*\bx="([\d.-]+)"[^>]*\by="([\d.-]+)"[^>]*\bwidth="([\d.-]+)"[^>]*\bheight="([\d.-]+)"/g)) {
+      const x = +m[1], y = +m[2], w = +m[3], h = +m[4];
+      assert.ok(x >= 0 && y >= 0, `${faction}/${range} box origin`);
+      assert.ok(x + w <= +vb[1] + 0.5, `${faction}/${range} box right ${x+w} > ${vb[1]}`);
+      assert.ok(y + h <= +vb[2] + 0.5, `${faction}/${range} box bottom`);
+    }
+    assert.ok(meta.shortTitle.length >= 3);
   }
 });
 
-test("Black Guard chart shows HL, Banner, four companies without ellipsis truncation", () => {
-  const svg = buildChartSvg("guard");
-  assert.match(svg, /Cassian Thorne/);
-  assert.match(svg, /Alaric/);
-  assert.match(svg, /Recon|Seraphina/);
-  assert.match(svg, /Iron|Garrick/);
-  assert.match(svg, /Ash|Dagny/);
-  assert.match(svg, /Heavy|Brynja/);
-  assert.doesNotMatch(svg, /Alaric Vae…|Garri…|…/);
+test("Guard div→platoon shows 4 companies and 9 platoon slots", () => {
+  const svg = buildChartSvg("guard", "div-plt");
+  assert.match(svg, /Recon/);
+  assert.match(svg, /Iron/);
+  assert.match(svg, /Ash/);
+  assert.match(svg, /Heavy|Hammer/);
+  assert.match(svg, /Brann/);
+  assert.match(svg, /Joss/);
+  // nine platoons: 2 named recon + iron×3 + ash×3 + heavy×1
+  const pltMarks = (svg.match(/data-platoon="1"/g) || []).length;
+  assert.equal(pltMarks, 9, `expected 9 platoon marks, got ${pltMarks}`);
 });
 
-test("Desert enemy chart includes warrior king and proposed host flesh", () => {
-  const svg = buildChartSvg("enemy");
-  assert.match(svg, /Warrior King|warrior king|Rival/i);
-  assert.match(svg, /Proposed|PROPOSED|proposed/);
+test("no silent brigade / regiment layer required on Guard high charts", () => {
+  const a = buildChartSvg("guard", "high-div");
+  const b = buildChartSvg("guard", "hl-banner");
+  // must not present a confirmed Brigade unit node
+  assert.doesNotMatch(a + b, /data-unit-id="[^"]*brigade[^"]*"[^>]*data-status="confirmed"/i);
+  assert.doesNotMatch(a + b, /class="unit-label"[^>]*>\s*Brigade/i);
+  assert.match(a + b, /no formal regiments/i);
+  assert.match(a + b, /5–8 Banners|5-8 Banners/);
 });
 
-test("nine unit types retained with proposed status", () => {
+test("Desert Kingdom canyon mix 3/4 desert + 1/4 Imperial appears proposed/confirmed carefully", () => {
+  const svg = buildChartSvg("kingdom", "div-plt") + buildChartSvg("kingdom", "hl-banner") + buildChartSvg("kingdom", "high-div");
+  assert.match(svg, /3\/4|¾|three.?quarter/i);
+  assert.match(svg, /Imperial|1\/4|¼/i);
+  assert.match(svg, /Canyon|canyon/);
+  assert.match(svg, /Rashid|High Lord/i);
+});
+
+test("URL state round-trip for all 12", () => {
+  for (const { faction, range } of chartCombos()) {
+    const q = chartUrlQuery(faction, range);
+    assert.match(q, new RegExp(`faction=${faction}`));
+    assert.match(q, new RegExp(`range=${range}`));
+    const parsed = parseChartState(q);
+    assert.equal(parsed.faction, faction);
+    assert.equal(parsed.range, range);
+  }
+  assert.deepEqual(parseChartState(""), { faction: "guard", range: "high-div" });
+});
+
+test("nine unit types retained proposed", () => {
   assert.deepEqual([...UNIT_TYPE_IDS], NINE);
-  for (const id of NINE) {
-    const t = getUnitType(id);
-    assert.equal(t.status, "proposed");
-    assert.ok(t.label.length > 3);
-  }
+  for (const id of NINE) assert.equal(getUnitType(id).status, "proposed");
 });
 
-test("legend explains echelon and role symbols", () => {
-  const html = buildLegendHtml();
-  assert.match(html, /echelon|Echelon|XXX|Division|Banner|Company|Platoon/i);
-  assert.match(html, /infantry|artillery|cavalry|armor/i);
-  assert.match(html, /Proposed|Confirmed/i);
+test("legend + detail helpers", () => {
+  assert.match(buildLegendHtml(), /Echelon|echelon|XXX|Banner|Company|Platoon/i);
+  assert.match(buildLegendHtml(), /infantry|artillery|Proposed/i);
+  const d = buildDetailHtml("guard", "div-plt", "alaric");
+  assert.match(d, /data-detail-overlay/);
+  assert.match(d, /Banner|Alaric/);
 });
 
-test("detail overlay helper returns prose for a unit without replacing chart", () => {
-  const html = buildDetailHtml("guard", "alaric");
-  assert.match(html, /data-detail-overlay/);
-  assert.match(html, /Banner|Alaric/);
-  assert.match(html, /Confirmed|confirmed/);
-  assert.ok(html.length > 80);
-});
-
-test("zoom: reset is 1; fit action distinct; no forced shrink on reset", () => {
-  assert.equal(RESET_ZOOM, 1);
-  assert.equal(nextZoom(1, "reset"), 1);
-  assert.ok(nextZoom(1, "in") > 1);
-  assert.ok(nextZoom(1, "out") < 1);
-  assert.equal(FIT_ACTION, "fit");
-});
-
-test("page is v3 marker — chart chrome not card explorer primary", () => {
+test("page is v4 with faction+range selectors and print hooks", () => {
   const html = readFileSync(join(dir, "military.html"), "utf8");
-  assert.match(html, /data-military-build="story-military-org-v3"/);
+  assert.match(html, /data-military-build="story-military-org-v4"/);
   assert.match(html, /role="tablist"/);
-  assert.match(html, /mil-chart-host|chart-viewport/);
-  assert.match(html, /Zoom in|Zoom out|Reset|Fit overview|Fit/i);
-  assert.match(html, /Download/i);
-  assert.doesNotMatch(html, /data-explorer="true"/);
-  assert.doesNotMatch(html, /story-military-org-v2"/);
-  for (const bad of FORBIDDEN_PUBLIC) {
-    assert.doesNotMatch(html, new RegExp(bad, "i"));
-  }
+  assert.match(html, /data-faction="kingdom"/);
+  assert.match(html, /data-range="high-div"/);
+  assert.match(html, /data-range="hl-banner"/);
+  assert.match(html, /data-range="div-plt"/);
+  assert.match(html, /Print|print/);
+  assert.match(html, /chart-artboard|mil-artboard/);
+  assert.doesNotMatch(html, /story-military-org-v3"/);
+  for (const bad of FORBIDDEN_PUBLIC) assert.doesNotMatch(html, new RegExp(bad, "i"));
 });
 
-test("css paper chart + pan viewport, not focus-card explorer primary", () => {
+test("css one-sheet fit + print landscape, not giant pan-default", () => {
   const css = readFileSync(join(dir, "military.css"), "utf8");
-  assert.match(css, /chart-viewport|mil-chart/);
-  assert.match(css, /#f[5-9]|#fff|paper|ivory|cream/i);
-  assert.doesNotMatch(css, /\.focus-card\s*\{[^}]*min-height:\s*140px/);
+  assert.match(css, /chart-artboard|mil-artboard/);
+  assert.match(css, /@media print/);
+  assert.match(css, /landscape|size:/i);
+  assert.match(css, /object-fit|preserveAspectRatio|width:\s*100%/);
 });
 
-test("js wires pan zoom fit download and optional detail without fitWidth-on-load", () => {
+test("js wires 12 states, URL, print, fit sheet — not explorer", () => {
   const js = readFileSync(join(dir, "military.js"), "utf8");
   assert.match(js, /buildChartSvg/);
-  assert.match(js, /Fit|fitOverview|FIT_ACTION/);
-  assert.match(js, /download|Download/);
-  assert.doesNotMatch(js, /fitWidth\(\)/);
-  assert.match(js, /buildDetailHtml|detail/);
+  assert.match(js, /chartUrlQuery|parseChartState|history\.replaceState|pushState/);
+  assert.match(js, /print|Print/);
+  assert.doesNotMatch(js, /buildExplorerHtml/);
+  assert.doesNotMatch(js, /data-explorer/);
 });
