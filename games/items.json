@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-11-03 19:01 MST",
+ "generated": "2026-11-06 12:57 MST",
  "items": [
   {
    "id": "story",
@@ -1762,6 +1762,19 @@
    "extras": [],
    "note": "Phone co-op mystery — hear phrases, pick doors, dodge false trails, vote who has the key",
    "thumb": "thumbs/coop-mystery.png"
+  },
+  {
+   "id": "harmony-trainer",
+   "title": "Harmony Trainer",
+   "type": "tool",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; YIN from harmony-hands part",
+   "section": "live",
+   "updated": "2026-11-06",
+   "url": "games/harmony-trainer/",
+   "extras": [],
+   "note": "Sing harmony drills with mic pitch meter and scored lanes",
+   "thumb": "thumbs/harmony-trainer.png"
   }
  ]
 }

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Harmony Trainer</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css?v=1">
+</head>
+<body>
+<div id="app">
+  <!-- Home -->
+  <section id="screen-home" class="screen active" aria-label="Home">
+    <div class="hero">
+      <div class="logo" id="home-logo"></div>
+      <h1>Harmony Trainer</h1>
+      <p>Sing the harmony. Hold the line.</p>
+    </div>
+    <p class="hint" id="home-hint">Pick a drill, wear headphones, then tap Mic.</p>
+    <div class="stack">
+      <button type="button" class="primary" id="btn-exercises" style="min-height:56px"></button>
+      <button type="button" class="ghost" id="btn-listen" style="min-height:52px"></button>
+    </div>
+    <div class="panel" style="margin-top:0.75rem">
+      <div class="row" style="margin-bottom:0.4rem">
+        <span style="font-size:0.8rem;color:var(--muted)">Voice octave</span>
+      </div>
+      <div class="oct-row">
+        <button type="button" id="oct-down" aria-label="Lower octave"></button>
+        <span>Male default <b id="oct-label">-1</b></span>
+        <button type="button" id="oct-up" aria-label="Raise octave"></button>
+      </div>
+    </div>
+    <div class="tip-bar" style="margin-top:0.65rem" id="home-tip"></div>
+  </section>
+
+  <!-- Exercise list -->
+  <section id="screen-list" class="screen" aria-label="Exercises">
+    <div class="topbar">
+      <button type="button" id="list-back" aria-label="Back"></button>
+      <div class="crumb">Exercises</div>
+    </div>
+    <p class="hint">Graded path — start at the top</p>
+    <ul class="ex-list" id="ex-list"></ul>
+  </section>
+
+  <!-- Practice -->
+  <section id="screen-practice" class="screen" aria-label="Practice">
+    <div class="topbar">
+      <button type="button" id="prac-back" aria-label="Back"></button>
+      <div class="crumb" id="prac-title">Practice</div>
+    </div>
+    <p class="hint" id="prac-hint">Sing the gold line</p>
+    <div class="mic-banner" id="mic-banner" role="status">
+      <span id="mic-banner-text">Mic blocked — allow mic to score pitch</span>
+      <button type="button" id="mic-retry" class="ghost" style="flex:0;min-width:auto;padding:0.35rem 0.6rem">Retry</button>
+    </div>
+    <div class="practice-body">
+      <div class="meter-wrap">
+        <div class="note-pill">
+          <div class="lbl">Target</div>
+          <div class="val" id="target-note">—</div>
+        </div>
+        <div class="meter idle" id="meter" aria-live="polite">
+          <div>
+            <div class="cents" id="meter-cents">—</div>
+            <div class="state" id="meter-state">Mic off</div>
+          </div>
+        </div>
+        <div class="note-pill">
+          <div class="lbl">You</div>
+          <div class="val" id="sung-note">—</div>
+        </div>
+      </div>
+      <div class="lane-wrap"><canvas id="lane" aria-label="Pitch lane"></canvas></div>
+      <div class="transport">
+        <div class="mix-toggles">
+          <button type="button" class="toggle on" id="tog-melody" aria-pressed="true"></button>
+          <button type="button" class="toggle on" id="tog-harmony" aria-pressed="true"></button>
+          <button type="button" class="ghost" id="btn-mic"></button>
+        </div>
+        <div class="sliders">
+          <label>Tempo <span id="tempo-val">90</span>
+            <input type="range" id="tempo" min="60" max="140" value="90">
+          </label>
+          <label>Mix melody
+            <input type="range" id="vol-mel" min="0" max="100" value="70">
+          </label>
+          <label>Mix harmony
+            <input type="range" id="vol-har" min="0" max="100" value="55">
+          </label>
+          <label>Master
+            <input type="range" id="vol-master" min="0" max="100" value="85">
+          </label>
+        </div>
+        <div class="btns">
+          <button type="button" id="btn-stop" class="ghost"></button>
+          <button type="button" id="btn-play" class="primary"></button>
+        </div>
+      </div>
+      <div class="tip-bar" id="prac-tip"></div>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section id="screen-result" class="screen" aria-label="Result">
+    <div class="topbar">
+      <button type="button" id="res-back" aria-label="Back"></button>
+      <div class="crumb">Score</div>
+    </div>
+    <p class="hint" id="res-hint">Within ±50 cents</p>
+    <div class="score-big" id="res-score">0%</div>
+    <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-bottom:0.5rem" id="res-best"></p>
+    <ul class="phrase-scores" id="res-phrases"></ul>
+    <div class="footer-actions">
+      <button type="button" class="ghost" id="res-again"></button>
+      <button type="button" class="primary" id="res-list"></button>
+    </div>
+  </section>
+</div>
+<script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>

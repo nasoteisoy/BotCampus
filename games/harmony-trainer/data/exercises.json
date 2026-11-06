@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "defaultOctaveShift": -12,
+  "headphonesTip": "Wear headphones so the mic hears you, not the piano.",
+  "exercises": [
+    {
+      "id": "hold-3rd-above",
+      "title": "Hold a 3rd",
+      "hint": "Sing the top note and hold it",
+      "grade": 1,
+      "kind": "hold",
+      "tempo": 60,
+      "key": "C",
+      "intervalLabel": "major 3rd above",
+      "melody": [{ "midi": 60, "beats": 8 }],
+      "harmony": [{ "midi": 64, "beats": 8 }],
+      "phrases": [[0, 8]]
+    },
+    {
+      "id": "hold-3rd-below",
+      "title": "3rd below",
+      "hint": "Sing under the held note",
+      "grade": 1,
+      "kind": "hold",
+      "tempo": 60,
+      "key": "C",
+      "intervalLabel": "major 3rd below",
+      "melody": [{ "midi": 64, "beats": 8 }],
+      "harmony": [{ "midi": 60, "beats": 8 }],
+      "phrases": [[0, 8]]
+    },
+    {
+      "id": "hold-5th-above",
+      "title": "Hold a 5th",
+      "hint": "Sing a fifth above and hold",
+      "grade": 2,
+      "kind": "hold",
+      "tempo": 60,
+      "key": "C",
+      "intervalLabel": "perfect 5th above",
+      "melody": [{ "midi": 60, "beats": 8 }],
+      "harmony": [{ "midi": 67, "beats": 8 }],
+      "phrases": [[0, 8]]
+    },
+    {
+      "id": "hold-5th-below",
+      "title": "5th below",
+      "hint": "Sing a fifth under the drone",
+      "grade": 2,
+      "kind": "hold",
+      "tempo": 60,
+      "key": "C",
+      "intervalLabel": "perfect 5th below",
+      "melody": [{ "midi": 67, "beats": 8 }],
+      "harmony": [{ "midi": 60, "beats": 8 }],
+      "phrases": [[0, 8]]
+    },
+    {
+      "id": "moving-3rds-scale",
+      "title": "Moving 3rds",
+      "hint": "Follow the scale a third above",
+      "grade": 3,
+      "kind": "scale",
+      "tempo": 72,
+      "key": "C",
+      "intervalLabel": "parallel major/minor 3rds",
+      "melody": [
+        { "midi": 60, "beats": 2 },
+        { "midi": 62, "beats": 2 },
+        { "midi": 64, "beats": 2 },
+        { "midi": 65, "beats": 2 },
+        { "midi": 67, "beats": 2 },
+        { "midi": 69, "beats": 2 },
+        { "midi": 71, "beats": 2 },
+        { "midi": 72, "beats": 2 }
+      ],
+      "harmony": [
+        { "midi": 64, "beats": 2 },
+        { "midi": 65, "beats": 2 },
+        { "midi": 67, "beats": 2 },
+        { "midi": 69, "beats": 2 },
+        { "midi": 71, "beats": 2 },
+        { "midi": 72, "beats": 2 },
+        { "midi": 74, "beats": 2 },
+        { "midi": 76, "beats": 2 }
+      ],
+      "phrases": [[0, 8], [8, 16]]
+    },
+    {
+      "id": "twinkle",
+      "title": "Twinkle Twinkle",
+      "hint": "Sing the harmony line over the tune",
+      "grade": 4,
+      "kind": "song",
+      "tempo": 90,
+      "key": "C",
+      "publicDomain": "Twinkle Twinkle Little Star (Ah! vous dirai-je, maman) — public domain",
+      "melody": [
+        { "midi": 60, "beats": 1 }, { "midi": 60, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 2 },
+        { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 },
+        { "midi": 62, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 60, "beats": 2 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 2 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 2 },
+        { "midi": 60, "beats": 1 }, { "midi": 60, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 2 },
+        { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 },
+        { "midi": 62, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 60, "beats": 2 }
+      ],
+      "harmony": [
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 71, "beats": 1 },
+        { "midi": 72, "beats": 1 }, { "midi": 72, "beats": 1 }, { "midi": 71, "beats": 2 },
+        { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 2 },
+        { "midi": 71, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 2 },
+        { "midi": 71, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 2 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 71, "beats": 1 },
+        { "midi": 72, "beats": 1 }, { "midi": 72, "beats": 1 }, { "midi": 71, "beats": 2 },
+        { "midi": 69, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 65, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 2 }
+      ],
+      "phrases": [[0, 8], [8, 16], [16, 24], [24, 32], [32, 40], [40, 48]]
+    },
+    {
+      "id": "ode-to-joy",
+      "title": "Ode to Joy",
+      "hint": "Sing parallel thirds with Beethoven",
+      "grade": 4,
+      "kind": "song",
+      "tempo": 100,
+      "key": "C",
+      "publicDomain": "Beethoven Ode to Joy theme — public domain",
+      "melody": [
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 1 },
+        { "midi": 60, "beats": 1 }, { "midi": 60, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 64, "beats": 1 },
+        { "midi": 64, "beats": 1.5 }, { "midi": 62, "beats": 0.5 }, { "midi": 62, "beats": 2 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 1 },
+        { "midi": 60, "beats": 1 }, { "midi": 60, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 64, "beats": 1 },
+        { "midi": 62, "beats": 1.5 }, { "midi": 60, "beats": 0.5 }, { "midi": 60, "beats": 2 }
+      ],
+      "harmony": [
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 1 },
+        { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 67, "beats": 1.5 }, { "midi": 65, "beats": 0.5 }, { "midi": 65, "beats": 2 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 1 },
+        { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 65, "beats": 1.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 2 }
+      ],
+      "phrases": [[0, 8], [8, 16], [16, 24], [24, 32]]
+    },
+    {
+      "id": "amazing-grace",
+      "title": "Amazing Grace",
+      "hint": "Long tones — stay on the harmony",
+      "grade": 5,
+      "kind": "song",
+      "tempo": 72,
+      "key": "G",
+      "publicDomain": "Amazing Grace (Newton/Walker) — public domain melody",
+      "melody": [
+        { "midi": 67, "beats": 2 }, { "midi": 72, "beats": 2 }, { "midi": 71, "beats": 1 }, { "midi": 72, "beats": 1 }, { "midi": 74, "beats": 2 },
+        { "midi": 72, "beats": 2 }, { "midi": 71, "beats": 2 }, { "midi": 67, "beats": 4 },
+        { "midi": 67, "beats": 2 }, { "midi": 72, "beats": 2 }, { "midi": 71, "beats": 1 }, { "midi": 72, "beats": 1 }, { "midi": 74, "beats": 2 },
+        { "midi": 72, "beats": 2 }, { "midi": 71, "beats": 2 }, { "midi": 69, "beats": 4 },
+        { "midi": 74, "beats": 2 }, { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 1 }, { "midi": 72, "beats": 1 }, { "midi": 74, "beats": 2 },
+        { "midi": 72, "beats": 2 }, { "midi": 71, "beats": 2 }, { "midi": 67, "beats": 4 },
+        { "midi": 64, "beats": 2 }, { "midi": 67, "beats": 2 }, { "midi": 72, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 2 },
+        { "midi": 67, "beats": 2 }, { "midi": 64, "beats": 2 }, { "midi": 62, "beats": 4 }
+      ],
+      "harmony": [
+        { "midi": 71, "beats": 2 }, { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 1 }, { "midi": 76, "beats": 1 }, { "midi": 79, "beats": 2 },
+        { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 2 }, { "midi": 71, "beats": 4 },
+        { "midi": 71, "beats": 2 }, { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 1 }, { "midi": 76, "beats": 1 }, { "midi": 79, "beats": 2 },
+        { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 2 }, { "midi": 72, "beats": 4 },
+        { "midi": 79, "beats": 2 }, { "midi": 81, "beats": 2 }, { "midi": 79, "beats": 1 }, { "midi": 76, "beats": 1 }, { "midi": 79, "beats": 2 },
+        { "midi": 76, "beats": 2 }, { "midi": 74, "beats": 2 }, { "midi": 71, "beats": 4 },
+        { "midi": 67, "beats": 2 }, { "midi": 71, "beats": 2 }, { "midi": 76, "beats": 1 }, { "midi": 74, "beats": 1 }, { "midi": 72, "beats": 2 },
+        { "midi": 71, "beats": 2 }, { "midi": 67, "beats": 2 }, { "midi": 66, "beats": 4 }
+      ],
+      "phrases": [[0, 8], [8, 16], [16, 24], [24, 32]]
+    },
+    {
+      "id": "row-row",
+      "title": "Row Your Boat",
+      "hint": "Round-friendly thirds over the melody",
+      "grade": 4,
+      "kind": "song",
+      "tempo": 100,
+      "key": "C",
+      "publicDomain": "Row, Row, Row Your Boat — public domain",
+      "melody": [
+        { "midi": 60, "beats": 1.5 }, { "midi": 60, "beats": 0.5 }, { "midi": 60, "beats": 1 }, { "midi": 62, "beats": 1 },
+        { "midi": 64, "beats": 3 }, { "midi": 62, "beats": 0.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 3 },
+        { "midi": 72, "beats": 0.5 }, { "midi": 72, "beats": 0.5 }, { "midi": 72, "beats": 0.5 }, { "midi": 67, "beats": 0.5 }, { "midi": 67, "beats": 0.5 }, { "midi": 67, "beats": 0.5 },
+        { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 60, "beats": 0.5 }, { "midi": 60, "beats": 0.5 }, { "midi": 60, "beats": 0.5 },
+        { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 60, "beats": 2 }
+      ],
+      "harmony": [
+        { "midi": 64, "beats": 1.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 },
+        { "midi": 67, "beats": 3 }, { "midi": 65, "beats": 0.5 }, { "midi": 67, "beats": 0.5 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 3 },
+        { "midi": 76, "beats": 0.5 }, { "midi": 76, "beats": 0.5 }, { "midi": 76, "beats": 0.5 }, { "midi": 71, "beats": 0.5 }, { "midi": 71, "beats": 0.5 }, { "midi": 71, "beats": 0.5 },
+        { "midi": 67, "beats": 0.5 }, { "midi": 67, "beats": 0.5 }, { "midi": 67, "beats": 0.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 0.5 }, { "midi": 64, "beats": 0.5 },
+        { "midi": 71, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 2 }
+      ],
+      "phrases": [[0, 4], [4, 8], [8, 14], [14, 18]]
+    },
+    {
+      "id": "when-the-saints",
+      "title": "When the Saints",
+      "hint": "Marching thirds — keep steady",
+      "grade": 5,
+      "kind": "song",
+      "tempo": 110,
+      "key": "C",
+      "publicDomain": "When the Saints Go Marching In — public domain",
+      "melody": [
+        { "midi": 60, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 3 },
+        { "midi": 60, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 3 },
+        { "midi": 60, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 67, "beats": 2 },
+        { "midi": 64, "beats": 1 }, { "midi": 60, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 3 },
+        { "midi": 64, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 60, "beats": 2 },
+        { "midi": 60, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 },
+        { "midi": 65, "beats": 2 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 62, "beats": 1 }, { "midi": 60, "beats": 3 }
+      ],
+      "harmony": [
+        { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 3 },
+        { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 3 },
+        { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 69, "beats": 1 }, { "midi": 71, "beats": 2 },
+        { "midi": 67, "beats": 1 }, { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 3 },
+        { "midi": 67, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 2 },
+        { "midi": 64, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 71, "beats": 1 }, { "midi": 71, "beats": 1 },
+        { "midi": 69, "beats": 2 }, { "midi": 69, "beats": 1 }, { "midi": 67, "beats": 1 }, { "midi": 65, "beats": 1 }, { "midi": 64, "beats": 3 }
+      ],
+      "phrases": [[0, 6], [6, 12], [12, 18], [18, 24], [24, 32]]
+    }
+  ]
+}
