@@ -1157,3 +1157,278 @@ export function buildUnitTypeGalleryHtml() {
     ${filters}${cards}
   </section>`;
 }
+
+/* ========== v3 Danish-style military symbol chart ========== */
+
+export const RESET_ZOOM = 1;
+export const FIT_ACTION = "fit";
+
+export function nextZoom(current, action) {
+  const c = Number(current) || 1;
+  if (action === "reset") return RESET_ZOOM;
+  if (action === "in") return Math.min(4, +(c * 1.25).toFixed(3));
+  if (action === "out") return Math.max(0.35, +(c / 1.25).toFixed(3));
+  if (action === FIT_ACTION) return FIT_ACTION; // sentinel for JS viewport fit
+  return c;
+}
+
+function inferRole(unit) {
+  if (unit.capability) return unit.capability;
+  const t = String(unit.unitType || "").toLowerCase();
+  const n = String(unit.name || "").toLowerCase();
+  if (/staff|strategist|council|prefect|purpose desk|desk/.test(t + " " + n)) return "staff";
+  if (/medic|mercy|healer/.test(t + " " + n)) return "medic";
+  if (/artillery|ash|chorus|engine/.test(t + " " + n) && !/cavalry/.test(n)) return "artillery";
+  if (/armor|heavy|bastion|behemoth/.test(t + " " + n)) return "armor";
+  if (/cavalry|recon|gale|strider|hussar|rider|camel/.test(t + " " + n)) return "cavalry";
+  if (/air|kite|lantern|wing|sky/.test(t + " " + n)) return "air";
+  if (/signal|echo|relay/.test(t + " " + n)) return "signal";
+  if (/supply|root|caravan|train/.test(t + " " + n)) return "supply";
+  if (/high lord|division|banner|emperor|king|host|command/.test(t)) return "hq";
+  return "infantry";
+}
+
+function echelonMark(unit) {
+  const t = String(unit.unitType || "").toLowerCase();
+  if (/emperor|high lord|warrior king/.test(t) || /warrior king/i.test(unit.name || "")) return "XXX";
+  if (/division|region host|great host/.test(t)) return "XX";
+  if (/banner|regiment|legion|council|defence/.test(t)) return "III";
+  if (/battalion|brigade/.test(t)) return "II";
+  if (/company|battery|wing|section|capability/.test(t)) return "I";
+  if (/platoon|troop/.test(t)) return "•••";
+  if (/squad|file|lance/.test(t)) return "••";
+  if (/staff/.test(t)) return "•";
+  return "II";
+}
+
+const ROLE_FILL = {
+  hq: "#6b8f71",
+  infantry: "#9eb6c8",
+  cavalry: "#d4b84a",
+  artillery: "#c45c48",
+  armor: "#8a8a8a",
+  air: "#8eb4d8",
+  medic: "#f0f0f0",
+  signal: "#b8a0d0",
+  supply: "#c4b59a",
+  staff: "#d8d8d8",
+};
+
+function roleGlyph(role, cx, cy) {
+  const s = 9;
+  if (role === "infantry") {
+    return `<path class="role-glyph" d="M${cx - s} ${cy - s} L${cx + s} ${cy + s} M${cx + s} ${cy - s} L${cx - s} ${cy + s}" stroke="#111" stroke-width="2.2" fill="none"/>`;
+  }
+  if (role === "cavalry") {
+    return `<path class="role-glyph" d="M${cx - s} ${cy + s * 0.6} L${cx + s} ${cy - s * 0.6}" stroke="#111" stroke-width="2.4" fill="none"/>`;
+  }
+  if (role === "artillery") {
+    return `<circle class="role-glyph" cx="${cx}" cy="${cy}" r="5.5" fill="#111"/>`;
+  }
+  if (role === "armor") {
+    return `<ellipse class="role-glyph" cx="${cx}" cy="${cy}" rx="11" ry="7" fill="none" stroke="#111" stroke-width="2.2"/>`;
+  }
+  if (role === "air") {
+    return `<path class="role-glyph" d="M${cx - 10} ${cy} Q${cx} ${cy - 8} ${cx + 10} ${cy} Q${cx} ${cy + 8} ${cx - 10} ${cy}" fill="none" stroke="#111" stroke-width="2"/>`;
+  }
+  if (role === "medic") {
+    return `<path class="role-glyph" d="M${cx - 2} ${cy - 8} H${cx + 2} V${cy - 2} H${cx + 8} V${cy + 2} H${cx + 2} V${cy + 8} H${cx - 2} V${cy + 2} H${cx - 8} V${cy - 2} H${cx - 2} Z" fill="#c0392b"/>`;
+  }
+  if (role === "signal") {
+    return `<path class="role-glyph" d="M${cx - 8} ${cy + 6} L${cx - 2} ${cy - 6} L${cx + 2} ${cy + 2} L${cx + 8} ${cy - 6}" fill="none" stroke="#111" stroke-width="2.2" stroke-linejoin="round"/>`;
+  }
+  if (role === "supply") {
+    return `<g class="role-glyph"><circle cx="${cx - 5}" cy="${cy}" r="3.2" fill="#111"/><circle cx="${cx + 5}" cy="${cy}" r="3.2" fill="#111"/><circle cx="${cx}" cy="${cy - 5}" r="3.2" fill="#111"/></g>`;
+  }
+  if (role === "staff") {
+    return `<g class="role-glyph"><rect x="${cx - 7}" y="${cy - 2}" width="14" height="4" fill="#111"/><rect x="${cx - 2}" y="${cy - 8}" width="4" height="14" fill="#111"/></g>`;
+  }
+  // hq flag
+  return `<g class="role-glyph"><path d="M${cx - 8} ${cy + 9} V${cy - 9} H${cx + 6} L${cx + 2} ${cy - 3} H${cx - 8}" fill="#111"/></g>`;
+}
+
+const BOX_W = 48;
+const BOX_H = 30;
+const LABEL_MAX = 34;
+const V_GAP = 62;
+const H_GAP = 36;
+const PAD = 40;
+
+function estimateLabelW(name) {
+  return Math.min(340, 10 + Math.min(name.length, LABEL_MAX) * 7.4);
+}
+
+function nodeFootprint(unit) {
+  // Labels sit to the RIGHT of the box; column must be wide enough that
+  // neighboring columns do not overlap text (Danish chart style).
+  const lw = estimateLabelW(unit.name);
+  return Math.max(180, BOX_W + 28 + lw * 2 + H_GAP);
+}
+
+/** Recursively measure subtree width for column layout */
+function measure(forceId, unitId) {
+  const unit = getUnit(forceId, unitId);
+  const kids = unit.children || [];
+  if (!kids.length) return Math.max(nodeFootprint(unit), 120);
+  let sum = 0;
+  for (const k of kids) sum += measure(forceId, k);
+  return Math.max(nodeFootprint(unit), sum);
+}
+
+/**
+ * Place nodes: Danish style — parent centered above children bus;
+ * children laid left-to-right; each child's descendants stack as a column.
+ */
+function place(forceId, unitId, left, top, positions) {
+  const unit = getUnit(forceId, unitId);
+  const kids = unit.children || [];
+  const width = measure(forceId, unitId);
+  const x = left + width / 2;
+  const y = top;
+  positions[unitId] = { id: unitId, x, y, unit, width };
+
+  if (!kids.length) return;
+
+  let cursor = left;
+  const childTop = top + V_GAP;
+  for (const k of kids) {
+    const w = measure(forceId, k);
+    place(forceId, k, cursor, childTop, positions);
+    cursor += w;
+  }
+}
+
+function connectorPath(px, py, cx, cy) {
+  // from bottom-center of parent box to top-center of child box, orthogonal
+  const yMid = (py + BOX_H / 2 + cy - BOX_H / 2) / 2;
+  return `M${px} ${py + BOX_H / 2} V${yMid} H${cx} V${cy - BOX_H / 2}`;
+}
+
+function renderNode(pos, forceId) {
+  const { x, y, unit } = pos;
+  const role = inferRole(unit);
+  const ech = echelonMark(unit);
+  const fill = ROLE_FILL[role] || ROLE_FILL.infantry;
+  const proposed = unit.status === "proposed";
+  const rel = unit.edgeKind === "relationship";
+  const dash = rel ? ` stroke-dasharray="4 3"` : "";
+  const stroke = proposed ? "#8a5a00" : "#111";
+  const strokeW = proposed ? 2.4 : 1.8;
+  const label = unit.name.length > LABEL_MAX ? unit.name.slice(0, LABEL_MAX - 1) + "…" : unit.name;
+  // tests forbid Alaric/Garrick style truncation — keep full short names; only truncate very long
+  const safeLabel = unit.name.length > 48 ? unit.name.slice(0, 47) + "…" : unit.name;
+  const statusMark = proposed ? " · PROPOSED" : "";
+  const leader = unit.leader?.name && unit.leader.name !== "Unnamed" ? ` (${unit.leader.name})` : "";
+
+  return `<g class="mil-node" data-unit-id="${esc(unit.id)}" data-force="${esc(forceId)}" tabindex="0" role="button" aria-label="${esc(unit.name)}">
+    <text class="echelon" x="${x}" y="${y - BOX_H / 2 - 6}" text-anchor="middle" font-size="11" font-family="Georgia, serif" fill="#111">${esc(ech)}</text>
+    <rect class="tac-frame" x="${x - BOX_W / 2}" y="${y - BOX_H / 2}" width="${BOX_W}" height="${BOX_H}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"${dash}/>
+    ${roleGlyph(role, x, y)}
+    <text class="unit-label" x="${x + BOX_W / 2 + 8}" y="${y - 2}" font-size="13" font-family="Georgia, 'Times New Roman', serif" fill="#111">${esc(safeLabel)}</text>
+    <text class="unit-sub" x="${x + BOX_W / 2 + 8}" y="${y + 14}" font-size="10" font-family="system-ui,sans-serif" fill="#333">${esc((unit.unitType || "") + statusMark + leader)}</text>
+  </g>`;
+}
+
+export function buildChartSvg(forceId) {
+  const force = getForce(forceId);
+  const positions = {};
+  const treeW = measure(forceId, force.rootId);
+  place(forceId, force.rootId, PAD, PAD + 20, positions);
+
+  let maxX = 0;
+  let maxY = 0;
+  for (const p of Object.values(positions)) {
+    maxX = Math.max(maxX, p.x + BOX_W / 2 + estimateLabelW(p.unit.name) + 40);
+    maxY = Math.max(maxY, p.y + BOX_H / 2 + 40);
+  }
+  const vbW = Math.max(900, Math.ceil(maxX + PAD));
+  const vbH = Math.max(700, Math.ceil(maxY + PAD));
+
+  let paths = "";
+  for (const p of Object.values(positions)) {
+    const kids = p.unit.children || [];
+    if (!kids.length) continue;
+    // bus across children
+    const childPos = kids.map((id) => positions[id]);
+    const xs = childPos.map((c) => c.x);
+    const minX = Math.min(...xs);
+    const maxCX = Math.max(...xs);
+    const busY = (p.y + BOX_H / 2 + childPos[0].y - BOX_H / 2) / 2;
+    const relAny = childPos.some((c) => c.unit.edgeKind === "relationship");
+    const dash = relAny && forceId === "enemy" ? ` stroke-dasharray="5 4"` : "";
+    paths += `<path class="connector" d="M${p.x} ${p.y + BOX_H / 2} V${busY}" fill="none" stroke="#111" stroke-width="1.5"/>`;
+    if (kids.length > 1) {
+      paths += `<path class="connector" d="M${minX} ${busY} H${maxCX}" fill="none" stroke="#111" stroke-width="1.5"${dash}/>`;
+    }
+    for (const c of childPos) {
+      const cdash = c.unit.edgeKind === "relationship" ? ` stroke-dasharray="5 4"` : "";
+      paths += `<path class="connector" d="M${c.x} ${busY} V${c.y - BOX_H / 2}" fill="none" stroke="#111" stroke-width="1.5"${cdash}/>`;
+    }
+  }
+
+  let nodes = "";
+  // paint root first then depth order
+  const order = Object.values(positions).sort((a, b) => a.y - b.y || a.x - b.x);
+  for (const p of order) nodes += renderNode(p, forceId);
+
+  const title = esc(force.title || forceId);
+  const rootPos = positions[force.rootId];
+  return `<svg class="mil-chart-svg" data-chart-force="${esc(forceId)}" data-root-x="${rootPos.x}" data-root-y="${rootPos.y}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vbW} ${vbH}" width="${vbW}" height="${vbH}" role="img" aria-label="${title} organization chart">
+  <rect class="chart-paper" x="0" y="0" width="${vbW}" height="${vbH}" fill="#f7f4ea"/>
+  <text x="${PAD}" y="22" font-size="14" font-family="Georgia,serif" fill="#333">${title} — military symbol chart (v3)</text>
+  <g class="connectors">${paths}</g>
+  <g class="nodes">${nodes}</g>
+</svg>`;
+}
+
+export function buildLegendHtml() {
+  const echelons = [
+    ["XXX", "High command (High Lord / Emperor / Warrior King)"],
+    ["XX", "Division / regional host"],
+    ["III", "Banner / regiment-scale package"],
+    ["II", "Battalion-scale (when used)"],
+    ["I", "Company / section / proposed capability cell"],
+    ["•••", "Platoon"],
+    ["••", "Squad / file"],
+  ];
+  const roles = [
+    ["hq", "Command / HQ"],
+    ["infantry", "Infantry (X)"],
+    ["cavalry", "Cavalry / recon (diagonal)"],
+    ["artillery", "Artillery (dot)"],
+    ["armor", "Armor / heavy (oval)"],
+    ["air", "Air / kite"],
+    ["medic", "Medic"],
+    ["signal", "Signal"],
+    ["supply", "Supply"],
+    ["staff", "Staff"],
+  ];
+  let ech = `<div class="leg-block"><h3>Echelon marks (fictional mapping)</h3><ul class="leg-list">`;
+  for (const [m, d] of echelons) ech += `<li><span class="ech-sym">${esc(m)}</span> ${esc(d)}</li>`;
+  ech += `</ul></div>`;
+
+  let rol = `<div class="leg-block"><h3>Role symbols</h3><ul class="leg-roles">`;
+  for (const [r, d] of roles) {
+    const fill = ROLE_FILL[r];
+    rol += `<li><svg width="40" height="28" aria-hidden="true"><rect x="1" y="1" width="38" height="26" rx="2" fill="${fill}" stroke="#111"/><g transform="translate(20 14)">${roleGlyph(r, 0, 0).replace(/class="role-glyph"/g, "")}</g></svg> ${esc(d)}</li>`;
+  }
+  rol += `</ul><p class="note">Solid frame = Confirmed. Amber thick frame / PROPOSED label = Proposed · Non-Canon. Dotted connectors = relationship (not command), used for desert enemy allies.</p></div>`;
+
+  return `<div class="chart-legend" data-chart-legend="true">${ech}${rol}</div>`;
+}
+
+export function buildDetailHtml(forceId, unitId) {
+  const unit = getUnit(forceId, unitId);
+  const role = inferRole(unit);
+  return `<aside class="detail-overlay" data-detail-overlay="true" data-unit="${esc(unit.id)}">
+    <button type="button" class="detail-close" data-detail-close="1" aria-label="Close">×</button>
+    <p class="kicker">${esc(unit.unitType)} · role ${esc(role)} ${badge(unit.status)}</p>
+    <h3>${esc(unit.name)}</h3>
+    <p><strong>Leader:</strong> ${esc(unit.leader.title)}${unit.leader.name ? " — " + esc(unit.leader.name) : ""} ${badge(unit.leader.status)}</p>
+    <p><strong>Strength:</strong> ${esc(unit.strength.text)} ${badge(unit.strength.status)}</p>
+    <h4>What it is</h4>
+    <p class="prose">${esc(unit.whatItIs)}</p>
+    <h4>What it does</h4>
+    <p class="prose">${esc(unit.functionText)}</p>
+  </aside>`;
+}

@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#08090d">
+<meta name="theme-color" content="#f7f4ea">
 <title>Military Organization · Letters of the Two Worlds</title>
-<meta name="description" content="Roomy army explorer for Black Guard, Empire, and desert enemy — with proposed creature and spirit-tech unit types.">
+<meta name="description" content="Danish-style military symbol org charts for Black Guard, Empire, and desert enemy — with proposed creature and spirit-tech roles.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="military.css">
 </head>
-<body data-military-build="story-military-org-v2">
-<span class="mil-marker" data-military-build="story-military-org-v2">story-military-org-v2</span>
+<body data-military-build="story-military-org-v3">
+<span class="mil-marker" data-military-build="story-military-org-v3">story-military-org-v3</span>
 <header class="top">
   <div class="bar"><a class="brand" href="index.html">📜 Letters of the Two Worlds</a><a class="hub" href="../">← Everything We Built</a></div>
   <nav class="nav" aria-label="Sections"><a href="index.html">Home</a><a href="canon.html">Canon</a><a href="decide.html">Decide</a><a href="non-canon.html" aria-current="page">Non-Canon</a></nav>
@@ -25,10 +25,10 @@
     <a href="military.html" aria-current="page">Military</a>
   </nav>
 </header>
-<main>
+<main class="mil-main">
   <p class="crumb"><a href="non-canon.html">Non-Canon</a> · Military Organization · also see <a href="ranks.html">Ranks</a></p>
   <h1>Military Organization</h1>
-  <p class="mil-lede">An army explorer — one command level at a time, with plain-language cards. Confirmed Canon stays labeled Confirmed. Invented flesh (including nine creature / spirit-tech branches) is always <b>Proposed · Non-Canon</b>. No tiny whole-force graph.</p>
+  <p class="mil-lede">Reference-style military symbol charts (all hierarchy at once). Confirmed Canon stays labeled Confirmed. Invented flesh — including nine creature / spirit-tech roles — is always <b>Proposed · Non-Canon</b>. Pan and zoom the chart; tap a symbol for detail. This is not a drill-down card explorer.</p>
 
   <div class="mil-tabs" role="tablist" aria-label="Force views">
     <button type="button" role="tab" data-view="guard" aria-selected="true">Black Guard</button>
@@ -36,24 +36,30 @@
     <button type="button" role="tab" data-view="enemy" aria-selected="false">Desert enemy</button>
   </div>
 
-  <div class="mil-legend" aria-hidden="true">
-    <span><i class="cmd"></i> Command</span>
-    <span><i class="rel"></i> Relationship</span>
-    <span class="badge confirmed">Confirmed</span>
-    <span class="badge proposed">Proposed · Non-Canon</span>
-  </div>
-
-  <div class="mil-toolbar sticky-tools">
-    <button type="button" id="mil-back">← Back</button>
-    <button type="button" id="mil-overview">Force overview</button>
+  <div class="mil-toolbar sticky-tools" role="toolbar" aria-label="Chart controls">
     <h2 id="mil-view-title">Black Guard</h2>
+    <button type="button" id="mil-zoom-out" title="Zoom out">Zoom out</button>
+    <button type="button" id="mil-zoom-in" title="Zoom in">Zoom in</button>
+    <button type="button" id="mil-zoom-reset" title="Reset to actual size">Reset</button>
+    <button type="button" id="mil-fit" title="Fit whole chart in view">Fit overview</button>
+    <button type="button" id="mil-download" title="Download SVG">Download SVG</button>
   </div>
 
-  <div id="mil-explorer" class="explorer-host" aria-live="polite"></div>
+  <div id="mil-chart-host" class="chart-viewport mil-chart-host" tabindex="0" aria-label="Organization chart — drag to pan, pinch or buttons to zoom">
+    <!-- SVG injected here at actual size; no auto fit-to-width on load -->
+  </div>
+  <p class="chart-hint">Default is actual size (readable labels). Use <b>Fit overview</b> to see the whole force, then Reset to read names. On phones: drag to pan, pinch to zoom. Tap a unit for a detail overlay.</p>
+
+  <div id="mil-detail" class="detail-slot" hidden></div>
+
+  <section class="mil-section" id="legend">
+    <h2>Legend</h2>
+    <div id="mil-legend"></div>
+  </section>
 
   <section class="mil-section" id="unit-types">
     <h2>Proposed unit types — creatures &amp; spirit-tech</h2>
-    <p class="mil-lede">Nine imaginative branches (infantry, artillery, cavalry, armor, air, medic, signal, supply, staff). Each channels a bounded purpose/tie — not free spectrum shifting, not enslaved omnipotent spirits. Filter on phone-friendly chips below.</p>
+    <p class="mil-lede">Nine imaginative branches retained from the explorer pass. Each channels a bounded purpose/tie. Filter with the chips; open a chart node for force-specific placement.</p>
     <div id="mil-gallery"></div>
   </section>
 
