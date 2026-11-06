@@ -19,41 +19,47 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+// Bright daytime yard (Chumi: don't make it dark)
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1024);
-scene.fog = new THREE.Fog(0x0b1024, 18, 55);
+scene.background = new THREE.Color(0x8ec7f0);
+scene.fog = new THREE.Fog(0xb9d9f2, 42, 95);
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.05, 80);
-const eyeH = 1.62;
-camera.position.set(0, eyeH, 8);
+const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.08, 120);
+camera.position.set(0, 2.2, 11);
 
-const hemi = new THREE.HemisphereLight(0xb8d0ff, 0x2a1a10, 1.1);
+const hemi = new THREE.HemisphereLight(0xfff2d6, 0x7a9a55, 1.25);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffe2a8, 1.15);
-sun.position.set(6, 14, 4);
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.55);
+sun.position.set(10, 22, 8);
 scene.add(sun);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
 
-// Yard
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(40, 40),
-  new THREE.MeshStandardMaterial({ color: 0x2a3348, roughness: 0.95 })
+  new THREE.PlaneGeometry(48, 48),
+  new THREE.MeshStandardMaterial({ color: 0xc9b896, roughness: 0.92 })
 );
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
-const grid = new THREE.GridHelper(40, 40, 0x3a4a6a, 0x1c2438);
-grid.position.y = 0.01;
+const grid = new THREE.GridHelper(40, 40, 0xa89870, 0xb8a878);
+grid.position.y = 0.02;
 scene.add(grid);
 
-// Low walls (collision)
 const walls = [];
+const wallMeshes = [];
 function addWall(x, z, w, d) {
   const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w, 1.4, d),
-    new THREE.MeshStandardMaterial({ color: 0x3d465c, roughness: 0.35, roughnessMap: null })
+    new THREE.BoxGeometry(w, 1.5, d),
+    new THREE.MeshStandardMaterial({ color: 0xe4ddd0, roughness: 0.82 })
   );
-  m.position.set(x, 0.7, z);
+  m.position.set(x, 0.75, z);
+  m.userData.cover = true;
   scene.add(m);
-  walls.push({ minX: x - w / 2 - 0.35, maxX: x + w / 2 + 0.35, minZ: z - d / 2 - 0.35, maxZ: z + d / 2 + 0.35 });
+  wallMeshes.push(m);
+  walls.push({
+    minX: x - w / 2 - 0.35, maxX: x + w / 2 + 0.35,
+    minZ: z - d / 2 - 0.35, maxZ: z + d / 2 + 0.35,
+    mesh: m,
+  });
 }
 addWall(-12, 0, 1, 24);
 addWall(12, 0, 1, 24);
@@ -64,18 +70,48 @@ addWall(5, 3, 0.6, 5);
 
 const fx = new FX(scene);
 
-// Player state
+// ---- player (visible HQ trooper) ----
 const keys = Object.create(null);
-let yaw = 0, pitch = 0;
+let yaw = 0;
+let pitch = 0.12; // slight downward look default
 let moveX = 0, moveY = 0;
 let lookDx = 0, lookDy = 0;
 let fireHeld = false, firePressed = false;
 let playing = false, pointerLocked = false;
-let sens = isTouch ? 0.0032 : 0.0022;
-const player = { x: 0, z: 8, vx: 0, vz: 0 };
+let ignoreFireUntil = 0;
+const sens = isTouch ? 0.0032 : 0.0022;
+const player = { x: 0, z: 8 };
+let playerTrooper = null;
+let playerPose = 'idle';
+let playerPoseT = 0;
+let shootPoseLeft = 0;
 let shots = 0, hits = 0;
 let hitFlash = 0;
 let muzzleCool = 0;
+
+// OTS camera (Battlefront-style): behind + right shoulder so body sits left of reticle
+// camera-systems: pitch clamp, exp follow after move, spring-arm wall pull-in
+const CAM_DIST = 3.35;
+const CAM_HEIGHT = 1.58;
+const SHOULDER_R = 0.62;
+const LOOK_H = 1.38;
+const PITCH_MIN = THREE.MathUtils.degToRad(-70);
+const PITCH_MAX = THREE.MathUtils.degToRad(42);
+const POS_RATE = 12.5;
+// HQ trooper rest forward is +Z; lookDir at yaw=0 is -Z → offset π so back faces camera
+const BODY_YAW_OFFSET = Math.PI;
+
+const camPos = new THREE.Vector3(0, 2.2, 11);
+const _lookDir = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _pivot = new THREE.Vector3();
+const _ideal = new THREE.Vector3();
+const _tmp = new THREE.Vector3();
+const _muzzle = new THREE.Vector3();
+const _aimPt = new THREE.Vector3();
+const _from = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const raycaster = new THREE.Raycaster();
 
 function updateHud() {
   hitsEl.textContent = String(hits);
@@ -83,13 +119,27 @@ function updateHud() {
   accEl.textContent = shots ? Math.round((100 * hits) / shots) + '%' : '—';
 }
 
-// Targets: HQ troopers that walk / strafe with poseTrooper gait
+function spawnPlayer() {
+  if (playerTrooper) {
+    disposeHqTrooper(playerTrooper);
+    playerTrooper = null;
+  }
+  playerTrooper = createHqTrooper({ side: 'attacker', cls: 'rifle' });
+  playerTrooper.root.position.set(player.x, 0, player.z);
+  playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+  scene.add(playerTrooper.root);
+  playerPose = 'idle';
+  playerPoseT = 0;
+  poseTrooper(playerTrooper, 'idle', 0, 0.016);
+}
+
+// Targets
 const targets = [];
 const PATHS = [
   { pts: [new THREE.Vector3(-6, 0, -4), new THREE.Vector3(6, 0, -4), new THREE.Vector3(6, 0, 4), new THREE.Vector3(-6, 0, 4)], speed: 2.2, side: 'defender' },
   { pts: [new THREE.Vector3(8, 0, -6), new THREE.Vector3(8, 0, 6)], speed: 1.8, side: 'defender' },
   { pts: [new THREE.Vector3(-8, 0, 5), new THREE.Vector3(-2, 0, -6), new THREE.Vector3(-8, 0, -3)], speed: 2.4, side: 'defender' },
-  { pts: [new THREE.Vector3(0, 0, -8), new THREE.Vector3(4, 0, -2), new THREE.Vector3(-4, 0, -2)], speed: 1.6, side: 'attacker' },
+  { pts: [new THREE.Vector3(0, 0, -8), new THREE.Vector3(4, 0, -2), new THREE.Vector3(-4, 0, -2)], speed: 1.6, side: 'defender' },
 ];
 
 function spawnTarget(cfg, i) {
@@ -98,16 +148,8 @@ function spawnTarget(cfg, i) {
   t.root.position.set(start.x, 0, start.z);
   scene.add(t.root);
   const obj = {
-    id: i,
-    trooper: t,
-    pts: cfg.pts,
-    seg: 0,
-    u: 0,
-    speed: cfg.speed,
-    alive: true,
-    state: 'run',
-    stateT: 0,
-    hitR: 0.55,
+    id: i, trooper: t, pts: cfg.pts, seg: 0, u: 0,
+    speed: cfg.speed, alive: true, state: 'run', stateT: 0, hitR: 0.72,
   };
   targets.push(obj);
   poseTrooper(t, 'run', 0, 0.016);
@@ -115,15 +157,14 @@ function spawnTarget(cfg, i) {
 }
 
 function clearTargets() {
-  for (const o of targets) {
-    disposeHqTrooper(o.trooper);
-  }
+  for (const o of targets) disposeHqTrooper(o.trooper);
   targets.length = 0;
 }
 
 function spawnAll() {
   clearTargets();
   PATHS.forEach((p, i) => spawnTarget(p, i));
+  spawnPlayer();
 }
 
 function advanceTarget(o, dt) {
@@ -131,12 +172,7 @@ function advanceTarget(o, dt) {
     o.stateT += dt;
     poseTrooper(o.trooper, 'die', o.stateT, dt);
     if (o.stateT > 2.8) {
-      // respawn on same path
-      o.alive = true;
-      o.state = 'run';
-      o.stateT = 0;
-      o.seg = 0;
-      o.u = 0;
+      o.alive = true; o.state = 'run'; o.stateT = 0; o.seg = 0; o.u = 0;
       const p = o.pts[0];
       o.trooper.root.position.set(p.x, 0, p.z);
       o.trooper.root.visible = true;
@@ -144,23 +180,17 @@ function advanceTarget(o, dt) {
     }
     return;
   }
-  const a = o.pts[o.seg];
-  const b = o.pts[(o.seg + 1) % o.pts.length];
-  const dx = b.x - a.x, dz = b.z - a.z;
-  const len = Math.hypot(dx, dz) || 1;
-  o.u += (o.speed * dt) / len;
-  if (o.u >= 1) {
-    o.u -= 1;
-    o.seg = (o.seg + 1) % o.pts.length;
-  }
   const a2 = o.pts[o.seg];
   const b2 = o.pts[(o.seg + 1) % o.pts.length];
-  const x = a2.x + (b2.x - a2.x) * o.u;
-  const z = a2.z + (b2.z - a2.z) * o.u;
-  const yawFace = Math.atan2(b2.x - a2.x, b2.z - a2.z);
-  o.trooper.root.position.x = x;
-  o.trooper.root.position.z = z;
-  o.trooper.root.rotation.y = yawFace;
+  const dx = b2.x - a2.x, dz = b2.z - a2.z;
+  const len = Math.hypot(dx, dz) || 1;
+  o.u += (o.speed * dt) / len;
+  if (o.u >= 1) { o.u -= 1; o.seg = (o.seg + 1) % o.pts.length; }
+  const a = o.pts[o.seg];
+  const b = o.pts[(o.seg + 1) % o.pts.length];
+  o.trooper.root.position.x = a.x + (b.x - a.x) * o.u;
+  o.trooper.root.position.z = a.z + (b.z - a.z) * o.u;
+  o.trooper.root.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
   o.stateT += dt;
   poseTrooper(o.trooper, 'run', o.stateT, dt);
 }
@@ -175,45 +205,128 @@ function collidePlayer(nx, nz) {
       else z = nz < cz ? w.minZ : w.maxZ;
     }
   }
-  x = Math.max(-11.2, Math.min(11.2, x));
-  z = Math.max(-11.2, Math.min(11.2, z));
-  return { x, z };
+  return {
+    x: Math.max(-11.2, Math.min(11.2, x)),
+    z: Math.max(-11.2, Math.min(11.2, z)),
+  };
 }
 
-const _fwd = new THREE.Vector3();
-const _right = new THREE.Vector3();
-const _aim = new THREE.Vector3();
-const _origin = new THREE.Vector3();
-const _dir = new THREE.Vector3();
-const raycaster = new THREE.Raycaster();
+function lookBasis() {
+  // Match three.js YXZ camera: forward & right on XZ with pitch
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const sy = Math.sin(yaw), cy = Math.cos(yaw);
+  _lookDir.set(-sy * cp, sp, -cy * cp).normalize();
+  _right.set(cy, 0, -sy).normalize();
+}
+
+function updateCamera(dt, hard = false) {
+  lookBasis();
+  _pivot.set(player.x, LOOK_H, player.z);
+  // Ideal: behind along -look (flattened) + right shoulder + height
+  _ideal.copy(_pivot)
+    .addScaledVector(_lookDir, -CAM_DIST)
+    .addScaledVector(_right, SHOULDER_R);
+  // shoulder height; pitch lifts/lowers slightly without flipping
+  _ideal.y = CAM_HEIGHT + (-pitch) * 0.45;
+
+  // Spring-arm wall / cover pull-in (camera-systems §4 / pitfalls)
+  _from.copy(_pivot);
+  _dir.copy(_ideal).sub(_from);
+  const wantDist = _dir.length();
+  if (wantDist > 1e-4) {
+    _dir.multiplyScalar(1 / wantDist);
+    raycaster.set(_from, _dir);
+    raycaster.far = wantDist;
+    const hitsWall = raycaster.intersectObjects(wallMeshes, false);
+    let dist = wantDist;
+    if (hitsWall.length) dist = Math.max(0.45, hitsWall[0].distance - 0.18);
+    _ideal.copy(_from).addScaledVector(_dir, dist);
+  }
+  // Ground clamp
+  if (_ideal.y < 0.45) _ideal.y = 0.45;
+
+  if (hard) camPos.copy(_ideal);
+  else {
+    const t = 1 - Math.exp(-POS_RATE * dt);
+    camPos.lerp(_ideal, t);
+  }
+  camera.position.copy(camPos);
+  // Look through reticle: aim point ahead of pivot so body stays left of center
+  _aimPt.copy(_pivot).addScaledVector(_lookDir, 12);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(_aimPt);
+}
+
+function getMuzzleWorld(out) {
+  const rig = playerTrooper?.rig;
+  if (rig) {
+    try {
+      rig.world('muzzle', 0, out);
+      return out;
+    } catch (_) { /* fall through */ }
+  }
+  lookBasis();
+  return out.set(player.x, 1.35, player.z).addScaledVector(_lookDir, 0.55).addScaledVector(_right, 0.15);
+}
+
+function coverBlocks(from, to) {
+  _dir.copy(to).sub(from);
+  const dist = _dir.length();
+  if (dist < 0.05) return true;
+  _dir.multiplyScalar(1 / dist);
+  raycaster.set(from, _dir);
+  raycaster.far = dist - 0.05;
+  return raycaster.intersectObjects(wallMeshes, false).length > 0;
+}
 
 function tryFire() {
   if (!playing || muzzleCool > 0) return;
+  if (performance.now() < ignoreFireUntil) return;
   muzzleCool = 0.18;
   shots += 1;
   updateHud();
+  shootPoseLeft = 0.35;
+  playerPose = 'shoot';
+  playerPoseT = 0;
 
+  lookBasis();
+  _pivot.set(player.x, LOOK_H, player.z);
+  // Centre-reticle aim from camera
   camera.getWorldDirection(_dir);
-  _origin.copy(camera.position);
-  raycaster.set(_origin, _dir);
+  raycaster.set(camera.position, _dir);
+  raycaster.far = 50;
+  const coverHit = raycaster.intersectObjects(wallMeshes, false);
+  if (coverHit.length) _aimPt.copy(coverHit[0].point);
+  else _aimPt.copy(camera.position).addScaledVector(_dir, 40);
 
-  // simple muzzle FX from eye
-  const muzzle = _origin.clone().add(_dir.clone().multiplyScalar(0.4));
-  fx.muzzle(muzzle, _dir, 0xffd27a, 0.7);
+  getMuzzleWorld(_muzzle);
+  // Muzzle → aim convergence
+  _dir.copy(_aimPt).sub(_muzzle).normalize();
+  fx.muzzle(_muzzle, _dir, 0xffd27a, 0.85);
+
+  // Blocked by cover between muzzle and aim?
+  const blocked = coverBlocks(_muzzle, _aimPt);
 
   let best = null, bestD = 40;
-  for (const o of targets) {
-    if (!o.alive) continue;
-    const p = o.trooper.root.position;
-    const center = new THREE.Vector3(p.x, 1.1, p.z);
-    const to = center.clone().sub(_origin);
-    const t = to.dot(_dir);
-    if (t < 0.3 || t > bestD) continue;
-    const closest = _origin.clone().add(_dir.clone().multiplyScalar(t));
-    if (closest.distanceTo(center) <= o.hitR) {
-      best = o; bestD = t;
+  if (!blocked) {
+    for (const o of targets) {
+      if (!o.alive) continue;
+      // exclude self (player is not in targets, but skip if same root)
+      if (playerTrooper && o.trooper.root === playerTrooper.root) continue;
+      const p = o.trooper.root.position;
+      const center = _tmp.set(p.x, 1.1, p.z);
+      const to = center.clone().sub(_muzzle);
+      const t = to.dot(_dir);
+      if (t < 0.4 || t > bestD) continue;
+      const closest = _muzzle.clone().addScaledVector(_dir, t);
+      if (closest.distanceTo(center) <= o.hitR) {
+        // also ensure cover doesn't sit between muzzle and target
+        if (coverBlocks(_muzzle, center)) continue;
+        best = o; bestD = t;
+      }
     }
   }
+
   if (best) {
     hits += 1;
     updateHud();
@@ -222,23 +335,30 @@ function tryFire() {
     best.stateT = 0;
     const hp = best.trooper.root.position.clone().setY(1.2);
     fx.hitPuff(hp, 1.2);
-    fireFx(scene, best.trooper, hp);
+    fireFx(scene, playerTrooper, hp);
     hitmark.hidden = false;
     hitmark.classList.add('on');
     hitFlash = 0.12;
   } else {
-    const miss = _origin.clone().add(_dir.clone().multiplyScalar(30));
-    fx.tracer(muzzle, miss, 0xffe08a, 0.08, 0.025);
+    fx.tracer(_muzzle, _aimPt, 0xffe08a, 0.08, 0.025);
   }
 }
 
 function restart() {
   shots = 0; hits = 0; updateHud();
-  player.x = 0; player.z = 8; yaw = 0; pitch = 0;
+  player.x = 0; player.z = 8;
+  yaw = 0; pitch = 0.12;
+  shootPoseLeft = 0;
+  ignoreFireUntil = performance.now() + 350;
+  fireHeld = false; firePressed = false;
   spawnAll();
+  updateCamera(1 / 60, true);
 }
 
-// Input — keyboard
+function isUiEventTarget(t) {
+  return !!(t && t.closest && t.closest('button, #start, #hud button, #btnRestart, #btnStart, #btnFire'));
+}
+
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Escape') document.exitPointerLock?.();
@@ -259,13 +379,15 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mousedown', (e) => {
   if (!playing || isTouch) return;
-  if (e.button === 0) { fireHeld = true; firePressed = true; }
+  if (e.button !== 0) return;
+  if (isUiEventTarget(e.target)) return; // restart/start must not fire
+  if (!pointerLocked) return; // only shoot while locked (fixes restart-click-fires)
+  fireHeld = true; firePressed = true;
 });
 document.addEventListener('mouseup', (e) => {
   if (e.button === 0) fireHeld = false;
 });
 
-// Touch joy + look + fire
 const joy = document.getElementById('joy');
 const joyKnob = document.getElementById('joyKnob');
 const lookzone = document.getElementById('lookzone');
@@ -312,31 +434,115 @@ lookzone.addEventListener('pointerup', endLook);
 lookzone.addEventListener('pointercancel', endLook);
 
 document.getElementById('btnFire').addEventListener('pointerdown', (e) => {
-  e.preventDefault(); fireHeld = true; firePressed = true;
+  e.preventDefault(); e.stopPropagation();
+  fireHeld = true; firePressed = true;
 });
 document.getElementById('btnFire').addEventListener('pointerup', () => { fireHeld = false; });
 document.getElementById('btnFire').addEventListener('pointercancel', () => { fireHeld = false; });
 
-document.getElementById('btnStart').addEventListener('click', () => {
+document.getElementById('btnStart').addEventListener('click', (e) => {
+  e.stopPropagation();
   startEl.hidden = true;
   playing = true;
+  ignoreFireUntil = performance.now() + 350;
   restart();
   if (!isTouch) canvas.requestPointerLock?.();
   canvas.focus();
   setTimeout(() => hint.classList.add('fade'), 4000);
 });
-document.getElementById('btnRestart').addEventListener('click', () => {
+document.getElementById('btnRestart').addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  ignoreFireUntil = performance.now() + 400;
+  fireHeld = false; firePressed = false;
   restart();
 });
 
-// Test hooks (?test=1)
 const params = new URLSearchParams(location.search);
 if (params.get('test') === '1') {
   window.__ARMY_RANGE_TEST__ = {
-    getState: () => ({ shots, hits, playing, targets: targets.map((t) => ({ alive: t.alive, x: t.trooper.root.position.x, z: t.trooper.root.position.z, state: t.state })) }),
+    getState: () => ({
+      shots, hits, playing,
+      yaw, pitch,
+      player: { x: player.x, z: player.z, pose: playerPose },
+      cam: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      targets: targets.map((t) => ({
+        alive: t.alive,
+        x: t.trooper.root.position.x,
+        z: t.trooper.root.position.z,
+        state: t.state,
+      })),
+    }),
     fire: () => tryFire(),
     restart,
-    start: () => { startEl.hidden = true; playing = true; restart(); },
+    start: () => {
+      startEl.hidden = true; playing = true;
+      ignoreFireUntil = 0; restart();
+    },
+    setLook: (y, p) => {
+      yaw = y;
+      pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, p));
+      if (playerTrooper) {
+        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+        playerTrooper.root.updateMatrixWorld(true);
+      }
+      updateCamera(1 / 30, true);
+    },
+    walkForward: (dist = 2) => {
+      const sy = Math.sin(yaw), cy = Math.cos(yaw);
+      const n = collidePlayer(player.x - sy * dist, player.z - cy * dist);
+      player.x = n.x; player.z = n.z;
+      if (playerTrooper) {
+        playerTrooper.root.position.x = player.x;
+        playerTrooper.root.position.z = player.z;
+        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+        playerPose = 'run'; playerPoseT = 0.2;
+        poseTrooper(playerTrooper, 'run', playerPoseT, 0.05);
+        playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+        playerTrooper.root.updateMatrixWorld(true);
+      }
+      updateCamera(1 / 30, true);
+    },
+    /** Live scene orientation (actual playerTrooper), not a rebuilt probe. */
+    getOrient: () => {
+      if (!playerTrooper) return null;
+      lookBasis();
+      playerTrooper.root.updateMatrixWorld(true);
+      const q = new THREE.Quaternion();
+      playerTrooper.root.getWorldQuaternion(q);
+      const localFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
+      const muzzle = new THREE.Vector3();
+      const chest = new THREE.Vector3();
+      try { playerTrooper.rig.world('muzzle', 0, muzzle); } catch (_) { muzzle.set(player.x, 1.35, player.z); }
+      try { playerTrooper.rig.world('chest', 0, chest); } catch (_) { chest.set(player.x, 1.2, player.z); }
+      const rifleDir = muzzle.clone().sub(chest).normalize();
+      const piv = new THREE.Vector3(player.x, LOOK_H, player.z);
+      const cam = camera.position.clone();
+      const camFromPivot = cam.clone().sub(piv);
+      const lookFlat = _lookDir.clone().setY(0).normalize();
+      const fwdFlat = localFwd.clone().setY(0).normalize();
+      const rifleFlat = rifleDir.clone().setY(0).normalize();
+      const camFlat = camFromPivot.clone().setY(0).normalize();
+      const camToPlayer = piv.clone().sub(cam).setY(0).normalize();
+      const behindDot = camFlat.dot(lookFlat);
+      const fwdDotLook = fwdFlat.dot(lookFlat);
+      const fwdDotCam = fwdFlat.dot(camToPlayer);
+      const rifleDotLook = rifleFlat.dot(lookFlat);
+      const rifleDotCam = rifleFlat.dot(camToPlayer);
+      return {
+        yaw, pitch, bodyYaw: yaw + BODY_YAW_OFFSET, bodyYawOffset: BODY_YAW_OFFSET,
+        lookDir: [_lookDir.x, _lookDir.y, _lookDir.z],
+        localFwd: [localFwd.x, localFwd.y, localFwd.z],
+        rifleDir: [rifleDir.x, rifleDir.y, rifleDir.z],
+        muzzle: [muzzle.x, muzzle.y, muzzle.z],
+        cam: [cam.x, cam.y, cam.z],
+        behindDot, fwdDotLook, fwdDotCam, rifleDotLook, rifleDotCam,
+        // camToPlayer = cam→pivot. Back to camera ⇒ forward aligns with that (+), front to camera ⇒ opposite (−).
+        camIsBehindLook: behindDot < -0.3,
+        backTowardCamera: fwdDotLook > 0.5 && fwdDotCam > 0.5,
+        rifleTowardReticle: rifleDotLook > 0.35 && rifleDotCam > 0.25,
+      };
+    },
   };
 }
 
@@ -346,33 +552,49 @@ function frame(now) {
   last = now;
 
   if (playing) {
-    // look
     yaw -= lookDx * sens;
     pitch -= lookDy * sens;
-    pitch = Math.max(-1.35, Math.min(1.35, pitch));
+    pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, pitch));
     lookDx = 0; lookDy = 0;
 
-    // move
     let mx = moveX, my = moveY;
     if (!isTouch) {
       mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
       my = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
     }
-    const len = Math.hypot(mx, my);
-    if (len > 1) { mx /= len; my /= len; }
-    const speed = (keys.ShiftLeft || keys.ShiftRight) ? 6.5 : 4.2;
+    const mlen = Math.hypot(mx, my);
+    if (mlen > 1) { mx /= mlen; my /= mlen; }
+    const moving = mlen > 0.12;
+    const speed = (keys.ShiftLeft || keys.ShiftRight) ? 6.2 : 4.0;
     const s = Math.sin(yaw), c = Math.cos(yaw);
-    const dx = (mx * c + my * s) * speed * dt;
-    const dz = (-mx * s + my * c) * speed * dt;
+    // camera-relative: forward = look XZ (-sin yaw, -cos yaw), right = (cos yaw, -sin yaw)
+    const dx = (c * mx - s * my) * speed * dt;
+    const dz = (-s * mx - c * my) * speed * dt;
     const n = collidePlayer(player.x + dx, player.z + dz);
     player.x = n.x; player.z = n.z;
 
-    camera.position.set(player.x, eyeH, player.z);
-    camera.rotation.order = 'YXZ';
-    camera.rotation.y = yaw;
-    camera.rotation.x = pitch;
+    if (playerTrooper) {
+      playerTrooper.root.position.x = player.x;
+      playerTrooper.root.position.z = player.z;
+      playerTrooper.root.rotation.y = yaw + BODY_YAW_OFFSET;
+      playerPoseT += dt;
+      if (shootPoseLeft > 0) {
+        shootPoseLeft -= dt;
+        poseTrooper(playerTrooper, 'shoot', playerPoseT, dt);
+        playerPose = 'shoot';
+      } else if (moving) {
+        if (playerPose !== 'run') { playerPose = 'run'; playerPoseT = 0; }
+        poseTrooper(playerTrooper, 'run', playerPoseT, dt);
+      } else {
+        if (playerPose !== 'idle') { playerPose = 'idle'; playerPoseT = 0; }
+        poseTrooper(playerTrooper, 'idle', playerPoseT, dt);
+      }
+    }
 
-    if (firePressed || (fireHeld && muzzleCool <= 0 && !isTouch)) tryFire();
+    // Camera AFTER movement (camera-systems §7)
+    updateCamera(dt, false);
+
+    if (firePressed || (fireHeld && muzzleCool <= 0 && !isTouch && pointerLocked)) tryFire();
     firePressed = false;
     if (muzzleCool > 0) muzzleCool -= dt;
     if (hitFlash > 0) {
@@ -381,6 +603,12 @@ function frame(now) {
     }
 
     for (const o of targets) advanceTarget(o, dt);
+  } else if (playerTrooper) {
+    // preview idle on start screen
+    playerPoseT += dt;
+    poseTrooper(playerTrooper, 'idle', playerPoseT, dt);
+    for (const o of targets) advanceTarget(o, dt);
+    updateCamera(dt, false);
   }
 
   fx.update(dt, camera);
@@ -397,6 +625,9 @@ addEventListener('resize', () => {
   renderer.setSize(w, h, false);
 });
 
-// Auto-show start; spawn preview troopers so load validates HQ
 spawnAll();
+updateCamera(1 / 60, true);
 updateHud();
+if (hint) {
+  hint.textContent = 'Third-person · WASD / stick move · look · Fire · Restart';
+}
