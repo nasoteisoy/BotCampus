@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#070a1c">
+<title>Army Range — FPS proof</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="c" tabindex="0"></canvas>
+  <div id="hud">
+    <div id="cross" aria-hidden="true"></div>
+    <div id="hitmark" hidden></div>
+    <div id="stats"><span id="hits">0</span> hits · <span id="shots">0</span> shots · <span id="acc">—</span></div>
+    <button type="button" id="btnRestart" class="btn">Restart</button>
+    <div id="hint">Tap / click to look · WASD or stick to move · Fire to shoot walking troopers</div>
+  </div>
+  <div id="touch" hidden>
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div id="lookzone"></div>
+    <button type="button" id="btnFire" class="btn fire">Fire</button>
+  </div>
+  <div id="start" class="overlay">
+    <h1>Army Range</h1>
+    <p>HQ troopers walk the yard. Shoot them. Restart anytime.</p>
+    <button type="button" id="btnStart" class="btn primary">Play</button>
+  </div>
+</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.min.js"
+  }
+}
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
