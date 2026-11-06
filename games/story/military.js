@@ -1,143 +1,103 @@
 import {
   viewIds,
-  getView,
-  buildMobileHtml,
-  buildSvgMarkup,
-  nextZoom,
-  RESET_ZOOM,
+  getForce,
+  buildExplorerHtml,
+  buildGlossaryHtml,
+  buildUnitTypeGalleryHtml,
 } from "./military-model.mjs";
 
 const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
-const mobileHost = document.getElementById("mil-mobile");
-const svgHost = document.getElementById("mil-svg-host");
-const stage = document.getElementById("mil-stage");
-const viewport = document.getElementById("mil-viewport");
-const zoomLabel = document.getElementById("mil-zoom-label");
+const explorerHost = document.getElementById("mil-explorer");
+const galleryHost = document.getElementById("mil-gallery");
+const glossaryHost = document.getElementById("mil-glossary");
+const titleEl = document.getElementById("mil-view-title");
 
 let view = "guard";
-let zoom = RESET_ZOOM;
-let panX = 0;
-let panY = 0;
-let dragging = false;
-let lastX = 0;
-let lastY = 0;
+let focusId = getForce(view).rootId;
+const history = [];
 
-function applyTransform() {
-  if (!stage) return;
-  stage.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-  if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+function renderExplorer() {
+  if (!explorerHost) return;
+  explorerHost.innerHTML = buildExplorerHtml(view, focusId);
+  if (titleEl) titleEl.textContent = getForce(view).title;
+  for (const tab of tabs) {
+    const on = tab.dataset.view === view;
+    tab.setAttribute("aria-selected", on ? "true" : "false");
+    tab.tabIndex = on ? 0 : -1;
+  }
 }
 
-function render() {
-  const v = getView(view);
-  document.getElementById("mil-view-title").textContent = v.title;
-  if (mobileHost) mobileHost.innerHTML = buildMobileHtml(view);
-  if (svgHost) svgHost.innerHTML = buildSvgMarkup(view);
-  for (const tab of tabs) {
-    const selected = tab.dataset.view === view;
-    tab.setAttribute("aria-selected", selected ? "true" : "false");
-    tab.tabIndex = selected ? 0 : -1;
-  }
-  const panel = document.getElementById("mil-panel");
-  if (panel) panel.dataset.activeView = view;
+function setFocus(nextId, pushHist = true) {
+  if (!nextId) return;
+  if (pushHist && focusId && nextId !== focusId) history.push({ view, focusId });
+  focusId = nextId;
+  renderExplorer();
+  explorerHost?.querySelector(".focus-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function setView(next) {
   if (!viewIds().includes(next)) return;
   view = next;
-  zoom = RESET_ZOOM;
-  panX = 0;
-  panY = 0;
-  applyTransform();
-  render();
+  focusId = getForce(view).rootId;
+  history.length = 0;
+  renderExplorer();
 }
+
+function onDrillClick(e) {
+  const btn = e.target.closest("[data-drill]");
+  if (!btn) return;
+  e.preventDefault();
+  setFocus(btn.getAttribute("data-drill"), true);
+}
+
+explorerHost?.addEventListener("click", onDrillClick);
+
+document.getElementById("mil-back")?.addEventListener("click", () => {
+  const prev = history.pop();
+  if (prev) {
+    view = prev.view;
+    focusId = prev.focusId;
+    renderExplorer();
+  } else {
+    setFocus(getForce(view).rootId, false);
+  }
+});
+
+document.getElementById("mil-overview")?.addEventListener("click", () => {
+  history.length = 0;
+  setFocus(getForce(view).rootId, false);
+});
 
 for (const tab of tabs) {
   tab.addEventListener("click", () => setView(tab.dataset.view));
-  tab.addEventListener("keydown", (e) => {
-    const ids = viewIds();
-    const i = ids.indexOf(view);
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      setView(ids[(i + 1) % ids.length]);
-      tabs.find((t) => t.dataset.view === view)?.focus();
-    }
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      setView(ids[(i - 1 + ids.length) % ids.length]);
-      tabs.find((t) => t.dataset.view === view)?.focus();
-    }
-  });
 }
 
-document.getElementById("mil-zoom-in")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "in");
-  applyTransform();
-});
-document.getElementById("mil-zoom-out")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "out");
-  applyTransform();
-});
-document.getElementById("mil-zoom-reset")?.addEventListener("click", () => {
-  zoom = nextZoom(zoom, "reset");
-  panX = 0;
-  panY = 0;
-  applyTransform();
+function renderGallery() {
+  if (!galleryHost) return;
+  galleryHost.innerHTML = buildUnitTypeGalleryHtml();
+}
+
+galleryHost?.addEventListener("click", (e) => {
+  const filter = e.target.closest("[data-filter-type]");
+  if (!filter) return;
+  const type = filter.getAttribute("data-filter-type");
+  galleryHost.querySelectorAll(".unit-filter").forEach((b) => {
+    b.classList.toggle("is-on", b === filter);
+  });
+  galleryHost.querySelectorAll(".type-card").forEach((card) => {
+    const show = type === "all" || card.getAttribute("data-type") === type;
+    card.hidden = !show;
+  });
 });
 
-if (viewport) {
-  viewport.addEventListener("pointerdown", (e) => {
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    viewport.setPointerCapture(e.pointerId);
-  });
-  viewport.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    panX += e.clientX - lastX;
-    panY += e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    applyTransform();
-  });
-  viewport.addEventListener("pointerup", () => {
-    dragging = false;
-  });
-  viewport.addEventListener(
-    "wheel",
-    (e) => {
-      e.preventDefault();
-      zoom = nextZoom(zoom, e.deltaY < 0 ? "in" : "out");
-      applyTransform();
-    },
-    { passive: false }
-  );
-}
+if (glossaryHost) glossaryHost.innerHTML = buildGlossaryHtml();
 
 const params = new URLSearchParams(location.search);
 if (params.get("view") && viewIds().includes(params.get("view"))) {
   view = params.get("view");
+  focusId = getForce(view).rootId;
 }
+if (params.get("focus")) focusId = params.get("focus");
 
-function fitWidth() {
-  if (!viewport || !svgHost) return;
-  const svg = svgHost.querySelector("svg");
-  if (!svg) return;
-  const vb = svg.viewBox.baseVal;
-  const vw = viewport.clientWidth - 32;
-  if (vb.width > 0 && vw > 0) {
-    const fit = Math.min(1, vw / vb.width);
-    zoom = Math.max(0.25, Math.min(1, +fit.toFixed(4)));
-    panX = 0;
-    panY = 0;
-  }
-}
-
-render();
-fitWidth();
-applyTransform();
-
-window.addEventListener("resize", () => {
-  fitWidth();
-  applyTransform();
-});
+renderExplorer();
+renderGallery();
