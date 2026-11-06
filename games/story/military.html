@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08090d">
+<title>Military Organization · Letters of the Two Worlds</title>
+<meta name="description" content="Readable Black Guard, Empire, and desert-enemy organization charts for Letters of the Two Worlds.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="military.css">
+</head>
+<body data-military-build="story-military-org-v1">
+<span class="mil-marker" data-military-build="story-military-org-v1">story-military-org-v1</span>
+<header class="top">
+  <div class="bar"><a class="brand" href="index.html">📜 Letters of the Two Worlds</a><a class="hub" href="../">← Everything We Built</a></div>
+  <nav class="nav" aria-label="Sections"><a href="index.html">Home</a><a href="canon.html">Canon</a><a href="decide.html">Decide</a><a href="non-canon.html" aria-current="page">Non-Canon</a></nav>
+  <nav class="nav sub" aria-label="Non-Canon pages">
+    <a href="letters.html">Letters</a>
+    <a href="ashara.html">Ashara</a>
+    <a href="lore.html">Lore</a>
+    <a href="characters.html">Characters</a>
+    <a href="comics.html">Comics</a>
+    <a href="ranks.html">Ranks</a>
+    <a href="military.html" aria-current="page">Military</a>
+  </nav>
+</header>
+<main id="mil-panel" data-active-view="guard">
+  <p class="crumb"><a href="non-canon.html">Non-Canon</a> · Military Organization · also see <a href="ranks.html">Ranks</a></p>
+  <h1>Military Organization</h1>
+  <p class="mil-lede">Locked structure from Canon for the Black Guard, the Empire’s high lords and Prefects, and the Book 1 desert enemy. Desktop: branch diagram with pan and zoom. Phone: normal-size collapsible branches. Names marked with * are provisional.</p>
+
+  <div class="mil-tabs" role="tablist" aria-label="Organization views">
+    <button type="button" role="tab" id="tab-guard" data-view="guard" aria-selected="true" aria-controls="mil-panels">Black Guard</button>
+    <button type="button" role="tab" id="tab-empire" data-view="empire" aria-selected="false" aria-controls="mil-panels">Empire</button>
+    <button type="button" role="tab" id="tab-enemy" data-view="enemy" aria-selected="false" aria-controls="mil-panels">Desert enemy</button>
+  </div>
+
+  <div class="mil-legend" aria-hidden="true">
+    <span><i></i> Command</span>
+    <span><i class="rel"></i> Relationship (advises / alliance / hires / influence)</span>
+  </div>
+
+  <h2 id="mil-view-title">Black Guard</h2>
+
+  <section class="mil-panel-desk" aria-label="Desktop organization diagram">
+    <div class="mil-toolbar">
+      <button type="button" id="mil-zoom-out" aria-label="Zoom out">− Zoom out</button>
+      <button type="button" id="mil-zoom-in" aria-label="Zoom in">+ Zoom in</button>
+      <button type="button" id="mil-zoom-reset" aria-label="Reset view">Reset</button>
+      <span class="hint">Drag to pan · <span id="mil-zoom-label">100%</span></span>
+    </div>
+    <div class="mil-viewport" id="mil-viewport">
+      <div class="mil-stage" id="mil-stage">
+        <div id="mil-svg-host"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mil-panel-mobile" aria-label="Phone organization tree" id="mil-panels">
+    <div id="mil-mobile"></div>
+  </section>
+</main>
+<footer>Letters of the Two Worlds · a story world by Chumi &amp; his wife · <a href="../">Everything We Built</a></footer>
+<script src="site.js"></script>
+<script type="module" src="military.js"></script>
+</body>
+</html>
