@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#9fd3f5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+<title>Infantry Command</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="c" tabindex="0"></canvas>
+  <div id="box" hidden></div>
+  <div id="top">
+    <div id="point" class="panel">
+      <div class="lbl"><span id="ptState">Neutral</span></div>
+      <div id="ptBar"><i id="ptFill"></i><b></b></div>
+      <div class="hold"><span class="you">You <b id="holdP">0</b></span><span class="foe">Enemy <b id="holdE">0</b></span><span class="goal">/ <b id="holdGoal">60</b>s</span></div>
+    </div>
+    <button type="button" id="btnRestart" class="btn sm">Restart</button>
+  </div>
+  <div id="bottom">
+    <div id="squads"></div>
+    <div id="cmds">
+      <button type="button" id="btnAll" class="btn">All</button>
+      <button type="button" id="btnAMove" class="btn" aria-pressed="false">Attack-move</button>
+      <button type="button" id="btnStop" class="btn">Stop</button>
+    </div>
+  </div>
+  <div id="start" class="overlay">
+    <h1>Infantry Command</h1>
+    <ul class="howto">
+      <li><b>Select</b> tap / click a squad or card · drag a box (PC)</li>
+      <li><b>Move</b> tap ground (phone) · right-click (PC)</li>
+      <li><b>Attack</b> tap / right-click an enemy</li>
+      <li><b>Win</b> wipe them out or hold the point 60 s</li>
+    </ul>
+    <button type="button" id="btnStart" class="btn primary">Deploy</button>
+  </div>
+  <div id="end" class="overlay" hidden>
+    <h1 id="endTitle">Victory</h1>
+    <p id="endSub"></p>
+    <button type="button" id="btnAgain" class="btn primary">Play again</button>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
