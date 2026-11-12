@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Loot Island</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230c3d4e'/%3E%3C/svg%3E">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/addons/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      --safe-b: max(16px, env(safe-area-inset-bottom, 0px));
+      --safe-l: max(12px, env(safe-area-inset-left, 0px));
+      --safe-r: max(12px, env(safe-area-inset-right, 0px));
+      --safe-t: max(10px, env(safe-area-inset-top, 0px));
+    }
+    html, body { margin: 0; height: 100%; background: #0c3d4e; overflow: hidden; font-family: system-ui, "Segoe UI", sans-serif; }
+    #c { display: block; width: 100%; height: 100%; touch-action: none; }
+    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    #loot-hud { position: absolute; inset: 0; pointer-events: none; color: #f4f1e8; }
+    #overlay {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: #0c3d4e; color: #f4f1e8; font-size: 18px; font-weight: 650; z-index: 20;
+      transition: opacity .35s ease;
+    }
+    #overlay.gone { opacity: 0; pointer-events: none; }
+    .hint {
+      position: absolute; top: calc(var(--safe-t) + 8px);
+      left: var(--safe-l); right: 96px; transform: none;
+      background: rgba(8, 28, 36, .82); border: 1px solid #e8d5a0aa; color: #f4e6c0;
+      padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+      text-align: center; line-height: 1.25;
+    }
+    @media (min-width: 800px) {
+      .hint {
+        left: 50%; right: auto; transform: translateX(-50%);
+        white-space: nowrap; max-width: min(70vw, 520px);
+      }
+    }
+    .reset-btn {
+      pointer-events: auto; position: absolute;
+      top: calc(var(--safe-t) + 8px); right: var(--safe-r);
+      min-height: 44px; min-width: 72px; padding: 8px 14px;
+      border-radius: 12px; border: 2px solid #e8d5a0; background: rgba(8, 28, 36, .9);
+      color: #f4e6c0; font-weight: 700; font-size: 14px; cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+    .reset-btn:active { background: #e8d5a0; color: #0c3d4e; }
+    .prompt {
+      position: absolute; left: 50%; bottom: 28%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(8, 28, 36, .92); border: 2px solid #e8d5a0;
+      padding: 10px 16px; border-radius: 14px; font-weight: 800; font-size: 16px;
+    }
+    .prompt[hidden], .open-btn[hidden], .item-slam[hidden], .touch[hidden], #fps[hidden] { display: none !important; }
+    .prompt kbd {
+      background: #e8d5a0; color: #0c3d4e; padding: 2px 8px; border-radius: 6px; font-size: 13px;
+    }
+    .chest-ico { width: 26px; height: 26px; display: inline-flex; color: #e8d5a0; flex-shrink: 0; }
+    .chest-ico svg { width: 100%; height: 100%; }
+    .open-btn {
+      pointer-events: auto; position: absolute;
+      right: var(--safe-r); bottom: calc(var(--safe-b) + 18px);
+      min-width: 72px; min-height: 72px; padding: 8px 12px;
+      border-radius: 16px; border: 2px solid #e8d5a0; background: rgba(8, 28, 36, .92);
+      color: #f4e6c0; font-weight: 800; font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      touch-action: manipulation; -webkit-user-select: none; user-select: none;
+    }
+    .open-btn .chest-ico { width: 26px; height: 26px; }
+    .open-btn:active { background: #e8d5a0; color: #0c3d4e; }
+    .item-slam {
+      position: absolute; left: 50%; right: auto; top: auto;
+      bottom: calc(var(--safe-b) + 144px);
+      transform: translateX(-50%) scale(.4);
+      text-align: center; pointer-events: none;
+      background: #02080c;
+      border: 1px solid #e8d5a066;
+      border-radius: 16px;
+      padding: 8px 22px 10px;
+      max-width: min(92vw, 560px);
+      box-sizing: border-box;
+    }
+    @media (min-width: 900px) {
+      .item-slam { bottom: 11%; }
+    }
+    .item-slam em { display: block; font-style: normal; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; font-size: clamp(13px, 3.2vw, 18px); opacity: .95; }
+    .item-slam strong { display: block; font-size: clamp(24px, 6vw, 44px); font-weight: 900; line-height: 1.1; }
+    .item-slam.slam { animation: slam .55s cubic-bezier(.2, 1.4, .3, 1) forwards; }
+    @keyframes slam {
+      0% { transform: translateX(-50%) scale(.2) translateY(24px); opacity: 0; }
+      60% { transform: translateX(-50%) scale(1.08) translateY(0); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .item-slam.slam { animation: none; transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+    .touch { position: absolute; inset: 0; pointer-events: none; }
+    .joy {
+      pointer-events: auto; position: absolute;
+      left: var(--safe-l); bottom: calc(var(--safe-b) + 12px);
+      width: 118px; height: 118px; border-radius: 50%;
+      background: rgba(8, 28, 36, .5); border: 2px solid #e8d5a066;
+      touch-action: none;
+    }
+    .joy-knob {
+      position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px;
+      border-radius: 50%; background: #e8d5a0; opacity: .9;
+    }
+    #fps {
+      position: absolute; left: var(--safe-l); top: calc(var(--safe-t) + 8px);
+      background: rgba(8,28,36,.75); color: #cfe; padding: 4px 8px; border-radius: 8px; font: 12px/1.2 ui-monospace, monospace;
+    }
+    @media (max-height: 430px) {
+      .hint { font-size: 12px; padding: 6px 10px; }
+      .prompt { bottom: 34%; padding: 8px 12px; }
+      .item-slam { bottom: calc(var(--safe-b) + 8px); padding: 6px 16px 8px; }
+      .item-slam strong { font-size: clamp(20px, 4.6vw, 32px); }
+      .joy { width: 96px; height: 96px; }
+      .open-btn { min-width: 64px; min-height: 64px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="ui"></div>
+  <div id="fps" hidden>0 fps</div>
+  <div id="overlay">Loading island…</div>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
