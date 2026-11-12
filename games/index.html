@@ -79,6 +79,17 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
 .trow.epic{background:#151933;border-color:#323a66}
 .trow.feat{background:#12162a;border-color:#2a3157}
 .trow .card{margin:0 0 8px;box-shadow:none}
+.trow.init{background:#121a33;border-color:#2a3a6a}
+.trow .card{margin:0 0 8px;box-shadow:none;position:relative}
+.lpill{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1;border-radius:999px;padding:4px 7px;min-height:20px;text-transform:uppercase;white-space:nowrap}
+.lpill-topic{background:#ffcc33;color:#1b1400}
+.lpill-initiative{background:#1d4ed8;color:#fff}
+.lpill-epic{background:#6d28d9;color:#fff}
+.lpill-feature{background:#14b8a6;color:#06201c}
+.lpill-card{background:#38d97a;color:#06210f}
+.tree-legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px;padding:8px 2px}
+.tree .card .lpill-card{margin:0 0 6px;align-self:flex-start}
+
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:16px}
 .sheet{width:100%;max-width:520px;background:var(--card);border-radius:18px 18px 14px 14px;padding:16px;max-height:min(80vh,640px);overflow:auto}
 .sheet h3{margin:0 0 10px;font-size:18px}
@@ -157,7 +168,7 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
   var STAGES=['Not rated yet','Finished demo','In progress demo','Halfway there'];
   var PROJECT_ORDER=['Story','Seraphina & Fire Bro','Move & Play','Army HQ','Front Line','Space battles','Planet wars','WW2 & historical','Element soldiers','Creatures & pets','Party games','Campus','Effect demos','Harmony','Toys','Wild Forage','Renders','Other'];
   var FEATURE_ORDER=['Unit movement','Unit looks','Unit brains','Camera','Vehicles','Combat','UI/Menu','Story','Strategy','World/Exploration','Party','Music','Effects','Pet care','Collecting','Toys','Research','Campus shell','Practice drills'];
-  var EPIC_NONE='Not in an epic yet';
+  var INITIATIVE_ORDER=['Story writing','Story game making'];
   var MINE_KEY='ewb-my-groups';
   var STATUS_KEY='ewb-item-status';
   var state={view:'tree',type:'all',bot:'all',place:'all',kind:'all',stage:'all',signed:'all',q:'',groupBy:'off'};
@@ -186,7 +197,8 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
   function itemSuggested(it){return it.suggestedStage||'';}
   function itemSigned(it){var o=ov(it);return typeof o.signedOff==='boolean'?o.signedOff:!!it.signedOff;}
   function itemSignedDate(it){var o=ov(it);return o.signedOffDate||it.signedOffDate||'';}
-  function itemEpic(it){return it.epic||EPIC_NONE;}
+  function itemInitiative(it){return it.initiative||'';}
+  function itemEpic(it){return it.epic||'';}
   function isFilterOn(){return state.type!=='all'||state.bot!=='all'||state.place!=='all'||state.kind!=='all'||state.stage!=='all'||state.signed!=='all'||!!state.q;}
   function chip(group,val,label,n){
     var b=el('button','chip');b.type='button';b.dataset.group=group;b.dataset.val=val;
@@ -255,7 +267,7 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
     if(state.signed==='yes'&&!itemSigned(it))return false;
     if(state.signed==='no'&&itemSigned(it))return false;
     if(state.q){
-      var h=[it.title,it.note,it.maker,TYPES[it.type],it.url,it.id,(it.maker==='unknown'?'crew':''),itemGroup(it),itemFeature(it),itemKind(it),itemStage(it),itemEpic(it)].join(' ').toLowerCase();
+      var h=[it.title,it.note,it.maker,TYPES[it.type],it.url,it.id,(it.maker==='unknown'?'crew':''),itemGroup(it),itemInitiative(it),itemFeature(it),itemKind(it),itemStage(it),itemEpic(it)].join(' ').toLowerCase();
       var words=state.q.toLowerCase().split(/\s+/).filter(Boolean);
       for(var w=0;w<words.length;w++)if(h.indexOf(words[w])<0)return false;
     }
@@ -307,6 +319,7 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
     else th.textContent=(TYPES[it.type]||'🎮').split(' ')[0];
     th.appendChild(el('span','tag',TYPES[it.type]||it.type));c.appendChild(th);
     var bd=el('div','body');
+    if(state.view==='tree')bd.appendChild(levelPill('card'));
     bd.appendChild(el('h3','title',it.title));
     if(it.note)bd.appendChild(el('p','note',it.note));
     var meta=el('div','meta');
@@ -451,9 +464,7 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
   function orderedKeys(names,preferred){
     var seen={},out=[];
     (preferred||[]).forEach(function(n){if(names[n]&&!seen[n]){out.push(n);seen[n]=1;}});
-    Object.keys(names).sort(function(a,c){
-      if(a===EPIC_NONE)return 1;if(c===EPIC_NONE)return -1;return a.localeCompare(c);
-    }).forEach(function(n){if(!seen[n])out.push(n);});
+    Object.keys(names).sort(function(a,c){return a.localeCompare(c);}).forEach(function(n){if(!seen[n])out.push(n);});
     return out;
   }
   function appendBundle(main,mode,name,list,opts){
@@ -486,14 +497,21 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
     if(opts.badge!==false){var badge=epicReadyBox(allItems);if(badge)panel.appendChild(badge);}
     return panel;
   }
-  function detailsRow(cls,key,name,count,extra,open,fill){
+  function levelPill(level){
+    var labels={topic:'TOPIC',initiative:'INITIATIVE',epic:'EPIC',feature:'FEATURE',card:'CARD'};
+    return el('span','lpill lpill-'+level,labels[level]||level);
+  }
+  function detailsRow(level,cls,key,name,count,itemsForRollup,open,fill){
     var d=el('details','trow'+(cls?' '+cls:''));
     var remembered=Object.prototype.hasOwnProperty.call(openGroups,key)?openGroups[key]:null;
     d.open=remembered!=null?remembered:!!open;
     var sum=el('summary');
+    sum.appendChild(levelPill(level));
     var nm=el('span','t-name',name+' ');nm.appendChild(el('span','count',String(count)));
     sum.appendChild(nm);
-    if(extra)sum.appendChild(extra);
+    if(itemsForRollup&&itemsForRollup.length){
+      var extra=el('div','rollup');rollupPills(itemsForRollup,extra);sum.appendChild(extra);
+    }
     d.appendChild(sum);
     var body=el('div','t-kids');d.appendChild(body);
     var filled=false;
@@ -502,8 +520,37 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
     if(d.open)ensure();
     return {el:d,body:body};
   }
+  function appendFeatureBranches(parent,items,keyPrefix,auto){
+    var withFeat=[],loose=[];
+    items.forEach(function(i){if(itemFeature(i))withFeat.push(i);else loose.push(i);});
+    var byFeat={};withFeat.forEach(function(i){var n=itemFeature(i);(byFeat[n]||(byFeat[n]=[])).push(i);});
+    orderedKeys(byFeat,FEATURE_ORDER).forEach(function(feat){
+      var flist=byFeat[feat];
+      var frow=detailsRow('feature','feat',keyPrefix+'-f-'+feat,feat,flist.length,flist,auto,function(fbody){
+        flist.forEach(function(i){fbody.appendChild(card(i,{detailed:true}));});
+      });
+      parent.appendChild(frow.el);
+    });
+    loose.forEach(function(i){parent.appendChild(card(i,{detailed:true}));});
+  }
+  function appendEpicAndLoose(parent,items,keyPrefix,auto){
+    var withEpic=[],loose=[];
+    items.forEach(function(i){if(itemEpic(i))withEpic.push(i);else loose.push(i);});
+    var byEpic={};withEpic.forEach(function(i){var n=itemEpic(i);(byEpic[n]||(byEpic[n]=[])).push(i);});
+    orderedKeys(byEpic,[]).forEach(function(epic){
+      var elist=byEpic[epic];
+      var erow=detailsRow('epic','epic',keyPrefix+'-e-'+epic,epic,elist.length,elist,auto,function(ebody){
+        appendFeatureBranches(ebody,elist,keyPrefix+'-e-'+epic,auto);
+      });
+      parent.appendChild(erow.el);
+    });
+    appendFeatureBranches(parent,loose,keyPrefix+'-loose',auto);
+  }
   function renderTree(main,matched){
     var wrap=el('div','tree');
+    var legend=el('div','tree-legend');legend.setAttribute('aria-label','Row levels');
+    ['topic','initiative','epic','feature','card'].forEach(function(l){legend.appendChild(levelPill(l));});
+    wrap.appendChild(legend);
     var byTopic={};data.items.forEach(function(i){var n=itemGroup(i);(byTopic[n]||(byTopic[n]=[])).push(i);});
     var shown=0,auto=isFilterOn();
     orderedKeys(byTopic,PROJECT_ORDER).forEach(function(topic){
@@ -511,26 +558,23 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
       var vis=all.filter(match);
       if(!vis.length)return;
       shown+=vis.length;
-      var extra=el('div','rollup');rollupPills(all,extra);
-      var badge=epicReadyBox(all);if(badge)extra.appendChild(badge);
-      var row=detailsRow('topic','tree-'+topic,topic,vis.length,extra,auto,function(body){
+      var row=detailsRow('topic','topic','tree-'+topic,topic,vis.length,vis,auto,function(body){
         body.appendChild(topicPanel(all,{rollup:false,badge:false}));
-        var byEpic={};vis.forEach(function(i){var n=itemEpic(i);(byEpic[n]||(byEpic[n]=[])).push(i);});
-        orderedKeys(byEpic,[]).forEach(function(epic){
-          var elist=byEpic[epic];
-          var erow=detailsRow('epic','tree-'+topic+'-'+epic,epic,elist.length,null,auto,function(ebody){
-            var byFeat={};elist.forEach(function(i){var n=itemFeature(i)||'Untagged';(byFeat[n]||(byFeat[n]=[])).push(i);});
-            orderedKeys(byFeat,FEATURE_ORDER).forEach(function(feat){
-              var flist=byFeat[feat];
-              var frow=detailsRow('feat','tree-'+topic+'-'+epic+'-'+feat,feat,flist.length,null,auto,function(fbody){
-                flist.forEach(function(i){fbody.appendChild(card(i,{detailed:true}));});
-              });
-              ebody.appendChild(frow.el);
-            });
+        var badge=epicReadyBox(all);if(badge)body.insertBefore(badge,body.firstChild);
+        var withInit=[],rest=[];
+        vis.forEach(function(i){if(itemInitiative(i))withInit.push(i);else rest.push(i);});
+        var byInit={};withInit.forEach(function(i){var n=itemInitiative(i);(byInit[n]||(byInit[n]=[])).push(i);});
+        orderedKeys(byInit,INITIATIVE_ORDER).forEach(function(init){
+          var ilist=byInit[init];
+          var irow=detailsRow('initiative','init','tree-'+topic+'-i-'+init,init,ilist.length,ilist,auto,function(ibody){
+            appendEpicAndLoose(ibody,ilist,'tree-'+topic+'-i-'+init,auto);
           });
-          body.appendChild(erow.el);
+          body.appendChild(irow.el);
         });
+        appendEpicAndLoose(body,rest,'tree-'+topic,auto);
       });
+      var badge=epicReadyBox(all);
+      if(badge)row.el.querySelector('summary') && row.el.querySelector('summary').appendChild(badge);
       wrap.appendChild(row.el);
     });
     main.appendChild(wrap);
