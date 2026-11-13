@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%236fcf4a'/%3E%3Cpolygon points='3,10 8,4 13,10' fill='%23e85d4c'/%3E%3C/svg%3E">
+<title>Tiny Town</title>
+<style>
+:root {
+  --ink: #243226;
+  --panel: #fff6df;
+  --panel-edge: #e8c888;
+  --accent: #ffd24a;
+  --accent-ink: #3a2a00;
+  --good: #2fb356;
+  --bad: #e85d4c;
+  --sky0: #7ec8f0;
+  --sky1: #b8e9ff;
+  --chip: #fffaf0;
+  --shadow: 0 3px 0 rgba(60, 40, 10, .18);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: linear-gradient(180deg, var(--sky0), var(--sky1) 40%, #9ee08a);
+  font-family: ui-rounded, "Trebuchet MS", "Nunito", system-ui, sans-serif;
+  color: var(--ink);
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;
+}
+#app {
+  position: fixed; inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+  overflow: hidden;
+}
+#hud {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px 6px;
+  flex-wrap: wrap;
+  z-index: 3;
+}
+#brand {
+  font-weight: 800; font-size: 15px; letter-spacing: .02em;
+  color: #1e4a28; text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  margin-right: 4px; white-space: nowrap;
+}
+.chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; align-items: center; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--chip);
+  border: 2px solid var(--panel-edge);
+  border-radius: 999px;
+  padding: 4px 10px 4px 6px;
+  min-height: 40px;
+  box-shadow: var(--shadow);
+  font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums;
+}
+.chip svg, .chip .ico, .chip .ico svg { width: 24px; height: 24px; flex: none; display: block; }
+@media (min-width: 900px) {
+  .chip { min-height: 48px; font-size: 18px; padding: 4px 12px 4px 6px; }
+  .chip svg, .chip .ico, .chip .ico svg { width: 32px; height: 32px; }
+}
+.chip.warn { border-color: var(--bad); background: #ffe8e4; animation: pulse 0.8s ease-in-out infinite; }
+.chip.goal { background: #e8ffe8; border-color: #8fd99a; margin-left: auto; }
+#controls {
+  display: flex; gap: 6px; align-items: center;
+}
+.icon-btn {
+  width: 48px; height: 48px; min-width: 48px; min-height: 48px;
+  border: 2px solid var(--panel-edge);
+  background: var(--panel);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: grid; place-items: center;
+  cursor: pointer; color: var(--ink);
+  padding: 0;
+}
+.icon-btn svg { width: 24px; height: 24px; }
+.icon-btn[aria-pressed="true"], .icon-btn.on {
+  background: var(--accent);
+  border-color: #e0a800;
+  color: var(--accent-ink);
+}
+.icon-btn:active { transform: translateY(2px); box-shadow: none; }
+#stage { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+#c {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block; touch-action: none; cursor: pointer;
+}
+#hint {
+  position: fixed; pointer-events: none; z-index: 6;
+  display: none; align-items: center; gap: 8px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  border-radius: 16px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+  font-weight: 800; font-size: 16px;
+  color: var(--ink);
+  animation: bob 1s ease-in-out infinite;
+}
+#hint.show { display: flex; }
+#hint .hint-ico, #hint .hint-ico svg { width: 28px; height: 28px; flex: none; display: block; }
+#hint .hint-bldg, #hint .hint-bldg svg { width: 36px; height: 30px; flex: none; display: block; overflow: visible; }
+#dock {
+  display: flex; align-items: stretch; gap: 8px;
+  padding: 6px 10px 10px;
+  z-index: 3;
+}
+#buildbar {
+  display: flex; gap: 6px; flex: 1; justify-content: center;
+  flex-wrap: nowrap;
+}
+.bldg {
+  flex: 1; max-width: 110px; min-width: 64px;
+  min-height: 88px;
+  border: 3px solid var(--panel-edge);
+  background: var(--panel);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 4px 3px 6px;
+  cursor: pointer; color: var(--ink);
+}
+.bldg .pic { width: 44px; height: 36px; display: grid; place-items: center; flex: none; }
+.bldg .pic svg { width: 42px; height: 34px; overflow: visible; }
+.bldg .cost {
+  display: flex; gap: 3px; align-items: center; justify-content: center;
+  flex-wrap: wrap;
+  font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums;
+  min-height: 24px;
+  line-height: 1;
+}
+.bldg .cost span { display: inline-flex; align-items: center; gap: 2px; }
+.bldg .cost svg { width: 24px; height: 24px; flex: none; display: block; }
+.bldg.selected {
+  background: #fff3b0;
+  border-color: #e0a800;
+  transform: translateY(-3px);
+}
+.bldg.cant { opacity: .55; }
+.bldg:active { transform: translateY(2px); box-shadow: none; }
+.bldg.pulse { animation: pulse 1s ease-in-out infinite; }
+#end {
+  position: fixed; inset: 0; z-index: 10;
+  display: none; place-items: center;
+  background: rgba(30, 50, 40, .35);
+  backdrop-filter: blur(4px);
+}
+#end.show { display: grid; }
+.card {
+  background: var(--panel);
+  border: 3px solid var(--panel-edge);
+  border-radius: 28px;
+  padding: 22px 28px 20px;
+  box-shadow: 0 12px 0 rgba(60,40,10,.2);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  min-width: 220px;
+  animation: popin .35s cubic-bezier(.2,1.4,.4,1) both;
+}
+#endMark { width: 96px; height: 96px; }
+#replay {
+  width: 72px; height: 72px; min-width: 72px;
+  border: 3px solid #e0a800;
+  background: var(--accent);
+  border-radius: 22px;
+  box-shadow: 0 5px 0 #c49200;
+  cursor: pointer; color: var(--accent-ink);
+  display: grid; place-items: center;
+}
+#replay svg { width: 36px; height: 36px; }
+#replay:active { transform: translateY(4px); box-shadow: none; }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes popin {
+  from { transform: scale(.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+  .bldg.pulse, .chip.warn, #hint { animation: none !important; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  #app {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  #hud {
+    grid-column: 1 / -1;
+    padding: 4px 8px;
+    flex-wrap: nowrap;
+  }
+  .chips { flex-wrap: nowrap; }
+  .chip { min-height: 40px; font-size: 14px; padding: 2px 8px 2px 5px; }
+  .icon-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 12px; }
+  #stage { grid-column: 1; grid-row: 2; min-height: 0; min-width: 0; }
+  #dock {
+    grid-column: 2; grid-row: 2;
+    flex-direction: column;
+    padding: 4px 6px 8px;
+    justify-content: stretch;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+  #buildbar {
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 4px;
+    justify-content: stretch;
+  }
+  .bldg { max-width: 128px; min-height: 52px; min-width: 108px; flex: 1 1 0; padding: 3px 4px 4px; }
+  .bldg .pic { width: 36px; height: 26px; }
+  .bldg .pic svg { width: 36px; height: 26px; }
+  #controls { flex-direction: row; flex: none; }
+}
+@media (max-width: 400px) and (orientation: portrait) {
+  .chip { font-size: 14px; min-height: 40px; padding: 3px 8px 3px 5px; }
+  #brand { font-size: 13px; }
+  .bldg { min-width: 64px; min-height: 88px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div id="brand">Tiny Town</div>
+    <div class="chips">
+      <div class="chip" id="c-food" title="Food"><span class="ico" data-ico="food"></span><span class="n">0</span></div>
+      <div class="chip" id="c-water" title="Water"><span class="ico" data-ico="water"></span><span class="n">0</span></div>
+      <div class="chip" id="c-wood" title="Wood"><span class="ico" data-ico="wood"></span><span class="n">0</span></div>
+      <div class="chip" id="c-coins" title="Coins"><span class="ico" data-ico="coins"></span><span class="n">0</span></div>
+      <div class="chip goal" id="c-people" title="Villagers"><span class="ico" data-ico="users"></span><span class="n">0/20</span></div>
+    </div>
+    <div id="controls">
+      <button class="icon-btn" id="btn-pause" aria-label="Pause" aria-pressed="false"></button>
+      <button class="icon-btn on" id="btn-1x" aria-label="1x speed" aria-pressed="true"></button>
+      <button class="icon-btn" id="btn-2x" aria-label="2x speed" aria-pressed="false"></button>
+      <button class="icon-btn" id="btn-mute" aria-label="Mute" aria-pressed="false"></button>
+    </div>
+  </header>
+  <div id="stage">
+    <canvas id="c"></canvas>
+  </div>
+  <footer id="dock">
+    <div id="buildbar"></div>
+  </footer>
+  <div id="hint"></div>
+</div>
+<div id="end" role="dialog" aria-modal="true">
+  <div class="card">
+    <div id="endMark"></div>
+    <button id="replay" aria-label="Play again"></button>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+
+  /* —— Lucide-style paths from parts-library/svg-icon-set (candidate) —— */
+  const PATHS = {
+    play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+    pause: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+    volume: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.1 5a9 9 0 0 1 0 14M15.5 8.5a5 5 0 0 1 0 7"/>',
+    mute: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    coins: '<circle cx="8" cy="8" r="6"/><path d="M18.1 14.1A6 6 0 1 1 11.9 5.9"/><path d="M8 6v4l2 1"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    refresh: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/>',
+    hand: '<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.7-2.2L3 16.5"/>',
+    flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+    ff: '<polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/>',
+    home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  };
+  function svgIcon(name, size, color, sw) {
+    const d = PATHS[name] || PATHS.flag;
+    const stroke = color || "currentColor";
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${sw || 2.2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  }
+
+  /* Tiny resource pictograms (not emoji) */
+  function resSvg(kind, size) {
+    size = size || 22;
+    if (kind === "food") return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="16" rx="7" ry="5" fill="#f4d35e" stroke="#c49200" stroke-width="1.2"/><path d="M12 16 C12 8 16 5 19 4" fill="none" stroke="#3d8a3a" stroke-width="2" stroke-linecap="round"/><circle cx="18.2" cy="5.2" r="2.2" fill="#3dbe5a"/></svg>`;
+    if (kind === "water") return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 C12 3 5 11 5 15 a7 7 0 0 0 14 0 C19 11 12 3 12 3z" fill="#4fc3f7" stroke="#1e88c8" stroke-width="1.3"/></svg>`;
+    if (kind === "wood") return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="10" width="18" height="6" rx="3" fill="#c47a3a" stroke="#7a4a28" stroke-width="1.2"/><rect x="5" y="7" width="14" height="5" rx="2.5" fill="#e0a05a" stroke="#7a4a28" stroke-width="1.1"/><line x1="9" y1="8" x2="8" y2="16" stroke="#7a4a28" stroke-width="1"/><line x1="15" y1="8" x2="16" y2="16" stroke="#7a4a28" stroke-width="1"/></svg>`;
+    if (kind === "coins") return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="13" r="6.2" fill="#ffd24a" stroke="#c49200" stroke-width="1.3"/><circle cx="15" cy="9" r="6.2" fill="#ffe27a" stroke="#c49200" stroke-width="1.3"/><text x="15" y="12.2" text-anchor="middle" font-size="8" font-weight="800" fill="#c49200">C</text></svg>`;
+    if (kind === "users") return svgIcon("users", size, "#2a6a38", 2.1);
+    return "";
+  }
+
+  /* Building thumbnails for the dock */
+  function bldgSvg(type) {
+    if (type === "farm") return `<svg viewBox="0 0 42 34"><ellipse cx="21" cy="30" rx="16" ry="3" fill="rgba(0,40,0,.15)"/><rect x="4" y="20" width="16" height="10" fill="#e85d4c"/><polygon points="4,20 12,12 20,20" fill="#c44536"/><rect x="9" y="23" width="4" height="7" fill="#6b3a2a"/><rect x="22" y="22" width="5" height="8" fill="#f4d35e"/><rect x="28" y="18" width="5" height="12" fill="#e8c44a"/><rect x="34" y="20" width="5" height="10" fill="#f4d35e"/></svg>`;
+    if (type === "house") return `<svg viewBox="0 0 42 34"><ellipse cx="21" cy="30" rx="14" ry="3" fill="rgba(0,40,0,.15)"/><rect x="10" y="16" width="22" height="14" fill="#ffe0b5"/><polygon points="8,16 21,6 34,16" fill="#e85d4c"/><rect x="18" y="21" width="6" height="9" fill="#6b3a2a"/><rect x="13" y="20" width="4" height="4" fill="#7ec8f0"/><rect x="28" y="8" width="3" height="6" fill="#b8c0c8"/></svg>`;
+    if (type === "well") return `<svg viewBox="0 0 42 34"><ellipse cx="21" cy="30" rx="12" ry="3" fill="rgba(0,40,0,.15)"/><rect x="12" y="18" width="18" height="10" rx="2" fill="#b8c0c8"/><ellipse cx="21" cy="18" rx="8" ry="4" fill="#4fc3f7"/><rect x="11" y="10" width="3" height="12" fill="#8a5a3a"/><rect x="28" y="10" width="3" height="12" fill="#8a5a3a"/><rect x="11" y="8" width="20" height="3" fill="#c47a3a"/></svg>`;
+    if (type === "lumber") return `<svg viewBox="0 0 42 34"><ellipse cx="21" cy="30" rx="14" ry="3" fill="rgba(0,40,0,.15)"/><rect x="8" y="16" width="20" height="13" fill="#c47a3a"/><polygon points="6,16 18,8 30,16" fill="#7a4a28"/><rect x="15" y="21" width="5" height="8" fill="#5a3020"/><rect x="30" y="22" width="8" height="4" rx="2" fill="#e0a05a"/><rect x="31" y="18" width="7" height="4" rx="2" fill="#c47a3a"/></svg>`;
+    if (type === "market") return `<svg viewBox="0 0 42 34"><ellipse cx="21" cy="30" rx="14" ry="3" fill="rgba(0,40,0,.15)"/><rect x="8" y="20" width="26" height="10" fill="#f3c98b"/><polygon points="6,20 21,10 36,20" fill="#ff6b8a"/><polygon points="6,20 13,14 21,20" fill="#fff"/><polygon points="21,20 29,14 36,20" fill="#fff"/><circle cx="16" cy="25" r="2.2" fill="#ffd24a"/><circle cx="26" cy="25" r="2.2" fill="#3dbe5a"/></svg>`;
+    return "";
+  }
+
+  /* —— WebAudio, adapted from parts-library/space-sfx createSpaceAudio —— */
+  function createTownAudio() {
+    let ctx = null, muted = false, unlocked = false, master = null;
+    function ensure() {
+      if (muted) return null;
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.32;
+        master.connect(ctx.destination);
+      }
+      return ctx;
+    }
+    async function unlock() {
+      const c = ensure();
+      if (!c) return;
+      try { if (c.state === "suspended") await c.resume(); unlocked = true; } catch (_) {}
+    }
+    function beep(freq, dur, type, vol, slide) {
+      if (muted || !unlocked) return;
+      const c = ensure();
+      if (!c || !master) return;
+      try {
+        const t0 = c.currentTime;
+        const o = c.createOscillator();
+        const g = c.createGain();
+        o.type = type || "sine";
+        o.frequency.setValueAtTime(freq, t0);
+        if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t0 + dur);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(vol || 0.16, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g); g.connect(master);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+      } catch (_) {}
+    }
+    function chord(freqs, dur, vol) {
+      freqs.forEach((f, i) => setTimeout(() => beep(f, dur, "triangle", vol || 0.12), i * 70));
+    }
+    return {
+      get muted() { return muted; },
+      get unlocked() { return unlocked; },
+      setMuted(v) { muted = !!v; },
+      unlock,
+      tick() { beep(880, 0.04, "sine", 0.06); },
+      place() { beep(392, 0.07, "triangle", 0.14, 660); setTimeout(() => beep(784, 0.1, "triangle", 0.12), 50); },
+      deny() { beep(160, 0.12, "sine", 0.1, 90); },
+      produce(kind) {
+        const f = { food: 620, water: 740, wood: 480, coins: 880 }[kind] || 600;
+        beep(f, 0.08, "sine", 0.09);
+      },
+      coin() { beep(988, 0.07, "triangle", 0.12); setTimeout(() => beep(1318, 0.1, "triangle", 0.1), 60); },
+      spawn() { chord([523, 659, 784], 0.1, 0.1); },
+      leave() { beep(392, 0.16, "sine", 0.12, 220); },
+      win() { chord([523, 659, 784, 1046], 0.16, 0.14); },
+      fail() { beep(247, 0.22, "sine", 0.14, 120); setTimeout(() => beep(185, 0.3, "sine", 0.12, 90), 180); },
+      suspend() { if (ctx && ctx.state === "running") ctx.suspend().catch(() => {}); },
+      resume() { if (muted || !unlocked || !ctx) return; ctx.resume().catch(() => {}); },
+      dispose() { try { if (ctx) ctx.close(); } catch (_) {} ctx = null; master = null; unlocked = false; },
+    };
+  }
+
+  /* —— Game constants —— */
+  const COLS = 8, ROWS = 8, GOAL = 20;
+  const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const TYPES = {
+    farm:   { cost: { wood: 6, coins: 2 }, color: "#f4d35e" },
+    well:   { cost: { wood: 4, coins: 2 }, color: "#4fc3f7" },
+    lumber: { cost: { wood: 3, coins: 3 }, color: "#c47a3a" },
+    house:  { cost: { wood: 8, coins: 4, food: 2 }, color: "#ffe0b5" },
+    market: { cost: { wood: 6, coins: 4 }, color: "#ff6b8a" },
+  };
+  const TYPE_ORDER = ["farm", "well", "lumber", "house", "market"];
+  const SHIRTS = ["#ff6b8a", "#4fc3f7", "#ffd24a", "#b388ff", "#3dbe5a", "#ff9a32"];
+  const HAIR = ["#3a2418", "#6b3a2a", "#c47a3a", "#f4d35e", "#1e2a4a"];
+
+  const audio = createTownAudio();
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const hudEls = {
+    food: document.querySelector("#c-food .n"),
+    water: document.querySelector("#c-water .n"),
+    wood: document.querySelector("#c-wood .n"),
+    coins: document.querySelector("#c-coins .n"),
+    people: document.querySelector("#c-people .n"),
+  };
+  const chipEls = {
+    food: document.getElementById("c-food"),
+    water: document.getElementById("c-water"),
+    wood: document.getElementById("c-wood"),
+    coins: document.getElementById("c-coins"),
+  };
+
+  let state, selected = null, layout = {}, floats = [], particles = [];
+  let trauma = 0, traumaT = 0, hover = null, ended = false;
+  let lastHud = "";
+  let firstPlaced = false;
+  let pointerOn = false;
+
+  function freshState() {
+    const grid = [];
+    for (let y = 0; y < ROWS; y++) {
+      const row = [];
+      for (let x = 0; x < COLS; x++) {
+        const deco = ((x === 0 && y === 0) || (x === COLS - 1 && y === 0) || (x === 0 && y === ROWS - 1))
+          ? "tree"
+          : (x === COLS - 1 && y === ROWS - 1) ? "pond"
+          : (hash(x, y) % 11 === 0 ? "flower" : null);
+        row.push({ x, y, type: null, deco, timer: 0, scale: 1, bounce: 0, work: 0 });
+      }
+      grid.push(row);
+    }
+    const hx = 3, hy = 4;
+    grid[hy][hx].type = "house";
+    grid[hy][hx].deco = null;
+    grid[hy][hx].scale = 1;
+    const villagers = [
+      makeVillager(hx, hy, 0),
+      makeVillager(hx, hy, 1),
+    ];
+    return {
+      food: 14, water: 8, wood: 20, coins: 12,
+      villagers,
+      grid,
+      speed: 1,
+      paused: false,
+      won: false,
+      lost: false,
+      eatAcc: 0,
+      starveAcc: 0,
+      spawnQ: [],
+      time: 0,
+    };
+  }
+
+  function hash(x, y) { return (x * 73856093) ^ (y * 19349663); }
+
+  function makeVillager(gx, gy, i) {
+    const jitter = () => (Math.random() - 0.5) * 0.35;
+    return {
+      id: Math.random().toString(36).slice(2, 8) + i,
+      x: gx + 0.5 + jitter(),
+      y: gy + 0.65 + jitter(),
+      tx: gx + 0.5, ty: gy + 0.65,
+      path: [],
+      job: "idle",
+      carry: null,
+      target: null,
+      workT: 0,
+      shirt: SHIRTS[i % SHIRTS.length],
+      hair: HAIR[i % HAIR.length],
+      phase: Math.random() * Math.PI * 2,
+      face: 1,
+      leaving: false,
+      age: 0,
+    };
+  }
+
+  function canAfford(type) {
+    const c = TYPES[type].cost;
+    return Object.keys(c).every((k) => state[k] >= c[k]);
+  }
+  function pay(type) {
+    const c = TYPES[type].cost;
+    for (const k of Object.keys(c)) state[k] -= c[k];
+  }
+  function popCount() { return state.villagers.filter((v) => !v.leaving).length; }
+  function houses() {
+    let n = 0;
+    forEachTile((t) => { if (t.type === "house") n++; });
+    return n;
+  }
+  function forEachTile(fn) {
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) fn(state.grid[y][x]);
+  }
+  function tileAt(x, y) {
+    if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return null;
+    return state.grid[y][x];
+  }
+  function walkable(x, y) {
+    const t = tileAt(x, y);
+    return !!t && t.deco !== "tree" && t.deco !== "pond";
+  }
+  function isBuildable(t) {
+    return t && !t.type && t.deco !== "tree" && t.deco !== "pond";
+  }
+
+  function place(type, gx, gy) {
+    if (ended || !TYPES[type]) return { ok: false, err: "type" };
+    const t = tileAt(gx, gy);
+    if (!isBuildable(t)) return { ok: false, err: "tile" };
+    if (!canAfford(type)) return { ok: false, err: "cost" };
+    pay(type);
+    t.type = type;
+    t.deco = null;
+    t.timer = 0;
+    t.bounce = REDUCE ? 0 : 0.01;
+    t.scale = REDUCE ? 1 : 0.2;
+    firstPlaced = true;
+    audio.place();
+    if (!REDUCE) trauma = Math.min(1, trauma + 0.18);
+    addFloat(gx + 0.5, gy + 0.2, "pop", "#fff");
+    burst(gx + 0.5, gy + 0.5, TYPES[type].color, 10);
+    if (type === "house") {
+      const cap = houses() * 2;
+      const need = Math.max(0, cap - popCount());
+      for (let i = 0; i < Math.min(2, need); i++) {
+        state.spawnQ.push({ t: 0.7 + i * 0.8, gx, gy });
+      }
+    }
+    updateHud();
+    updateDock();
+    return { ok: true };
+  }
+
+  function addRes(kind, amt, gx, gy) {
+    if (!amt) return;
+    state[kind] += amt;
+    const label = (amt > 0 ? "+" : "") + amt;
+    const col = { food: "#c49200", water: "#1e88c8", wood: "#7a4a28", coins: "#c49200" }[kind] || "#243226";
+    addFloat(gx + 0.5, gy + 0.15, label, col);
+    if (amt > 0) {
+      if (kind === "coins") audio.coin();
+      else audio.produce(kind);
+    }
+    updateHud();
+    updateDock();
+  }
+
+  function addFloat(x, y, text, color) {
+    floats.push({ x, y, text, color, t: 0, life: 0.9 });
+  }
+  function burst(x, y, color, n) {
+    if (REDUCE) return;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 0.4 + Math.random() * 1.4;
+      particles.push({
+        x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.6,
+        t: 0, life: 0.45 + Math.random() * 0.25, color, r: 2 + Math.random() * 2.5,
+      });
+    }
+  }
+
+  /* Pathfinding: 4-dir BFS on walkable tiles (buildings are walkable so routes stay short) */
+  function findPath(sx, sy, tx, ty) {
+    sx = clampi(Math.floor(sx), 0, COLS - 1);
+    sy = clampi(Math.floor(sy), 0, ROWS - 1);
+    tx = clampi(Math.floor(tx), 0, COLS - 1);
+    ty = clampi(Math.floor(ty), 0, ROWS - 1);
+    if (sx === tx && sy === ty) return [];
+    const key = (x, y) => x + y * COLS;
+    const q = [[sx, sy]];
+    const prev = new Map();
+    prev.set(key(sx, sy), null);
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (q.length) {
+      const [x, y] = q.shift();
+      if (x === tx && y === ty) break;
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (!walkable(nx, ny)) continue;
+        const k = key(nx, ny);
+        if (prev.has(k)) continue;
+        prev.set(k, [x, y]);
+        q.push([nx, ny]);
+      }
+    }
+    if (!prev.has(key(tx, ty))) {
+      return [{ x: tx + 0.5, y: ty + 0.65 }];
+    }
+    const cells = [];
+    let cur = [tx, ty];
+    while (cur) {
+      cells.push(cur);
+      cur = prev.get(key(cur[0], cur[1]));
+    }
+    cells.reverse();
+    cells.shift();
+    return cells.map(([x, y]) => ({ x: x + 0.5, y: y + 0.65 }));
+  }
+  function clampi(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+  function nearestOf(type, fromX, fromY) {
+    let best = null, d = 1e9;
+    forEachTile((t) => {
+      if (t.type !== type) return;
+      const dd = Math.abs(t.x + 0.5 - fromX) + Math.abs(t.y + 0.65 - fromY);
+      if (dd < d) { d = dd; best = t; }
+    });
+    return best;
+  }
+  function randomWalkTarget() {
+    const opts = [];
+    forEachTile((t) => { if (walkable(t.x, t.y)) opts.push(t); });
+    return opts[(Math.random() * opts.length) | 0] || null;
+  }
+
+  function assignJobs() {
+    const idle = state.villagers.filter((v) => v.job === "idle" && !v.leaving);
+    if (!idle.length) return;
+    const workplaces = [];
+    forEachTile((t) => {
+      if (t.type === "farm" || t.type === "well" || t.type === "lumber" || t.type === "market") {
+        workplaces.push(t);
+      }
+    });
+    if (!workplaces.length) return;
+    for (const v of idle) {
+      if (Math.random() > 0.55) continue;
+      const t = workplaces[(Math.random() * workplaces.length) | 0];
+      v.job = "walk";
+      v.target = t;
+      v.carry = null;
+      v.path = findPath(v.x, v.y, t.x, t.y);
+    }
+  }
+
+  function produceAt(t) {
+    if (t.type === "farm") {
+      if (state.water >= 1) { state.water -= 1; addRes("food", 3, t.x, t.y); }
+      else addRes("food", 1, t.x, t.y);
+    } else if (t.type === "well") {
+      addRes("water", 3, t.x, t.y);
+    } else if (t.type === "lumber") {
+      addRes("wood", 2, t.x, t.y);
+    } else if (t.type === "market") {
+      if (state.food >= 8) { state.food -= 2; addRes("coins", 3, t.x, t.y); }
+      else if (state.wood >= 12) { state.wood -= 2; addRes("coins", 3, t.x, t.y); }
+      else if (state.water >= 10) { state.water -= 2; addRes("coins", 3, t.x, t.y); }
+    }
+  }
+
+  function cargoOf(type) {
+    return { farm: "food", well: "water", lumber: "wood", market: "coins" }[type] || null;
+  }
+
+  function updateSim(dt) {
+    if (ended) return;
+    state.time += dt;
+
+    forEachTile((t) => {
+      if (t.bounce > 0 || t.scale !== 1) {
+        t.bounce += dt;
+        const k = Math.min(1, t.bounce / 0.28);
+        const over = REDUCE ? 1 : 1 + 0.16 * Math.sin(k * Math.PI);
+        t.scale = 0.2 + 0.8 * (1 - Math.pow(1 - k, 3)) * (k < 1 ? over : 1);
+        if (k >= 1) { t.scale = 1; t.bounce = 0; }
+      }
+      if (!t.type || t.type === "house") return;
+      t.timer += dt;
+      const rate = t.type === "market" ? 2.6 : 2.2;
+      if (t.timer >= rate) {
+        t.timer -= rate;
+        produceAt(t);
+      }
+    });
+
+    /* eat */
+    state.eatAcc += dt;
+    if (state.eatAcc >= 4) {
+      state.eatAcc -= 4;
+      const n = popCount();
+      if (n > 0) {
+        const need = n;
+        if (state.food >= need) {
+          state.food -= need;
+          state.starveAcc = 0;
+        } else {
+          state.food = 0;
+          state.starveAcc += 1;
+        }
+        updateHud();
+        updateDock();
+      }
+    }
+    if (state.food <= 0 && popCount() > 0) {
+      state.starveAcc += dt * 0.15;
+      if (state.starveAcc >= 3) {
+        state.starveAcc = 0;
+        startLeave();
+      }
+    } else if (state.food > 0) {
+      state.starveAcc = Math.max(0, state.starveAcc - dt);
+    }
+
+    /* scheduled house move-ins */
+    for (let i = state.spawnQ.length - 1; i >= 0; i--) {
+      state.spawnQ[i].t -= dt;
+      if (state.spawnQ[i].t <= 0) {
+        const q = state.spawnQ.splice(i, 1)[0];
+        if (popCount() < houses() * 2 && !ended) {
+          const v = makeVillager(q.gx, q.gy, state.villagers.length);
+          state.villagers.push(v);
+          audio.spawn();
+          addFloat(q.gx + 0.5, q.gy, "+1", "#2fb356");
+          burst(q.gx + 0.5, q.gy + 0.5, "#ffd24a", 8);
+          updateHud();
+          checkWin();
+        }
+      }
+    }
+
+    assignJobs.acc = (assignJobs.acc || 0) + dt;
+    if (assignJobs.acc > 1.2) { assignJobs.acc = 0; assignJobs(); }
+
+    const speedWalk = 1.55;
+    for (const v of state.villagers) {
+      v.age += dt;
+      v.phase += dt * (v.job === "walk" || v.path.length ? 10 : 4);
+      if (v.job === "work") {
+        v.workT -= dt;
+        if (v.workT <= 0) {
+          const t = v.target;
+          v.carry = t ? cargoOf(t.type) : null;
+          const dest = (v.carry === "food" || v.carry === "water")
+            ? nearestOf("house", v.x, v.y)
+            : (nearestOf("market", v.x, v.y) || nearestOf("house", v.x, v.y));
+          if (dest) {
+            v.job = "carry";
+            v.target = dest;
+            v.path = findPath(v.x, v.y, dest.x, dest.y);
+          } else {
+            v.job = "idle";
+            v.carry = null;
+          }
+        }
+        continue;
+      }
+      if (v.path.length) {
+        const p = v.path[0];
+        const dx = p.x - v.x, dy = p.y - v.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const step = speedWalk * dt;
+        if (dx !== 0) v.face = dx < 0 ? -1 : 1;
+        if (step >= d) {
+          v.x = p.x; v.y = p.y; v.path.shift();
+          if (!v.path.length) arrive(v);
+        } else {
+          v.x += (dx / d) * step;
+          v.y += (dy / d) * step;
+        }
+      } else if (v.job === "idle" && !v.leaving && Math.random() < dt * 0.25) {
+        const t = randomWalkTarget();
+        if (t) v.path = findPath(v.x, v.y, t.x, t.y);
+      }
+    }
+
+    /* remove finished leavers off-map */
+    state.villagers = state.villagers.filter((v) => {
+      if (!v.leaving) return true;
+      if (v.x < -0.4 || v.x > COLS + 0.4 || v.y < -0.4 || v.y > ROWS + 0.4) {
+        updateHud();
+        checkFail();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function arrive(v) {
+    if (v.leaving) return;
+    if (v.job === "walk" && v.target) {
+      v.job = "work";
+      v.workT = 1.1;
+      return;
+    }
+    if (v.job === "carry") {
+      v.carry = null;
+      v.job = "idle";
+      v.target = null;
+      return;
+    }
+    v.job = "idle";
+  }
+
+  function startLeave() {
+    const v = state.villagers.find((p) => !p.leaving && p.job !== "work");
+    const w = v || state.villagers.find((p) => !p.leaving);
+    if (!w) return;
+    w.leaving = true;
+    w.job = "leave";
+    w.carry = null;
+    w.path = [{ x: w.x < COLS / 2 ? -0.8 : COLS + 0.8, y: w.y }];
+    audio.leave();
+    addFloat(w.x, w.y - 0.3, "-1", "#e85d4c");
+    updateHud();
+  }
+
+  function checkWin() {
+    if (ended) return;
+    if (popCount() >= GOAL) {
+      ended = true;
+      state.won = true;
+      state.paused = true;
+      audio.win();
+      if (!REDUCE) trauma = 0.55;
+      showEnd(true);
+    }
+  }
+  function checkFail() {
+    if (ended) return;
+    if (popCount() <= 0) {
+      ended = true;
+      state.lost = true;
+      state.paused = true;
+      audio.fail();
+      showEnd(false);
+    }
+  }
+
+  function showEnd(win) {
+    const el = document.getElementById("end");
+    const mark = document.getElementById("endMark");
+    mark.innerHTML = win
+      ? `<div style="display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:#d9f7d0;border:3px solid #2fb356">${svgIcon("check", 56, "#2fb356", 3)}</div>`
+      : `<div style="display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:#ffe0dc;border:3px solid #e85d4c">${svgIcon("x", 56, "#e85d4c", 3)}</div>`;
+    el.classList.add("show");
+    el.dataset.kind = win ? "win" : "fail";
+  }
+  function hideEnd() {
+    document.getElementById("end").classList.remove("show");
+  }
+
+  function updateHud() {
+    const p = popCount();
+    const snap = `${state.food}|${state.water}|${state.wood}|${state.coins}|${p}`;
+    hudEls.food.textContent = String(state.food);
+    hudEls.water.textContent = String(state.water);
+    hudEls.wood.textContent = String(state.wood);
+    hudEls.coins.textContent = String(state.coins);
+    hudEls.people.textContent = p + "/" + GOAL;
+    chipEls.food.classList.toggle("warn", state.food <= 2 && !ended);
+    /* only rewrite when values change — already cheap */
+    lastHud = snap;
+    document.getElementById("btn-pause").setAttribute("aria-pressed", state.paused ? "true" : "false");
+    document.getElementById("btn-pause").classList.toggle("on", state.paused);
+    document.getElementById("btn-1x").classList.toggle("on", !state.paused && state.speed === 1);
+    document.getElementById("btn-1x").setAttribute("aria-pressed", (!state.paused && state.speed === 1) ? "true" : "false");
+    document.getElementById("btn-2x").classList.toggle("on", !state.paused && state.speed === 2);
+    document.getElementById("btn-2x").setAttribute("aria-pressed", (!state.paused && state.speed === 2) ? "true" : "false");
+  }
+
+  function updateDock() {
+    for (const type of TYPE_ORDER) {
+      const btn = document.querySelector(`.bldg[data-type="${type}"]`);
+      if (!btn) continue;
+      const ok = canAfford(type);
+      btn.classList.toggle("cant", !ok);
+      btn.classList.toggle("selected", selected === type);
+      btn.classList.toggle("pulse", !firstPlaced && type === "farm");
+      const cost = TYPES[type].cost;
+      btn.querySelector(".cost").innerHTML = Object.keys(cost).map((k) =>
+        `<span>${resSvg(k, 24)}${cost[k]}</span>`
+      ).join("");
+    }
+    const hint = document.getElementById("hint");
+    if (!firstPlaced && !ended) {
+      hint.classList.add("show");
+      hint.innerHTML = `<span class="hint-ico">${svgIcon("hand", 28, "#243226")}</span><span class="hint-bldg">${bldgSvg("farm")}</span>`;
+      positionHint();
+    } else {
+      hint.classList.remove("show");
+    }
+  }
+
+  function positionHint() {
+    const hint = document.getElementById("hint");
+    const farm = document.querySelector('.bldg[data-type="farm"]');
+    if (!farm || !hint.classList.contains("show")) return;
+    hint.style.left = "0px";
+    hint.style.top = "0px";
+    const r = farm.getBoundingClientRect();
+    const h = hint.getBoundingClientRect();
+    const hw = h.width, hh = h.height;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const margin = 8;
+    const landscape = window.matchMedia("(orientation: landscape) and (max-height: 520px)").matches;
+    let left, top;
+    if (landscape) {
+      left = r.left - hw - 10;
+      top = r.top + (r.height - hh) / 2;
+    } else {
+      left = r.left + r.width / 2 - hw / 2;
+      top = r.top - hh - 10;
+    }
+    if (left < margin) left = Math.min(r.right + 10, vw - hw - margin);
+    if (top < margin) top = Math.min(r.bottom + 10, vh - hh - margin);
+    left = Math.min(Math.max(margin, left), Math.max(margin, vw - hw - margin));
+    top = Math.min(Math.max(margin, top), Math.max(margin, vh - hh - margin));
+    hint.style.left = Math.round(left) + "px";
+    hint.style.top = Math.round(top) + "px";
+  }
+
+  /* —— Layout / drawing —— */
+  function resize() {
+    const stage = document.getElementById("stage");
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const pad = 10;
+    const cw = rect.width - pad * 2;
+    const ch = rect.height - pad * 2;
+    const tile = Math.floor(Math.min(cw / COLS, ch / (ROWS + 0.35)) * 100) / 100;
+    const gw = tile * COLS, gh = tile * ROWS;
+    layout = {
+      w: rect.width, h: rect.height, tile,
+      ox: (rect.width - gw) / 2,
+      oy: (rect.height - gh) / 2 + tile * 0.08,
+      dpr,
+    };
+    positionHint();
+  }
+
+  function tileToScreen(gx, gy) {
+    return { x: layout.ox + gx * layout.tile, y: layout.oy + gy * layout.tile };
+  }
+  function worldToScreen(wx, wy) {
+    return { x: layout.ox + wx * layout.tile, y: layout.oy + wy * layout.tile };
+  }
+  function screenToTile(sx, sy) {
+    const gx = Math.floor((sx - layout.ox) / layout.tile);
+    const gy = Math.floor((sy - layout.oy) / layout.tile);
+    return { gx, gy };
+  }
+  function pageToCanvas(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+
+  function draw() {
+    const { w, h, tile } = layout;
+    if (!tile) return;
+    ctx.clearRect(0, 0, w, h);
+
+    let sx = 0, sy = 0;
+    if (trauma > 0 && !REDUCE) {
+      const shake = trauma * trauma;
+      sx = 7 * shake * Math.sin(traumaT * 1.7);
+      sy = 5 * shake * Math.sin(traumaT * 2.3);
+    }
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    /* soft sky already in page bg; field shadow */
+    const origin = tileToScreen(0, 0);
+    const fieldW = tile * COLS, fieldH = tile * ROWS;
+    ctx.fillStyle = "rgba(30,80,20,.12)";
+    roundRect(ctx, origin.x - 6, origin.y - 6, fieldW + 12, fieldH + 16, 18);
+    ctx.fill();
+
+    /* tiles */
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        drawTile(state.grid[y][x]);
+      }
+    }
+    /* ghost */
+    if (selected && hover && !ended) {
+      const t = tileAt(hover.gx, hover.gy);
+      const ok = isBuildable(t) && canAfford(selected);
+      const p = tileToScreen(hover.gx, hover.gy);
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.translate(p.x + tile / 2, p.y + tile / 2);
+      if (!ok) ctx.filter = "grayscale(.4) sepia(1) hue-rotate(-20deg)";
+      drawBuilding(selected, tile, 1);
+      ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = ok ? "rgba(47,179,86,.85)" : "rgba(232,93,76,.9)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(p.x + 3, p.y + 3, tile - 6, tile - 6);
+      ctx.restore();
+    }
+
+    /* buildings back-to-front, then villagers */
+    const bldgs = [];
+    forEachTile((t) => { if (t.type) bldgs.push(t); });
+    bldgs.sort((a, b) => a.y - b.y);
+    const folk = state.villagers.slice().sort((a, b) => a.y - b.y);
+    /* interleave by y */
+    const draws = [
+      ...bldgs.map((t) => ({ y: t.y + 0.55, k: "b", t })),
+      ...folk.map((v) => ({ y: v.y, k: "v", v })),
+    ].sort((a, b) => a.y - b.y);
+    for (const d of draws) {
+      if (d.k === "b") {
+        const p = tileToScreen(d.t.x, d.t.y);
+        ctx.save();
+        ctx.translate(p.x + tile / 2, p.y + tile / 2);
+        ctx.scale(d.t.scale, d.t.scale);
+        drawBuilding(d.t.type, tile, 1);
+        ctx.restore();
+      } else {
+        drawVillager(d.v);
+      }
+    }
+
+    /* floats + particles */
+    for (const f of floats) {
+      const k = f.t / f.life;
+      const p = worldToScreen(f.x, f.y - k * 0.55);
+      ctx.save();
+      ctx.globalAlpha = 1 - k;
+      const sc = REDUCE ? 1 : 1 + 0.2 * Math.sin(Math.min(1, k * 3) * Math.PI);
+      ctx.font = `800 ${Math.round(tile * 0.28 * sc)}px ui-rounded, Trebuchet MS, system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(255,255,255,.85)";
+      ctx.fillStyle = f.color;
+      if (f.text === "pop") {
+        /* sparkle only */
+      } else {
+        ctx.strokeText(f.text, p.x, p.y);
+        ctx.fillText(f.text, p.x, p.y);
+      }
+      ctx.restore();
+    }
+    for (const p of particles) {
+      const k = p.t / p.life;
+      const s = worldToScreen(p.x, p.y);
+      ctx.globalAlpha = 1 - k;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, p.r * (1 - k * 0.4), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
+  function drawTile(t) {
+    const { tile } = layout;
+    const p = tileToScreen(t.x, t.y);
+    const even = (t.x + t.y) % 2 === 0;
+    ctx.fillStyle = even ? "#6fcf4a" : "#7ed957";
+    ctx.fillRect(p.x, p.y, tile + 0.5, tile + 0.5);
+    /* subtle blade */
+    ctx.fillStyle = even ? "rgba(255,255,255,.08)" : "rgba(20,80,10,.08)";
+    ctx.fillRect(p.x + 2, p.y + 2, tile * 0.22, tile * 0.1);
+    if (t.deco === "flower" && !t.type) {
+      const cx = p.x + tile * 0.7, cy = p.y + tile * 0.65;
+      ctx.fillStyle = "#ff7eb3";
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * tile * 0.07, cy + Math.sin(a) * tile * 0.07, tile * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#ffd24a";
+      ctx.beginPath(); ctx.arc(cx, cy, tile * 0.04, 0, Math.PI * 2); ctx.fill();
+    }
+    if (t.deco === "tree" && !t.type) drawTree(p.x + tile / 2, p.y + tile * 0.7, tile);
+    if (t.deco === "pond" && !t.type) {
+      ctx.fillStyle = "#4fc3f7";
+      ctx.beginPath();
+      ctx.ellipse(p.x + tile / 2, p.y + tile * 0.55, tile * 0.36, tile * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.45)";
+      ctx.beginPath();
+      ctx.ellipse(p.x + tile * 0.42, p.y + tile * 0.48, tile * 0.1, tile * 0.05, -0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTree(x, y, tile) {
+    ctx.fillStyle = "rgba(0,40,0,.18)";
+    ctx.beginPath(); ctx.ellipse(x, y + tile * 0.06, tile * 0.22, tile * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#8a5a3a";
+    ctx.fillRect(x - tile * 0.06, y - tile * 0.18, tile * 0.12, tile * 0.28);
+    const blobs = [["#2f8a3a", 0.34, -0.42], ["#3dbe5a", 0.28, -0.58], ["#248a38", 0.22, -0.32]];
+    for (const [c, r, oy] of blobs) {
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(x, y + oy * tile, r * tile, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawBuilding(type, tile, scale) {
+    const s = tile * scale;
+    /* shadow */
+    ctx.fillStyle = "rgba(0,40,0,.22)";
+    ctx.beginPath(); ctx.ellipse(0, s * 0.36, s * 0.34, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    if (type === "farm") {
+      /* field rows */
+      ctx.fillStyle = "#e8c44a";
+      roundRect(ctx, -s * 0.38, s * 0.02, s * 0.34, s * 0.3, 3); ctx.fill();
+      ctx.fillStyle = "#f4d35e";
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(-s * 0.34 + i * s * 0.1, -s * 0.02, s * 0.07, s * 0.32);
+      }
+      /* barn */
+      ctx.fillStyle = "#e85d4c";
+      roundRect(ctx, -s * 0.02, -s * 0.08, s * 0.36, s * 0.4, 3); ctx.fill();
+      ctx.fillStyle = "#c44536";
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, -s * 0.08);
+      ctx.lineTo(s * 0.16, -s * 0.32);
+      ctx.lineTo(s * 0.38, -s * 0.08);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#6b3a2a";
+      ctx.fillRect(s * 0.1, s * 0.08, s * 0.1, s * 0.24);
+      ctx.fillStyle = "#ffd24a";
+      ctx.beginPath(); ctx.arc(s * 0.15, s * 0.18, s * 0.02, 0, Math.PI * 2); ctx.fill();
+    } else if (type === "house") {
+      ctx.fillStyle = "#ffe0b5";
+      roundRect(ctx, -s * 0.28, -s * 0.08, s * 0.56, s * 0.42, 3); ctx.fill();
+      ctx.fillStyle = "#e85d4c";
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.34, -s * 0.08);
+      ctx.lineTo(0, -s * 0.4);
+      ctx.lineTo(s * 0.34, -s * 0.08);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#6b3a2a";
+      ctx.fillRect(-s * 0.07, s * 0.08, s * 0.14, s * 0.26);
+      ctx.fillStyle = "#7ec8f0";
+      ctx.fillRect(-s * 0.2, s * 0.02, s * 0.1, s * 0.1);
+      ctx.fillRect(s * 0.1, s * 0.02, s * 0.1, s * 0.1);
+      ctx.fillStyle = "#c8d0d4";
+      ctx.fillRect(s * 0.16, -s * 0.38, s * 0.07, s * 0.14);
+    } else if (type === "well") {
+      ctx.fillStyle = "#b8c0c8";
+      roundRect(ctx, -s * 0.22, s * 0.0, s * 0.44, s * 0.28, 4); ctx.fill();
+      ctx.fillStyle = "#4fc3f7";
+      ctx.beginPath(); ctx.ellipse(0, s * 0.02, s * 0.16, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.5)";
+      ctx.beginPath(); ctx.ellipse(-s * 0.05, s * 0.0, s * 0.05, s * 0.03, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#8a5a3a";
+      ctx.fillRect(-s * 0.24, -s * 0.22, s * 0.07, s * 0.28);
+      ctx.fillRect(s * 0.17, -s * 0.22, s * 0.07, s * 0.28);
+      ctx.fillStyle = "#c47a3a";
+      ctx.fillRect(-s * 0.26, -s * 0.26, s * 0.52, s * 0.07);
+      ctx.strokeStyle = "#5a3020";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -s * 0.2); ctx.lineTo(0, s * 0.02); ctx.stroke();
+    } else if (type === "lumber") {
+      ctx.fillStyle = "#c47a3a";
+      roundRect(ctx, -s * 0.3, -s * 0.04, s * 0.5, s * 0.38, 3); ctx.fill();
+      ctx.fillStyle = "#7a4a28";
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.36, -s * 0.04);
+      ctx.lineTo(-s * 0.05, -s * 0.3);
+      ctx.lineTo(s * 0.26, -s * 0.04);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#5a3020";
+      ctx.fillRect(-s * 0.1, s * 0.1, s * 0.12, s * 0.24);
+      ctx.fillStyle = "#e0a05a";
+      roundRect(ctx, s * 0.16, s * 0.16, s * 0.2, s * 0.08, 3); ctx.fill();
+      ctx.fillStyle = "#c47a3a";
+      roundRect(ctx, s * 0.18, s * 0.08, s * 0.18, s * 0.08, 3); ctx.fill();
+    } else if (type === "market") {
+      ctx.fillStyle = "#f3c98b";
+      roundRect(ctx, -s * 0.3, s * 0.02, s * 0.6, s * 0.3, 3); ctx.fill();
+      /* awning stripes */
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.34, s * 0.02);
+      ctx.lineTo(0, -s * 0.28);
+      ctx.lineTo(s * 0.34, s * 0.02);
+      ctx.closePath();
+      ctx.fillStyle = "#ff6b8a";
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = "#fff";
+      for (let i = -3; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * s * 0.12, -s * 0.3);
+        ctx.lineTo((i + 0.5) * s * 0.12, -s * 0.3);
+        ctx.lineTo((i + 0.5) * s * 0.12 + s * 0.34, s * 0.04);
+        ctx.lineTo(i * s * 0.12 + s * 0.34, s * 0.04);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.fillStyle = "#ffd24a";
+      ctx.beginPath(); ctx.arc(-s * 0.1, s * 0.16, s * 0.07, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#3dbe5a";
+      ctx.beginPath(); ctx.arc(s * 0.12, s * 0.18, s * 0.06, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawVillager(v) {
+    const { tile } = layout;
+    const p = worldToScreen(v.x, v.y);
+    const bob = REDUCE ? 0 : Math.sin(v.phase) * tile * 0.04;
+    const walk = (v.path && v.path.length) || v.job === "walk" || v.job === "carry" || v.leaving;
+    const sq = REDUCE || !walk ? 1 : 1 + Math.sin(v.phase * 2) * 0.06;
+    ctx.save();
+    ctx.translate(p.x, p.y - bob);
+    ctx.scale(v.face * (REDUCE ? 1 : sq), 1 / (REDUCE ? 1 : sq));
+    const s = tile * 0.42;
+    /* shadow */
+    ctx.fillStyle = "rgba(0,40,0,.22)";
+    ctx.beginPath(); ctx.ellipse(0, s * 0.55, s * 0.28, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    /* legs */
+    ctx.fillStyle = "#3a3a55";
+    ctx.fillRect(-s * 0.16, s * 0.22, s * 0.12, s * 0.28);
+    ctx.fillRect(s * 0.04, s * 0.22, s * 0.12, s * 0.28);
+    /* body */
+    ctx.fillStyle = v.leaving ? "#b0b0b0" : v.shirt;
+    roundRect(ctx, -s * 0.22, -s * 0.05, s * 0.44, s * 0.34, s * 0.1); ctx.fill();
+    /* head */
+    ctx.fillStyle = "#f7c69c";
+    ctx.beginPath(); ctx.arc(0, -s * 0.22, s * 0.2, 0, Math.PI * 2); ctx.fill();
+    /* hair */
+    ctx.fillStyle = v.hair;
+    ctx.beginPath(); ctx.arc(0, -s * 0.3, s * 0.2, Math.PI, 0); ctx.fill();
+    /* eyes */
+    ctx.fillStyle = "#243226";
+    ctx.beginPath(); ctx.arc(-s * 0.07, -s * 0.22, s * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(s * 0.07, -s * 0.22, s * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    /* cargo */
+    if (v.carry) {
+      const c = worldToScreen(v.x, v.y);
+      ctx.save();
+      ctx.translate(c.x, c.y - tile * 0.42 - bob);
+      drawCargo(v.carry, tile * 0.22);
+      ctx.restore();
+    }
+  }
+
+  function drawCargo(kind, s) {
+    if (kind === "food") {
+      ctx.fillStyle = "#f4d35e";
+      ctx.beginPath(); ctx.ellipse(0, 0, s * 0.7, s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#3d8a3a"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s * 0.4, -s, s * 0.7, -s * 0.8); ctx.stroke();
+    } else if (kind === "water") {
+      ctx.fillStyle = "#4fc3f7";
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.8);
+      ctx.quadraticCurveTo(s * 0.7, 0, 0, s * 0.8);
+      ctx.quadraticCurveTo(-s * 0.7, 0, 0, -s * 0.8);
+      ctx.fill();
+    } else if (kind === "wood") {
+      ctx.fillStyle = "#c47a3a";
+      roundRect(ctx, -s * 0.8, -s * 0.3, s * 1.6, s * 0.55, 4); ctx.fill();
+    } else if (kind === "coins") {
+      ctx.fillStyle = "#ffd24a";
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.55, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#c49200"; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    c.beginPath();
+    c.moveTo(x + rr, y);
+    c.arcTo(x + w, y, x + w, y + h, rr);
+    c.arcTo(x + w, y + h, x, y + h, rr);
+    c.arcTo(x, y + h, x, y, rr);
+    c.arcTo(x, y, x + w, y, rr);
+    c.closePath();
+  }
+
+  function updateFx(dt) {
+    if (trauma > 0) {
+      trauma = Math.max(0, trauma - 1.4 * dt);
+      traumaT += dt * 30;
+    }
+    for (let i = floats.length - 1; i >= 0; i--) {
+      floats[i].t += dt;
+      if (floats[i].t >= floats[i].life) floats.splice(i, 1);
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.t += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 2.2 * dt;
+      if (p.t >= p.life) particles.splice(i, 1);
+    }
+  }
+
+  /* —— Input —— */
+  function onPointer(clientX, clientY, isDown) {
+    const { x, y } = pageToCanvas(clientX, clientY);
+    const { gx, gy } = screenToTile(x, y);
+    if (gx >= 0 && gy >= 0 && gx < COLS && gy < ROWS) hover = { gx, gy };
+    else hover = null;
+    if (!isDown || ended) return;
+    audio.unlock();
+    if (!selected) {
+      /* pulse farm if nothing selected at start */
+      const farm = document.querySelector('.bldg[data-type="farm"]');
+      if (farm && !firstPlaced) farm.classList.add("pulse");
+      return;
+    }
+    if (!hover) return;
+    const res = place(selected, hover.gx, hover.gy);
+    if (!res.ok && res.err === "cost") {
+      audio.deny();
+      const btn = document.querySelector(`.bldg[data-type="${selected}"]`);
+      if (btn && !REDUCE) {
+        btn.animate([{ transform: "translateX(0)" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "translateX(0)" }], { duration: 180 });
+      }
+    } else if (!res.ok && res.err === "tile") {
+      audio.deny();
+    }
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    pointerOn = true;
+    canvas.setPointerCapture(e.pointerId);
+    onPointer(e.clientX, e.clientY, true);
+    e.preventDefault();
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    onPointer(e.clientX, e.clientY, false);
+  });
+  canvas.addEventListener("pointerup", () => { pointerOn = false; });
+  canvas.addEventListener("pointercancel", () => { pointerOn = false; });
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  function setSelected(type) {
+    audio.unlock();
+    audio.tick();
+    selected = (selected === type) ? null : type;
+    updateDock();
+  }
+  function setSpeed(n) {
+    audio.unlock();
+    audio.tick();
+    if (n === 0) {
+      state.paused = true;
+    } else {
+      state.paused = false;
+      state.speed = n;
+    }
+    if (ended) { state.paused = true; }
+    updateHud();
+  }
+  function setMuted(v) {
+    audio.setMuted(v);
+    const btn = document.getElementById("btn-mute");
+    btn.innerHTML = svgIcon(v ? "mute" : "volume", 24);
+    btn.setAttribute("aria-pressed", v ? "true" : "false");
+    btn.classList.toggle("on", v);
+    if (!v) audio.unlock();
+  }
+
+  function reset() {
+    hideEnd();
+    ended = false;
+    selected = null;
+    firstPlaced = false;
+    floats = [];
+    particles = [];
+    trauma = 0;
+    hover = null;
+    state = freshState();
+    updateHud();
+    updateDock();
+  }
+
+  /* —— UI mount —— */
+  function mount() {
+    document.querySelectorAll("[data-ico]").forEach((el) => {
+      el.innerHTML = resSvg(el.getAttribute("data-ico"), 32);
+    });
+    document.getElementById("btn-pause").innerHTML = svgIcon("pause", 24);
+    document.getElementById("btn-1x").innerHTML = `<span style="font-weight:800;font-size:14px">1×</span>`;
+    document.getElementById("btn-2x").innerHTML = svgIcon("ff", 24);
+    document.getElementById("btn-mute").innerHTML = svgIcon("volume", 24);
+    document.getElementById("replay").innerHTML = svgIcon("refresh", 36, "currentColor", 2.4);
+
+    const bar = document.getElementById("buildbar");
+    for (const type of TYPE_ORDER) {
+      const btn = document.createElement("button");
+      btn.className = "bldg";
+      btn.dataset.type = type;
+      btn.setAttribute("aria-label", type);
+      btn.innerHTML = `<span class="pic">${bldgSvg(type)}</span><span class="cost"></span>`;
+      btn.addEventListener("click", () => {
+        if (ended) return;
+        if (!canAfford(type) && selected !== type) {
+          audio.unlock();
+          audio.deny();
+          if (!REDUCE) btn.animate([{ transform: "translateX(0)" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "translateX(0)" }], { duration: 180 });
+          return;
+        }
+        setSelected(type);
+      });
+      bar.appendChild(btn);
+    }
+    document.getElementById("btn-pause").addEventListener("click", () => setSpeed(state.paused ? state.speed : 0));
+    document.getElementById("btn-1x").addEventListener("click", () => setSpeed(1));
+    document.getElementById("btn-2x").addEventListener("click", () => setSpeed(2));
+    document.getElementById("btn-mute").addEventListener("click", () => { audio.unlock(); setMuted(!audio.muted); });
+    document.getElementById("replay").addEventListener("click", () => { audio.unlock(); audio.tick(); reset(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        if (!ended) setSpeed(state.paused ? state.speed : 0);
+      } else if (e.key === "1") setSpeed(1);
+      else if (e.key === "2") setSpeed(2);
+      else if (e.key === "Escape") { selected = null; updateDock(); }
+    });
+    window.addEventListener("pointerdown", () => audio.unlock(), { once: false, passive: true });
+    window.addEventListener("resize", resize);
+    window.addEventListener("orientationchange", () => setTimeout(resize, 80));
+  }
+
+  /* —— Loop —— */
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    let dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const simDt = (state.paused || ended) ? 0 : dt * state.speed;
+    updateSim(simDt);
+    updateFx(dt);
+    draw();
+  }
+
+  /* —— Test hooks (?test=1) —— */
+  function installHooks() {
+    const api = {
+      ready: true,
+      getState() {
+        const buildings = [];
+        forEachTile((t) => { if (t.type) buildings.push({ type: t.type, x: t.x, y: t.y }); });
+        return {
+          food: state.food, water: state.water, wood: state.wood, coins: state.coins,
+          villagers: popCount(),
+          buildings,
+          speed: state.paused ? 0 : state.speed,
+          paused: state.paused,
+          won: state.won, lost: state.lost,
+          selected, ended, time: state.time,
+        };
+      },
+      setResources(obj) {
+        for (const k of ["food", "water", "wood", "coins"]) {
+          if (typeof obj[k] === "number") state[k] = obj[k];
+        }
+        updateHud();
+        updateDock();
+      },
+      place(type, gx, gy) { return place(type, gx, gy); },
+      select(type) { selected = type || null; updateDock(); },
+      setSpeed,
+      setMuted,
+      tick(seconds) {
+        const s = Math.max(0, Number(seconds) || 0);
+        const step = 1 / 30;
+        let left = s;
+        while (left > 0) {
+          const d = Math.min(step, left);
+          updateSim(d);
+          updateFx(d);
+          left -= d;
+        }
+        draw();
+        updateHud();
+        updateDock();
+      },
+      tilePageXY(gx, gy) {
+        const r = canvas.getBoundingClientRect();
+        const p = tileToScreen(gx + 0.5, gy + 0.5);
+        return { x: r.left + p.x, y: r.top + p.y, tile: layout.tile };
+      },
+      seedMidgame() {
+        /* A lively town for screenshots */
+        const spots = [
+          ["farm", 1, 3], ["farm", 1, 4], ["farm", 1, 5],
+          ["well", 2, 3], ["lumber", 2, 5], ["lumber", 5, 2],
+          ["house", 4, 3], ["house", 5, 4], ["house", 2, 6],
+          ["market", 4, 5], ["farm", 6, 5],
+        ];
+        state.food = 40; state.water = 30; state.wood = 50; state.coins = 40;
+        for (const [type, x, y] of spots) {
+          const t = tileAt(x, y);
+          if (!t || t.type) continue;
+          t.type = type; t.deco = null; t.scale = 1; t.timer = Math.random() * 1.5;
+          if (type === "house") {
+            for (let i = 0; i < 2; i++) {
+              if (popCount() < GOAL - 1) state.villagers.push(makeVillager(x, y, state.villagers.length));
+            }
+          }
+        }
+        firstPlaced = true;
+        /* send some villagers walking */
+        assignJobs();
+        updateHud();
+        updateDock();
+        draw();
+      },
+      forceWin() {
+        while (popCount() < GOAL) {
+          state.villagers.push(makeVillager(3, 4, state.villagers.length));
+        }
+        state.food = 30;
+        updateHud();
+        checkWin();
+        draw();
+      },
+      forceFail() {
+        state.food = 0;
+        for (const v of state.villagers) {
+          v.leaving = true;
+          v.job = "leave";
+        }
+        state.villagers = [];
+        updateHud();
+        checkFail();
+        draw();
+      },
+      reset,
+    };
+    window.TinyTown = api;
+  }
+
+  /* boot */
+  mount();
+  state = freshState();
+  resize();
+  updateHud();
+  updateDock();
+  requestAnimationFrame(frame);
+  if (new URLSearchParams(location.search).has("test")) installHooks();
+  else {
+    /* still expose a tiny ready flag so load checks don't throw */
+    window.TinyTown = { ready: true, getState: () => ({ food: state.food, villagers: popCount(), won: state.won, lost: state.lost }) };
+  }
+})();
+</script>
+</body>
+</html>

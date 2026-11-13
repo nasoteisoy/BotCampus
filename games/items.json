@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-11-11 20:26 MST",
+ "generated": "2026-11-12 18:44 MST",
  "items": [
   {
    "id": "story",
@@ -2625,6 +2625,19 @@
    "extras": [],
    "note": "Walk the island and open the chest — a rarity beam slams in the item name",
    "thumb": "thumbs/loot-island.png"
+  },
+  {
+   "id": "tiny-town",
+   "title": "Tiny Town",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-12",
+   "url": "games/tiny-town/",
+   "extras": [],
+   "note": "Build farms, wells, and houses to grow 20 villagers before they starve",
+   "thumb": "thumbs/tiny-town.png"
   }
  ]
 }
