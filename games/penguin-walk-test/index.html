@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Penguin Walk Test</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#bfe3ef;touch-action:none;font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;display:flex;align-items:center;gap:8px;background:#fffaf2cc;border-radius:22px;padding:6px 14px 6px 8px;font-weight:800;font-size:22px;color:#5b3a29;box-shadow:0 3px 0 #0001}
+#btns{position:fixed;top:12px;right:12px;display:flex;gap:8px}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:#fffaf2cc;display:grid;place-items:center;box-shadow:0 3px 0 #0001;cursor:pointer;padding:0}
+#hint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;gap:18px;align-items:center;background:#fffaf2dd;border-radius:18px;padding:10px 16px;transition:opacity .8s}
+#stick{position:fixed;left:28px;bottom:28px;width:130px;height:130px;border-radius:50%;background:#fffaf255;border:3px solid #fffaf2aa;display:none}
+#knob{position:absolute;left:39px;top:39px;width:52px;height:52px;border-radius:50%;background:#fffaf2;box-shadow:0 3px 0 #0002}
+#win{position:fixed;inset:0;display:none;place-items:center;pointer-events:none}
+#load{position:fixed;inset:0;display:grid;place-items:center;background:#bfe3ef}
+#load div{width:46px;height:46px;border-radius:50%;border:6px solid #fffaf2;border-top-color:#f2c14e;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(.2)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/build/three.module.js","three/addons/":"./vendor/examples/jsm/"}}</script>
+</head><body>
+<div id="hud"><svg width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#f2c14e" stroke="#c9962e" stroke-width="3"/><circle cx="15" cy="15" r="6" fill="none" stroke="#c9962e" stroke-width="2.5"/></svg><span id="score">0</span><svg width="16" height="16" viewBox="0 0 16 16"><path d="M11 2L5 14" stroke="#9c6644" stroke-width="3" stroke-linecap="round"/></svg><span id="total">0</span></div>
+<div id="btns">
+ <button class="ib" id="reset" aria-label="restart"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.2-5.1" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+ <button class="ib" id="fs" aria-label="fullscreen"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</div>
+<div id="hint">
+ <svg width="92" height="62" viewBox="0 0 92 62"><g fill="#fffaf2" stroke="#5b3a29" stroke-width="3"><rect x="32" y="3" width="28" height="26" rx="6"/><rect x="2" y="33" width="28" height="26" rx="6"/><rect x="32" y="33" width="28" height="26" rx="6"/><rect x="62" y="33" width="28" height="26" rx="6"/></g><g fill="#5b3a29"><path d="M46 9l7 9h-14z"/><path d="M46 53l7-9h-14z"/><path d="M8 46l9-7v14z"/><path d="M84 46l-9-7v14z"/></g></svg>
+ <svg width="50" height="62" viewBox="0 0 50 62"><circle cx="25" cy="31" r="22" fill="#fffaf2" stroke="#5b3a29" stroke-width="3"/><circle cx="25" cy="31" r="9" fill="#5b3a29"/></svg>
+ <svg width="40" height="40" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#f2c14e" stroke="#c9962e" stroke-width="3"/><circle cx="15" cy="15" r="6" fill="none" stroke="#c9962e" stroke-width="2.5"/></svg>
+</div>
+<div id="stick"><div id="knob"></div></div>
+<div id="win"><svg width="200" height="200" viewBox="0 0 100 100" style="animation:pop .6s"><path d="M50 8l12 26 28 3-21 19 6 28-25-14-25 14 6-28-21-19 28-3z" fill="#f2c14e" stroke="#c9962e" stroke-width="4" stroke-linejoin="round"/></svg></div>
+<div id="load"><div></div></div>
+<script type="module" src="./game.js"></script>
+</body></html>
