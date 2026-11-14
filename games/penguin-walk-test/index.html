@@ -11,6 +11,11 @@ canvas{display:block}
 #hint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;gap:18px;align-items:center;background:#fffaf2dd;border-radius:18px;padding:10px 16px;transition:opacity .8s}
 #stick{position:fixed;left:28px;bottom:28px;width:130px;height:130px;border-radius:50%;background:#fffaf255;border:3px solid #fffaf2aa;display:none}
 #knob{position:absolute;left:39px;top:39px;width:52px;height:52px;border-radius:50%;background:#fffaf2;box-shadow:0 3px 0 #0002}
+#picker{position:fixed;right:12px;bottom:20px;display:flex;flex-direction:column;gap:10px}
+.pk{width:64px;height:64px;border-radius:50%;border:4px solid #fffaf2aa;padding:0;background:#fffaf2;overflow:hidden;cursor:pointer;box-shadow:0 3px 0 #0002;transition:transform .15s}
+.pk img{width:100%;height:100%;display:block}
+.pk.on{border-color:#f2c14e;transform:scale(1.12)}
+.pk.busy{opacity:.5}
 #win{position:fixed;inset:0;display:none;place-items:center;pointer-events:none}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#bfe3ef}
 #load div{width:46px;height:46px;border-radius:50%;border:6px solid #fffaf2;border-top-color:#f2c14e;animation:sp 1s linear infinite}
@@ -29,6 +34,7 @@ canvas{display:block}
  <svg width="50" height="62" viewBox="0 0 50 62"><circle cx="25" cy="31" r="22" fill="#fffaf2" stroke="#5b3a29" stroke-width="3"/><circle cx="25" cy="31" r="9" fill="#5b3a29"/></svg>
  <svg width="40" height="40" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#f2c14e" stroke="#c9962e" stroke-width="3"/><circle cx="15" cy="15" r="6" fill="none" stroke="#c9962e" stroke-width="2.5"/></svg>
 </div>
+<div id="picker"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="win"><svg width="200" height="200" viewBox="0 0 100 100" style="animation:pop .6s"><path d="M50 8l12 26 28 3-21 19 6 28-25-14-25 14 6-28-21-19 28-3z" fill="#f2c14e" stroke="#c9962e" stroke-width="4" stroke-linejoin="round"/></svg></div>
 <div id="load"><div></div></div>

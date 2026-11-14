@@ -46,7 +46,7 @@ const stick = { x: 0, y: 0, id: null, cx: 0, cy: 0 };
 if (matchMedia('(pointer: coarse)').matches || AUTOTEST) $('stick').style.display = 'block';
 const knob = $('knob');
 addEventListener('pointerdown', (e) => {
-  if (e.target.closest('.ib')) return; if (e.pointerType === 'mouse' && !AUTOTEST) return;
+  if (e.target.closest('.ib, .pk')) return; if (e.pointerType === 'mouse' && !AUTOTEST) return;
   $('stick').style.display = 'block'; hideHint(); stick.id = e.pointerId; const r = $('stick').getBoundingClientRect();
   const inStick = e.clientX < innerWidth / 2; stick.cx = inStick && e.clientY > innerHeight / 2 ? r.left + 65 : e.clientX; stick.cy = inStick && e.clientY > innerHeight / 2 ? r.top + 65 : e.clientY; move(e);
 });
@@ -57,14 +57,38 @@ function move(e) { let dx = e.clientX - stick.cx, dy = e.clientY - stick.cy; con
 $('fs').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.());
 
 const loader = new GLTFLoader();
-const [peng, props] = await Promise.all([loader.loadAsync('./assets/penguin.glb'), loader.loadAsync('./assets/props.glb')]);
-const player = new THREE.Group(); const model = peng.scene; toon(model); model.scale.setScalar(1.7); player.add(model); scene.add(player);
-const mixer = new THREE.AnimationMixer(model);
-const clip = (n) => peng.animations.find((a) => a.name === n) || peng.animations[0];
-const idle = mixer.clipAction(clip('Idle')).play(), walk = mixer.clipAction(clip('Walk')).play();
-walk.setEffectiveWeight(0); let walkW = 0;
+// cast: every character is agent-made (AI 3D -> Blender clay restyle -> free Blender auto-rig with Walk + Idle)
+const CAST = [
+  { id: 'penguin', file: './assets/penguin.glb', h: 1.7 },
+  { id: 'girl', file: './assets/girl.glb', h: 1.85 },
+  { id: 'axolotl', file: './assets/axolotl.glb', h: 1.35 },
+];
+const props = await loader.loadAsync('./assets/props.glb');
+const player = new THREE.Group(); scene.add(player);
+const cache = {}; let cur = null, mixer = null, idle = null, walk = null, model = null, walkW = 0;
+async function loadChar(c) {
+  if (cache[c.id]) return cache[c.id];
+  const g = await loader.loadAsync(c.file); const m = g.scene; toon(m);
+  const box = new THREE.Box3().setFromObject(m); const hgt = box.max.y - box.min.y; m.scale.setScalar(c.h / hgt);
+  const mx = new THREE.AnimationMixer(m); const clip = (n) => g.animations.find((a) => a.name === n) || g.animations[0];
+  const id = clip('Idle') ? mx.clipAction(clip('Idle')).play() : null, wk = clip('Walk') ? mx.clipAction(clip('Walk')).play() : null;
+  wk?.setEffectiveWeight(0); const size = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
+  return (cache[c.id] = { m, mx, id, wk, anims: g.animations.map((a) => a.name), r: Math.max(size.x, size.z) * 0.42 });
+}
+const pickBtns = [];
+async function setChar(i) {
+  const c = CAST[i]; pickBtns.forEach((b, j) => b.classList.toggle('on', j === i)); pickBtns[i].classList.add('busy');
+  const d = await loadChar(c); pickBtns[i].classList.remove('busy');
+  if (model) player.remove(model);
+  model = d.m; mixer = d.mx; idle = d.id; walk = d.wk; player.add(model); cur = c.id;
+  shadowBlob.scale.setScalar(d.r / 0.55); window.__game.anims = d.anims; window.__game.char = c.id;
+  model.position.y = 0; model.rotation.z = 0;
+}
 const shadowBlob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.18 }));
 shadowBlob.rotation.x = -Math.PI / 2; shadowBlob.position.y = 0.01; player.add(shadowBlob);
+const picker = document.getElementById('picker');
+CAST.forEach((c, i) => { const b = document.createElement('button'); b.className = 'pk'; b.setAttribute('aria-label', c.id);
+  b.innerHTML = `<img src="./assets/icons/${c.id}.webp" alt="">`; b.onclick = (e) => { e.stopPropagation(); setChar(i); }; picker.appendChild(b); pickBtns.push(b); });
 
 // props from the Blender prop set (same clay palette)
 const P = {}; props.scene.children.forEach((c) => (P[c.name] = c));
@@ -88,7 +112,8 @@ $('load').remove();
 const camOff = new THREE.Vector3(0, 4.4, 6.6), camPos = new THREE.Vector3(), look = new THREE.Vector3();
 camera.position.copy(player.position).addScaledVector(camOff, camera.aspect < 1 ? 1.55 : 1);
 const clock = new THREE.Clock(); let t = 0, autoT = 0;
-window.__game = { get pos() { return player.position.toArray(); }, get score() { return score; }, get walk() { return walkW; }, anims: peng.animations.map((a) => a.name), frames: 0 };
+window.__game = { get pos() { return player.position.toArray(); }, get score() { return score; }, get walk() { return walkW; }, anims: [], char: null, frames: 0, setChar };
+await setChar(0);
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.05); t += dt;
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + stick.x;
@@ -105,8 +130,9 @@ function tick() {
     const target = Math.atan2(ix, iz); let d = target - player.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); player.rotation.y += d * Math.min(1, dt * 12);
   }
   walkW += ((mag > 0.05 ? 1 : 0) - walkW) * Math.min(1, dt * 8);
-  walk.setEffectiveWeight(walkW); idle.setEffectiveWeight(1 - walkW); walk.timeScale = 0.6 + 1.2 * mag;
-  mixer.update(dt);
+  walk?.setEffectiveWeight(walkW); idle?.setEffectiveWeight(1 - walkW); if (walk) walk.timeScale = 0.6 + 1.2 * mag;
+  mixer?.update(dt);
+  if (model) { model.rotation.z = Math.sin(t * 11) * 0.05 * walkW; model.position.y = Math.abs(Math.sin(t * 11)) * 0.05 * walkW; } // toy waddle
   for (const c of coins) if (c.visible) {
     c.rotation.y += dt * 3; c.position.y = 0.55 + Math.sin(t * 3 + c.position.x) * 0.08;
     if (Math.hypot(c.position.x - player.position.x, c.position.z - player.position.z) < 0.7) {
