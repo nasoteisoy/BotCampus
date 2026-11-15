@@ -32,7 +32,7 @@ const CAST = [
   { id: 'penguin', file: './assets/penguin.glb', h: 2.0 },
   { id: 'girl', file: './assets/girl.glb', h: 2.2 },
   { id: 'axolotl', file: './assets/axolotl.glb', h: 1.5 },
-  { id: 'redpanda', file: './assets/redpanda.glb', h: 1.7 },
+  { id: 'redpanda', file: './assets/redpanda.glb', h: 1.45 },
 ];
 const KEYS = [['KeyW', 'KeyA', 'KeyS', 'KeyD'], ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'], ['KeyI', 'KeyJ', 'KeyK', 'KeyL'], ['Numpad8', 'Numpad4', 'Numpad5', 'Numpad6']];
 const keys = {}; addEventListener('keydown', (e) => { keys[e.code] = true; if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); }); addEventListener('keyup', (e) => (keys[e.code] = false));
