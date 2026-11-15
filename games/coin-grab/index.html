@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Coin Grab</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#bfe3ef;touch-action:none;font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+canvas{display:block}
+.ib{width:46px;height:46px;border-radius:50%;border:0;background:#fffaf2dd;display:grid;place-items:center;box-shadow:0 3px 0 #0002;cursor:pointer;padding:0}
+#btns{position:fixed;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
+#clock{width:46px;height:46px}
+#hud{position:fixed;inset:0;pointer-events:none}
+.chip{position:fixed;display:flex;align-items:center;gap:6px;background:#fffaf2dd;border-radius:26px;padding:4px 14px 4px 4px;font-weight:900;font-size:26px;color:#5b3a29;box-shadow:0 3px 0 #0002;border:4px solid}
+.chip img{width:42px;height:42px;border-radius:50%;background:#fff}
+.chip.p0{top:10px;left:10px}.chip.p1{top:10px;right:10px}.chip.p2{bottom:10px;left:10px}.chip.p3{bottom:10px;right:10px}
+.chip.lead{transform:scale(1.12)}
+.joy{position:fixed;width:124px;height:124px;border-radius:50%;border:4px solid;background:#fffaf244;display:none;touch-action:none}
+.joy i{position:absolute;left:34px;top:34px;width:48px;height:48px;border-radius:50%;background:#fffaf2;box-shadow:0 3px 0 #0003}
+.joy.j0{left:18px;bottom:70px}.joy.j1{right:18px;bottom:70px}.joy.j2{left:18px;top:70px}.joy.j3{right:18px;top:70px}
+#menu{position:fixed;inset:0;display:grid;place-items:center;background:#bfe3efcc}
+#menu .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:12px}
+.pc{border:5px solid #fffaf2;background:#fffaf2;border-radius:24px;padding:10px 12px;cursor:pointer;box-shadow:0 5px 0 #0002;display:flex;gap:4px;align-items:flex-end}
+.pc:hover,.pc:focus{border-color:#f2c14e;outline:none}
+.pc img{width:52px;height:52px;border-radius:50%;border:4px solid}
+#end{position:fixed;inset:0;display:none;place-items:center;background:#0003}
+#end .box{background:#fffaf2;border-radius:28px;padding:18px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 6px 0 #0002}
+#podium{display:flex;gap:14px;align-items:flex-end}
+#podium div{display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:900;font-size:24px;color:#5b3a29}
+#podium img{width:64px;height:64px;border-radius:50%;border:5px solid;background:#fff}
+#podium b{display:block;width:64px;border-radius:10px 10px 0 0}
+#load{position:fixed;inset:0;display:grid;place-items:center;background:#bfe3ef}
+#load div{width:46px;height:46px;border-radius:50%;border:6px solid #fffaf2;border-top-color:#f2c14e;animation:sp 1s linear infinite}
+#go{position:fixed;inset:0;display:none;place-items:center;pointer-events:none;font-size:120px;font-weight:900;color:#fffaf2;text-shadow:0 6px 0 #c9962e}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(.2)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/build/three.module.js","three/addons/":"./vendor/examples/jsm/"}}</script>
+</head><body>
+<div id="hud"></div>
+<div id="btns">
+ <button class="ib" id="home" aria-label="players"><svg width="26" height="26" viewBox="0 0 26 26" fill="#5b3a29"><circle cx="8" cy="8" r="4"/><circle cx="18" cy="8" r="4"/><path d="M1 22c0-5 3-8 7-8s7 3 7 8zM11 22c0-5 3-8 7-8s7 3 7 8z"/></svg></button>
+ <svg id="clock" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fffaf2dd"/><circle id="pie" cx="23" cy="23" r="10" fill="none" stroke="#f2c14e" stroke-width="20" stroke-dasharray="62.83 62.83" transform="rotate(-90 23 23)"/><circle cx="23" cy="23" r="21" fill="none" stroke="#5b3a29" stroke-width="3"/></svg>
+ <button class="ib" id="fs" aria-label="fullscreen"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</div>
+<div id="joys"></div>
+<div id="menu"><div class="row" id="counts"></div></div>
+<div id="go"></div>
+<div id="end"><div class="box"><svg width="70" height="50" viewBox="0 0 70 50"><path d="M5 45L10 12l14 14L35 4l11 22 14-14 5 33z" fill="#f2c14e" stroke="#c9962e" stroke-width="4" stroke-linejoin="round"/></svg><div id="podium"></div>
+ <button class="ib" id="again" aria-label="play again" style="width:64px;height:64px"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.2-5.1" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="#5b3a29" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+<div id="load"><div></div></div>
+<script type="module" src="./game.js"></script>
+</body></html>
