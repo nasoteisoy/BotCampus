@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0e3f28">
+  <title>Dice</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='4' width='24' height='24' rx='5' fill='%23f4efe6' stroke='%231b140e' stroke-width='2'/%3E%3Ccircle cx='11' cy='11' r='2' fill='%231b140e'/%3E%3Ccircle cx='21' cy='11' r='2' fill='%231b140e'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%231b140e'/%3E%3Ccircle cx='11' cy='21' r='2' fill='%231b140e'/%3E%3Ccircle cx='21' cy='21' r='2' fill='%231b140e'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div id="history" class="history" aria-label="Last rolls"></div>
+      <button type="button" id="btn-mute" class="icon-btn" aria-label="Sound on" aria-pressed="false"></button>
+    </header>
+    <div id="total-wrap">
+      <div id="total" aria-live="polite">0</div>
+    </div>
+    <div id="stage-wrap">
+      <canvas id="stage"></canvas>
+      <div id="die-chips" class="die-chips" aria-hidden="true"></div>
+      <div id="hint" class="hint">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V6a2 2 0 1 1 4 0v6"/><path d="M12 11V5a2 2 0 1 1 4 0v6"/><path d="M16 12V8a2 2 0 1 1 4 0v7a6 6 0 0 1-6 6h-2c-2.5 0-4.2-.8-5.4-2.1L4 16"/><path d="M8 13V9a2 2 0 1 0-4 0v5"/></svg>
+        Tap to roll
+      </div>
+    </div>
+    <footer class="controls">
+      <div class="row count-row">
+        <button type="button" id="btn-minus" class="round-btn" aria-label="Fewer dice"></button>
+        <span id="count" aria-label="Dice count">2</span>
+        <button type="button" id="btn-plus" class="round-btn" aria-label="More dice"></button>
+      </div>
+      <div class="row types" id="types" role="group" aria-label="Die type"></div>
+      <button type="button" id="btn-roll" class="roll" aria-label="Roll">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="22" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="11.5" cy="11.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="20.5" cy="11.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.7" fill="currentColor" stroke="none"/><circle cx="11.5" cy="20.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="20.5" cy="20.5" r="1.7" fill="currentColor" stroke="none"/></svg>
+        Roll
+      </button>
+    </footer>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

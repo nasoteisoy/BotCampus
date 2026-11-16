@@ -1,6 +1,6 @@
 {
  "base": "https://nasoteisoy.github.io/BotCampus/",
- "generated": "2026-11-12 18:44 MST",
+ "generated": "2026-11-15 20:52 MST",
  "items": [
   {
    "id": "story",
@@ -2638,6 +2638,19 @@
    "extras": [],
    "note": "Build farms, wells, and houses to grow 20 villagers before they starve",
    "thumb": "thumbs/tiny-town.png"
+  },
+  {
+   "id": "dice-roll",
+   "title": "Dice Roll",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r7 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-15",
+   "url": "games/dice-roll/",
+   "extras": [],
+   "note": "Tap to roll 3D dice on a felt tray — d4 through d20, lock any die, read the total",
+   "thumb": "thumbs/dice-roll.png"
   }
  ]
 }
