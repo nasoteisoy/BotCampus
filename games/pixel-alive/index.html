@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pixel Alive · 16 layers</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#07080d;color:#f4ecd8;font-family:ui-monospace,monospace;overflow:hidden;touch-action:manipulation}
+  #app{display:flex;height:100%;align-items:center;justify-content:center;gap:18px;padding:10px}
+  #stage{position:relative;flex:none}
+  #cv{display:block;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:6px;box-shadow:0 0 0 2px #1d2030}
+  #start{position:absolute;inset:0;margin:auto;width:42%;aspect-ratio:1;border-radius:50%;border:4px solid #ffd23f;background:#0c0d14cc;color:#ffd23f;font-size:min(16vw,90px);cursor:pointer}
+  #panel{display:flex;flex-direction:column;gap:10px;align-items:center}
+  #ctrl{display:flex;gap:8px}
+  #ctrl button{width:58px;height:48px;border-radius:10px;border:2px solid #34384e;background:#141725;color:#f4ecd8;font-size:24px;cursor:pointer}
+  #ctrl button.on{border-color:#ffd23f}
+  #tog{display:grid;grid-template-columns:repeat(4,64px);gap:8px}
+  .t{position:relative;width:64px;height:64px;border-radius:10px;border:2px solid #34384e;background:#141725;padding:0;cursor:pointer}
+  .t canvas{width:44px;height:44px;image-rendering:pixelated;margin-top:4px}
+  .t b{position:absolute;left:4px;top:2px;font-size:10px;color:#8a8ea8}
+  .t.now{border-color:#ffd23f;box-shadow:0 0 10px #ffd23f88}
+  .t.wait canvas{opacity:.35}
+  .t.off{background:#0b0c12;border-style:dashed}
+  .t.off canvas{opacity:.2;filter:grayscale(1)}
+  .t.off::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:4px;background:#e5604d;transform:rotate(-35deg);border-radius:2px}
+  @media (max-aspect-ratio:1/1){
+    #app{flex-direction:column;justify-content:flex-start;gap:8px;padding:8px}
+    #tog{grid-template-columns:repeat(8,1fr);width:min(96vw,520px);gap:5px}
+    .t{width:auto;height:auto;aspect-ratio:1}
+    .t canvas{width:70%;height:70%;margin-top:12%}
+    #ctrl button{height:40px}
+  }
+</style></head>
+<body>
+<div id="app">
+  <div id="stage"><canvas id="cv" width="135" height="240"></canvas><button id="start" aria-label="play">▶</button></div>
+  <div id="panel">
+    <div id="ctrl"><button id="bFilm" class="on" title="film">🎬</button><button id="bPlay" title="play / pause">⏸</button><button id="bScene" title="full scene">🌙</button><button id="bSnd" class="on" title="sound">🔊</button></div>
+    <div id="tog"></div>
+  </div>
+</div>
+<script src="film.js"></script>
+<script>
+(() => {
+  const PA = window.PixelAlive, cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const img = ctx.createImageData(PA.W, PA.H);
+  const S = { mode: 'film', playing: false, t: 0, abs: 0, user: Array(16).fill(true), frames: 0, sound: true, started: false };
+  window.__film = S;
+  // toggles
+  const tog = document.getElementById('tog'), btns = [];
+  PA.STEPS.forEach((s, i) => {
+    const b = document.createElement('button'); b.className = 't'; b.title = (i + 1) + ' ' + s.name;
+    b.innerHTML = '<b>' + (i + 1) + '</b>'; const c = document.createElement('canvas'); c.width = c.height = 9; PA.drawIcon(c.getContext('2d'), s.icon); b.appendChild(c);
+    b.onclick = () => { first(); S.user[i] = !S.user[i]; if (S.mode === 'film') setMode('scene'); refresh(); };
+    tog.appendChild(b); btns.push(b);
+  });
+  // audio: everything synthesised in film.js, scheduled a little ahead of the playhead
+  let ac = null, master = null, schedTo = 0;
+  function first() {
+    if (S.started) return; S.started = true; document.getElementById('start').style.display = 'none'; S.playing = true;
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = PA.masterChain(ac, ac.destination); ac.resume(); } catch (e) { ac = null; }
+    schedTo = S.abs;
+  }
+  function schedule() {
+    if (!ac || !S.playing || !S.sound) { schedTo = S.abs; return; }
+    const to = S.abs + 0.25; if (to <= schedTo) return;
+    const scene = S.mode === 'scene';
+    let a = schedTo; while (a < to) {                  // split the window at film loop points
+      const base = scene ? 0 : Math.floor(a / PA.TOTAL) * PA.TOTAL, b = scene ? to : Math.min(to, base + PA.TOTAL);
+      const off = scene ? 24 : 0;
+      for (const e of PA.audioEvents(a - base + off, b - base + off, { scene, user: S.user })) PA.playEvent(ac, master, ac.currentTime + Math.max(0, e[0] + base - off - S.abs), e);
+      a = b;
+    }
+    schedTo = to;
+  }
+  function setMode(m) { S.mode = m; S.abs = 0; schedTo = 0; document.getElementById('bFilm').classList.toggle('on', m === 'film'); document.getElementById('bScene').classList.toggle('on', m === 'scene'); }
+  document.getElementById('start').onclick = first;
+  cv.onclick = () => { if (!S.started) first(); else { S.playing = !S.playing; refresh(); } };
+  document.getElementById('bFilm').onclick = () => { first(); setMode('film'); S.playing = true; refresh(); };
+  document.getElementById('bScene').onclick = () => { first(); setMode('scene'); S.playing = true; refresh(); };
+  document.getElementById('bPlay').onclick = () => { first(); S.playing = !S.playing; refresh(); };
+  document.getElementById('bSnd').onclick = (e) => { first(); S.sound = !S.sound; e.currentTarget.textContent = S.sound ? '🔊' : '🔈'; e.currentTarget.classList.toggle('on', S.sound); };
+  function refresh() {
+    document.getElementById('bPlay').textContent = S.playing ? '⏸' : '▶';
+    const st = S.mode === 'film' ? PA.stepAt(S.t) : null, reached = PA.maskAt(S.t, S.mode === 'scene' || S.t >= PA.T_ALIVE);
+    btns.forEach((b, i) => { b.classList.toggle('off', !S.user[i]); b.classList.toggle('now', !!st && st.i === i); b.classList.toggle('wait', S.user[i] && !reached[i]); });
+  }
+  function fit() {
+    const portrait = innerWidth <= innerHeight;
+    let h = portrait ? Math.min(innerHeight - 8 - 50 - 8 - Math.min(innerWidth * 0.96, 520) / 8 * 2 - 30, (innerWidth - 16) * 16 / 9) : innerHeight - 20;
+    h = Math.max(240, Math.floor(h / 240 * 4) * 60); const w = h * 9 / 16;
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  }
+  addEventListener('resize', fit); fit();
+  let last = performance.now(), lastStep = -1;
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (S.playing) S.abs += dt;
+    S.t = S.mode === 'scene' ? 24 + S.abs : S.abs % PA.TOTAL;
+    schedule();
+    const fb = PA.render(S.t, { scene: S.mode === 'scene', user: S.user });
+    img.data.set(fb.d); ctx.putImageData(img, 0, 0);
+    const st = PA.stepAt(S.t), si = st ? st.i : -1; if (si !== lastStep || S.frames % 15 === 0) { lastStep = si; refresh(); }
+    S.frames++; requestAnimationFrame(frame);
+  }
+  refresh(); requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
