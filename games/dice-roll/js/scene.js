@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeFeltTexture, makeWoodTexture, slotPositions, estimateRadius, horizontalRadius } from './dice.js';
+import { makeFeltTexture, makeWoodTexture, slotPositions, estimateRadius, horizontalRadius, separateDice, clampDiceToTray } from './dice.js';
 
 const _ray = new THREE.Raycaster();
 const _ptr = new THREE.Vector2();
@@ -22,7 +22,7 @@ export function createWorld(canvas) {
   scene.background = new THREE.Color(0x0e3f28);
 
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40);
-  camera.position.set(0, 9.6, 6.4);
+  camera.position.set(0, 11.5, 3.5);
   camera.lookAt(0, 0.2, 0);
 
   const hemi = new THREE.HemisphereLight(0xfff3d6, 0x2d6a45, 0.85);
@@ -112,7 +112,20 @@ export function createWorld(canvas) {
 
   const camHome = camera.position.clone();
   const lookHome = new THREE.Vector3(0, 0.2, 0);
-  const camDir = new THREE.Vector3(0, 9.6, 6.4).normalize();
+  // r9 steeper default (~73°) keeps tall poly silhouettes inside the
+  // rails. d4 lies flat, so the r8 shallower pitch (~56°) is restored
+  // for that type to keep numerals >=12px and contrast well above 4.5.
+  const CAM_DIR_STD = new THREE.Vector3(0, 11.5, 3.5).normalize();
+  const CAM_DIR_D4 = new THREE.Vector3(0, 9.6, 6.4).normalize();
+  const camDir = CAM_DIR_STD.clone();
+
+  function setCamProfile(kind) {
+    const src = kind === 'd4' ? CAM_DIR_D4 : CAM_DIR_STD;
+    if (camDir.distanceToSquared(src) < 1e-12) return false;
+    camDir.copy(src);
+    applyCamera();
+    return true;
+  }
   let baseDist = 8.2;
   let viewPull = 1;
   let frameCount = 2;
@@ -255,6 +268,9 @@ export function createWorld(canvas) {
     max.x += 0.16;
     cornersOfBox(min, max, _fitCorners);
     applyFit(points.concat(_fitCorners));
+    // Pull back if a projected silhouette sits closer than 4px to a
+    // far or side rail inner edge. Prefer this over shrinking the dice.
+    ensureRailClearance(dice);
   }
 
   function setFrameCount(n, opts) {
@@ -501,6 +517,210 @@ export function createWorld(canvas) {
     syncRings(diceGroup.children.length ? [...diceGroup.children] : [die]);
   }
 
+  const RAIL_GAP_MIN = 4;
+  const _railA = new THREE.Vector3();
+  const _railB = new THREE.Vector3();
+  const _railS = { x: 0, y: 0 };
+  const _railT = { x: 0, y: 0 };
+
+  function signedDistToLine(px, py, ax, ay, bx, by, cx, cy) {
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    let nx = dy / len;
+    let ny = -dx / len;
+    const mx = (ax + bx) * 0.5;
+    const my = (ay + by) * 0.5;
+    if ((cx - mx) * nx + (cy - my) * ny < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    return (px - ax) * nx + (py - ay) * ny;
+  }
+
+  function railInnerLines(w, h) {
+    const wall = inner;
+    const lines = { far: [], left: [], right: [] };
+    const add = (key, x0, y0, z0, x1, y1, z1) => {
+      toScreenPx(_railA.set(x0, y0, z0), w, h, _railS);
+      const a = [_railS.x, _railS.y];
+      toScreenPx(_railB.set(x1, y1, z1), w, h, _railT);
+      lines[key].push({ a, b: [_railT.x, _railT.y] });
+    };
+    // Sample the inner face at felt, mid, and rail-top so a tall
+    // silhouette is tested against the real camera projection, not
+    // only the top point or the felt junction.
+    // Only the long inner lips of each rail, sampled at felt, mid, and
+    // rail-top. Short vertical corner edges must not be treated as
+    // infinite lines — their extensions cut across the tray and falsely
+    // report huge negative gaps on corner dice.
+    for (const y of [0, wallH * 0.5, wallH]) {
+      add('far', -wall, y, -wall, wall, y, -wall);
+      add('left', -wall, y, -wall, -wall, y, wall);
+      add('right', wall, y, -wall, wall, y, wall);
+    }
+    return lines;
+  }
+
+  function railScreenGaps(diceList) {
+    const all = diceList || [...diceGroup.children];
+    const canvas = renderer.domElement;
+    const w = Math.max(1, canvas.clientWidth || canvas.width);
+    const h = Math.max(1, canvas.clientHeight || canvas.height);
+    camera.updateMatrixWorld();
+    const center = { x: 0, y: 0 };
+    toScreenPx(_railA.set(0, 0.15, 0), w, h, center);
+    const lines = railInnerLines(w, h);
+    const minOf = (pt, segs) => {
+      let m = Infinity;
+      for (const s of segs) {
+        m = Math.min(m, signedDistToLine(pt[0], pt[1], s.a[0], s.a[1], s.b[0], s.b[1], center.x, center.y));
+      }
+      return m;
+    };
+    const perDie = [];
+    let minFar = Infinity;
+    let minLeft = Infinity;
+    let minRight = Infinity;
+    for (const d of all) {
+      const hull = dieScreenHull(d, w, h);
+      let far = Infinity;
+      let left = Infinity;
+      let right = Infinity;
+      for (const pt of hull) {
+        far = Math.min(far, minOf(pt, lines.far));
+        left = Math.min(left, minOf(pt, lines.left));
+        right = Math.min(right, minOf(pt, lines.right));
+      }
+      perDie.push({
+        index: d.userData.index,
+        far,
+        left,
+        right,
+        min: Math.min(far, left, right),
+      });
+      if (far < minFar) minFar = far;
+      if (left < minLeft) minLeft = left;
+      if (right < minRight) minRight = right;
+    }
+    const min = Math.min(minFar, minLeft, minRight);
+    return {
+      min: min === Infinity ? null : min,
+      minFar: minFar === Infinity ? null : minFar,
+      minLeft: minLeft === Infinity ? null : minLeft,
+      minRight: minRight === Infinity ? null : minRight,
+      ok: all.length === 0 || min >= RAIL_GAP_MIN,
+      threshold: RAIL_GAP_MIN,
+      perDie,
+    };
+  }
+
+  function ensureRailClearance(diceList, opts = {}) {
+    const all = diceList || [...diceGroup.children];
+    if (!all.length) return;
+    const holdCamera = !!opts.holdCamera;
+    // Start from the layout scale so a second fit in the same settle
+    // doesn't keep shrinking the dice. Locked dice stay put.
+    for (const d of all) {
+      if (d.userData.locked) continue;
+      const protoS = d.userData.proto?.sizeScale;
+      const mul = d.userData.layoutMul;
+      if (!(protoS > 0) || !(mul > 0)) continue;
+      const target = protoS * mul;
+      if (Math.abs(d.userData.scale - target) < 1e-6) continue;
+      const k = target / d.userData.scale;
+      d.userData.scale = target;
+      d.userData.mesh.scale.setScalar(target);
+      d.userData.restY *= k;
+      d.position.y = d.userData.restY;
+    }
+    const need = RAIL_GAP_MIN + 0.2;
+    const gapOf = () => railScreenGaps(all).min ?? 0;
+    camera.updateMatrixWorld();
+    if (gapOf() >= need) return;
+
+    // Partial-lock re-rolls must not move the camera (r8 lock freeze).
+    if (!holdCamera) {
+      const cap = camera.aspect <= 1 ? 18 : 16.8;
+      let lo = baseDist;
+      let hi = Math.min(cap, Math.max(lo + 0.25, lo * 1.04));
+      const gapAtDist = (dist) => {
+        baseDist = dist;
+        applyCamera();
+        camera.updateMatrixWorld();
+        return gapOf();
+      };
+      if (gapAtDist(hi) < need) hi = cap;
+      if (gapAtDist(hi) >= need) {
+        for (let i = 0; i < 16; i++) {
+          const mid = (lo + hi) * 0.5;
+          if (gapAtDist(mid) >= need) hi = mid;
+          else lo = mid;
+        }
+        gapAtDist(hi);
+        if (gapOf() >= need) return;
+      } else {
+        gapAtDist(hi);
+      }
+    }
+
+    // Camera cap isn't enough (tall silhouettes on a packed row), or
+    // the camera is frozen under a lock. Scale unlocked dice down just
+    // enough, keeping x/z, so numerals stay close.
+    const bases = all.map((d) => ({
+      d,
+      scale: d.userData.scale,
+      restY: d.userData.restY,
+    }));
+    const applyFactor = (f) => {
+      for (const b of bases) {
+        if (b.d.userData.locked) continue;
+        b.d.userData.scale = b.scale * f;
+        b.d.userData.mesh.scale.setScalar(b.d.userData.scale);
+        b.d.userData.restY = b.restY * f;
+        b.d.position.y = b.d.userData.restY;
+      }
+      camera.updateMatrixWorld();
+      return gapOf();
+    };
+    let sLo = 0.88;
+    let sHi = 1;
+    const atFloor = applyFactor(sLo) < need;
+    if (!atFloor) {
+      for (let i = 0; i < 16; i++) {
+        const mid = (sLo + sHi) * 0.5;
+        if (applyFactor(mid) >= need) sLo = mid;
+        else sHi = mid;
+      }
+      applyFactor(sLo);
+    }
+    if (gapOf() >= need) return;
+
+    // Still short: nudge unlocked dice away from the tight rail. This
+    // is the usual path for a locked re-roll whose unlocked die settled
+    // close to a lip while the camera and locked dice must stay put.
+    const trayLimit = inner - 0.35;
+    for (let iter = 0; iter < 14; iter++) {
+      const g = railScreenGaps(all);
+      if ((g.min ?? 0) >= need) break;
+      let moved = false;
+      for (const rec of g.perDie) {
+        const d = all.find((x) => x.userData.index === rec.index);
+        if (!d || d.userData.locked) continue;
+        if (rec.min >= need) continue;
+        const step = 0.035;
+        if (rec.far < need) { d.position.z += step; moved = true; }
+        if (rec.left < need) { d.position.x += step; moved = true; }
+        if (rec.right < need) { d.position.x -= step; moved = true; }
+        d.position.x = Math.max(-trayLimit, Math.min(trayLimit, d.position.x));
+        d.position.z = Math.max(-trayLimit, Math.min(trayLimit, d.position.z));
+      }
+      if (!moved) break;
+      separateDice(all, 0.08);
+      clampDiceToTray(all, trayLimit);
+    }
+  }
+
   function ringScreenGaps(diceList) {
     const all = diceList || [...diceGroup.children];
     const list = all.filter((d) => d.userData.locked && d.userData.ring?.visible);
@@ -582,6 +802,9 @@ export function createWorld(canvas) {
     setLayout,
     fitToCount,
     fitToDice,
+    setCamProfile,
+    railScreenGaps,
+    ensureRailClearance,
     towardFrom,
     screenUp,
     syncRing,

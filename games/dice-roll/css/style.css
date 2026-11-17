@@ -329,7 +329,7 @@ body { min-height: 100dvh; }
 @media (orientation: landscape) and (max-height: 560px) {
   #app {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(236px, 32vw);
+    grid-template-columns: minmax(0, 1fr) minmax(312px, 38vw);
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 8px 10px;
     padding:
@@ -343,8 +343,15 @@ body { min-height: 100dvh; }
   #total-wrap { grid-column: 2; grid-row: 2; min-height: 0; }
   .controls { grid-column: 2; grid-row: 3; }
   #total { font-size: clamp(48px, 12vh, 84px); }
-  .round-btn, .type-chip { width: 48px; height: 48px; min-width: 48px; max-width: 52px; flex: 0 0 48px; }
-  .types { flex-wrap: wrap; }
+  .round-btn { width: 48px; height: 48px; min-width: 48px; max-width: 52px; flex: 0 0 48px; }
+  .type-chip {
+    width: auto;
+    height: 48px;
+    min-width: 48px;
+    max-width: none;
+    flex: 1 1 0;
+  }
+  .types { flex-wrap: nowrap; gap: 4px; }
   .roll { height: 52px; font-size: 22px; }
   .hint { bottom: 10px; }
   #count { font-size: 30px; }

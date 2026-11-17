@@ -176,16 +176,20 @@ function isDesktop() {
 }
 
 function currentLayoutMul() {
+  const portrait = isPortrait();
+  const desktop = isDesktop();
   return layoutMulFor(type, count, {
-    portrait: isPortrait(),
+    portrait,
     tray: TRAY,
-    desktopBoost: isDesktop() && count >= 5,
+    desktopBoost: desktop && count >= 5,
+    landscapeBoost: !portrait && !desktop && count >= 5,
   });
 }
 
 function applyDieScales() {
   const mul = currentLayoutMul();
   for (const d of dice) {
+    if (d.userData.locked) continue;
     const base = d.userData.proto.sizeScale;
     d.userData.scale = base * mul;
     d.userData.mesh.scale.setScalar(d.userData.scale);
@@ -212,12 +216,51 @@ function currentSlots() {
   return slotPositions(count, layoutOptions());
 }
 
+function freezeLockedDice() {
+  return dice.filter((d) => d.userData.locked).map((d) => ({
+    d,
+    x: d.position.x,
+    y: d.position.y,
+    z: d.position.z,
+    qx: d.quaternion.x,
+    qy: d.quaternion.y,
+    qz: d.quaternion.z,
+    qw: d.quaternion.w,
+    scale: d.userData.scale,
+    restY: d.userData.restY,
+    layoutMul: d.userData.layoutMul,
+  }));
+}
+
+function restoreLockedDice(frozen) {
+  for (const s of frozen) {
+    const d = s.d;
+    if (!d.userData.locked) continue;
+    if (s.scale > 0) {
+      d.userData.scale = s.scale;
+      d.userData.mesh.scale.setScalar(s.scale);
+    }
+    if (s.layoutMul > 0) d.userData.layoutMul = s.layoutMul;
+    d.quaternion.set(s.qx, s.qy, s.qz, s.qw);
+    d.userData.restY = s.restY ?? restYForQuat(d, d.quaternion);
+    d.position.set(s.x, d.userData.restY, s.z);
+  }
+}
+
 function finishSettle() {
+  const frozen = freezeLockedDice();
+  const hasLocks = frozen.length > 0;
   applyDieScales();
+  restoreLockedDice(frozen);
   separateDice(dice, 0.08);
   clampDiceToTray(dice, TRAY);
   pullDiceFromFarWall(dice, TRAY, chipFarLane(count, { portrait: isPortrait() }));
-  world.fitToDice(dice);
+  restoreLockedDice(frozen);
+  // Keep the camera still when a locked die is in the tray so a re-roll
+  // of the others cannot nudge it on screen. Still clear unlocked dice
+  // of the rails without moving locked poses or the camera.
+  if (!hasLocks) world.fitToDice(dice);
+  else world.ensureRailClearance(dice, { holdCamera: true });
   for (const d of dice) {
     if (d.userData.locked) continue;
     const slot = { x: d.position.x, z: d.position.z };
@@ -229,9 +272,12 @@ function finishSettle() {
   separateDice(dice, 0.08);
   clampDiceToTray(dice, TRAY);
   pullDiceFromFarWall(dice, TRAY, chipFarLane(count, { portrait: isPortrait() }));
-  world.fitToDice(dice);
+  restoreLockedDice(frozen);
+  if (!hasLocks) world.fitToDice(dice);
+  else world.ensureRailClearance(dice, { holdCamera: true });
+  restoreLockedDice(frozen);
   for (const d of dice) {
-    if (!d.userData.locked) accentResult(d, d.userData.value);
+    if (!d.userData.locked) accentResult(d, d.userData.value, world.camera);
   }
   world.syncRings(dice);
 }
@@ -243,7 +289,7 @@ function placeDie(d, slot, value) {
   d.quaternion.copy(q);
   d.position.set(slot.x, d.userData.restY, slot.z);
   d.scale.set(1, 1, 1);
-  accentResult(d, value);
+  accentResult(d, value, world.camera);
   world.syncRing(d);
 }
 
@@ -848,6 +894,7 @@ function rebuildDice(keepLocks = false, presetValues = null) {
 function setType(next) {
   if (rolling || next === type) return;
   type = next;
+  world.setCamProfile(type === 'd4' ? 'd4' : 'std');
   paintTypes();
   rebuildDice(false);
 }
@@ -1551,6 +1598,7 @@ function inspectLayout() {
   const rendered = sampleRenderedNumerals();
   const rings = ringVisibility(72);
   const ringGaps = world.ringScreenGaps(dice);
+  const railGaps = world.railScreenGaps(dice);
   const wall = world.trayHalf;
   const trayIssues = [];
   for (const d of dice) {
@@ -1581,6 +1629,7 @@ function inspectLayout() {
     ringGapMin: ringGaps.minGap,
     ringGapOk: ringGaps.ok,
     ringGapPairs: ringGaps.pairs,
+    railGaps,
     ringDieGapMin: ringGaps.dieGapMin,
     ringDieGapOk: ringGaps.dieGapOk !== false,
     ringDiePairs: ringGaps.diePairs,
@@ -1588,6 +1637,24 @@ function inspectLayout() {
     upValues: dice.map((d) => readUpValue(d)),
     camFacingValues: dice.map((d) => readCameraFacingValue(d, world.camera)),
     footprints: dice.map((d) => horizontalRadius(d)),
+    positions: dice.map((d) => {
+      _chipProj.copy(d.position).project(world.camera);
+      const canvas = world.renderer.domElement;
+      const br = canvas.getBoundingClientRect();
+      return {
+        index: d.userData.index,
+        locked: !!d.userData.locked,
+        x: d.position.x,
+        y: d.position.y,
+        z: d.position.z,
+        qx: d.quaternion.x,
+        qy: d.quaternion.y,
+        qz: d.quaternion.z,
+        qw: d.quaternion.w,
+        sx: br.left + (_chipProj.x * 0.5 + 0.5) * br.width,
+        sy: br.top + (-_chipProj.y * 0.5 + 0.5) * br.height,
+      };
+    }),
   };
 }
 

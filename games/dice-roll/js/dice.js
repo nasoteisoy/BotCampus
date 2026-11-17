@@ -643,8 +643,27 @@ function d4ResultSpin(die, info) {
   return Math.atan2(cross, v.dot(desired));
 }
 
-export function accentResult(die, value) {
+function d4FrontFace(die, value, camera) {
+  const camDir = new THREE.Vector3();
+  if (camera) camDir.subVectors(camera.position, die.position);
+  else camDir.set(0, 0.85, 0.55);
+  if (camDir.lengthSq() < 1e-8) camDir.set(0, 1, 0);
+  else camDir.normalize();
+  let bestDot = -Infinity;
+  let best = null;
+  for (const info of die.userData.proto.atlasInfos) {
+    if (!info.cornerValues?.includes(value)) continue;
+    _n.copy(info.normal).applyQuaternion(die.quaternion);
+    const dot = _n.dot(camDir);
+    if (dot > bestDot) {
+      bestDot = dot;
+      best = info;
+    }
+  }
+  return best;
+}
 
+export function accentResult(die, value, camera = null) {
   const type = die.userData.type;
   if (type === 'd6') {
     const values = die.userData.proto.d6FaceValues;
@@ -659,12 +678,18 @@ export function accentResult(die, value) {
   const ctx = die.userData.atlasCanvas.getContext('2d');
   const tile = proto.atlasTile;
   ctx.drawImage(proto.atlasCanvas, 0, 0);
-  for (const info of proto.atlasInfos) {
-    const x = info.col * tile;
-    const y = info.row * tile;
-    if (info.cornerValues) drawD4Face(ctx, x, y, tile, info, value, d4ResultSpin(die, info));
-    else if (info.value === value) {
-      drawNumber(ctx, x, y, tile, info.value, proto.atlasTint, info.ptsLength, true);
+  if (type === 'd4') {
+    // Paint the result disc only on the camera-facing face so side faces
+    // don't show a grazing gold sliver of the same numeral.
+    const front = d4FrontFace(die, value, camera);
+    if (front) {
+      drawD4Face(ctx, front.col * tile, front.row * tile, tile, front, value, d4ResultSpin(die, front));
+    }
+  } else {
+    for (const info of proto.atlasInfos) {
+      if (info.value === value) {
+        drawNumber(ctx, info.col * tile, info.row * tile, tile, info.value, proto.atlasTint, info.ptsLength, true);
+      }
     }
   }
   die.userData.atlasTex.needsUpdate = true;
@@ -832,7 +857,9 @@ export function chipFarLane(count, opts = {}) {
   if (opts.portrait) return count >= 6 ? 0.48 : count >= 5 ? 0.36 : 0;
   // Don't reserve a huge far lane — perspective makes it too thin for a
   // 28px chip. Spend that space on the mid-row alley instead.
-  return count >= 6 ? 0.36 : count >= 5 ? 0.50 : count >= 4 ? 0.32 : 0;
+  // 6-dice back row needs more far-rail world slack so tall silhouettes
+  // stay ≥4px inside the far lip after perspective.
+  return count >= 6 ? 0.62 : count >= 5 ? 0.50 : count >= 4 ? 0.32 : 0;
 }
 
 /** Pull slot coordinates in so |slot| + radius stays inside the tray (axes independent). */
@@ -870,7 +897,11 @@ export function clampSlotsToTray(slots, radius, tray, opts = {}) {
 export function layoutMulFor(type, count, opts = {}) {
   const tray = opts.tray;
   const portrait = !!opts.portrait;
-  let mul = opts.desktopBoost ? 1.28 : 1;
+  // Start high for 5–6 dice on wide layouts so leftover tray slack
+  // goes into die size (and readable numerals). fits() searches down.
+  let mul = 1;
+  if (opts.desktopBoost) mul = 1.28;
+  else if (opts.landscapeBoost) mul = 1.42;
   if (!(tray > 0) || count < 1) return mul;
   const baseR = estimateRadius(type);
   const minGap = 0.08;
@@ -917,6 +948,7 @@ export function clampDiceToTray(dice, limit) {
   if (!(limit > 0) || !dice?.length) return;
   const v = new THREE.Vector3();
   for (const d of dice) {
+    if (d.userData.locked) continue;
     const r = horizontalRadius(d);
     const maxPos = Math.max(0, limit - r);
     d.position.x = Math.max(-maxPos, Math.min(maxPos, d.position.x));
@@ -952,7 +984,10 @@ export function pullDiceFromFarWall(dice, tray, farLane) {
   const room = tray - maxNear;
   if (shift > room) shift = room;
   if (shift > 1e-6) {
-    for (const d of dice) d.position.z += shift;
+    for (const d of dice) {
+      if (d.userData.locked) continue;
+      d.position.z += shift;
+    }
   }
 }
 
