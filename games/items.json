@@ -2651,6 +2651,19 @@
    "extras": [],
    "note": "Tap to roll 3D dice on a felt tray — d4 through d20, lock any die, read the total",
    "thumb": "thumbs/dice-roll.png"
+  },
+  {
+   "id": "carrier-fighter",
+   "title": "Carrier Fighter",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r1 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-17",
+   "url": "games/carrier-fighter/",
+   "extras": [],
+   "note": "Take off from the carrier, pop 5 target balloons, then fly through the rings and land",
+   "thumb": "thumbs/carrier-fighter.png"
   }
  ]
 }
