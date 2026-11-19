@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070a1c">
+<title>Captain Bridge</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="fade"></div>
+
+<div id="hud">
+  <div id="where" class="pill"></div>
+  <div id="topR">
+    <button id="bReports" class="btn hb" aria-label="Department Reports"></button>
+    <button id="bPlans" class="btn hb" aria-label="Flight Plans"></button>
+    <button id="bSettings" class="btn hb" aria-label="Settings"></button>
+  </div>
+  <div id="botR">
+    <div id="zoom" hidden>
+      <button id="bZoomIn" class="btn sq" aria-label="Zoom in"></button>
+      <button id="bZoomOut" class="btn sq" aria-label="Zoom out"></button>
+    </div>
+    <button id="bView" class="btn big" aria-label="Switch view"></button>
+  </div>
+  <div id="hint" class="pill"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <div id="stickGhost"></div>
+</div>
+
+<section id="sheet" hidden>
+  <header><div id="sheetTitle"></div><button id="sheetClose" class="btn sq" aria-label="Close"></button></header>
+  <div id="sheetBody"></div>
+</section>
+
+<div id="loading" class="pill">Loading ship…</div>
+<div id="dev" hidden></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
