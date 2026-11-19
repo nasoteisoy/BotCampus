@@ -2664,6 +2664,19 @@
    "extras": [],
    "note": "Take off from the carrier, pop 5 target balloons, then fly through the rings and land",
    "thumb": "thumbs/carrier-fighter.png"
+  },
+  {
+   "id": "space-carrier",
+   "title": "Space Carrier",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r1 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-18",
+   "url": "games/space-carrier/",
+   "extras": [],
+   "note": "Launch from the space carrier, blast 5 asteroids, then fly through the rings and land",
+   "thumb": "thumbs/space-carrier.png"
   }
  ]
 }

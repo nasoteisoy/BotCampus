@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2a3a8f">
+<title>Space Carrier</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.js",
+  "three/addons/": "./vendor/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c" aria-label="Space Carrier game"></canvas>
+
+<div id="hud" class="hidden">
+  <button id="btnMenu" class="ibtn tl" aria-label="Menu" data-tip="Menu"></button>
+  <div id="pips" aria-label="Targets"></div>
+  <div class="tr">
+    <button id="btnMute" class="ibtn" aria-label="Sound" data-tip="Sound"></button>
+    <button id="btnInfo" class="ibtn" aria-label="Credits" data-tip="Credits"></button>
+  </div>
+  <div id="banner" class="banner"><span class="bi"></span><span class="bt"></span></div>
+  <div id="guide" class="guide hidden">
+    <div class="chev up"></div><div class="chev down"></div><div class="chev left"></div><div class="chev right"></div>
+    <div class="gring"><div class="gdot"></div></div>
+  </div>
+  <div id="keys" class="keys hidden"></div>
+  <div id="stickZone" aria-label="Fly stick"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <button id="btnGo" class="bigbtn go hidden" aria-label="Go"></button>
+  <button id="btnFire" class="bigbtn fire hidden" aria-label="Fire"></button>
+  <div id="edge" class="edge hidden"><svg viewBox="0 0 48 48" width="56" height="56"><path d="M8 24 L34 8 L30 20 L44 24 L30 28 L34 40 Z" fill="#ffd23f" stroke="#13294b" stroke-width="3.5" stroke-linejoin="round"/></svg></div>
+  <div id="flash"></div>
+  <div id="dev" class="hidden"></div>
+</div>
+
+<div id="title" class="screen">
+  <div class="card">
+    <h1>Space Carrier</h1>
+    <div class="steps">
+      <div class="step"><div class="sico" data-ico="rocket"></div><span>Launch</span></div>
+      <div class="arrow-r"></div>
+      <div class="step"><div class="sico" data-ico="asteroid"></div><span>Hit 5</span></div>
+      <div class="arrow-r"></div>
+      <div class="step"><div class="sico" data-ico="dock"></div><span>Land</span></div>
+    </div>
+  </div>
+  <button id="btnPlay" class="bigbtn primary" aria-label="Play"></button>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="card">
+    <div class="row">
+      <button id="mResume" class="mbtn" aria-label="Play"><i></i><span>Play</span></button>
+      <button id="mRestart" class="mbtn" aria-label="Restart"><i></i><span>Restart</span></button>
+      <button id="mCredits" class="mbtn" aria-label="Credits"><i></i><span>Credits</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="credits" class="screen hidden">
+  <div class="card credits">
+    <h2>Credits</h2>
+    <ul>
+      <li><b>Space fighter</b> – “Spaceship” by Quaternius, via Poly Pizza (poly.pizza/m/xNbtFQwirO), CC0 (public domain). Recoloured for this game.</li>
+      <li><b>Space carrier</b> – “Imperial” from the Ultimate Spaceships Pack by Quaternius (quaternius.com), CC0 (public domain). Recoloured, with a new flight deck.</li>
+      <li><b>Asteroids</b> – two “Rock Large” models by Quaternius, via Poly Pizza, CC0. Recoloured.</li>
+      <li><b>Planets</b> – two “Planet” models by Quaternius, via Poly Pizza, CC0. Recoloured.</li>
+      <li><b>3D engine</b> – three.js (MIT).</li>
+    </ul>
+    <button id="cClose" class="ibtn close" aria-label="Close"></button>
+  </div>
+</div>
+
+<div id="win" class="screen hidden">
+  <div class="card win">
+    <div class="trophy"></div>
+    <div class="stars"><i></i><i></i><i></i></div>
+    <div class="wstats">
+      <div class="ws"><i data-ico="asteroid"></i><b id="wTargets">5/5</b></div>
+      <div class="ws"><i data-ico="clock"></i><b id="wTime">0:00</b></div>
+      <div class="ws"><i data-ico="dock"></i><i data-ico="check" class="ok"></i></div>
+    </div>
+  </div>
+  <button id="btnAgain" class="bigbtn primary" aria-label="Play again"></button>
+</div>
+
+<div id="tip" class="tip hidden"></div>
+<div id="loading" class="screen"><div class="spin"></div></div>
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
