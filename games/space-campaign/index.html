@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2a3a8f">
+<title>Space Campaign</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.js",
+  "three/addons/": "./vendor/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c" aria-label="Space Campaign game"></canvas>
+
+<!-- ===== campaign map HUD ===== -->
+<div id="mhud" class="hidden">
+  <button id="mMenu" class="ibtn tl" aria-label="Menu" data-tip="Menu"></button>
+  <div id="chips" class="chips">
+    <div class="chip" id="cCredits" data-tip="Credits"><i data-ico="coins"></i><b>0</b></div>
+    <div class="chip" id="cDay" data-tip="Day"><i data-ico="clock"></i><b>1</b></div>
+    <div class="chip" id="cCargo" data-tip="Cargo hold"><i data-ico="cargo"></i><b>0/20</b></div>
+    <div class="chip rep" id="cRep" data-tip="Empire stars"><i data-ico="star"></i><span class="bar"><span></span></span></div>
+  </div>
+  <div class="tr">
+    <button id="mMute" class="ibtn" aria-label="Sound" data-tip="Sound"></button>
+    <button id="mInfo" class="ibtn" aria-label="Credits" data-tip="Credits"></button>
+  </div>
+  <button id="alert" class="alert hidden" aria-label="Pirate raids" data-tip="Pirates attack a convoy"><i></i><b>1</b></button>
+  <div id="hint" class="hint hidden"></div>
+  <div id="toasts" class="toasts"></div>
+  <div id="dock" class="dock">
+    <div id="where" class="where" data-tip="You are here"><i></i><b></b></div>
+    <div id="acts" class="acts"></div>
+  </div>
+  <div id="harvestBar" class="dock harvest hidden">
+    <div class="where"><i></i><b></b></div>
+    <div class="acts"><button id="hDone" class="act ok" aria-label="Done" data-tip="Done"><i></i><span>Done</span></button></div>
+  </div>
+</div>
+
+<!-- slide-in panel (market / shipyard / tech / fleet / fight) -->
+<div id="panel" class="panel hidden" role="dialog">
+  <div class="phead"><i class="pico"></i><b class="ptitle"></b><span class="pextra"></span><button id="pClose" class="ibtn close" aria-label="Close"></button></div>
+  <div class="pbody"></div>
+</div>
+
+<!-- ===== battle HUD (Space Carrier) ===== -->
+<div id="hud" class="hidden">
+  <button id="btnMenu" class="ibtn tl" aria-label="Menu" data-tip="Pause"></button>
+  <div id="pips" aria-label="Pirates"></div>
+  <div id="shields" class="shields" aria-label="Shields"></div>
+  <div class="tr">
+    <button id="btnMute" class="ibtn" aria-label="Sound" data-tip="Sound"></button>
+  </div>
+  <div id="banner" class="banner"><span class="bi"></span><span class="bt"></span></div>
+  <div id="guide" class="guide hidden">
+    <div class="chev up"></div><div class="chev down"></div><div class="chev left"></div><div class="chev right"></div>
+    <div class="gring"><div class="gdot"></div></div>
+  </div>
+  <div id="keys" class="keys hidden"></div>
+  <div id="stickZone" aria-label="Fly stick"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <button id="btnGo" class="bigbtn go hidden" aria-label="Go"></button>
+  <button id="btnFire" class="bigbtn fire hidden" aria-label="Fire"></button>
+  <button id="btnHome" class="ibtn homebtn hidden" aria-label="Fly home" data-tip="Fly home"></button>
+  <div id="edge" class="edge hidden"><svg viewBox="0 0 48 48" width="56" height="56"><path d="M8 24 L34 8 L30 20 L44 24 L30 28 L34 40 Z" fill="#ffd23f" stroke="#13294b" stroke-width="3.5" stroke-linejoin="round"/></svg></div>
+  <div id="flash"></div>
+</div>
+<div id="dev" class="hidden"></div>
+
+<div id="title" class="screen hidden">
+  <div class="card">
+    <h1>Space Campaign</h1>
+    <div class="steps">
+      <div class="step"><div class="sico" data-ico="convoy"></div><span>Guard</span></div>
+      <div class="arrow-r"></div>
+      <div class="step"><div class="sico" data-ico="coins"></div><span>Trade</span></div>
+      <div class="arrow-r"></div>
+      <div class="step"><div class="sico" data-ico="ship"></div><span>Fleet</span></div>
+      <div class="arrow-r"></div>
+      <div class="step"><div class="sico" data-ico="crown"></div><span>Admiral</span></div>
+    </div>
+    <div class="row tbtns">
+      <button id="tContinue" class="mbtn big hidden" aria-label="Continue"><i data-ico="play"></i><span>Continue</span><em id="tDay"></em></button>
+      <button id="tNew" class="mbtn big" aria-label="New game"><i data-ico="plus"></i><span>New</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm" class="screen hidden">
+  <div class="card">
+    <div class="cq"><i data-ico="refresh"></i><span>New game?</span></div>
+    <div class="row">
+      <button id="cfYes" class="mbtn" aria-label="Yes"><i data-ico="check"></i><span>Yes</span></button>
+      <button id="cfNo" class="mbtn" aria-label="No"><i data-ico="x"></i><span>No</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="card">
+    <div class="row">
+      <button id="mResume" class="mbtn" aria-label="Play"><i data-ico="play"></i><span>Play</span></button>
+      <button id="mTitle" class="mbtn" aria-label="Save and exit"><i data-ico="home"></i><span>Save</span></button>
+      <button id="mCredits" class="mbtn" aria-label="Credits"><i data-ico="info"></i><span>Credits</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="credits" class="screen hidden">
+  <div class="card credits">
+    <h2>Credits</h2>
+    <ul>
+      <li><b>Your carrier</b> – “Imperial” from the Ultimate Spaceships Pack by Quaternius (quaternius.com), CC0 (public domain). Recoloured, with a new flight deck.</li>
+      <li><b>Fighter</b> – “Spaceship” by Quaternius, via Poly Pizza (poly.pizza/m/xNbtFQwirO), CC0. Recoloured.</li>
+      <li><b>Bomber, light destroyer, light cruiser, cruiser, heavy cruiser, escort carrier</b> – “Spitfire”, “Dispatcher”, “Striker”, “Zenith”, “Executioner” and “Insurgent” from the Ultimate Spaceships Pack by Quaternius, CC0. Recoloured.</li>
+      <li><b>Pirates</b> – “Bob” and “Pancake” from the Ultimate Spaceships Pack by Quaternius, CC0. Recoloured red.</li>
+      <li><b>Wrecks</b> – “Omen” from the Ultimate Spaceships Pack by Quaternius, CC0. Recoloured grey.</li>
+      <li><b>Convoy freighter</b> – “Cargo Depot” by Kay Lousberg, via Poly Pizza (poly.pizza/m/cRtW9KaGs0), CC0. Recoloured.</li>
+      <li><b>Trade stations</b> – “International Space Station” by Poly by Google, via Poly Pizza (poly.pizza/m/d3Fq5H6ne8E), CC-BY 3.0. Recoloured.</li>
+      <li><b>Asteroids and planets</b> – “Rock Large” x2 and “Planet” x2 by Quaternius, via Poly Pizza, CC0. Recoloured.</li>
+      <li><b>3D engine</b> – three.js (MIT).</li>
+    </ul>
+    <button id="cClose" class="ibtn close" aria-label="Close"></button>
+  </div>
+</div>
+
+<div id="admiral" class="screen hidden">
+  <div class="card win">
+    <div class="trophy"></div>
+    <h2>Empire Admiral!</h2>
+    <div class="wstats">
+      <div class="ws"><i data-ico="convoy"></i><b id="aSaved">0</b></div>
+      <div class="ws"><i data-ico="skull"></i><b id="aKills">0</b></div>
+      <div class="ws"><i data-ico="clock"></i><b id="aDays">0</b></div>
+    </div>
+    <div class="row" style="margin-top:14px"><button id="aGo" class="mbtn" aria-label="Keep playing"><i data-ico="play"></i><span>Play on</span></button></div>
+  </div>
+</div>
+
+<div id="tip" class="tip hidden"></div>
+<div id="loading" class="screen"><div class="spin"></div><div class="lbar"><span></span></div></div>
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
