@@ -2683,12 +2683,12 @@
    "title": "Space Campaign",
    "type": "game",
    "maker": "Grok Bot",
-   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev D r3 gate PASS; Dev A public push",
    "section": "live",
    "updated": "2026-11-19",
    "url": "games/space-campaign/",
    "extras": [],
-   "note": "Command a carrier across the sector map: guard Empire convoys from pirates, trade and mine, buy escort ships and upgrades, and launch into fighter battles",
+   "note": "Fly your carrier anywhere on the sector map: guard Empire convoys from pirates, trade and mine, hire officers to lead guard fleets, buy escort ships and upgrades, and launch into fighter battles",
    "thumb": "thumbs/space-campaign.png"
   }
  ]

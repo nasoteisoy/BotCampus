@@ -12,8 +12,8 @@ export const GOODS = {
 export const GOOD_IDS = Object.keys(GOODS);
 
 // node types: station, field (asteroids), wreck, beacon (empty jump point), nest (pirate base)
-// x/z in map units. mult = station price multipliers (<1 = makes it, cheap; >1 = needs it, pays well)
-export const NODES = [
+// x/z in r2 board units; SPREAD below stretches them into r3 world units (the carrier now flies freely between them). mult = station price multipliers (<1 = makes it, cheap; >1 = needs it, pays well)
+const BOARD = [
   { id: 0,  type: 'station', name: 'Aurora',     x: -95, z: 30,  color: 0x7ff0ff, planet: 'blue',
     mult: { food: 0.55, ore: 1.0, ice: 1.45, scrap: 1.1, tech: 1.25, crystal: 1.1 }, yard: ['fighter', 'bomber', 'destroyer'], tech: ['laser', 'shield', 'cargo', 'drill'] },
   { id: 1,  type: 'beacon',  x: -62, z: 8 },
@@ -34,8 +34,11 @@ export const NODES = [
   { id: 13, type: 'nest',    x: 162, z: -58 },
   { id: 14, type: 'beacon',  x: 82, z: -22 },
 ];
-export const LINKS = [[0, 1], [0, 5], [1, 2], [1, 3], [2, 3], [3, 4], [3, 6], [4, 5], [4, 7], [5, 9], [4, 9], [6, 14], [7, 14], [7, 8],
-  [8, 12], [8, 9], [14, 10], [10, 11], [10, 12], [11, 13], [12, 13], [6, 11]];
+export const SPREAD = 3;
+// every location is a bubble; arriving anywhere inside it parks the carrier at its centre (room for the carrier and its escorts)
+export const BUBBLE = { station: 40, nest: 38, field: 36, wreck: 34, beacon: 28 };
+export const NODES = BOARD.map((n) => ({ ...n, x: n.x * SPREAD, z: n.z * SPREAD, r: BUBBLE[n.type] }));
+export const WORLD = { minX: -330, maxX: 530, minZ: -250, maxZ: 270 }; // where the carrier may fly
 // empire trade routes (node paths, station to station); one convoy shuttles each
 export const ROUTES = [
   { id: 0, path: [0, 1, 3], color: 0xffd23f },
@@ -68,9 +71,20 @@ export const TECH = {
   drill:   { kind: 'perk',   icon: 'drill',   cost: [140, 340, 700],  label: 'Mining drill' }, // +1 per rock/lvl
   tractor: { kind: 'perk',   icon: 'magnet',  cost: [160, 380, 760],  label: 'Tractor beam' }, // +1 salvage/lvl, loot after fights
   scanner: { kind: 'perk',   icon: 'radar',   cost: [120, 300, 650],  label: 'Scanner' },    // see farther, raids last longer
-  warp:    { kind: 'perk',   icon: 'warp',    cost: [400, 900, 1600], label: 'Warp drive' }, // free hops per day
+  warp:    { kind: 'perk',   icon: 'warp',    cost: [400, 900, 1600], label: 'Warp drive' }, // +40% distance per day each level
   trade:   { kind: 'perk',   icon: 'handshake', cost: [220, 520, 1000], label: 'Trade pass' }, // sell +2%/lvl (always under the buy price)
 };
 export const TECH_IDS = Object.keys(TECH);
-export const CARRIER = { atk: 6, hull: 10, cargo: 20 };
+export const CARRIER = { atk: 6, hull: 10, cargo: 20, range: 150 }; // range: map units flown per day (warp adds 40% a level)
+export const SIGHT = 150; // how far the carrier sees (scanner adds 70 a level)
+
+// officers: hire one, give it ships, post its fleet somewhere and it guards that area by itself
+export const OFFICER_MAX = 3;
+export const OFFICER_RANKS = [ // rank badge chevrons = index + 1
+  { cost: 300, radius: 70, bonus: 0.25 }, // bonus = guarding home ground
+  { cost: 650, radius: 85, bonus: 0.4 },
+  { cost: 1100, radius: 100, bonus: 0.6 },
+];
+export const OFFICER_SHIPS = 4; // ships per officer fleet
+export const OFFICER_COLORS = ['#ff9440', '#b07dff', '#3ccf7a'];
 export const GOAL_REP = 100; // reputation to become Empire Admiral

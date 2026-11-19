@@ -1,8 +1,8 @@
 // Space Campaign rules: pure game state + rules (no DOM, no three.js). Seeded RNG lives in the save so a reload continues the same run.
-import { GOODS, GOOD_IDS, NODES, LINKS, ROUTES, HOME, SHIPS, FLEET_MAX, TECH, TECH_IDS, CARRIER, GOAL_REP } from './data.js';
+import { GOODS, GOOD_IDS, NODES, ROUTES, HOME, SHIPS, FLEET_MAX, TECH, TECH_IDS, CARRIER, GOAL_REP, WORLD, SIGHT, OFFICER_MAX, OFFICER_RANKS, OFFICER_SHIPS } from './data.js';
 
 export const SAVE_KEY = 'botcampus-space-campaign-v1';
-const VERSION = 1;
+export const VERSION = 2; // v1 = r2 node-hop saves (migrated on load), v2 = free flight + officers
 export const FIELD_ROCKS = 6, WRECK_BITS = 5, RAID_DAYS = 4;
 
 export function rand(S) { // mulberry32, state kept in S.seed
@@ -12,15 +12,13 @@ export function rand(S) { // mulberry32, state kept in S.seed
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const node = (id) => NODES[id];
-const ADJ = NODES.map(() => []);
-for (const [a, b] of LINKS) { ADJ[a].push(b); ADJ[b].push(a); }
-export const neighbors = (id) => ADJ[id];
 const ROUTE_NODES = [...new Set(ROUTES.flatMap((r) => r.path))];
 export const stations = () => NODES.filter((n) => n.type === 'station');
 
 export function newGame(seed = (Date.now() & 0x7fffffff)) {
   const S = {
-    v: VERSION, seed, day: 1, hop: 0, credits: 300, rep: 0, node: HOME, prev: HOME, visited: [HOME],
+    v: VERSION, seed, day: 1, clock: 0, credits: 300, rep: 0, node: HOME, visited: [HOME], seen: [],
+    pos: { x: NODES[HOME].x, z: NODES[HOME].z }, prevPos: { x: NODES[HOME].x, z: NODES[HOME].z }, officers: [],
     cargo: Object.fromEntries(GOOD_IDS.map((g) => [g, 0])), fleet: ['fighter', 'fighter'],
     tech: Object.fromEntries(TECH_IDS.map((t) => [t, 0])), prices: {}, trend: {}, fields: {}, nests: {},
     convoys: ROUTES.map((r, i) => ({ route: r.id, i: i % 2 ? r.path.length - 1 : 0, dir: i % 2 ? -1 : 1, raid: null })),
@@ -35,38 +33,69 @@ export function newGame(seed = (Date.now() & 0x7fffffff)) {
     if (n.type === 'wreck') S.fields[n.id] = WRECK_BITS;
     if (n.type === 'nest') S.nests[n.id] = { power: n.id === 9 ? 34 : 52, down: 0 };
   }
+  markSeen(S, S.pos.x, S.pos.z);
   return S;
 }
 
 // ---------- save ----------
 export function save(S) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); return true; } catch (_) { return false; } }
 export function load() {
-  try { const S = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return S && S.v === VERSION ? S : null; } catch (_) { return null; }
+  try { const S = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return S ? migrate(S) : null; } catch (_) { return null; }
+}
+// v1 (r2) saves sat on a node and hopped along lanes: give them a world position, a day clock, a scouting map and an empty officer list.
+// Their escorts are kept as the carrier's own fleet.
+export function migrate(S) {
+  if (!S || typeof S.v !== 'number' || S.v > VERSION) return null;
+  if (S.v === 1) {
+    const here = NODES[S.node] || NODES[HOME], back = NODES[S.prev] || here;
+    S.pos = { x: here.x, z: here.z }; S.prevPos = { x: back.x, z: back.z };
+    S.clock = Math.min(0.9, (S.hop || 0) / (1 + (S.tech.warp || 0))); delete S.hop; delete S.prev;
+    S.fleet = (S.fleet || []).filter((id) => SHIPS[id]); // escorts become the carrier's own fleet
+    S.officers = []; S.seen = [];
+    for (const id of S.visited || [HOME]) markSeen(S, NODES[id].x, NODES[id].z);
+    S.migratedFrom = 1; S.v = 2;
+  }
+  return S;
 }
 export function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (_) {} }
 
-// ---------- visibility (fog of war) ----------
-export function visibleSet(S) {
-  const vis = new Set([...S.visited, ...ROUTE_NODES]); // Empire charts show the trade lanes; the rest is scouted
-  for (const v of S.visited) for (const n of ADJ[v]) vis.add(n);
-  if (S.tech.scanner > 0) { // scanner: see further from where the carrier is now
-    let ring = [S.node];
-    for (let d = 0; d < 1 + S.tech.scanner; d++) { const nx = []; for (const a of ring) for (const b of ADJ[a]) if (!vis.has(b) || d < 2) { vis.add(b); nx.push(b); } ring = nx; }
-  }
-  return vis;
+// ---------- space: bubbles, sight, flight ----------
+const clampX = (x) => clamp(x, WORLD.minX, WORLD.maxX), clampZ = (z) => clamp(z, WORLD.minZ, WORLD.maxZ);
+export const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+// the location whose bubble holds this point (closest centre wins), or -1 for open space
+export function nodeAt(x, z) {
+  let best = -1, bd = Infinity;
+  for (const n of NODES) { const d = Math.hypot(n.x - x, n.z - z); if (d <= n.r && d < bd) { bd = d; best = n.id; } }
+  return best;
 }
-// shortest hop path through visible nodes
-export function findPath(S, to) {
-  const vis = visibleSet(S); if (!vis.has(to)) return null;
-  const prev = new Map([[S.node, -1]]), q = [S.node];
-  while (q.length) {
-    const a = q.shift(); if (a === to) break;
-    for (const b of ADJ[a]) if (vis.has(b) && !prev.has(b)) { prev.set(b, a); q.push(b); }
-  }
-  if (!prev.has(to)) return null;
-  const p = []; for (let c = to; c !== -1; c = prev.get(c)) p.unshift(c);
-  return p.slice(1);
+export const range = (S) => CARRIER.range * (1 + 0.4 * S.tech.warp);
+export const sight = (S) => SIGHT + 70 * S.tech.scanner;
+export function markSeen(S, x, z) {
+  const r = sight(S);
+  for (const n of NODES) if (!S.seen.includes(n.id) && Math.hypot(n.x - x, n.z - z) <= r + n.r) S.seen.push(n.id);
 }
+// Empire charts show the trade lanes; everything else has to be scouted by flying near it
+export function visibleSet(S) { return new Set([...ROUTE_NODES, ...S.seen]); }
+// where a tap would take the carrier: inside a bubble it parks at the centre, otherwise exactly where you tapped
+export function planMove(S, x, z) {
+  x = clampX(x); z = clampZ(z);
+  const id = nodeAt(x, z);
+  if (id >= 0) { x = NODES[id].x; z = NODES[id].z; }
+  const d = Math.hypot(x - S.pos.x, z - S.pos.z);
+  return { x, z, node: id, dist: d, days: d / range(S) };
+}
+// fly there: time passes by distance (one day per range units), the day ticks over as many times as the clock fills
+export function moveTo(S, x, z) {
+  const m = planMove(S, x, z); if (m.dist < 1) return null;
+  const from = { ...S.pos };
+  for (let k = 1, steps = Math.ceil(m.dist / 25); k <= steps; k++) markSeen(S, from.x + (m.x - from.x) * k / steps, from.z + (m.z - from.z) * k / steps);
+  S.prevPos = from; S.pos = { x: m.x, z: m.z }; S.node = m.node;
+  if (m.node >= 0 && !S.visited.includes(m.node)) S.visited.push(m.node);
+  S.clock += m.days; const ev = [];
+  while (S.clock >= 1) { S.clock -= 1; ev.push(...advanceDay(S)); }
+  return { ev, ...m };
+}
+export function wait(S) { S.clock = 0; return advanceDay(S); }
 
 // ---------- economy ----------
 export const cargoCap = (S) => CARRIER.cargo + 10 * S.tech.cargo;
@@ -100,20 +129,78 @@ export function sell(S, st, g, n = 1) {
 }
 
 // ---------- fleet + tech ----------
-export function fleetPower(S) {
-  let atk = CARRIER.atk, hull = CARRIER.hull;
-  for (const id of S.fleet) { atk += SHIPS[id].atk; hull += SHIPS[id].hull; }
+// the carrier's own fleet is S.fleet; officers' fleets that are not posted anywhere fly with the carrier too
+const shipPower = (S, ids, atk = 0, hull = 0) => {
+  for (const id of ids) { atk += SHIPS[id].atk; hull += SHIPS[id].hull; }
   const aM = 1 + 0.2 * S.tech.laser + 0.15 * S.tech.missile, hM = 1 + 0.2 * S.tech.shield;
   return Math.round(atk * aM + hull * hM * 0.6);
+};
+export const withMe = (S) => [...S.fleet, ...S.officers.filter((o) => !o.post).flatMap((o) => o.ships)];
+export const fleetPower = (S) => shipPower(S, withMe(S), CARRIER.atk, CARRIER.hull);
+export const wingmen = (S) => { const f = withMe(S); return Math.min(3, f.filter((id) => id === 'fighter' || id === 'bomber').length + f.filter((id) => id === 'carrier').length * 2); };
+// to: -1 = the carrier's own fleet, 0.. = that officer's fleet
+const groupOf = (S, to) => (to < 0 ? S.fleet : S.officers[to] && S.officers[to].ships);
+const groupMax = (to) => (to < 0 ? FLEET_MAX : OFFICER_SHIPS);
+export const groupFull = (S, to) => { const g = groupOf(S, to); return !g || g.length >= groupMax(to); };
+export function buyShip(S, id, to = -1) {
+  const c = SHIPS[id].cost; if (S.credits < c || groupFull(S, to)) return false;
+  S.credits -= c; groupOf(S, to).push(id); return true;
 }
-export const wingmen = (S) => Math.min(3, S.fleet.filter((id) => id === 'fighter' || id === 'bomber').length + S.fleet.filter((id) => id === 'carrier').length * 2);
-export function buyShip(S, id) {
-  const c = SHIPS[id].cost; if (S.credits < c || S.fleet.length >= FLEET_MAX) return false;
-  S.credits -= c; S.fleet.push(id); return true;
+export function sellShip(S, idx, from = -1) {
+  const g = groupOf(S, from), id = g && g[idx]; if (!id) return 0;
+  const v = Math.round(SHIPS[id].cost * 0.5); g.splice(idx, 1); S.credits += v; return v;
 }
-export function sellShip(S, idx) {
-  const id = S.fleet[idx]; if (!id) return 0;
-  const v = Math.round(SHIPS[id].cost * 0.5); S.fleet.splice(idx, 1); S.credits += v; return v;
+export function moveShip(S, from, idx, to) {
+  const a = groupOf(S, from); if (!a || !a[idx] || from === to || groupFull(S, to)) return false;
+  groupOf(S, to).push(a.splice(idx, 1)[0]); return true;
+}
+// ---------- officers ----------
+// the officer's own flagship adds a small base (bigger with rank); a fleet with no ships cannot guard
+export const officerPower = (S, o) => (o.ships.length ? Math.round(shipPower(S, o.ships, 6 + 3 * o.rank, 8 + 3 * o.rank) * (1 + OFFICER_RANKS[o.rank].bonus)) : 0);
+export const officerRadius = (o) => OFFICER_RANKS[o.rank].radius;
+export const hireCost = () => OFFICER_RANKS[0].cost;
+export function hireOfficer(S) {
+  if (S.officers.length >= OFFICER_MAX || S.credits < hireCost()) return null;
+  S.credits -= hireCost();
+  const o = { id: S.officers.length ? Math.max(...S.officers.map((k) => k.id)) + 1 : 0, rank: 0, ships: [], post: null, wins: 0 };
+  S.officers.push(o); return o;
+}
+export const promoteCost = (o) => (o.rank + 1 < OFFICER_RANKS.length ? OFFICER_RANKS[o.rank + 1].cost : 0);
+export function promote(S, i) {
+  const o = S.officers[i]; if (!o || !promoteCost(o) || S.credits < promoteCost(o)) return false;
+  S.credits -= promoteCost(o); o.rank++; return true;
+}
+// post a fleet: it guards everything within its radius from now on (and fights any raid already there)
+export function postOfficer(S, i, x, z) {
+  const o = S.officers[i]; if (!o || !o.ships.length) return null;
+  o.post = { x: clampX(x), z: clampZ(z) };
+  return guardSweep(S);
+}
+export function recallOfficer(S, i) { const o = S.officers[i]; if (!o || !o.post) return false; o.post = null; return true; }
+const guards = (S, c) => S.officers.filter((o) => o.post && o.ships.length && dist(o.post, NODES[convoyNode(c)]) <= officerRadius(o));
+// every posted fleet fights one raid inside its radius: officer fleet strength vs the pirates
+export function guardSweep(S) {
+  const ev = [];
+  for (const [oi, o] of S.officers.entries()) {
+    if (!o.post || !o.ships.length) continue;
+    const ci = S.convoys.findIndex((c) => c.raid && dist(o.post, NODES[convoyNode(c)]) <= officerRadius(o));
+    if (ci < 0) continue;
+    const c = S.convoys[ci], P = officerPower(S, o), E = c.raid.power, chance = winChance(P, E);
+    S.stats.battles++;
+    if (rand(S) < chance) {
+      const credits = 40 + E * 5, rep = 5;
+      c.raid = null; S.stats.saved++; o.wins++; S.credits += credits; S.rep += rep;
+      ev.push({ type: 'guardWin', officer: oi, convoy: ci, credits, rep, P, E });
+    } else {
+      // pushed back: the pirates are worn down (-20%); the fleet only loses its cheapest ship if the pirates were stronger
+      let lost = null;
+      if (E > P) { let b = 0; o.ships.forEach((id, k) => { if (SHIPS[id].cost < SHIPS[o.ships[b]].cost) b = k; }); lost = o.ships.splice(b, 1)[0]; }
+      c.raid.power = Math.max(6, Math.round(E * 0.8));
+      ev.push({ type: 'guardLoss', officer: oi, convoy: ci, lost, P, E });
+    }
+  }
+  if (!S.won && S.rep >= GOAL_REP) { S.won = true; ev.push({ type: 'admiral' }); }
+  return ev;
 }
 export const techCost = (S, t) => TECH[t].cost[S.tech[t]];
 export function buyTech(S, t) {
@@ -186,24 +273,14 @@ export function advanceDay(S) {
     S.tutorialRaid = true;
     const c = S.convoys[0]; if (!c.raid) { spawnRaid(S, c); c.raid.power = Math.min(c.raid.power, 11); ev.push({ type: 'raid', convoy: 0 }); }
   } else if (active < 2) {
-    for (const [i, c] of S.convoys.entries()) if (!c.raid && rand(S) < 0.16) { spawnRaid(S, c); ev.push({ type: 'raid', convoy: i }); break; }
+    // pirates mostly stay away from convoys inside a guarded area
+    for (const [i, c] of S.convoys.entries()) if (!c.raid && rand(S) < (guards(S, c).length ? 0.05 : 0.16)) { spawnRaid(S, c); ev.push({ type: 'raid', convoy: i }); break; }
   }
   for (const id of Object.keys(S.fields)) S.fields[id] = Math.min(NODES[id].type === 'field' ? FIELD_ROCKS : WRECK_BITS, S.fields[id] + 2);
   for (const ne of Object.values(S.nests)) if (ne.down > 0) ne.down--;
+  ev.push(...guardSweep(S));
   return ev;
 }
-
-// one hop; warp drive gives extra hops per day
-export function travel(S, to) {
-  if (!ADJ[S.node].includes(to)) return null;
-  S.prev = S.node; S.node = to;
-  if (!S.visited.includes(to)) S.visited.push(to);
-  S.hop++;
-  let ev = [];
-  if (S.hop >= 1 + S.tech.warp) { S.hop = 0; ev = advanceDay(S); }
-  return ev;
-}
-export function wait(S) { S.hop = 0; return advanceDay(S); }
 
 // ---------- fights ----------
 export function winChance(P, E) { if (E <= 0) return 1; return clamp((P * P) / (P * P + E * E), 0.05, 0.97); }
@@ -234,7 +311,7 @@ export function resolveFight(S, threat, flown = null) {
     for (const g of GOOD_IDS) S.cargo[g] -= Math.ceil(S.cargo[g] * 0.25);
     if (threat.kind === 'raid') {
       const c = S.convoys[threat.convoy]; c.raid.power = Math.max(6, Math.round(c.raid.power * 0.8)); // pirates got hurt too
-    } else { S.node = S.prev; } // pushed back out of the pirate base
+    } else { S.pos = { ...S.prevPos }; S.node = nodeAt(S.pos.x, S.pos.z); } // pushed back out of the pirate base
   }
   S.credits += out.credits; S.rep += out.rep;
   if (!S.won && S.rep >= GOAL_REP) { S.won = true; out.admiral = true; }

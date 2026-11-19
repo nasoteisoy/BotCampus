@@ -70,6 +70,8 @@ const PATHS = {
   convoy: '<rect x="2" y="7" width="7" height="7" rx="1"/><rect x="10" y="7" width="7" height="7" rx="1"/><path d="M17 10h3l2 2v2h-5"/><circle cx="6" cy="17" r="1.5"/><circle cx="14" cy="17" r="1.5"/>',
   dice: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.2"/><circle cx="16" cy="16" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="16" cy="8" r="1.2"/><circle cx="8" cy="16" r="1.2"/>',
   crown: '<path d="m2 6 4 10h12l4-10-6 4-4-7-4 7z"/><path d="M6 20h12"/>',
+  officer: '<path d="M3.5 9.5C3.5 7 7.3 4.5 12 4.5s8.5 2.5 8.5 5L18 11H6z"/><path d="M6.5 11v1.5a5.5 5.5 0 0 0 11 0V11"/><path d="M10 7.6h4"/><path d="M8 21c.8-2 2.2-3 4-3s3.2 1 4 3"/>',
+  rank: '<polyline points="5 13 12 7 19 13"/><polyline points="5 19 12 13 19 19"/>',
   pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
 };
 

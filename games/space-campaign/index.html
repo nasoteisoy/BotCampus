@@ -22,7 +22,7 @@
   <button id="mMenu" class="ibtn tl" aria-label="Menu" data-tip="Menu"></button>
   <div id="chips" class="chips">
     <div class="chip" id="cCredits" data-tip="Credits"><i data-ico="coins"></i><b>0</b></div>
-    <div class="chip" id="cDay" data-tip="Day"><i data-ico="clock"></i><b>1</b></div>
+    <div class="chip" id="cDay" data-tip="Day (the bar fills as you fly)"><i data-ico="clock"></i><b>1</b><span class="dbar"><span></span></span></div>
     <div class="chip" id="cCargo" data-tip="Cargo hold"><i data-ico="cargo"></i><b>0/20</b></div>
     <div class="chip rep" id="cRep" data-tip="Empire stars"><i data-ico="star"></i><span class="bar"><span></span></span></div>
   </div>
@@ -36,6 +36,10 @@
   <div id="dock" class="dock">
     <div id="where" class="where" data-tip="You are here"><i></i><b></b></div>
     <div id="acts" class="acts"></div>
+  </div>
+  <div id="placeBar" class="dock place hidden">
+    <div class="where" data-tip="Tap the map where this fleet should guard"><i></i><b></b></div>
+    <div class="acts"><button id="pbCancel" class="act" aria-label="Cancel" data-tip="Cancel"><i></i><span>Cancel</span></button></div>
   </div>
   <div id="harvestBar" class="dock harvest hidden">
     <div class="where"><i></i><b></b></div>
