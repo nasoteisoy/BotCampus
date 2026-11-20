@@ -2742,6 +2742,19 @@
    "extras": [],
    "note": "Hop the Meshy dragon around a grass island: WASD or stick to move, drag to look, pinch or wheel to zoom",
    "thumb": "thumbs/dragon-move-demo.png"
+  },
+  {
+   "id": "pacific-week",
+   "title": "Island Front",
+   "type": "game",
+   "maker": "Dev C",
+   "makerSource": "built by Dev C for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-20",
+   "url": "games/pacific-week/",
+   "extras": [],
+   "note": "Week-by-week island war: tap your army, tap an island to move, End Week to fight by sea, air and landing",
+   "thumb": "thumbs/pacific-week.png"
   }
  ]
 }
