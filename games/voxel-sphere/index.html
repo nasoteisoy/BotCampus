@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#eef2f7">
+<title>Voxel Sphere</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }</script>
+</head>
+<body>
+<canvas id="c" aria-label="10 by 10 by 10 cube grid around a sphere"></canvas>
+<div id="legend" aria-label="Legend">
+  <div class="row" title="All 8 corners inside the sphere"><span class="sw brown"></span><b id="nBrown"></b></div>
+  <div class="row" title="Touches or crosses the sphere"><span class="sw green"></span><b id="nGreen"></b></div>
+  <div class="row" title="Outside the sphere"><span class="sw black"></span><b id="nBlack"></b></div>
+  <div class="row" title="Sphere"><span class="sw sphere"></span></div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

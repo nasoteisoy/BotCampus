@@ -2703,6 +2703,19 @@
    "extras": [],
    "note": "Walk the bridge as captain, talk to your officers, check reports and flight plans, then flip outside to see the carrier and its routes",
    "thumb": "thumbs/captain-bridge.png"
+  },
+  {
+   "id": "voxel-sphere",
+   "title": "Voxel Sphere",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "built by Dev A for Chumi via Lead: Dev brief; Dev D r1 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-19",
+   "url": "games/voxel-sphere/",
+   "extras": [],
+   "note": "Spin a 10x10x10 grid of see-through cubes around a sphere: brown inside, green touching, black outside",
+   "thumb": "thumbs/voxel-sphere.png"
   }
  ]
 }
