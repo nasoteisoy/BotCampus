@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#bfe6ff">
+<title>Sphere Soldiers</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+</head>
+<body>
+<canvas id="c" aria-label="Planet: tap to add a soldier, drag to spin, pinch or wheel to zoom"></canvas>
+<div id="hud">
+  <div id="count" class="pill" role="status" title="Soldiers on the planet"><span class="ico" data-icon="users"></span><b id="n">0</b><span class="lb">Soldiers</span></div>
+  <button id="clear" class="btn" type="button" title="Remove all soldiers" disabled><span class="ico" data-icon="x"></span><span class="lb">Clear</span></button>
+</div>
+<div id="hint" class="pill"><span class="ico" data-icon="hand"></span><span class="lb">Tap the planet</span></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

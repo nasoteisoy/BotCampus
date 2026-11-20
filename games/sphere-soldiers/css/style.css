@@ -1,0 +1,20 @@
+/* Bright sky page; HUD uses the gold-dark-panels tokens from the parts library. */
+:root { --ink: #f2f5ff; --acc: #ffd23f; --tile: rgba(20, 28, 60, .78); --tile2: rgba(34, 46, 92, .9); --tap: 52px; --r: 18px; }
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+body { background: radial-gradient(120% 90% at 50% 20%, #e9f7ff 0%, #bfe6ff 55%, #8fd0ff 100%); font: 700 16px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#hud { position: fixed; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); pointer-events: none; }
+.pill, .btn { min-height: var(--tap); box-sizing: border-box; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border-radius: var(--r);
+  border: 2px solid rgba(120, 150, 230, .35); background: linear-gradient(160deg, var(--tile2), var(--tile)); box-shadow: 0 6px 18px rgba(20, 40, 90, .25); }
+.pill { pointer-events: auto; }
+#count b { font-size: 22px; min-width: 1.4em; text-align: center; color: var(--acc); }
+.lb { font-size: 16px; }
+.ico { display: inline-flex; color: var(--acc); }
+.ico svg { width: 26px; height: 26px; }
+.btn { pointer-events: auto; min-width: var(--tap); color: var(--ink); font: inherit; cursor: pointer; transition: transform .1s, border-color .15s, opacity .15s; }
+.btn:hover, .btn:focus-visible { border-color: var(--acc); outline: none; }
+.btn:active { transform: translateY(2px); }
+.btn:disabled { opacity: .45; cursor: default; }
+#hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); pointer-events: none; transition: opacity .3s; white-space: nowrap; }
+#hint.off { opacity: 0; }

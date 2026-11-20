@@ -2716,6 +2716,19 @@
    "extras": [],
    "note": "Spin a 10x10x10 grid of see-through cubes around a sphere: brown inside, green touching, black outside",
    "thumb": "thumbs/voxel-sphere.png"
+  },
+  {
+   "id": "sphere-soldiers",
+   "title": "Sphere Soldiers",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "built by Dev A for Chumi via Lead: Dev brief; Dev D r1 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-19",
+   "url": "games/sphere-soldiers/",
+   "extras": [],
+   "note": "Tap the planet to drop HQ troopers; each one walks around the little world on its own",
+   "thumb": "thumbs/sphere-soldiers.png"
   }
  ]
 }
