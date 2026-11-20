@@ -2729,6 +2729,19 @@
    "extras": [],
    "note": "Tap the planet to drop HQ troopers; each one walks around the little world on its own",
    "thumb": "thumbs/sphere-soldiers.png"
+  },
+  {
+   "id": "dragon-move-demo",
+   "title": "Dragon Move Demo",
+   "type": "game",
+   "maker": "Dev A",
+   "makerSource": "built by Dev A for Chumi via Lead: Dev brief; Dev D r1 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-20",
+   "url": "games/dragon-move-demo/",
+   "extras": [],
+   "note": "Hop the Meshy dragon around a grass island: WASD or stick to move, drag to look, pinch or wheel to zoom",
+   "thumb": "thumbs/dragon-move-demo.png"
   }
  ]
 }

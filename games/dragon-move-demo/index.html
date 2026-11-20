@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#bfe8ff">
+<title>Dragon Move Demo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+</head>
+<body>
+<canvas id="c" aria-label="Dragon on a grass island: move with WASD, arrow keys or the stick; drag to look around; wheel or pinch to zoom"></canvas>
+<div id="hint" aria-hidden="true">
+  <span class="chip"><span class="ico" data-icon="move"></span><b>Move</b><span class="pc">WASD</span><span class="ph">Stick</span></span>
+  <span class="chip"><span class="ico" data-icon="hand"></span><b>Look</b><span>Drag</span></span>
+  <span class="chip"><span class="ico" data-icon="zoom"></span><b>Zoom</b><span class="pc">Wheel</span><span class="ph">Pinch</span></span>
+</div>
+<div id="loading" role="status">Loading dragon</div>
+<div id="joy" aria-label="Move stick"><div id="knob"></div></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
