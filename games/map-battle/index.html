@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2f2e1b">
+<title>Battle of Kerovo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/game.css?v=2">
+</head>
+<body>
+<canvas id="map" aria-label="Battle map"></canvas>
+
+<div id="top" class="bar">
+  <button id="bMenu" class="ib" type="button" aria-label="Menu"></button>
+  <button id="bMode" class="ib" type="button" aria-label="Drag mode"></button>
+  <div id="objs" role="group" aria-label="Villages"></div>
+  <button id="bSpeed" class="ib" type="button" aria-label="Speed"></button>
+</div>
+<div id="holdTag" hidden></div>
+<canvas id="mini" aria-label="Minimap"></canvas>
+
+<div id="rail" class="bar">
+  <button id="bAll" class="ib" type="button" aria-label="Select all"></button>
+  <div id="cards"></div>
+  <button id="bClear" class="ib" type="button" aria-label="Clear selection"></button>
+</div>
+<div id="hint" hidden></div>
+
+<section id="ovStart" class="ov">
+  <div class="panel">
+    <h1>Battle of Kerovo</h1>
+    <div class="steps" id="startSteps"></div>
+    <div class="actions"><button id="bPlay" class="primary" type="button"></button></div>
+  </div>
+</section>
+
+<section id="ovMenu" class="ov" hidden>
+  <div class="panel">
+    <h2 id="menuTitle"></h2>
+    <div class="legend" id="legend"></div>
+    <div class="actions">
+      <button id="bSound" class="ib wide" type="button"></button>
+      <button id="bRestart" class="ib wide" type="button"></button>
+      <button id="bResume" class="primary" type="button"></button>
+    </div>
+  </div>
+</section>
+
+<section id="ovEnd" class="ov" hidden>
+  <div class="panel">
+    <div id="endBanner"></div>
+    <div class="stats" id="endStats"></div>
+    <div class="actions"><button id="bAgain" class="primary" type="button"></button></div>
+  </div>
+</section>
+
+<div id="loading">Painting the map</div>
+<script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>
