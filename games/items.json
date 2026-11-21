@@ -2768,6 +2768,19 @@
    "extras": [],
    "note": "Command any level: army to battalion; cavalry and artillery",
    "thumb": "thumbs/map-battle.png"
+  },
+  {
+   "id": "ripples2",
+   "title": "Ripples 2",
+   "type": "game",
+   "maker": "Dev C",
+   "makerSource": "built by Dev C from scratch for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-20",
+   "url": "https://nasoteisoy.github.io/ripples2/",
+   "extras": [],
+   "note": "Pieces fall outward. Fill a ring to clear it.",
+   "thumb": "thumbs/ripples2.png"
   }
  ]
 }

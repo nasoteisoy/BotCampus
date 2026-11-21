@@ -332,8 +332,8 @@ footer{color:var(--dim);text-align:center;font-size:13px;padding:20px}
     meta.appendChild(el('span',null,itemSigned(it)?('Signed off'+(itemSignedDate(it)?' '+itemSignedDate(it):'')):'Not signed off'));
     bd.appendChild(meta);
     if(it.section==='live'){
-      var a=el('a','play','▶ Play');a.href=root+(it.url||'');a.target='_blank';a.rel='noopener';bd.appendChild(a);
-      if(it.extras&&it.extras.length){var ex=el('div','extras');it.extras.forEach(function(x){var e=el('a',null,x.label);e.href=root+x.url;e.target='_blank';e.rel='noopener';ex.appendChild(e);});bd.appendChild(ex);}
+      var a=el('a','play','▶ Play');if(/^[a-z][a-z0-9+.-]*:/i.test(it.url||''))a.href=it.url;else a.href=root+(it.url||'');a.target='_blank';a.rel='noopener';bd.appendChild(a);
+      if(it.extras&&it.extras.length){var ex=el('div','extras');it.extras.forEach(function(x){var e=el('a',null,x.label);if(/^[a-z][a-z0-9+.-]*:/i.test(x.url||''))e.href=x.url;else e.href=root+x.url;e.target='_blank';e.rel='noopener';ex.appendChild(e);});bd.appendChild(ex);}
     }else if(it.section==='box'){
       bd.appendChild(el('div','play none','⏳ Not online yet'));
     }else{
