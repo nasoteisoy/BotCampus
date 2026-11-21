@@ -1,0 +1,126 @@
+{
+ "built": "2026-11-20",
+ "models": [
+  {
+   "slot": "red",
+   "url": "models/tripo/01_dragon_red.glb",
+   "v": "6ecb84779b9b",
+   "bytes": 1900992,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": true,
+   "clips": [
+    "fire_breath",
+    "fly",
+    "happy",
+    "idle",
+    "land",
+    "look_around",
+    "run",
+    "sleep",
+    "takeoff",
+    "walk"
+   ],
+   "socket": "mouth"
+  },
+  {
+   "slot": "green",
+   "url": "models/tripo/02_dragon_green.glb",
+   "v": "9eb191343aaa",
+   "bytes": 2001924,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": true,
+   "clips": [
+    "fire_breath",
+    "fly",
+    "happy",
+    "idle",
+    "land",
+    "look_around",
+    "run",
+    "sleep",
+    "takeoff",
+    "walk"
+   ],
+   "socket": "mouth"
+  },
+  {
+   "slot": "purple",
+   "url": "models/tripo/03_dragon_purple.glb",
+   "v": "795e56d1ceaf",
+   "bytes": 1869316,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": true,
+   "clips": [
+    "fire_breath",
+    "fly",
+    "happy",
+    "idle",
+    "land",
+    "look_around",
+    "run",
+    "sleep",
+    "takeoff",
+    "walk"
+   ],
+   "socket": "mouth"
+  },
+  {
+   "slot": "nest",
+   "url": "models/tripo/08_nest.glb",
+   "v": "b48f2f98474a",
+   "bytes": 1615304,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": false,
+   "clips": [],
+   "socket": null
+  },
+  {
+   "slot": "egg",
+   "url": "models/tripo/04_egg.glb",
+   "v": "53a42ccf9520",
+   "bytes": 1562836,
+   "trisIn": 39999,
+   "tris": 39999,
+   "skinned": false,
+   "clips": [],
+   "socket": null
+  },
+  {
+   "slot": "chest",
+   "url": "models/tripo/05_chest.glb",
+   "v": "ffaf1b29794f",
+   "bytes": 1753168,
+   "trisIn": 39999,
+   "tris": 39999,
+   "skinned": false,
+   "clips": [],
+   "socket": null
+  },
+  {
+   "slot": "tree",
+   "url": "models/tripo/06_tree.glb",
+   "v": "15044a38fea7",
+   "bytes": 1687292,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": false,
+   "clips": [],
+   "socket": null
+  },
+  {
+   "slot": "rock",
+   "url": "models/tripo/07_rock.glb",
+   "v": "abd4089e723b",
+   "bytes": 1765292,
+   "trisIn": 40000,
+   "tris": 40000,
+   "skinned": false,
+   "clips": [],
+   "socket": null
+  }
+ ]
+}
