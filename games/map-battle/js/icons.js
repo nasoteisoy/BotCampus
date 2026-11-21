@@ -35,6 +35,18 @@ const PATHS = {
   sparkles: '<path d="M9.9 2.1 11 6.5 15.4 7.6 11 8.7 9.9 13.1 8.8 8.7 4.4 7.6 8.8 6.5Z"/><path d="M19 12v4"/><path d="M17 14h4"/><path d="M5 18v3"/><path d="M3.5 19.5h3"/>',
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   pill: '<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>',
+  // r3: arms of service, command and formations (drawn for this game; no emoji)
+  inf: '<path d="M9 21v-6l-2-1V9a3 3 0 0 1 6 0v5l-2 1v6"/><circle cx="10" cy="4" r="1.8"/><path d="M15 2l2 19"/><path d="M13.5 7l3.5-1"/>',
+  cav: '<path d="M5 21l2-7-3-3 3-6 4 1 3-3 1 4 5 3-1 3-4-1-2 2 1 7"/><path d="M9 9h.01"/>',
+  art: '<circle cx="8" cy="16" r="4"/><path d="M8 16l13-7M10 13l10-6.5"/><path d="M4 21h8"/>',
+  star: '<polygon points="12 2 15 9 22 9.5 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.5 9 9"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  unlink: '<path d="M9 15l-2 2a3 3 0 0 1-4-4l3-3a3 3 0 0 1 4 0"/><path d="M15 9l2-2a3 3 0 0 1 4 4l-3 3a3 3 0 0 1-4 0"/><path d="M8 3v3M3 8h3M16 21v-3M21 16h-3"/>',
+  fline: '<rect x="2" y="9" width="5" height="6" rx="0.5"/><rect x="9.5" y="9" width="5" height="6" rx="0.5"/><rect x="17" y="9" width="5" height="6" rx="0.5"/>',
+  fcolumn: '<rect x="9" y="2" width="6" height="5" rx="0.5"/><rect x="9" y="9.5" width="6" height="5" rx="0.5"/><rect x="9" y="17" width="6" height="5" rx="0.5"/>',
+  fsquare: '<rect x="4" y="4" width="16" height="16" rx="1"/><rect x="8.5" y="8.5" width="7" height="7" rx="0.5" stroke-dasharray="2 2"/>',
+  fauto: '<path d="M12 3a9 9 0 1 1-8.5 6"/><polyline points="3 3 3.5 9 9 8.5"/><path d="M9 15l3-7 3 7M10 13h4"/>',
+  halt: '<circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 };
 

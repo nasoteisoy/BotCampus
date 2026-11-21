@@ -2761,12 +2761,12 @@
    "title": "Battle of Kerovo",
    "type": "game",
    "maker": "Dev A + Dev B",
-   "makerSource": "built by Dev A (r1) and Dev B (r2) for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "makerSource": "built by Dev A (r1) and Dev B (r2, r3) for Chumi via Lead: Dev brief; Dev D r3 gate PASS 12/12; Dev A public push",
    "section": "live",
    "updated": "2026-11-20",
    "url": "games/map-battle/",
    "extras": [],
-   "note": "Painted-map battle: tap a commander or drag-select blue regiments, tap to march, hold the villages or rout green",
+   "note": "Command any level: army to battalion; cavalry and artillery",
    "thumb": "thumbs/map-battle.png"
   }
  ]

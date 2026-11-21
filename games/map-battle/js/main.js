@@ -1,11 +1,14 @@
 // Battle of Kerovo: camera, real mouse/touch/keyboard input, HUD and game loop.
+// r3: command levels (Army > Corps > Division > Regiment > Battalion) picked from face cards,
+// a breadcrumb + children bar, direct orders that override the parent, and a Rejoin release.
 // Source parts: parts-library svg-icon-set (icons.js), space-sfx (audio.js), gold-dark-panels
 // (css colours), battle-endcard (results layout idea: outcome banner + icon stat tiles).
 import { WORLD, VILLAGES, HAMLETS } from './map.js';
 import { paintTerrain, shrinkTerrain } from './terrain.js';
 import { drawPortrait } from './portraits.js';
-import { createBattle, stepBattle, orderMarch, isActive, sideStrength, centroid, corpsUnits, RULES } from './sim.js';
-import { createFx, addVolleyFx, addOrderMark, stepFx, drawScene, drawMinimap, corpsCardRect, corpsCentroid, villageLabelBox, hamletLabelBox } from './render.js';
+import { createBattle, stepBattle, orderMarch, isActive, sideStrength, centroid, corpsUnits, RULES, orderNode, releaseNode, coveringNodes, liveLeaves, nodeCentroid } from './sim.js';
+import { ancestors, LEVEL_NAME } from './org.js';
+import { createFx, addVolleyFx, addCannonFx, addDustFx, addOrderMark, stepFx, drawScene, drawMinimap, corpsCardRect, corpsCentroid, villageLabelBox, hamletLabelBox } from './render.js';
 import { icon } from './icons.js';
 import { createBattleAudio } from './audio.js';
 
@@ -17,7 +20,9 @@ const mg = miniEl.getContext('2d');
 const sfx = createBattleAudio();
 
 const view = { s: 0.5, ox: 0, oy: 0, w: 0, h: 0, dpr: 1 };
-const ui = { selected: new Set(), selectedCorps: new Set(), box: null, time: 0, mode: 'pan', speed: 1, hint: 0 };
+const ui = { selected: new Set(), selectedCorps: new Set(), node: null, box: null, time: 0, mode: 'pan', speed: 1, hint: 0, cardRects: {} };
+const SEED = Number(new URLSearchParams(location.search).get('seed')) || 0;
+const newSeed = () => SEED || 1 + Math.floor(Math.random() * 1e6);
 const art = { terrain: null, portraits: {} };
 const mini = { base: null, width: 0, height: 0, dpr: 1 };
 let state = null;
@@ -30,16 +35,24 @@ let lastVolleySound = 0;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const minScale = () => Math.min(view.w / WORLD.w, view.h / WORLD.h) * 0.95;
 const maxScale = () => Math.max(2.6, minScale() * 6);
+/** Top of the bottom HUD (command bar if shown, else the rail): the map can scroll its south edge above it. */
+function bottomHudTop() {
+  const cmd = document.getElementById('cmd'), rail = document.getElementById('rail');
+  const el = cmd && !cmd.hidden ? cmd : rail;
+  return el ? el.getBoundingClientRect().top : view.h - 70;
+}
 function clampView() {
   view.s = clamp(view.s, minScale(), maxScale());
-  const pad = 70;
+  const pad = 70, padB = Math.max(pad, view.h - bottomHudTop() + 12);
   const mw = WORLD.w * view.s, mh = WORLD.h * view.s;
   view.ox = mw + pad * 2 <= view.w ? (view.w - mw) / 2 : clamp(view.ox, view.w - mw - pad, pad);
-  view.oy = mh + pad * 2 <= view.h ? (view.h - mh) / 2 : clamp(view.oy, view.h - mh - pad, pad);
+  view.oy = mh + pad * 2 <= view.h ? (view.h - mh) / 2 : clamp(view.oy, view.h - mh - padB, pad);
 }
+/** Centre a world point in the free play area between the top bar and the bottom HUD. */
 function centerOn(wx, wy) {
+  const cy = (56 + bottomHudTop()) / 2;
   view.ox = view.w / 2 - wx * view.s;
-  view.oy = view.h / 2 - wy * view.s;
+  view.oy = cy - wy * view.s;
   clampView();
 }
 function zoomAt(px, py, f) {
@@ -53,7 +66,7 @@ const toWorld = (x, y) => ({ x: (x - view.ox) / view.s, y: (y - view.oy) / view.
 const toScreen = (x, y) => ({ x: x * view.s + view.ox, y: y * view.s + view.oy });
 /** On-screen HUD boxes that can hide the map (bars' own children, rail cards, minimap). */
 function hudRects() {
-  return [...document.querySelectorAll('#top > *, #objs .obj, #rail > *, #cards .card, #mini')]
+  return [...document.querySelectorAll('#top > *, #objs .obj, #rail > *, #cards .card, #mini, #cmd:not([hidden]) button')]
     .filter((e) => e.id !== 'objs' && e.id !== 'cards' && !e.hidden)
     .map((e) => e.getBoundingClientRect())
     .filter((r) => r.width && r.height);
@@ -115,10 +128,25 @@ function resize() {
 
 /* ---------- selection and orders ---------- */
 const blueUnits = () => state.units.filter((u) => u.side === 'b' && isActive(u));
+const nodeById = (id) => state.nodes.get(id);
+/** Select a list of units; when they are exactly one command, that command is selected too. */
 function setSelection(list) {
   ui.selected = new Set(list.map((u) => u.id));
+  const cover = list.length ? coveringNodes(state, list) : [];
+  ui.node = cover.length === 1 ? cover[0].id : null;
   if (list.length) sfx.tap();
   if (list.length && ui.hint === 0) ui.hint = 1;
+  renderCmd();
+  tickHud();
+}
+function selectNode(id) {
+  const n = nodeById(id);
+  if (!n || n.side !== 'b' || !liveLeaves(n).length) return;
+  ui.selected = new Set(liveLeaves(n).map((u) => u.id));
+  ui.node = n.id;
+  sfx.tap();
+  if (ui.hint === 0) ui.hint = 1;
+  renderCmd();
   tickHud();
 }
 function refreshSelectedCorps() {
@@ -126,24 +154,36 @@ function refreshSelectedCorps() {
     const u = state.units.find((k) => k.id === id);
     if (!u || !isActive(u)) ui.selected.delete(id);
   }
+  if (ui.node) {
+    const n = nodeById(ui.node);
+    if (!n || !liveLeaves(n).length) { ui.node = null; renderCmd(); }
+    else for (const u of liveLeaves(n)) ui.selected.add(u.id);
+  }
   ui.selectedCorps = new Set(state.corps.filter((c) => {
     const live = corpsUnits(state, c.id);
     return c.side === 'b' && live.length && live.every((u) => ui.selected.has(u.id));
   }).map((c) => c.id));
 }
-const selectCorps = (id) => setSelection(corpsUnits(state, id));
+const selectCorps = (id) => selectNode(id);
+/** Order the selected command; a box of loose units orders each smallest whole command in it. */
 function orderTo(wx, wy) {
-  const list = state.units.filter((u) => ui.selected.has(u.id) && isActive(u));
-  if (!list.length) return false;
-  orderMarch(state, list, clamp(wx, 20, WORLD.w - 20), clamp(wy, 20, WORLD.h - 20));
+  const x = clamp(wx, 20, WORLD.w - 20), y = clamp(wy, 20, WORLD.h - 20);
+  const n = ui.node && nodeById(ui.node);
+  if (n) orderNode(state, n, x, y, 'player');
+  else {
+    const list = state.units.filter((u) => ui.selected.has(u.id) && isActive(u));
+    if (!list.length) return false;
+    orderMarch(state, list, x, y, 'player');
+  }
   addOrderMark(fx, wx, wy);
   sfx.tap();
   if (ui.hint < 2) { ui.hint = 2; tickHud(); }
+  renderCmd();
   return true;
 }
 function unitAt(sx, sy, side) {
   const p = toWorld(sx, sy);
-  const tol = Math.max(20, 22 / view.s);
+  const tol = Math.max(16, 20 / view.s);
   let best = null, bd = tol;
   for (const u of state.units) {
     if (u.side !== side || !isActive(u)) continue;
@@ -155,9 +195,8 @@ function unitAt(sx, sy, side) {
 function corpsCardAt(sx, sy) {
   for (const c of state.corps) {
     if (c.side !== 'b') continue;
-    const at = corpsCentroid(state, c.id);
-    if (!at) continue;
-    const r = corpsCardRect(view, at);
+    const r = ui.cardRects[c.id];
+    if (!r) continue;
     if (sx >= r.x - 4 && sx <= r.x + r.w + 4 && sy >= r.y - 4 && sy <= r.y + r.h + 4) return c;
   }
   return null;
@@ -172,8 +211,16 @@ function onTap(sx, sy, button) {
   const mine = unitAt(sx, sy, 'b');
   if (mine) {
     const now = performance.now();
+    // double tap = its corps; a single tap picks the battalion, and tapping again inside the
+    // current command climbs one level (battalion > regiment > division > corps)
     if (lastTap.id === mine.id && now - lastTap.t < 380) selectCorps(mine.corps);
-    else setSelection([mine]);
+    else {
+      const cur = ui.node && nodeById(ui.node);
+      const chain = ancestors(state, nodeById(mine.id));
+      const i = cur ? chain.indexOf(cur) : -1;
+      if (i > 1) selectNode(chain[i - 1].id);
+      else selectNode(mine.id);
+    }
     lastTap = { id: mine.id, t: now };
     return;
   }
@@ -231,11 +278,18 @@ function endPointer(e) {
   const p = pointers.get(e.pointerId);
   if (!p) return;
   pointers.delete(e.pointerId);
-  if (e.type === 'pointerup' && !gesture) onTap(p.x, p.y, p.button);
+  if (e.type === 'pointerup' && !gesture) { if (e.pointerType === 'touch') canvasUp = { t: performance.now(), x: e.clientX, y: e.clientY }; onTap(p.x, p.y, p.button); }
   if (gesture === 'box' && ui.box) { boxSelect(ui.box); ui.box = null; }
   if (pointers.size === 0) { gesture = null; pinch = null; }
   else if (gesture === 'pinch' && pointers.size === 1) gesture = 'pinch-end';
 }
+// A touch tap on the map can show the command bar under the finger; swallow the browser's
+// follow-up click so it does not land on a bar button that just appeared there.
+// Only the ghost click is swallowed: same spot as the touch that just ended, within 400 ms.
+let canvasUp = { t: -1e9, x: 0, y: 0 };
+document.addEventListener('click', (e) => {
+  if (e.target !== canvas && performance.now() - canvasUp.t < 400 && Math.hypot(e.clientX - canvasUp.x, e.clientY - canvasUp.y) < 12) { e.stopPropagation(); e.preventDefault(); }
+}, true);
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -263,7 +317,8 @@ window.addEventListener('keydown', (e) => {
   }
   if (phase !== 'play') return;
   if (k === '1' || k === '2' || k === '3') selectCorps(`b${Number(k) - 1}`);
-  else if (k === '4') setSelection(blueUnits());
+  else if (k === '4') selectNode('bA');
+  else if (k === 'r' && ui.node && nodeById(ui.node).override) releaseSelected();
   else if (k === 'f') cycleSpeed();
   else if (k === 'b') toggleMode();
   else if (k === '=' || k === '+') zoomAt(view.w / 2, view.h / 2, 1.2);
@@ -306,7 +361,7 @@ function buildHud() {
   ui.mode = matchMedia('(pointer:fine)').matches ? 'box' : 'pan';
   renderMode();
   renderSpeed();
-  $('bAll').innerHTML = btn('users', 'All', '4');
+  $('bAll').innerHTML = btn('star', 'Army', '4');
   $('bClear').innerHTML = btn('x', 'Clear', 'Esc');
   $('bPlay').innerHTML = `${icon('play', { size: 24 })}Play`;
   $('bResume').innerHTML = `${icon('play', { size: 24 })}Go`;
@@ -323,6 +378,8 @@ function buildHud() {
     tile('step', icon('move', { size: 28 }), 'Tap map = march'),
     tile('step', icon('flag', { size: 28 }), 'Hold 3 villages'),
     tile('step', icon('swords', { size: 28 }), 'Or break them'),
+    tile('step', icon('star', { size: 28 }), 'Pick any level'),
+    tile('step', icon('link', { size: 28 }), 'Rejoin = back to plan'),
   ].join('');
   $('legend').innerHTML = [
     tile('lg', icon('hand', { size: 26 }), 'Tap = pick'),
@@ -331,6 +388,10 @@ function buildHud() {
     tile('lg', icon('zoom', { size: 26 }), 'Pinch / wheel'),
     tile('lg', icon('flag', { size: 26 }), 'Hold 3 villages'),
     tile('lg', icon('shield', { size: 26 }), 'Villages + forts = cover'),
+    tile('lg', icon('inf', { size: 26 }), 'Foot: line, column, square'),
+    tile('lg', icon('cav', { size: 26 }), 'Horse: fast, charges'),
+    tile('lg', icon('art', { size: 26 }), 'Guns: long range, unlimber'),
+    tile('lg', icon('unlink', { size: 26 }), 'Own order = off plan'),
   ].join('');
   $('objs').innerHTML = state.villages.map((v, i) => `<button class="obj" type="button" data-i="${i}" aria-label="${v.name}">${icon('flag', { size: 24 })}<span class="nm">${v.name}</span></button>`).join('');
   $('cards').innerHTML = state.corps.filter((c) => c.side === 'b').map((c) => `<button class="card" type="button" data-corps="${c.id}" aria-label="Corps ${c.label}"><img alt="" src="${art.portraits[c.id].toDataURL()}"><b>${c.label}</b></button>`).join('');
@@ -340,8 +401,16 @@ function bindHud() {
   $('bMenu').onclick = () => (phase === 'play' ? openMenu() : null);
   $('bMode').onclick = toggleMode;
   $('bSpeed').onclick = cycleSpeed;
-  $('bAll').onclick = () => setSelection(blueUnits());
+  $('bAll').onclick = () => { if (phase === 'play') { selectNode('bA'); } };
   $('bClear').onclick = () => setSelection([]);
+  $('cmd').onclick = (e) => {
+    if (phase !== 'play') return;
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.id === 'bRel') releaseSelected();
+    else if (b.dataset.node) { selectNode(b.dataset.node); centerOnSelection(); }
+    else if (b.dataset.form) setFormation(b.dataset.form);
+  };
   $('bPlay').onclick = startGame;
   $('bResume').onclick = closeMenu;
   $('bRestart').onclick = restart;
@@ -357,6 +426,64 @@ function bindHud() {
   };
   for (const id of ['bAll', 'bClear', 'bMode', 'bSpeed', 'bMenu', 'bPlay', 'bAgain']) $(id).addEventListener('pointerdown', () => sfx.unlock());
 }
+/* ---------- command bar: breadcrumb, children, rejoin, formation ---------- */
+const KIND_ICON = { inf: 'inf', cav: 'cav', art: 'art', mixed: 'star' };
+const ROLE_NAME = { attack: 'attack', pin: 'pin', flank: 'flank', reserve: 'reserve', bombard: 'guns', screen: 'screen', support: 'support', hold: 'hold', move: 'move' };
+const portraitURL = {};
+function faceOf(n) {
+  if (n.level === 'bn') return `${icon(KIND_ICON[n.kind], { size: 24 })}`;
+  if (!portraitURL[n.id]) {
+    const seed = n.level === 'army' ? 1 : n.level === 'corps' ? n.index + 3 : n.portrait;
+    portraitURL[n.id] = drawPortrait(seed, n.side, 48, 60).toDataURL();
+  }
+  return `<img alt="" src="${portraitURL[n.id]}">`;
+}
+const badgeOf = (n) => (n.level === 'army' ? icon('star', { size: 24, className: 'sc-ico bdg' }) : n.level === 'corps' ? `<b>${n.label}</b>` : n.kind !== 'inf' && n.level !== 'bn' ? icon(KIND_ICON[n.kind], { size: 24, className: 'sc-ico bdg' }) : `<b>${n.label}</b>`);
+function nodeName(n) {
+  const chain = ancestors(state, n).slice(1).map((k) => k.label).join('.');
+  return `${LEVEL_NAME[n.level]} ${chain}`.trim();
+}
+function cmdButton(n, cls, role) {
+  const ovr = n.override ? ' ovr' : '';
+  const r = role ? ` r-${role}` : '';
+  return `<button class="cb ${cls}${ovr}${r}" type="button" data-node="${n.id}" data-level="${n.level}" aria-label="${nodeName(n)}${role ? ', ' + ROLE_NAME[role] : ''}${n.override ? ', own order' : ''}">${faceOf(n)}${badgeOf(n)}${n.override ? icon('unlink', { size: 24, className: 'sc-ico bdg ovri' }) : ''}</button>`;
+}
+function renderCmd() {
+  const el = $('cmd');
+  const n = ui.node && nodeById(ui.node);
+  if (!n || phase === 'end') { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const chain = ancestors(state, n);
+  const crumbs = chain.map((k, i) => cmdButton(k, `crumb${k === n ? ' on' : ''}`, null) + (i < chain.length - 1 ? '<i class="sep" aria-hidden="true"></i>' : '')).join('');
+  const roleOf = (kid) => (n.plan.find((p) => p.id === kid.id) || {}).role;
+  const kids = n.children.map((id) => nodeById(id)).filter((k) => liveLeaves(k).length).map((k) => cmdButton(k, 'kid', k.override ? null : roleOf(k))).join('');
+  let tools = '';
+  if (n.override) tools += `<button id="bRel" class="ib rel" type="button" aria-label="Rejoin plan">${icon('link', { size: 24 })}<span class="lb">Rejoin</span></button>`;
+  if (n.level === 'bn') {
+    const u = state.unitById.get(n.id);
+    const forms = n.kind === 'inf' ? [['auto', 'fauto', 'Auto'], ['line', 'fline', 'Line'], ['column', 'fcolumn', 'Column'], ['square', 'fsquare', 'Square']]
+      : n.kind === 'cav' ? [['auto', 'fauto', 'Charge'], ['hold', 'halt', 'Hold']] : [];
+    tools += forms.map(([f, ic, lb]) => `<button class="ib fm" type="button" data-form="${f}" aria-pressed="${u && u.formSet === f}" aria-label="${lb}">${icon(ic, { size: 24 })}<span class="lb">${lb}</span></button>`).join('');
+  }
+  el.innerHTML = `<div id="crumbs">${crumbs}</div>${kids ? `<div id="kids">${kids}</div>` : ''}${tools ? `<div id="tools">${tools}</div>` : ''}`;
+}
+function releaseSelected() {
+  const n = ui.node && nodeById(ui.node);
+  if (!n || !n.override) return;
+  releaseNode(state, n);
+  sfx.tap();
+  renderCmd();
+}
+function setFormation(f) {
+  const n = ui.node && nodeById(ui.node);
+  const u = n && state.unitById.get(n.id);
+  if (!u) return;
+  u.formSet = f;
+  if (f === 'hold') u.charge = null;
+  sfx.tap();
+  renderCmd();
+}
+
 function centerOnSelection() {
   const list = state.units.filter((u) => ui.selected.has(u.id));
   if (!list.length) return;
@@ -413,11 +540,18 @@ function tickHud() {
     b.querySelector('img').style.opacity = String(0.45 + 0.55 * avg);
   });
   $('bClear').style.visibility = ui.selected.size ? 'visible' : 'hidden';
+  if (ui.node) {
+    const n = nodeById(ui.node);
+    const sig = n ? `${n.id}|${n.override}|${n.plan.map((p) => p.id + p.role).join()}|${n.children.map((id) => nodeById(id).override + ':' + liveLeaves(nodeById(id)).length).join()}` : '';
+    if (sig !== ui.cmdSig) { ui.cmdSig = sig; renderCmd(); }
+    document.querySelectorAll('#cmd .cb').forEach((b) => b.classList.toggle('hit', nodeById(b.dataset.node).underFire > 0));
+  }
   const tag = $('holdTag');
   if (state.hold.side && !state.result) {
     tag.hidden = false;
-    tag.className = state.hold.side;
-    tag.innerHTML = `${icon('flag', { size: 18 })}${Math.ceil(RULES.holdSeconds - state.hold.time)}`;
+    // paused = a village is contested (or no shot fired yet): the count stops, shown dimmed
+    tag.className = state.hold.side + (state.hold.paused ? ' paused' : '');
+    tag.innerHTML = `${icon(state.hold.paused ? 'halt' : 'flag', { size: 24 })}${Math.ceil(RULES.holdSeconds - state.hold.time)}`;
   } else tag.hidden = true;
   placeHint();
 }
@@ -433,9 +567,11 @@ function startGame() {
 function openMenu() { phase = 'menu'; $('ovMenu').hidden = false; $('bResume').focus(); }
 function closeMenu() { $('ovMenu').hidden = true; phase = 'play'; }
 function restart() {
-  state = createBattle(1 + Math.floor(Math.random() * 1e6));
+  state = createBattle(newSeed());
   fx = createFx();
   ui.selected.clear();
+  ui.node = null;
+  renderCmd();
   ui.hint = 2;
   endTimer = 0;
   $('ovMenu').hidden = true;
@@ -466,6 +602,7 @@ function showEnd() {
   ].join('');
   $('ovEnd').hidden = false;
   phase = 'end';
+  renderCmd();
   sfx.bugle(win);
   $('bAgain').focus();
 }
@@ -477,7 +614,10 @@ function handleEvents(now) {
     if (e.kind === 'fire') {
       addVolleyFx(fx, e);
       if (now - lastVolleySound > 110) { sfx.volley(); lastVolleySound = now; }
-    } else if (e.kind === 'rout') sfx.rout();
+    } else if (e.kind === 'cannon') {
+      addCannonFx(fx, e);
+      if (now - lastVolleySound > 110) { sfx.volley(); lastVolleySound = now; }
+    } else if (e.kind === 'melee') addDustFx(fx, e); else if (e.kind === 'rout') sfx.rout();
     else if (e.kind === 'capture') sfx.bugle(e.side === 'b');
   }
   state.events.length = 0;
@@ -505,7 +645,7 @@ function loop(now) {
 function boot() {
   art.terrain = paintTerrain();
   mini.base = shrinkTerrain(art.terrain, 264);
-  state = createBattle(1 + Math.floor(Math.random() * 1e6));
+  state = createBattle(newSeed());
   for (const c of state.corps) art.portraits[c.id] = drawPortrait(c.index + 3, c.side, 96, 120);
   resize();
   window.addEventListener('resize', resize);
@@ -517,7 +657,9 @@ function boot() {
   $('bPlay').focus();
   if (new URLSearchParams(location.search).get('dev') === '1') {
     // Read-only peek for QA scripts; input still goes through real pointer and key events.
-    window.mapBattle = { get state() { return state; }, get view() { return { ...view }; }, get phase() { return phase; }, toScreen, villageLabelsClear, westEdge, labelBoxes: () => VILLAGES.map((v) => ({ name: v.name, ...villageLabelBox(g, view, v) })) };
+    window.mapBattle = { get state() { return state; }, get view() { return { ...view }; }, get phase() { return phase; }, toScreen, villageLabelsClear, westEdge, get node() { return ui.node; }, get cardRects() { return ui.cardRects; },
+      // camera-only hook for the QA unit close-up stills (does not touch the battle)
+      stillCam: (x, y, sc) => { view.s = sc; view.ox = view.w / 2 - x * sc; view.oy = view.h / 2 - y * sc; clampView(); }, hamletBoxes: () => HAMLETS.map((h) => ({ name: h.name, ...hamletLabelBox(g, view, h) })), labelBoxes: () => VILLAGES.map((v) => ({ name: v.name, ...villageLabelBox(g, view, v) })) };
   }
   requestAnimationFrame(loop);
 }

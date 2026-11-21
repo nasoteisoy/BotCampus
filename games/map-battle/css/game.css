@@ -27,6 +27,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2f2e1b;color:var(--in
 #holdTag.b{border-color:#5a64d8;color:#9aa4ff}
 #holdTag.g{border-color:#3fa848;color:#7fe887}
 #holdTag[hidden]{display:none}
+#holdTag{min-height:48px;min-width:48px}
+#holdTag.paused{opacity:.6;border-style:dashed}
 #mini{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(max(6px,env(safe-area-inset-top)) + 64px);width:132px;height:88px;border:2px solid var(--gold);border-radius:6px;z-index:2;touch-action:none;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 #cards{display:flex;gap:6px}
 .card{position:relative;width:52px;height:64px;padding:0;border-radius:8px;border:2px solid rgba(212,175,55,.6);background:#1c160b;cursor:pointer;overflow:visible}
@@ -36,6 +38,25 @@ html,body{margin:0;height:100%;overflow:hidden;background:#2f2e1b;color:var(--in
 .card.hit{animation:hit .35s ease-in-out infinite alternate}
 @keyframes hit{to{box-shadow:0 0 0 3px rgba(255,80,50,.8)}}
 .card[hidden]{display:none}
+/* r3 command bar: breadcrumb (Army > Corps > Div > Reg > Bn), children, Rejoin, formations */
+#cmd{position:fixed;left:0;right:0;bottom:calc(max(6px,env(safe-area-inset-bottom)) + 74px);z-index:2;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:0 6px;pointer-events:none}
+#cmd[hidden]{display:none}
+#cmd>div{display:flex;align-items:center;gap:6px;padding:4px;border-radius:12px;background:rgba(34,27,14,.78);border:1px solid rgba(212,175,55,.35);pointer-events:auto}
+.cb{position:relative;flex:0 0 auto;width:48px;height:48px;padding:0;border-radius:10px;border:2px solid rgba(212,175,55,.55);background:#1c160b;color:var(--acc);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:visible}
+.cb img{display:block;width:100%;height:100%;object-fit:cover;border-radius:8px}
+.cb b{position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);min-width:20px;padding:0 4px;border-radius:6px;background:var(--blue);color:#fff;font:700 11px Georgia,serif;border:1px solid #e8ecff;line-height:14px}
+.cb .bdg{position:absolute;right:-7px;bottom:-7px;width:24px;height:24px;padding:3px;border-radius:50%;background:#1c160b;border:1px solid rgba(212,175,55,.6)}
+.cb .ovri{right:auto;left:-7px;top:-7px;bottom:auto;color:#ffb040;border-color:#ffb040}
+.cb.on{border-color:var(--acc);box-shadow:0 0 0 3px rgba(255,210,63,.55)}
+.cb.ovr{border-style:dashed;border-color:#ffb040}
+.cb.hit{animation:hit .35s ease-in-out infinite alternate}
+.cb:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.r-pin{border-color:#ff7a4a}.r-flank{border-color:#ffd23f}.r-reserve{border-color:#cfc8b0;border-style:dotted}.r-bombard{border-color:#ffa040}.r-screen{border-color:#8fe0ff}.r-support{border-color:#e8e0c0}.r-hold{border-color:#b8d0ff}.r-attack{border-color:#ffffff}
+.sep{flex:0 0 auto;width:9px;height:9px;margin:0 2px 0 -2px;border-top:2px solid var(--acc);border-right:2px solid var(--acc);transform:rotate(45deg)}
+#tools .ib{min-width:48px;height:48px;padding:2px 5px}
+.ib.rel{color:#ffb040;border-color:#ffb040}
+.ib.fm[aria-pressed=true]{background:var(--panel2);border-color:var(--acc)}
+
 #hint{position:fixed;z-index:4;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:14px;background:var(--acc);color:#2a1d00;font-weight:900;font-size:15px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.5);animation:bob 1s ease-in-out infinite alternate}
 #hint[hidden]{display:none}
 #hint::after{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-9px;border:9px solid transparent;border-bottom:0;border-top-color:var(--acc)}
@@ -72,6 +93,8 @@ h2{font-size:24px}
   .card{width:48px;height:58px}
   #mini{top:calc(max(6px,env(safe-area-inset-top)) + 56px);width:108px;height:72px}
   #holdTag{top:calc(max(6px,env(safe-area-inset-top)) + 56px)}
+  /* landscape phone: the command bar sits right of centre, above the rail, so the blue start line on the left stays tappable */
+  #cmd{bottom:calc(max(6px,env(safe-area-inset-bottom)) + 70px);justify-content:flex-end}
   .panel{padding:10px 12px}
   h1{margin-bottom:8px}
   .steps,.legend,.stats{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}

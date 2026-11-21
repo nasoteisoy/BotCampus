@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#2f2e1b">
 <title>Battle of Kerovo</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="css/game.css?v=2">
+<link rel="stylesheet" href="css/game.css?v=3">
 </head>
 <body>
 <canvas id="map" aria-label="Battle map"></canvas>
@@ -20,8 +20,9 @@
 <div id="holdTag" hidden></div>
 <canvas id="mini" aria-label="Minimap"></canvas>
 
+<div id="cmd" hidden role="group" aria-label="Command"></div>
 <div id="rail" class="bar">
-  <button id="bAll" class="ib" type="button" aria-label="Select all"></button>
+  <button id="bAll" class="ib" type="button" aria-label="Army"></button>
   <div id="cards"></div>
   <button id="bClear" class="ib" type="button" aria-label="Clear selection"></button>
 </div>
@@ -56,6 +57,6 @@
 </section>
 
 <div id="loading">Painting the map</div>
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>
