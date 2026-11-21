@@ -4,19 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#bfe8ff">
-<title>Dragon Move Demo</title>
+<title>Dragon Island Compare</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
 </head>
 <body>
-<canvas id="c" aria-label="Dragon on a grass island: move with WASD, arrow keys or the stick; drag to look around; wheel or pinch to zoom"></canvas>
-<div id="hint" aria-hidden="true">
-  <span class="chip"><span class="ico" data-icon="move"></span><b>Move</b><span class="pc">WASD</span><span class="ph">Stick</span></span>
-  <span class="chip"><span class="ico" data-icon="hand"></span><b>Look</b><span>Drag</span></span>
-  <span class="chip"><span class="ico" data-icon="zoom"></span><b>Zoom</b><span class="pc">Wheel</span><span class="ph">Pinch</span></span>
+<canvas id="c" aria-label="Two dragon islands, one per 3D tool. Move with WASD, arrow keys or the stick; drag to look around; wheel or pinch to zoom"></canvas>
+<div id="islands" role="group" aria-label="Island">
+  <button type="button" class="seg" data-tool="meshy" aria-pressed="true"><span class="ico" data-x="box"></span><span class="lb">Meshy</span></button>
+  <button type="button" class="seg" data-tool="tripo" aria-pressed="false"><span class="ico" data-x="box"></span><span class="lb">Tripo</span></button>
 </div>
-<div id="loading" role="status">Loading dragon</div>
+<div id="hint" aria-hidden="true">
+  <span class="chip"><span class="ico" data-icon="move"></span><span class="pc">WASD</span><span class="ph">Stick</span></span>
+  <span class="chip pc"><span class="key">Shift</span><span>Run</span></span>
+  <span class="chip"><span class="ico" data-icon="hand"></span><span>Drag</span></span>
+  <span class="chip"><span class="ico" data-icon="zoom"></span><span class="pc">Wheel</span><span class="ph">Pinch</span></span>
+</div>
+<div id="acts">
+  <button type="button" id="swap" class="act" hidden><span class="ico" data-x="swap"></span><span class="dots"></span><span class="lb">Swap</span><kbd>Q</kbd></button>
+  <button type="button" id="fly" class="act" hidden><span class="ico" data-x="feather"></span><span class="lb">Fly</span><kbd>Space</kbd></button>
+  <button type="button" id="fire" class="act hot" hidden><span class="ico" data-x="flame"></span><span class="lb">Fire</span><kbd>F</kbd></button>
+</div>
+<div id="loading" role="status">Loading dragons</div>
 <div id="joy" aria-label="Move stick"><div id="knob"></div></div>
 <script type="module" src="js/main.js"></script>
 </body>

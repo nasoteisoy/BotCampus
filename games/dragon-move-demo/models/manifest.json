@@ -1,0 +1,251 @@
+{
+ "built": "2026-11-20",
+ "islands": {
+  "meshy": [
+   {
+    "slot": "pink",
+    "url": "models/meshy/01_dragon_pink.glb",
+    "v": "6cf574668a29",
+    "bytes": 1323876,
+    "trisIn": 40000,
+    "tris": 37878,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "mint",
+    "url": "models/meshy/02_dragon_mint.glb",
+    "v": "8f964664d27d",
+    "bytes": 1140616,
+    "trisIn": 40000,
+    "tris": 37982,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "lavender",
+    "url": "models/meshy/03_dragon_lavender.glb",
+    "v": "6a6899555562",
+    "bytes": 1356372,
+    "trisIn": 40000,
+    "tris": 37962,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "nest",
+    "url": "models/meshy/08_nest.glb",
+    "v": "c20c87285c32",
+    "bytes": 962448,
+    "trisIn": 30000,
+    "tris": 29486,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "egg",
+    "url": "models/meshy/04_egg.glb",
+    "v": "d110e2b0f370",
+    "bytes": 433808,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "chest",
+    "url": "models/meshy/05_chest.glb",
+    "v": "782da267fe99",
+    "bytes": 1055408,
+    "trisIn": 30000,
+    "tris": 19998,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "tree",
+    "url": "models/meshy/06_tree.glb",
+    "v": "871cb162bc51",
+    "bytes": 404340,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "rock",
+    "url": "models/meshy/07_rock.glb",
+    "v": "d7fb2b2bcbda",
+    "bytes": 439752,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   }
+  ],
+  "tripo": [
+   {
+    "slot": "pink",
+    "url": "models/tripo/01_dragon_pink.glb",
+    "v": "b388bf6cf9e9",
+    "bytes": 1149856,
+    "trisIn": 40000,
+    "tris": 38120,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "mint",
+    "url": "models/tripo/02_dragon_mint.glb",
+    "v": "1d437abe3098",
+    "bytes": 1195196,
+    "trisIn": 39998,
+    "tris": 38261,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "lavender",
+    "url": "models/tripo/03_dragon_lavender.glb",
+    "v": "851a9a70ceb6",
+    "bytes": 1172784,
+    "trisIn": 40000,
+    "tris": 38668,
+    "skinned": true,
+    "clips": [
+     "fire_breath",
+     "fly",
+     "happy",
+     "idle",
+     "land",
+     "look_around",
+     "run",
+     "sleep",
+     "takeoff",
+     "walk"
+    ],
+    "socket": "mouth"
+   },
+   {
+    "slot": "nest",
+    "url": "models/tripo/08_nest.glb",
+    "v": "699a3f8bc9c8",
+    "bytes": 922688,
+    "trisIn": 30000,
+    "tris": 28368,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "egg",
+    "url": "models/tripo/04_egg.glb",
+    "v": "c7c434641950",
+    "bytes": 486680,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "chest",
+    "url": "models/tripo/05_chest.glb",
+    "v": "e3803a282bac",
+    "bytes": 959020,
+    "trisIn": 30000,
+    "tris": 20254,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "tree",
+    "url": "models/tripo/06_tree.glb",
+    "v": "fb333cea4171",
+    "bytes": 334052,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   },
+   {
+    "slot": "rock",
+    "url": "models/tripo/07_rock.glb",
+    "v": "8711a4bec73a",
+    "bytes": 406940,
+    "trisIn": 30000,
+    "tris": 20000,
+    "skinned": false,
+    "clips": [],
+    "socket": null
+   }
+  ]
+ }
+}

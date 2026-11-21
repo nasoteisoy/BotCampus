@@ -1,19 +1,16 @@
-// Dragon move demo: the optimized Meshy dragon hops around a small grass island (art review).
+// Dragon Island Compare: the same island twice, once with the Meshy models and once with the Tripo models.
+// One dragon is yours (switchable); the others wander. All dragon poses are the GLBs' own animation clips.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { buildIsland } from './island.js';
-import { Hopper } from './hopper.js';
+import { TOOLS, SLOTS } from './slots.js';
+import { loadWorld } from './world.js';
+import { FireFx } from './fire.js';
 import { FollowCam } from './follow-cam.js';
 import { createJoystick } from './joystick.js';
 import { createKeys } from './keys.js';
 import { icon } from './shell-icons.js';
-
-const ISLAND_R = 8, EDGE_INNER = 5.6, EDGE_OUTER = 7.0;   // soft edge: slows from 5.6 m, stops at 7 m
-const MODEL_URL = 'models/dragon.glb';
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { iconX } from './icons-extra.js';
 
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -22,46 +19,29 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.toneMapping = THREE.NeutralToneMapping;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xbfe8ff);
-scene.fog = new THREE.Fog(0xbfe8ff, 30, 70);
+scene.fog = new THREE.Fog(0xbfe8ff, 25, 60);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.55;
 pmrem.dispose();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-camera.position.set(0, 3.6, 7.4);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 150);
+camera.position.set(0, 2.3, 5.2);
 
-// ---- light: sky fill + a sun whose shadow box follows the dragon (crisp shadow on a small area)
+// ---- light: sky fill + a sun whose shadow box follows your dragon
 scene.add(new THREE.HemisphereLight(0xeaf6ff, 0x6a9a48, 1.0));
 const sun = new THREE.DirectionalLight(0xfff3dd, 2.4);
-const SUN_OFFSET = new THREE.Vector3(4, 9, 5);
+const SUN_OFFSET = new THREE.Vector3(3, 7, 4);
 sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
-Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 25 });
+Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 1, far: 20 });
 scene.add(sun, sun.target);
-scene.add(buildIsland(ISLAND_R, EDGE_INNER));
+const fire = new FireFx(scene);
 
-// ---- the dragon: root (position + turn) > body (hop height + squash, pivot at the feet) > model
-const root = new THREE.Group(), body = new THREE.Group();
-root.add(body); scene.add(root);
-const hopper = new Hopper({ inner: EDGE_INNER, outer: EDGE_OUTER, reduceMotion });
-let loaded = false;
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-loader.load(MODEL_URL, (gltf) => {
-  const model = gltf.scene;
-  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  const box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
-  model.position.set(-c.x, -box.min.y, -c.z);   // feet on the ground, centred over the pivot
-  body.add(model);
-  loaded = true;
-  document.body.classList.add('ready');
-}, undefined, (err) => { console.error('dragon model failed to load', err); });
-
-// ---- camera: drag orbits, wheel / pinch zooms, follows with lag; never under the island
+// ---- camera: drag orbits, wheel / pinch zooms, follows your dragon with lag
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.1; controls.enablePan = false;
-controls.minDistance = 2.4; controls.maxDistance = 16; controls.maxPolarAngle = THREE.MathUtils.degToRad(84);
+controls.minDistance = 1.4; controls.maxDistance = 12; controls.maxPolarAngle = THREE.MathUtils.degToRad(84);
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
-const follow = new FollowCam(camera, controls, { lag: reduceMotion ? 8 : 3.5 });
-follow.snap(root.position);
+const follow = new FollowCam(camera, controls, { lag: 3.5, lookHeight: 0.55 });
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 document.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
@@ -69,46 +49,110 @@ document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: fal
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.fov = w / h < 0.75 ? 55 : 45;   // portrait phones: a little wider so the dragon and island read
-  camera.updateProjectionMatrix();
+  camera.aspect = w / h; camera.fov = w / h < 0.75 ? 55 : 45; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
 resize();
 
-// ---- input: WASD / arrows, or the left stick on touch screens; both move relative to the camera
+// ---- HUD
+for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon, { size: 24 });
+for (const el of document.querySelectorAll('[data-x]')) el.innerHTML = iconX(el.dataset.x);
+const ui = { swap: document.getElementById('swap'), fly: document.getElementById('fly'), fire: document.getElementById('fire'), hint: document.getElementById('hint'), segs: [...document.querySelectorAll('.seg')] };
 const keys = createKeys();
 const joy = createJoystick(document.getElementById('joy'), document.getElementById('knob'));
-const touchUI = matchMedia('(pointer: coarse)').matches;
-document.body.classList.toggle('touch', touchUI);
+document.body.classList.toggle('touch', matchMedia('(pointer: coarse)').matches);
 addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
-for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon, { size: 24 });
-const hint = document.getElementById('hint');
-let movedFor = 0;
+let run = false, movedFor = 0;
 
-const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+// ---- world state
+let islands = null, tool = TOOLS[0], playerSlot = 'pink';
+const island = () => islands[tool];
+const player = () => island().player;
+
+function choosePlayer(slotId) {
+  const isl = island(), a = isl.actors.find((x) => x.slot.id === slotId) || isl.actors[0];
+  if (!a) return;
+  playerSlot = a.slot.id; isl.setPlayer(a); fire.clear();
+  follow.snap({ x: a.mover.x, y: 0, z: a.mover.z });
+}
+function setIsland(t) {
+  if (!islands || !islands[t]) return;
+  tool = t;
+  for (const k of TOOLS) islands[k].group.visible = k === t;
+  for (const b of ui.segs) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
+  const keep = player() && player().slot.id === playerSlot ? player() : null;
+  if (keep) { fire.clear(); follow.snap({ x: keep.mover.x, y: 0, z: keep.mover.z }); } else choosePlayer(playerSlot);
+  refreshButtons();
+}
+function swap() {
+  const list = island().actors; if (list.length < 2) return;
+  const i = list.indexOf(player());
+  choosePlayer(list[(i + 1) % list.length].slot.id); refreshButtons();
+}
+function refreshButtons() {
+  const p = player(), list = island().actors;
+  ui.swap.hidden = list.length < 2;
+  ui.swap.querySelector('.dots').innerHTML = list.map((a) => `<i class="${a === p ? 'cur' : ''}" style="background:${a.slot.color}"></i>`).join('');
+  ui.fly.hidden = !p || !p.canFly();
+  ui.fire.hidden = !p || !p.canFire();
+  const up = p && (p.state === 'fly' || p.state === 'takeoff') && !p.wantLand;
+  ui.fly.querySelector('.lb').textContent = up ? 'Land' : 'Fly';
+  ui.fly.querySelector('.ico').innerHTML = iconX(up ? 'land' : 'feather');
+  ui.fly.classList.toggle('on', !!up);
+}
+const press = (fn) => (e) => { e.preventDefault(); fn(); refreshButtons(); };
+ui.segs.forEach((b) => b.addEventListener('click', press(() => setIsland(b.dataset.tool))));
+ui.swap.addEventListener('click', press(swap));
+ui.fly.addEventListener('click', press(() => player()?.toggleFly()));
+ui.fire.addEventListener('click', press(() => player()?.fire()));
+addEventListener('keydown', (e) => {
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') run = true;
+  if (!islands || e.repeat) return;
+  const act = { Space: () => player()?.toggleFly(), KeyF: () => player()?.fire(), KeyQ: swap, KeyT: () => setIsland(TOOLS[(TOOLS.indexOf(tool) + 1) % TOOLS.length]) }[e.code];
+  if (act) { e.preventDefault(); act(); refreshButtons(); }
+});
+addEventListener('keyup', (e) => { if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') run = false; });
+addEventListener('blur', () => { run = false; });
+
+// input relative to the camera; the stick runs when pushed far
+const fwd = new THREE.Vector3();
 function moveInput() {
   const k = keys.vector(), x = joy.active ? joy.x : k.x, y = joy.active ? joy.y : k.y;
   camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
-  right.set(-fwd.z, 0, fwd.x);
-  return { x: right.x * x + fwd.x * y, z: right.z * x + fwd.z * y };
+  const fast = joy.active ? Math.hypot(joy.x, joy.y) > 0.85 : run;
+  return { x: -fwd.z * x + fwd.x * y, z: fwd.x * x + fwd.z * y, run: fast };
 }
 
+loadWorld('models/manifest.json').then((w) => {
+  islands = w;
+  for (const t of TOOLS) scene.add(w[t].group);
+  // land on the first island that has a dragon
+  setIsland(TOOLS.find((t) => w[t].actors.length) || TOOLS[0]);
+  document.body.classList.add('ready');
+}).catch((err) => console.error('dragon islands failed to load', err));
+
 const timer = new THREE.Clock();
+const kick = new THREE.Vector3();
+let lastState = '';
 renderer.setAnimationLoop(() => {
   const dt = Math.min(timer.getDelta(), 0.1);
-  if (loaded) {
-    const m = moveInput();
-    hopper.update(dt, m.x, m.z);
-    root.position.set(hopper.x, 0, hopper.z); root.rotation.y = hopper.yaw;
-    body.position.y = hopper.y; body.scale.set(hopper.sxz, hopper.sy, hopper.sxz);
-    if (Math.hypot(m.x, m.z) > 0.1 && (movedFor += dt) > 4) hint.classList.add('off');
+  if (islands) {
+    const m = moveInput(), p = player();
+    island().update(dt, m);   // only the island on screen runs
+    fire.emit(dt, p?.dragon);
+    if (p) {
+      follow.update(dt, { x: p.mover.x, y: 0, z: p.mover.z });
+      sun.target.position.set(p.mover.x, 0, p.mover.z); sun.position.copy(sun.target.position).add(SUN_OFFSET);
+      if (p.state !== lastState) { lastState = p.state; refreshButtons(); }
+    }
+    if (Math.hypot(m.x, m.z) > 0.1 && (movedFor += dt) > 4) ui.hint.classList.add('off');
   }
-  follow.update(dt, { x: hopper.x, y: hopper.y, z: hopper.z });
+  fire.update(dt);
   controls.update();
-  sun.target.position.copy(root.position); sun.position.copy(root.position).add(SUN_OFFSET);
+  fire.shake(kick, dt); camera.position.add(kick);   // fire kick: applied for this render only
   renderer.render(scene, camera);
+  camera.position.sub(kick);
 });
 
-// QA handles, only with ?test=1 (the page itself never reads window.__dm)
-if (new URLSearchParams(location.search).get('test') === '1') window.__dm = { hopper, root, body, camera, controls, renderer, isLoaded: () => loaded, edge: { inner: EDGE_INNER, outer: EDGE_OUTER, island: ISLAND_R } };
+// QA handles, only with ?test=1 (the page itself never reads window.__dr)
+if (new URLSearchParams(location.search).get('test') === '1') window.__dr = { get islands() { return islands; }, get tool() { return tool; }, player, fire, kick, camera, controls, renderer, SLOTS, isLoaded: () => !!islands };
