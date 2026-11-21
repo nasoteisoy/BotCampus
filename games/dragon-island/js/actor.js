@@ -3,8 +3,16 @@
 // are skipped for that dragon.
 import * as THREE from 'three';
 import { Mover } from './mover.js';
+import { damp, wrapAngle } from './ease.js';
+import { FlightPose, FLY } from './flight-pose.js';
 
 export const SPEED = Object.freeze({ walk: 0.85, run: 2.2, fly: 2.0, wander: 0.6 });
+/** Speed / turn easing per gait (see Mover.update): run reacts a little faster, flight is heavy and turns wide. */
+const FEEL = Object.freeze({
+  walk: {} /* MOVE defaults */, run: { accel: 5, decel: 3.5 }, fly: { accel: 1.8, decel: 1.2, turnMax: 1.5 },
+});
+const FLY_STEER = 0.4;   // share of fly speed the stick still steers with during takeoff / landing
+const TURN_STEP = 0.8;   // rad/s: turning in place this fast plays slow walk steps instead of idle
 const NEAR = 4.5, LOOK_MAX = 1.0, IDLE_FIDGET = 7;
 const rand = (a, b) => a + Math.random() * (b - a);
 const _v = new THREE.Vector3(), _up = new THREE.Vector3(), _q = new THREE.Quaternion(), _pq = new THREE.Quaternion();
@@ -14,7 +22,8 @@ export class Actor {
     this.dragon = dragon; this.slot = slot;
     this.mover = new Mover({ x: slot.pos[0], z: slot.pos[1], yaw: slot.yaw, inner: edge.inner, outer: edge.outer, bodyR });
     this.isPlayer = false; this.state = 'ground'; this.timer = rand(1, 3); this.idleFor = 0; this.target = null;
-    this.wantLand = false; this.lookYaw = 0; this.happyCool = 0;
+    this.wantLand = false; this.lookYaw = 0; this.happyCool = 0; this.yawRate = 0; this.landClipDone = false;
+    this.flight = new FlightPose();
     dragon.onFinished = (clip) => this.#finished(clip);
     this.#sync();
   }
@@ -36,7 +45,9 @@ export class Actor {
     if (this.state === 'takeoff') { this.wantLand = true; return; }
     if (this.state === 'land') return;
     this.wantLand = false;
-    if (this.dragon.play('takeoff')) this.state = 'takeoff'; else { this.dragon.play('fly'); this.state = 'fly'; }
+    this.state = 'takeoff';
+    if (!this.dragon.play('takeoff')) this.dragon.play('fly');
+    this.flight.startArc(FLY.cruise, this.dragon.clipLength('takeoff'));
   }
   fire() {
     if (!this.canFire() || this.state === 'fire') return;
@@ -46,18 +57,23 @@ export class Actor {
   /** input: { x, z } wanted direction (length 0..1) and run flag, only for the player */
   update(dt, input, world) {
     const m = this.mover;
-    let wx = 0, wz = 0;
+    const yaw0 = m.yaw;
+    let wx = 0, wz = 0, feel = this.airborne ? FEEL.fly : FEEL.walk;
     if (this.isPlayer) {
       const mag = Math.min(1, Math.hypot(input.x, input.z));
       if (mag > 0.05 && (this.state === 'happy' || this.state === 'look')) this.#toGround();
-      const top = this.state === 'fly' ? SPEED.fly : input.run ? SPEED.run : SPEED.walk;
-      if (this.state === 'ground' || this.state === 'fly') { wx = input.x * top; wz = input.z * top; }
+      if (this.state === 'ground' && input.run) feel = FEEL.run;
+      const top = this.state === 'fly' ? SPEED.fly : this.airborne ? SPEED.fly * FLY_STEER : input.run ? SPEED.run : SPEED.walk;
+      if (this.state === 'ground' || this.airborne) { wx = input.x * top; wz = input.z * top; }
     } else this.#think(dt, world);
     if (this.state === 'walk' && this.target) {
       const dx = this.target[0] - m.x, dz = this.target[1] - m.z, d = Math.hypot(dx, dz);
       if (d < 0.3 || (this.timer -= dt) < 0) this.#toGround(); else { wx = (dx / d) * SPEED.wander; wz = (dz / d) * SPEED.wander; }
     }
-    m.update(dt, wx, wz, world.obstaclesFor(this));
+    m.update(dt, wx, wz, world.obstaclesFor(this), feel);
+    this.yawRate = dt > 0 ? wrapAngle(m.yaw - yaw0) / dt : 0;
+    this.flight.update(dt, { airborne: this.airborne, yawRate: this.yawRate, speed: m.speed });
+    if (this.state === 'land' && this.flight.arcDone && this.landClipDone) this.#toGround();
     if (this.state === 'ground') this.#locomotion(dt);
     if (this.state === 'fly') this.dragon.setRate(1);
     if (this.state === 'walk') this.dragon.setRate(THREE.MathUtils.clamp(m.speed / SPEED.walk, 0.6, 1.3));
@@ -68,7 +84,7 @@ export class Actor {
 
   #locomotion(dt) {
     const s = this.mover.speed, d = this.dragon;
-    if (s < 0.15) {
+    if (s < 0.15 && Math.abs(this.yawRate) < TURN_STEP) {
       this.idleFor += dt;
       if (this.isPlayer && this.idleFor > IDLE_FIDGET && d.play('look_around')) { this.state = 'look'; this.idleFor = 0; return; }
       d.play('idle'); return;
@@ -76,7 +92,7 @@ export class Actor {
     this.idleFor = 0;
     const run = s > (SPEED.walk + SPEED.run) / 2 && d.has('run');
     if (run) { d.play('run'); d.setRate(THREE.MathUtils.clamp(s / SPEED.run, 0.6, 1.3)); }
-    else if (d.play('walk')) d.setRate(THREE.MathUtils.clamp(s / SPEED.walk, 0.6, 1.4));
+    else if (d.play('walk')) d.setRate(THREE.MathUtils.clamp(s / SPEED.walk, 0.6, 1.4));   // a pivot in place steps at the 0.6 floor
   }
   #think(dt, world) {
     this.happyCool -= dt;
@@ -94,11 +110,16 @@ export class Actor {
     else this.timer = rand(2, 4);
   }
   #happy() { if (!this.dragon.play('happy')) return false; this.state = 'happy'; this.happyCool = 9; return true; }
-  #land() { this.wantLand = false; if (this.dragon.play('land')) this.state = 'land'; else this.#toGround(); }
+  /** Come down along a height arc timed to the land clip; update() lands it once the clip ends and the arc is down. */
+  #land() {
+    this.wantLand = false; this.state = 'land'; this.landClipDone = !this.dragon.play('land');
+    this.flight.startArc(0, this.dragon.clipLength('land'));
+  }
   #toGround() { this.state = 'ground'; this.target = null; this.timer = rand(2, 5); this.idleFor = 0; this.dragon.play('idle'); }
   #finished(clip) {
     if (clip === 'takeoff' && this.state === 'takeoff') { this.dragon.play('fly'); this.state = 'fly'; if (this.wantLand) this.#land(); return; }
-    if (clip === 'land' || clip === 'fire_breath' || clip === 'happy' || clip === 'look_around') if (this.state !== 'fly' && this.state !== 'takeoff') this.#toGround();
+    if (clip === 'land') { this.landClipDone = true; return; }
+    if (clip === 'fire_breath' || clip === 'happy' || clip === 'look_around') if (this.state !== 'fly' && this.state !== 'takeoff') this.#toGround();
   }
   /** turn toward the player when idle, and turn the head bone on top of the clip pose (clamped, eased) */
   #lookAt(dt, player) {
@@ -109,15 +130,18 @@ export class Actor {
       if (d < NEAR) {
         const yawTo = Math.atan2(dx, dz);
         if (this.state === 'ground' && this.mover.speed < 0.15) this.mover.faceToward(yawTo, dt, 2.5);
-        want = THREE.MathUtils.clamp(Math.atan2(Math.sin(yawTo - this.mover.yaw), Math.cos(yawTo - this.mover.yaw)), -LOOK_MAX, LOOK_MAX);
+        want = THREE.MathUtils.clamp(wrapAngle(yawTo - this.mover.yaw), -LOOK_MAX, LOOK_MAX);
       }
     }
-    this.lookYaw += (want - this.lookYaw) * (1 - Math.exp(-4 * dt));
+    this.lookYaw += (want - this.lookYaw) * damp(4, dt);
     const h = this.dragon.head; if (!h || Math.abs(this.lookYaw) < 1e-3) return;
     this.dragon.root.updateMatrixWorld(true);
     h.parent.getWorldQuaternion(_pq);
     _up.set(0, 1, 0).applyQuaternion(_pq.invert());
     h.quaternion.premultiply(_q.setFromAxisAngle(_up, this.lookYaw));
   }
-  #sync() { const r = this.dragon.root; r.position.set(this.mover.x, 0, this.mover.z); r.rotation.y = this.mover.yaw; }
+  #sync() {
+    const r = this.dragon.root, f = this.flight;
+    r.position.set(this.mover.x, f.alt, this.mover.z); r.rotation.set(f.pitch, this.mover.yaw, f.bank, 'YXZ');
+  }
 }

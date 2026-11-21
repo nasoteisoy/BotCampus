@@ -41,7 +41,9 @@ export class Dragon {
   }
   /** playback speed of the current loop (walk / run follow the move speed so the feet do not slide much) */
   setRate(r) { if (this.current) this.current.setEffectiveTimeScale(r); }
+  /** seconds one play of a clip takes at normal speed (0 when this dragon has no such clip) */
+  clipLength(name) { return this.actions[name] ? this.actions[name].getClip().duration : 0; }
   get clipTime() { return this.current ? this.current.time : 0; }
-  get clipDuration() { return this.current ? this.current.getClip().duration : 0; }
+  get clipDuration() { return this.clip ? this.clipLength(this.clip) : 0; }
   update(dt) { this.mixer.update(dt); }
 }

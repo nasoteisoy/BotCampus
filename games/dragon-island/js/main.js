@@ -41,7 +41,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.1; controls.enablePan = false;
 controls.minDistance = 1.4; controls.maxDistance = 12; controls.maxPolarAngle = THREE.MathUtils.degToRad(84);
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
-const follow = new FollowCam(camera, controls, { lag: 3.5, lookHeight: 0.55 });
+const follow = new FollowCam(camera, controls, { lag: 2.6, lookHeight: 0.55 });
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 document.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
@@ -77,7 +77,7 @@ function choosePlayer(slotId) {
   const a = isl.actors.find((x) => x.slot.id === slotId) || isl.actors[0];
   if (!a) return;
   playerSlot = a.slot.id; isl.setPlayer(a); fire.clear();
-  follow.snap({ x: a.mover.x, y: 0, z: a.mover.z });
+  follow.snap({ x: a.mover.x, y: a.flight.alt, z: a.mover.z });
 }
 function swap() {
   const list = island()?.actors; if (!list || list.length < 2) return;
@@ -140,7 +140,7 @@ renderer.setAnimationLoop(() => {
     isl.update(dt, m);
     fire.emit(dt, p?.dragon);
     if (p) {
-      follow.update(dt, { x: p.mover.x, y: 0, z: p.mover.z });
+      follow.update(dt, { x: p.mover.x, y: p.flight.alt, z: p.mover.z }, { x: p.mover.vx, z: p.mover.vz });
       sun.target.position.set(p.mover.x, 0, p.mover.z); sun.position.copy(sun.target.position).add(SUN_OFFSET);
       if (p.state !== lastState) { lastState = p.state; refreshButtons(); }
     }

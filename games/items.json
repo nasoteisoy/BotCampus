@@ -2787,12 +2787,12 @@
    "title": "Dragon Island",
    "type": "game",
    "maker": "Dev B",
-   "makerSource": "built by Dev B for Chumi via Lead: Dev brief; Lead: Art PASS; Dev D r1b gate PASS; Dev A public push",
+   "makerSource": "built by Dev B for Chumi via Lead: Dev brief; Dev B built r2; Lead: Art PASS; Dev D r2 gate PASS; Dev A public push",
    "section": "live",
    "updated": "2026-11-21",
    "url": "games/dragon-island/",
    "extras": [],
-   "note": "Walk, fly, and breathe fire, then swap the red, green, and purple dragons.",
+   "note": "Smoother walk, turn, takeoff, and landing. Fly, breathe fire, and swap the red, green, and purple dragons.",
    "thumb": "thumbs/dragon-island.png"
   }
  ]
