@@ -1,9 +1,10 @@
 // Dragon Island Compare: the same island twice, once with the Meshy models and once with the Tripo models.
+// Cute style loads first. The realistic set is fetched only when the player first switches to it.
 // One dragon is yours (switchable); the others wander. All dragon poses are the GLBs' own animation clips.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { TOOLS, SLOTS } from './slots.js';
+import { TOOLS, STYLES, MANIFEST, SLOTS, SLOTS_BY_STYLE, mapSlot } from './slots.js';
 import { loadWorld } from './world.js';
 import { FireFx } from './fire.js';
 import { FollowCam } from './follow-cam.js';
@@ -57,40 +58,100 @@ resize();
 // ---- HUD
 for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon, { size: 24 });
 for (const el of document.querySelectorAll('[data-x]')) el.innerHTML = iconX(el.dataset.x);
-const ui = { swap: document.getElementById('swap'), fly: document.getElementById('fly'), fire: document.getElementById('fire'), hint: document.getElementById('hint'), segs: [...document.querySelectorAll('.seg')] };
+const ui = {
+  swap: document.getElementById('swap'), fly: document.getElementById('fly'), fire: document.getElementById('fire'), hint: document.getElementById('hint'),
+  toolSegs: [...document.querySelectorAll('#islands .seg')],
+  styleSegs: [...document.querySelectorAll('#styles .seg')],
+};
 const keys = createKeys();
 const joy = createJoystick(document.getElementById('joy'), document.getElementById('knob'));
 document.body.classList.toggle('touch', matchMedia('(pointer: coarse)').matches);
 addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
 let run = false, movedFor = 0;
 
-// ---- world state
-let islands = null, tool = TOOLS[0], playerSlot = 'pink';
-const island = () => islands[tool];
-const player = () => island().player;
+// ---- world state: cute islands load first; realistic islands stay unloaded until the first Real switch
+const worlds = { cute: null, real: null };
+const inflight = {};
+let style = 'cute', wantStyle = 'cute', tool = TOOLS[0], playerSlot = 'pink';
+const island = () => worlds[style]?.[tool] || null;
+const player = () => island()?.player || null;
 
+function refreshStyleButtons() {
+  for (const b of ui.styleSegs) b.setAttribute('aria-pressed', String(b.dataset.style === wantStyle));
+}
+function refreshToolButtons() {
+  for (const b of ui.toolSegs) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
+}
+function showWorld() {
+  for (const s of STYLES) {
+    const w = worlds[s]; if (!w) continue;
+    for (const k of TOOLS) w[k].group.visible = (s === style && k === tool);
+  }
+}
 function choosePlayer(slotId) {
-  const isl = island(), a = isl.actors.find((x) => x.slot.id === slotId) || isl.actors[0];
+  const isl = island(); if (!isl) return;
+  const a = isl.actors.find((x) => x.slot.id === slotId) || isl.actors[0];
   if (!a) return;
   playerSlot = a.slot.id; isl.setPlayer(a); fire.clear();
   follow.snap({ x: a.mover.x, y: 0, z: a.mover.z });
 }
-function setIsland(t) {
-  if (!islands || !islands[t]) return;
-  tool = t;
-  for (const k of TOOLS) islands[k].group.visible = k === t;
-  for (const b of ui.segs) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
+function applyWanted() {
+  if (!worlds[wantStyle]) return;
+  if (style !== wantStyle) playerSlot = mapSlot(playerSlot, wantStyle);
+  style = wantStyle;
+  document.body.classList.remove('busy');
+  refreshStyleButtons();
+  refreshToolButtons();
+  showWorld();
   const keep = player() && player().slot.id === playerSlot ? player() : null;
   if (keep) { fire.clear(); follow.snap({ x: keep.mover.x, y: 0, z: keep.mover.z }); } else choosePlayer(playerSlot);
   refreshButtons();
 }
+function ensureStyle(s) {
+  if (worlds[s]) return Promise.resolve(worlds[s]);
+  if (!inflight[s]) {
+    inflight[s] = loadWorld(MANIFEST[s], SLOTS_BY_STYLE[s], s === 'cute').then((w) => {
+      worlds[s] = w;
+      for (const t of TOOLS) { w[t].group.visible = false; scene.add(w[t].group); }
+      return w;
+    }).finally(() => { delete inflight[s]; });
+  }
+  return inflight[s];
+}
+function setIsland(t) {
+  if (!TOOLS.includes(t)) return;
+  tool = t;
+  refreshToolButtons();
+  if (worlds[style]) {
+    showWorld();
+    const keep = player() && player().slot.id === playerSlot ? player() : null;
+    if (keep) { fire.clear(); follow.snap({ x: keep.mover.x, y: 0, z: keep.mover.z }); } else choosePlayer(playerSlot);
+    refreshButtons();
+  }
+}
+async function setStyle(s) {
+  if (!STYLES.includes(s)) return;
+  wantStyle = s;
+  refreshStyleButtons();
+  if (worlds[s]) { applyWanted(); return; }
+  document.body.classList.add('busy');
+  try {
+    await ensureStyle(s);
+  } catch (err) {
+    console.error('dragon islands failed to load', err);
+    if (wantStyle === s) { wantStyle = style; refreshStyleButtons(); }
+    if (!inflight.real && !inflight.cute) document.body.classList.remove('busy');
+    return;
+  }
+  applyWanted();
+}
 function swap() {
-  const list = island().actors; if (list.length < 2) return;
+  const list = island()?.actors; if (!list || list.length < 2) return;
   const i = list.indexOf(player());
   choosePlayer(list[(i + 1) % list.length].slot.id); refreshButtons();
 }
 function refreshButtons() {
-  const p = player(), list = island().actors;
+  const p = player(), list = island()?.actors || [];
   ui.swap.hidden = list.length < 2;
   ui.swap.querySelector('.dots').innerHTML = list.map((a) => `<i class="${a === p ? 'cur' : ''}" style="background:${a.slot.color}"></i>`).join('');
   ui.fly.hidden = !p || !p.canFly();
@@ -101,14 +162,21 @@ function refreshButtons() {
   ui.fly.classList.toggle('on', !!up);
 }
 const press = (fn) => (e) => { e.preventDefault(); fn(); refreshButtons(); };
-ui.segs.forEach((b) => b.addEventListener('click', press(() => setIsland(b.dataset.tool))));
+ui.toolSegs.forEach((b) => b.addEventListener('click', press(() => setIsland(b.dataset.tool))));
+ui.styleSegs.forEach((b) => b.addEventListener('click', press(() => { setStyle(b.dataset.style); })));
 ui.swap.addEventListener('click', press(swap));
 ui.fly.addEventListener('click', press(() => player()?.toggleFly()));
 ui.fire.addEventListener('click', press(() => player()?.fire()));
 addEventListener('keydown', (e) => {
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') run = true;
-  if (!islands || e.repeat) return;
-  const act = { Space: () => player()?.toggleFly(), KeyF: () => player()?.fire(), KeyQ: swap, KeyT: () => setIsland(TOOLS[(TOOLS.indexOf(tool) + 1) % TOOLS.length]) }[e.code];
+  if (!worlds.cute || e.repeat) return;
+  const act = {
+    Space: () => player()?.toggleFly(),
+    KeyF: () => player()?.fire(),
+    KeyQ: swap,
+    KeyT: () => setIsland(TOOLS[(TOOLS.indexOf(tool) + 1) % TOOLS.length]),
+    KeyR: () => setStyle(STYLES[(STYLES.indexOf(wantStyle) + 1) % STYLES.length]),
+  }[e.code];
   if (act) { e.preventDefault(); act(); refreshButtons(); }
 });
 addEventListener('keyup', (e) => { if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') run = false; });
@@ -123,12 +191,9 @@ function moveInput() {
   return { x: -fwd.z * x + fwd.x * y, z: fwd.x * x + fwd.z * y, run: fast };
 }
 
-loadWorld('models/manifest.json').then((w) => {
-  islands = w;
-  for (const t of TOOLS) scene.add(w[t].group);
-  // land on the first island that has a dragon
-  setIsland(TOOLS.find((t) => w[t].actors.length) || TOOLS[0]);
+ensureStyle('cute').then(() => {
   document.body.classList.add('ready');
+  applyWanted();
 }).catch((err) => console.error('dragon islands failed to load', err));
 
 const timer = new THREE.Clock();
@@ -136,9 +201,10 @@ const kick = new THREE.Vector3();
 let lastState = '';
 renderer.setAnimationLoop(() => {
   const dt = Math.min(timer.getDelta(), 0.1);
-  if (islands) {
+  const isl = island();
+  if (isl) {
     const m = moveInput(), p = player();
-    island().update(dt, m);   // only the island on screen runs
+    isl.update(dt, m);   // only the island on screen runs
     fire.emit(dt, p?.dragon);
     if (p) {
       follow.update(dt, { x: p.mover.x, y: 0, z: p.mover.z });
@@ -155,4 +221,22 @@ renderer.setAnimationLoop(() => {
 });
 
 // QA handles, only with ?test=1 (the page itself never reads window.__dr)
-if (new URLSearchParams(location.search).get('test') === '1') window.__dr = { get islands() { return islands; }, get tool() { return tool; }, player, fire, kick, camera, controls, renderer, SLOTS, isLoaded: () => !!islands };
+if (new URLSearchParams(location.search).get('test') === '1') window.__dr = {
+  get islands() { return worlds[style]; },
+  get worlds() { return worlds; },
+  get tool() { return tool; },
+  get style() { return style; },
+  get wantStyle() { return wantStyle; },
+  setStyle, setIsland, player, fire, kick, camera, controls, renderer, SLOTS, SLOTS_BY_STYLE,
+  isLoaded: () => !!worlds.cute,
+  isRealLoaded: () => !!worlds.real,
+  pairGaps(st = style, tl = tool) {
+    const isl = worlds[st]?.[tl]; if (!isl) return [];
+    const a = isl.actors, pairs = [];
+    for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) {
+      const A = a[i], B = a[j], d = Math.hypot(A.mover.x - B.mover.x, A.mover.z - B.mover.z), need = A.mover.bodyR + B.mover.bodyR;
+      pairs.push({ a: A.slot.id, b: B.slot.id, d, need, ok: d + 1e-6 >= need, ra: A.mover.bodyR, rb: B.mover.bodyR, footA: A.dragon.footprint, footB: B.dragon.footprint });
+    }
+    return pairs;
+  },
+};

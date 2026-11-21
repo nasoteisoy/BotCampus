@@ -10,10 +10,16 @@
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
 </head>
 <body>
-<canvas id="c" aria-label="Two dragon islands, one per 3D tool. Move with WASD, arrow keys or the stick; drag to look around; wheel or pinch to zoom"></canvas>
-<div id="islands" role="group" aria-label="Island">
-  <button type="button" class="seg" data-tool="meshy" aria-pressed="true"><span class="ico" data-x="box"></span><span class="lb">Meshy</span></button>
-  <button type="button" class="seg" data-tool="tripo" aria-pressed="false"><span class="ico" data-x="box"></span><span class="lb">Tripo</span></button>
+<canvas id="c" aria-label="Two dragon islands, one per 3D tool, in a cute or realistic style. Move with WASD, arrow keys or the stick; drag to look around; wheel or pinch to zoom"></canvas>
+<div id="toggles">
+  <div id="styles" role="group" aria-label="Style">
+    <button type="button" class="seg" data-style="cute" aria-pressed="true"><span class="ico" data-x="smile"></span><span class="lb">Cute</span></button>
+    <button type="button" class="seg" data-style="real" aria-pressed="false" aria-label="Realistic"><span class="ico" data-x="aperture"></span><span class="lb">Real</span></button>
+  </div>
+  <div id="islands" role="group" aria-label="Island">
+    <button type="button" class="seg" data-tool="meshy" aria-pressed="true"><span class="ico" data-x="box"></span><span class="lb">Meshy</span></button>
+    <button type="button" class="seg" data-tool="tripo" aria-pressed="false"><span class="ico" data-x="box"></span><span class="lb">Tripo</span></button>
+  </div>
 </div>
 <div id="hint" aria-hidden="true">
   <span class="chip"><span class="ico" data-icon="move"></span><span class="pc">WASD</span><span class="ph">Stick</span></span>
@@ -26,7 +32,7 @@
   <button type="button" id="fly" class="act" hidden><span class="ico" data-x="feather"></span><span class="lb">Fly</span><kbd>Space</kbd></button>
   <button type="button" id="fire" class="act hot" hidden><span class="ico" data-x="flame"></span><span class="lb">Fire</span><kbd>F</kbd></button>
 </div>
-<div id="loading" role="status">Loading dragons</div>
+<div id="loading" role="status" aria-label="Loading"><span class="spin" aria-hidden="true"></span></div>
 <div id="joy" aria-label="Move stick"><div id="knob"></div></div>
 <script type="module" src="js/main.js"></script>
 </body>

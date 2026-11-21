@@ -7,8 +7,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .ico { display: inline-flex; color: var(--acc); }
 .ico svg { width: 24px; height: 24px; }
 
-/* island toggle: one tap switches instantly */
-#islands { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; padding: 4px; border-radius: 18px; background: var(--tile); box-shadow: 0 4px 14px rgba(20, 40, 90, .2); }
+/* style + tool toggles: side by side when there is room, stacked on a narrow phone */
+#toggles { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: max-content; max-width: calc(100% - 16px); z-index: 2; pointer-events: none; }
+#toggles > * { pointer-events: auto; }
+#styles, #islands { display: flex; gap: 8px; padding: 4px; border-radius: 18px; background: var(--tile); box-shadow: 0 4px 14px rgba(20, 40, 90, .2); }
 .seg { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; min-width: 112px; padding: 0 14px; border: 2px solid transparent; border-radius: 14px; background: transparent; justify-content: center; }
 .seg[aria-pressed="true"] { background: linear-gradient(160deg, var(--tile2), var(--tile)); border-color: var(--acc); }
 .seg[aria-pressed="false"] .ico { color: #9fb0e8; }
@@ -24,6 +26,9 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 body.touch .ph { display: inline; }
 body.touch .pc { display: none !important; }
 body.touch #hint { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 66px); }
+@media (max-width: 700px) {
+  body.touch #hint { top: calc(max(10px, env(safe-area-inset-top)) + 124px); }
+}
 
 /* action buttons, bottom right */
 #acts { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
@@ -38,8 +43,10 @@ body.touch .act kbd { display: none; }
 .dots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); opacity: .55; }
 .dots i.cur { opacity: 1; border-color: #fff; }
 
-#loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 12px 18px; border-radius: 14px; background: var(--tile); }
-body.ready #loading { display: none; }
+#loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; display: none; align-items: center; justify-content: center; border-radius: 16px; background: var(--tile); z-index: 5; box-shadow: 0 4px 14px rgba(20, 40, 90, .2); }
+body:not(.ready) #loading, body.busy #loading { display: flex; }
+.spin { width: 28px; height: 28px; border: 3px solid rgba(255, 210, 63, .25); border-top-color: var(--acc); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 #joy { display: none; position: fixed; left: max(18px, env(safe-area-inset-left)); bottom: max(22px, env(safe-area-inset-bottom)); width: 132px; height: 132px; border-radius: 50%;
   background: rgba(20, 28, 60, .45); border: 2px solid rgba(255, 210, 63, .55); touch-action: none; box-shadow: 0 6px 18px rgba(20, 40, 90, .25); }
 body.touch #joy { display: block; }
@@ -49,4 +56,5 @@ body.touch #joy { display: block; }
 @media (orientation: landscape) and (max-height: 500px) {
   #joy { width: 120px; height: 120px; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); }
   #acts { flex-direction: row-reverse; align-items: flex-end; bottom: max(14px, env(safe-area-inset-bottom)); }
+  body.touch #hint { top: calc(max(8px, env(safe-area-inset-top)) + 76px); }
 }

@@ -10,14 +10,16 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const _v = new THREE.Vector3(), _up = new THREE.Vector3(), _q = new THREE.Quaternion(), _pq = new THREE.Quaternion();
 
 export class Actor {
-  constructor(dragon, slot, edge) {
+  constructor(dragon, slot, edge, bodyR = 0.42) {
     this.dragon = dragon; this.slot = slot;
-    this.mover = new Mover({ x: slot.pos[0], z: slot.pos[1], yaw: slot.yaw, inner: edge.inner, outer: edge.outer });
+    this.mover = new Mover({ x: slot.pos[0], z: slot.pos[1], yaw: slot.yaw, inner: edge.inner, outer: edge.outer, bodyR });
     this.isPlayer = false; this.state = 'ground'; this.timer = rand(1, 3); this.idleFor = 0; this.target = null;
     this.wantLand = false; this.lookYaw = 0; this.happyCool = 0;
     dragon.onFinished = (clip) => this.#finished(clip);
     this.#sync();
   }
+  /** Public pose write (used after a spawn resolve). */
+  sync() { this.#sync(); }
   get airborne() { return this.state === 'takeoff' || this.state === 'fly' || this.state === 'land'; }
   canFly() { return this.dragon.has('fly'); }
   canFire() { return this.dragon.has('fire_breath') && !this.airborne; }
