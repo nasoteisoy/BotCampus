@@ -40,7 +40,23 @@ const PATHS = {
   minus: '<line x1="5" y1="12" x2="19" y2="12"/>',
   fit: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   star: '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/>',
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
 };
+// r6: company (NATO-style frame) and ship class icons as plain path data, shared by the DOM (svg) and the map canvas (Path2D)
+export const UNIT_PATHS = {
+  inf: 'M3 6h18v12H3z M3 6l18 12 M21 6L3 18',
+  armor: 'M3 6h18v12H3z M8.5 9h7a3 3 0 0 1 0 6h-7a3 3 0 0 1 0-6z',
+  art: 'M3 6h18v12H3z M12 10.4a1.6 1.6 0 1 0 0.01 0z',
+  eng: 'M3 6h18v12H3z M7 15v-5h10v5 M12 10v5',
+  aa: 'M3 6h18v12H3z M6.5 18a5.5 5.5 0 0 1 11 0',
+  bb: 'M2 14h20l-2.5 4h-15z M7 14v-3h8v3 M10 11V8h3v3 M15 12.5h5',
+  dd: 'M4 15h16l-2 3H6z M9 15v-2h5v2 M11 13v-2.5',
+  cv: 'M1.5 13h21l-2.5 5H4.5z M15 13v-3.5h3V13',
+};
+export const UNIT_NAMES = { inf: 'INFANTRY', armor: 'ARMOR', art: 'ARTILLERY', eng: 'ENGINEER', aa: 'AA GUNS', bb: 'BATTLESHIP', dd: 'DESTROYER', cv: 'CARRIER' };
+export function unitIcon(type, size = 22) {
+  return `<svg class="u-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${UNIT_PATHS[type]}"/></svg>`;
+}
 
 export function icon(name, { size = 22, className = 'sc-ico' } = {}) {
   const d = PATHS[name] || PATHS.help;

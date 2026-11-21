@@ -13,6 +13,102 @@ export const BLUE = 'blue';
 export const RED = 'red';
 export const other = (s) => (s === BLUE ? RED : BLUE);
 
+// ---- order of battle (r6) ----
+// Every army is a regiment: 3 battalions of 3-4 companies (10 in all). Each company has 0-3 strength pips;
+// a company at 0 has been wiped out and drops out of its battalion. Engine strength `u.str` stays the battle
+// number (one fighter per point); the regiment always carries PIPS_PER_STR pips per point, so a full regiment
+// (str 6) is 30 pips = 10 full companies. Losses take pips from the weakest company first, so companies wipe
+// and battalions shrink; reinforcements fill the weakest (and re-form wiped companies). No randomness here.
+export const CO_TYPES = ['inf', 'armor', 'art', 'eng', 'aa'];
+export const CO_MAX = 3;
+export const PIPS_PER_STR = 5;
+const BN_SETS = [
+  [['inf', 'inf', 'armor', 'eng'], ['inf', 'art', 'aa'], ['inf', 'inf', 'art']],
+  [['inf', 'armor', 'armor', 'art'], ['inf', 'inf', 'eng'], ['inf', 'aa', 'art']],
+];
+// fleets: one ship per strength point, two-plus classes
+export const SHIP_TYPES = ['bb', 'dd', 'cv'];
+const SHIP_ORDER = ['bb', 'dd', 'dd', 'cv', 'dd', 'bb'];
+
+function makeOob(u) {
+  const set = BN_SETS[u.cmd % 2], rot = u.cmd % 3;
+  const bns = [0, 1, 2].map((i) => {
+    const types = set[(i + rot) % 3];
+    return { n: i + 1, cmd: u.cmd * 10 + i + 1, cos: types.map((type, j) => ({ id: `${i + 1}${'abcd'[j]}`, type, pips: 0 })) };
+  });
+  return { bns };
+}
+const allCos = (o) => o.bns.flatMap((b) => b.cos.map((c) => ({ c, b })));
+const sumPips = (u) => allCos(u.oob).reduce((n, x) => n + x.c.pips, 0);
+export const regPips = (u) => (u && u.kind === 'army' ? sumPips(syncOob(u)) : 0);
+// bring the companies (or ships) in line with u.str; returns the unit for chaining
+export function syncOob(u) {
+  if (!u) return u;
+  if (u.kind === 'fleet') {
+    u.ships = u.ships || [];
+    const n = Math.max(0, u.str);
+    while (u.ships.length > n) u.ships.pop();
+    while (u.ships.length < n) u.ships.push(SHIP_ORDER[u.ships.length % SHIP_ORDER.length]);
+    return u;
+  }
+  if (!u.oob) u.oob = makeOob(u);
+  const target = Math.max(0, Math.min(u.str, 10 * CO_MAX / PIPS_PER_STR)) * PIPS_PER_STR;
+  let have = sumPips(u);
+  const list = allCos(u.oob);
+  const bnPips = (b) => b.cos.reduce((n, c) => n + c.pips, 0);
+  while (have > target) {
+    // weakest living company; ties go to the strongest battalion so damage spreads, then the rear company
+    let pick = null;
+    for (const x of list) {
+      if (x.c.pips <= 0) continue;
+      if (!pick || x.c.pips < pick.c.pips || (x.c.pips === pick.c.pips && bnPips(x.b) >= bnPips(pick.b))) pick = x;
+    }
+    pick.c.pips--; have--;
+  }
+  while (have < target) {
+    let pick = null;
+    for (const x of list) if (x.c.pips < CO_MAX && (!pick || x.c.pips < pick.c.pips)) pick = x;
+    if (!pick) break;
+    pick.c.pips++; have++;
+  }
+  return u;
+}
+// living companies (pips > 0) as a flat list, for the panel, tags and battle reports
+export function companies(u) {
+  syncOob(u);
+  return u.oob ? allCos(u.oob).filter((x) => x.c.pips > 0).map((x) => ({ id: x.c.id, type: x.c.type, pips: x.c.pips, bn: x.b.n })) : [];
+}
+// battalions with their living companies (a battalion with none left drops out)
+export function battalions(u) {
+  syncOob(u);
+  if (!u.oob) return [];
+  return u.oob.bns.map((b) => ({ n: b.n, cmd: b.cmd, cos: b.cos.filter((c) => c.pips > 0).map((c) => ({ ...c })) })).filter((b) => b.cos.length);
+}
+// what each unit had before a fight, so the week report can say which companies or ships were lost
+function oobSnapshot(units) {
+  const snap = {};
+  for (const u of units) {
+    syncOob(u);
+    snap[u.id] = { side: u.side, kind: u.kind, cos: u.kind === 'fleet' ? u.ships.map((t, i) => ({ id: `s${i}`, type: t })) : companies(u).map((c) => ({ id: c.id, type: c.type, bn: c.bn })) };
+  }
+  return snap;
+}
+function oobLosses(s, snap) {
+  const lost = { blue: [], red: [] };
+  for (const [id, was] of Object.entries(snap)) {
+    const u = unit(s, id);
+    if (was.kind === 'fleet') {
+      const left = u ? syncOob(u).ships.slice() : [];
+      for (const c of was.cos) { const k = left.indexOf(c.type); if (k >= 0) left.splice(k, 1); else lost[was.side].push({ unit: id, type: c.type, ship: true }); }
+      continue;
+    }
+    const alive = new Set(u ? companies(u).map((c) => c.id) : []);
+    for (const c of was.cos) if (!alive.has(c.id)) lost[was.side].push({ unit: id, type: c.type, bn: c.bn });
+  }
+  if (s.stats.coLost) for (const side of [BLUE, RED]) s.stats.coLost[side] += lost[side].length; // companies + ships lost, for the end card
+  return lost;
+}
+
 // Fictional theater. type: home | supply | air | plain. Land shape: ellipse rx, ry, rot (radians).
 export const ISLANDS = [
   { id: 'kestra', name: 'KESTRA', x: 330, y: 930, type: 'home', owner: BLUE, rx: 300, ry: 190, rot: -0.5 },
@@ -71,7 +167,7 @@ export function createGame(seed = 1) {
     islands: ISLANDS.map((i) => ({ ...i, secs: buildSections(i) })),
     units: [], orders: {}, secOrders: {}, landAt: {}, over: null,
     recon: { blue: [], red: [] }, flights: { blue: 0, red: 0 },
-    stats: { navalWon: 0, navalFought: 0, landWon: 0, landFought: 0, lost: { blue: 0, red: 0 }, sunk: { blue: 0, red: 0 }, retreats: { blue: 0, red: 0 }, recon: { blue: 0, red: 0 } },
+    stats: { navalWon: 0, navalFought: 0, landWon: 0, landFought: 0, lost: { blue: 0, red: 0 }, sunk: { blue: 0, red: 0 }, retreats: { blue: 0, red: 0 }, recon: { blue: 0, red: 0 }, coLost: { blue: 0, red: 0 } },
     lastArrows: [],
   };
   addUnit(s, BLUE, 'army', 'kestra', 4, 'b2');
@@ -87,7 +183,7 @@ export function createGame(seed = 1) {
 
 export function addUnit(s, side, kind, at, str, sec = null) {
   const u = { id: `${side[0]}${kind[0]}${s.nextId++}`, side, kind, at, str, cmd: s.nextCmd++, sec: kind === 'army' ? sec : null };
-  s.units.push(u);
+  s.units.push(syncOob(u));
   return u;
 }
 
@@ -330,15 +426,16 @@ function nearestOwnIsland(s, side, from, range) {
 
 function makeNaval(s, isl) {
   const blueF = unitsAt(s, isl.id, BLUE, 'fleet'), redF = unitsAt(s, isl.id, RED, 'fleet');
+  const snap = oobSnapshot([...blueF, ...redF]);
   const icons = {};
   for (const [side, fleets] of [[BLUE, blueF], [RED, redF]]) {
     const arr = [];
-    fleets.forEach((f) => { for (let i = 0; i < f.str; i++) arr.push({ side, kind: 'ship', unit: f.id, alive: true, idx: arr.length }); });
+    fleets.forEach((f) => { syncOob(f); for (let i = 0; i < f.str; i++) arr.push({ side, kind: 'ship', ship: f.ships[i], unit: f.id, alive: true, idx: arr.length }); });
     const planes = airfieldsNear(s, side, isl);
     for (let i = 0; i < planes; i++) arr.push({ side, kind: 'plane', alive: true, idx: arr.length });
     icons[side] = arr;
   }
-  const b = { kind: 'naval', island: isl.id, icons, round: 0, done: false, winner: null, retreated: null, shotsAll: [], canRetreat: {} };
+  const b = { kind: 'naval', island: isl.id, icons, round: 0, done: false, winner: null, retreated: null, shotsAll: [], canRetreat: {}, snap };
   for (const side of [BLUE, RED]) b.canRetreat[side] = !!nearestOwnIsland(s, side, isl, RANGE.fleet);
   return b;
 }
@@ -348,6 +445,7 @@ function makeLand(s, isl, sec, atkSide, blind) {
   const defSide = other(atkSide);
   const atkUnits = armiesIn(s, isl.id, sec.id, atkSide);
   const defUnits = armiesIn(s, isl.id, sec.id, defSide);
+  const snap = oobSnapshot([...atkUnits, ...defUnits]);
   const icons = { [atkSide]: [], [defSide]: [] };
   // transports caught by a hostile fleet with no escort lose half before they hit the beach
   let transportLoss = 0;
@@ -363,7 +461,7 @@ function makeLand(s, isl, sec, atkSide, blind) {
   for (let i = 0; i < (sec.owner === atkSide ? 0 : sec.gar); i++) icons[defSide].push({ side: defSide, kind: 'fort', neutral: !garSide, alive: true, idx: icons[defSide].length });
   defUnits.forEach((u) => { for (let i = 0; i < u.str; i++) icons[defSide].push({ side: defSide, kind: 'inf', unit: u.id, alive: true, idx: icons[defSide].length }); });
   const b = { kind: 'land', island: isl.id, sec: sec.id, secKind: sec.kind, atk: atkSide, def: defSide, defOwner: sec.owner, icons, round: 0, done: false, winner: null,
-    retreated: null, blind: !!blind, support, transportLoss, shotsAll: [], canRetreat: {} };
+    retreated: null, blind: !!blind, support, transportLoss, shotsAll: [], canRetreat: {}, snap };
   b.canRetreat[atkSide] = atkUnits.length > 0;
   b.canRetreat[defSide] = defUnits.length > 0 && sec.links.some((id) => section(isl, id).owner === defSide && !armiesIn(s, isl.id, id, atkSide).length);
   b.atk0 = icons[atkSide].filter((i) => i.kind === 'inf').length; b.def0 = icons[defSide].length;
@@ -413,6 +511,7 @@ function applyIconLosses(s, b, side) {
     const u = unit(s, id); if (!u) continue;
     const lost = u.str - n;
     if (b.kind === 'naval') s.stats.sunk[side] += lost; else s.stats.lost[side] += lost;
+    if (u.kind === 'fleet') { syncOob(u); b.icons[side].filter((i) => i.unit === id && !i.alive && i.ship).forEach((i) => { const k = u.ships.lastIndexOf(i.ship); if (k >= 0) u.ships.splice(k, 1); }); }
     u.str = n;
   }
 }
@@ -443,6 +542,7 @@ function finishBattle(s, b) {
       else { s.stats.sunk[f.side] += Math.max(0, f.str); removeUnit(s, f); }
     }
     if (b.retreated) s.stats.retreats[b.retreated]++;
+    b.coLost = oobLosses(s, b.snap);
     return;
   }
   const sec = section(isl, b.sec);
@@ -482,6 +582,7 @@ function finishBattle(s, b) {
   s.stats.landFought += (b.atk === BLUE || b.defOwner === BLUE) ? 1 : 0;
   if ((b.winner === BLUE) && (b.atk === BLUE || b.defOwner === BLUE)) s.stats.landWon++;
   s.units.filter((u) => u.kind === 'army' && u.str <= 0).forEach((u) => removeUnit(s, u));
+  b.coLost = oobLosses(s, b.snap);
 }
 
 function removeUnit(s, u) {
@@ -598,7 +699,7 @@ export function* weekSteps(s, { ai = true } = {}) {
   if (vh.owner === BLUE) s.over = { winner: BLUE, week: s.week };
   else if (kh.owner === RED) s.over = { winner: RED, week: s.week };
   if (!s.over) { for (const e of reinforce(s)) yield e; mergeStacks(s); }
-  s.units.forEach((u) => { delete u.moved; delete u.landed; delete u.blind; delete u.from; });
+  s.units.forEach((u) => { delete u.moved; delete u.landed; delete u.blind; delete u.from; syncOob(u); });
   s.recon = { blue: [], red: [] }; s.flights = { blue: 0, red: 0 };
   s.week++;
   yield { type: 'week', week: s.week };
@@ -666,9 +767,9 @@ export function endWeek(s, { ai = true, retreat } = {}) {
 // flat summary of a finished battle (kept compatible with r1/r2 event shapes)
 export function battleEvent(b) {
   if (b.kind === 'naval') {
-    return { type: 'naval', island: b.island, start: { blue: b.icons.blue.map((x) => x.kind), red: b.icons.red.map((x) => x.kind) }, shots: b.shotsAll, rounds: b.round, winner: b.winner, retreats: b.retreats || [], retreated: b.retreated };
+    return { type: 'naval', island: b.island, start: { blue: b.icons.blue.map((x) => x.kind), red: b.icons.red.map((x) => x.kind) }, shots: b.shotsAll, rounds: b.round, winner: b.winner, retreats: b.retreats || [], retreated: b.retreated, lost: b.coLost };
   }
   return { type: 'landing', island: b.island, sec: b.sec, secKind: b.secKind, side: b.atk, won: b.winner === b.atk && !b.retreated, retreated: b.retreated, blind: b.blind,
     atk0: b.atk0, def0: b.def0, atkLeft: b.icons[b.atk].filter((i) => i.alive && i.kind === 'inf').length, defLeft: b.icons[b.def].filter((i) => i.alive).length,
-    transportLoss: b.transportLoss, support: b.support, retreats: b.retreats || [], prevOwner: b.defOwner };
+    transportLoss: b.transportLoss, support: b.support, retreats: b.retreats || [], prevOwner: b.defOwner, lost: b.coLost };
 }

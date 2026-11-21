@@ -2748,12 +2748,12 @@
    "title": "Island Front",
    "type": "game",
    "maker": "Dev C",
-   "makerSource": "built by Dev C for Chumi via Lead: Dev brief; Dev C built r5; Dev D r5 gate PASS; Dev A public push",
+   "makerSource": "built by Dev C for Chumi via Lead: Dev brief; Dev C built r6c; Dev D r6c gate PASS; Lead: Art PASS on look; Dev A public push",
    "section": "live",
-   "updated": "2026-11-20",
+   "updated": "2026-11-21",
    "url": "games/pacific-week/",
    "extras": [],
-   "note": "Island sections, recon under fog, watch battles and retreat",
+   "note": "Zoom in to see companies and battalions. Recon under fog, watch battles and retreat.",
    "thumb": "thumbs/pacific-week.png"
   },
   {

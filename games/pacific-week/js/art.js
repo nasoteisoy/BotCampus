@@ -1,5 +1,16 @@
 // Hand-drawn canvas art: invented flags, fictional commander portraits, unit symbols, KG-style front arrows.
 import { rng } from './state.js';
+import { UNIT_PATHS } from './icons.js';
+
+const unitPath2D = {};
+// company / ship class icon on a canvas, same shapes as the panel's svg icons
+export function unitGlyph(g, type, x, y, s, col = '#e9edf1', lw = 2.2) {
+  const p = unitPath2D[type] || (unitPath2D[type] = new Path2D(UNIT_PATHS[type]));
+  g.save(); g.translate(x - s / 2, y - s / 2); g.scale(s / 24, s / 24);
+  g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(p);
+  if (type === 'art') { g.fillStyle = col; g.beginPath(); g.arc(12, 12, 2, 0, 7); g.fill(); }
+  g.restore();
+}
 
 export const SIDE_COL = {
   blue: { fill: '#2c5aa8', dark: '#122a5c', light: '#8fb4ff', arrow: [44, 86, 178], arrowEdge: [14, 32, 84] },
@@ -71,6 +82,7 @@ export function portrait(side, seed, size = 96) {
   const hg = g.createRadialGradient(43, 38, 3, 48, 42, 22);
   hg.addColorStop(0, shade(skin, 0.12)); hg.addColorStop(1, shade(skin, -0.25));
   g.fillStyle = hg; g.beginPath(); g.ellipse(48, 42, hw, hh, 0, 0, Math.PI * 2); g.fill();
+  g.lineWidth = 1.3; g.strokeStyle = 'rgba(40,26,18,.55)'; g.stroke(); // crisp jaw line
   // ears
   g.fillStyle = shade(skin, -0.15);
   g.beginPath(); g.ellipse(48 - hw, 44, 3, 5, 0, 0, Math.PI * 2); g.ellipse(48 + hw, 44, 3, 5, 0, 0, Math.PI * 2); g.fill();
@@ -105,10 +117,10 @@ export function portrait(side, seed, size = 96) {
   }
   // archive-photo grade: warm wash + grain + vignette
   g.globalCompositeOperation = 'color';
-  g.fillStyle = side === 'blue' ? 'rgba(120,124,130,.35)' : 'rgba(140,120,100,.35)'; g.fillRect(0, 0, 96, 96);
+  g.fillStyle = side === 'blue' ? 'rgba(120,124,130,.18)' : 'rgba(140,120,100,.18)'; g.fillRect(0, 0, 96, 96);
   g.globalCompositeOperation = 'source-over';
-  for (let i = 0; i < 220; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${0.05 + r() * 0.05})`; g.fillRect(r() * 96, r() * 96, 1, 1); }
-  const vg = g.createRadialGradient(48, 44, 26, 48, 48, 50); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)');
+  for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${0.03 + r() * 0.03})`; g.fillRect(r() * 96, r() * 96, 0.6, 0.6); }
+  const vg = g.createRadialGradient(48, 44, 26, 48, 48, 50); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.32)');
   g.fillStyle = vg; g.fillRect(0, 0, 96, 96);
   g.restore();
   // ring

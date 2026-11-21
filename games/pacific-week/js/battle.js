@@ -48,7 +48,7 @@ export function openBoard(b, opts) {
       const yc = VH * (planes.length ? 0.62 : 0.52);
       ships.forEach((x, n) => {
         const c = Math.floor(n / rows), r = n % rows;
-        icons[key(side, x.idx)] = { ...base, kind: 'ship', x: x0 + dir * (span * 0.78 - c * U * 1.3 - (r % 2) * U * 0.3), y: yc + (r - (rows - 1) / 2) * gapY, size: U };
+        icons[key(side, x.idx)] = { ...base, kind: 'ship', ship: x.ship, x: x0 + dir * (span * 0.78 - c * U * 1.3 - (r % 2) * U * 0.3), y: yc + (r - (rows - 1) / 2) * gapY, size: U };
       });
       const P = U * 0.55;
       planes.forEach((x, n) => {
@@ -133,7 +133,8 @@ export function openBoard(b, opts) {
       if (ic.kind === 'ship' || ic.kind === 'support') {
         g.fillStyle = 'rgba(255,255,255,.12)';
         g.beginPath(); g.ellipse(x - ic.dir * ic.size * 0.55, y, ic.size * 0.5, ic.size * 0.06, 0, 0, 7); g.fill();
-        g.save(); g.translate(x, y); g.scale(ic.dir, 1); shipTop(g, 0, 0, ic.size, '#dfe5ec', false); g.restore();
+        const L = ic.ship === 'dd' ? ic.size * 0.72 : ic.size; // destroyers small, carriers flat-decked
+        g.save(); g.translate(x, y); g.scale(ic.dir, 1); shipTop(g, 0, 0, L, '#dfe5ec', ic.ship === 'cv'); g.restore();
         g.fillStyle = col.fill; g.fillRect(x - ic.size * 0.18, y + ic.size * 0.16, ic.size * 0.36, 3);
       } else if (ic.kind === 'plane') {
         planeTop(g, x, y + Math.sin(t / 300 + ic.x) * 3, ic.size, '#eef2f6', ic.dir === 1 ? 0 : Math.PI);
