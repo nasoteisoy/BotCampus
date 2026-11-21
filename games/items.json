@@ -2774,12 +2774,12 @@
    "title": "Ripples 2",
    "type": "game",
    "maker": "Dev C",
-   "makerSource": "built by Dev C from scratch for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "makerSource": "built by Dev C from scratch for Chumi via Lead: Dev brief; Dev B built r4 name and layout; Dev A built r4b live hook; Dev D r4b gate PASS; Dev A public push",
    "section": "live",
    "updated": "2026-11-21",
    "url": "https://nasoteisoy.github.io/ripples2/",
    "extras": [],
-   "note": "Pieces fall outward. Fill a ring to clear it.",
+   "note": "Pieces fall outward. Fill a ring to clear it. Enter your name at the start; your button order and best score save in the cloud.",
    "thumb": "thumbs/ripples2.png"
   },
   {
