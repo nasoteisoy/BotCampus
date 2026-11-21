@@ -27,7 +27,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 #tl { top: var(--pad-t); left: var(--pad); }
 #tr { top: var(--pad-t); right: var(--pad-r); }
 #zoom { left: var(--pad); bottom: var(--pad-b); flex-direction: column; }
-#b-end { position: absolute; right: var(--pad-r); bottom: var(--pad-b); z-index: 6; font-size: 22px; padding: 12px 20px; min-height: 58px; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+#br { right: var(--pad-r); bottom: var(--pad-b); z-index: 6; flex-direction: column; align-items: flex-end; }
+#b-recon { position: relative; width: 58px; min-height: 58px; background: rgba(16,22,32,.9); border-color: #8fb0d8; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+#b-recon.on { background: #1d3a62; border-color: #f5c518; }
+#b-recon .badge { position: absolute; top: -8px; right: -8px; min-width: 24px; height: 24px; border-radius: 12px; background: #2c5aa8; color: #fff; border: 2px solid #fff; font-size: 14px; display: grid; place-items: center; padding: 0 5px; }
+#b-end { position: relative; z-index: 6; font-size: 22px; padding: 12px 20px; min-height: 58px; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
 #b-end .badge { position: absolute; top: -10px; right: -8px; min-width: 26px; height: 26px; border-radius: 13px; background: #2c5aa8; color: #fff; border: 2px solid #fff; font-size: 15px; display: grid; place-items: center; padding: 0 6px; }
 .chip { display: flex; align-items: center; gap: 6px; background: rgba(12,16,24,.82); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; padding: 6px 10px; min-height: 40px; font-size: 22px; font-weight: 900; }
 .chip canvas { width: 30px; height: 20px; }
@@ -47,6 +51,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 #sel-kind { width: 40px; height: 27px; }
 .pips { display: grid; grid-template-columns: repeat(6, 12px); gap: 4px; }
 .pips i { width: 12px; height: 12px; border-radius: 50%; background: #fff; display: block; }
+#app.island-view #sel.panel { left: var(--pad); right: auto; bottom: auto; top: 50%; transform: translateY(-50%); flex-direction: column; align-items: center; }
+@media (max-width: 560px) and (min-height: 431px) {
+  /* portrait: keep the panel at the bottom so sections have the full width */
+  #app.island-view #sel.panel { left: 50%; right: auto; top: auto; bottom: calc(var(--pad-b) + 70px); transform: translateX(-50%); flex-direction: row; align-items: center; }
+}
 
 #hint { position: absolute; z-index: 7; pointer-events: none; background: #f5c518; color: #1a1400; font-weight: 900; font-size: 20px; padding: 8px 14px; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.5); white-space: nowrap; transform: translate(-50%, -100%); animation: bob 1.2s ease-in-out infinite; }
 #hint::after { content: ''; position: absolute; left: 50%; bottom: -10px; margin-left: -10px; border: 10px solid transparent; border-bottom: 0; border-top-color: #f5c518; }
@@ -60,6 +69,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
 .nv-head { position: absolute; top: 0; left: 0; right: 0; height: 64px; display: flex; align-items: center; justify-content: center; gap: 18px; background: linear-gradient(#050c18, rgba(5,12,24,.7)); border-bottom: 1px solid rgba(255,255,255,.12); pointer-events: none; }
 #nv-title { font-weight: 900; font-size: 34px; letter-spacing: .12em; color: #e9edf2; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
 .nv-flag { width: 42px; height: 28px; }
+#nv-sec { width: 40px; height: 40px; }
+#nv-amb { display: inline-flex; color: #ff8a6a; }
+#b-retreat { position: absolute; left: 50%; bottom: var(--pad-b); transform: translateX(-50%); z-index: 9; min-height: 58px; padding: 10px 22px; font-size: 22px; font-weight: 900; background: rgba(20,26,36,.92); border-color: #f5c518; color: #f5c518; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+#b-retreat.armed { background: #f5c518; color: #1a1400; }
+#b-retreat:active { transform: translateX(-50%) translateY(1px); }
 
 .overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(4,8,14,.55); padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad); overflow: auto; }
 .card { position: relative; width: min(460px, 100%); background: var(--card); border: 1px solid rgba(255,255,255,.18); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6); margin: auto; }
@@ -92,12 +106,16 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   #banner .wk { font-size: 28px; padding: 7px 20px 6px; }
   #b-end { font-size: 19px; padding: 10px 14px; }
   .chip { font-size: 19px; padding: 4px 8px; }
-  #tl .btn.ico, #zoom .btn.ico { width: 48px; min-width: 48px; min-height: 48px; }
+  #tl .btn.ico, #zoom .btn.ico, #sel .btn.ico { width: 48px; min-width: 48px; min-height: 48px; }
+  #b-recon { width: 52px; min-height: 52px; }
+  #br { flex-direction: row; align-items: flex-end; }
   .panel { bottom: calc(var(--pad-b) + 70px); }
 }
 @media (max-height: 430px) {
   #banner .wk { font-size: 26px; padding: 6px 20px 5px; }
   #zoom { flex-direction: row; }
+  /* keep the selection panel off the island name in landscape island view */
+  #sel.panel { left: var(--pad); right: auto; bottom: auto; top: 50%; transform: translateY(-50%); }
   .card { padding: 14px; }
   .title-card .logo { margin-bottom: 10px; }
   .logo .l1 { font-size: 40px; }

@@ -2748,12 +2748,12 @@
    "title": "Island Front",
    "type": "game",
    "maker": "Dev C",
-   "makerSource": "built by Dev C for Chumi via Lead: Dev brief; Dev D r2 gate PASS; Dev A public push",
+   "makerSource": "built by Dev C for Chumi via Lead: Dev brief; Dev C built r5; Dev D r5 gate PASS; Dev A public push",
    "section": "live",
    "updated": "2026-11-20",
    "url": "games/pacific-week/",
    "extras": [],
-   "note": "Week-by-week island war: tap your army, tap an island to move, End Week to fight by sea, air and landing",
+   "note": "Island sections, recon under fog, watch battles and retreat",
    "thumb": "thumbs/pacific-week.png"
   },
   {

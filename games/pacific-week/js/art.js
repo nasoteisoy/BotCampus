@@ -217,3 +217,58 @@ export function drawArrow(g, cv, side, t, { width = 30, alpha = 0.9 } = {}) {
   g.lineWidth = width * 0.16; g.strokeStyle = `rgba(255,255,255,${side === 'blue' ? 0.16 : 0.12})`; g.lineCap = 'round'; g.stroke();
   g.restore();
 }
+
+// ---- r3: section kind icons (no words), infantry, bunker ----
+export function secIcon(g, kind, x, y, s, col = '#e6ebf0') {
+  g.save(); g.strokeStyle = col; g.fillStyle = col; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = s * 0.11;
+  if (kind === 'beach') {
+    // two waves over a sand line
+    for (const dy of [-0.18, 0.08]) {
+      g.beginPath();
+      for (let i = 0; i <= 12; i++) { const px = x - s * 0.42 + (i / 12) * s * 0.84; const py = y + dy * s + Math.sin(i / 12 * Math.PI * 2) * s * 0.07; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+      g.stroke();
+    }
+    g.fillStyle = '#d9c48c'; g.beginPath(); g.ellipse(x, y + s * 0.34, s * 0.38, s * 0.08, 0, 0, 7); g.fill();
+  } else if (kind === 'port') {
+    g.beginPath(); g.arc(x, y - s * 0.3, s * 0.08, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(x, y - s * 0.22); g.lineTo(x, y + s * 0.38); g.moveTo(x - s * 0.18, y - s * 0.1); g.lineTo(x + s * 0.18, y - s * 0.1); g.stroke();
+    g.beginPath(); g.arc(x, y + s * 0.05, s * 0.33, 0.25 * Math.PI, 0.75 * Math.PI); g.stroke();
+  } else if (kind === 'air') {
+    planeTop(g, x, y, s * 0.95, col, -Math.PI / 2);
+  } else if (kind === 'ridge') {
+    g.beginPath(); g.moveTo(x - s * 0.45, y + s * 0.3); g.lineTo(x - s * 0.12, y - s * 0.3); g.lineTo(x + s * 0.06, y - s * 0.02); g.lineTo(x + s * 0.2, y - s * 0.18); g.lineTo(x + s * 0.45, y + s * 0.3); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.moveTo(x - s * 0.12, y - s * 0.3); g.lineTo(x - s * 0.02, y + s * 0.3); g.lineTo(x - s * 0.45, y + s * 0.3); g.closePath(); g.fill();
+  } else if (kind === 'jungle') {
+    g.lineWidth = s * 0.09; g.beginPath(); g.moveTo(x + s * 0.02, y + s * 0.42); g.quadraticCurveTo(x - s * 0.02, y, x + s * 0.06, y - s * 0.2); g.stroke();
+    for (const a of [-2.6, -1.9, -1.2, -0.5, 0.2]) {
+      g.beginPath(); g.moveTo(x + s * 0.06, y - s * 0.2);
+      g.quadraticCurveTo(x + s * 0.06 + Math.cos(a) * s * 0.3, y - s * 0.2 + Math.sin(a) * s * 0.3 - s * 0.08, x + s * 0.06 + Math.cos(a) * s * 0.42, y - s * 0.2 + Math.sin(a) * s * 0.42 + s * 0.06); g.stroke();
+    }
+  } else if (kind === 'depot') {
+    crateIcon(g, x, y, s * 0.8, col);
+  } else if (kind === 'hq') {
+    star(g, x, y, s * 0.4, '#f2c43a');
+  }
+  g.restore();
+}
+
+// Infantry figure for the land board, facing +x.
+export function soldier(g, x, y, H, col = '#d9dee4', dir = 1) {
+  g.save(); g.translate(x, y); g.scale(dir, 1); g.fillStyle = col; g.strokeStyle = col; g.lineCap = 'round';
+  g.beginPath(); g.ellipse(0, -H * 0.36, H * 0.14, H * 0.09, 0, Math.PI, 0); g.fill(); // helmet
+  g.fillRect(-H * 0.17, -H * 0.37, H * 0.34, H * 0.03);
+  g.beginPath(); g.arc(0, -H * 0.28, H * 0.08, 0, 7); g.fill(); // head
+  g.beginPath(); g.moveTo(-H * 0.12, -H * 0.2); g.lineTo(H * 0.12, -H * 0.2); g.lineTo(H * 0.1, H * 0.08); g.lineTo(-H * 0.1, H * 0.08); g.closePath(); g.fill(); // torso
+  g.lineWidth = H * 0.08; g.beginPath(); g.moveTo(-H * 0.06, H * 0.06); g.lineTo(-H * 0.14, H * 0.38); g.moveTo(H * 0.06, H * 0.06); g.lineTo(H * 0.16, H * 0.38); g.stroke(); // legs
+  g.lineWidth = H * 0.045; g.beginPath(); g.moveTo(-H * 0.08, -H * 0.06); g.lineTo(H * 0.42, -H * 0.2); g.stroke(); // rifle
+  g.restore();
+}
+export function bunker(g, x, y, W, col = '#c9ced4', band) {
+  g.save(); g.translate(x, y);
+  g.fillStyle = '#6f6a5c'; // sandbags
+  for (let i = -2; i <= 2; i++) { g.beginPath(); g.ellipse(i * W * 0.2, W * 0.2, W * 0.12, W * 0.07, 0, 0, 7); g.fill(); }
+  g.fillStyle = col; g.beginPath(); g.moveTo(-W * 0.42, W * 0.16); g.quadraticCurveTo(-W * 0.4, -W * 0.3, 0, -W * 0.32); g.quadraticCurveTo(W * 0.4, -W * 0.3, W * 0.42, W * 0.16); g.closePath(); g.fill();
+  g.fillStyle = '#111418'; g.fillRect(-W * 0.24, -W * 0.08, W * 0.48, W * 0.08); // gun slit
+  if (band) { g.fillStyle = band; g.fillRect(-W * 0.3, -W * 0.22, W * 0.6, W * 0.06); }
+  g.restore();
+}
