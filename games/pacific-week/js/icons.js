@@ -52,8 +52,13 @@ export const UNIT_PATHS = {
   bb: 'M2 14h20l-2.5 4h-15z M7 14v-3h8v3 M10 11V8h3v3 M15 12.5h5',
   dd: 'M4 15h16l-2 3H6z M9 15v-2h5v2 M11 13v-2.5',
   cv: 'M1.5 13h21l-2.5 5H4.5z M15 13v-3.5h3V13',
+  // r7 planes, top-down, nose up: each type has its own outline
+  recon: 'M12 8v13 M5 12.5h14 M9 20h6 M6.5 5.5a8 8 0 0 1 11 0 M9 8a4 4 0 0 1 6 0',
+  fighter: 'M12 2v19 M12 8.5L3 14.5 M12 8.5l9 6 M8.5 20.5L12 18l3.5 2.5',
+  bomber: 'M12 2.5v18 M2 10h20 M6 8v4.5 M9.5 8v4.5 M14.5 8v4.5 M18 8v4.5 M8 20h8',
+  torpedo: 'M12 2v11 M4 6.5h16 M9 12h6 M5 18.5h11 M16 18.5l3-2.5v5z',
 };
-export const UNIT_NAMES = { inf: 'INFANTRY', armor: 'ARMOR', art: 'ARTILLERY', eng: 'ENGINEER', aa: 'AA GUNS', bb: 'BATTLESHIP', dd: 'DESTROYER', cv: 'CARRIER' };
+export const UNIT_NAMES = { inf: 'INFANTRY', armor: 'ARMOR', art: 'ARTILLERY', eng: 'ENGINEER', aa: 'AA GUNS', bb: 'BATTLESHIP', dd: 'DESTROYER', cv: 'CARRIER', recon: 'RECON', fighter: 'FIGHTER', bomber: 'BOMBER', torpedo: 'TORPEDO' };
 export function unitIcon(type, size = 22) {
   return `<svg class="u-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${UNIT_PATHS[type]}"/></svg>`;
 }

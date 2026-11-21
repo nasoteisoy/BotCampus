@@ -20,8 +20,9 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 
 let S, view, sel = null, busy = false, terrain = null, terrainScale = 0.75;
 let seen = new Set(), reconMode = false, board = null, nameAbove = null;
+let planeSel = null, airOpen = false; // r7: the plane picked in the air tray, and whether the tray is open
 let fx;
-const resetFx = () => { fx = { moving: null, stayArrows: null, pops: [], pulses: [], reveals: {}, flight: null, flashes: [] }; };
+const resetFx = () => { fx = { moving: null, stayArrows: null, pops: [], pulses: [], reveals: {}, flight: null, flashes: [], strike: null, marks: [] }; };
 resetFx();
 const reveals = []; // QA log of reveal effects
 const cam = { x: WW / 2, y: WH / 2, z: 0.5 };
@@ -57,8 +58,17 @@ const zMax = 2.4;
 function fitCamera(home) {
   const phone = Math.min(vw, vh) < 560;
   if (home && phone && vh > vw) {
-    // portrait phone: Kestra and Oska both on screen (tags keep their r2 pixel size through tokenScale)
-    cam.z = Math.min(0.46, vw / 1030); cam.x = 685; cam.y = WH / 2;
+    // portrait phone: all of Kestra (land, ring, section markers, airfield planes, tags) and Oska on screen.
+    // r7b: zoom out until both fit with a margin (the old fixed zoom clipped Kestra's airfield off the left edge)
+    const m = 10, k = G.island(S, 'kestra'), o = G.island(S, 'oska');
+    cam.y = WH / 2;
+    for (cam.z = Math.min(0.46, vw / 1030); cam.z > 0.27; cam.z -= 0.004) {
+      const a = islandExtent(k), b = islandExtent(o);
+      if ((b.r - a.l) * cam.z <= vw - 2 * m) break;
+    }
+    const a = islandExtent(k), b = islandExtent(o);
+    cam.x = (a.l + b.r) / 2;
+    cam.x = Math.min(cam.x, a.l + (vw / 2 - m) / cam.z); // Kestra wins if both cannot fit
   } else if (home && phone) {
     // landscape phone: Tallow clear of the top edge and left of the WEEK banner, Kestra + Oska in view
     cam.z = Math.min(0.46, Math.max(0.3, vh / 1147));
@@ -69,6 +79,31 @@ function fitCamera(home) {
     cam.x = home ? k.x + (vw / cam.z) * 0.25 : WW / 2; cam.y = WH / 2;
   }
   clampCam();
+  if (home) { // r7b: never start with the home island cut by an edge
+    const e = islandExtent(G.island(S, 'kestra')), m = 8, l = toScreen(e.l, e.t), r = toScreen(e.r, e.b);
+    if (l.x < m) cam.x -= (m - l.x) / cam.z; else if (r.x > vw - m) cam.x += (r.x - vw + m) / cam.z;
+    if (l.y < m) cam.y -= (m - l.y) / cam.z; else if (r.y > vh - m) cam.y += (r.y - vh + m) / cam.z;
+  }
+}
+// r7b: world-space box of everything drawn for an island at the current zoom: land, owner ring, section markers,
+// parked planes, unit tags and carrier planes (used by the start camera and the e2e home-in-frame check)
+function islandExtent(isl) {
+  const e = { l: Infinity, r: -Infinity, t: Infinity, b: -Infinity };
+  const add = (x0, y0, x1 = x0, y1 = y0) => { e.l = Math.min(e.l, x0); e.r = Math.max(e.r, x1); e.t = Math.min(e.t, y0); e.b = Math.max(e.b, y1); };
+  const c = Math.cos(isl.rot), sn = Math.sin(isl.rot);
+  const hw = Math.hypot(isl.rx * c, isl.ry * sn) * 1.05, hh = Math.hypot(isl.rx * sn, isl.ry * c) * 1.05;
+  add(isl.x - hw, isl.y - hh, isl.x + hw, isl.y + hh);
+  const rr = R + 4 / cam.z; add(isl.x - rr, isl.y - rr, isl.x + rr, isl.y + rr);
+  for (const x of isl.secs) {
+    const p = secPos(isl, x); add(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
+    if (x.kind === 'air') for (const t of airfieldPlanePts(isl, x, p)) add(t.x - t.gl * 0.66, t.y - t.gl * 0.66, t.x + t.gl * 0.66, t.y + t.gl * 0.66);
+  }
+  if (view && !useBlocks()) for (const u of unitsAtView(isl.id)) {
+    const p = tagPos(u), bb = tagBounds(p.x, p.y, p.s); add(bb.x0, bb.y0, bb.x1, bb.y1);
+    const n = u.kind === 'fleet' ? S.planes.filter((q) => q.base.fleet === u.id).length : 0;
+    if (n) { const gl = MAP_PLANE / cam.z, xa = p.x + (TAG_W / 2 - 1) * p.s + 4 / cam.z, x1 = xa + carrierNudge(isl.id, xa, p.y, gl, n) + gl * (0.62 + (n - 1) * 1.3 + 0.66); add(x1, p.y - gl * 0.66, x1, p.y + gl * 0.66); }
+  }
+  return e;
 }
 function clampCam() {
   cam.z = Math.max(zMin(), Math.min(zMax, cam.z));
@@ -88,6 +123,7 @@ function measurePanel() {
 }
 const toScreen = (x, y) => ({ x: (x - cam.x) * cam.z + vw / 2, y: (y - cam.y) * cam.z + vh / 2 });
 const toWorld = (x, y) => ({ x: (x - vw / 2) / cam.z + cam.x, y: (y - vh / 2) / cam.z + cam.y });
+let planeMarks = [], carrierQ = []; // r7b: map plane icons drawn this frame (screen px) / carrier planes queued over the markers
 // 0 = strategic map, 1 = island view with sections
 const secK = () => Math.max(0, Math.min(1, (cam.z - 0.62) / 0.28));
 
@@ -163,14 +199,14 @@ function tagPos(u) {
 }
 // largest scale <= want at which every tag corner of an n-stack stays inside the island circle
 function fitScale(n, want) {
-  const R = G.CIRCLE_R * 1.35; // corners may sit past the ring so tags stay readable at phone start zoom
+  const R = G.CIRCLE_R * 0.97; // r7: tags stay inside the ring; the section icons sit on the ring around them
   for (let sc = want; sc > 0.3; sc -= 0.02) {
     const b = tagBounds(7 * sc, 0, sc);
     const yMax = Math.max(Math.abs(-((n - 1) / 2) * 34 * sc + 8 + b.y0), Math.abs(((n - 1) / 2) * 34 * sc + 8 + b.y1));
     const xMax = Math.max(Math.abs(b.x0), Math.abs(b.x1));
-    if (Math.hypot(xMax, yMax) <= R) return sc;
+    if (Math.hypot(xMax, yMax) <= R) return Math.max(sc, Math.min(want, 0.62 / cam.z)); // never below readable (19px tall)
   }
-  return 0.3;
+  return Math.max(0.3, Math.min(want, 0.62 / cam.z));
 }
 // tags grow when zoomed out so they stay readable, but never past what fits inside the circle
 const tokenScale = () => Math.max(1, Math.min(2.4, 0.8 / cam.z));
@@ -402,6 +438,7 @@ function drawBlock(u, blk, alpha = 1) {
     });
   });
   g.restore();
+  drawUnitExtras(u, b.x0 + b.w, b.y0, b.h, g, { x: b.x0, y: b.y0 + b.h });
   g.restore();
 }
 
@@ -413,7 +450,7 @@ function frame() {
   requestAnimationFrame(frame);
 }
 function render() {
-  cardCache = null; labelCache = null;
+  cardCache = null; labelCache = null; planeMarks = []; carrierQ = [];
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = '#0f1724'; g.fillRect(0, 0, vw, vh);
   g.setTransform(dpr * cam.z, 0, 0, dpr * cam.z, dpr * (vw / 2 - cam.x * cam.z), dpr * (vh / 2 - cam.y * cam.z));
@@ -426,6 +463,7 @@ function render() {
   Object.entries(fx.reveals).forEach(([id, t0]) => drawReveal(vIsl(id), t0));
   if (sel && !busy) drawRange();
   if (reconMode && !busy) drawReconTargets();
+  if (planeSel && !reconMode && !busy) drawStrikeTargets();
   if (!busy) {
     Object.entries(S.orders).forEach(([id, to]) => {
       const u = G.unit(S, id);
@@ -438,6 +476,11 @@ function render() {
       const u = G.unit(S, id);
       if (u && u.side === 'blue') drawSecArrow(u.at, u.sec, to, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260));
     });
+    const pulse = 0.6 + 0.25 * Math.sin(tNow / 260);
+    // r7 sealift: beach -> ship (embark) and ship -> beach (land) arrows
+    Object.entries(S.embark).forEach(([id]) => { const u = G.unit(S, id); if (u && u.side === 'blue' && u.sec) drawShoreArrow(u.at, u.sec, 'blue', 1, pulse, true); });
+    Object.entries(S.landOrd).forEach(([id, o]) => { const u = G.unit(S, id); if (u && u.side === 'blue') { drawShoreArrow(o.isl, o.sec, 'blue', 1, pulse, false); const x = vSec(o.isl, o.sec), q = secPos(vIsl(o.isl), x); targetRing(q.x, q.y, q.r * 1.3 + 3 / cam.z, 0.9); if (G.landingRisk(S, 'blue', o.isl).risk) riskMark(q); } });
+    Object.entries(S.strikes).forEach(([pid, to], i) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') drawStrikeLine(b, vIsl(to), p.type, i, pulse); });
   }
   if (fx.stayArrows) fx.stayArrows.forEach((m) => drawMoveArrow(m, 1, 0.85));
   if (fx.moving) fx.moving.list.forEach((m) => drawMoveArrow(m, fx.moving.t, 0.9));
@@ -447,15 +490,31 @@ function render() {
     if (blocks) { drawBlock(u, blockAt(u)); return; }
     const p = tagPos(u); drawTag(u, p.x, p.y, p.s);
   }));
+  // r7: with an army on a beach selected, the ships it can board get a pulsing dashed frame
+  const cu = sel && !busy && G.unit(S, sel);
+  if (cu && cu.kind === 'army' && !cu.aboard) unitsAtView(cu.at).filter((f) => f.kind === 'fleet' && G.canEmbark(S, cu, f.id)).forEach((f) => {
+    let r;
+    if (blocks) { const k = blockAt(f); r = { x0: k.x0, y0: k.y0, x1: k.x0 + k.w, y1: k.y0 + k.h }; } else { const t = tagPos(f); r = tagBounds(t.x, t.y, t.s); }
+    const pad = 5 / cam.z;
+    g.save(); g.setLineDash([10 / cam.z, 7 / cam.z]); g.lineDashOffset = -tNow / 30 / cam.z; g.lineWidth = 3 / cam.z; g.strokeStyle = 'rgba(245,197,24,.95)';
+    g.strokeRect(r.x0 - pad, r.y0 - pad, r.x1 - r.x0 + pad * 2, r.y1 - r.y0 + pad * 2); g.restore();
+  });
+  // strategic map: section icons ride on the island ring, over the tags so they always read
+  if (ks < 0.5) view.islands.forEach((isl) => drawSections(isl, ks, seen.has(isl.id)));
+  drawCarrierPlanes();
   if (fx.moving) fx.moving.list.forEach((m) => {
     const u = view.units.find((x) => x.id === m.unit); if (!u) return;
     const t = Math.min(1, ease(fx.moving.t) * 0.98);
     let p;
     if (m.inland) { const a = vSec(m.from, m.fromSec), b = vSec(m.to, m.toSec); const s0 = ks > 0.5 ? SEC_S : tokenScale() * 0.6; p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: s0 }; }
+    else if (m.embark || m.land) { const sh = shorePts(m.from, m.embark ? m.fromSec : m.toSec), a = m.embark ? sh.b : sh.a, b = m.embark ? sh.a : sh.b; p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: ks > 0.5 ? SEC_S : tokenScale() * 0.6 }; }
     else { const c = curvePt(curveFor(m.from, m.to, m.kind), t); p = { ...c, s: tokenScale() }; }
     drawTag(u, p.x, p.y, p.s);
   });
   if (fx.flight) drawFlight(fx.flight);
+  if (fx.strike) drawStrike(fx.strike);
+  fx.marks = fx.marks.filter((m) => tNow - m.t0 < 1500 / Math.max(1, speed / 3));
+  fx.marks.forEach(drawMark);
   fx.flashes = fx.flashes.filter((f) => tNow - f.t0 < 700 / Math.max(1, speed / 3));
   fx.flashes.forEach(drawFlash);
   fx.pulses = fx.pulses.filter((p) => tNow - p.t0 < 900 / speed);
@@ -503,7 +562,58 @@ function drawSecArrow(islId, fromSec, toSec, side, t, alpha) {
   const cv = arrowCurve({ x: a.x + ux * SEC_R * 0.7, y: a.y + uy * SEC_R * 0.7 }, { x: b.x - ux * SEC_R * 0.9, y: b.y - uy * SEC_R * 0.9 }, 0.1);
   drawArrow(g, cv, side, ease(t), { width: Math.max(14, 16 * Math.min(1.6, 0.9 / cam.z)), alpha });
 }
+// r7: shore arrows between a beach and the sea off it (embark: out to the ship, land: in from the ship)
+function shorePts(islId, secId, ks = secK()) {
+  const isl = vIsl(islId), x = vSec(islId, secId), p = secPos(isl, x, ks);
+  const d = Math.hypot(p.x - isl.x, p.y - isl.y) || 1, ux = (p.x - isl.x) / d, uy = (p.y - isl.y) / d;
+  const sea = R * (2.1 - 0.3 * ks) + 26 / cam.z;
+  return { a: { x: isl.x + ux * sea, y: isl.y + uy * sea }, b: { x: p.x, y: p.y }, r: p.r, ux, uy };
+}
+function drawShoreArrow(islId, secId, side, t, alpha, out) {
+  if (!vSec(islId, secId)) return;
+  const sh = shorePts(islId, secId), gap = sh.r * 1.15;
+  const near = { x: sh.b.x + sh.ux * gap, y: sh.b.y + sh.uy * gap };
+  const cv = out ? arrowCurve(near, sh.a, 0.15) : arrowCurve(sh.a, near, -0.15);
+  drawArrow(g, cv, side, ease(t), { width: Math.max(14, 16 * Math.min(1.6, 0.9 / cam.z)), alpha });
+  // a small ship glyph out at sea marks the transport end
+  const gl = Math.max(16, 15 / cam.z);
+  g.save(); g.globalAlpha = Math.min(1, alpha + 0.2);
+  g.fillStyle = 'rgba(12,15,20,.9)'; g.beginPath(); g.arc(sh.a.x, sh.a.y, gl * 0.75, 0, 7); g.fill();
+  g.lineWidth = gl * 0.12; g.strokeStyle = SIDE_COL[side].fill; g.stroke();
+  shipSide(g, sh.a.x, sh.a.y + gl * 0.08, gl * 1.05, '#e9edf1');
+  g.restore();
+}
+// plane glyph on a dark disc in the side colour; nose points along ang (0 = up)
+function planeMini(c, type, x, y, s, side, ang = 0, alpha = 1) {
+  c.save(); c.globalAlpha = alpha; c.translate(x, y);
+  c.fillStyle = 'rgba(12,15,20,.92)'; c.beginPath(); c.arc(0, 0, s * 0.62, 0, 7); c.fill();
+  c.lineWidth = s * 0.09; c.strokeStyle = SIDE_COL[side].fill; c.stroke();
+  c.rotate(ang); unitGlyph(c, type, 0, 0, s * 0.86, '#f2f5f8', 2.6);
+  c.restore();
+}
+// r7b: a confirmed landing under a stronger enemy fleet keeps a red ring and a red half mark on its beach
+function riskMark(q) {
+  const r = q.r * 1.3 + 9 / cam.z;
+  g.save(); g.lineWidth = 4 / cam.z; g.strokeStyle = '#ff5a4e'; g.setLineDash([8 / cam.z, 6 / cam.z]);
+  g.beginPath(); g.arc(q.x, q.y, r, 0, 7); g.stroke(); g.setLineDash([]);
+  const fs = 22 / cam.z, bx = q.x + r * 0.75, by = q.y - r * 0.75;
+  g.fillStyle = '#7a1410'; g.beginPath(); g.arc(bx, by, fs * 0.62, 0, 7); g.fill(); g.lineWidth = 2 / cam.z; g.strokeStyle = '#ff8a7e'; g.stroke();
+  g.fillStyle = '#fff'; g.font = `900 ${fs}px "Barlow Condensed", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('\u00bd', bx, by + fs * 0.04);
+  g.restore();
+}
+function drawStrikeLine(b, isl, type, i, alpha) {
+  const d = Math.hypot(isl.x - b.x, isl.y - b.y) || 1, ux = (isl.x - b.x) / d, uy = (isl.y - b.y) / d;
+  const end = { x: isl.x - ux * R * 0.45 + (i % 3 - 1) * 10, y: isl.y - uy * R * 0.45 };
+  const cv = arrowCurve({ x: b.x, y: b.y }, end, 0.2);
+  g.save(); g.globalAlpha = alpha; g.setLineDash([14, 12]); g.lineDashOffset = -tNow / 30; g.lineWidth = Math.max(4, 3 / cam.z); g.strokeStyle = 'rgba(245,197,24,.9)';
+  g.beginPath(); for (let k = 0; k <= 24; k++) { const p = curvePt(cv, k / 24); k ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); } g.stroke(); g.restore();
+  const t = Math.max(0.3, 0.8 - (i % 4) * 0.16), p = curvePt(cv, t), q = curvePt(cv, t + 0.04), gl = Math.max(26, 22 / cam.z);
+  planeMini(g, type, p.x, p.y, gl, 'blue', Math.atan2(q.y - p.y, q.x - p.x) + Math.PI / 2);
+  g.save(); g.lineWidth = Math.max(4, 3 / cam.z); g.strokeStyle = 'rgba(245,197,24,.95)';
+  const r = Math.max(22, 16 / cam.z); g.beginPath(); g.arc(isl.x, isl.y, r, 0, 7); g.moveTo(isl.x - r * 1.5, isl.y); g.lineTo(isl.x + r * 1.5, isl.y); g.moveTo(isl.x, isl.y - r * 1.5); g.lineTo(isl.x, isl.y + r * 1.5); g.stroke(); g.restore();
+}
 function drawMoveArrow(m, t, alpha) {
+  if (m.embark || m.land) { drawShoreArrow(m.from, m.embark ? m.fromSec : m.toSec, m.side, t, alpha, !!m.embark); return; }
   if (m.inland) drawSecArrow(m.from, m.fromSec, m.toSec, m.side, t, alpha);
   else drawArrowBetween(m.from, m.to, m.side, t, alpha, m.kind);
 }
@@ -513,6 +623,30 @@ function targetRing(x, y, r, a = 1) {
 }
 
 const ownCol = (o) => (o ? SIDE_COL[o].fill : '#8a8f96');
+// r7: sections show at every zoom. On the strategic map each section is an icon marker on the island ring, at the angle
+// where it really lies (spread apart and kept off the type badge on top); zooming in slides it to its real spot.
+const ringCache = new Map();
+function ringAngles(isl) {
+  if (ringCache.has(isl.id)) return ringCache.get(isl.id);
+  const list = isl.secs.map((x) => ({ id: x.id, a: Math.atan2(x.y - isl.y, x.x - isl.x) }));
+  const keepOff = [{ a: -Math.PI / 2, w: 0.5 }, { a: Math.PI / 2, w: 0.5 }, { a: -Math.PI * 0.75, w: 0.26 }]; // type badge, name, flag
+  const gap = Math.min(0.95, (Math.PI * 2 - 1.04) / list.length);
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  for (let it = 0; it < 80; it++) {
+    for (const p of list) {
+      for (const k of keepOff) { const d = wrap(p.a - k.a); if (Math.abs(d) < k.w) p.a = wrap(k.a + Math.sign(d || 1) * k.w); }
+      for (const q of list) { if (q === p) continue; const d = wrap(p.a - q.a); if (Math.abs(d) < gap) { const push = (gap - Math.abs(d)) / 2 * Math.sign(d || 1); p.a = wrap(p.a + push); q.a = wrap(q.a - push); } }
+    }
+  }
+  const m = new Map(list.map((p) => [p.id, p.a]));
+  ringCache.set(isl.id, m);
+  return m;
+}
+const mapMarkR = () => Math.max(11, Math.min(15, R * cam.z * 0.25)) / cam.z; // screen 11-15 px on the map
+function secPos(isl, x, ks = secK()) {
+  const r0 = mapMarkR(), a = ringAngles(isl).get(x.id), rr = R + r0 * 0.55, rx = isl.x + Math.cos(a) * rr, ry = isl.y + Math.sin(a) * rr;
+  return { x: rx + (x.x - rx) * ks, y: ry + (x.y - ry) * ks, r: r0 + (SEC_R - r0) * ks };
+}
 function secAngles(isl) {
   // order sections around the centre so the owner ring reads like a pie of the island
   return isl.secs.map((x) => ({ x, a: Math.atan2(x.y - isl.y, x.x - isl.x) })).sort((p, q) => p.a - q.a);
@@ -530,7 +664,7 @@ function drawIsland(isl, ks) {
   const segs = secAngles(isl), n = segs.length;
   g.globalAlpha = 0.9 * (1 - ks * 0.7);
   g.lineWidth = 9;
-  segs.forEach((sg, i) => {
+  if (ks > 0) segs.forEach((sg, i) => {
     const a0 = (sg.a + (segs[(i - 1 + n) % n].a + (i === 0 ? -Math.PI * 2 : 0))) / 2;
     const a1 = (sg.a + (segs[(i + 1) % n].a + (i === n - 1 ? Math.PI * 2 : 0))) / 2;
     g.strokeStyle = ownCol(known ? sg.x.owner : null); g.beginPath(); g.arc(isl.x, isl.y, R, a0 + 0.05, a1 - 0.05); g.stroke();
@@ -566,7 +700,7 @@ function drawIsland(isl, ks) {
     else for (let i = 0; i < Math.min(6, gar); i++) fort(isl.x - (Math.min(6, gar) - 1) * 9 + i * 18, isl.y + R - 2, hostile[0] ? hostile[0].owner : null);
     g.globalAlpha = 1;
   }
-  if (ks > 0) drawSections(isl, ks, known);
+  if (ks >= 0.5) drawSections(isl, ks, known);
   let np = nameAnchor(isl);
   if (lab && lab.name.moved) { const w = toWorld((lab.name.left + lab.name.right) / 2, lab.name.top); np = { x: w.x, y: w.y, base: 'top' }; }
   g.font = '700 26px "Barlow Condensed", "Arial Narrow", sans-serif';
@@ -636,26 +770,56 @@ function qBadge(x, y, r) {
 }
 function drawSections(isl, ks, known) {
   const cur = sel && !busy ? G.unit(S, sel) : null;
-  g.save(); g.globalAlpha = ks;
-  // links
-  g.setLineDash([6, 6]); g.lineWidth = 3; g.strokeStyle = 'rgba(235,238,240,.55)';
-  for (const x of isl.secs) for (const l of x.links) if (l > x.id) { const y = isl.secs.find((q) => q.id === l); g.beginPath(); g.moveTo(x.x, x.y); g.lineTo(y.x, y.y); g.stroke(); }
-  g.setLineDash([]);
+  g.save();
+  // links (island view only)
+  if (ks > 0.5) {
+    g.globalAlpha = Math.min(1, (ks - 0.5) * 2);
+    g.setLineDash([6, 6]); g.lineWidth = 3; g.strokeStyle = 'rgba(235,238,240,.55)';
+    for (const x of isl.secs) for (const l of x.links) if (l > x.id) { const y = isl.secs.find((q) => q.id === l); const a = secPos(isl, x, ks), b = secPos(isl, y, ks); g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+    g.setLineDash([]); g.globalAlpha = 1;
+  }
   for (const x of isl.secs) {
-    g.fillStyle = 'rgba(12,15,20,.88)'; g.beginPath(); g.arc(x.x, x.y, SEC_R, 0, 7); g.fill();
-    g.lineWidth = 5; g.strokeStyle = known && x.owner ? ownCol(x.owner) : 'rgba(180,190,200,.5)'; g.stroke();
-    g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.arc(x.x, x.y, SEC_R - 4, 0, 7); g.stroke();
-    secIcon(g, x.kind, x.x, x.y, SEC_R * 1.15, '#e6ebf0');
-    // garrison under the marker
-    if (x.owner !== 'blue' && x.gar > 0) {
-      if (!known) qBadge(x.x, x.y + SEC_R + 6, 10);
-      else for (let i = 0; i < x.gar; i++) fort(x.x - (x.gar - 1) * 9 + i * 18, x.y + SEC_R + 6, x.owner);
-    } else if (x.owner !== 'blue' && !known) qBadge(x.x, x.y + SEC_R + 6, 10);
-    // where the selected army can push
-    if (cur && cur.kind === 'army' && cur.at === isl.id && G.canSecOrder(S, cur, x.id) && x.id !== cur.sec) targetRing(x.x, x.y, SEC_R + 8, ks);
-    if (cur && cur.kind === 'army' && cur.at !== isl.id && x.kind === 'beach' && G.canOrder(S, cur, isl.id)) targetRing(x.x, x.y, SEC_R + 8, ks * 0.8);
+    const p = secPos(isl, x, ks), r = p.r;
+    g.fillStyle = 'rgba(12,15,20,.92)'; g.beginPath(); g.arc(p.x, p.y, r, 0, 7); g.fill();
+    g.lineWidth = r * 0.21; g.strokeStyle = known && x.owner ? ownCol(x.owner) : 'rgba(180,190,200,.6)'; g.stroke();
+    if (ks > 0.5) { g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.arc(p.x, p.y, r - 4, 0, 7); g.stroke(); }
+    secIcon(g, x.kind, p.x, p.y, r * 1.15, '#e6ebf0');
+    if (x.kind === 'air' && (x.owner === 'blue' || known)) drawAirfieldPlanes(isl, x, p);
+    // garrison under the marker (island view; the map shows forts on the ring bottom)
+    if (ks > 0.5) {
+      if (x.owner !== 'blue' && x.gar > 0) {
+        if (!known) qBadge(p.x, p.y + r + 6, 10);
+        else for (let i = 0; i < x.gar; i++) fort(p.x - (x.gar - 1) * 9 + i * 18, p.y + r + 6, x.owner);
+      } else if (x.owner !== 'blue' && !known) qBadge(p.x, p.y + r + 6, 10);
+    }
+    // where the selected army can push inland / land from its ship
+    if (cur && cur.kind === 'army' && cur.at === isl.id && !cur.aboard && G.canSecOrder(S, cur, x.id) && x.id !== cur.sec) targetRing(p.x, p.y, r + Math.max(8, 4 / cam.z), 1);
+    if (cur && cur.kind === 'army' && cur.aboard && G.landIsland(S, cur) === isl.id && x.kind === 'beach') targetRing(p.x, p.y, r * 1.3 + 3 / cam.z, 1);
   }
   g.restore();
+}
+// planes parked at an airfield sit in a short row just outside its marker
+// r7b: on the map a parked plane icon is a fixed MAP_PLANE px on screen (glyph ~22 px) so the four types read at 390
+const MAP_PLANE = 26;
+function airfieldPlanePts(isl, x, p) {
+  const list = S.planes.filter((q) => q.base.isl === isl.id && q.base.sec === x.id); if (!list.length) return [];
+  const d = Math.hypot(p.x - isl.x, p.y - isl.y) || 1, ux = (p.x - isl.x) / d, uy = (p.y - isl.y) / d;
+  if (secK() > 0.5) { // island view: a row under the marker (below any forts)
+    const gl = Math.max(15, 15 / cam.z);
+    const y = p.y + p.r + gl * 0.8 + (x.owner !== 'blue' && x.gar > 0 ? 22 : 0);
+    return list.map((q, i) => ({ q, x: p.x + (i - (list.length - 1) / 2) * gl * 1.3, y, gl }));
+  }
+  const gl = MAP_PLANE / cam.z, cx = p.x + ux * (p.r + gl * 0.7), cy = p.y + uy * (p.r + gl * 0.7);
+  return list.map((q, i) => { const o = (i - (list.length - 1) / 2) * gl * 1.3; return { q, x: cx - uy * o, y: cy + ux * o, gl }; });
+}
+function drawAirfieldPlanes(isl, x, p) {
+  for (const t of airfieldPlanePts(isl, x, p)) mapPlane(t.q, t.x, t.y, t.gl);
+}
+// draw one plane icon on the map and remember its on-screen size (the e2e reads these)
+function mapPlane(q, x, y, gl) {
+  planeMini(g, q.type, x, y, gl, q.side, 0, q.used ? 0.45 : 1);
+  const sp = toScreen(x, y);
+  planeMarks.push({ id: q.id, type: q.type, side: q.side, x: sp.x, y: sp.y, glyph: gl * 0.86 * cam.z, disc: gl * 1.24 * cam.z });
 }
 function drawFog(isl, a) {
   if (!fogSprite) makeFog();
@@ -686,8 +850,24 @@ function drawReveal(isl, t0) {
   g.fillStyle = gr; g.beginPath(); g.moveTo(isl.x, isl.y); g.arc(isl.x, isl.y, R * 1.2, a - 0.7, a); g.closePath(); g.fill();
   g.restore();
 }
+function reconTargetsFor(pid) {
+  const all = G.reconTargets(S, 'blue'); if (!pid) return all;
+  const p = G.plane(S, pid), b = p && G.planeBase(S, p); if (!b) return [];
+  return all.filter((id) => { const i = G.island(S, id); return Math.hypot(i.x - b.x, i.y - b.y) <= G.RECON_RANGE; });
+}
+function drawStrikeTargets() {
+  const p = G.plane(S, planeSel), b = p && G.planeBase(S, p); if (!b) return;
+  g.save(); g.setLineDash([10, 14]); g.lineWidth = 3 / Math.max(0.6, cam.z); g.strokeStyle = 'rgba(245,197,24,.4)';
+  g.beginPath(); g.arc(b.x, b.y, G.AIR_RANGE, 0, 7); g.stroke(); g.restore();
+  for (const id of G.strikeTargets(S, p.id)) {
+    const isl = vIsl(id), k = 0.8 + 0.2 * Math.sin(tNow / 220);
+    g.save(); g.globalAlpha = k; g.setLineDash([14, 10]); g.lineDashOffset = tNow / 25; g.lineWidth = 6; g.strokeStyle = '#f5c518';
+    g.beginPath(); g.arc(isl.x, isl.y, R + 16, 0, 7); g.stroke(); g.restore();
+  }
+  g.save(); g.strokeStyle = 'rgba(245,197,24,.9)'; g.lineWidth = 4; g.beginPath(); g.arc(b.x, b.y, 34 + 6 * Math.sin(tNow / 200), 0, 7); g.stroke(); g.restore();
+}
 function drawReconTargets() {
-  const tg = G.reconTargets(S, 'blue');
+  const tg = reconTargetsFor(planeSel);
   for (const id of tg) {
     const isl = vIsl(id);
     const p = 0.6 + 0.4 * Math.sin(tNow / 220);
@@ -697,7 +877,7 @@ function drawReconTargets() {
     g.beginPath(); g.arc(isl.x, isl.y, 16, 0, 7); g.stroke();
     g.restore();
   }
-  for (const s of G.reconSources(S, 'blue')) { g.save(); g.strokeStyle = 'rgba(232,244,255,.8)'; g.lineWidth = 4; g.beginPath(); g.arc(s.x, s.y, 40 + 6 * Math.sin(tNow / 200), 0, 7); g.stroke(); g.restore(); }
+  for (const s of G.reconSources(S, 'blue').filter((q) => !planeSel || q.plane === planeSel)) { g.save(); g.strokeStyle = 'rgba(232,244,255,.8)'; g.lineWidth = 4; g.beginPath(); g.arc(s.x, s.y, 40 + 6 * Math.sin(tNow / 200), 0, 7); g.stroke(); g.restore(); }
 }
 function drawFlight(f) {
   const k = Math.min(1, (tNow - f.t0) / f.dur);
@@ -707,7 +887,43 @@ function drawFlight(f) {
   g.beginPath(); for (let i = 0; i <= 30; i++) { const p = curvePt(cv, (i / 30) * k); i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); } g.stroke(); g.setLineDash([]);
   const p = curvePt(cv, k), q = curvePt(cv, Math.min(1, k + 0.02));
   g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 10;
-  planeTop(g, p.x, p.y, 92, '#f2f5f8', Math.atan2(q.y - p.y, q.x - p.x));
+  planeMini(g, 'recon', p.x, p.y, Math.max(40, 34 / cam.z), 'blue', Math.atan2(q.y - p.y, q.x - p.x) + Math.PI / 2);
+  g.restore();
+}
+function drawStrike(st) {
+  const k = Math.min(1, (tNow - st.t0) / st.dur), e = st.e, to = vIsl(e.to);
+  const gl = Math.max(28, 26 / cam.z);
+  const n = e.flights.length + (e.escorts || []).length;
+  const fly = (from0, i, type, side, stopAt) => {
+    const d = Math.hypot(to.x - from0.x, to.y - from0.y) || 1, px = -(to.y - from0.y) / d, py = (to.x - from0.x) / d, o = (i - (n - 1) / 2) * gl * 1.1;
+    const from = { x: from0.x + px * o, y: from0.y + py * o }, end = { x: to.x + px * o * 0.8, y: to.y - R * 0.1 + py * o * 0.8 };
+    const cv = arrowCurve(from, end, 0.14);
+    const kk = Math.min(k, stopAt);
+    g.save(); g.setLineDash([10, 10]); g.lineWidth = Math.max(3, 2 / cam.z); g.strokeStyle = 'rgba(235,242,250,.45)';
+    g.beginPath(); for (let j = 0; j <= 24; j++) { const p = curvePt(cv, (j / 24) * kk); j ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); } g.stroke(); g.restore();
+    const p = curvePt(cv, kk), q = curvePt(cv, Math.min(1, kk + 0.02));
+    if (k < stopAt || stopAt >= 1) planeMini(g, type, p.x, p.y, gl, side, Math.atan2(q.y - p.y, q.x - p.x) + Math.PI / 2);
+    else { const a = Math.max(0, 1 - (k - stopAt) * 4); g.save(); g.globalAlpha = a; g.fillStyle = '#ff8a2a'; g.beginPath(); g.arc(p.x, p.y, gl * (0.5 + (k - stopAt) * 2), 0, 7); g.fill(); g.restore(); }
+    return p;
+  };
+  e.flights.forEach((f, i) => fly(f.from, i, f.type, e.side, f.lost ? 0.7 : 1));
+  (e.escorts || []).forEach((f, i) => fly(f.from, e.flights.length + i, 'fighter', e.side, 1));
+  // interceptors climb out of the target to meet the strike
+  const foe = G.other(e.side);
+  for (let i = 0; i < Math.min(3, e.interceptors || 0); i++) {
+    const kk = Math.min(1, k / 0.7), ang = -Math.PI / 2 + (i - 1) * 0.7;
+    const x = to.x + Math.cos(ang) * R * 1.6 * kk, y = to.y + Math.sin(ang) * R * 1.6 * kk;
+    planeMini(g, 'fighter', x, y, gl * 0.9, foe, ang + Math.PI / 2);
+  }
+}
+function drawMark(m) {
+  const k = Math.min(1, (tNow - m.t0) / (1500 / Math.max(1, speed / 3)));
+  const s = Math.max(34, 30 / cam.z), x = m.x, y = m.y - k * s;
+  g.save(); g.globalAlpha = 1 - k * k;
+  g.fillStyle = 'rgba(14,18,22,.92)'; g.fillRect(x - s / 2, y - s / 2, s, s);
+  g.lineWidth = s * 0.07; g.strokeStyle = SIDE_COL[m.side].fill; g.strokeRect(x - s / 2, y - s / 2, s, s);
+  if (m.type === 'fort') fort(x, y, m.side); else unitGlyph(g, m.type, x, y, s * 0.75, '#f2f5f8', 2.4);
+  g.strokeStyle = '#ff5a4a'; g.lineWidth = s * 0.09; g.beginPath(); g.moveTo(x - s * 0.38, y - s * 0.38); g.lineTo(x + s * 0.38, y + s * 0.38); g.moveTo(x + s * 0.38, y - s * 0.38); g.lineTo(x - s * 0.38, y + s * 0.38); g.stroke();
   g.restore();
 }
 function drawFlash(f) {
@@ -751,20 +967,52 @@ function drawTag(u, cx, cy, s = 1, alpha = 1, c = g) {
   const pic = portrait(u.side, u.cmd, 128);
   c.drawImage(pic, x0 + 6 - PR + 2, -PR, PR * 2, PR * 2);
   if (selected) { c.lineWidth = 3; c.strokeStyle = '#f5c518'; c.beginPath(); c.arc(x0 + 8, 0, PR + 1.5, 0, 7); c.stroke(); }
+  drawUnitExtras(u, x0 + 6 + TAG_W, y0, TAG_H, c, null, c === g);
   c.restore();
+  // r7b: a carrier's planes sit right of its tag at MAP_PLANE px, drawn after the ring markers so nothing covers them
+  if (c === g && u.kind === 'fleet' && S) {
+    const gl = MAP_PLANE / cam.z, pl = S.planes.filter((q) => q.base.fleet === u.id);
+    const xr = cx + (x0 + 6 + TAG_W) * s + 4 / cam.z + carrierNudge(u.at, cx + (x0 + 6 + TAG_W) * s + 4 / cam.z, cy, gl, pl.length);
+    pl.forEach((q, i) => carrierQ.push({ q, x: xr + gl * (0.62 + i * 1.3), y: cy, gl, alpha }));
+  }
+}
+// slide a carrier's plane row right until it clears the island's section markers (map zoom only)
+function carrierNudge(islId, x0, y, gl, n) {
+  if (!n || secK() > 0.5 || !view) return 0;
+  const isl = vIsl(islId); if (!isl) return 0;
+  const marks = isl.secs.map((x) => secPos(isl, x));
+  for (let d = 0; d < 80 / cam.z; d += 2 / cam.z) {
+    let hit = false;
+    for (let i = 0; i < n && !hit; i++) { const px = x0 + d + gl * (0.62 + i * 1.3); hit = marks.some((m) => Math.hypot(m.x - px, m.y - y) < m.r + gl * 0.62 + 2 / cam.z); }
+    if (!hit) return d;
+  }
+  return 0;
+}
+function drawCarrierPlanes() { for (const t of carrierQ) { g.save(); g.globalAlpha = t.alpha; mapPlane(t.q, t.x, t.y, t.gl); g.restore(); } carrierQ = []; }
+// r7: an army aboard shows a ship badge; a fleet shows the troops it carries and the planes on its carrier
+function drawUnitExtras(u, xr, y0, h, c = g, below = null, skipPlanes = false) {
+  const badge = (fn) => { c.fillStyle = '#0d1116'; c.beginPath(); c.arc(xr, y0 + 1, 9, 0, 7); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#f5c518'; c.stroke(); fn(xr, y0 + 1); };
+  if (u.kind === 'army' && u.aboard) badge((x, y) => shipSide(c, x, y + 2, 14, '#fff'));
+  if (u.kind !== 'fleet' || !S) return;
+  const units = view ? view.units : S.units;
+  const n = units.filter((a) => a.aboard === u.id).length;
+  if (n) badge((x, y) => { armySymbol(c, x, y, 10, '#fff'); });
+  const pl = skipPlanes ? [] : S.planes.filter((q) => q.base.fleet === u.id);
+  pl.forEach((q, i) => (below ? planeMini(c, q.type, below.x + 11 + i * 24, below.y + 13, 22, q.side, 0, q.used ? 0.45 : 1) : planeMini(c, q.type, xr + 16 + i * 24, y0 + h / 2, 22, q.side, 0, q.used ? 0.45 : 1)));
 }
 
 function drawPop(p) {
   const k = Math.max(0, Math.min(1, (tNow - p.t0) / (1600 / speed)));
   const isl = vIsl(p.island);
   g.save(); g.globalAlpha = 1 - k * k;
-  const x = isl.x + 60, y = isl.y - R - 30 - k * 50;
-  g.fillStyle = 'rgba(14,18,22,.92)'; g.fillRect(x - 46, y - 20, 92 + (p.ships ? 50 : 0), 40);
-  g.strokeStyle = SIDE_COL[p.side].fill; g.lineWidth = 3; g.strokeRect(x - 46, y - 20, 92 + (p.ships ? 50 : 0), 40);
+  const x = isl.x + 60, y = isl.y - R - 30 - k * 50, w = 92 + (p.ships ? 50 : 0) + (p.planes ? 54 : 0);
+  g.fillStyle = 'rgba(14,18,22,.92)'; g.fillRect(x - 46, y - 20, w, 40);
+  g.strokeStyle = SIDE_COL[p.side].fill; g.lineWidth = 3; g.strokeRect(x - 46, y - 20, w, 40);
   g.fillStyle = '#fff'; g.font = '900 28px "Barlow Condensed", sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
   g.fillText(`+${p.troops}`, x - 38, y + 1);
   armySymbol(g, x + 22, y, 22, '#fff');
   if (p.ships) { g.fillText('+1', x + 46, y + 1); shipSide(g, x + 82, y + 2, 22, '#fff'); }
+  if (p.planes) { const px = x + 46 + (p.ships ? 50 : 0); g.fillText('+1', px, y + 1); unitGlyph(g, p.planeType, px + 36, y, 26, '#fff', 2.4); }
   g.restore();
 }
 function drawPulse(p) {
@@ -810,12 +1058,18 @@ function toggleHoldings(force) {
 }
 function updateHud() {
   renderHoldings();
-  const n = [...Object.keys(S.orders), ...Object.keys(S.secOrders)].filter((id) => G.unit(S, id)?.side === 'blue').length;
+  const ids = new Set([...Object.keys(S.orders), ...Object.keys(S.secOrders), ...Object.keys(S.embark), ...Object.keys(S.landOrd)]);
+  const n = [...ids].filter((id) => G.unit(S, id)?.side === 'blue').length + Object.keys(S.strikes).filter((id) => G.plane(S, id)?.side === 'blue').length;
   $('ordn').hidden = !n; $('ordn').textContent = n;
   $('b-end').disabled = busy || !!S.over;
-  const fl = G.flightsLeft(S, 'blue'), canRecon = !busy && !S.over && fl > 0 && G.reconTargets(S, 'blue').length > 0;
-  if (!canRecon) reconMode = false;
-  $('b-recon').hidden = !canRecon; $('recn').textContent = fl; $('b-recon').classList.toggle('on', reconMode);
+  // r7 air button: opens the tray of planes (by base); the badge counts planes ready to fly this week
+  const mine = S.planes.filter((p) => p.side === 'blue');
+  const ready = mine.filter((p) => !p.used && !S.strikes[p.id] && G.planeBase(S, p)).length;
+  const canAir = !busy && !S.over && mine.length > 0;
+  if (!canAir) { airOpen = false; planeSel = null; reconMode = false; }
+  if (planeSel && !G.plane(S, planeSel)) { planeSel = null; reconMode = false; }
+  $('b-recon').hidden = !canAir; $('recn').textContent = ready; $('recn').hidden = !ready; $('b-recon').classList.toggle('on', airOpen || reconMode);
+  renderAir();
   const p = $('sel');
   const u = sel && G.unit(S, sel);
   if (!u || busy) { p.hidden = true; $('app').classList.remove('island-view', 'sel-open'); measurePanel(); return; }
@@ -832,6 +1086,55 @@ function updateHud() {
   $('sel-z').innerHTML = icon(secK() > 0.5 ? 'fit' : 'zoom', { size: 24 });
   measurePanel();
   if (wasHidden || p.dataset.unit !== u.id) { p.dataset.unit = u.id; keepClear(u.at); }
+}
+// r7 air tray: one row per base (airfield or carrier), a chip per plane. Tap a chip, then a target island.
+function renderAir() {
+  const box = $('air');
+  if (!airOpen || busy || S.over) { box.hidden = true; return; }
+  const groups = new Map();
+  for (const p of S.planes.filter((q) => q.side === 'blue')) {
+    const b = G.planeBase(S, p); if (!b) continue;
+    const k = b.fleet ? `f:${b.fleet}` : `a:${b.isl}`;
+    if (!groups.has(k)) groups.set(k, { b, list: [] });
+    groups.get(k).list.push(p);
+  }
+  const key = JSON.stringify([[...groups.entries()].map(([k, v]) => [k, v.list.map((p) => [p.id, p.used, S.strikes[p.id] || ''])]), planeSel]);
+  box.hidden = false;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.innerHTML = [...groups.values()].map(({ b, list }) => `<div class="air-row"><canvas class="air-base" data-k="${b.fleet ? 'cv' : 'air'}" data-isl="${b.isl}" width="64" height="64"></canvas>${list.map((p) => {
+    const st = p.used ? 'used' : S.strikes[p.id] ? 'set' : '';
+    return `<button class="pl ${st}${p.id === planeSel ? ' on' : ''}" data-p="${p.id}" data-t="${p.type}" aria-label="${UNIT_NAMES[p.type]}" title="${UNIT_NAMES[p.type]}">${unitIcon(p.type, 30)}${st === 'set' ? `<i class="tg">${icon('crosshair', { size: 14 })}</i>` : ''}</button>`;
+  }).join('')}</div>`).join('');
+  box.querySelectorAll('canvas.air-base').forEach((c) => {
+    const q = c.getContext('2d'); q.scale(2, 2);
+    q.fillStyle = '#12161c'; q.beginPath(); q.arc(16, 16, 14, 0, 7); q.fill(); q.lineWidth = 2.5; q.strokeStyle = SIDE_COL.blue.fill; q.stroke();
+    if (c.dataset.k === 'cv') unitGlyph(q, 'cv', 16, 16, 22, '#e6ebf0', 2.2); else secIcon(q, 'air', 16, 16, 21, '#e6ebf0');
+  });
+}
+function pickPlane(pid) {
+  const p = G.plane(S, pid); if (!p || busy) return;
+  if (S.strikes[pid]) { G.issueStrike(S, pid, null); planeSel = null; reconMode = false; sfx.pew(); updateHud(); return; }
+  if (p.used) { toast(`${unitIcon(p.type, 28)}${icon('x', { size: 28 })}`, 800); return; }
+  if (planeSel === pid) { planeSel = null; reconMode = false; updateHud(); return; }
+  sel = null;
+  if (p.type === 'recon') {
+    if (!reconTargetsFor(pid).length) { toast(`${unitIcon('recon', 28)}${icon('x', { size: 28 })}`, 800); return; }
+    planeSel = pid; reconMode = true;
+  } else {
+    reconMode = false;
+    if (!G.strikeTargets(S, pid).length) {
+      const b = G.planeBase(S, p);
+      // fighters fly escort: order a bomber or torpedo plane first; a sailing carrier launches nothing
+      if (b && b.fleet && S.orders[b.fleet]) toast(`${unitIcon('cv', 28)}${icon('x', { size: 28 })}`, 1000);
+      else if (p.type === 'fighter') toast(`${unitIcon('fighter', 28)}<span>+</span>${unitIcon('bomber', 28)}${unitIcon('torpedo', 28)}`, 1300);
+      else if (b && S.islands.some((i) => !seen.has(i.id) && Math.hypot(i.x - b.x, i.y - b.y) <= G.AIR_RANGE)) toast(`${unitIcon(p.type, 28)}<span>+</span>${unitIcon('recon', 28)}<span>SCOUT FIRST</span>`, 1400);
+      else toast(`${unitIcon(p.type, 28)}${icon('x', { size: 28 })}`, 800);
+      return;
+    }
+    planeSel = pid;
+  }
+  sfx.pew(); updateHud();
 }
 // drill-down: regiment > battalions (commander portrait each) > companies with their own pips
 const pipsHtml = (n) => `<span class="pp">${Array.from({ length: G.CO_MAX }, (_, k) => `<i class="${k < n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -884,14 +1187,27 @@ let hintTarget = null;
 function refreshHint() {
   const h = $('hint');
   if (hintStep === 'done' || busy || S.over || !$('title').hidden) { h.hidden = true; hintTarget = null; return; }
-  if (hintStep === 'unit') { hintTarget = { world: G.island(S, 'kestra') }; $('hint-t').textContent = 'TAP YOUR ARMY'; }
+  if (hintStep === 'wait') { h.hidden = true; hintTarget = null; return; }
+  const fleet = S.units.find((u) => u.side === 'blue' && u.kind === 'fleet' && u.at === 'kestra');
+  const aboard = S.units.find((u) => u.side === 'blue' && u.aboard);
+  const onBeach = fleet && S.units.find((u) => u.side === 'blue' && u.kind === 'army' && G.canEmbark(S, u, fleet.id));
+  if (hintStep === 'unit') { hintTarget = onBeach ? { unit: onBeach.id } : { world: G.island(S, 'kestra') }; $('hint-t').textContent = 'TAP YOUR ARMY'; }
+  else if (hintStep === 'ship' && fleet) { hintTarget = { unit: fleet.id }; $('hint-t').textContent = 'TAP YOUR SHIP'; }
+  else if (hintStep === 'unit2' && aboard) { hintTarget = { unit: aboard.id }; $('hint-t').textContent = 'TAP YOUR ARMY'; }
   else if (hintStep === 'dest') { hintTarget = { world: G.island(S, 'oska') }; $('hint-t').textContent = 'TAP AN ISLAND'; }
   else { hintTarget = { el: $('b-end') }; $('hint-t').textContent = 'END WEEK'; }
   h.hidden = false;
 }
 function placeHint() {
   const h = $('hint');
-  if (hintTarget.world) {
+  if (hintTarget.unit) {
+    const u = view.units.find((x) => x.id === hintTarget.unit);
+    if (u) { const q = useBlocks() ? (() => { const b = blockAt(u); return { x: b.x0 + b.w / 2, y: b.y0 }; })() : (() => { const t = tagPos(u); return { x: t.x, y: t.y - 18 * t.s }; })(); hintTarget.pt = toScreen(q.x, q.y); }
+  }
+  if (hintTarget.pt) {
+    const p = hintTarget.pt, hw = h.offsetWidth / 2 + 6;
+    h.classList.remove('below'); h.style.left = `${Math.max(hw, Math.min(vw - hw, p.x))}px`; h.style.top = `${Math.max(h.offsetHeight + 70, p.y - 6)}px`;
+  } else if (hintTarget.world) {
     const p = toScreen(hintTarget.world.x, hintTarget.world.y - R - 30);
     const hw = h.offsetWidth / 2 + 6;
     h.classList.remove('below'); h.style.left = `${Math.max(hw, Math.min(vw - hw, p.x))}px`; h.style.top = `${Math.max(h.offsetHeight + 70, p.y)}px`;
@@ -926,35 +1242,188 @@ function islandAt(wx, wy) {
   return best;
 }
 function sectionAt(wx, wy) {
-  if (secK() < 0.5) return null;
-  const tol = Math.max(SEC_R + 4, 22 / cam.z);
+  const ks = secK();
   let best = null, bd = 1e9;
-  for (const isl of S.islands) for (const x of isl.secs) { const d = Math.hypot(x.x - wx, x.y - wy); if (d < tol && d < bd) { bd = d; best = { isl, x }; } }
+  for (const isl of S.islands) for (const x of isl.secs) {
+    const p = secPos(isl, x, ks), tol = Math.max(p.r + 4 / cam.z, 22 / cam.z);
+    const d = Math.hypot(p.x - wx, p.y - wy); if (d < tol && d < bd) { bd = d; best = { isl, x }; }
+  }
   return best;
 }
-function select(id) { sel = id; if (id) advanceHint('dest'); updateHud(); sfx.pew(); }
+function select(id) {
+  sel = id;
+  if (id) { airOpen = false; planeSel = null; reconMode = false; }
+  const u = id && G.unit(S, id);
+  if (u && hintStep === 'unit' && u.kind === 'army' && G.unitsAt(S, u.at, 'blue', 'fleet').some((f) => G.canEmbark(S, u, f.id))) advanceHint('ship');
+  if (u && hintStep === 'unit2' && u.aboard) advanceHint('dest');
+  updateHud(); sfx.pew();
+}
+// small canvas icons for toasts (beach marker, ship)
+const toastImg = (() => { const m = {}; return (k) => {
+  if (m[k]) return m[k];
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64; const q = c.getContext('2d'); q.scale(2, 2);
+  q.fillStyle = '#12161c'; q.beginPath(); q.arc(16, 16, 14, 0, 7); q.fill(); q.lineWidth = 2.5; q.strokeStyle = SIDE_COL.blue.fill; q.stroke();
+  if (k === 'ship') shipSide(q, 16, 17, 22, '#e6ebf0'); else secIcon(q, k, 16, 16, 20, '#e6ebf0');
+  return (m[k] = `<img src="${c.toDataURL()}" width="32" height="32" alt="">`);
+}; })();
+// armies cross water only by ship: walk to a beach, board a ship there, sail, land on a beach
+function seaPrompt(u) {
+  const x = u.sec && G.section(G.island(S, u.at), u.sec);
+  const onBeach = x && x.kind === 'beach' && x.owner === 'blue';
+  const ship = G.unitsAt(S, u.at, 'blue', 'fleet').length > 0;
+  if (onBeach && ship) return `${armyImg()}${icon('back', { size: 22, className: 'sc-ico flip' })}${toastImg('ship')}<span>TAP YOUR SHIP</span>`;
+  if (!onBeach) return `${toastImg('beach')}${icon('back', { size: 22, className: 'sc-ico flip' })}${toastImg('ship')}<span>BEACH FIRST</span>`;
+  return `${toastImg('ship')}<span>NO SHIP HERE</span>`;
+}
+const armyImg = () => { if (armyImg.v) return armyImg.v; const c = document.createElement('canvas'); c.width = 64; c.height = 64; const q = c.getContext('2d'); q.scale(2, 2); armySymbol(q, 16, 16, 22, '#e6ebf0'); return (armyImg.v = `<img src="${c.toDataURL()}" width="32" height="32" alt="">`); };
+function ordered() { sfx.hit(); sel = null; updateHud(); }
+// r7b sealift helpers: sail the army's ship to `tid` (if needed) and land it on `beach` (or the best beach).
+// Returns the beach id, 'ship' when the ship cannot sail there, or false.
+function sailAndLand(uid, tid, beach) {
+  const u = G.unit(S, uid), f = u && G.unit(S, u.aboard); if (!f) return false;
+  if (tid !== G.landIsland(S, u)) {
+    const ok = tid === f.at ? G.issueOrder(S, f.id, f.at) : G.issueOrder(S, f.id, tid);
+    if (!ok) return 'ship';
+  }
+  const b = beach || G.landingBeach(S, u, G.island(S, tid));
+  return G.issueLand(S, uid, b) ? b : false;
+}
+const SNAP_KEYS = ['orders', 'secOrders', 'landOrd', 'landAt', 'embark', 'strikes'];
+function orderSnap() { const o = {}; for (const k of SNAP_KEYS) if (S[k] !== undefined) o[k] = clone(S[k]); return o; }
+function orderRestore(o) { for (const k of Object.keys(o)) S[k] = o[k]; }
+// r7b: the landing-under-fire card. Nothing is ordered until the player confirms.
+let warnPending = null;
+function warnArt(risk) {
+  const c = document.createElement('canvas'), W = 240, H = 64; c.width = W * 2; c.height = H * 2;
+  const x = c.getContext('2d'); x.scale(2, 2);
+  armySymbol(x, 30, 32, 34, '#fff');
+  x.font = '900 30px "Barlow Condensed", sans-serif'; x.textBaseline = 'middle'; x.textAlign = 'left';
+  x.fillStyle = '#ff6b5e'; x.fillText('\u00bd', 54, 33);
+  shipSide(x, 118, 36, 40, SIDE_COL.red.fill);
+  x.fillStyle = '#fff'; x.font = '900 22px "Barlow Condensed", sans-serif'; x.fillText(String(risk.foe), 140, 22);
+  x.font = '900 34px "Barlow Condensed", sans-serif'; x.fillText('>', 160, 34);
+  shipSide(x, 205, 36, 40, SIDE_COL.blue.fill);
+  x.font = '900 22px "Barlow Condensed", sans-serif'; x.fillText(String(risk.own), 226, 22);
+  return c.toDataURL();
+}
+function showWarn(p, at = null) {
+  warnPending = p;
+  armWarnGuard();
+  const w = $('warn');
+  w.innerHTML = `<img class="w-art" alt="" src="${warnArt(p.risk)}"><div class="w-t">UNDER FIRE: ARMY LOSES HALF</div>`
+    + `<div class="w-b"><button id="warn-no" aria-label="Cancel">${icon('x', { size: 28 })}</button>`
+    + `<button id="warn-ok" aria-label="Land anyway">${icon('check', { size: 28 })}<span>LAND</span></button></div>`;
+  w.hidden = false;
+  placeWarn(w, at);
+  $('warn-no').onclick = (e) => { e.stopPropagation(); hideWarn(); };
+  $('warn-ok').onclick = (e) => { e.stopPropagation(); confirmWarn(); };
+}
+// r7c belt 1: the card opens on the island tap's pointerup. The rest of that same gesture (touchend, the compatibility
+// mousedown / mouseup / click) lands wherever the finger is, which may be the card. Swallow it in the capture phase,
+// and disarm on the gesture's click or when a new gesture starts (pointerdown / touchstart), so a later separate tap on
+// LAND or the cancel button works. A short fallback disarm covers a gesture that never sends its click.
+let warnGuard = null;
+function armWarnGuard() {
+  disarmWarnGuard();
+  const swallow = (e) => { e.stopImmediatePropagation(); e.preventDefault(); if (e.type === 'click') disarmWarnGuard(); };
+  const fresh = () => disarmWarnGuard(); // a new touch or press: let it through
+  const types = ['touchend', 'pointerup', 'mousedown', 'mouseup', 'click'];
+  types.forEach((t) => window.addEventListener(t, swallow, { capture: true, passive: false }));
+  window.addEventListener('pointerdown', fresh, true); window.addEventListener('touchstart', fresh, true);
+  warnGuard = { swallow, fresh, types, timer: setTimeout(disarmWarnGuard, 500) };
+}
+function disarmWarnGuard() {
+  const gd = warnGuard; if (!gd) return; warnGuard = null; clearTimeout(gd.timer);
+  gd.types.forEach((t) => window.removeEventListener(t, gd.swallow, { capture: true }));
+  window.removeEventListener('pointerdown', gd.fresh, true); window.removeEventListener('touchstart', gd.fresh, true);
+}
+// r7c belt 2: place the card so its buttons are at least WARN_GAP px from the tap, fully on screen, preferring spots
+// that do not cover the HUD, End Week or the unit panel. Order of preference: centre, up, sideways, down.
+const WARN_GAP = 28, WARN_M = 8;
+function placeWarn(w, at) {
+  w.style.transform = 'none';
+  const W = w.offsetWidth, H = w.offsetHeight;
+  const place = (l, t) => { w.style.left = `${l}px`; w.style.top = `${t}px`; };
+  const cl = Math.round((vw - W) / 2), ct = Math.round((vh - H) / 2);
+  if (!at) { place(cl, ct); return; }
+  place(0, 0);
+  const btns = ['warn-ok', 'warn-no'].map((id) => { const r = $(id).getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; });
+  const obs = [...document.querySelectorAll('.hud, #sel, #banner, #hold, #air')].filter((e) => !e.hidden && e.offsetParent !== null)
+    .map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height);
+  const clampL = (l) => Math.max(WARN_M, Math.min(vw - W - WARN_M, l)), clampT = (t) => Math.max(WARN_M, Math.min(vh - H - WARN_M, t));
+  const btnTop = Math.min(...btns.map((b) => b.t)), btnBot = Math.max(...btns.map((b) => b.b));
+  const cands = [
+    [cl, ct],
+    [cl, at.y - WARN_GAP - H], // whole card above the tap
+    [cl, at.y - WARN_GAP - btnBot], // buttons above the tap
+    [at.x - WARN_GAP - W, ct], [at.x + WARN_GAP, ct], // left / right of the tap
+    [at.x - WARN_GAP - W, at.y - H / 2], [at.x + WARN_GAP, at.y - H / 2],
+    [cl, at.y + WARN_GAP - btnTop + 0], [cl, at.y + WARN_GAP], // below
+  ];
+  for (let t = WARN_M; t <= vh - H - WARN_M; t += 16) for (let l = WARN_M; l <= vw - W - WARN_M; l += 16) cands.push([l, t]);
+  const gapTo = (b, l, t) => { const dx = Math.max(b.l + l - at.x, 0, at.x - (b.r + l)), dy = Math.max(b.t + t - at.y, 0, at.y - (b.b + t)); return Math.hypot(dx, dy); };
+  const cover = (l, t) => obs.reduce((n, r) => n + Math.max(0, Math.min(l + W, r.right) - Math.max(l, r.left)) * Math.max(0, Math.min(t + H, r.bottom) - Math.max(t, r.top)), 0);
+  let best = null;
+  cands.forEach(([l0, t0], i) => {
+    const l = clampL(Math.round(l0)), t = clampT(Math.round(t0));
+    if (Math.min(...btns.map((b) => gapTo(b, l, t))) < WARN_GAP) return;
+    const score = cover(l, t) + i * 0.5; // least HUD covered; earlier (preferred) spots win ties
+    if (!best || score < best.score) best = { l, t, score };
+  });
+  if (best) place(best.l, best.t); else place(cl, ct);
+  w.dataset.tap = `${Math.round(at.x)},${Math.round(at.y)}`;
+}
+function hideWarn() { warnPending = null; disarmWarnGuard(); const w = $('warn'); if (w) { w.hidden = true; w.innerHTML = ''; } }
+function confirmWarn() {
+  const p = warnPending; hideWarn(); if (!p) return;
+  const r = sailAndLand(p.uid, p.tid, p.beach);
+  if (r && r !== 'ship') { if (hintStep === 'dest') advanceHint('end'); ordered(); }
+}
 function tapAt(sx, sy) {
   if (busy || S.over) return;
+  if (warnPending) { hideWarn(); return; } // a tap on the map cancels the landing card
   const w = toWorld(sx, sy);
-  if (reconMode) {
+  if (reconMode || planeSel) {
     const isl = islandAt(w.x, w.y);
-    if (isl && G.reconTargets(S, 'blue').includes(isl.id)) { doRecon(isl.id); return; }
-    reconMode = false; updateHud(); return;
+    if (reconMode) {
+      if (isl && reconTargetsFor(planeSel).includes(isl.id)) { doRecon(isl.id, planeSel); return; }
+    } else if (isl && G.issueStrike(S, planeSel, isl.id)) { sfx.hit(); planeSel = null; updateHud(); return; }
+    reconMode = false; planeSel = null; updateHud(); return;
   }
   const tag = tagAt(w.x, w.y);
   const isl = islandAt(w.x, w.y);
   const sec = sectionAt(w.x, w.y);
   const cur = sel && G.unit(S, sel);
+  // r7 sealift 1: an army on a beach taps a friendly ship in the same waters = board it
+  if (cur && cur.kind === 'army' && !cur.aboard && tag && tag.kind === 'fleet' && tag.side === 'blue' && tag.at === cur.at) {
+    if (G.issueEmbark(S, cur.id, tag.id)) { if (hintStep === 'ship') advanceHint('end1'); ordered(); return; }
+    toast(seaPrompt(cur), 1300); select(tag.id); return;
+  }
+  // r7 sealift 2: an army aboard taps an island (or one of its beaches): its ship sails there and it lands on a beach
+  if (cur && cur.kind === 'army' && cur.aboard) {
+    const tid = sec ? sec.isl.id : isl && isl.id;
+    const onTag = tag && tag.side === 'blue' && tag.at === tid && !sec;
+    if (tid && !onTag) {
+      // r7b: try the orders, and if the landing would go in under a stronger enemy fleet, undo them and ask first
+      const snap = orderSnap();
+      const r = sailAndLand(cur.id, tid, sec && sec.x.kind === 'beach' ? sec.x.id : null);
+      if (r === 'ship') { toast(`${toastImg('ship')}${icon('x', { size: 28 })}`, 800); return; }
+      if (r) {
+        const risk = G.landingRisk(S, 'blue', tid);
+        if (risk.risk) { orderRestore(snap); showWarn({ uid: cur.id, tid, beach: r, risk }, { x: sx, y: sy }); return; }
+        if (hintStep === 'dest') advanceHint('end'); ordered(); return;
+      }
+    }
+  }
   if (tag && tag.side === 'blue' && (!cur || tag.at === cur.at || !isl || isl.id === cur.at) && !(cur && sec && cur.at === sec.isl.id && cur.kind === 'army' && G.canSecOrder(S, cur, sec.x.id) && sec.x.id !== cur.sec && !G.armiesIn(S, sec.isl.id, sec.x.id, 'blue').some((u) => u.id === tag.id))) {
     select(tag.id === sel ? null : tag.id); return;
   }
-  // island view: push to a linked section, or land on a chosen beach
-  if (cur && sec && cur.kind === 'army') {
-    if (sec.isl.id === cur.at && G.canSecOrder(S, cur, sec.x.id)) { G.issueSecOrder(S, cur.id, sec.x.id); sfx.hit(); advanceHint('end'); sel = null; updateHud(); return; }
-    if (sec.isl.id !== cur.at && sec.x.kind === 'beach' && G.issueOrder(S, cur.id, sec.isl.id, sec.x.id)) { sfx.hit(); advanceHint('end'); sel = null; updateHud(); return; }
-  }
+  // push to a linked section (island view, or the ring markers on the map)
+  if (cur && sec && cur.kind === 'army' && sec.isl.id === cur.at && G.canSecOrder(S, cur, sec.x.id)) { G.issueSecOrder(S, cur.id, sec.x.id); ordered(); return; }
+  // an army on land cannot cross water by itself: say what to do instead
+  if (cur && cur.kind === 'army' && !cur.aboard && isl && isl.id !== cur.at) { toast(seaPrompt(cur), 1500); return; }
   if (cur && isl && isl.id !== cur.at) {
-    if (G.issueOrder(S, cur.id, isl.id)) { sfx.hit(); advanceHint('end'); sel = null; updateHud(); return; }
+    if (G.issueOrder(S, cur.id, isl.id)) { ordered(); return; }
   }
   if (sec) {
     const here = G.unitsAt(S, sec.isl.id, 'blue').filter((u) => u.kind === 'army' && u.sec === sec.x.id);
@@ -1025,7 +1494,7 @@ function zoomAt(sx, sy, f) {
 }
 window.addEventListener('keydown', (e) => {
   if (!$('title').hidden) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startPlay(); } return; }
-  if (e.key === 'Escape') { $('help').hidden = true; sel = null; reconMode = false; updateHud(); }
+  if (e.key === 'Escape') { hideWarn(); $('help').hidden = true; sel = null; reconMode = false; planeSel = null; airOpen = false; updateHud(); }
   else if ((e.key === 'Enter' || e.key === ' ') && $('end').hidden && $('help').hidden) { e.preventDefault(); doEndWeek(); }
   else if (e.key === 'Tab') {
     e.preventDefault(); if (busy) return;
@@ -1034,7 +1503,7 @@ window.addEventListener('keydown', (e) => {
     if (mine.length) { const u = mine[(i + 1) % mine.length]; select(u.id); const isl = G.island(S, u.at); cam.x = isl.x; cam.y = isl.y; clampCam(); }
   } else if (e.key === '+' || e.key === '=') zoomAt(vw / 2, vh / 2, 1.25);
   else if (e.key === '-') zoomAt(vw / 2, vh / 2, 0.8);
-  else if (e.key === 'r' || e.key === 'R') { if (!$('b-recon').hidden) { reconMode = !reconMode; updateHud(); } }
+  else if (e.key === 'r' || e.key === 'R') { if (!$('b-recon').hidden) { airOpen = !airOpen; planeSel = null; reconMode = false; sel = null; updateHud(); } }
   else if (e.key.startsWith('Arrow')) {
     const d = 80 / cam.z;
     if (e.key === 'ArrowLeft') cam.x -= d; if (e.key === 'ArrowRight') cam.x += d;
@@ -1043,16 +1512,16 @@ window.addEventListener('keydown', (e) => {
   } else if (/^[1-9]$/.test(e.key) && sel) {
     // number keys order the selected unit to the n-th reachable island (keyboard play)
     const u = G.unit(S, sel); const r = G.reachable(S, u);
-    const id = r[+e.key - 1]; if (id && G.issueOrder(S, u.id, id)) { advanceHint('end'); sel = null; updateHud(); }
+    const id = r[+e.key - 1]; if (id && G.issueOrder(S, u.id, id)) { sel = null; updateHud(); }
   }
 });
 
 // ---------- recon ----------
-async function doRecon(islId) {
+async function doRecon(islId, planeId) {
   if (busy) return null;
-  const f = G.recon(S, 'blue', islId);
+  const f = G.recon(S, 'blue', islId, planeId || undefined);
   if (!f) return null;
-  reconMode = false; busy = true; updateHud();
+  reconMode = false; planeSel = null; busy = true; updateHud();
   const isl = G.island(S, islId);
   sfx.alarm();
   fx.flight = { a: { x: f.from.x, y: f.from.y }, b: { x: isl.x, y: isl.y }, t0: performance.now(), dur: 1100 / Math.max(1, speed / 3) };
@@ -1084,7 +1553,10 @@ const fighters = (b, side) => b.icons[side].filter((i) => i.alive && (i.kind ===
 
 async function doEndWeek(opts = {}) {
   if (busy || S.over || !$('title').hidden) return;
-  busy = true; sel = null; reconMode = false; advanceHint('done'); $('report').hidden = true; toggleHoldings(false); updateHud(); refreshHint();
+  const nextHint = hintStep === 'end1' ? 'unit2' : 'done';
+  hideWarn();
+  busy = true; sel = null; reconMode = false; planeSel = null; airOpen = false; if (hintStep !== 'done') hintStep = 'wait';
+  $('report').hidden = true; toggleHoldings(false); updateHud(); refreshHint();
   const camBefore = { x: cam.x, y: cam.y, z: cam.z };
   view = snapshotView();
   const seenBefore = new Set(seen);
@@ -1098,7 +1570,7 @@ async function doEndWeek(opts = {}) {
       const after = G.vision(S, 'blue');
       const shown = e.moves.filter((m) => m.side === 'blue' || seenBefore.has(m.from) || after.has(m.to));
       if (shown.length) {
-        fx.moving = { list: shown, ids: new Set(e.moves.map((m) => m.unit)), t: 0 };
+        fx.moving = { list: shown, ids: new Set(e.moves.flatMap((m) => [m.unit, ...(m.carry || [])])), t: 0 };
         sfx.alarm();
         await tween(1500, (k) => { fx.moving.t = k; });
         fx.stayArrows = shown; fx.moving = null;
@@ -1153,6 +1625,43 @@ async function doEndWeek(opts = {}) {
       fx.pulses.push({ x: isl.x, y: isl.y, r: R, side: e.side, t0: performance.now() });
       if (seen.has(e.island) || e.side === 'blue' || e.prev === 'blue') { sfx.boom(); await wait(500); }
       updateHud();
+    } else if (e.type === 'strike-abort') {
+      // r7b: the target sailed away and nothing in range is left to hit: the planes turn back unspent
+      events.push(e);
+      if (e.side === 'blue') {
+        toast(`${e.planes.map((q) => unitIcon(q.type, 30)).join('')}${icon('back', { size: 24 })}<span class="t-sm">TARGET GONE: PLANE KEPT</span>`, 1900);
+        await wait(700);
+      }
+    } else if (e.type === 'strike') {
+      events.push(e);
+      if (e.side === 'blue' && e.retargeted && e.retargeted.length) {
+        // r7b: the fleet sailed on; the torpedo planes followed it to its new waters
+        toast(`${e.retargeted.map((r) => unitIcon((G.plane(S, r.plane) || { type: 'torpedo' }).type, 30)).join('')}${icon('move', { size: 22 })}${toastImg('ship')}<span class="t-sm">${G.island(S, e.to).name}</span>`, 1600);
+      }
+      if (e.side === 'blue' || seen.has(e.to)) {
+        const dur = 1400 / Math.max(1, speed / 3);
+        fx.strike = { e, t0: performance.now(), dur };
+        sfx.alarm();
+        await wait(1400 * speed / Math.max(1, speed / 3));
+        fx.strike = null;
+        const isl = vIsl(e.to), foe = G.other(e.side);
+        e.hits.forEach((h, i) => {
+          const x = h.sec ? secPos(isl, vSec(e.to, h.sec)) : { x: isl.x + (i % 3 - 1) * 40, y: isl.y + R * 0.2 };
+          fx.flashes.push({ x: x.x, y: x.y, t0: performance.now() });
+          if (h.kind !== 'miss') fx.marks.push({ x: x.x, y: x.y - 40, type: h.kind === 'ship' ? h.ship : h.kind === 'fort' ? 'fort' : ((e.lost && e.lost[foe] && e.lost[foe][0]) || { type: 'inf' }).type, side: foe, t0: performance.now() });
+        });
+        e.flights.filter((f) => f.lost).forEach((f) => fx.marks.push({ x: isl.x, y: isl.y - R * 0.9, type: f.type, side: e.side, t0: performance.now() }));
+        if (e.hits.some((h) => h.kind !== 'miss')) sfx.boom();
+        view = snapshotView(); updateHud();
+        await wait(700);
+      } else view = snapshotView();
+    } else if (e.type === 'rebase') {
+      events.push(e);
+      const mv = e.moved.filter((m) => m.side === 'blue'), lost = e.lost.filter((m) => m.side === 'blue');
+      if (mv.length || lost.length) {
+        toast(`${mv.map((m) => `${unitIcon(m.type, 28)}${icon('back', { size: 20, className: 'sc-ico flip' })}${m.to.fleet ? unitIcon('cv', 28) : toastImg('air')}`).join('')}${lost.map((m) => `${unitIcon(m.type, 28)}${icon('x', { size: 24 })}`).join('')}`, 1800);
+        await wait(600);
+      }
     } else if (e.type === 'reinforce') {
       events.push(e);
       if (e.side === 'blue' || seen.has(e.island)) fx.pops.push({ ...e, t0: performance.now() });
@@ -1169,6 +1678,7 @@ async function doEndWeek(opts = {}) {
   fx.stayArrows = null;
   setBanner(S.week, true);
   busy = false;
+  if (hintStep === 'wait') advanceHint(nextHint === 'unit2' && S.units.some((u) => u.side === 'blue' && u.aboard) ? 'unit2' : 'done');
   updateHud(); refreshHint();
   showReport(events, seenBefore);
   if (S.over) { await wait(900); showEnd(); }
@@ -1178,8 +1688,14 @@ async function doEndWeek(opts = {}) {
 // ---------- week report: every fight Blue saw, who won, and which companies / ships each side lost ----------
 let reportData = [];
 function showReport(events, seenBefore) {
-  const fights = events.filter((e) => (e.type === 'landing' || e.type === 'naval') && e.lost)
+  const fights = events.filter((e) => (e.type === 'landing' || e.type === 'naval' || e.type === 'strike') && e.lost)
     .map((e) => {
+      if (e.type === 'strike') {
+        const foe = G.other(e.side), down = e.flights.filter((f) => f.lost).map((f) => ({ type: f.type, plane: true }));
+        const own = { [e.side]: down, [foe]: e.lost[foe] };
+        const visible = e.side === 'blue' || seen.has(e.to) || seenBefore.has(e.to);
+        return { island: e.to, name: G.island(S, e.to).name, kind: 'strike', plane: (e.flights[0] || { type: 'bomber' }).type, winner: e.hits.some((h) => h.kind !== 'miss') ? e.side : foe, blue: own.blue, red: visible ? own.red : [], blueIn: e.side === 'blue' || own.blue.length > 0, visible };
+      }
       const blueIn = e.type === 'naval' ? true : e.side === 'blue' || e.prevOwner === 'blue' || e.lost.blue.length > 0;
       const visible = blueIn || seen.has(e.island) || seenBefore.has(e.island);
       const winner = e.type === 'naval' ? e.winner : (e.won ? e.side : G.other(e.side));
@@ -1194,9 +1710,9 @@ function showReport(events, seenBefore) {
   const group = (list) => Object.entries(list.reduce((m, c) => ((m[c.type] = (m[c.type] || 0) + 1), m), {}));
   const lostHtml = (side, list) => (list.length ? `<span class="lost ${side}" data-n="${list.length}"><canvas class="rf" data-side="${side}" width="30" height="20"></canvas>${group(list)
     .map(([t, n]) => `<span class="x" data-t="${t}" data-n="${n}" title="${UNIT_NAMES[t]}">${unitIcon(t, 24)}</span>${n > 1 ? `<small>${n}</small>` : ''}`).join('')}</span>` : '');
-  r.innerHTML = fights.map((f) => `<div class="rep-row"><canvas class="rk" data-kind="${f.kind}" width="56" height="56"></canvas><b>${f.name}</b>
+  r.innerHTML = fights.map((f) => `<div class="rep-row"><canvas class="rk" data-kind="${f.kind}"${f.plane ? ` data-plane="${f.plane}"` : ''} width="56" height="56"></canvas><b>${f.name}</b>
     <canvas class="rw" data-side="${f.winner || ''}" width="30" height="20"></canvas>${lostHtml('blue', f.blue)}${lostHtml('red', f.red)}</div>`).join('');
-  r.querySelectorAll('canvas.rk').forEach((c) => { const q = c.getContext('2d'); if (c.dataset.kind === 'naval') shipSide(q, 28, 30, 44, '#e6ebf0'); else secIcon(q, c.dataset.kind, 28, 28, 44, '#e6ebf0'); });
+  r.querySelectorAll('canvas.rk').forEach((c) => { const q = c.getContext('2d'); if (c.dataset.kind === 'naval') shipSide(q, 28, 30, 44, '#e6ebf0'); else if (c.dataset.plane) unitGlyph(q, c.dataset.plane, 28, 28, 44, '#e6ebf0', 2.4); else secIcon(q, c.dataset.kind, 28, 28, 44, '#e6ebf0'); });
   r.querySelectorAll('canvas.rw, canvas.rf').forEach((c) => { if (c.dataset.side) drawFlag(c.getContext('2d'), c.dataset.side, 1, 1, 28, 18); });
   r.style.width = '';
   r.hidden = false;
@@ -1236,7 +1752,10 @@ function buildLegend() {
   const rows = [
     ['army', 'ARMY', 'takes sections'], ['fleet', 'FLEET', 'sea fights'], ['beach', 'BEACH', 'land here first'],
     ['secs', 'SECTIONS', 'take all to win the island'], ['supply', 'DEPOT', '+ troops each week'],
-    ['air', 'AIRFIELD', '+ planes, recon'], ['fog', 'FOG', 'fly recon to see'], ['home', 'HQ', 'take theirs to win'],
+    ['air', 'AIRFIELD', 'bases 4 planes'], ['fog', 'FOG', 'fly recon to see'], ['home', 'HQ', 'take theirs to win'],
+    ['lift', 'SEALIFT', 'beach, ship, beach: 2 armies a fleet'], ['cv', 'CARRIER', '2 planes a carrier, they sail with it'],
+    ['recon', 'RECON', 'scouts an island'], ['fighter', 'FIGHTER', 'escorts, shoots down planes'],
+    ['bomber', 'BOMBER', 'hits troops and forts'], ['torpedo', 'TORPEDO', 'sinks ships'],
   ];
   $('legend').innerHTML = rows.map(([k, a, b]) => `<canvas data-k="${k}" width="200" height="80"></canvas><div>${a}<small>${b}</small></div>`).join('');
   $('legend').querySelectorAll('canvas').forEach((c) => {
@@ -1249,6 +1768,13 @@ function buildLegend() {
       q.lineWidth = 5; cols.forEach((cl, i) => { q.strokeStyle = cl; q.beginPath(); q.arc(50, 20, 15, i * Math.PI / 2 + 0.12, (i + 1) * Math.PI / 2 - 0.12); q.stroke(); });
       return;
     }
+    if (['recon', 'fighter', 'bomber', 'torpedo'].includes(k)) { planeMini(q, k, 50, 20, 32, 'blue'); return; }
+    if (k === 'lift') {
+      for (const [x, d] of [[16, 'beach'], [84, 'beach']]) { q.fillStyle = '#12161c'; q.beginPath(); q.arc(x, 20, 14, 0, 7); q.fill(); q.lineWidth = 2.5; q.strokeStyle = SIDE_COL.blue.fill; q.stroke(); secIcon(q, d, x, 20, 19, '#e6ebf0'); }
+      shipSide(q, 50, 22, 30, '#e6ebf0'); q.fillStyle = '#e6ebf0'; q.beginPath(); q.moveTo(33, 16); q.lineTo(37, 20); q.lineTo(33, 24); q.fill(); q.beginPath(); q.moveTo(67, 16); q.lineTo(71, 20); q.lineTo(67, 24); q.fill();
+      return;
+    }
+    if (k === 'cv') { q.fillStyle = '#12161c'; q.beginPath(); q.arc(36, 20, 17, 0, 7); q.fill(); q.lineWidth = 3; q.strokeStyle = SIDE_COL.blue.fill; q.stroke(); unitGlyph(q, 'cv', 36, 20, 26, '#e6ebf0', 2.2); planeMini(q, 'fighter', 66, 20, 20, 'blue'); planeMini(q, 'torpedo', 86, 20, 20, 'blue'); return; }
     q.fillStyle = '#12161c'; q.beginPath(); q.arc(50, 20, 17, 0, 7); q.fill(); q.lineWidth = 3; q.strokeStyle = SIDE_COL.blue.fill; q.stroke();
     const kind = { beach: 'beach', supply: 'depot', air: 'air', home: 'hq' }[k];
     secIcon(q, kind, 50, 20, 24, '#e6ebf0');
@@ -1371,7 +1897,8 @@ function zoomToIsland(id, z) {
 function wire() {
   $('b-play').onclick = startPlay;
   $('b-end').onclick = () => doEndWeek();
-  $('b-recon').onclick = () => { if (busy) return; reconMode = !reconMode; sel = null; updateHud(); };
+  $('b-recon').onclick = () => { if (busy) return; airOpen = !airOpen; planeSel = null; reconMode = false; sel = null; updateHud(); };
+  $('air').onclick = (e) => { const b = e.target.closest('.pl'); if (b) pickPlane(b.dataset.p); };
   $('b-restart').onclick = () => { if (!busy) { newGame(); refreshHint(); } };
   $('b-help').onclick = () => { $('help').hidden = false; };
   $('c-blue').onclick = () => toggleHoldings();
@@ -1427,7 +1954,23 @@ window.__PW__ = {
   select(id) { select(id); }, order(id, to, sec) { const ok = G.issueOrder(S, id, to, sec); updateHud(); return ok; },
   secOrder(id, sec) { const ok = G.issueSecOrder(S, id, sec); updateHud(); return ok; },
   refresh() { view = snapshotView(); refreshFog(false); updateHud(); },
-  recon: (id) => doRecon(id),
+  recon: (id, pid) => doRecon(id, pid),
+  // test setup only: put an army aboard a friendly ship at its island (moving one there if needed), sail to `to`, land on `sec`
+  seaLift(id, to, sec) {
+    const u = G.unit(S, id);
+    let f = S.units.find((x) => x.side === u.side && x.kind === 'fleet' && x.at === u.at);
+    if (!f) { f = S.units.find((x) => x.side === u.side && x.kind === 'fleet'); f.at = u.at; }
+    u.aboard = f.id; u.sec = null;
+    if (to !== u.at && !G.issueOrder(S, f.id, to)) return false;
+    const ok = G.issueLand(S, id, sec || G.landingBeach(S, u, G.island(S, to)));
+    view = snapshotView(); updateHud(); return ok;
+  },
+  embark(id, fid) { const ok = G.issueEmbark(S, id, fid); updateHud(); return ok; },
+  land(id, sec) { const ok = G.issueLand(S, id, sec); updateHud(); return ok; },
+  strike(pid, to) { const ok = G.issueStrike(S, pid, to); updateHud(); return ok; },
+  openAir(v = true) { airOpen = v; planeSel = null; reconMode = false; sel = null; updateHud(); },
+  get planeSel() { return planeSel; }, get airOpen() { return airOpen; }, get hintStep() { return hintStep; },
+  markerScreen(id, sec) { const i = vIsl(id), x = vSec(id, sec), p = secPos(i, x); const c = toScreen(p.x, p.y); return { ...c, r: p.r * cam.z }; },
   endWeek: (opts) => doEndWeek(opts),
   tokenRect(id) {
     const u = view.units.find((x) => x.id === id); if (!u) return null;
@@ -1450,10 +1993,17 @@ window.__PW__ = {
     });
   },
   islandScreen(id) { const i = G.island(S, id); return toScreen(i.x, i.y); },
-  sectionScreen(id, sec) { const x = G.section(G.island(S, id), sec); return toScreen(x.x, x.y); },
+  sectionScreen(id, sec) { const i = G.island(S, id), x = G.section(i, sec), p = secPos(i, x); return toScreen(p.x, p.y); },
   focus(id, z) { const i = G.island(S, id); cam.x = i.x; cam.y = i.y; if (z) cam.z = z; clampCam(); updateHud(); },
   labels(id) { cardCache = null; labelCache = null; const l = labelLayout().get(id); return l ? { name: { ...l.name }, badge: { ...l.badge } } : null; },
   cardCols() { cardCache = null; labelCache = null; return (cardLayout().cols || []).map((c) => ({ ...c })); },
   zoomToIsland, nameBox, sectionBox, holdings, toggleHoldings, get report() { return reportData; }, keepClear,
   showEnd,
+  // r7b QA
+  planeMarks: () => planeMarks.map((m) => ({ ...m })),
+  homeFrame(id = 'kestra') { const e = islandExtent(G.island(S, id)), a = toScreen(e.l, e.t), b = toScreen(e.r, e.b), n = nameBox(id);
+    return { left: Math.min(a.x, n.left), top: Math.min(a.y, n.top), right: Math.max(b.x, n.right), bottom: Math.max(b.y, n.bottom), vw, vh, z: cam.z }; },
+  get warn() { return warnPending ? { ...warnPending } : null; },
+  tapLand(id, tid) { select(id); const p = this.islandScreen(tid); tapAt(p.x, p.y); },
+  fitHome() { fitCamera(true); },
 };
