@@ -1,0 +1,138 @@
+{
+  "generated": "2026-11-22",
+  "note": "Compact index of reusable graphic parts. Thumbs are shipped with this page. No raw GLB bytes.",
+  "parts": [
+    {
+      "id": "hq-troopers",
+      "name": "HQ Troopers",
+      "source": "Army HQ",
+      "path": "hq-troopers/",
+      "kind": "character",
+      "status": "approved"
+    },
+    {
+      "id": "space-ships3d",
+      "name": "Space ships",
+      "source": "Star Conquests",
+      "path": "space-ships3d/",
+      "kind": "ship",
+      "status": "candidate"
+    },
+    {
+      "id": "svg-icon-set",
+      "name": "SVG icons",
+      "source": "Star Conquests",
+      "path": "svg-icon-set/",
+      "kind": "icon",
+      "status": "candidate"
+    },
+    {
+      "id": "space-particles",
+      "name": "Space particles",
+      "source": "Star Conquests",
+      "path": "space-particles/",
+      "kind": "fx",
+      "status": "approved"
+    },
+    {
+      "id": "carrier-bearn",
+      "name": "Bearn carrier",
+      "source": "Carrier Fighter",
+      "path": "carrier-bearn/models/carrier.glb",
+      "kind": "vehicle",
+      "status": "approved"
+    },
+    {
+      "id": "fighter-prop-plane",
+      "name": "Prop fighter",
+      "source": "Carrier Fighter",
+      "path": "fighter-prop-plane/models/fighter.glb",
+      "kind": "plane",
+      "status": "approved"
+    },
+    {
+      "id": "galaxy-map-3d",
+      "name": "Galaxy map",
+      "source": "Star Conquests",
+      "path": "galaxy-map-3d/",
+      "kind": "other",
+      "status": "candidate"
+    },
+    {
+      "id": "battle-endcard",
+      "name": "Battle end card",
+      "source": "Star Conquests",
+      "path": "battle-endcard/",
+      "kind": "ui",
+      "status": "candidate"
+    },
+    {
+      "id": "dragon-explorer",
+      "name": "Dragon explorer",
+      "source": "Dragon Collecting",
+      "path": "2d/dragon_explorer_approved_2026-11-08/",
+      "kind": "sprite",
+      "status": "approved",
+      "thumb": "thumbs/dragon-explorer.png"
+    },
+    {
+      "id": "seraphina-chibi",
+      "name": "Seraphina chibi",
+      "source": "Seraphina",
+      "path": "pixel/seraphina_f_chibi2/f_chibi2_native.png",
+      "kind": "sprite",
+      "status": "approved",
+      "thumb": "thumbs/seraphina-chibi.png"
+    },
+    {
+      "id": "collecting-boy",
+      "name": "Collecting boy",
+      "source": "Dragon Collecting",
+      "path": "3d/dragon_collecting_preferred_2026-11-07/C_boy.glb",
+      "kind": "glb",
+      "status": "preferred",
+      "thumb": "thumbs/collecting-boy.png"
+    },
+    {
+      "id": "collecting-dragon",
+      "name": "Collecting dragon",
+      "source": "Dragon Collecting",
+      "path": "3d/dragon_collecting_preferred_2026-11-07/D_dragon.glb",
+      "kind": "glb",
+      "status": "preferred",
+      "thumb": "thumbs/collecting-dragon.png"
+    },
+    {
+      "id": "rigged-dragon",
+      "name": "Rigged dragon",
+      "source": "Parts library",
+      "path": "3d/rigged_animals_2026-11-13/models/dragon.glb",
+      "kind": "glb",
+      "status": "catalogued"
+    },
+    {
+      "id": "rigged-fox",
+      "name": "Rigged fox",
+      "source": "Parts library",
+      "path": "3d/rigged_animals_2026-11-13/models/fox.glb",
+      "kind": "glb",
+      "status": "catalogued"
+    },
+    {
+      "id": "rigged-raccoon",
+      "name": "Rigged raccoon",
+      "source": "Parts library",
+      "path": "3d/rigged_animals_2026-11-13/models/raccoon.glb",
+      "kind": "glb",
+      "status": "catalogued"
+    },
+    {
+      "id": "rigged-shiba",
+      "name": "Rigged shiba",
+      "source": "Parts library",
+      "path": "3d/rigged_animals_2026-11-13/models/shiba.glb",
+      "kind": "glb",
+      "status": "catalogued"
+    }
+  ]
+}
