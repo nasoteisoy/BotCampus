@@ -9,15 +9,12 @@ import {
 } from './data.js';
 import { shouldPromptLevelChange } from './presets.js';
 import { getEmu } from './auth.js';
-import { isVerified, getUid, signInGoogle, doSignOut } from './auth.js';
 import {
-  getStoreState, canEdit, hintSeen, markHintSeen,
+  getStoreState, hintSeen, markHintSeen,
   saveTick, saveLevel, saveFocus, saveTier, saveTierAdd, saveTierRename, saveTierRemove,
   saveReuse, saveItemAdd, saveItemRename, saveItemRemove,
   saveProjectAdd, saveProjectRename, saveProjectStatus, saveStarterList,
 } from './store.js';
-
-const WHO = 'Chumi only';
 
 const ui = {
   route: parseHash(),
@@ -60,39 +57,25 @@ function showFlash() {
   showFlash._t = setTimeout(() => el.classList.remove('show'), 1400);
 }
 
-function banner(store) {
-  if (store.offline && store.source === 'cache') {
-    return `<div class="banner offline" data-id="banner-offline">${icon('cloudoff', { size: 22 })}<span>Offline list</span></div>`;
-  }
-  if (store.source === 'seed' || (store.source === 'cache' && !store.readable)) {
-    return `<div class="banner" data-id="banner-local">${icon('cloudoff', { size: 22 })}<span>Local list</span></div>`;
-  }
+/** No full-width Local/Offline banners and no sign-in nags. */
+export function cuesHtml(_store) {
   return '';
 }
 
-/** Persistent signed-out cue. Empty when already signed in / verified. */
-export function signinCueHtml(signedIn) {
-  if (signedIn) return '';
-  return `<button type="button" class="banner signin-cue" data-action="signin" data-id="signin-cue" aria-label="Sign in to edit">${icon('login', { size: 22 })}<span>Sign in to edit</span></button>`;
+export function signinCueHtml(_signedIn) {
+  return '';
+}
+
+export function accountBtnHtml() {
+  return '';
 }
 
 function cues(store) {
-  return `${banner(store)}${signinCueHtml(isVerified())}`;
+  return cuesHtml(store);
 }
 
-function showSigninCue() {
-  ui.sheet = { type: 'confirm', title: 'Sign in to edit', ok: 'OK', danger: false, noop: true };
-  render();
-}
-
-function requireEdit() {
-  if (canEdit()) return true;
-  showSigninCue();
-  return false;
-}
-
-function editLock(edit) {
-  return edit ? '' : 'aria-disabled="true"';
+function editLock(_edit) {
+  return '';
 }
 
 function hintBar() {
@@ -112,22 +95,16 @@ function topBar(opts) {
 }
 
 function accountBtn() {
-  if (isVerified()) {
-    return `<button class="icon-btn" data-action="account" aria-label="Account">${icon('user', { size: 20 })}<span class="lb">Account</span></button>`;
-  }
-  return `<button class="icon-btn" data-action="signin" data-id="signin" aria-label="Sign in with Google">${icon('login', { size: 20 })}<span class="lb">Sign in</span></button>`;
+  return accountBtnHtml();
 }
 
 function listView(store) {
   const list = activeProjects(store.projects);
-  const archived = archivedProjects(store.projects);
   const cards = list.map(projectCard).join('') || `<div class="empty">No projects yet</div>`;
-  const starter = canEdit() && store.emptyLive
+  const starter = store.emptyLive
     ? `<div class="fab-wrap"><button class="btn primary big" data-action="seed-list">${icon('plus', { size: 22 })} Add starter list</button></div>`
     : '';
-  const add = canEdit()
-    ? `<div class="fab-wrap"><button class="btn primary big" data-action="add-project" data-id="add-project">${icon('plus', { size: 22 })} Add project</button></div>`
-    : '';
+  const add = `<div class="fab-wrap"><button class="btn primary big" data-action="add-project" data-id="add-project">${icon('plus', { size: 22 })} Add project</button></div>`;
   return `${topBar({
     crumb: 'Checklists',
     actions: `${accountBtn()}
@@ -140,7 +117,6 @@ function listView(store) {
     ${cards}
     ${starter}
     ${add}
-    ${archived.length && !canEdit() ? '' : ''}
   </div>`;
 }
 
@@ -171,7 +147,7 @@ function projectView(store, slug) {
     return `${topBar({ back: true, crumb: 'Checklists', actions: accountBtn() })}
       <div class="scroll"><div class="empty">No project</div></div>`;
   }
-  const edit = canEdit();
+  const edit = true;
   const levelCtl = `<div class="seg" role="group" aria-label="Test level">
     ${['light', 'normal', 'heavy'].map((lv) => `
       <button class="seg-btn" data-action="set-level" data-level="${lv}" data-id="level-${lv}"
@@ -298,7 +274,7 @@ function reuseView(store, slug) {
     return `${topBar({ back: true, crumb: 'Reuse', actions: accountBtn() })}
       <div class="scroll"><div class="empty">No project</div></div>`;
   }
-  const edit = canEdit();
+  const edit = true;
   const selected = p.reuse || {};
   const cards = (catalogParts || []).map((part) => {
     const on = !!selected[part.id];
@@ -353,9 +329,7 @@ function itemRow(group, id, item, edit) {
 function archiveView(store) {
   const list = archivedProjects(store.projects);
   const cards = list.map((p) => {
-    const restore = canEdit()
-      ? `<button class="btn" data-action="restore-project" data-slug="${esc(p.slug)}" data-id="restore-${esc(p.slug)}">${icon('inbox', { size: 18 })} Restore</button>`
-      : '';
+    const restore = `<button class="btn" data-action="restore-project" data-slug="${esc(p.slug)}" data-id="restore-${esc(p.slug)}">${icon('inbox', { size: 18 })} Restore</button>`;
     return `<div class="card" style="flex-wrap:wrap">
       <span class="mark">${icon('archive', { size: 22 })}</span>
       <span class="body"><span class="name">${esc(p.name)}</span></span>
@@ -484,23 +458,6 @@ function renderSheet() {
       </div>
     </div></div>`;
   }
-  if (s.type === 'account') {
-    const uid = getUid();
-    return `<div class="sheet-bg" data-action="sheet-cancel"><div class="sheet" data-id="account-sheet" >
-      <h2>Account</h2>
-      <p class="who">${WHO}</p>
-      <div class="field"><label>uid</label>
-        <div class="row" style="margin:0">
-          <div class="lab" data-id="uid-value">${esc(uid)}</div>
-          <button class="icon-btn" data-action="copy-uid" data-id="copy-uid" aria-label="Copy uid">${icon('copy', { size: 20 })}<span class="lb">Copy</span></button>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn big" data-action="signout" data-id="signout">${icon('logout', { size: 20 })} Sign out</button>
-        <button class="btn big" data-action="sheet-cancel">Close</button>
-      </div>
-    </div></div>`;
-  }
   return '';
 }
 
@@ -538,7 +495,7 @@ async function withSave(fn) {
     render();
     return out;
   } catch (e) {
-    ui.sheet = { type: 'confirm', title: e && e.code === 'readonly' ? 'Sign in to edit' : 'Could not save', ok: 'OK', danger: false, noop: true };
+    ui.sheet = { type: 'confirm', title: 'Could not save', ok: 'OK', danger: false, noop: true };
     render();
     return null;
   }
@@ -572,27 +529,6 @@ async function onTap(e) {
     else go('#/');
     return;
   }
-  if (action === 'signin') {
-    try { await signInGoogle(); } catch (_) { /* popup blocked or cancelled */ }
-    render();
-    return;
-  }
-  if (action === 'account') {
-    ui.sheet = { type: 'account' };
-    render();
-    return;
-  }
-  if (action === 'signout') {
-    await doSignOut();
-    ui.sheet = null;
-    render();
-    return;
-  }
-  if (action === 'copy-uid') {
-    const uid = getUid();
-    try { await navigator.clipboard.writeText(uid); showFlash(); } catch (_) { /* */ }
-    return;
-  }
   if (action === 'goto-history') { go('#/history'); return; }
   if (action === 'goto-archive') { go('#/archive'); return; }
   if (action === 'open-project') { go(`#/p/${btn.getAttribute('data-slug')}`); return; }
@@ -607,7 +543,6 @@ async function onTap(e) {
 
 
   if (action === 'tick' && route.slug) {
-    if (!requireEdit()) return;
     const group = btn.getAttribute('data-group');
     const id = btn.getAttribute('data-id');
     const on = btn.getAttribute('aria-checked') !== 'true';
@@ -616,7 +551,6 @@ async function onTap(e) {
   }
 
   if (action === 'set-level' && route.slug) {
-    if (!requireEdit()) return;
     const level = btn.getAttribute('data-level');
     const proj = store.projects[route.slug];
     if (!proj || proj.level === level) return;
@@ -643,13 +577,11 @@ async function onTap(e) {
 
 
   if (action === 'set-focus' && route.slug) {
-    if (!requireEdit()) return;
     const focus = btn.getAttribute('data-focus');
     await withSave(() => saveFocus(route.slug, focus));
     return;
   }
   if (action === 'toggle-tier' && route.slug) {
-    if (!requireEdit()) return;
     const id = btn.getAttribute('data-tier');
     const on = btn.getAttribute('aria-pressed') !== 'true';
     await withSave(() => saveTier(route.slug, id, on));
@@ -658,7 +590,6 @@ async function onTap(e) {
 
   if (action === 'open-reuse' && route.slug) { go(`#/p/${route.slug}/reuse`); return; }
   if (action === 'toggle-reuse' && route.slug) {
-    if (!requireEdit()) return;
     const id = btn.getAttribute('data-part');
     const on = btn.getAttribute('aria-pressed') !== 'true';
     const part = (catalogParts || []).find((x) => x.id === id);

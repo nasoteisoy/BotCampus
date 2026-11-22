@@ -56,12 +56,12 @@ export function parseHostPort(base) {
 }
 
 /**
- * Local preview (this machine) without ?dcemu must never write to the live DB.
- * GitHub Pages / a real host may write after rules are live and the owner is signed in.
+ * Product saves go to the live DB unless ?dcemu is set.
+ * Emulator mode must never write to live, including on a real host.
+ * Localhost / 127.0.0.1 without ?dcemu may write live (no client host guard).
  */
 export function allowLiveWrites(win = typeof window === 'undefined' ? undefined : window) {
   if (!win || !win.location) return false;
-  const host = win.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1') return false;
+  if (readEmuConfig(win).isEmu) return false;
   return true;
 }

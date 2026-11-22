@@ -1,7 +1,8 @@
 /**
  * Load / save devChecklists/ only.
  * Sources: live or emulator RTDB, then localStorage cache, then local seed.
- * Never writes to the live DB from localhost or from emulator mode.
+ * Live writes are allowed from any host, including localhost, unless ?dcemu is set.
+ * ?dcemu writes only to the emulator, never to live.
  */
 import {
   SEED_META, STANDARD_DEFAULTS, HISTORY_LIMIT, LOG_LIMIT,
@@ -13,7 +14,7 @@ import { testsForLevel, applyPresetToTests, shouldPromptLevelChange } from './pr
 import { seedGraphicsFor, isValidFocus, isValidTierId, isValidGroup, toggleTier, focusLabel, tierLabel } from './graphics.js';
 import { normalizeReuseEntry } from './reuse.js';
 import { LIVE_DB_URL, readEmuConfig, allowLiveWrites } from './firebase-config.js';
-import { getFirebase, isVerified, getUid } from './auth.js';
+import { getFirebase } from './auth.js';
 
 export const CACHE_KEY = 'botcampus:dev-checklists';
 export const HINT_KEY = 'botcampus:dev-checklists:hint';
@@ -176,6 +177,20 @@ export function shouldFallbackEmptyLive(val, isEmu = false) {
   return !isEmu && isEmptyChecklistVal(val);
 }
 
+/** True when first open should try to write the starter list to live. Never in emu. */
+export function shouldAutoWriteSeed(val, isEmu = false) {
+  return !isEmu && isEmptyChecklistVal(val);
+}
+
+/** RTDB payload for the four seed projects. */
+export function starterListPayload(at = Date.now()) {
+  const projects = {};
+  for (const meta of SEED_META) {
+    projects[meta.slug] = projectToPayload(makeProject(meta, at, `Added project ${meta.name}`));
+  }
+  return { projects, log: {} };
+}
+
 export function isEmptyChecklistVal(val) {
   if (val == null) return true;
   if (typeof val !== 'object') return true;
@@ -192,14 +207,14 @@ export function fallbackFromCacheOrSeed(cache) {
 
 function canWriteNow() {
   const emu = readEmuConfig();
-  if (!isVerified()) return false;
-  if (emu.isEmu) return state.readable;
-  if (!allowLiveWrites()) return false;
-  return state.readable;
+  if (emu.isEmu) return true;
+  // Node / unit tests have no window; never hit live from that context.
+  if (typeof window === 'undefined') return false;
+  return allowLiveWrites();
 }
 
 export function canEdit() {
-  return canWriteNow() && state.writable;
+  return true;
 }
 
 export async function startStore() {
@@ -218,8 +233,8 @@ export async function startStore() {
         restThenFallback();
         return;
       }
-      if (shouldFallbackEmptyLive(val, emu.isEmu)) {
-        applyFallback({ offline: false });
+      if (shouldAutoWriteSeed(val, emu.isEmu)) {
+        autoWriteSeedOrFallback();
         return;
       }
       applyDecoded(decoded, emu.isEmu ? 'emu' : 'live', {
@@ -242,8 +257,8 @@ async function restThenFallback() {
   const got = await restGet('devChecklists');
   const emu = readEmuConfig();
   if (got.ok) {
-    if (shouldFallbackEmptyLive(got.value, emu.isEmu)) {
-      applyFallback({ offline: false });
+    if (shouldAutoWriteSeed(got.value, emu.isEmu)) {
+      await autoWriteSeedOrFallback();
       return;
     }
     const decoded = decodeTree(got.value || {});
@@ -260,27 +275,84 @@ async function restThenFallback() {
   applyFallback({ offline: !!offline });
 }
 
-async function writeProject(slug, proj, logText) {
-  const err = validateProject(proj, slug);
-  if (err) throw new Error(err);
-  if (!canWriteNow()) throw new Error('read-only');
-  const { database, sdk } = getFirebase();
-  if (!database || !sdk) throw new Error('no database');
-  const payload = projectToPayload(proj);
-  const { ref, set, push } = sdk.dbMod;
-  await set(ref(database, `devChecklists/projects/${slug}`), payload);
-  if (logText) {
-    const rec = { at: proj.updatedAt, text: logText, who: 'Chumi', slug };
-    await push(ref(database, 'devChecklists/log'), rec);
+async function restWrite(method, path, body) {
+  const emu = readEmuConfig();
+  if (emu.isEmu) throw new Error('live REST write blocked in emu');
+  if (typeof window === 'undefined') throw new Error('no database');
+  if (!allowLiveWrites()) throw new Error('live writes not allowed');
+  const base = LIVE_DB_URL.replace(/\/+$/, '');
+  const url = `${base}/${path.replace(/^\/+/, '')}.json`;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const err = new Error('write failed ' + res.status);
+      err.status = res.status;
+      throw err;
+    }
+    try { return await res.json(); } catch { return null; }
+  } finally {
+    clearTimeout(t);
   }
 }
 
-function mustEdit() {
-  if (!canEdit()) {
-    const e = new Error('read-only');
-    e.code = 'readonly';
-    throw e;
+let seedWriteAttempted = false;
+let seedWriteInFlight = false;
+
+async function autoWriteSeedOrFallback() {
+  if (seedWriteInFlight) return;
+  if (seedWriteAttempted) {
+    applyFallback({ offline: false });
+    return;
   }
+  seedWriteAttempted = true;
+  seedWriteInFlight = true;
+  try {
+    const payload = starterListPayload();
+    await restWrite('PUT', 'devChecklists', payload);
+    const decoded = decodeTree(payload);
+    applyDecoded(decoded, 'live', {
+      readable: true,
+      writable: true,
+      offline: false,
+      emptyLive: false,
+    });
+  } catch (_) {
+    applyFallback({ offline: false });
+  } finally {
+    seedWriteInFlight = false;
+  }
+}
+
+async function writeProject(slug, proj, logText) {
+  const err = validateProject(proj, slug);
+  if (err) throw new Error(err);
+  const emu = readEmuConfig();
+  const payload = projectToPayload(proj);
+  const rec = logText ? { at: proj.updatedAt, text: logText, who: 'Chumi', slug } : null;
+  if (emu.isEmu) {
+    const { database, sdk } = getFirebase();
+    if (!database || !sdk) throw new Error('no database');
+    const { ref, set, push } = sdk.dbMod;
+    await set(ref(database, `devChecklists/projects/${slug}`), payload);
+    if (rec) await push(ref(database, 'devChecklists/log'), rec);
+    return;
+  }
+  if (typeof window === 'undefined') throw new Error('no database');
+  if (!allowLiveWrites()) throw new Error('read-only');
+  await restWrite('PUT', `devChecklists/projects/${slug}`, payload);
+  if (rec) await restWrite('POST', 'devChecklists/log', rec);
+}
+
+function mustEdit() {
+  // Anyone who opens the page may edit. Writes may still fail if the database
+  // rejects them; the UI surfaces that as "Could not save".
 }
 
 export async function saveTick(slug, group, itemId, on) {
@@ -320,8 +392,9 @@ export async function saveLevel(slug, level, mode) {
 export async function saveFocus(slug, focus) {
   mustEdit();
   if (!isValidFocus(focus)) throw new Error('bad graphicsFocus');
-  const proj = { ...state.projects[slug] };
-  if (!proj) throw new Error('missing project');
+  const raw = state.projects[slug];
+  if (!raw) throw new Error('missing project');
+  const proj = { ...raw };
   if (proj.graphicsFocus === focus) return { slug, project: proj };
   proj.graphicsFocus = focus;
   return commit(slug, proj, `Focus ${focusLabel(focus)}`.slice(0, 160));
@@ -330,8 +403,9 @@ export async function saveFocus(slug, focus) {
 export async function saveTier(slug, tierId, on) {
   mustEdit();
   if (!isValidTierId(tierId)) throw new Error('bad graphics tier');
-  const proj = { ...state.projects[slug] };
-  if (!proj) throw new Error('missing project');
+  const raw = state.projects[slug];
+  if (!raw) throw new Error('missing project');
+  const proj = { ...raw };
   proj.graphicsTiers = toggleTier(proj.graphicsTiers, tierId, !!on);
   const text = `${on ? 'Tier on' : 'Tier off'}: ${tierLabel(tierId, proj.graphicsTiers)}`.slice(0, 160);
   return commit(slug, proj, text);
@@ -464,18 +538,22 @@ export async function saveStarterList() {
   mustEdit();
   if (Object.keys(state.projects).length) throw new Error('not empty');
   const at = Date.now();
-  const { database, sdk } = getFirebase();
-  if (!database || !sdk) throw new Error('no database');
-  const { ref, set, push } = sdk.dbMod;
-  for (const meta of SEED_META) {
-    const proj = makeProject(meta, at, `Added project ${meta.name}`);
-    const err = validateProject(proj, meta.slug);
-    if (err) throw new Error(err);
-    await set(ref(database, `devChecklists/projects/${meta.slug}`), projectToPayload(proj));
+  const payload = starterListPayload(at);
+  const emu = readEmuConfig();
+  if (emu.isEmu) {
+    const { database, sdk } = getFirebase();
+    if (!database || !sdk) throw new Error('no database');
+    const { ref, set, push } = sdk.dbMod;
+    for (const [slug, body] of Object.entries(payload.projects)) {
+      await set(ref(database, `devChecklists/projects/${slug}`), body);
+    }
+    await push(ref(database, 'devChecklists/log'), {
+      at, text: 'Added starter list', who: 'Chumi',
+    });
+    return;
   }
-  await push(ref(database, 'devChecklists/log'), {
-    at, text: 'Added starter list', who: 'Chumi',
-  });
+  if (typeof window === 'undefined') throw new Error('no database');
+  await restWrite('PUT', 'devChecklists', payload);
 }
 
 async function commit(slug, proj, text) {
@@ -505,4 +583,3 @@ export function markHintSeen() {
 void historyKey;
 void isValidSlug;
 void LOG_LIMIT;
-void getUid;
