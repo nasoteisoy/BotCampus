@@ -1,8 +1,9 @@
 // Combat board for sea and land fights, driven round by round by the week generator.
 // Losses fade out (no health bars). A RETREAT button pulls Blue survivors out at a cost.
 // Grown from the r1/r2 naval board (js/naval.js), same dark KG look.
-import { shipTop, planeTop, drawFlag, SIDE_COL, soldier, bunker, secIcon } from './art.js?v=9d';
-import { icon } from './icons.js?v=9d';
+import { shipTop, planeTop, drawFlag, SIDE_COL, soldier, bunker, secIcon } from './art.js?v=9e';
+import { icon } from './icons.js?v=9e';
+import { registerCanvasTip, unregisterCanvasTip } from './tips.js?v=9e';
 
 const $ = (id) => document.getElementById(id);
 export const navalLog = [];
@@ -77,7 +78,17 @@ export function openBoard(b, opts) {
   const tracers = [], booms = [], splashes = [];
   let done = false, fastFwd = 1, banner = null, retreatAnim = null;
   const onTap = () => { fastFwd = 5; };
-  cv.addEventListener('pointerdown', onTap);
+  cv.addEventListener('click', onTap); // r9e: click (not pointerdown) so a long-press for a unit's name does not fast-forward
+  // r9e: hover / long-press names the unit under the pointer (board coords: portrait boards are turned -90deg)
+  const SHIP_TIP = { dd: 'Destroyer', bb: 'Battleship', cv: 'Carrier' };
+  registerCanvasTip(cv, (sx, sy) => {
+    const bx = portrait ? H - bottomPad - sy : sx, by = portrait ? sx : sy - top;
+    let best = null, bd = 1e9;
+    for (const ic of Object.values(icons)) { const d = Math.hypot(ic.x - bx, ic.y - by); if (d < ic.size * 0.6 && d < bd) { bd = d; best = ic; } }
+    if (!best) return null;
+    const nm = best.kind === 'ship' ? SHIP_TIP[best.ship] || 'Ship' : best.kind === 'plane' ? 'Plane' : best.kind === 'inf' ? 'Troops (1 company)' : best.kind === 'fort' ? 'Fort' : 'Ship support';
+    return `<b>${nm}</b>${best.dead ? ' (lost)' : ''}`;
+  });
   const board = { wantRetreat: false, icons };
   const showRetreat = (on) => { rb.hidden = !on; };
   rb.onclick = (e) => { e.stopPropagation(); board.wantRetreat = true; rb.classList.add('armed'); };
@@ -262,7 +273,7 @@ export function openBoard(b, opts) {
     battleLog.push(rec);
     if (!land) navalLog.push(rec);
     done = true;
-    cv.removeEventListener('pointerdown', onTap);
+    cv.removeEventListener('click', onTap); unregisterCanvasTip(cv);
     root.hidden = true; root.classList.remove('land');
   };
   return board;

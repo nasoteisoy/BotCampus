@@ -64,8 +64,11 @@ export const UNIT_PATHS = {
   torpedo: 'M12 2v11 M4 6.5h16 M9 12h6 M5 18.5h11 M16 18.5l3-2.5v5z',
 };
 export const UNIT_NAMES = { inf: 'INFANTRY', armor: 'ARMOR', art: 'ARTILLERY', eng: 'ENGINEER', aa: 'AA GUNS', bb: 'BATTLESHIP', dd: 'DESTROYER', cv: 'CARRIER', recon: 'RECON', fighter: 'FIGHTER', bomber: 'BOMBER', torpedo: 'TORPEDO' };
+// r9e: the name shown on hover / long-press for every unit-type icon (one shared tooltip, js/tips.js)
+export const TYPE_TIP = { inf: 'Infantry company', armor: 'Armor company', art: 'Artillery', eng: 'Engineers', aa: 'Anti-air', dd: 'Destroyer', bb: 'Battleship', cv: 'Carrier',
+  recon: 'Recon plane', fighter: 'Fighter', torpedo: 'Torpedo bomber', bomber: 'Bomber', fort: 'Fort', dock: 'Dock', airfield: 'Airfield' };
 export function unitIcon(type, size = 22) {
-  return `<svg class="u-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${UNIT_PATHS[type]}"/></svg>`;
+  return `<svg class="u-ico" data-tip="${TYPE_TIP[type] || ''}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${UNIT_PATHS[type]}"/></svg>`;
 }
 
 export function icon(name, { size = 22, className = 'sc-ico' } = {}) {

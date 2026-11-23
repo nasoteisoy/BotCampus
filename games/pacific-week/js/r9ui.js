@@ -1,8 +1,8 @@
 // r9 UI helpers (no game state here): big kind badges, echelon lines, rank chips, cost tags, plain-word names,
 // and the Menu sheets (Tutorial, Matchups). Style follows the parts-library gold-dark panels (--acc gold on dark).
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9d';
-import { rankBoard } from './art.js?v=9d';
-import { STRONG, WEAK, KEYS } from './matchups.js?v=9d';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9e';
+import { rankBoard } from './art.js?v=9e';
+import { STRONG, WEAK, KEYS } from './matchups.js?v=9e';
 
 // kind = what a card / marker IS: ground forces, ships, planes or a commander
 export const KIND = {
