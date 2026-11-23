@@ -173,7 +173,8 @@ export function createGame(seed = 1) {
     islands: ISLANDS.map((i) => ({ ...i, secs: buildSections(i) })),
     units: [], orders: {}, secOrders: {}, landAt: {}, over: null,
     recon: { blue: [], red: [] }, flights: { blue: 0, red: 0 },
-    planes: [], nextPid: 1, embark: {}, landOrd: {}, strikes: {},
+    planes: [], nextPid: 1, embark: {}, landOrd: {}, strikes: {}, strikeZ: {}, spotOrd: {}, flyOrd: {}, landPl: {}, zseen: { blue: [], red: [] },
+    known: { blue: [], red: [] }, reconOrd: {}, // r8g3: known = zones a side has discovered for good (recon, or a unit that went there); reconOrd = queued recon flights
     stats: { navalWon: 0, navalFought: 0, landWon: 0, landFought: 0, lost: { blue: 0, red: 0 }, sunk: { blue: 0, red: 0 }, retreats: { blue: 0, red: 0 }, recon: { blue: 0, red: 0 }, coLost: { blue: 0, red: 0 } },
     lastArrows: [],
   };
@@ -215,8 +216,14 @@ export const contested = (isl) => new Set(isl.secs.map((x) => x.owner)).size > 1
 export const ownedSecs = (s, side, kind) => s.islands.reduce((n, i) => n + i.secs.filter((x) => x.owner === side && (!kind || x.kind === kind)).length, 0);
 export const ownedCount = (s, side, type) => s.islands.filter((i) => i.owner === side && (!type || i.type === type)).length;
 // r7: air cover over a sea fight = the side's fighters and torpedo planes whose base is in range (carrier or owned airfield)
+// r8g: a fighter joins only when it is already in the air over that island (CAP); a torpedo plane joins when it is in the
+// air over that island or still on a base in range.
 export function airfieldsNear(s, side, isl) {
-  return (s.planes || []).filter((p) => p.side === side && (p.type === 'fighter' || p.type === 'torpedo')).filter((p) => { const b = planeBase(s, p); return b && dist(b, isl) <= AIR_RANGE; }).length;
+  return (s.planes || []).filter((p) => p.side === side && (p.type === 'fighter' || p.type === 'torpedo')).filter((p) => {
+    if (p.air) return p.air.isl === isl.id;
+    if (p.type === 'fighter') return false;
+    const b = planeBase(s, p); return b && dist(b, isl) <= AIR_RANGE;
+  }).length;
 }
 
 // ---- planes (r7) ----
@@ -253,51 +260,175 @@ export function addPlane(s, side, type, base) {
 }
 export const plane = (s, id) => (s.planes || []).find((p) => p.id === id);
 // bombers hit land, torpedo planes hit ships, fighters escort a strike (they cancel interceptors); recon flies recon()
-export function canStrike(s, pid, toId) {
+export function canStrike(s, pid, toId, sec = null) {
   const p = plane(s, pid);
-  if (!p || s.over || p.used || p.type === 'recon') return false;
+  if (!p || s.over || p.used || p.type === 'recon' || p.air || (s.flyOrd && s.flyOrd[pid])) return false; // r8g: not while airborne / ordered up
   const b = planeBase(s, p), t = island(s, toId);
   if (!b || !t) return false;
   if (b.fleet && s.orders[b.fleet]) return false; // a carrier that sails this week cannot launch
   if (dist(b, t) > AIR_RANGE) return false;
-  // only a target you can see (scout it with recon first) with something to hit: forts not yours, or enemy forces
-  if (!vision(s, p.side).has(t.id)) return false;
-  if (!t.secs.some((x) => x.owner !== p.side && x.gar > 0) && !s.units.some((u) => u.side !== p.side && u.at === t.id)) return false;
+  // r8g ask 9: a fogged target is fine (scouting first is optional). A strike goes to one zone: a bomber to a section,
+  // a torpedo plane to the sea. Where that zone is seen it must hold something to hit; a fogged zone is a blind strike.
+  if (sec != null && (!section(t, sec) || p.type !== 'bomber')) return false;
+  const zone = p.type === 'bomber' ? sec : null;
+  const zv = zoneVision(s, p.side);
+  if (p.type === 'bomber' && zone == null && !vision(s, p.side, zv).has(t.id)) return false; // whole-island bomb run only where every zone is seen
+  const zSeen = zone == null ? vision(s, p.side, zv).has(t.id) || (p.type === 'torpedo' && zv.has(zkey(t.id))) : zv.has(zkey(t.id, zone));
+  if (zSeen && p.type !== 'fighter') {
+    const fortIn = (x) => x.owner !== p.side && x.gar > 0;
+    const ok = zone != null ? fortIn(section(t, zone)) || s.units.some((u) => u.side !== p.side && u.kind === 'army' && u.at === t.id && u.sec === zone)
+      : t.secs.some(fortIn) || s.units.some((u) => u.side !== p.side && u.at === t.id);
+    if (!ok) return false;
+  }
   // fighters fly escort: only over an island your bombers / torpedo planes are already ordered to hit
   if (p.type === 'fighter') return Object.entries(s.strikes).some(([id, to]) => { const q = plane(s, id); return to === toId && q && q.side === p.side && q.type !== 'fighter'; });
   return true;
 }
-export function issueStrike(s, pid, toId) {
-  if (!toId) { delete s.strikes[pid]; return true; }
-  if (!canStrike(s, pid, toId)) return false;
+export function issueStrike(s, pid, toId, sec = null) {
+  if (!s.strikeZ) s.strikeZ = {};
+  if (!toId) { delete s.strikes[pid]; delete s.strikeZ[pid]; return true; }
+  if (!canStrike(s, pid, toId, sec)) return false;
   s.strikes[pid] = toId;
+  if (sec) s.strikeZ[pid] = sec; else delete s.strikeZ[pid];
+  if (s.flyOrd) delete s.flyOrd[pid];
   return true;
 }
 export const strikeTargets = (s, pid) => s.islands.filter((i) => canStrike(s, pid, i.id)).map((i) => i.id);
 
-// ---- fog of war ----
-// Full sight: own units/sections, islands next to own units, fleets as scouts, airfield patrols, recon flights.
-export function vision(s, side) {
-  const seen = new Set(s.recon[side] || []);
-  const mine = s.units.filter((u) => u.side === side);
-  for (const i of s.islands) {
-    if (ownsAny(i, side) || mine.some((u) => u.at === i.id)) { seen.add(i.id); continue; }
-    for (const u of mine) {
-      const a = island(s, u.at);
-      if (dist(a, i) <= (u.kind === 'fleet' ? SEE.fleet : SEE.adj)) { seen.add(i.id); break; }
-    }
-    if (seen.has(i.id)) continue;
-    for (const j of s.islands) for (const x of j.secs) if (x.owner === side && x.kind === 'air' && dist(x, i) <= SEE.air) seen.add(i.id);
-  }
-  return seen;
+// ---- r8g: planes in the air (asks 5, 6, 7) ----
+// A plane is on its base (an owned airfield zone or a carrier) or in the air over one island (p.air = { isl, sec, wk }).
+// - Fly: a plane on its base takes off to any island within AIR_RANGE of the base (over its own airfield / carrier = CAP).
+//   It goes up at the start of the next End Week, before strikes and battles, and stays up for that whole week.
+// - Land: it may only come down on an owned airfield zone or a carrier (never a beach / land / HQ zone), within AIR_RANGE
+//   of the island it is over, with room. It comes down at the start of the following End Week (one turn in the air).
+// - Must land: a plane never stays up two weeks. With no landing order it returns to its own base if that is still
+//   valid and in range, else the nearest own airfield / carrier in range with room. Nowhere to land: the plane is lost.
+// - CAP: only a fighter that is already in the air over an island joins a sea fight there or intercepts a strike there.
+export const isAirborne = (p) => !!(p && p.air);
+function landSpots(s, side) {
+  const out = [];
+  for (const i of s.islands) for (const x of i.secs) if (x.kind === 'air' && x.owner === side) out.push({ base: { isl: i.id, sec: x.id }, x: x.x, y: x.y });
+  for (const f of s.units) if (f.kind === 'fleet' && f.side === side && syncOob(f).ships.includes('cv')) { const i = island(s, f.at); out.push({ base: { fleet: f.id }, x: i.x, y: i.y }); }
+  return out;
 }
+const normBase = (b) => (b.fleet ? { fleet: b.fleet } : { isl: b.isl, sec: b.sec });
+export function canFly(s, pid, islId, sec = null) {
+  const p = plane(s, pid);
+  if (!p || s.over || p.air || p.used) return false;
+  const b = planeBase(s, p), t = island(s, islId);
+  if (!b || !t) return false;
+  if (b.fleet && s.orders[b.fleet]) return false; // a carrier that sails this week launches nothing
+  if (sec != null && !section(t, sec)) return false;
+  return dist(b, t) <= AIR_RANGE;
+}
+export function issueFly(s, pid, islId, sec = null) {
+  if (!s.flyOrd) s.flyOrd = {};
+  if (!islId) { delete s.flyOrd[pid]; return true; }
+  if (!canFly(s, pid, islId, sec)) return false;
+  delete s.strikes[pid];
+  s.flyOrd[pid] = { isl: islId, sec: sec || null };
+  return true;
+}
+// is `base` a place this plane may come down on (from the island it is over)? pending = other planes already told to land there
+function landOk(s, p, base, overId, pending = 0) {
+  if (!base || !validBase(s, p.side, base)) return false;
+  const at = planeBase(s, { side: p.side, base }), over = island(s, overId);
+  if (!at || !over || dist(at, over) > AIR_RANGE) return false;
+  return baseKey(base) === baseKey(p.base) || baseRoom(s, base) - pending > 0;
+}
+export function canLandPlane(s, pid, base) {
+  const p = plane(s, pid);
+  if (!p || s.over || !p.air) return false;
+  const pending = Object.entries(s.landPl || {}).filter(([id, b]) => id !== pid && b && baseKey(b) === baseKey(base) && baseKey(plane(s, id) ? plane(s, id).base : b) !== baseKey(b)).length;
+  return landOk(s, p, base, p.air.isl, pending);
+}
+export function issuePlaneLand(s, pid, base) {
+  if (!s.landPl) s.landPl = {};
+  if (!base) { delete s.landPl[pid]; return true; }
+  if (!canLandPlane(s, pid, base)) return false;
+  s.landPl[pid] = normBase(base);
+  return true;
+}
+// every place this airborne plane could land now, nearest first
+export function landTargets(s, pid) {
+  const p = plane(s, pid); if (!p || !p.air) return [];
+  const over = island(s, p.air.isl);
+  return landSpots(s, p.side).filter((c) => canLandPlane(s, pid, c.base)).sort((a, b) => dist(a, over) - dist(b, over)).map((c) => c.base);
+}
+// start of End Week: planes in the air come down (ordered spot, else home, else nearest; else lost), then ordered planes go up
+function airPhase(s, flyOrd, landPl) {
+  const landed = [], lost = [], up = [];
+  for (const p of [...s.planes].filter((q) => q.air).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    const overId = p.air.isl, over = island(s, overId);
+    let to = landOk(s, p, landPl[p.id], overId) ? landPl[p.id] : landOk(s, p, p.base, overId) ? p.base : null;
+    if (!to) { const c = landSpots(s, p.side).filter((q) => landOk(s, p, q.base, overId)).sort((a, b) => dist(a, over) - dist(b, over))[0]; to = c ? c.base : null; }
+    const from = { isl: overId, sec: p.air.sec || null };
+    if (to) { p.base = normBase(to); delete p.air; p.used = true; landed.push({ plane: p.id, side: p.side, type: p.type, from, to: normBase(to) }); }
+    else { s.planes = s.planes.filter((q) => q !== p); lost.push({ plane: p.id, side: p.side, type: p.type, from }); }
+  }
+  for (const [pid, o] of Object.entries(flyOrd || {}).sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    const p = plane(s, pid); if (!p || p.air || p.used || !o) continue;
+    const b = planeBase(s, p), t = island(s, o.isl);
+    if (!b || !t || dist(b, t) > AIR_RANGE) continue;
+    p.air = { isl: o.isl, sec: o.sec || null, wk: s.week };
+    up.push({ plane: p.id, side: p.side, type: p.type, from: { x: b.x, y: b.y }, to: o.isl, sec: o.sec || null });
+  }
+  return { landed, lost, up };
+}
+
+// ---- r8g (ask 8): land units cross water only aboard a fleet ----
+// An army never changes island by itself: canOrder refuses armies, canSecOrder only follows links inside its own island.
+// It boards a friendly fleet from an owned beach (room for FLEET_LIFT groups per fleet), sails with it, and lands on a
+// beach of the island the fleet is at. transportRoom is the room left on a fleet this week.
+export function transportRoom(s, f) {
+  if (!f || f.kind !== 'fleet') return 0;
+  return Math.max(0, FLEET_LIFT - carried(s, f).length - Object.values(s.embark || {}).filter((id) => id === f.id).length);
+}
+
+// ---- fog of war (r8g ask 9: by zone) ----
+// r8g3: s.known[side] is the lasting store (a recon flight, or an army / fleet that went into a zone). s.recon (this week's
+// flights) and s.zseen (strike peeks) still fade at End Week; they never remove anything from s.known.
+// The AI plans on the sight it always had (this week's flights + what it stands on), so r8g3 does not retune it.
+let aiPlanning = false;
+export function learn(s, side, keys) { if (!s.known) s.known = { blue: [], red: [] }; if (!s.known[side]) s.known[side] = []; for (const k of keys) if (!s.known[side].includes(k)) s.known[side].push(k); }
+export function learnUnits(s) {
+  for (const u of s.units) {
+    if (u.str <= 0 || u.aboard) continue;
+    if (u.kind === 'army' && u.sec) learn(s, u.side, [zkey(u.at, u.sec)]);
+    if (u.kind === 'fleet') { const sp = fleetSpot(s, u); learn(s, u.side, sp ? [zkey(u.at), zkey(u.at, sp)] : [zkey(u.at)]); }
+  }
+}
+// Sight is per zone: every section of an island is a zone, plus the island's sea ('isl:sea').
+// A side sees: the zones it owns (an owned beach or dock also sees the sea there); the zone each of its armies stands in;
+// the sea where each of its fleets is (and the beach / dock it is docked at); the zone a plane of its is in the air over;
+// a zone one of its strikes flew to this week (s.zseen). Only a recon flight sees every zone of an island.
+// Any unit may move into / attack a fogged zone; it then sees only that zone. vision() = islands seen in every zone.
+export const zkey = (isl, sec) => `${isl}:${sec || 'sea'}`;
+export function zoneVision(s, side) {
+  const z = new Set();
+  for (const id of s.recon[side] || []) { const i = island(s, id); if (!i) continue; z.add(zkey(id)); for (const x of i.secs) z.add(zkey(id, x.id)); }
+  for (const k of (s.zseen && s.zseen[side]) || []) z.add(k);
+  if (!aiPlanning) for (const k of (s.known && s.known[side]) || []) z.add(k); // r8g3: discoveries stay after End Week
+  for (const i of s.islands) for (const x of i.secs) if (x.owner === side) { z.add(zkey(i.id, x.id)); if (x.kind === 'beach' || x.kind === 'port') z.add(zkey(i.id)); }
+  for (const u of s.units) {
+    if (u.side !== side) continue;
+    if (u.kind === 'army' && u.sec) z.add(zkey(u.at, u.sec));
+    if (u.kind === 'fleet') { z.add(zkey(u.at)); const sp = fleetSpot(s, u); if (sp) z.add(zkey(u.at, sp)); }
+  }
+  for (const p of s.planes || []) if (p.side === side && p.air) z.add(zkey(p.air.isl, p.air.sec));
+  return z;
+}
+export function vision(s, side, z = zoneVision(s, side)) {
+  return new Set(s.islands.filter((i) => i.secs.every((x) => z.has(zkey(i.id, x.id)))).map((i) => i.id));
+}
+export const zoneSeen = (s, side, isl, sec) => zoneVision(s, side).has(zkey(isl, sec));
 // Contact: known that something is there, strength unknown ('?').
 export function contact(s, side, islId) {
   const i = island(s, islId);
   return s.units.some((u) => u.side === side && dist(island(s, u.at), i) <= SEE.contact) || s.islands.some((j) => ownsAny(j, side) && dist(j, i) <= SEE.contact);
 }
 // r7: recon is flown by recon planes (one flight each per week) from their airfield or carrier
-const reconPlanes = (s, side) => (s.planes || []).filter((p) => p.side === side && p.type === 'recon' && !p.used && planeBase(s, p));
+const reconPlanes = (s, side) => (s.planes || []).filter((p) => p.side === side && p.type === 'recon' && !p.used && !p.air && !(s.flyOrd && s.flyOrd[p.id]) && !(s.reconOrd && s.reconOrd[p.id]) && planeBase(s, p));
 export function reconSources(s, side) {
   return reconPlanes(s, side).map((p) => { const b = planeBase(s, p); return { island: b.isl, sec: b.sec || null, fleet: b.fleet || null, x: b.x, y: b.y, plane: p.id }; });
 }
@@ -314,7 +445,26 @@ export function recon(s, side, islId, planeId) {
   if (!from) return null;
   plane(s, from.plane).used = true;
   s.flights[side]++; s.recon[side].push(islId); s.stats.recon[side]++;
+  learn(s, side, [zkey(islId), ...i.secs.map((x) => zkey(islId, x.id))]); // r8g3: a scouted island stays scouted
   return { from, to: islId, plane: from.plane };
+}
+// r8g3: the player's recon is an End Week order (like the other air orders). It flies first thing at End Week (before any
+// move), then recon() above reveals the island for good. Out of range / already seen / plane busy = refused, nothing spent.
+export function canRecon(s, pid, islId) {
+  const p = plane(s, pid), i = island(s, islId);
+  if (!p || !i || s.over || p.type !== 'recon') return false;
+  if (!reconPlanes(s, p.side).some((q) => q.id === pid)) return false;
+  const b = planeBase(s, p); if (!b || (b.fleet && s.orders[b.fleet])) return false;
+  if (vision(s, p.side).has(islId)) return false;
+  if (Object.entries(s.reconOrd || {}).some(([q, t]) => t === islId && plane(s, q) && plane(s, q).side === p.side)) return false;
+  return dist(b, i) <= RECON_RANGE;
+}
+export function issueRecon(s, pid, islId) {
+  if (!s.reconOrd) s.reconOrd = {};
+  if (!islId) { delete s.reconOrd[pid]; return true; }
+  if (!canRecon(s, pid, islId)) return false;
+  s.reconOrd[pid] = islId;
+  return true;
 }
 
 // ---- orders ----
@@ -338,12 +488,13 @@ export function issueOrder(s, unitId, toId, sec) {
   const u = unit(s, unitId);
   if (!canOrder(s, u, toId)) return false;
   delete s.secOrders[unitId]; delete s.landAt[unitId]; delete s.embark[unitId]; delete s.landOrd[unitId];
+  if (s.spotOrd) delete s.spotOrd[unitId]; // r8e: a plain island order sails to open sea there
   if (toId === u.at) { delete s.orders[unitId]; return true; }
   s.orders[unitId] = toId;
   if (u.kind === 'fleet') {
     // troops aboard can only land where the fleet ends up; a sailing carrier launches nothing this week
     for (const a of carried(s, u)) if (s.landOrd[a.id] && s.landOrd[a.id].isl !== toId) delete s.landOrd[a.id];
-    for (const p of s.planes) if (p.base.fleet === u.id) delete s.strikes[p.id];
+    for (const p of s.planes) if (p.base.fleet === u.id) { delete s.strikes[p.id]; if (s.flyOrd) delete s.flyOrd[p.id]; }
   }
   return true;
 }
@@ -384,6 +535,39 @@ export function issueLand(s, unitId, secId) {
   s.landOrd[unitId] = { isl: landIsland(s, u), sec: secId };
   return true;
 }
+// ---- r8e: where a fleet sits in an island's waters (position only; no combat effect) ----
+// A fleet is either out at sea in the waters of island `at` (spot null) or docked at one of that island's beaches
+// (spot { isl, sec }). Every rule still reads `at` only; a stale spot (fleet moved by retreat / merge) reads as sea.
+// r8g (ask 4): ships go only where there is water: open sea, a beach or a dock (port). Never a land, airfield or HQ zone.
+export const SHIP_ZONES = ['beach', 'port'];
+export const shipZone = (x) => !!x && SHIP_ZONES.includes(x.kind);
+export function fleetSpot(s, f) {
+  if (!f || f.kind !== 'fleet' || !f.spot || f.spot.isl !== f.at) return null;
+  const x = section(island(s, f.at), f.spot.sec);
+  return shipZone(x) ? x.id : null;
+}
+export function canFleetMove(s, fid, toId, sec = null) {
+  const f = unit(s, fid);
+  if (!f || f.kind !== 'fleet' || s.over) return false;
+  if (toId !== f.at && !canOrder(s, f, toId)) return false; // same reach rule as any fleet order
+  if (sec == null) return true;
+  return shipZone(section(island(s, toId), sec));
+}
+// toId === at: reposition in its own waters now (sea <-> beach; no move order, nothing else changes).
+// toId !== at: the normal fleet order to toId, arriving at sea or docked at beach `sec`.
+export function issueFleetMove(s, fid, toId, sec = null) {
+  if (!canFleetMove(s, fid, toId, sec)) return false;
+  const f = unit(s, fid);
+  if (!s.spotOrd) s.spotOrd = {};
+  if (toId === f.at) {
+    if (s.orders[fid]) issueOrder(s, fid, f.at); // cancels a planned sail
+    f.spot = sec ? { isl: toId, sec } : null; delete s.spotOrd[fid];
+    return true;
+  }
+  if (!issueOrder(s, fid, toId)) return false;
+  s.spotOrd[fid] = sec ? { isl: toId, sec } : null;
+  return true;
+}
 // r7b: would a landing at islId this week go in under the guns of a stronger enemy fleet (as far as `side` can see)?
 // own = friendly fleets there now or ordered there; foe = visible enemy fleets there now. Unscouted: unknown.
 export function landingRisk(s, side, islId) {
@@ -419,6 +603,10 @@ export function issueSecOrder(s, unitId, secId) {
 
 // ---- AI (any side): recon first, then island attacks, inland pushes, fleets ----
 export function aiOrders(s, side = RED) {
+  aiPlanning = true;
+  try { return aiOrders0(s, side); } finally { aiPlanning = false; }
+}
+function aiOrders0(s, side) {
   const foe = other(side);
   const homeId = side === RED ? 'voruna' : 'kestra';
   const foeHomeId = side === RED ? 'kestra' : 'voruna';
@@ -426,19 +614,34 @@ export function aiOrders(s, side = RED) {
   const armyStr = (list) => list.reduce((n, u) => n + u.str, 0);
   // 1. recon: fly at the most valuable unseen targets
   const val = (i) => (i.id === foeHomeId ? 8 : 0) + ({ supply: 3, air: 2.5, home: 6, plain: 1 }[i.type]) + (i.owner === foe ? 1 : 0);
-  for (const id of reconTargets(s, side).map((id) => island(s, id)).sort((a, b) => val(b) - val(a)).map((i) => i.id)) {
+  // r8g ask 9: every landing on a fogged beach is an ambush, so scout where our troops are headed first
+  const goals = new Set(s.units.filter((u) => u.side === side && u.goal).map((u) => u.goal.to));
+  const rv = (i) => val(i) + (goals.has(i.id) ? 10 : 0);
+  for (const id of reconTargets(s, side).map((id) => island(s, id)).sort((a, b) => rv(b) - rv(a)).map((i) => i.id)) {
     if (!flightsLeft(s, side)) break;
     recon(s, side, id);
   }
   const seen = vision(s, side);
   s.aiMemo = s.aiMemo || {};
   const memo = (s.aiMemo[side] = s.aiMemo[side] || {});
+  // r8g ask 9: sight is per zone, so is the AI's memory. A seen zone counts what is there (and is remembered); a fogged
+  // zone counts what was last seen there, else a guess (2, an enemy home zone 4).
+  const zvA = zoneVision(s, side);
   const islDef = (i) => {
-    const d = i.secs.reduce((n, x) => n + secDef(s, i, x, side), 0) + (i.type === 'home' ? 1 : 0);
-    if (seen.has(i.id)) { memo[i.id] = d; return d; }
-    return Math.max(3, memo[i.id] || 0); // unknown: assume a fight
+    let d = i.type === 'home' ? 1 : 0;
+    for (const x of i.secs) {
+      const k = 'z:' + zkey(i.id, x.id);
+      if (zvA.has(zkey(i.id, x.id))) { memo[k] = secDef(s, i, x, side); d += memo[k]; }
+      else d += k in memo ? memo[k] : x.owner === side ? 0 : i.id === foeHomeId ? 4 : 2;
+    }
+    if (seen.has(i.id)) memo[i.id] = d;
+    return seen.has(i.id) ? d : Math.max(3, d); // unknown: assume a fight
   };
-  const threat = armyStr(s.units.filter((u) => u.side === foe && u.kind === 'army' && dist(island(s, u.at), home) <= RANGE.army));
+  // r8g (ask 8): armies cross water only on ships, so the threat to home is what enemy fleets near home can lift
+  // (FLEET_LIFT groups each) plus enemy troops already on the home island; troops with no ship are no threat.
+  const foeNear = s.units.filter((u) => u.side === foe && u.kind === 'army' && dist(island(s, u.at), home) <= RANGE.army);
+  const lift = FLEET_LIFT * s.units.filter((u) => u.side === foe && u.kind === 'fleet' && dist(island(s, u.at), home) <= RANGE.fleet * 1.5).length;
+  const threat = armyStr(foeNear.filter((u) => u.at === homeId)) + armyStr(foeNear.filter((u) => u.at !== homeId).sort((p, q) => (q.aboard ? 1 : 0) - (p.aboard ? 1 : 0) || q.str - p.str).slice(0, lift));
   const free = new Set(s.units.filter((u) => u.side === side && u.kind === 'army').map((u) => u.id));
   // armies already fighting inside a contested island push inland together: weaker enemy groups and key sections first
   const secVal = { hq: 3, depot: 2, air: 2, port: 1.5, beach: 1, ridge: 1, jungle: 1 };
@@ -454,7 +657,12 @@ export function aiOrders(s, side = RED) {
     for (const t of targets) {
       const avail = mine.filter((u) => !used.has(u.id) && t.x.links.includes(u.sec)).sort((p, q) => q.str - p.str);
       if (!avail.length) continue;
-      if (t.d === 0) { const u = avail[avail.length - 1]; s.secOrders[u.id] = t.x.id; used.add(u.id); continue; }
+      if (t.d === 0) {
+        // r8g: an empty beach / dock under enemy ships is where their troops land next: hold it with the strongest two
+        const hot = (t.x.kind === 'beach' || t.x.kind === 'port') && unitsAt(s, isl.id, foe, 'fleet').length;
+        for (const u of hot ? avail.slice(0, 2) : [avail[avail.length - 1]]) { s.secOrders[u.id] = t.x.id; used.add(u.id); }
+        continue;
+      }
       const need = s.week > 40 ? t.d : Math.ceil(t.d * (s.week > 25 ? 1 : 1.15)) + 1; // grow bolder as the war drags on
       const sum = avail.reduce((n, u) => n + u.str, 0);
       if (sum >= need) {
@@ -520,7 +728,7 @@ export function aiOrders(s, side = RED) {
   const foeHome = island(s, foeHomeId);
   for (const id of free) {
     const u = unit(s, id);
-    if (u.at === homeId && threat > 0 && !u.aboard) continue;
+    if (u.at === homeId && threat > 0 && !u.aboard && unitsAt(s, homeId, side, 'army').length <= HOME_STACK * 2) continue; // r8g: a crowded home sends its spare troops out
     const fight = s.islands.filter((i) => i.id !== u.at && ownsAny(i, side) && i.secs.some((x) => x.owner !== side) && armyNear(u, i))
       .sort((a, b) => dist(a, island(s, u.at)) - dist(b, island(s, u.at)))[0];
     if (fight) { intents.set(id, { to: fight.id, sec: landingBeach(s, u, fight) }); continue; }
@@ -569,14 +777,19 @@ export function aiOrders(s, side = RED) {
   }
   // never sail troops into a known enemy fleet without a clear edge: wait, call the other fleets, then go together
   memo.fl = memo.fl || {};
-  for (const i of s.islands) if (seen.has(i.id)) memo.fl[i.id] = unitsAt(s, i.id, foe, 'fleet').reduce((n, f) => n + f.str, 0);
+  const zv = zoneVision(s, side); // r8g ask 9: a sea is known where its zone is seen
+  for (const i of s.islands) if (seen.has(i.id) || zv.has(zkey(i.id))) memo.fl[i.id] = unitsAt(s, i.id, foe, 'fleet').reduce((n, f) => n + f.str, 0);
+  // r8g: with no proximity sight, an unseen enemy home sea is assumed to hold a full home fleet (do not feed ships in one by one)
+  if (!zv.has(zkey(foeHomeId)) && !(foeHomeId in memo.fl)) memo.fl[foeHomeId] = MAX_STR.fleet;
   const foePow = (id) => { const n = memo.fl[id] || 0; return n ? n + airfieldsNear(s, foe, island(s, id)) / 2 : 0; };
   const myPowAt = (id) => fleets.filter((f) => f.at === id).reduce((n, f) => n + f.str, 0) + airfieldsNear(s, side, island(s, id)) / 2;
   const rally = new Set();
   for (const [fid, to] of [...fleetDest]) {
     const f = unit(s, fid), need = foePow(to);
+    // r8g: a convoy does not leave home with fewer than 3 ships (the home fleet grows a ship every 2 weeks while it waits)
+    if (to !== f.at && f.at === homeId && f.str < 3 && (carried(s, f).length || Object.values(s.embark).includes(fid))) { fleetDest.set(fid, f.at); for (const a of carried(s, f)) delete s.landOrd[a.id]; continue; }
     if (to === f.at || !need) continue;
-    const edge = s.week > 60 ? 0 : s.week > 35 ? 0.6 : 1.1; // bolder as the war drags on
+    const edge = s.week > 35 ? 0.6 : 1.1; // bolder as the war drags on (r8g: never 0 - with blind landings and strikes, lone ships just feed the enemy)
     if (myPowAt(f.at) >= need * edge + 1) { for (const g of fleets) if (g.at === f.at && !fleetDest.has(g.id)) fleetDest.set(g.id, to); }
     else { fleetDest.set(fid, f.at); rally.add(f.at); for (const a of carried(s, f)) delete s.landOrd[a.id]; }
   }
@@ -615,6 +828,12 @@ export function aiOrders(s, side = RED) {
   const byT = {}; for (const [pid, to] of Object.entries(s.strikes)) if (plane(s, pid).side === side) byT[to] = (byT[to] || 0) + 1;
   const order = Object.entries(byT).sort((a, b) => b[1] - a[1]).map((e) => e[0]);
   for (const p of mine.filter((p) => p.type === 'fighter')) { const t = order.find((id) => canStrike(s, p.id, id)); if (t) issueStrike(s, p.id, t); }
+  // r8g: fighters not escorting fly CAP (a fighter on the ground joins no fight): over our landing if in range, else over home base
+  for (const p of mine.filter((p) => p.type === 'fighter' && !s.strikes[p.id] && !p.air)) {
+    const b = planeBase(s, p); if (!b) continue;
+    const t = landT.find((id) => canFly(s, p.id, id)) || (canFly(s, p.id, b.isl) ? b.isl : null);
+    if (t) issueFly(s, p.id, t);
+  }
 }
 
 // AI retreat rule used for Red (and for Blue in AI-vs-AI sims): clearly outgunned after the first exchange.
@@ -853,8 +1072,14 @@ function findContest(s) {
 // Yields: moves, battle-start, round, battle-end, sweep, capture, reinforce, week, over.
 export function* weekSteps(s, { ai = true } = {}) {
   if (s.over) return;
+  // r8g3: queued recon flights go first, so what they find is known before anyone moves (and before the AI plans)
+  const rOrd = s.reconOrd || {}; s.reconOrd = {};
+  const recs = [];
+  for (const [pid, to] of Object.entries(rOrd)) { const p = plane(s, pid); if (!p) continue; const f = recon(s, p.side, to, pid); if (f) recs.push({ ...f, side: p.side }); }
   const seenBefore = { blue: vision(s, BLUE), red: vision(s, RED) };
+  const zBefore = { blue: zoneVision(s, BLUE), red: zoneVision(s, RED) }; // r8g: a landing is blind when its beach zone was fogged
   if (ai) aiOrders(s, RED);
+  if (recs.length) yield { type: 'recon', flights: recs };
   const moves = [];
   s.units.forEach((u) => { u.moved = false; u.landed = false; });
   for (const p of s.planes) { const b = planeBase(s, p); if (b) p.last = { x: b.x, y: b.y }; }
@@ -875,6 +1100,7 @@ export function* weekSteps(s, { ai = true } = {}) {
     const m = { unit: id, side: u.side, kind: u.kind, from: u.at, to, str: u.str, blind: !seenBefore[u.side].has(to), carry: load.map((a) => a.id) };
     u.from = { at: u.at, sec: null };
     u.at = to; u.moved = true;
+    const sp = s.spotOrd && s.spotOrd[id]; u.spot = sp && sp.isl === to ? { ...sp } : null; // r8e: arrive at sea or docked at the ordered beach
     load.forEach((a) => { a.at = to; });
     moves.push(m);
   }
@@ -899,13 +1125,17 @@ export function* weekSteps(s, { ai = true } = {}) {
     moves.push({ unit: id, side: u.side, kind: 'army', from: u.at, fromSec: u.sec, to: u.at, toSec: secId, inland: true, str: u.str, blind: false });
     u.from = { at: u.at, sec: u.sec }; u.sec = secId; u.moved = true;
   }
-  const landOrd = s.landOrd, strikes = s.strikes;
-  s.orders = {}; s.secOrders = {}; s.landAt = {}; s.embark = {}; s.landOrd = {}; s.strikes = {};
+  const landOrd = s.landOrd, strikes = s.strikes, strikeZ = s.strikeZ || {}, flyOrd = s.flyOrd || {}, landPl = s.landPl || {};
+  s.orders = {}; s.secOrders = {}; s.landAt = {}; s.embark = {}; s.landOrd = {}; s.strikes = {}; s.strikeZ = {}; s.spotOrd = {}; s.flyOrd = {}; s.landPl = {};
+  s.zseen = { blue: [], red: [] }; // r8g: last week's strike sightings fade; this week's strikes add new ones
   const arrow = (m) => ({ side: m.side, kind: m.kind, from: m.from, to: m.to, fromSec: m.fromSec, toSec: m.toSec, inland: !!m.inland, embark: !!m.embark, land: !!m.land });
   s.lastArrows = moves.map(arrow);
   yield { type: 'moves', moves };
+  // r8g: planes up last week come down, planes ordered up go up (before strikes, so a fighter on CAP is in the air for them)
+  const air = airPhase(s, flyOrd, landPl);
+  if (air.landed.length || air.lost.length || air.up.length) yield { type: 'air', ...air };
   // air strikes go in before the fleets meet
-  for (const e of resolveStrikes(s, strikes, watch)) yield e;
+  for (const e of resolveStrikes(s, strikes, watch, strikeZ)) yield e;
   // 3. troops land from their fleet onto a beach where the fleet now is (before the fleets fight: a landing under the guns
   //    of a stronger hostile fleet loses half on the way in, see makeLand)
   const lands = [];
@@ -914,12 +1144,12 @@ export function* weekSteps(s, { ai = true } = {}) {
     if (!f || f.at !== o.isl) continue;
     const x = section(island(s, o.isl), o.sec); if (!x || x.kind !== 'beach') continue;
     u.from = { aboard: f.id, at: f.at, sec: null }; u.aboard = null; u.at = o.isl; u.sec = o.sec; u.moved = true; u.landed = true;
-    u.blind = !seenBefore[u.side].has(o.isl);
+    u.blind = !zBefore[u.side].has(zkey(o.isl, o.sec));
     const foeF = unitsAt(s, o.isl, other(u.side), 'fleet').reduce((n, q) => n + q.str, 0), ownF = unitsAt(s, o.isl, u.side, 'fleet').reduce((n, q) => n + q.str, 0);
     u.underFire = foeF > ownF;
     lands.push({ unit: id, side: u.side, kind: 'army', from: o.isl, to: o.isl, toSec: o.sec, land: true, fleet: f.id, str: u.str, blind: u.blind });
   }
-  if (lands.length) { s.lastArrows.push(...lands.map(arrow)); yield { type: 'moves', moves: lands }; }
+  if (lands.length) { s.lastArrows.push(...lands.map(arrow)); learnUnits(s); yield { type: 'moves', moves: lands }; }
   // sea first
   for (const isl of s.islands) {
     if (!unitsAt(s, isl.id, BLUE, 'fleet').length || !unitsAt(s, isl.id, RED, 'fleet').length) continue;
@@ -956,8 +1186,9 @@ export function* weekSteps(s, { ai = true } = {}) {
   s.units.forEach((u) => { delete u.moved; delete u.landed; delete u.blind; delete u.from; delete u.underFire; syncOob(u); });
   // planes whose airfield fell or whose carrier sank fly to the nearest free base in range, else they are lost
   const rb = rebase(s); if (rb.moved.length || rb.lost.length) yield { type: 'rebase', ...rb };
+  learnUnits(s); // r8g3: every zone an army / fleet of yours went into this week stays known
   s.planes.forEach((p) => { p.used = false; });
-  s.recon = { blue: [], red: [] }; s.flights = { blue: 0, red: 0 };
+  s.recon = { blue: [], red: [] }; s.flights = { blue: 0, red: 0 }; // this week's flights are done; what they saw is in s.known
   s.week++;
   yield { type: 'week', week: s.week };
   if (s.over) yield { type: 'over', winner: s.over.winner };
@@ -972,8 +1203,10 @@ const SINK_FIRST = ['bb', 'cv', 'dd'];
 // is still in range (retarget); otherwise it turns back unharmed and unspent (refund), and so does a bomber with nothing
 // left to hit. Escorts go where their strike goes, or turn back with it.
 const hasShips = (s, side, islId) => s.units.some((u) => u.side !== side && u.kind === 'fleet' && u.at === islId && u.str > 0);
-const hasLandTarget = (s, side, isl) => s.units.some((u) => u.side !== side && u.kind === 'army' && u.at === isl.id && u.sec && u.str > 0) || isl.secs.some((x) => x.owner !== side && x.gar > 0);
-function redirectStrikes(s, strikes, watch) {
+const hasLandTarget = (s, side, isl, sec = null) => s.units.some((u) => u.side !== side && u.kind === 'army' && u.at === isl.id && u.sec && (!sec || u.sec === sec) && u.str > 0) || isl.secs.some((x) => (!sec || x.id === sec) && x.owner !== side && x.gar > 0);
+// r8g ask 9: a strike sees the one zone it flew to (a bomber: its section, a torpedo plane: the sea) until the next End Week
+function seeZone(s, side, islId, sec) { if (!s.zseen) s.zseen = { blue: [], red: [] }; const k = zkey(islId, sec); if (!s.zseen[side].includes(k)) s.zseen[side].push(k); }
+function redirectStrikes(s, strikes, watch, zones = {}) {
   const plan = {}, retargeted = {}, aborted = [];
   const entries = Object.entries(strikes || {}).map(([pid, to]) => ({ p: plane(s, pid), to })).filter((x) => x.p && !x.p.used);
   for (const x of entries.filter((e) => e.p.type !== 'fighter')) {
@@ -982,7 +1215,7 @@ function redirectStrikes(s, strikes, watch) {
     if (x.p.type === 'torpedo' && !hasShips(s, x.p.side, to)) {
       const f = (watch[x.p.id] || []).map((id) => unit(s, id)).find((u) => u && u.str > 0 && dist(b, island(s, u.at)) <= AIR_RANGE);
       if (f) { retargeted[x.p.id] = { from: to, to: f.at }; to = f.at; } else to = null;
-    } else if (x.p.type === 'bomber' && !hasLandTarget(s, x.p.side, island(s, to))) to = null;
+    } else if (x.p.type === 'bomber' && !hasLandTarget(s, x.p.side, island(s, to), zones[x.p.id])) { seeZone(s, x.p.side, to, zones[x.p.id]); to = null; } // r8g: it flew there and saw the zone
     if (to) plan[x.p.id] = to; else aborted.push({ plane: x.p.id, side: x.p.side, type: x.p.type, from: { x: b.x, y: b.y }, to: x.to });
   }
   for (const x of entries.filter((e) => e.p.type === 'fighter')) {
@@ -994,28 +1227,32 @@ function redirectStrikes(s, strikes, watch) {
   }
   return { plan, retargeted, aborted };
 }
-function resolveStrikes(s, strikes, watch = {}) {
+function resolveStrikes(s, strikes, watch = {}, zones = {}) {
   const out = [];
   const groups = {};
-  const { plan, retargeted, aborted } = redirectStrikes(s, strikes, watch);
+  const { plan, retargeted, aborted } = redirectStrikes(s, strikes, watch, zones);
   for (const side of [BLUE, RED]) { const list = aborted.filter((a) => a.side === side); if (list.length) out.push({ type: 'strike-abort', side, planes: list }); }
   for (const [pid, to] of Object.entries(plan)) {
     const p = plane(s, pid); if (!p || p.used) continue;
     const b = planeBase(s, p), t = island(s, to);
     if (!b || !t || dist(b, t) > AIR_RANGE) continue;
-    const k = `${p.side}:${to}`;
-    (groups[k] = groups[k] || { side: p.side, to, list: [] }).list.push({ p, b });
+    // a bomber strikes its zone; an escort flies with the first bomber group over the same island (else the torpedo group)
+    const mate = p.type === 'fighter' ? Object.entries(plan).find(([id, t]) => t === to && plane(s, id) && plane(s, id).side === p.side && plane(s, id).type === 'bomber') : null;
+    const zs = p.type === 'bomber' ? zones[pid] || null : mate ? zones[mate[0]] || null : null;
+    const k = `${p.side}:${to}:${zs || ''}`;
+    (groups[k] = groups[k] || { side: p.side, to, sec: zs, list: [] }).list.push({ p, b });
   }
   for (const grp of Object.values(groups)) {
     const foe = other(grp.side), isl = island(s, grp.to);
+    if (grp.list.some((x) => x.p.type !== 'fighter')) seeZone(s, grp.side, grp.to, grp.list.some((x) => x.p.type === 'bomber') ? grp.sec : null);
     const strikers = grp.list.filter((x) => x.p.type === 'bomber' || x.p.type === 'torpedo').sort((a, b) => (a.p.id < b.p.id ? -1 : 1));
     const escorts = grp.list.filter((x) => x.p.type === 'fighter');
     grp.list.forEach((x) => { x.p.used = true; });
     if (!strikers.length) continue;
-    const interceptors = s.planes.filter((q) => q.side === foe && q.type === 'fighter' && !q.used).filter((q) => { const b = planeBase(s, q); return b && dist(b, isl) <= AIR_RANGE; });
+    const interceptors = s.planes.filter((q) => q.side === foe && q.type === 'fighter' && !q.used && q.air && q.air.isl === isl.id); // r8g: only fighters already up over the target (CAP)
     const free = Math.max(0, interceptors.length - escorts.length);
     const flights = [], hits = [];
-    const targetsArmy = () => s.units.filter((u) => u.side === foe && u.kind === 'army' && u.at === isl.id && u.sec && u.str > 0).sort((a, b) => b.str - a.str);
+    const targetsArmy = () => s.units.filter((u) => u.side === foe && u.kind === 'army' && u.at === isl.id && u.sec && (!grp.sec || u.sec === grp.sec) && u.str > 0).sort((a, b) => b.str - a.str);
     const snapUnits = [...targetsArmy(), ...s.units.filter((u) => u.side === foe && u.kind === 'fleet' && u.at === isl.id)];
     const snap = oobSnapshot(snapUnits);
     strikers.forEach((x, i) => {
@@ -1025,7 +1262,7 @@ function resolveStrikes(s, strikes, watch = {}) {
       if (x.p.type === 'bomber') {
         const a = targetsArmy()[0];
         if (a) { a.str -= 1; s.stats.lost[foe]++; hits.push({ kind: 'army', unit: a.id, sec: a.sec }); syncOob(a); if (a.str <= 0) removeUnit(s, a); return; }
-        const x2 = isl.secs.filter((q) => q.owner !== grp.side && q.gar > 0).sort((p, q) => q.gar - p.gar)[0]; // enemy or neutral forts
+        const x2 = isl.secs.filter((q) => (!grp.sec || q.id === grp.sec) && q.owner !== grp.side && q.gar > 0).sort((p, q) => q.gar - p.gar)[0]; // enemy or neutral forts
         if (x2) { x2.gar -= 1; hits.push({ kind: 'fort', sec: x2.id }); return; }
         hits.push({ kind: 'miss' }); return;
       }
@@ -1037,7 +1274,7 @@ function resolveStrikes(s, strikes, watch = {}) {
       hits.push({ kind: 'ship', unit: f.id, ship: t });
       if (f.str <= 0) removeUnit(s, f);
     });
-    out.push({ type: 'strike', side: grp.side, to: grp.to, retargeted: grp.list.filter((x) => retargeted[x.p.id]).map((x) => ({ plane: x.p.id, from: retargeted[x.p.id].from })), flights, escorts: escorts.map((x) => ({ plane: x.p.id, from: { x: x.b.x, y: x.b.y } })), intercepted: Math.min(free, strikers.length), interceptors: interceptors.length, hits, lost: oobLosses(s, snap) });
+    out.push({ type: 'strike', side: grp.side, to: grp.to, sec: grp.sec, retargeted: grp.list.filter((x) => retargeted[x.p.id]).map((x) => ({ plane: x.p.id, from: retargeted[x.p.id].from })), flights, escorts: escorts.map((x) => ({ plane: x.p.id, from: { x: x.b.x, y: x.b.y } })), intercepted: Math.min(free, strikers.length), interceptors: interceptors.length, hits, lost: oobLosses(s, snap) });
   }
   return out;
 }
@@ -1045,7 +1282,7 @@ function resolveStrikes(s, strikes, watch = {}) {
 function rebase(s) {
   const moved = [], lost = [];
   for (const p of [...s.planes]) {
-    if (planeBase(s, p)) continue;
+    if (p.air || planeBase(s, p)) continue; // r8g: a plane in the air comes down in airPhase
     const fx = p.base.isl && island(s, p.base.isl) && section(island(s, p.base.isl), p.base.sec);
     const from = fx ? { x: fx.x, y: fx.y } : p.last;
     const cands = [];
@@ -1140,4 +1377,30 @@ export function battleEvent(b) {
   return { type: 'landing', island: b.island, sec: b.sec, secKind: b.secKind, side: b.atk, won: b.winner === b.atk && !b.retreated, retreated: b.retreated, blind: b.blind,
     atk0: b.atk0, def0: b.def0, atkLeft: b.icons[b.atk].filter((i) => i.alive && i.kind === 'inf').length, defLeft: b.icons[b.def].filter((i) => i.alive).length,
     transportLoss: b.transportLoss, support: b.support, retreats: b.retreats || [], prevOwner: b.defOwner, lost: b.coLost };
+}
+
+// ---- r8b (additive: no rule changes) ----
+// Next-week reinforcements, previewed exactly: reinforce() run on a copy of the state as it stands now.
+// Exact when the holdings it reads (HQ, port, airfield, depots, the HQ stack) do not change before the week ends.
+export function previewReinforce(s) {
+  const c = JSON.parse(JSON.stringify({ ...s, rand: null }));
+  const before = new Map(c.units.map((u) => [u.id, u.str]));
+  return reinforce(c).map((e) => {
+    const armies = c.units.filter((u) => u.side === e.side && u.kind === 'army' && u.at === e.island && u.sec === 'hq')
+      .map((u) => ({ id: before.has(u.id) ? u.id : null, cmd: u.cmd, add: u.str - (before.get(u.id) || 0), fresh: !before.has(u.id) })).filter((x) => x.add > 0);
+    let shipType = null, fleet = null;
+    if (e.ships) {
+      const f = c.units.find((u) => u.side === e.side && u.kind === 'fleet' && u.at === e.island && u.str !== before.get(u.id));
+      if (f) { syncOob(f); shipType = f.ships[f.ships.length - 1]; fleet = before.has(f.id) ? f.id : null; }
+    }
+    return { ...e, armies, shipType, fleet };
+  });
+}
+// Put an army under another friendly commander (the commander portrait it shows). Its companies stay as they are.
+export function reassignCmd(s, unitId, toUnitId) {
+  const u = unit(s, unitId), t = unit(s, toUnitId);
+  if (!u || !t || u === t || u.side !== t.side || u.kind !== 'army' || t.kind !== 'army' || u.cmd === t.cmd) return false;
+  syncOob(u); // the OOB is built once from the first commander; keep it
+  u.cmd = t.cmd;
+  return true;
 }

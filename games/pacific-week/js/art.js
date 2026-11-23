@@ -1,5 +1,5 @@
 // Hand-drawn canvas art: invented flags, fictional commander portraits, unit symbols, KG-style front arrows.
-import { rng } from './state.js';
+import { rng } from './state.js?v=8g3';
 import { UNIT_PATHS } from './icons.js';
 
 const unitPath2D = {};
