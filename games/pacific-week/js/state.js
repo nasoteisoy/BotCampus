@@ -88,7 +88,7 @@ export function companies(u) {
 export function battalions(u) {
   syncOob(u);
   if (!u.oob) return [];
-  return u.oob.bns.map((b) => ({ n: b.n, cmd: b.cmd, w: b.w || 0, cos: b.cos.filter((c) => c.pips > 0).map((c) => ({ ...c })) })).filter((b) => b.cos.length);
+  return u.oob.bns.map((b) => ({ n: b.n, cmd: b.cmd, w: b.w || 0, p: !!b.p, cos: b.cos.filter((c) => c.pips > 0).map((c) => ({ ...c })) })).filter((b) => b.cos.length || b.p); // r9c: a promoted (empty) command stays until filled
 }
 // what each unit had before a fight, so the week report can say which companies or ships were lost
 function oobSnapshot(units) {
@@ -171,6 +171,7 @@ export function createGame(seed = 1) {
   const s = {
     seed, week: 1, rand: rng(seed), nextId: 1, nextCmd: 1,
     islands: ISLANDS.map((i) => ({ ...i, secs: buildSections(i) })),
+    seas: makeSeas(ISLANDS), // r9c ask 3: open-water sea zones along the sail routes
     units: [], orders: {}, secOrders: {}, landAt: {}, over: null,
     recon: { blue: [], red: [] }, flights: { blue: 0, red: 0 },
     planes: [], nextPid: 1, embark: {}, landOrd: {}, strikes: {}, strikeZ: {}, spotOrd: {}, flyOrd: {}, landPl: {}, zseen: { blue: [], red: [] },
@@ -204,7 +205,7 @@ export function addUnit(s, side, kind, at, str, sec = null) {
   return u;
 }
 
-export const island = (s, id) => s.islands.find((i) => i.id === id);
+export const island = (s, id) => s.islands.find((i) => i.id === id) || (s.seas || []).find((i) => i.id === id); // r9c: open-water sea zones answer too (no land zones)
 export const unit = (s, id) => s.units.find((u) => u.id === id);
 export const section = (isl, id) => isl.secs.find((x) => x.id === id);
 export const unitsAt = (s, id, side, kind) =>
@@ -440,32 +441,47 @@ export function reconTargets(s, side) {
   const v = vision(s, side), src = reconSources(s, side);
   return s.islands.filter((i) => !v.has(i.id) && src.some((p) => dist(p, i) <= RECON_RANGE)).map((i) => i.id);
 }
-export function recon(s, side, islId, planeId) {
-  if (!reconTargets(s, side).includes(islId)) return null;
-  const i = island(s, islId);
+// r9c ask 4: a recon flight sees the zone it flies to plus that zone's linked neighbours (a beach / port also sees the
+// island's sea zone next to it; the sea zone sees the island's beaches and ports). Not the whole island any more.
+// sec: a zone id, 'sea' (the island's sea zone), or null = the island's most linked zone (the AI's pick).
+export function reconZones(s, islId, sec = null) {
+  const isl = island(s, islId); if (!isl) return [];
+  if (!isl.secs || !isl.secs.length) return [zkey(islId)]; // open water (r9c sea zone)
+  if (sec === 'sea') return [zkey(islId), ...isl.secs.filter((x) => shipZone(x)).map((x) => zkey(islId, x.id))];
+  const x = sec ? section(isl, sec) : [...isl.secs].sort((a, b) => b.links.length - a.links.length)[0];
+  if (!x) return [];
+  return [zkey(islId, x.id), ...x.links.map((l) => zkey(islId, l)), ...(shipZone(x) ? [zkey(islId)] : [])];
+}
+export function recon(s, side, islId, planeId, sec = null) {
+  if (islId && typeof islId === 'object') { sec = islId.sec || null; islId = islId.isl; }
+  const i = island(s, islId); if (!i) return null;
+  const zones = reconZones(s, islId, sec), zv = zoneVision(s, side);
+  if (!zones.length || zones.every((k) => zv.has(k))) return null; // nothing new to see
   const from = reconSources(s, side).filter((p) => dist(p, i) <= RECON_RANGE && (!planeId || p.plane === planeId)).sort((a, b) => dist(a, i) - dist(b, i))[0];
   if (!from) return null;
   plane(s, from.plane).used = true;
-  s.flights[side]++; s.recon[side].push(islId); s.stats.recon[side]++;
-  learn(s, side, [zkey(islId), ...i.secs.map((x) => zkey(islId, x.id))]); // r8g3: a scouted island stays scouted
-  return { from, to: islId, plane: from.plane };
+  s.flights[side]++; s.stats.recon[side]++;
+  learn(s, side, zones); // r8g3: what a recon saw stays known
+  if (!s.zseen) s.zseen = { blue: [], red: [] }; if (!s.zseen[side]) s.zseen[side] = []; s.zseen[side].push(...zones); // and the AI plans with it this week
+  return { from, to: islId, sec, zones, plane: from.plane };
 }
 // r8g3: the player's recon is an End Week order (like the other air orders). It flies first thing at End Week (before any
 // move), then recon() above reveals the island for good. Out of range / already seen / plane busy = refused, nothing spent.
-export function canRecon(s, pid, islId) {
+export function canRecon(s, pid, islId, sec = null) {
   const p = plane(s, pid), i = island(s, islId);
   if (!p || !i || s.over || p.type !== 'recon') return false;
   if (!reconPlanes(s, p.side).some((q) => q.id === pid)) return false;
   const b = planeBase(s, p); if (!b || (b.fleet && s.orders[b.fleet])) return false;
-  if (vision(s, p.side).has(islId)) return false;
-  if (Object.entries(s.reconOrd || {}).some(([q, t]) => t === islId && plane(s, q) && plane(s, q).side === p.side)) return false;
+  const zv = zoneVision(s, p.side), zones = reconZones(s, islId, sec);
+  if (!zones.length || zones.every((k) => zv.has(k))) return false; // r9c: already sees all of that zone and its neighbours
+  if (Object.entries(s.reconOrd || {}).some(([q, t]) => (t && t.isl ? t.isl : t) === islId && ((t && t.sec) || null) === sec && plane(s, q) && plane(s, q).side === p.side)) return false;
   return dist(b, i) <= RECON_RANGE;
 }
-export function issueRecon(s, pid, islId) {
+export function issueRecon(s, pid, islId, sec = null) {
   if (!s.reconOrd) s.reconOrd = {};
   if (!islId) { delete s.reconOrd[pid]; return true; }
-  if (!canRecon(s, pid, islId)) return false;
-  s.reconOrd[pid] = islId;
+  if (!canRecon(s, pid, islId, sec)) return false;
+  s.reconOrd[pid] = { isl: islId, sec }; // r9c: a zone
   return true;
 }
 
@@ -483,7 +499,7 @@ export function inReach(s, u, toId) {
   return !!a && !!b && toId !== u.at && dist(a, b) <= RANGE[u.kind] + (perkOf(u) === 'move' ? MOVE_PERK : 0); // r9: a 'move' commander sails further
 }
 export function reachable(s, u) {
-  return s.islands.filter((i) => i.id !== u.at && canOrder(s, u, i.id)).map((i) => i.id);
+  return [...s.islands, ...(u && u.kind === 'fleet' ? s.seas || [] : [])].filter((i) => i.id !== u.at && canOrder(s, u, i.id)).map((i) => i.id);
 }
 // Island-to-island move. Armies land on a beach (or a friendly port); `sec` picks the beach.
 export function issueOrder(s, unitId, toId, sec) {
@@ -1183,7 +1199,7 @@ export function* weekSteps(s, { ai = true } = {}) {
   }
   if (lands.length) { s.lastArrows.push(...lands.map(arrow)); learnUnits(s); yield { type: 'moves', moves: lands }; }
   // sea first
-  for (const isl of s.islands) {
+  for (const isl of [...s.islands, ...(s.seas || [])]) { // r9c: a sea fight happens in the sea zone both fleets are in
     if (!unitsAt(s, isl.id, BLUE, 'fleet').length || !unitsAt(s, isl.id, RED, 'fleet').length) continue;
     const b = makeNaval(s, isl);
     yield { type: 'battle-start', b };
@@ -1481,7 +1497,7 @@ export const COH_HIT = 0.02; // per average battalion star: a better hit chance 
 export const cohStars = (w) => Math.max(0, Math.min(COH_MAX, Math.floor((w || 0) / COH_WEEKS)));
 export function regCohesion(u) {
   if (!u || u.kind !== 'army') return 0;
-  const bns = battalions(u); if (!bns.length) return 0;
+  const bns = battalions(u).filter((b) => b.cos.length); if (!bns.length) return 0; // r9c: an empty promoted battalion does not count
   return bns.reduce((n, b) => n + cohStars(b.w), 0) / bns.length;
 }
 function tickCohesion(s) {
@@ -1606,7 +1622,9 @@ function resplit(a, b, total) {
   if (sa + sb < total) { if (pa % PIPS_PER_STR >= pb % PIPS_PER_STR) sa++; else sb++; }
   return [sa, sb];
 }
-const sameGround = (u, t) => u && t && u.side === t.side && u.kind === 'army' && t.kind === 'army' && u.at === t.at && !u.aboard && !t.aboard && u.sec && t.sec;
+// r9c ask 5: reorganize only between commands in the SAME zone
+const sameGround = (u, t) => u && t && u.side === t.side && u.kind === 'army' && t.kind === 'army' && u.at === t.at && !u.aboard && !t.aboard && u.sec && t.sec && u.sec === t.sec;
+export function reorgBlock(s, unitId, toUnitId) { const u = unit(s, unitId), t = unit(s, toUnitId); if (!u || !t) return 'gone'; if (u.aboard || t.aboard) return 'aboard'; if (u.at !== t.at || u.sec !== t.sec) return 'zone'; return null; }
 const bnOf = (u, n) => u.oob.bns.find((b) => b.n === n);
 // move one company to another battalion (of this or another regiment on the same island) or to a new battalion ('new')
 export function canMoveCo(s, unitId, coId, toUnitId, toBn) {
@@ -1616,7 +1634,7 @@ export function canMoveCo(s, unitId, coId, toUnitId, toBn) {
   const src = u.oob.bns.find((b) => b.cos.some((c) => c.id === coId && c.pips > 0)); if (!src) return false;
   const c = src.cos.find((q) => q.id === coId);
   if (toBn === 'new') return t.oob.bns.length < 5 && canPay(s, u.side, COST.cmd) && (u !== t || src.cos.filter((q) => q.pips > 0).length > 1);
-  const dst = bnOf(t, toBn); if (!dst || dst.cos.filter((q) => q.pips > 0).length === 0) return false;
+  const dst = bnOf(t, toBn); if (!dst || (dst.cos.filter((q) => q.pips > 0).length === 0 && !dst.p)) return false; // r9c: or a promoted empty battalion
   if (u === t) return dst !== src;
   if (companies(u).length < 2) return false; // a regiment keeps at least one company
   const tot = u.str + t.str;
@@ -1769,3 +1787,54 @@ export function aiBuy(s, side = RED) {
   }
   return n;
 }
+
+// ======================= r9c ask 5: promote a commander (an empty command in this zone) =======================
+// Any time, for the new-commander price (COST.cmd): an empty battalion (a new Major) in this regiment, or an empty
+// regiment (a new Colonel) in the same zone. Then companies / battalions can be moved into it (same zone only).
+export function canPromote(s, unitId, what) {
+  const u = unit(s, unitId);
+  if (!u || s.over || u.kind !== 'army' || u.aboard || !u.sec || !['bn', 'reg'].includes(what)) return false;
+  if (what === 'bn') { syncOob(u); if (u.oob.bns.length >= 5) return false; }
+  return canPay(s, u.side, COST.cmd);
+}
+export function promote(s, unitId, what) {
+  if (!canPromote(s, unitId, what)) return null;
+  const u = unit(s, unitId); pay(s, u.side, COST.cmd);
+  if (what === 'bn') {
+    const n = Math.max(0, ...u.oob.bns.map((b) => b.n)) + 1;
+    const b = { n, cmd: s.nextCmd++, w: 0, cos: [], p: true }; u.oob.bns.push(b); u.org = true;
+    return { unit: u.id, bn: n, cmd: b.cmd };
+  }
+  const t = addUnit(s, u.side, 'army', u.at, 0, u.sec); // a new Colonel (s.nextCmd)
+  t.oob = { bns: [{ n: 1, cmd: s.nextCmd++, w: 0, cos: [], p: true }] }; t.org = true; t.p = true;
+  return { unit: t.id, bn: 1, cmd: t.cmd };
+}
+
+// ======================= r9c asks 2 + 3: sea zones =======================
+// Every island has its own sea zone ('<isl>:sea', named e.g. KESTRA SOUND): a fleet not docked at a beach / port is IN it.
+// Between islands lie open-water sea zones (s.seas): fleets can sail into one and stop there; a sea fight happens in the
+// zone both fleets are in. An open-water zone looks like an island with no land (island() finds it, s.islands does not).
+const SEA_NAMES = ['GULL STRAIT', 'IRON REACH', 'SALT PASSAGE', 'TERN BASIN', 'CORAL GAP', 'WHALE RUN', 'STORM NARROWS', 'GREY DEEP'];
+const ISL_SEA = ['SOUND', 'BAY', 'ROADS', 'WATERS', 'COVE', 'BIGHT', 'REACH', 'LAGOON'];
+export function makeSeas(isles) {
+  const out = [];
+  const pairs = [];
+  for (let a = 0; a < isles.length; a++) for (let b = a + 1; b < isles.length; b++) { const d = dist(isles[a], isles[b]); if (d >= 420 && d <= RANGE.fleet * 1.25) pairs.push([d, isles[a], isles[b]]); }
+  pairs.sort((p, q) => p[0] - q[0]);
+  for (const [, A, B] of pairs) {
+    const m = { x: Math.round((A.x + B.x) / 2), y: Math.round((A.y + B.y) / 2) };
+    const nearLand = (i) => { const dx = m.x - i.x, dy = m.y - i.y, c = Math.cos(-i.rot), sn = Math.sin(-i.rot), u = dx * c - dy * sn, v = dx * sn + dy * c; return (u / (i.rx + 90)) ** 2 + (v / (i.ry + 90)) ** 2 < 1; };
+    if (isles.some(nearLand)) continue; // on or too near land
+    if (out.some((q) => dist(q, m) < 260)) continue;
+    out.push({ id: `sea${out.length + 1}`, name: SEA_NAMES[out.length % SEA_NAMES.length], x: m.x, y: m.y, type: 'sea', sea: true, owner: null, secs: [], rx: 0, ry: 0, rot: 0, links: [A.id, B.id] });
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+export const isSea = (s, id) => (s.seas || []).some((q) => q.id === id);
+export function seaName(s, islId) {
+  const sea = (s.seas || []).find((q) => q.id === islId); if (sea) return sea.name;
+  const i = s.islands.findIndex((q) => q.id === islId); return i < 0 ? '' : `${s.islands[i].name} ${ISL_SEA[i % ISL_SEA.length]}`;
+}
+// which zone a fleet is in: { isl, sec } with sec = a beach / port id, or 'sea' (the island's or an open-water sea zone)
+export function fleetZone(s, f) { const sp = fleetSpot(s, f); return { isl: f.at, sec: sp || 'sea', sea: !sp, name: sp ? null : seaName(s, f.at) }; }

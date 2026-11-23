@@ -1,12 +1,12 @@
-import * as G from './state.js?v=9b';
-import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9b';
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9b';
-import { createSpaceAudio } from './audio.js?v=9b';
-import { computeTerrain } from './terrain.js?v=9b';
-import { openBoard } from './battle.js?v=9b';
-import { STRONG, WEAK, cardKey } from './matchups.js?v=9b';
-import * as R9 from './r9ui.js?v=9b';
-import { soldier, bunker } from './art.js?v=9b';
+import * as G from './state.js?v=9c';
+import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9c';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9c';
+import { createSpaceAudio } from './audio.js?v=9c';
+import { computeTerrain } from './terrain.js?v=9c';
+import { openBoard } from './battle.js?v=9c';
+import { STRONG, WEAK, cardKey } from './matchups.js?v=9c';
+import * as R9 from './r9ui.js?v=9c';
+import { soldier, bunker } from './art.js?v=9c';
 
 const params = new URLSearchParams(location.search);
 let speed = params.has('fast') ? 12 : 1;
@@ -52,7 +52,7 @@ function newGame(seed = Date.now() % 100000) {
   updateHud();
 }
 function snapshotView() { return { islands: clone(S.islands), units: clone(S.units) }; }
-const vIsl = (id) => view.islands.find((i) => i.id === id);
+const vIsl = (id) => view.islands.find((i) => i.id === id) || (S.seas || []).find((i) => i.id === id); // r9c: open-water sea zones too
 const vSec = (islId, secId) => { const i = vIsl(islId); return i && i.secs.find((x) => x.id === secId); };
 
 function resize() {
@@ -554,14 +554,29 @@ function placeTokens() {
     }
   }
   const zones = out.slice();
+  // r9c asks 2 + 3: every island's own sea zone gets a marker on its sea side; open-water sea zones sit between islands.
+  // A fleet that is not docked is drawn ON its sea zone marker (it is IN that zone).
+  const seaTok = new Map();
+  for (const sea of S.seas || []) { const t = { kind: 'sea', isl: sea.id, sec: 'sea', open: true, side: null, own: null, x: sea.x, y: sea.y, r: tr * 1.12, name: sea.name, known: zKnown(sea.id, null) }; out.push(t); seaTok.set(sea.id, t); } // open-water zones first: the island sea markers keep clear of them
   for (const isl of view.islands) {
-    const list = unitsAtView(isl.id);
     const port = isl.secs.find((x) => x.kind === 'port');
     const a0 = port ? Math.atan2(port.y - isl.y, port.x - isl.x) : 0.55;
     const nameOk = (a) => Math.abs(wrapA(a - Math.PI / 2)) > 0.55;
-    const nb = nameBox(isl.id), n0 = toWorld(nb.left, nb.top), n1 = toWorld(nb.right, nb.bottom); // keep fleets off the island's name
+    const nb = nameBox(isl.id), n0 = toWorld(nb.left, nb.top), n1 = toWorld(nb.right, nb.bottom);
     const offName = (pt, r) => { const cx = Math.max(n0.x, Math.min(pt.x, n1.x)), cy = Math.max(n0.y, Math.min(pt.y, n1.y)); return Math.hypot(pt.x - cx, pt.y - cy) >= r + 2 / z; };
     const free = (pt, r) => offName(pt, r) && out.every((t) => Math.hypot(t.x - pt.x, t.y - pt.y) >= t.r + r + 3 / z);
+    let best = null;
+    for (const k of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.3, -2.3, Math.PI]) {
+      const a = a0 + k; if (!nameOk(a)) continue;
+      for (let d = R * 0.9; d <= R * 2.6; d += tr * 0.5) { const pt = { x: isl.x + Math.cos(a) * d, y: isl.y + Math.sin(a) * d }; if (free(pt, tr * 1.2) && seaClear(pt, tr)) { if (!best || d < best.d - tr) best = { d, pt }; break; } }
+      if (best && best.d <= R * 1.5) break;
+    }
+    const pos = best ? best.pt : { x: isl.x + Math.cos(a0) * R * 1.6, y: isl.y + Math.sin(a0) * R * 1.6 };
+    const t = { kind: 'sea', isl: isl.id, sec: 'sea', side: null, own: null, x: pos.x, y: pos.y, r: tr * 1.12, name: G.seaName(S, isl.id), known: zKnown(isl.id, null) };
+    out.push(t); seaTok.set(isl.id, t);
+  }
+  for (const isl of [...view.islands, ...(S.seas || [])]) {
+    const list = unitsAtView(isl.id);
     const groups = new Map();
     for (const f of list.filter((u) => u.kind === 'fleet')) { const lv = !busy && G.unit(S, f.id), sp = G.fleetSpot(S, lv && lv.at === f.at ? lv : f), k = `${f.side}:${sp || ''}`; if (!groups.has(k)) groups.set(k, { side: f.side, spot: sp, fl: [] }); groups.get(k).fl.push(f); }
     for (const q of groups.values()) {
@@ -571,14 +586,10 @@ function placeTokens() {
         const base = Math.atan2(zt.y - isl.y, zt.x - isl.x), d = zt.r * 0.55; // r9b ask 5: on the dock / beach marker, not beside it
         let alt = null;
         pos = { x: zt.x + Math.cos(base) * d, y: zt.y + Math.sin(base) * d }; void alt;
-      } else { // at sea in the island's waters, clear of the zones
-        let best = null;
-        for (const k of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.3, -2.3, Math.PI]) {
-          const a = a0 + k; if (!nameOk(a)) continue;
-          for (let d = R * 0.9; d <= R * 2.6; d += tr * 0.5) { const pt = { x: isl.x + Math.cos(a) * d, y: isl.y + Math.sin(a) * d }; if (free(pt, tr) && seaClear(pt, tr)) { if (!best || d < best.d - tr) best = { d, pt }; break; } }
-          if (best && best.d <= R * 1.5) break;
-        }
-        pos = best ? best.pt : { x: isl.x + Math.cos(a0) * R * 1.6, y: isl.y + Math.sin(a0) * R * 1.6 };
+      } else { // r9c: in its sea zone, on that zone's marker (two sides there = side by side on it)
+        const st = seaTok.get(isl.id), sides = [...groups.values()].filter((g2) => !g2.spot), k = sides.indexOf(q);
+        const off = sides.length > 1 ? (k === 0 ? -1 : 1) * st.r * 0.62 : 0;
+        pos = { x: st.x + off, y: st.y - st.r * 0.18 };
       }
       const ids = q.fl.map((f) => f.id), carrying = view.units.filter((a) => ids.includes(a.aboard)).map((a) => a.id);
       const planes = S.planes.filter((pl) => ids.includes(pl.base.fleet)).map((pl) => pl.id);
@@ -601,7 +612,7 @@ function tokenHot(t) {
   if (sel && t.units && t.units.includes(sel)) return true;
   return !!(planeSel && t.planes && t.planes.includes(planeSel));
 }
-function drawTokens() { for (const t of placeTokens()) { let q = foeSel && !t.ghost ? { ...t, beat: tokenBeats(t) } : t; if (t.kind === 'zone' && zoneTarget(t)) q = { ...q, target: true }; drawToken(q, tokenHot(t)); } }
+function drawTokens() { for (const t of placeTokens()) { let q = foeSel && !t.ghost ? { ...t, beat: tokenBeats(t) } : t; if ((t.kind === 'zone' || t.kind === 'sea') && zoneTarget(t)) q = { ...q, target: true }; drawToken(q, tokenHot(t)); } }
 // r8e: a landing from a fleet already docked at that beach draws from the fleet token's edge (no extra ship glyph)
 function landFrom(u, o) {
   if (!strat()) return null;
@@ -617,6 +628,7 @@ function zoneTarget(t) {
   const u = sel && !busy && G.unit(S, sel); if (!u) return false;
   if (u.kind === 'army' && !u.aboard) return u.at === t.isl && t.sec !== u.sec && G.canSecOrder(S, u, t.sec);
   if (u.kind === 'army' && u.aboard) return G.landIsland(S, u) === t.isl && t.secKind === 'beach';
+  if (u.kind === 'fleet' && t.kind === 'sea') return !(u.at === t.isl && !G.fleetSpot(S, u)) && G.canFleetMove(S, u.id, t.isl, null); // r9c: sea zones it can sail into
   if (u.kind === 'fleet') return G.SHIP_ZONES.includes(t.secKind) && G.canFleetMove(S, u.id, t.isl, t.sec);
   return false;
 }
@@ -656,6 +668,7 @@ const arriveImg = (() => { let v; return () => { if (v) return v; const c = docu
 function drawToken(t, hi = false, c = g, zz = cam.z) {
   if (t.kind === 'next') { drawGhost(t, hi, c, zz); return; }
   if (t.kind === 'zone') { drawZone(t, hi, c, zz); return; }
+  if (t.kind === 'sea') { drawSeaZone(t, hi, c, zz); return; }
   const r = t.r, col = t.own ? SIDE_COL[t.own].fill : '#8a929c', gc = '#eef1f4';
   c.save();
   // r8c: the green counter ring sits outside the gold select ring (r + 5) so both read when a glowing token is selected
@@ -723,13 +736,25 @@ function fortAt(c, x, y, owner) {
   c.fillStyle = owner ? SIDE_COL[owner].light : '#d0d4da'; c.fillRect(x - 5, y - 4, 10, 8);
   c.fillRect(x - 5, y - 7, 3, 3); c.fillRect(x + 2, y - 7, 3, 3);
 }
+// r9c ask 3: a sea zone marker: a water disc with a dashed rim and a wave icon (its name on hover / tap)
+function drawSeaZone(t, hi, c = g, zz = cam.z) {
+  const r = t.r;
+  c.save();
+  c.fillStyle = t.known ? 'rgba(28,78,128,.88)' : 'rgba(40,58,78,.7)'; c.beginPath(); c.arc(t.x, t.y, r, 0, 7); c.fill();
+  c.setLineDash([5 / zz, 4 / zz]); c.lineWidth = (hi || t.target ? 3.5 : 2.2) / zz; c.strokeStyle = hi || t.target ? '#ffd23f' : 'rgba(170,215,255,.9)'; c.stroke(); c.setLineDash([]);
+  c.strokeStyle = t.known ? '#dff1ff' : '#aeb6c0'; c.lineWidth = r * 0.12; c.lineCap = 'round';
+  for (const dy of [-0.2, 0.18]) { c.beginPath(); for (let i = 0; i <= 10; i++) { const px = t.x - r * 0.55 + (i / 10) * r * 1.1, py = t.y + dy * r + Math.sin((i / 10) * Math.PI * 2) * r * 0.1; i ? c.lineTo(px, py) : c.moveTo(px, py); } c.stroke(); }
+  if (t.open) { c.fillStyle = 'rgba(230,240,250,.85)'; c.font = `700 ${Math.max(9, 11 / zz)}px "Barlow Condensed", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(t.name, t.x, t.y + r + 3 / zz); }
+  c.restore();
+}
 function tokenAt(sx, sy) {
   if (!strat()) return null;
   tokCache = null;
   let best = null, bd = 1e9;
   for (const t of placeTokens()) {
     const p = toScreen(t.x, t.y), d = Math.hypot(p.x - sx, p.y - sy);
-    if (d <= Math.max(TOK_HIT, t.r * cam.z + 4) && d < bd) { bd = d; best = t; }
+    const dd = t.kind === 'sea' ? d + 6 : d; // r9c: a fleet on the marker wins the tap
+    if (d <= Math.max(TOK_HIT, t.r * cam.z + 4) && dd < bd) { bd = dd; best = t; }
   }
   return best;
 }
@@ -800,7 +825,9 @@ function groupCards(grp, list) {
   // r9 reorganize: with a company / battalion picked, the places it can go (same island only)
   if (reorg && reorg.u === u.id && u.side === 'blue' && u.kind === 'army') {
     if (reorg.k === 'co') cards.push({ t: 'newbn' });
-    S.units.filter((t) => t !== u && t.side === 'blue' && t.kind === 'army' && t.at === u.at && !t.aboard && t.sec && (reorg.k === 'bn' ? G.canMoveBn(S, u.id, reorg.bn, t.id) : true)).forEach((t) => cards.push({ t: 'rt', u: t }));
+    S.units.filter((t) => t !== u && t.side === 'blue' && t.kind === 'army' && t.at === u.at && !t.aboard && t.sec === u.sec && (reorg.k === 'bn' ? G.canMoveBn(S, u.id, reorg.bn, t.id) : true)).forEach((t) => cards.push({ t: 'rt', u: t }));
+    // r9c ask 5: regiments in another zone of this island are shown but blocked (same zone only)
+    S.units.filter((t) => t !== u && t.side === 'blue' && t.kind === 'army' && t.at === u.at && !t.aboard && t.sec && t.sec !== u.sec).forEach((t) => cards.push({ t: 'rt', u: t, blk: true }));
     if (reorg.k === 'bn') cards.push({ t: 'newreg' });
   }
   // the picked one first, then the targets (slots), then the other battalions: what you need stays on screen
@@ -852,8 +879,8 @@ function cardHtml0(c) {
     return `<button class="sc grp wing ${c.side}${c.side === 'blue' ? '' : ' foe'}" data-ga="${c.key}" aria-label="Air wing">${inner}</button>`;
   }
   if (c.t === 'bn') { // a battalion: its commander + its companies (the real units) with their pips
-    const pk = reorg && reorg.u === c.u.id, bnOn = pk && reorg.k === 'bn' && reorg.bn === c.b.n, tgt = pk && reorg.k === 'co' && reorg.bn !== c.b.n;
-    return `<div class="sc bn ${c.u.side}${bnOn ? ' pick' : ''}${tgt ? ' tgt' : ''}" data-bn="${c.b.n}" data-bu="${c.u.id}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" data-rank="maj" data-cu="${c.u.id}" data-cb="${c.b.n}" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 2, cls: 'xs' })}<span class="bn-cos">${c.b.cos.map((q) => `<i class="co${pk && reorg.k === 'co' && reorg.co === q.id ? ' pick' : ''}" data-t="${q.type}" data-co="${q.id}"><span class="ech1"></span>${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
+    const pk = reorg && reorg.u === c.u.id, bnOn = pk && reorg.k === 'bn' && reorg.bn === c.b.n, tgt = (pk && reorg.k === 'co' && reorg.bn !== c.b.n) || (!c.b.cos.length && c.u.side === 'blue');
+    return `<div class="sc bn ${c.u.side}${bnOn ? ' pick' : ''}${tgt ? ' tgt' : ''}" data-bn="${c.b.n}" data-bu="${c.u.id}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" data-rank="maj" data-cu="${c.u.id}" data-cb="${c.b.n}" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 2, cls: 'xs' })}<span class="bn-cos">${c.b.cos.length ? '' : `<i class="bn-empty">${icon('plus', { size: 20 })}</i>`}${c.b.cos.map((q) => `<i class="co${pk && reorg.k === 'co' && reorg.co === q.id ? ' pick' : ''}" data-t="${q.type}" data-co="${q.id}"><span class="ech1"></span>${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
   }
   if (c.t === 'u') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
@@ -863,6 +890,7 @@ function cardHtml0(c) {
   }
   if (c.t === 'newbn') return `<button class="sc slot" data-slot="newbn" aria-label="New battalion">${icon('plus', { size: 22 })}${R9.echHtml(2)}${R9.rankChip('maj', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
   if (c.t === 'newreg') return `<button class="sc slot" data-slot="newreg" aria-label="New regiment">${icon('plus', { size: 22 })}${R9.echHtml(3)}${R9.rankChip('col', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
+  if (c.t === 'rt' && c.blk) return `<button class="sc slot rt blk" data-rtblk="${c.u.id}" aria-label="Other zone"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.u.cmd}" data-rank="col" data-cu="${c.u.id}" width="56" height="56"></canvas><i class="blk-x">${icon('x', { size: 26 })}</i><b class="rt-n">${R9.LAND_WORD[vSec(c.u.at, c.u.sec)?.kind] || ''}</b></button>`;
   if (c.t === 'rt') return `<button class="sc slot rt" data-rt="${c.u.id}" aria-label="Regiment"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.u.cmd}" data-rank="col" data-cu="${c.u.id}" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 3, word: false, cls: 'xs' })}<b class="rt-n">${R9.ord(c.u.cmd)}</b></button>`;
   if (c.t === 's') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
@@ -924,6 +952,7 @@ function infoHtml() {
       pic = portraitCv(u, u.cmd, 'col'); kb = R9.kindBadge('army', { ech: 3 }); mk = 'army';
       name = `${R9.typeWord(mostType(G.companies(u).map((c) => c.type)))} regiment - ${R9.ord(u.cmd)} Regt`;
       extra = `${R9.rankChip('col')}${R9.starsHtml(Math.round(G.regCohesion(u)))}${perkHtml(u)}`;
+      if (side === 'blue' && u.sec && !u.aboard) extra += `<span class="promo"><b>${icon('star', { size: 14 })}PROMOTE</b><button class="buy" data-promote="bn" aria-label="Promote a Major: empty battalion" ${G.canPromote(S, u.id, 'bn') ? '' : 'disabled'}>${R9.echHtml(2)}${R9.rankChip('maj', 16)}${R9.coinHtml(G.COST.cmd)}</button><button class="buy" data-promote="reg" aria-label="Promote a Colonel: empty regiment" ${G.canPromote(S, u.id, 'reg') ? '' : 'disabled'}>${R9.echHtml(3)}${R9.rankChip('col', 16)}${R9.coinHtml(G.COST.cmd)}</button></span>`;
       const x = u.sec && !u.aboard && G.section(G.island(S, u.at), u.sec);
       if (false && side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) extra += `<button class="buy tog${buyOpen ? ' on' : ''}" data-buytog="1" aria-label="Buy companies">${icon('plus', { size: 16 })}${icon('coins', { size: 16 })}</button>`;
       if (buyOpen && side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) rows = `<div class="in-buy">${G.CO_TYPES.map((ty) => buyBtn(`data-buyco="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canBuyCo(S, u.id, ty))).join('')}</div>`;
@@ -931,7 +960,7 @@ function infoHtml() {
       pic = portraitCv(u, u.cmd, 'col'); kb = R9.kindBadge('fleet'); mk = 'fleet';
       G.syncOob(u); name = `Fleet - ${u.ships.length} ship${u.ships.length === 1 ? '' : 's'}, ${R9.ord(u.cmd)} Fleet`;
       const sp = G.fleetSpot(S, u), isl = G.island(S, u.at), iname = isl.name.charAt(0) + isl.name.slice(1).toLowerCase();
-      const where = sp ? `<span class="where dock">${icon('anchor', { size: 15 })}<b>Docked</b> ${G.section(isl, sp).kind === 'port' ? 'port' : 'beach'}, ${iname}</span>` : `<span class="where sea">${R9.waveSvg}<b>At sea</b> off ${iname}</span>`;
+      const where = sp ? `<span class="where dock">${icon('anchor', { size: 15 })}<b>Docked</b> ${G.section(isl, sp).kind === 'port' ? 'port' : 'beach'}, ${iname}</span>` : `<span class="where sea">${R9.waveSvg}<b>In</b> ${R9.cap(G.seaName(S, u.at))}</span>`;
       extra = `${R9.rankChip('col')}${perkHtml(u)}${where}`;
     }
     if (side === 'blue') extra += cancelBtn(u.id);
@@ -974,9 +1003,11 @@ function stripR9Tap(e) {
   if ((b = at('[data-unorder]'))) { if (G.unorderUnit(S, 'blue', b.dataset.unorder)) sfx.pew(); updateHud(); return true; }
   if ((b = at('[data-buypl]'))) return done(!!G.buyPlane(S, 'blue', strip.isl, strip.sec, b.dataset.buypl), unitIcon(b.dataset.buypl, 28));
   if ((b = at('[data-buysh]'))) return done(!!G.buyShip(S, 'blue', strip.isl, b.dataset.buysh), unitIcon(b.dataset.buysh, 28));
+  if ((b = at('[data-promote]'))) { const pid = sel || (strip.grp && strip.grp.k === 'u' && strip.grp.id); const r = pid && G.promote(S, pid, b.dataset.promote); if (r) toast(`${icon('star', { size: 24 })}${R9.echHtml(b.dataset.promote === 'reg' ? 3 : 2)}<b class="t-w">${R9.RANK_WORD[b.dataset.promote === 'reg' ? 'col' : 'maj']} ${R9.cmdName('blue', r.cmd)}</b>`, 1500); return done(!!r, R9.coinHtml(G.COST.cmd)); } // r9c ask 5
   // reorganize: tap-pick a company (its icon) or a battalion (its card), then tap where it goes
   const u = strip.grp && strip.grp.k === 'u' && G.unit(S, strip.grp.id);
   if (!u || u.side !== 'blue' || u.kind !== 'army') return false;
+  if (at('[data-rtblk]')) { toast(`${icon('x', { size: 26 })}<b class="t-w">Same zone only</b>`, 1300); sfx.alarm(); return true; } // r9c ask 5
   const co = at('.sc.bn .co[data-co]'), bn = at('.sc.bn[data-bn]'), slot = at('[data-slot]'), rt = at('[data-rt]');
   if (reorg && (bn || slot || rt)) {
     if (reorg.k === 'co' && co && +bn.dataset.bn === reorg.bn && co.dataset.co === reorg.co) { reorg = null; sfx.pew(); updateHud(); return true; }
@@ -1175,7 +1206,7 @@ function render() {
   if (sel && !busy) drawRange();
   if (reconMode && !busy) drawReconTargets();
   if (planeSel && !reconMode && !busy) drawStrikeTargets();
-  cancelMarks = []; const inlandQ = [];
+  cancelMarks = []; const inlandQ = [], airQ = [];
   const cmark = (id, a, b) => { if (a && b) cancelMarks.push({ id, wx: (a.x + b.x) / 2, wy: (a.y + b.y) / 2, dx: b.x - a.x, dy: b.y - a.y }); };
   if (!busy) {
     Object.entries(S.orders).forEach(([id, to]) => {
@@ -1198,8 +1229,18 @@ function render() {
       if (ft) { const zp = secPos(vIsl(u.at), vSec(u.at, u.sec)), d = Math.hypot(ft.x - zp.x, ft.y - zp.y) || 1, k = Math.max(0, d - ft.r - 4 / cam.z) / d; sp = { x: zp.x + (ft.x - zp.x) * k, y: zp.y + (ft.y - zp.y) * k }; }
       drawShoreArrow(u.at, u.sec, 'blue', 1, pulse, true, sp); const sh = shorePts(u.at, u.sec); cmark(id, sh.b, sp || sh.a); });
     Object.entries(S.landOrd).forEach(([id, o]) => { const u = G.unit(S, id); if (u && u.side === 'blue') { drawShoreArrow(o.isl, o.sec, 'blue', 1, pulse, false, landFrom(u, o)); { const sh = shorePts(o.isl, o.sec); cmark(id, sh.b, landFrom(u, o) || sh.a); } const x = vSec(o.isl, o.sec), q = secPos(vIsl(o.isl), x); targetRing(q.x, q.y, q.r * 1.3 + 3 / cam.z, 0.9); if (G.landingRisk(S, 'blue', o.isl).risk) riskMark(q); } });
-    Object.entries(S.strikes).forEach(([pid, to], i) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') { drawStrikeLine(b, vIsl(to), p.type, i, pulse); cmark(pid, b, vIsl(to)); } });
-    Object.entries(S.reconOrd || {}).forEach(([pid, to]) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') { drawReconOrder(b, vIsl(to)); cmark(pid, b, vIsl(to)); } });
+    // r9c ask 1: every planned air order (strike, recon, fly / cover, rebase / land) = a thick arrow base -> target,
+    // drawn after the markers (airQ below), with its cancel X beside it
+    const airOrd = [];
+    Object.entries(S.strikes).forEach(([pid, to]) => airOrd.push([pid, 'strike', { isl: to, sec: (S.strikeZ || {})[pid] || null }]));
+    Object.entries(S.reconOrd || {}).forEach(([pid, to]) => airOrd.push([pid, 'recon', typeof to === 'string' ? { isl: to, sec: null } : to]));
+    Object.entries(S.flyOrd || {}).forEach(([pid, to]) => airOrd.push([pid, 'fly', to]));
+    Object.entries(S.landPl || {}).forEach(([pid, to]) => airOrd.push([pid, 'land', to]));
+    for (const [pid, k, to] of airOrd) {
+      const p = G.plane(S, pid), b = p && p.side === 'blue' && G.planeBase(S, p); if (!b || !to) continue;
+      const a = airPt(p.air ? { isl: p.air.isl, sec: p.air.sec } : b), z = airPt(to); if (!a || !z || Math.hypot(z.x - a.x, z.y - a.y) < 4) continue;
+      airQ.push({ a, z, k, type: p.type }); cmark(pid, a, z);
+    }
   }
   if (fx.stayArrows) fx.stayArrows.forEach((m) => drawMoveArrow(m, 1, 0.85));
   if (fx.moving) fx.moving.list.forEach((m) => drawMoveArrow(m, fx.moving.t, 0.9));
@@ -1218,6 +1259,7 @@ function render() {
     inlandQ.forEach(([i, a, b]) => drawSecArrow(i, a, b, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260)));
     if (fx.moving) fx.moving.list.filter((m) => m.inland).forEach((m) => drawSecArrow(m.from, m.fromSec, m.toSec, m.side, fx.moving.t, 0.9));
   }
+  if (strat() || airQ.length) airQ.forEach(drawAirOrder); // r9c ask 1: on top of the markers
   if (fx.scout) drawScout(fx.scout);
   if (fx.hop) drawHop(fx.hop);
   if (!busy) drawCancelMarks();
@@ -1317,6 +1359,25 @@ function secArrowPts(islId, fromSec, toSec) {
   const a = secPos(isl, x0), b = secPos(isl, x1);
   const d = Math.hypot(b.x - a.x, b.y - a.y) || 1, ux = (b.x - a.x) / d, uy = (b.y - a.y) / d;
   return { a: { x: a.x + ux * a.r * 0.15, y: a.y + uy * a.r * 0.15 }, b: { x: b.x - ux * b.r * 0.55, y: b.y - uy * b.r * 0.55 } };
+}
+// r9c ask 1: where an air order starts / ends on the map: a zone circle, a fleet token (carrier) or the island
+function airPt(base) {
+  if (!base) return null;
+  if (base.fleet) { const ft = strat() && placeTokens().find((t) => t.kind === 'fleet' && t.fleets.includes(base.fleet)); if (ft) return { x: ft.x, y: ft.y, r: ft.r }; const f = G.unit(S, base.fleet); const i = f && vIsl(f.at); return i ? { x: i.x, y: i.y, r: 20 } : null; }
+  const isl = vIsl(base.isl); if (!isl) return null;
+  const x = base.sec && vSec(base.isl, base.sec); if (x) { const p = secPos(isl, x); return { x: p.x, y: p.y, r: p.r }; }
+  return { x: isl.x, y: isl.y, r: 30 };
+}
+const AIR_ICON = { strike: 'crosshair', recon: 'eye', fly: 'move', land: 'anchor' };
+function drawAirOrder(q) {
+  const d = Math.hypot(q.z.x - q.a.x, q.z.y - q.a.y) || 1, ux = (q.z.x - q.a.x) / d, uy = (q.z.y - q.a.y) / d;
+  const a = { x: q.a.x + ux * (q.a.r || 0) * 0.5, y: q.a.y + uy * (q.a.r || 0) * 0.5 }, b = { x: q.z.x - ux * (q.z.r || 0) * 0.6, y: q.z.y - uy * (q.z.r || 0) * 0.6 };
+  const cv = arrowCurve(a, b, -0.16);
+  drawArrow(g, cv, 'blue', 1, { width: Math.max(14 / cam.z, 12), alpha: 0.9 });
+  // what kind of air order: a plane with the order's mark, riding the arrow
+  const m = curvePt(cv, 0.42), s = Math.max(26 / cam.z, 22);
+  g.save(); g.fillStyle = 'rgba(12,16,24,.92)'; g.beginPath(); g.arc(m.x, m.y, s * 0.62, 0, 7); g.fill(); g.lineWidth = 2.5 / cam.z; g.strokeStyle = '#8fb4ff'; g.stroke();
+  unitGlyph(g, q.type, m.x, m.y, s * 0.82, '#fff', 2.4); g.restore();
 }
 function drawSecArrow(islId, fromSec, toSec, side, t, alpha) {
   const q = secArrowPts(islId, fromSec, toSec); if (!q) return;
@@ -2134,7 +2195,9 @@ const toastImg = (() => { const m = {}; return (k) => {
   if (m[k]) return m[k];
   const c = document.createElement('canvas'); c.width = 64; c.height = 64; const q = c.getContext('2d'); q.scale(2, 2);
   q.fillStyle = '#12161c'; q.beginPath(); q.arc(16, 16, 14, 0, 7); q.fill(); q.lineWidth = 2.5; q.strokeStyle = SIDE_COL.blue.fill; q.stroke();
-  if (k === 'ship') shipSide(q, 16, 17, 22, '#e6ebf0'); else secIcon(q, k, 16, 16, 20, '#e6ebf0');
+  if (k === 'ship') shipSide(q, 16, 17, 22, '#e6ebf0');
+  else if (k === 'sea') { q.strokeStyle = '#bfe3ff'; q.lineWidth = 2.4; q.lineCap = 'round'; for (const dy of [-4, 4]) { q.beginPath(); for (let i = 0; i <= 10; i++) { const px = 7 + i * 1.8, py = 16 + dy + Math.sin(i / 10 * Math.PI * 2) * 2; i ? q.lineTo(px, py) : q.moveTo(px, py); } q.stroke(); } }
+  else secIcon(q, k, 16, 16, 20, '#e6ebf0');
   return (m[k] = `<img src="${c.toDataURL()}" width="32" height="32" alt="">`);
 }; })();
 // armies cross water only by ship: walk to a beach, board a ship there, sail, land on a beach
@@ -2154,7 +2217,7 @@ function ordered() { sfx.hit(); sel = null; strip = null; foeSel = null; updateH
 // r8e: the open sea near an island (a fleet order to "the waters of" that island)
 function seaIsland(wx, wy) {
   let best = null, bd = 1e9;
-  for (const isl of S.islands) { const d = Math.hypot(isl.x - wx, isl.y - wy); if (d < R * 2.6 && d < bd) { bd = d; best = isl; } }
+  for (const isl of [...S.islands, ...(S.seas || [])]) { const d = Math.hypot(isl.x - wx, isl.y - wy); if (d < R * 2.6 && d < bd) { bd = d; best = isl; } } // r9c: open water = the nearest sea zone
   return best;
 }
 function sailAndLand(uid, tid, beach) {
@@ -2275,7 +2338,8 @@ function tapAt(sx, sy) {
       planeSel = null; updateHud(); return;
     }
     if (p && p.type === 'recon') { // r8g3: a recon tap only ever queues a recon order (never a fly order); out of range / already seen = refused, nothing spent
-      if (isl && G.issueRecon(S, p.id, isl.id)) { planeOrdered(); return; }
+      const rz = tk && tk.kind === 'zone' ? tk.sec : tk && (tk.kind === 'fleet' || tk.kind === 'sea') ? 'sea' : null; // r9c ask 4: recon flies to a zone and sees it + its neighbours
+      if (isl && G.issueRecon(S, p.id, isl.id, rz)) { planeOrdered(); return; }
       if (isl) { noGo(sx, sy, pic); return; }
       reconMode = false; planeSel = null; strip = null; updateHud(); return;
     }
@@ -2308,6 +2372,11 @@ function tapAt(sx, sy) {
         noGo(sx, sy, toastImg('ship')); return;
       }
       sel = null; strip = null; foeSel = null; updateHud(); return;
+    }
+    if (tk && tk.kind === 'sea' && !(cur && cur.kind === 'army' && cur.aboard && !tk.open)) { // r9c: a sea zone tap names it (troops aboard tapping an island's sea sail to that island)
+      if (cur && cur.kind === 'army') { noGo(sx, sy, toastImg('sea')); return; }
+      if (strip) closeStrip();
+      toast(`${toastImg('sea')}<b>${R9.cap(tk.name)}</b>`, 1100); return;
     }
     if (tk) {
       if (cur && cur.kind === 'army' && cur.aboard && tk.kind === 'fleet' && tk.fleets.includes(cur.aboard)) { openStrip(tk); return; } // its own ship: show the fleet strip
@@ -2461,6 +2530,7 @@ cvs.addEventListener('pointermove', (e) => {
 function zoneTip(sx, sy) {
   const tip = $('ztip'); if (!tip) return;
   const tk = !busy && strat() ? tokenAt(sx, sy) : null;
+  if (tk && tk.kind === 'sea') { tip.innerHTML = `${R9.waveSvg} <b>${R9.cap(tk.name)}</b>`; tip.style.left = `${sx + 14}px`; tip.style.top = `${sy - 34}px`; tip.hidden = false; return; } // r9c: sea zone names on hover
   if (!tk || tk.kind !== 'zone' || !zKnown(tk.isl, tk.sec)) { tip.hidden = true; return; }
   const x = G.section(G.island(S, tk.isl), tk.sec);
   tip.innerHTML = `<b>${R9.LAND_WORD[x.kind]}</b> ${R9.cap(G.island(S, tk.isl).name)}`; tip.style.left = `${sx + 14}px`; tip.style.top = `${sy - 34}px`; tip.hidden = false;

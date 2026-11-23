@@ -1,8 +1,8 @@
 // r9 UI helpers (no game state here): big kind badges, echelon lines, rank chips, cost tags, plain-word names,
 // and the Menu sheets (Tutorial, Matchups). Style follows the parts-library gold-dark panels (--acc gold on dark).
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9b';
-import { rankBoard } from './art.js?v=9b';
-import { STRONG, WEAK, KEYS } from './matchups.js?v=9b';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9c';
+import { rankBoard } from './art.js?v=9c';
+import { STRONG, WEAK, KEYS } from './matchups.js?v=9c';
 
 // kind = what a card / marker IS: ground forces, ships, planes or a commander
 export const KIND = {
@@ -125,13 +125,15 @@ export function cmdPanel(c, portraitSrc) {
 export const waveSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>';
 
 // ======================= r9b asks 7 + 8: lands, islands, the goal =======================
-export const LAND_WORD = { beach: 'Beach', port: 'Port', air: 'Airfield', ridge: 'Ridge', jungle: 'Jungle', depot: 'Depot', hq: 'HQ' };
+export const LAND_WORD = { sea: 'Sea zone', beach: 'Beach', port: 'Port', air: 'Airfield', ridge: 'Ridge', jungle: 'Jungle', depot: 'Depot', hq: 'HQ' };
 export const LAND_SHORT = {
+  sea: 'ships fight here',
   beach: 'landing spot', port: 'ships dock', air: 'planes base here', ridge: 'high ground, cover',
   jungle: 'thick cover', depot: '+2 supply a week, buy here', hq: 'home base, buy here',
 };
 // what each land does (Lands menu). Combat lines follow G.TERRAIN; the rest are the existing rules.
 const LAND_DOES = {
+  sea: 'Open water. Ships move and fight here. Planes can strike ships here. Troops on transports are exposed.',
   beach: 'Landing spot. Your ships help you attack here.',
   port: 'Ships dock here. Bought ships unload at your home port. Your ships help you attack here.',
   air: 'Planes base and land here. Bought planes unload at your home airfield.',
@@ -151,6 +153,7 @@ export function landPros(kind, G) {
   for (const ty of T.downAtk || []) out.push(dnChip(unitIcon(ty, 20), `${typeWord(ty)} attacking -${pct}%`));
   if (T.cover > 0) out.push(upChip(icon('shield', { size: 20 }), `Defenders: cover, hit ${pct}% less`));
   if (T.cover < 0) out.push(dnChip(icon('shield', { size: 20 }), `Defenders: no cover, hit ${pct}% more`));
+  if (kind === 'sea') return [upChip(unitIcon('dd', 20), 'Ships fight'), upChip(icon('plane', { size: 20 }), 'Planes can strike'), dnChip(unitIcon('inf', 20), 'Troops aboard exposed')].join('');
   if (kind === 'beach' || kind === 'port') out.push(upChip(unitIcon('dd', 20), 'Attackers: ships help'));
   if (kind === 'air') out.push(upChip(icon('plane', { size: 20 }), 'Planes land'));
   if (kind === 'depot') out.push(upChip(icon('coins', { size: 20 }), `+${G.DEPOT_SUPPLY} supply`));
@@ -159,7 +162,7 @@ export function landPros(kind, G) {
   return out.join('');
 }
 export function landsSheet(landImg, G) {
-  const kinds = ['beach', 'port', 'air', 'ridge', 'jungle', 'depot', 'hq'];
+  const kinds = ['sea', 'beach', 'port', 'air', 'ridge', 'jungle', 'depot', 'hq'];
   return `<div class="sheet-h">${icon('map', { size: 26 })}<b>LANDS</b></div><div class="lands">${kinds.map((k) => `<div class="ld-row" data-land="${k}">
     <span class="ld-k">${landImg(k)}<b>${LAND_WORD[k]}</b></span><div class="ld-b"><div class="ld-does">${LAND_DOES[k]}</div><div class="ld-pc">${landPros(k, G)}</div></div></div>`).join('')}</div>`;
 }

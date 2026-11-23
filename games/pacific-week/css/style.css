@@ -468,3 +468,10 @@ i.q { font-style: normal; font-weight: 900; font-size: 15px; color: #c9ced6; wid
 .lp.up { background: rgba(80,200,90,.14); border: 1px solid rgba(110,220,120,.6); color: #b9f2bf; } .lp.up .lp-a { color: #5fe06c; }
 .lp.dn { background: rgba(230,70,60,.14); border: 1px solid rgba(240,100,90,.6); color: #ffc2bc; } .lp.dn .lp-a { color: #ff5a4c; }
 .lp.none { color: #c9d3e6; }
+/* r9c ask 5: promote buttons, blocked reorg targets (other zone), empty promoted battalions */
+#strip .promo { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
+#strip .promo > b { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #ffd23f; letter-spacing: .04em; }
+#strip .sc.slot.rt.blk { border-color: rgba(255,255,255,.28); box-shadow: none; background: rgba(40,30,30,.65); opacity: .7; cursor: not-allowed; }
+#strip .sc.slot.rt.blk .blk-x { position: absolute; top: 2px; right: 2px; color: #ff6b6b; line-height: 0; }
+#strip .bn-empty { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; border: 2px dashed #5fd17a; color: #5fd17a; }
+.t-w { margin-left: 4px; }
