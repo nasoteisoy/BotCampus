@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <link rel="icon" href="data:,">
-<title>Dragon Explorer · sprite-stack test v2</title>
+<title>Dragon Explorer · sprite-stack test v3b</title>
 <style>
 html,body{margin:0;height:100%;background:#16324a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font-family:system-ui,sans-serif}
 canvas#view{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -48,11 +48,11 @@ const rnd=(()=>{let s=20261122;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>
 
 // ---------------- assets v2 (sheets: rows = frames + shadow row, cols = 32 angles; built by tools/v2/build_v2.py) ----------------
 let A, WD={}, WI={};
-const V='?v=v2a';
+const V='?v=v3b';
 async function loadAssets(){
-  A=await (await fetch('sprites_v2/meta.json'+V)).json();
+  A=await (await fetch('sprites_v3b/meta.json'+V)).json();   // v3b: v3 + dragon ears (tools/v3b/build_v3b.py); v3 kept as index_v3.html
   const HOP=[0,2,5,7,5,2];
-  await Promise.all(Object.entries(A).map(async([k,m])=>{ const img=new Image(); img.src='sprites_v2/'+k+'.png'+V; await img.decode(); m.img=img; m.hop=HOP; }));
+  await Promise.all(Object.entries(A).map(async([k,m])=>{ const img=new Image(); img.src='sprites_v3b/'+k+'.png'+V; await img.decode(); m.img=img; m.hop=HOP; }));
   WD=await (await fetch('sprites_v2/world/world.json'+V)).json();
   await Promise.all(Object.keys(WD).map(async k=>{ const img=new Image(); img.src='sprites_v2/world/'+k+'.png'+V; await img.decode(); WI[k]=img; }));
 }
