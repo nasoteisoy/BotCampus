@@ -475,3 +475,29 @@ i.q { font-style: normal; font-weight: 900; font-size: 15px; color: #c9ced6; wid
 #strip .sc.slot.rt.blk .blk-x { position: absolute; top: 2px; right: 2px; color: #ff6b6b; line-height: 0; }
 #strip .bn-empty { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; border: 2px dashed #5fd17a; color: #5fd17a; }
 .t-w { margin-left: 4px; }
+/* r9d ask 1: BUY button in the top bar + the one shop sheet */
+.chip.buyc { position: relative; color: #1a1400; background: #ffd23f; border-color: #c9a010; gap: 4px; font-weight: 900; }
+.chip.buyc .si { display: grid; place-items: center; }
+.chip.buyc .badge { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; border-radius: 9px; background: #2c5aa8; color: #fff; font: 900 12px "Barlow Condensed", sans-serif; display: grid; place-items: center; padding: 0 4px; }
+.chip.buyc:disabled { filter: grayscale(.8) brightness(.7); }
+.shop-sup { display: inline-flex; align-items: center; gap: 3px; margin-left: 10px; color: #ffd23f; }
+.shop { display: flex; flex-direction: column; gap: 10px; }
+.shop-g { padding: 8px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+.shop-g.zlost { border-color: rgba(255,107,107,.5); }
+.shop-h { display: flex; align-items: center; gap: 6px; font: 800 16px "Barlow Condensed", sans-serif; color: #dfe6f0; margin-bottom: 6px; }
+.shop-h img { width: 28px; height: 28px; }
+.shop-why { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; color: #ff8f8f; font-weight: 900; }
+.shop-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.shop .buy { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 58px; min-height: 58px; padding: 4px 6px; border-radius: 10px; background: #1d2a3b; border: 2px solid #ffd23f; color: #f2f5f8; cursor: pointer; }
+.shop .buy:disabled { opacity: .38; border-color: rgba(255,255,255,.3); cursor: default; }
+.shop .buy.poor:disabled .cost { color: #ff8f8f; }
+.shop-next { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font: 800 15px "Barlow Condensed", sans-serif; color: #bfeaff; }
+.shop-next .co-q { display: inline-flex; align-items: center; gap: 2px; min-height: 40px; min-width: 40px; padding: 2px 5px; }
+.shop-next .co-q.wait { border-color: #ff8f8f; }
+.shop-none { color: #7f8a99; }
+/* r9d: on a phone the top-right chips go on two rows (islands, then supply + BUY) so they never cover the left buttons */
+@media (max-width: 560px) {
+  #tr { flex-wrap: wrap; justify-content: flex-end; max-width: 200px; row-gap: 6px; }
+  #c-blue, #c-red { order: 1; } #c-sup, #c-buy { order: 2; }
+  .chip.buyc b { display: none; }
+}

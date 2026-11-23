@@ -1,6 +1,6 @@
 // Hand-drawn canvas art: invented flags, fictional commander portraits, unit symbols, KG-style front arrows.
-import { rng } from './state.js?v=9c';
-import { UNIT_PATHS } from './icons.js?v=9c';
+import { rng } from './state.js?v=9d';
+import { UNIT_PATHS } from './icons.js?v=9d';
 
 const unitPath2D = {};
 // company / ship class icon on a canvas, same shapes as the panel's svg icons

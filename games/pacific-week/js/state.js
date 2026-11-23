@@ -1391,7 +1391,7 @@ function mergeStacks(s) {
   for (const isl of s.islands) {
     for (const side of [BLUE, RED]) {
       const groups = {};
-      unitsAt(s, isl.id, side).forEach((u) => { const k = `${u.kind}:${u.sec}:${u.aboard || ''}${u.org ? `:${u.id}` : ''}`; (groups[k] = groups[k] || []).push(u); }); // r9: a reorganized regiment keeps its own make-up
+      unitsAt(s, isl.id, side).forEach((u) => { const k = `${u.kind}:${u.kind === 'fleet' ? fleetSpot(s, u) || 'sea' : u.sec}:${u.aboard || ''}${u.org ? `:${u.id}` : ''}`; /* r9d: a fleet docked at the port stays apart from one at sea */ (groups[k] = groups[k] || []).push(u); }); // r9: a reorganized regiment keeps its own make-up
       for (const [k, list] of Object.entries(groups)) {
         if (list.length < 2) continue;
         const kind = k.split(':')[0];
@@ -1725,17 +1725,25 @@ export const BUY_KINDS = [...CO_TYPES, ...SHIP_TYPES, ...PLANE_TYPES];
 export const homeOf = (side) => (side === BLUE ? 'kestra' : 'voruna');
 function ensureIncoming(s) { if (!s.incoming) s.incoming = { blue: [], red: [] }; return s.incoming; }
 export const incomingOf = (s, side) => ensureIncoming(s)[side];
-export function canOrderUnit(s, side, type) {
-  if (!s || s.over || !BUY_KINDS.includes(type) || !canPay(s, side, COST[type])) return false;
-  const home = island(s, homeOf(side)); if (!home) return false;
-  if (section(home, 'hq').owner !== side) return false; // the transport unloads at your home HQ
-  if (SHIP_TYPES.includes(type)) { const pt = section(home, 'port'); return !!pt && pt.owner === side; }
-  if (PLANE_TYPES.includes(type)) {
-    const hb = { isl: home.id, sec: 'air' }, coming = incomingOf(s, side).filter((q) => PLANE_TYPES.includes(q.type)).length;
-    return validBase(s, side, hb) && baseRoom(s, hb) - coming > 0;
+// r9d ask 2: each kind unloads at ONE home zone: companies at the home HQ, ships at the home port, planes at the home
+// airfield. Lose that zone and that kind cannot be bought (buyBlock says why); anything already bought waits for it.
+export const DROP_ZONE = { co: 'hq', ship: 'port', plane: 'air' };
+export const buyKind = (type) => (SHIP_TYPES.includes(type) ? 'ship' : PLANE_TYPES.includes(type) ? 'plane' : 'co');
+export function dropZone(s, side, type) { const home = island(s, homeOf(side)); return home ? home.secs.find((x) => x.kind === DROP_ZONE[buyKind(type)]) || null : null; }
+// why this can't be bought now: 'over' | 'hq' | 'port' | 'air' (that home zone is lost) | 'full' (airfield full) | 'cost' | null = OK
+export function buyBlock(s, side, type) {
+  if (!s || s.over || !BUY_KINDS.includes(type)) return 'over';
+  const z = dropZone(s, side, type), want = DROP_ZONE[buyKind(type)];
+  if (!z || z.owner !== side) return want;
+  if (want === 'air') {
+    const hb = { isl: homeOf(side), sec: z.id }, coming = incomingOf(s, side).filter((q) => PLANE_TYPES.includes(q.type)).length;
+    if (!validBase(s, side, hb)) return 'air';
+    if (baseRoom(s, hb) - coming <= 0) return 'full';
   }
-  return true;
+  if (!canPay(s, side, COST[type])) return 'cost';
+  return null;
 }
+export const canOrderUnit = (s, side, type) => buyBlock(s, side, type) === null;
 export function orderUnit(s, side, type) {
   if (!canOrderUnit(s, side, type)) return false;
   pay(s, side, COST[type]); incomingOf(s, side).push({ type });
@@ -1750,30 +1758,35 @@ function deliver(s) {
   const out = []; ensureSupply(s); ensureIncoming(s);
   for (const side of [BLUE, RED]) {
     const q = s.incoming[side]; if (!q.length) continue;
-    const home = island(s, homeOf(side)); if (section(home, 'hq').owner !== side) continue; // waits until the HQ is yours again
-    const left = [], got = [];
+    const home = island(s, homeOf(side)), left = [], got = [], stops = {}; // r9d: each item waits until ITS home zone is yours
+    const zoneOk = (ty) => { const z = dropZone(s, side, ty); return !!z && z.owner === side; };
+    const stop = (ty) => { const z = dropZone(s, side, ty).id; (stops[z] = stops[z] || []).push(ty); };
     let troops = 0, ships = 0, planes = 0, shipType = null, planeType = null;
     for (const it of q) {
       const ty = it.type;
+      if (!zoneOk(ty)) { left.push(it); continue; }
       if (CO_TYPES.includes(ty)) {
         const here = armiesIn(s, home.id, 'hq', side);
         let a = here.find((u) => u.str < MAX_STR.army && !u.org);
         if (!a && here.length >= HOME_STACK) { left.push(it); continue; }
         if (!a) { a = addUnit(s, side, 'army', home.id, 0, 'hq'); a.oob.bns.forEach((b) => { b.w = 0; b.cos.forEach((c) => { c.w = 0; }); }); } // new men, no time together yet
-        addBoughtCo(a, ty); troops++; got.push(ty);
+        addBoughtCo(a, ty); troops++; got.push(ty); stop(ty);
       } else if (SHIP_TYPES.includes(ty)) {
-        let f = unitsAt(s, home.id, side, 'fleet').filter((u) => u.str < MAX_STR.fleet && !s.orders[u.id] && !u.aboard).sort((a, b) => b.str - a.str)[0];
+        const pid = dropZone(s, side, ty).id; // r9d: joins a fleet docked at the home port, else a new fleet there
+        let f = unitsAt(s, home.id, side, 'fleet').filter((u) => u.str < MAX_STR.fleet && !s.orders[u.id] && !u.aboard && fleetSpot(s, u) === pid).sort((a, b) => b.str - a.str)[0];
         if (!f) f = addUnit(s, side, 'fleet', home.id, 0);
         syncOob(f); f.ships.push(ty); f.str += 1;
-        if (section(home, 'port').owner === side && !f.spot) f.spot = { isl: home.id, sec: 'port' }; // docked at the home port
-        ships++; shipType = ty; got.push(ty);
+        f.spot = { isl: home.id, sec: dropZone(s, side, ty).id }; // r9d: docked at the home port
+        ships++; shipType = ty; got.push(ty); stop(ty);
       } else {
-        const hb = { isl: home.id, sec: 'air' };
-        if (validBase(s, side, hb) && baseRoom(s, hb) > 0 && addPlane(s, side, ty, hb)) { planes++; planeType = ty; got.push(ty); } else left.push(it);
+        const hb = { isl: home.id, sec: dropZone(s, side, ty).id };
+        if (validBase(s, side, hb) && baseRoom(s, hb) > 0 && addPlane(s, side, ty, hb)) { planes++; planeType = ty; got.push(ty); stop(ty); } else left.push(it);
       }
     }
     s.incoming[side] = left;
-    if (got.length) out.push({ type: 'reinforce', side, island: home.id, troops, ships, planes, planeType, shipType, items: got, spent: 0, transport: true });
+    // r9d ask 3: stops = which home zone each item unloads at (port first: the transport docks, then HQ / airfield)
+    const order = ['port', 'hq', 'air'], st = Object.entries(stops).map(([sec, items]) => ({ sec, items })).sort((a, b) => order.indexOf(section(home, a.sec).kind) - order.indexOf(section(home, b.sec).kind));
+    if (got.length) out.push({ type: 'reinforce', side, island: home.id, troops, ships, planes, planeType, shipType, items: got, stops: st, spent: 0, transport: true });
   }
   return out;
 }

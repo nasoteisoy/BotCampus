@@ -1,12 +1,12 @@
-import * as G from './state.js?v=9c';
-import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9c';
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9c';
-import { createSpaceAudio } from './audio.js?v=9c';
-import { computeTerrain } from './terrain.js?v=9c';
-import { openBoard } from './battle.js?v=9c';
-import { STRONG, WEAK, cardKey } from './matchups.js?v=9c';
-import * as R9 from './r9ui.js?v=9c';
-import { soldier, bunker } from './art.js?v=9c';
+import * as G from './state.js?v=9d';
+import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9d';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9d';
+import { createSpaceAudio } from './audio.js?v=9d';
+import { computeTerrain } from './terrain.js?v=9d';
+import { openBoard } from './battle.js?v=9d';
+import { STRONG, WEAK, cardKey } from './matchups.js?v=9d';
+import * as R9 from './r9ui.js?v=9d';
+import { soldier, bunker } from './art.js?v=9d';
 
 const params = new URLSearchParams(location.search);
 let speed = params.has('fast') ? 12 : 1;
@@ -974,17 +974,11 @@ function infoHtml() {
     const land = t.known ? `<span class="in-land">${toastImg(x.kind)}<b>${R9.LAND_WORD[x.kind]}</b><span class="in-does">${R9.LAND_SHORT[x.kind]}</span></span>` : '';
     const top = `<div class="in-isl">${land}<span class="in-iname">${R9.cap(I.name)}</span>${R9.islandGives(I, G)}</div><div class="in-goal">${R9.goalLine(G, S)}</div>`;
     if (!own) return `<div class="st-info zone">${top}</div>`;
-    if (x.kind === 'hq' || x.kind === 'depot' || x.kind === 'port') { // r9b ask 9: buy here; it comes by transport to your home island at End Week
-      for (const ty of G.CO_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
-      for (const ty of G.SHIP_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
-    }
-    if (x.kind === 'hq' || x.kind === 'depot' || x.kind === 'port' || x.kind === 'air') for (const ty of G.PLANE_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
+    // r9d ask 1: no shop on zone cards any more (the BUY button in the top bar); zones keep their buildings
     rowsB.push(buyBtn(`data-build="fort" aria-label="Build fort"`, `<img alt="" src="${fortImg()}" width="22" height="22">`, G.COST.fort, G.canBuild(S, 'blue', isl, x.id, 'fort')));
     if (x.kind === 'beach') rowsB.push(buyBtn(`data-build="dock" aria-label="Build dock"`, icon('anchor', { size: 22 }), G.COST.dock, G.canBuild(S, 'blue', isl, x.id, 'dock')));
     if (['ridge', 'jungle', 'depot'].includes(x.kind)) rowsB.push(buyBtn(`data-build="airfield" aria-label="Build airfield"`, `${icon('plane', { size: 22 })}`, G.COST.airfield, G.canBuild(S, 'blue', isl, x.id, 'airfield')));
-    const q = G.incomingOf(S, 'blue');
-    const coming = q.length ? `<div class="in-coming">${R9.shipSvg}<b>Next week</b>${q.map((it) => `<button class="co-q" data-unorder="${it.type}" aria-label="Take back ${it.type}">${unitIcon(it.type, 20)}</button>`).join('')}</div>` : '';
-    return `<div class="st-info zone">${top}<div class="in-shop"><div class="in-sup">${icon('coins', { size: 18 })}<b>${S.supply.blue}</b></div><div class="in-buy">${rowsB.join('')}</div></div>${coming}</div>`;
+    return `<div class="st-info zone">${top}<div class="in-shop"><div class="in-sup">${icon('coins', { size: 18 })}<b>${S.supply.blue}</b></div><div class="in-buy">${rowsB.join('')}</div></div></div>`;
   }
   return `<div class="st-info ${side}">${pic}<div class="in-body"><div class="in-top">${kb}${extra}</div><div class="in-name">${name}</div>${R9.matchWords(mk, keyImg)}${rows}</div></div>`;
 }
@@ -1090,7 +1084,23 @@ function renderMenu() {
   else if (menuView.k === 'step') html = R9.tutorialStep(tutSteps(menuView.which), menuView.i, menuView.which);
   else if (menuView.k === 'match') html = R9.matchupsSheet(keyImg);
   else if (menuView.k === 'lands') html = R9.landsSheet(toastImg, G);
+  else if (menuView.k === 'shop') html = shopSheet();
   card.innerHTML = `${html}<button class="btn ico m-x" data-mx="1" aria-label="Close">${icon('x', { size: 24 })}</button>`;
+}
+// r9d ask 1: ONE shop (the BUY button in the top bar): companies, ships, planes with prices; greyed when you can't pay or
+// when that kind's home landing zone is lost (short reason). Next week = what the transport brings; tap one to take it back.
+const BUY_WHY = { hq: 'Home HQ lost', port: 'Home port lost', air: 'Home airfield lost', full: 'Airfield full' };
+function shopSheet() {
+  const groups = [['co', G.CO_TYPES, 'hq'], ['ship', G.SHIP_TYPES, 'port'], ['plane', G.PLANE_TYPES, 'air']];
+  const rows = groups.map(([k, types, zk]) => {
+    const why = BUY_WHY[G.buyBlock(S, 'blue', types[0])] || '';
+    const btns = types.map((ty) => { const blk = G.buyBlock(S, 'blue', ty); return `<button class="buy shop-b${blk === 'cost' ? ' poor' : ''}" data-order="${ty}" aria-label="Buy ${R9.typeWord(ty)}" ${blk || busy ? 'disabled' : ''}>${unitIcon(ty, 30)}${R9.coinHtml(G.COST[ty])}</button>`; }).join('');
+    return `<div class="shop-g${why ? ' zlost' : ''}" data-shop="${k}"><div class="shop-h">${toastImg(zk)}<b>${R9.LAND_WORD[zk]}</b>${why ? `<span class="shop-why">${icon('x', { size: 16 })}${why}</span>` : ''}</div><div class="shop-row">${btns}</div></div>`;
+  }).join('');
+  const q = G.incomingOf(S, 'blue');
+  const wait = (ty) => { const z = G.dropZone(S, 'blue', ty); return !z || z.owner !== 'blue'; };
+  const next = `<div class="shop-next">${R9.shipSvg}<b>Next week</b>${q.length ? q.map((it) => `<button class="co-q${wait(it.type) ? ' wait' : ''}" data-unorder="${it.type}" aria-label="Take back ${it.type}">${unitIcon(it.type, 24)}${wait(it.type) ? icon('pause', { size: 14 }) : ''}</button>`).join('') : '<span class="shop-none">-</span>'}</div>`;
+  return `<div class="sheet-h">${icon('shop', { size: 26 })}<b>BUY</b><span class="shop-sup">${icon('coins', { size: 20 })}<b>${S.supply.blue}</b></span></div><div class="shop">${rows}${next}</div>`;
 }
 function openMenu(v) { menuView = v; renderMenu(); sfx.pew(); }
 function renderStrip() {
@@ -1297,6 +1307,12 @@ function render() {
   fx.pulses = fx.pulses.filter((p) => tNow - p.t0 < 900 / speed);
   fx.pulses.forEach(drawPulse);
   if (fx.trans) drawTransport(fx.trans);
+  if (fx.drops && fx.drops.length) { // r9d: what was unloaded pops up over the zone it landed at
+    fx.drops = fx.drops.filter((d) => tNow - d.t0 < 1400 / speed);
+    for (const d of fx.drops) { const k = (tNow - d.t0) / (1400 / speed), n = d.items.length, sz = Math.max(30, 26 / cam.z); g.save(); g.globalAlpha = 1 - k * k;
+      d.items.forEach((ty, i) => { const x = d.x + (i - (n - 1) / 2) * sz * 1.1, y = d.y - sz * (1.2 + k); g.fillStyle = 'rgba(12,15,20,.92)'; g.beginPath(); g.arc(x, y, sz * 0.5, 0, 7); g.fill(); g.lineWidth = 3 / cam.z; g.strokeStyle = SIDE_COL[d.side].fill; g.stroke(); unitGlyph(g, ty, x, y, sz * 0.7, '#fff', 2.4); });
+      g.restore(); }
+  }
   fx.pops = fx.pops.filter((p) => tNow - p.t0 < 1600 / speed);
   fx.pops.forEach(drawPop);
   // screen-space vignette
@@ -1912,6 +1928,7 @@ function toggleHoldings(force) {
 }
 function updateHud() {
   if (!strip || busy) { foeSel = null; reorg = null; }
+  const cb = $('c-buy'); if (cb) { const n = G.incomingOf(S, 'blue').length, bd = cb.querySelector('.badge'); bd.hidden = !n; bd.textContent = n; cb.disabled = busy || !!S.over; }
   const sp = $('c-sup'); if (sp && S.supply) { sp.querySelector('b').textContent = S.supply.blue; sp.querySelector('small').textContent = `+${G.income(S, 'blue')}`; }
   renderHoldings();
   const ids = new Set([...Object.keys(S.orders), ...Object.keys(S.secOrders), ...Object.keys(S.embark), ...Object.keys(S.landOrd)]);
@@ -2735,10 +2752,21 @@ async function doEndWeek(opts = {}) {
       events.push(e);
       if (e.side === 'blue' || seen.has(e.island)) {
         // r9b ask 9: what was bought comes in on a transport from that side's map edge and unloads at home
+        // r9d ask 3: it sails in and stops at each home zone it unloads at: the port (ships), then the HQ (companies), the airfield (planes)
         const isl = G.island(S, e.island), dir = e.side === 'blue' ? -1 : 1;
-        const to = { x: isl.x + dir * (isl.rx + 40), y: isl.y + 40 }, from = { x: dir < 0 ? -60 : WW + 60, y: to.y - 80 };
-        fx.trans = { side: e.side, from, to, t: 0, items: e.items || [] };
-        await tween(1300, (k) => { fx.trans.t = k; });
+        const stops = (e.stops && e.stops.length ? e.stops : [{ sec: null, items: e.items || [] }]).map((q) => {
+          const x = q.sec && vSec(isl.id, q.sec), p = x ? secPos(vIsl(isl.id), x) : { x: isl.x + dir * (isl.rx + 40), y: isl.y + 40 };
+          return { ...q, at: { x: p.x, y: p.y } };
+        });
+        let from = { x: dir < 0 ? -60 : WW + 60, y: stops[0].at.y - 80 }, load = (e.items || []).slice();
+        for (const st of stops) {
+          fx.trans = { side: e.side, from, to: st.at, t: 0, items: load, sec: st.sec };
+          await tween(from.x < -10 || from.x > WW ? 1200 : 650, (k) => { fx.trans.t = k; });
+          for (const ty of st.items) { const i = load.indexOf(ty); if (i >= 0) load.splice(i, 1); }
+          fx.drops = (fx.drops || []).concat([{ x: st.at.x, y: st.at.y, items: st.items, side: e.side, t0: performance.now() }]);
+          from = st.at;
+          await wait(250);
+        }
         fx.trans = null;
         fx.pops.push({ ...e, t0: performance.now() });
       }
@@ -2828,7 +2856,7 @@ function showEnd() {
 function buildLegend() {
   const rows = [
     ['army', 'ARMY', 'takes sections'], ['fleet', 'FLEET', 'sea fights'], ['beach', 'BEACH', 'land here first'],
-    ['secs', 'SECTIONS', 'take all to win the island'], ['supply', 'DEPOT', '+2 supply a week, buy here'],
+    ['secs', 'SECTIONS', 'take all to win the island'], ['supply', 'DEPOT', '+2 supply a week'],
     ['air', 'AIRFIELD', 'bases 4 planes'], ['fog', 'FOG', 'fly recon to see'], ['home', 'HQ', 'take theirs to win'],
     ['lift', 'SEALIFT', 'beach, ship, beach: 2 armies a fleet'], ['cv', 'CARRIER', '2 planes a carrier, they sail with it'],
     ['recon', 'RECON', 'scouts an island'], ['fighter', 'FIGHTER', 'escorts, shoots down planes'],
@@ -2866,6 +2894,7 @@ function icons() {
   $('b-restart').innerHTML = icon('refresh', { size: 24 });
   $('b-menu').innerHTML = icon('menu', { size: 24 });
   $('c-sup').querySelector('.si').innerHTML = icon('coins', { size: 18 });
+  $('c-buy').querySelector('.si').innerHTML = icon('shop', { size: 20 });
   $('b-sound').innerHTML = icon('volume', { size: 24 });
   $('z-in').innerHTML = icon('plus', { size: 24 });
   $('z-out').innerHTML = icon('minus', { size: 24 });
@@ -3009,7 +3038,10 @@ function wire() {
     else if (b.dataset.tut) openMenu({ k: 'step', which: b.dataset.tut, i: 0 });
     else if (b.dataset.tstep != null) openMenu({ ...menuView, i: +b.dataset.tstep });
     else if (b.dataset.tdone) openMenu({ k: 'tut' });
+    else if (b.dataset.order && !busy) { if (G.orderUnit(S, 'blue', b.dataset.order)) sfx.hit(); else sfx.alarm(); renderMenu(); updateHud(); } // r9d shop
+    else if (b.dataset.unorder && !busy) { if (G.unorderUnit(S, 'blue', b.dataset.unorder)) sfx.pew(); renderMenu(); updateHud(); }
   };
+  $('c-buy').onclick = () => { if (!busy && !S.over) openMenu({ k: 'shop' }); };
   $('c-sup').onclick = () => toast(`${icon('coins', { size: 28 })}<b>${S.supply.blue}</b><span class="t-sm">+${G.income(S, 'blue')}</span>`, 1200);
   $('c-blue').onclick = () => toggleHoldings();
   $('c-red').onclick = () => toggleHoldings();

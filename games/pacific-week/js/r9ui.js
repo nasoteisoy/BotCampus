@@ -1,8 +1,8 @@
 // r9 UI helpers (no game state here): big kind badges, echelon lines, rank chips, cost tags, plain-word names,
 // and the Menu sheets (Tutorial, Matchups). Style follows the parts-library gold-dark panels (--acc gold on dark).
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9c';
-import { rankBoard } from './art.js?v=9c';
-import { STRONG, WEAK, KEYS } from './matchups.js?v=9c';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9d';
+import { rankBoard } from './art.js?v=9d';
+import { STRONG, WEAK, KEYS } from './matchups.js?v=9d';
 
 // kind = what a card / marker IS: ground forces, ships, planes or a commander
 export const KIND = {
@@ -129,18 +129,18 @@ export const LAND_WORD = { sea: 'Sea zone', beach: 'Beach', port: 'Port', air: '
 export const LAND_SHORT = {
   sea: 'ships fight here',
   beach: 'landing spot', port: 'ships dock', air: 'planes base here', ridge: 'high ground, cover',
-  jungle: 'thick cover', depot: '+2 supply a week, buy here', hq: 'home base, buy here',
+  jungle: 'thick cover', depot: '+2 supply a week', hq: 'home base, new troops land',
 };
 // what each land does (Lands menu). Combat lines follow G.TERRAIN; the rest are the existing rules.
 const LAND_DOES = {
   sea: 'Open water. Ships move and fight here. Planes can strike ships here. Troops on transports are exposed.',
   beach: 'Landing spot. Your ships help you attack here.',
-  port: 'Ships dock here. Bought ships unload at your home port. Your ships help you attack here.',
-  air: 'Planes base and land here. Bought planes unload at your home airfield.',
+  port: 'Ships dock here. Bought ships land at your HOME port. Your ships help you attack here.',
+  air: 'Planes base and land here. Bought planes land at your HOME airfield.',
   ridge: 'High ground: defenders have cover.',
   jungle: 'Thick jungle: foot soldiers do well, heavy guns do badly.',
-  depot: '+2 supply every week. You can buy here.',
-  hq: 'Home base. Buy here; what you buy unloads here. Lose your home HQ = you lose.',
+  depot: '+2 supply every week.',
+  hq: 'Home base. Bought companies land at your HOME HQ. Lose your home HQ = you lose.',
 };
 const upChip = (pic, w) => `<span class="lp up">${upArrow}${pic}<b>${w}</b></span>`;
 const dnChip = (pic, w) => `<span class="lp dn">${dnArrow}${pic}<b>${w}</b></span>`;
@@ -157,7 +157,9 @@ export function landPros(kind, G) {
   if (kind === 'beach' || kind === 'port') out.push(upChip(unitIcon('dd', 20), 'Attackers: ships help'));
   if (kind === 'air') out.push(upChip(icon('plane', { size: 20 }), 'Planes land'));
   if (kind === 'depot') out.push(upChip(icon('coins', { size: 20 }), `+${G.DEPOT_SUPPLY} supply`));
-  if (kind === 'hq' || kind === 'depot' || kind === 'port') out.push(upChip(icon('coins', { size: 20 }), 'Buy here'));
+  if (kind === 'hq') out.push(upChip(unitIcon('inf', 20), 'Home: new companies land')); // r9d: buying is the BUY button; each kind lands at one home zone
+  if (kind === 'port') out.push(upChip(unitIcon('dd', 20), 'Home: new ships land'));
+  if (kind === 'air') out.push(upChip(icon('plane', { size: 20 }), 'Home: new planes land'));
   if (!out.length) out.push('<span class="lp none">No fight changes</span>');
   return out.join('');
 }
