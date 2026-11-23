@@ -1,14 +1,14 @@
 // r9 UI helpers (no game state here): big kind badges, echelon lines, rank chips, cost tags, plain-word names,
 // and the Menu sheets (Tutorial, Matchups). Style follows the parts-library gold-dark panels (--acc gold on dark).
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9';
-import { rankBoard } from './art.js?v=9';
-import { STRONG, WEAK, KEYS } from './matchups.js?v=9';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9b';
+import { rankBoard } from './art.js?v=9b';
+import { STRONG, WEAK, KEYS } from './matchups.js?v=9b';
 
 // kind = what a card / marker IS: ground forces, ships, planes or a commander
 export const KIND = {
   army: { col: '#4e7d32', ring: '#a6d98a', word: 'ARMY' },
   fleet: { col: '#1d4f91', ring: '#8fc0ff', word: 'FLEET' },
-  air: { col: '#1f7fa8', ring: '#9be3ff', word: 'AIR' },
+  air: { col: '#1f7fa8', ring: '#9be3ff', word: 'AIR WING' },
   cmd: { col: '#a9781c', ring: '#ffd86b', word: 'CMDR' },
 };
 const KIND_SVG = {
@@ -23,9 +23,12 @@ export function echHtml(n, cls = '') {
   const w = n * 5 + 1;
   return `<svg class="ech ${cls}" data-ech="${n}" width="${w * 1.6}" height="16" viewBox="0 0 ${w} 10" aria-label="${['', 'company', 'battalion', 'regiment'][n]}">${Array.from({ length: n }, (_, i) => `<rect x="${1 + i * 5}" y="0" width="3" height="10" rx="1"/>`).join('')}</svg>`;
 }
+// r9b: the word on an army badge is its echelon (REGIMENT / BATTALION / COMPANY), never ARMY
+export const ECH_WORD = { 3: 'REGIMENT', 2: 'BATTALION', 1: 'COMPANY' };
 export function kindBadge(kind, { ech = 0, word = true, cls = '' } = {}) {
   const k = KIND[kind]; if (!k) return '';
-  return `<span class="kb kb-${kind} ${cls}" data-kind="${kind}" style="--kb:${k.col};--kr:${k.ring}">${echHtml(ech)}<span class="kb-i"><svg viewBox="0 0 24 24" fill="${kind === 'cmd' ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${KIND_SVG[kind]}</svg></span>${word ? `<b>${k.word}</b>` : ''}</span>`;
+  const wd = kind === 'army' ? ECH_WORD[ech] || 'TROOPS' : k.word;
+  return `<span class="kb kb-${kind} ${cls}" data-kind="${kind}" style="--kb:${k.col};--kr:${k.ring}">${echHtml(ech)}<span class="kb-i"><svg viewBox="0 0 24 24" fill="${kind === 'cmd' ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${KIND_SVG[kind]}</svg></span>${word ? `<b>${wd}</b>` : ''}</span>`;
 }
 // the same badge on a canvas (map markers): a coloured disc with the kind symbol, echelon bars above it
 const kindPath = {};
@@ -90,3 +93,84 @@ export function tutorialStep(steps, i, which) {
     <span class="tut-dots">${steps.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span>
     ${i < steps.length - 1 ? `<button class="btn ico primary" data-tstep="${i + 1}" aria-label="Next">${icon('back', { size: 26, className: 'sc-ico flip' })}</button>` : `<button class="btn ico primary" data-tdone="1" aria-label="Done">${icon('check', { size: 26 })}</button>`}</div>`;
 }
+
+// ---- r9b: commander names + the commander panel ----
+const FIRST = 'ABCDEFGHJKLMNPRSTW';
+const SUR = {
+  blue: ['Harlan', 'Ostrow', 'Kendell', 'Marsh', 'Calloway', 'Brandt', 'Whitcombe', 'Reyes', 'Lindqvist', 'Abernathy', 'Dorsey', 'Hale', 'Fenwick', 'Okafor', 'Prescott', 'Vance', 'Tolliver', 'Merritt', 'Sato', 'Ingram', 'Castellan', 'Rourke', 'Pell', 'Garrick'],
+  red: ['Varek', 'Moradin', 'Kesh', 'Torvald', 'Ilgar', 'Senna', 'Duvra', 'Halvik', 'Orsk', 'Petrane', 'Zalec', 'Brannoc', 'Valtis', 'Corvo', 'Remik', 'Tarnes', 'Ulvar', 'Kostin', 'Arvel', 'Drago', 'Mirsk', 'Lazko', 'Fenrik', 'Sabor'],
+};
+export function cmdName(side, seed) {
+  const n = Math.abs(Math.floor(seed * 2654435761) >>> 0);
+  const list = SUR[side] || SUR.blue;
+  return `${FIRST[n % FIRST.length]}. ${list[(n >>> 7) % list.length]}`;
+}
+export const PERK_WORDS = {
+  atk: 'Attack: his troops hit 5% more often',
+  def: 'Defence: his troops are hit 5% less',
+  move: 'Move: his fleet sails 150 further',
+  scout: 'Scout: sees the zones next to him',
+};
+// c = { side, seed, rank, perk, stars (null = none), what }; portraitSrc = data URL of the big portrait
+export function cmdPanel(c, portraitSrc) {
+  const p = c.perk && PERK_INFO[c.perk];
+  return `<div class="cp-head"><img class="cp-p" alt="" src="${portraitSrc}" width="84" height="84"><div class="cp-id">
+      <div class="cp-name">${RANK_WORD[c.rank]} ${cmdName(c.side, c.seed)}</div>
+      <div class="cp-rank">${rankChip(c.rank, 24)}<b>${RANK_WORD[c.rank]}</b></div>
+      <div class="cp-what">${c.what}</div></div>
+      <button class="btn ico cp-x" data-cpx="1" aria-label="Close">${icon('x', { size: 22 })}</button></div>
+    <div class="cp-row">${p ? `<span class="perk big">${icon(p.ic, { size: 20 })}<b>${p.w}</b></span><span class="cp-w">${PERK_WORDS[c.perk]}</span>` : `<span class="perk none">${icon('minus', { size: 18 })}</span><span class="cp-w">No perk</span>`}</div>
+    ${c.stars == null ? '' : `<div class="cp-row">${starsHtml(c.stars)}<span class="cp-w">Together ${c.stars}/3 (longer under him = better)</span></div>`}`;
+}
+export const waveSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>';
+
+// ======================= r9b asks 7 + 8: lands, islands, the goal =======================
+export const LAND_WORD = { beach: 'Beach', port: 'Port', air: 'Airfield', ridge: 'Ridge', jungle: 'Jungle', depot: 'Depot', hq: 'HQ' };
+export const LAND_SHORT = {
+  beach: 'landing spot', port: 'ships dock', air: 'planes base here', ridge: 'high ground, cover',
+  jungle: 'thick cover', depot: '+2 supply a week, buy here', hq: 'home base, buy here',
+};
+// what each land does (Lands menu). Combat lines follow G.TERRAIN; the rest are the existing rules.
+const LAND_DOES = {
+  beach: 'Landing spot. Your ships help you attack here.',
+  port: 'Ships dock here. Bought ships unload at your home port. Your ships help you attack here.',
+  air: 'Planes base and land here. Bought planes unload at your home airfield.',
+  ridge: 'High ground: defenders have cover.',
+  jungle: 'Thick jungle: foot soldiers do well, heavy guns do badly.',
+  depot: '+2 supply every week. You can buy here.',
+  hq: 'Home base. Buy here; what you buy unloads here. Lose your home HQ = you lose.',
+};
+const upChip = (pic, w) => `<span class="lp up">${upArrow}${pic}<b>${w}</b></span>`;
+const dnChip = (pic, w) => `<span class="lp dn">${dnArrow}${pic}<b>${w}</b></span>`;
+const upArrow = '<svg class="lp-a" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5 M5 11l7-7 7 7"/></svg>';
+const dnArrow = '<svg class="lp-a" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v15 M5 13l7 7 7-7"/></svg>';
+export function landPros(kind, G) {
+  const T = G.TERRAIN[kind] || { up: [], down: [], cover: 0 }, out = [], pct = Math.round(G.TER_STEP * 100);
+  for (const ty of T.up) out.push(upChip(unitIcon(ty, 20), `${typeWord(ty)} +${pct}%`));
+  for (const ty of T.down) out.push(dnChip(unitIcon(ty, 20), `${typeWord(ty)} -${pct}%`));
+  for (const ty of T.downAtk || []) out.push(dnChip(unitIcon(ty, 20), `${typeWord(ty)} attacking -${pct}%`));
+  if (T.cover > 0) out.push(upChip(icon('shield', { size: 20 }), `Defenders: cover, hit ${pct}% less`));
+  if (T.cover < 0) out.push(dnChip(icon('shield', { size: 20 }), `Defenders: no cover, hit ${pct}% more`));
+  if (kind === 'beach' || kind === 'port') out.push(upChip(unitIcon('dd', 20), 'Attackers: ships help'));
+  if (kind === 'air') out.push(upChip(icon('plane', { size: 20 }), 'Planes land'));
+  if (kind === 'depot') out.push(upChip(icon('coins', { size: 20 }), `+${G.DEPOT_SUPPLY} supply`));
+  if (kind === 'hq' || kind === 'depot' || kind === 'port') out.push(upChip(icon('coins', { size: 20 }), 'Buy here'));
+  if (!out.length) out.push('<span class="lp none">No fight changes</span>');
+  return out.join('');
+}
+export function landsSheet(landImg, G) {
+  const kinds = ['beach', 'port', 'air', 'ridge', 'jungle', 'depot', 'hq'];
+  return `<div class="sheet-h">${icon('map', { size: 26 })}<b>LANDS</b></div><div class="lands">${kinds.map((k) => `<div class="ld-row" data-land="${k}">
+    <span class="ld-k">${landImg(k)}<b>${LAND_WORD[k]}</b></span><div class="ld-b"><div class="ld-does">${LAND_DOES[k]}</div><div class="ld-pc">${landPros(k, G)}</div></div></div>`).join('')}</div>`;
+}
+// what holding this island gives you (ask 7)
+export function islandGives(I, G) {
+  const dep = I.secs.filter((x) => x.kind === 'depot').length, sup = (G.INCOME[I.type] || 0) + dep * G.DEPOT_SUPPLY;
+  const out = [`<span class="ig">${icon('coins', { size: 16 })}<b>+${sup} supply a week</b></span>`];
+  if (I.secs.some((x) => x.kind === 'air')) out.push(`<span class="ig">${icon('plane', { size: 16 })}<b>planes can land</b></span>`);
+  if (I.secs.some((x) => x.kind === 'port')) out.push(`<span class="ig">${icon('anchor', { size: 16 })}<b>ships dock${I.type === 'home' ? ' + unload' : ''}</b></span>`);
+  if (I.type === 'home') out.push(`<span class="ig">${icon('home', { size: 16 })}<b>home HQ</b></span>`);
+  return `<span class="in-gives">${out.join('')}</span>`;
+}
+export const goalLine = (G, S) => `${icon('target', { size: 16 })}<b>Take ${cap(G.island(S, G.homeOf('red')).name)} to win</b><span class="dot">·</span><b>Lose ${cap(G.island(S, G.homeOf('blue')).name)} = lose</b>`;
+export const shipSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h16l-2 3H6z M9 15v-2h5v2 M11 13v-2.5"/></svg>`;

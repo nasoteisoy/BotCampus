@@ -1,4 +1,4 @@
-import { computeTerrain } from './terrain.js?v=9';
+import { computeTerrain } from './terrain.js?v=9b';
 self.onmessage = (e) => {
   const { islands, W, H, scale } = e.data;
   const t = computeTerrain(islands, W, H, scale);

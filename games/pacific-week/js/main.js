@@ -1,12 +1,12 @@
-import * as G from './state.js?v=9';
-import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9';
-import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9';
-import { createSpaceAudio } from './audio.js?v=9';
-import { computeTerrain } from './terrain.js?v=9';
-import { openBoard } from './battle.js?v=9';
-import { STRONG, WEAK, cardKey } from './matchups.js?v=9';
-import * as R9 from './r9ui.js?v=9';
-import { soldier, bunker } from './art.js?v=9';
+import * as G from './state.js?v=9b';
+import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9b';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9b';
+import { createSpaceAudio } from './audio.js?v=9b';
+import { computeTerrain } from './terrain.js?v=9b';
+import { openBoard } from './battle.js?v=9b';
+import { STRONG, WEAK, cardKey } from './matchups.js?v=9b';
+import * as R9 from './r9ui.js?v=9b';
+import { soldier, bunker } from './art.js?v=9b';
 
 const params = new URLSearchParams(location.search);
 let speed = params.has('fast') ? 12 : 1;
@@ -31,7 +31,7 @@ let reorg = null; // r9: a picked company { k: 'co', u, co } or battalion { k: '
 let cancelMarks = []; // r9: the X on each planned Blue move this frame (screen px)
 let menuView = null; // r9: what the Menu sheet shows
 let fx;
-const resetFx = () => { fx = { moving: null, stayArrows: null, pops: [], pulses: [], reveals: {}, flight: null, flashes: [], strike: null, marks: [], scout: null }; };
+const resetFx = () => { fx = { trans: null, moving: null, stayArrows: null, pops: [], pulses: [], reveals: {}, flight: null, flashes: [], strike: null, marks: [], scout: null }; };
 resetFx();
 const reveals = []; // QA log of reveal effects
 const cam = { x: WW / 2, y: WH / 2, z: 0.5 };
@@ -568,11 +568,9 @@ function placeTokens() {
       let pos = null;
       if (q.spot) { // docked: just off its beach zone, on the sea side
         const zt = zones.find((t) => t.isl === isl.id && t.sec === q.spot);
-        const base = Math.atan2(zt.y - isl.y, zt.x - isl.x), d = zt.r + tr + 3 / z;
+        const base = Math.atan2(zt.y - isl.y, zt.x - isl.x), d = zt.r * 0.55; // r9b ask 5: on the dock / beach marker, not beside it
         let alt = null;
-        for (const k of [0, 0.5, -0.5, 1, -1, 1.5, -1.5, 2, -2]) { const pt = { x: zt.x + Math.cos(base + k) * d, y: zt.y + Math.sin(base + k) * d }; if (free(pt, tr)) { if (seaClear(pt, tr)) { pos = pt; break; } if (!alt) alt = pt; } }
-        if (!pos) pos = alt;
-        if (!pos) pos = { x: zt.x + Math.cos(base) * d, y: zt.y + Math.sin(base) * d };
+        pos = { x: zt.x + Math.cos(base) * d, y: zt.y + Math.sin(base) * d }; void alt;
       } else { // at sea in the island's waters, clear of the zones
         let best = null;
         for (const k of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.3, -2.3, Math.PI]) {
@@ -677,9 +675,7 @@ function drawToken(t, hi = false, c = g, zz = cam.z) {
   const badge = (bx, by, fn) => { const br = Math.max(r * 0.5, 8 / zz); c.fillStyle = '#0d1116'; c.beginPath(); c.arc(bx, by, br, 0, 7); c.fill(); c.lineWidth = Math.max(1.5 / zz, br * 0.16); c.strokeStyle = col; c.stroke(); fn(bx, by, br); };
   const k = Math.SQRT1_2 * r * 1.02;
   if (t.count > 1 || (t.count > 0 && (t.kind === 'air' || t.kind === 'carrier' || t.fort))) badge(t.x + k, t.y - k, (bx, by, br) => { c.fillStyle = '#fff'; c.font = `900 ${br * 1.45}px "Barlow Condensed", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(t.count), bx, by + br * 0.08); });
-  if (t.carrying) badge(t.x - k, t.y - k, (bx, by, br) => armySymbol(c, bx, by, br * 1.2, '#f5c518'));
-  if (t.kind === 'fleet') R9.drawKindBadge(c, 'fleet', t.x - k, t.y + k, Math.max(r * 0.46, 7.5 / zz)); // r9: kind badge on the fleet marker
-  if (t.kind === 'fleet' && t.planes && t.planes.length) badge(t.x + k, t.y + k, (bx, by, br) => planeTop(c, bx, by, br * 1.5, '#e6ebf0', -Math.PI / 2)); // r8e: a carrier's planes ride in its fleet
+  // r9b asks 1 + 6: no side badges on a fleet marker (troops aboard / carrier planes / kind show on its cards)
   c.restore();
 }
 // r8e: a zone circle (owner outline + soft fill, grey under fog) with what it holds inside: icon + count
@@ -717,17 +713,8 @@ function drawZone(t, hi, c, zz) {
   if (t.count > 0) { disc(t.x + k, t.y - k, t.numSide ? secHex[t.numSide].line : cl ? cl.line : SEC_GREY); c.fillStyle = '#fff'; c.font = `900 ${br * 1.45}px "Barlow Condensed", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(t.count), t.x + k, t.y - k + br * 0.08); }
   // top left: a plane in the air over this zone (r8g asks 6 / 7)
   // r8g2 fix 4: a plane silhouette (side colour, dark outline) over the circle's top-left edge, readable at map zoom
-  if (t.up && t.up.length) { const L = Math.max(r * 1.7, 30 / zz), ax = t.x - r * 0.6, ay = t.y - r * 0.6;
-    c.save(); c.translate(ax - L / 2, ay - L / 2); c.scale(L / 24, L / 24); c.lineJoin = 'round';
-    c.lineWidth = 3.2; c.strokeStyle = 'rgba(8,10,14,.95)'; c.stroke(PLANE_P); c.fillStyle = SIDE_COL[t.upSide].light; c.fill(PLANE_P);
-    c.lineWidth = 1; c.strokeStyle = '#fff'; c.stroke(PLANE_P); c.restore(); }
-  // bottom right: a garrison fort (not a unit; a small mark so the zone still reads as defended)
-  if (t.gar > 0) { c.save(); c.translate(t.x + k, t.y + k); c.scale(br / 9, br / 9); fortAt(c, 0, 0, t.own); c.restore(); }
-  if (t.next) arriveGlyph(c, t.x - k, t.y + k, br); // r8b arrivals land in this zone next week
-  // r9 ask 1 + 2: what is here at a glance: army (with regiment lines III) or air, on the zone's left edge
-  if (t.armySide) R9.drawKindBadge(c, 'army', t.x - r * 1.02, t.y + r * 0.2, br * 0.95, 3);
-  else if ((t.planes || []).length) R9.drawKindBadge(c, 'air', t.x - r * 1.02, t.y + r * 0.2, br * 0.95);
-  if (t.dock || t.field) { c.save(); const bx = t.x + r * 1.02, by = t.y + r * 0.2, rr = br * 0.8; c.fillStyle = '#0d1116'; c.beginPath(); c.arc(bx, by, rr, 0, 7); c.fill(); c.lineWidth = Math.max(1, rr * 0.18); c.strokeStyle = '#f5c518'; c.stroke(); secIcon(c, t.dock ? 'port' : 'air', bx, by, rr * 1.5, '#f5c518'); c.restore(); }
+  // r9b asks 1 + 6: a zone marker is its place icon + the unit count only. No side badges (kind, plane in the air,
+  // garrison, arrivals, buildings): what is there and what is coming shows on the cards when you tap the zone.
   c.restore();
   if (c === g) { const p = toScreen(t.x, t.y); zoneLog.push({ isl: t.isl, sec: t.sec, line: cl ? cl.line : SEC_GREY, tint: cl ? cl.fill : null, known: !t.unknown, open: !t.unknown && !cl, owner: t.own, x: p.x, y: p.y, r: r * zz, wx: t.x, wy: t.y, wr: r, show: t.show, count: t.count, next: t.next, up: (t.up || []).length, gar: t.gar || 0, numSide: t.numSide || null }); }
 }
@@ -856,17 +843,17 @@ function cardHtml0(c) {
   if (c.t === 'g') { // officer only: the group's leading officer portrait (+ a small move mark if it has an order)
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
     const kb = c.head ? R9.kindBadge('cmd', { ech: u.kind === 'army' ? 3 : 0 }) : R9.kindBadge(u.kind === 'fleet' ? 'fleet' : 'army', { ech: u.kind === 'army' ? 3 : 0 });
-    const inner = `<canvas class="sc-p" data-side="${u.side}" data-cmd="${u.cmd}" data-k="${u.kind}" data-only="1" data-rank="col" width="96" height="96"></canvas>${kb}${mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
+    const inner = `<canvas class="sc-p" data-side="${u.side}" data-cmd="${u.cmd}" data-k="${u.kind}" data-only="1" data-rank="col" data-cu="${u.id}" width="96" height="96"></canvas>${kb}${mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
     const attrs = `data-g="${u.id}" data-u="${u.id}" data-cmd="${u.cmd}" data-army="${u.kind === 'army' && !c.head ? 1 : ''}"`;
     return mine ? `<button class="sc grp ${u.side}${on ? ' on' : ''}${c.head ? ' head' : ''}" ${attrs} aria-label="Group">${inner}</button>` : `<div class="sc grp ${u.side} foe${c.head ? ' head' : ''}" data-g="${u.id}">${inner}</div>`;
   }
   if (c.t === 'ga') { // an air wing: its pilot officer, a small plane mark (gold when some are in the air)
-    const inner = `<canvas class="sc-p" data-side="${c.side}" data-cmd="${wingCmd(c.key)}" data-only="1" data-rank="maj" width="96" height="96"></canvas>${R9.kindBadge('air')}${c.up ? `<i class="sc-w up">${unitIcon('fighter', 16)}</i>` : ''}`;
+    const inner = `<canvas class="sc-p" data-side="${c.side}" data-cmd="${wingCmd(c.key)}" data-only="1" data-rank="maj" data-cw="1" width="96" height="96"></canvas>${R9.kindBadge('air')}${c.up ? `<i class="sc-w up">${unitIcon('fighter', 16)}</i>` : ''}`;
     return `<button class="sc grp wing ${c.side}${c.side === 'blue' ? '' : ' foe'}" data-ga="${c.key}" aria-label="Air wing">${inner}</button>`;
   }
   if (c.t === 'bn') { // a battalion: its commander + its companies (the real units) with their pips
     const pk = reorg && reorg.u === c.u.id, bnOn = pk && reorg.k === 'bn' && reorg.bn === c.b.n, tgt = pk && reorg.k === 'co' && reorg.bn !== c.b.n;
-    return `<div class="sc bn ${c.u.side}${bnOn ? ' pick' : ''}${tgt ? ' tgt' : ''}" data-bn="${c.b.n}" data-bu="${c.u.id}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" data-rank="maj" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 2, word: false, cls: 'xs' })}<span class="bn-cos">${c.b.cos.map((q) => `<i class="co${pk && reorg.k === 'co' && reorg.co === q.id ? ' pick' : ''}" data-t="${q.type}" data-co="${q.id}"><span class="ech1"></span>${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
+    return `<div class="sc bn ${c.u.side}${bnOn ? ' pick' : ''}${tgt ? ' tgt' : ''}" data-bn="${c.b.n}" data-bu="${c.u.id}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" data-rank="maj" data-cu="${c.u.id}" data-cb="${c.b.n}" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 2, cls: 'xs' })}<span class="bn-cos">${c.b.cos.map((q) => `<i class="co${pk && reorg.k === 'co' && reorg.co === q.id ? ' pick' : ''}" data-t="${q.type}" data-co="${q.id}"><span class="ech1"></span>${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
   }
   if (c.t === 'u') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
@@ -876,10 +863,10 @@ function cardHtml0(c) {
   }
   if (c.t === 'newbn') return `<button class="sc slot" data-slot="newbn" aria-label="New battalion">${icon('plus', { size: 22 })}${R9.echHtml(2)}${R9.rankChip('maj', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
   if (c.t === 'newreg') return `<button class="sc slot" data-slot="newreg" aria-label="New regiment">${icon('plus', { size: 22 })}${R9.echHtml(3)}${R9.rankChip('col', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
-  if (c.t === 'rt') return `<button class="sc slot rt" data-rt="${c.u.id}" aria-label="Regiment"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.u.cmd}" data-rank="col" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 3, word: false, cls: 'xs' })}<b class="rt-n">${R9.ord(c.u.cmd)}</b></button>`;
+  if (c.t === 'rt') return `<button class="sc slot rt" data-rt="${c.u.id}" aria-label="Regiment"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.u.cmd}" data-rank="col" data-cu="${c.u.id}" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 3, word: false, cls: 'xs' })}<b class="rt-n">${R9.ord(c.u.cmd)}</b></button>`;
   if (c.t === 's') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
-    const inner = `${unitIcon(c.ship, 34)}<canvas class="sc-c" data-side="${u.side}" data-cmd="${u.cmd}" data-rank="col" width="56" height="56"></canvas>${R9.kindBadge('fleet', { word: false, cls: 'xs' })}${c.i === 0 && mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
+    const inner = `${unitIcon(c.ship, 34)}<canvas class="sc-c" data-side="${u.side}" data-cmd="${u.cmd}" data-rank="col" data-cu="${u.id}" width="56" height="56"></canvas>${R9.kindBadge('fleet', { word: false, cls: 'xs' })}${c.i === 0 && mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
     return mine ? `<button class="sc ship ${u.side}${on ? ' on' : ''}" data-u="${u.id}" data-t="${c.ship}" aria-label="${UNIT_NAMES[c.ship]}">${inner}</button>` : `<div class="sc ship ${u.side} foe" data-t="${c.ship}">${inner}</div>`;
   }
   if (c.t === 'pl') {
@@ -903,7 +890,7 @@ function infoTarget() {
   const pl = planeSel && G.plane(S, planeSel); if (pl) return { k: 'plane', p: pl };
   const id = sel || (strip.grp && strip.grp.k === 'u' ? strip.grp.id : null);
   const u = id && G.unit(S, id); if (u && (u.side === 'blue' || !u.unknown)) return { k: 'unit', u };
-  if (strip.kind === 'zone' && !strip.grp && zKnown(strip.isl, strip.sec)) { const x = G.section(G.island(S, strip.isl), strip.sec); if (x && x.owner === 'blue') return { k: 'zone', x }; }
+  if (strip.kind === 'zone' && !strip.grp) { const x = G.section(G.island(S, strip.isl), strip.sec); if (x) return { k: 'zone', x, known: zKnown(strip.isl, strip.sec) }; } // r9b asks 7 + 8: every zone card says what the land and island give
   return null;
 }
 const perkHtml = (u) => { const k = G.perkOf(u); const p = k && R9.PERK_INFO[k]; return p ? `<span class="perk" data-perk="${k}">${icon(p.ic, { size: 15 })}<b>${p.w}</b></span>` : ''; };
@@ -912,18 +899,18 @@ const buyBtn = (attr, ic, cost, ok) => `<button class="buy" ${attr} ${ok ? '' : 
 function infoHtml() {
   const t = infoTarget(); if (!t) return '';
   let pic = '', kb = '', name = '', extra = '', side = 'blue', mk = null, rows = '';
-  const portraitCv = (u, cmd, rank) => `<canvas class="in-p" data-side="${u.side}" data-cmd="${cmd}" data-rank="${rank}" width="104" height="104"></canvas>`;
+  const portraitCv = (u, cmd, rank, extra = '') => `<canvas class="in-p" data-side="${u.side}" data-cmd="${cmd}" data-rank="${rank}" data-cu="${u.id}" ${extra} width="104" height="104"></canvas>`;
   if (t.k === 'reorg') {
     const u = t.u, b = u.oob.bns.find((q) => q.n === reorg.bn);
     if (!b) { reorg = null; return ''; }
     if (reorg.k === 'co') {
       const c = b.cos.find((q) => q.id === reorg.co); if (!c) { reorg = null; return ''; }
-      pic = portraitCv(u, coSeed(u, c.id), 'capt'); kb = R9.kindBadge('army', { ech: 1 });
+      pic = portraitCv(u, coSeed(u, c.id), 'capt', `data-cb="${b.n}" data-cc="${c.id}"`); kb = R9.kindBadge('army', { ech: 1 });
       name = `${R9.typeWord(c.type)} company - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`;
       extra = `${R9.rankChip('capt')}${R9.starsHtml(G.cohStars(c.w))}`;
       rows = `<div class="in-hint">${icon('hand', { size: 20 })}${icon('back', { size: 18, className: 'sc-ico flip' })}${R9.echHtml(2)}<span class="or">/</span>${icon('plus', { size: 16 })}${R9.echHtml(2)}${R9.coinHtml(G.COST.cmd)}</div>`;
     } else {
-      pic = portraitCv(u, b.cmd, 'maj'); kb = R9.kindBadge('army', { ech: 2 });
+      pic = portraitCv(u, b.cmd, 'maj', `data-cb="${b.n}"`); kb = R9.kindBadge('army', { ech: 2 });
       name = `${R9.typeWord(mostType(b.cos.filter((q) => q.pips > 0).map((q) => q.type)))} battalion - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`;
       extra = `${R9.rankChip('maj')}${R9.starsHtml(G.cohStars(b.w))}`;
       rows = `<div class="in-hint">${icon('hand', { size: 20 })}${icon('back', { size: 18, className: 'sc-ico flip' })}${R9.echHtml(3)}<span class="or">/</span>${icon('plus', { size: 16 })}${R9.echHtml(3)}${R9.coinHtml(G.COST.cmd)}</div>`;
@@ -938,11 +925,14 @@ function infoHtml() {
       name = `${R9.typeWord(mostType(G.companies(u).map((c) => c.type)))} regiment - ${R9.ord(u.cmd)} Regt`;
       extra = `${R9.rankChip('col')}${R9.starsHtml(Math.round(G.regCohesion(u)))}${perkHtml(u)}`;
       const x = u.sec && !u.aboard && G.section(G.island(S, u.at), u.sec);
-      if (side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) rows = `<div class="in-buy">${G.CO_TYPES.map((ty) => buyBtn(`data-buyco="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canBuyCo(S, u.id, ty))).join('')}</div>`;
+      if (false && side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) extra += `<button class="buy tog${buyOpen ? ' on' : ''}" data-buytog="1" aria-label="Buy companies">${icon('plus', { size: 16 })}${icon('coins', { size: 16 })}</button>`;
+      if (buyOpen && side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) rows = `<div class="in-buy">${G.CO_TYPES.map((ty) => buyBtn(`data-buyco="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canBuyCo(S, u.id, ty))).join('')}</div>`;
     } else {
       pic = portraitCv(u, u.cmd, 'col'); kb = R9.kindBadge('fleet'); mk = 'fleet';
       G.syncOob(u); name = `Fleet - ${u.ships.length} ship${u.ships.length === 1 ? '' : 's'}, ${R9.ord(u.cmd)} Fleet`;
-      extra = `${R9.rankChip('col')}${perkHtml(u)}`;
+      const sp = G.fleetSpot(S, u), isl = G.island(S, u.at), iname = isl.name.charAt(0) + isl.name.slice(1).toLowerCase();
+      const where = sp ? `<span class="where dock">${icon('anchor', { size: 15 })}<b>Docked</b> ${G.section(isl, sp).kind === 'port' ? 'port' : 'beach'}, ${iname}</span>` : `<span class="where sea">${R9.waveSvg}<b>At sea</b> off ${iname}</span>`;
+      extra = `${R9.rankChip('col')}${perkHtml(u)}${where}`;
     }
     if (side === 'blue') extra += cancelBtn(u.id);
   } else if (t.k === 'plane') {
@@ -951,13 +941,21 @@ function infoHtml() {
     name = `${R9.typeWord(p.type)} plane - ${b && b.fleet ? 'carrier' : b ? G.island(S, b.isl).name.charAt(0) + G.island(S, b.isl).name.slice(1).toLowerCase() : 'no'} air wing`;
     extra = cancelBtn(p.id);
   } else if (t.k === 'zone') {
-    const x = t.x, isl = strip.isl, rowsB = [];
+    const x = t.x, isl = strip.isl, I = G.island(S, isl), rowsB = [], own = x.owner === 'blue' && t.known;
+    const land = t.known ? `<span class="in-land">${toastImg(x.kind)}<b>${R9.LAND_WORD[x.kind]}</b><span class="in-does">${R9.LAND_SHORT[x.kind]}</span></span>` : '';
+    const top = `<div class="in-isl">${land}<span class="in-iname">${R9.cap(I.name)}</span>${R9.islandGives(I, G)}</div><div class="in-goal">${R9.goalLine(G, S)}</div>`;
+    if (!own) return `<div class="st-info zone">${top}</div>`;
+    if (x.kind === 'hq' || x.kind === 'depot' || x.kind === 'port') { // r9b ask 9: buy here; it comes by transport to your home island at End Week
+      for (const ty of G.CO_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
+      for (const ty of G.SHIP_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
+    }
+    if (x.kind === 'hq' || x.kind === 'depot' || x.kind === 'port' || x.kind === 'air') for (const ty of G.PLANE_TYPES) rowsB.push(buyBtn(`data-order="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canOrderUnit(S, 'blue', ty)));
     rowsB.push(buyBtn(`data-build="fort" aria-label="Build fort"`, `<img alt="" src="${fortImg()}" width="22" height="22">`, G.COST.fort, G.canBuild(S, 'blue', isl, x.id, 'fort')));
     if (x.kind === 'beach') rowsB.push(buyBtn(`data-build="dock" aria-label="Build dock"`, icon('anchor', { size: 22 }), G.COST.dock, G.canBuild(S, 'blue', isl, x.id, 'dock')));
     if (['ridge', 'jungle', 'depot'].includes(x.kind)) rowsB.push(buyBtn(`data-build="airfield" aria-label="Build airfield"`, `${icon('plane', { size: 22 })}`, G.COST.airfield, G.canBuild(S, 'blue', isl, x.id, 'airfield')));
-    if (x.kind === 'air' || x.field) for (const ty of G.PLANE_TYPES) rowsB.push(buyBtn(`data-buypl="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canBuyPlane(S, 'blue', isl, x.id, ty)));
-    if (x.kind === 'port' || x.dock) for (const ty of G.SHIP_TYPES) rowsB.push(buyBtn(`data-buysh="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canBuyShip(S, 'blue', isl, ty)));
-    return `<div class="st-info zone"><div class="in-sup">${icon('coins', { size: 18 })}<b>${S.supply.blue}</b></div><div class="in-buy">${rowsB.join('')}</div></div>`;
+    const q = G.incomingOf(S, 'blue');
+    const coming = q.length ? `<div class="in-coming">${R9.shipSvg}<b>Next week</b>${q.map((it) => `<button class="co-q" data-unorder="${it.type}" aria-label="Take back ${it.type}">${unitIcon(it.type, 20)}</button>`).join('')}</div>` : '';
+    return `<div class="st-info zone">${top}<div class="in-shop"><div class="in-sup">${icon('coins', { size: 18 })}<b>${S.supply.blue}</b></div><div class="in-buy">${rowsB.join('')}</div></div>${coming}</div>`;
   }
   return `<div class="st-info ${side}">${pic}<div class="in-body"><div class="in-top">${kb}${extra}</div><div class="in-name">${name}</div>${R9.matchWords(mk, keyImg)}${rows}</div></div>`;
 }
@@ -968,9 +966,12 @@ function stripR9Tap(e) {
   const done = (ok, what) => { if (ok) { view = snapshotView(); tokCache = null; sfx.hit(); } else noGoStrip(what); updateHud(); return true; };
   let b;
   if ((b = at('[data-cancel]'))) { if (G.cancelOrder(S, b.dataset.cancel)) { sfx.pew(); toast(`${icon('xcircle', { size: 30 })}`, 700); } updateHud(); return true; }
+  if (at('[data-buytog]')) { buyOpen = !buyOpen; sfx.pew(); updateHud(); return true; }
   if (at('[data-unpick]')) { reorg = null; sfx.pew(); updateHud(); return true; }
   if ((b = at('[data-buyco]'))) return done(!!(sel && G.buyCo(S, sel, b.dataset.buyco)), unitIcon(b.dataset.buyco, 28));
   if ((b = at('[data-build]'))) return done(G.build(S, 'blue', strip.isl, strip.sec, b.dataset.build), icon('coins', { size: 28 }));
+  if ((b = at('[data-order]'))) return done(G.orderUnit(S, 'blue', b.dataset.order), unitIcon(b.dataset.order, 28)); // r9b ask 9
+  if ((b = at('[data-unorder]'))) { if (G.unorderUnit(S, 'blue', b.dataset.unorder)) sfx.pew(); updateHud(); return true; }
   if ((b = at('[data-buypl]'))) return done(!!G.buyPlane(S, 'blue', strip.isl, strip.sec, b.dataset.buypl), unitIcon(b.dataset.buypl, 28));
   if ((b = at('[data-buysh]'))) return done(!!G.buyShip(S, 'blue', strip.isl, b.dataset.buysh), unitIcon(b.dataset.buysh, 28));
   // reorganize: tap-pick a company (its icon) or a battalion (its card), then tap where it goes
@@ -998,7 +999,24 @@ function stripR9Tap(e) {
   if (bn) { reorg = { k: 'bn', u: u.id, bn: +bn.dataset.bn }; sfx.pew(); updateHud(); return true; }
   return false;
 }
-let lastReorg = null, lastCancel = null;
+// r9b ask 3: commander panel (name, rank word + board, perk in plain words, cohesion stars)
+function openCmdPanel(cv) {
+  const d = cv.dataset, rank = d.rank || 'col', u = d.cu && G.unit(S, d.cu);
+  let perk = null, stars = null, what = 'Air wing';
+  if (u && u.kind === 'army') {
+    G.syncOob(u);
+    const b = d.cb && u.oob.bns.find((q) => q.n === +d.cb), c = b && d.cc && b.cos.find((q) => q.id === d.cc);
+    if (c) { stars = G.cohStars(c.w); what = `${R9.typeWord(c.type)} company - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`; }
+    else if (b) { stars = G.cohStars(b.w); what = `${R9.typeWord(mostType(b.cos.filter((q) => q.pips > 0).map((q) => q.type)))} battalion - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`; }
+    else { perk = G.perkOf(u); stars = Math.round(G.regCohesion(u)); what = `${R9.typeWord(mostType(G.companies(u).map((q) => q.type)))} regiment - ${R9.ord(u.cmd)} Regt`; }
+  } else if (u && u.kind === 'fleet') { perk = G.perkOf(u); G.syncOob(u); what = `Fleet - ${u.ships.length} ships, ${R9.ord(u.cmd)} Fleet`; }
+  const big = document.createElement('canvas'); big.width = big.height = 168; big.getContext('2d').drawImage(portrait(d.side, +d.cmd, 168, rank), 0, 0);
+  const box = $('cmdp'); box.innerHTML = R9.cmdPanel({ side: d.side, seed: +d.cmd, rank, perk, stars, what }, big.toDataURL()); box.hidden = false;
+  lastCmdPanel = { cmd: +d.cmd, rank, name: R9.cmdName(d.side, +d.cmd), perk, stars };
+  armWarnGuard(); sfx.pew();
+}
+let lastCmdPanel = null;
+let lastReorg = null, lastCancel = null, buyOpen = false;
 function noGoStrip(what) { toast(`${what}${icon('x', { size: 28 })}`, 1200); sfx.alarm(); }
 // ---------- r9 ask 4 + 5: Menu -> Tutorial (Battle / Campaign map, picture-first) and Matchups ----------
 const picCv = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2; const q = c.getContext('2d'); q.scale(2, 2); fn(q); return `<img alt="" src="${c.toDataURL()}" width="${w}" height="${h}">`; };
@@ -1035,10 +1053,12 @@ function renderMenu() {
   if (menuView.k === 'root') html = `<div class="sheet-h">${icon('menu', { size: 26 })}<b>MENU</b></div><div class="menu-grid">
       <button class="btn mbtn" data-m="tut">${icon('book', { size: 40 })}<b>TUTORIAL</b></button>
       <button class="btn mbtn" data-m="match">${icon('swords', { size: 40 })}<b>MATCHUPS</b></button>
-      <button class="btn mbtn" data-m="help">${icon('help', { size: 40 })}<b>KEY</b></button></div>`;
+      <button class="btn mbtn" data-m="help">${icon('help', { size: 40 })}<b>KEY</b></button>
+      <button class="btn mbtn" data-m="lands">${icon('map', { size: 40 })}<b>LANDS</b></button></div><div class="in-goal m-goal">${R9.goalLine(G, S)}</div>`;
   else if (menuView.k === 'tut') html = R9.tutorialPick();
   else if (menuView.k === 'step') html = R9.tutorialStep(tutSteps(menuView.which), menuView.i, menuView.which);
   else if (menuView.k === 'match') html = R9.matchupsSheet(keyImg);
+  else if (menuView.k === 'lands') html = R9.landsSheet(toastImg, G);
   card.innerHTML = `${html}<button class="btn ico m-x" data-mx="1" aria-label="Close">${icon('x', { size: 24 })}</button>`;
 }
 function openMenu(v) { menuView = v; renderMenu(); sfx.pew(); }
@@ -1155,7 +1175,7 @@ function render() {
   if (sel && !busy) drawRange();
   if (reconMode && !busy) drawReconTargets();
   if (planeSel && !reconMode && !busy) drawStrikeTargets();
-  cancelMarks = [];
+  cancelMarks = []; const inlandQ = [];
   const cmark = (id, a, b) => { if (a && b) cancelMarks.push({ id, wx: (a.x + b.x) / 2, wy: (a.y + b.y) / 2, dx: b.x - a.x, dy: b.y - a.y }); };
   if (!busy) {
     Object.entries(S.orders).forEach(([id, to]) => {
@@ -1168,7 +1188,7 @@ function render() {
     });
     Object.entries(S.secOrders).forEach(([id, to]) => {
       const u = G.unit(S, id);
-      if (u && u.side === 'blue') { drawSecArrow(u.at, u.sec, to, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260)); cmark(id, vSec(u.at, u.sec), vSec(u.at, to)); }
+      if (u && u.side === 'blue') { inlandQ.push([u.at, u.sec, to]); const q = secArrowPts(u.at, u.sec, to); if (q) cmark(id, q.a, q.b); } // drawn after the zone markers
     });
     const pulse = 0.6 + 0.25 * Math.sin(tNow / 260);
     // r7 sealift: beach -> ship (embark) and ship -> beach (land) arrows
@@ -1194,6 +1214,10 @@ function render() {
     if (blocks) { drawBlock(u, blockAt(u)); return; }
     const p = tagPos(u); drawTag(u, p.x, p.y, p.s);
   }));
+  if (strat()) { // r9b ask 4: inland arrows above the zone circles (planned, and the ones moving at End Week)
+    inlandQ.forEach(([i, a, b]) => drawSecArrow(i, a, b, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260)));
+    if (fx.moving) fx.moving.list.filter((m) => m.inland).forEach((m) => drawSecArrow(m.from, m.fromSec, m.toSec, m.side, fx.moving.t, 0.9));
+  }
   if (fx.scout) drawScout(fx.scout);
   if (fx.hop) drawHop(fx.hop);
   if (!busy) drawCancelMarks();
@@ -1216,7 +1240,7 @@ function render() {
     const u = view.units.find((x) => x.id === m.unit); if (!u) return;
     const t = Math.min(1, ease(fx.moving.t) * 0.98);
     let p;
-    if (m.inland) { const a = vSec(m.from, m.fromSec), b = vSec(m.to, m.toSec); const s0 = ks > 0.5 ? SEC_S : tokenScale() * 0.6; p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: s0 }; }
+    if (m.inland) { const a = secPos(vIsl(m.from), vSec(m.from, m.fromSec)), b = secPos(vIsl(m.to), vSec(m.to, m.toSec)); const s0 = ks > 0.5 ? SEC_S : tokenScale() * 0.6; p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: s0 }; }
     else if (m.embark || m.land) { const sh = shorePts(m.from, m.embark ? m.fromSec : m.toSec), a = m.embark ? sh.b : sh.a, b = m.embark ? sh.a : sh.b; p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, s: ks > 0.5 ? SEC_S : tokenScale() * 0.6 }; }
     else { const c = curvePt(curveFor(m.from, m.to, m.kind), t); p = { ...c, s: tokenScale() }; }
     if (strat()) drawToken({ kind: u.kind === 'fleet' ? 'fleet' : 'troops', side: u.side, x: p.x, y: p.y, r: TOK_PX / zRef(), count: 0, own: u.side });
@@ -1230,6 +1254,7 @@ function render() {
   fx.flashes.forEach(drawFlash);
   fx.pulses = fx.pulses.filter((p) => tNow - p.t0 < 900 / speed);
   fx.pulses.forEach(drawPulse);
+  if (fx.trans) drawTransport(fx.trans);
   fx.pops = fx.pops.filter((p) => tNow - p.t0 < 1600 / speed);
   fx.pops.forEach(drawPop);
   // screen-space vignette
@@ -1245,7 +1270,7 @@ function drawCancelMarks() {
   const put = [];
   for (const m of cancelMarks) {
     let p = toScreen(m.wx, m.wy);
-    const d = Math.hypot(m.dx || 0, m.dy || 0); if (d) { p = { x: p.x - (m.dy / d) * CANCEL_PX * 1.9, y: p.y + (m.dx / d) * CANCEL_PX * 1.9 }; } // beside the arrow, so the arrow still shows
+    const d = Math.hypot(m.dx || 0, m.dy || 0); if (d) { p = { x: p.x - (m.dy / d) * CANCEL_PX * 2.3, y: p.y + (m.dx / d) * CANCEL_PX * 2.3 }; } // beside the arrow, so the arrow still shows
     for (let k = 0; k < 6 && put.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANCEL_PX * 2.2); k++) p = { x: p.x + CANCEL_PX * 1.4, y: p.y };
     m.sx = p.x; m.sy = p.y; put.push(p);
     const w = toWorld(p.x, p.y), r = CANCEL_PX / cam.z;
@@ -1285,11 +1310,18 @@ function drawArrowBetween(fromId, toId, side, t, alpha, kind) {
   drawArrow(g, curveFor(fromId, toId, kind), side, ease(t), { width: (kind === 'fleet' ? 30 : 42) * tokenScale(), alpha });
 }
 // short push arrow between two sections of one island
-function drawSecArrow(islId, fromSec, toSec, side, t, alpha) {
-  const a = vSec(islId, fromSec), b = vSec(islId, toSec); if (!a || !b) return;
+// r9b ask 4: from zone circle to zone circle where they are drawn (r8e zone layout), not the raw section points that sit
+// under the circles; drawn after the zone markers so it is never hidden under them
+function secArrowPts(islId, fromSec, toSec) {
+  const isl = vIsl(islId), x0 = vSec(islId, fromSec), x1 = vSec(islId, toSec); if (!isl || !x0 || !x1) return null;
+  const a = secPos(isl, x0), b = secPos(isl, x1);
   const d = Math.hypot(b.x - a.x, b.y - a.y) || 1, ux = (b.x - a.x) / d, uy = (b.y - a.y) / d;
-  const cv = arrowCurve({ x: a.x + ux * SEC_R * 0.7, y: a.y + uy * SEC_R * 0.7 }, { x: b.x - ux * SEC_R * 0.9, y: b.y - uy * SEC_R * 0.9 }, 0.1);
-  drawArrow(g, cv, side, ease(t), { width: Math.max(14, 16 * Math.min(1.6, 0.9 / cam.z)), alpha });
+  return { a: { x: a.x + ux * a.r * 0.15, y: a.y + uy * a.r * 0.15 }, b: { x: b.x - ux * b.r * 0.55, y: b.y - uy * b.r * 0.55 } };
+}
+function drawSecArrow(islId, fromSec, toSec, side, t, alpha) {
+  const q = secArrowPts(islId, fromSec, toSec); if (!q) return;
+  const cv = arrowCurve(q.a, q.b, 0.18);
+  drawArrow(g, cv, side, ease(t), { width: Math.max(16 / cam.z, 14), alpha: Math.max(alpha, 0.85) });
 }
 // r7: shore arrows between a beach and the sea off it (embark: out to the ship, land: in from the ship)
 function shorePts(islId, secId, ks = secK()) {
@@ -1751,6 +1783,17 @@ function drawUnitExtras(u, xr, y0, h, c = g, below = null, skipPlanes = false) {
   pl.forEach((q, i) => (below ? planeMini(c, q.type, below.x + 11 + i * 24, below.y + 13, 22, q.side, 0, q.used ? 0.45 : 1) : planeMini(c, q.type, xr + 16 + i * 24, y0 + h / 2, 22, q.side, 0, q.used ? 0.45 : 1)));
 }
 
+function drawTransport(tr) {
+  const k = ease(tr.t), x = tr.from.x + (tr.to.x - tr.from.x) * k, y = tr.from.y + (tr.to.y - tr.from.y) * k + Math.sin(tr.t * 12) * 3;
+  const sz = Math.max(46, 34 / cam.z);
+  g.save();
+  g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 3 / cam.z; g.setLineDash([10 / cam.z, 8 / cam.z]); g.beginPath(); g.moveTo(tr.from.x, tr.from.y); g.lineTo(x, y); g.stroke(); g.setLineDash([]);
+  g.fillStyle = 'rgba(14,18,22,.92)'; g.beginPath(); g.arc(x, y, sz * 0.72, 0, 7); g.fill(); g.lineWidth = 4 / cam.z; g.strokeStyle = SIDE_COL[tr.side].fill; g.stroke();
+  shipSide(g, x, y + sz * 0.06, sz, '#fff');
+  // what it carries rides on deck
+  const n = Math.min(tr.items.length, 5); for (let i = 0; i < n; i++) { const bx = x + (i - (n - 1) / 2) * sz * 0.36, by = y - sz * 0.78; g.fillStyle = SIDE_COL[tr.side].fill; g.beginPath(); g.arc(bx, by, sz * 0.16, 0, 7); g.fill(); }
+  g.restore();
+}
 function drawPop(p) {
   const k = Math.max(0, Math.min(1, (tNow - p.t0) / (1600 / speed)));
   const isl = vIsl(p.island);
@@ -1761,8 +1804,8 @@ function drawPop(p) {
   g.fillStyle = '#fff'; g.font = '900 28px "Barlow Condensed", sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
   g.fillText(`+${p.troops}`, x - 38, y + 1);
   armySymbol(g, x + 22, y, 22, '#fff');
-  if (p.ships) { g.fillText('+1', x + 46, y + 1); shipSide(g, x + 82, y + 2, 22, '#fff'); }
-  if (p.planes) { const px = x + 46 + (p.ships ? 50 : 0); g.fillText('+1', px, y + 1); unitGlyph(g, p.planeType, px + 36, y, 26, '#fff', 2.4); }
+  if (p.ships) { g.fillText(`+${p.ships}`, x + 46, y + 1); shipSide(g, x + 82, y + 2, 22, '#fff'); }
+  if (p.planes) { const px = x + 46 + (p.ships ? 50 : 0); g.fillText(`+${p.planes}`, px, y + 1); unitGlyph(g, p.planeType, px + 36, y, 26, '#fff', 2.4); }
   g.restore();
 }
 function drawPulse(p) {
@@ -2077,6 +2120,7 @@ function sectionAt(wx, wy) {
   return best;
 }
 function select(id) {
+  if (id !== sel) buyOpen = false;
   sel = id;
   if (id) { airOpen = false; planeSel = null; reconMode = false; }
   const u = id && G.unit(S, id);
@@ -2398,6 +2442,7 @@ cvs.addEventListener('pointerdown', (e) => {
   }
 });
 cvs.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse' && !pointers.size) { zoneTip(e.clientX, e.clientY); return; } // r9b ask 8: hover = the land's name
   if (!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (!gesture) return;
@@ -2413,6 +2458,14 @@ cvs.addEventListener('pointermove', (e) => {
     cam.x = gesture.mid.x - (mx - vw / 2) / cam.z; cam.y = gesture.mid.y - (my - vh / 2) / cam.z; clampCam();
   }
 });
+function zoneTip(sx, sy) {
+  const tip = $('ztip'); if (!tip) return;
+  const tk = !busy && strat() ? tokenAt(sx, sy) : null;
+  if (!tk || tk.kind !== 'zone' || !zKnown(tk.isl, tk.sec)) { tip.hidden = true; return; }
+  const x = G.section(G.island(S, tk.isl), tk.sec);
+  tip.innerHTML = `<b>${R9.LAND_WORD[x.kind]}</b> ${R9.cap(G.island(S, tk.isl).name)}`; tip.style.left = `${sx + 14}px`; tip.style.top = `${sy - 34}px`; tip.hidden = false;
+}
+cvs.addEventListener('pointerleave', () => { const tip = $('ztip'); if (tip) tip.hidden = true; });
 const endPointer = (e) => {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
@@ -2610,7 +2663,15 @@ async function doEndWeek(opts = {}) {
       }
     } else if (e.type === 'reinforce') {
       events.push(e);
-      if (e.side === 'blue' || seen.has(e.island)) fx.pops.push({ ...e, t0: performance.now() });
+      if (e.side === 'blue' || seen.has(e.island)) {
+        // r9b ask 9: what was bought comes in on a transport from that side's map edge and unloads at home
+        const isl = G.island(S, e.island), dir = e.side === 'blue' ? -1 : 1;
+        const to = { x: isl.x + dir * (isl.rx + 40), y: isl.y + 40 }, from = { x: dir < 0 ? -60 : WW + 60, y: to.y - 80 };
+        fx.trans = { side: e.side, from, to, t: 0, items: e.items || [] };
+        await tween(1300, (k) => { fx.trans.t = k; });
+        fx.trans = null;
+        fx.pops.push({ ...e, t0: performance.now() });
+      }
     } else events.push(e);
   }
   lastEvents = events;
@@ -2697,7 +2758,7 @@ function showEnd() {
 function buildLegend() {
   const rows = [
     ['army', 'ARMY', 'takes sections'], ['fleet', 'FLEET', 'sea fights'], ['beach', 'BEACH', 'land here first'],
-    ['secs', 'SECTIONS', 'take all to win the island'], ['supply', 'DEPOT', '+ troops each week'],
+    ['secs', 'SECTIONS', 'take all to win the island'], ['supply', 'DEPOT', '+2 supply a week, buy here'],
     ['air', 'AIRFIELD', 'bases 4 planes'], ['fog', 'FOG', 'fly recon to see'], ['home', 'HQ', 'take theirs to win'],
     ['lift', 'SEALIFT', 'beach, ship, beach: 2 armies a fleet'], ['cv', 'CARRIER', '2 planes a carrier, they sail with it'],
     ['recon', 'RECON', 'scouts an island'], ['fighter', 'FIGHTER', 'escorts, shoots down planes'],
@@ -2854,6 +2915,8 @@ function wire() {
     // r8b: tap an enemy card = pick its kind; your cards / tokens / tray planes that beat it glow, the ones it beats dim
     const f = e.target.closest('.sc.foe[data-key]');
     if (f) { foeSel = foeSel === f.dataset.key ? null : f.dataset.key; sfx.pew(); updateHud(); return; }
+    const pc = e.target.closest('canvas.sc-c, canvas.in-p, .sc.head canvas.sc-p, .sc.wing canvas.sc-p');
+    if (pc && !pc.closest('[data-rt]') && !(pc.classList.contains('sc-p') && pc.closest('.sc.wing') && !strip.grp)) { openCmdPanel(pc); return; } // r9b ask 3
     if (stripR9Tap(e)) return; // r9: cancel, buy / build, reorganize
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'st-x') { strip = null; foeSel = null; sel = null; reorg = null; planeSel = null; reconMode = false; updateHud(); return; }
@@ -2865,11 +2928,13 @@ function wire() {
   wireDrag();
   $('b-restart').onclick = () => { if (!busy) { newGame(); refreshHint(); } };
   $('b-menu').onclick = () => openMenu({ k: 'root' });
+  document.addEventListener('pointerdown', (e) => { const c = $('cmdp'); if (!c.hidden && (!e.target.closest('#cmdp') || e.target.closest('[data-cpx]'))) { if (e.target.closest('[data-cpx]')) e.preventDefault(); c.hidden = true; } }, true);
   $('menu').onclick = (e) => {
     if (e.target === $('menu') || e.target.closest('[data-mx]')) { openMenu(null); return; }
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.m === 'tut') openMenu({ k: 'tut' });
     else if (b.dataset.m === 'match') openMenu({ k: 'match' });
+    else if (b.dataset.m === 'lands') openMenu({ k: 'lands' });
     else if (b.dataset.m === 'help') { openMenu(null); $('help').hidden = false; }
     else if (b.dataset.tut) openMenu({ k: 'step', which: b.dataset.tut, i: 0 });
     else if (b.dataset.tstep != null) openMenu({ ...menuView, i: +b.dataset.tstep });
@@ -3009,6 +3074,7 @@ window.__PW__ = {
   airChips() { return [...document.querySelectorAll('#air .pl')].map((e) => ({ p: e.dataset.p, t: e.dataset.t, beat: e.classList.contains('beat'), risk: e.classList.contains('risk') })); },
   zones: () => zoneLog.map((z) => ({ ...z })), get SIDE_COL() { return SIDE_COL; }, secHex,
   // r9 QA
+  get cmdPanel() { return $('cmdp').hidden ? null : lastCmdPanel; },
   get reorg() { return reorg ? { ...reorg } : null; }, get lastReorg() { return lastReorg; }, get lastCancel() { return lastCancel; }, get menuView() { return menuView; },
   cancelMarks: () => cancelMarks.map((m) => ({ id: m.id, x: m.sx, y: m.sy })), openMenu(v) { openMenu(v); }, info: () => infoHtml(),
   tokenBeats() { tokCache = null; return placeTokens().filter((t) => !t.ghost && tokenBeats(t)).map((t) => tokKey(t)); },
