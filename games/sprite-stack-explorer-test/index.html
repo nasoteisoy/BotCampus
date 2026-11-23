@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Dragon Explorer · sprite-stack test</title>
+<style>
+html,body{margin:0;height:100%;background:#16324a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font-family:system-ui,sans-serif}
+canvas#view{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#hud{position:absolute;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));display:flex;gap:6px;align-items:center;background:rgba(20,24,30,.55);padding:5px 10px;border-radius:14px;pointer-events:none}
+#hud canvas{image-rendering:pixelated;width:36px;height:36px;opacity:.35;filter:grayscale(1) brightness(.5)}
+#hud canvas.got{opacity:1;filter:none}
+#hud b{color:#ffd35a;font-size:18px;min-width:34px;text-align:center;text-shadow:0 1px 0 #000}
+#joy{position:absolute;left:0;bottom:0;width:55%;height:45%;touch-action:none}
+#knob,#ring{position:absolute;border-radius:50%;pointer-events:none;display:none}
+#ring{width:110px;height:110px;margin:-55px 0 0 -55px;border:3px solid rgba(255,255,255,.35);background:rgba(20,24,30,.25)}
+#knob{width:48px;height:48px;margin:-24px 0 0 -24px;background:rgba(255,255,255,.55)}
+#act{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:84px;height:84px;border-radius:50%;background:rgba(20,24,30,.55);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;touch-action:none}
+#act.near{border-color:#ffd35a;background:rgba(255,211,90,.35);animation:pulse .7s ease-in-out infinite alternate}
+#act.on{transform:scale(.92)}
+@keyframes pulse{to{box-shadow:0 0 0 8px rgba(255,211,90,.25)}}
+#act svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#hint{position:absolute;left:12px;bottom:calc(10px + env(safe-area-inset-bottom));color:#fff;opacity:.55;font-size:11px;pointer-events:none}
+#win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(10,20,30,.45)}
+#win .row{display:flex;gap:4px}#win canvas{image-rendering:pixelated;width:80px;height:80px}
+#pop{position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top));width:108px;height:108px;margin-left:-54px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,170,.95),rgba(255,211,90,.55) 60%,rgba(255,211,90,0) 72%);display:none;align-items:center;justify-content:center;pointer-events:none}
+#pop.show{display:flex;animation:pop 1.4s ease-out forwards}#pop canvas{image-rendering:pixelated;width:72px;height:72px}
+@keyframes pop{0%{transform:scale(.3)}18%{transform:scale(1.15)}30%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
+#again{width:72px;height:72px;border-radius:50%;background:#ffd35a;border:0;display:flex;align-items:center;justify-content:center}
+#again svg{width:36px;height:36px;fill:none;stroke:#3a2a10;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+</style></head><body>
+<canvas id="view"></canvas>
+<div id="hud"></div>
+<div id="joy"></div><div id="ring"></div><div id="knob"></div>
+<div id="act"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M10.5 7.5v6M7.5 10.5h6"/></svg></div>
+<div id="hint">WASD / arrows · Space</div>
+<div id="pop"></div>
+<div id="win"><div class="row" id="winrow"></div><button id="again" aria-label="again"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button></div>
+<script>
+'use strict';
+const Q=new URLSearchParams(location.search);
+const SQ=0.5;                         // camera tilt: footprint rows squashed, 1 px per slice (see README)
+const view=document.getElementById('view'), vctx=view.getContext('2d');
+const low=document.createElement('canvas'), ctx=low.getContext('2d');
+let SCALE=3, LW=200, LH=200;
+const rnd=(()=>{let s=20261122;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};})();
+
+// ---------------- assets (sheets built by tools/build_boy.py + tools/build_dragons.py) ----------------
+let A;
+async function loadAssets(){
+  A=await (await fetch('slices/assets.json?v=4')).json();
+  await Promise.all(Object.entries(A).map(async([k,m])=>{
+    const img=new Image(); img.src=m.sheet+'?v=4'; await img.decode(); m.img=img;
+    // shadow silhouette = union of frame-0 slices
+    const c=document.createElement('canvas'); c.width=m.X; c.height=m.Y; const g=c.getContext('2d');
+    for(let z=0;z<m.H;z++) g.drawImage(img, z*(m.X+m.pad), 0, m.X, m.Y, 0,0,m.X,m.Y);
+    g.globalCompositeOperation='source-in'; g.fillStyle='#173018'; g.fillRect(0,0,m.X,m.Y); m.shadow=c;
+  }));
+}
+// one outline around the whole stacked silhouette (baked outline voxels were stripped in tools/build_*.py)
+const BUF=document.createElement('canvas'); BUF.width=BUF.height=112; const bg_=BUF.getContext('2d');
+const TB=document.createElement('canvas'); TB.width=TB.height=112; const tg_=TB.getContext('2d');
+function drawChar(g,m,frame,sx,sy,rot,lift=0,shadow=true){
+  if(shadow){ g.save(); g.globalAlpha=.4; g.translate(sx+1,sy+1); g.scale(1,SQ); g.rotate(rot); g.drawImage(m.shadow,-m.X/2,-m.Y/2); g.restore(); }
+  bg_.imageSmoothingEnabled=false; tg_.imageSmoothingEnabled=false;
+  bg_.clearRect(0,0,112,112); drawStack(bg_,m,frame,56,84,rot,lift,false);
+  tg_.globalCompositeOperation='source-over'; tg_.clearRect(0,0,112,112); tg_.drawImage(BUF,0,0);
+  tg_.globalCompositeOperation='source-in'; tg_.fillStyle=m.outline||'#1a1420'; tg_.fillRect(0,0,112,112);
+  const ox=sx-56, oy=sy-84;
+  g.drawImage(TB,ox-1,oy); g.drawImage(TB,ox+1,oy); g.drawImage(TB,ox,oy-1); g.drawImage(TB,ox,oy+1); g.drawImage(BUF,ox,oy);
+}
+// draw a stacked frame: every slice rotated by the same angle, squashed, 1px apart
+function drawStack(g,m,frame,sx,sy,rot,lift=0,shadow=true){
+  const {X,Y,H,pad,img}=m;
+  if(shadow){ g.save(); g.globalAlpha=.4; g.translate(sx+1,sy+1); g.scale(1,SQ); g.rotate(rot); g.drawImage(m.shadow,-X/2,-Y/2); g.restore(); }
+  const fy=frame*(Y+pad);
+  for(let z=0;z<H;z++){
+    g.save(); g.translate(sx, sy-z-lift); g.scale(1,SQ); g.rotate(rot);
+    g.drawImage(img, z*(X+pad), fy, X, Y, -X/2, -Y/2, X, Y); g.restore();
+  }
+}
+
+// ---------------- island world (environment drawn in code) ----------------
+const WW=640, WH=640; const ground=document.createElement('canvas'); ground.width=WW; ground.height=WH;
+let land, props=[];
+function islandR(a){ return 250+18*Math.sin(3*a+1)+12*Math.sin(5*a+.3)+8*Math.cos(7*a); }
+function buildWorld(){
+  const g=ground.getContext('2d'); const id=g.createImageData(WW,WH), d=id.data; land=new Uint8Array(WW*WH);
+  const cx=WW/2, cy=WH/2;
+  const path=[[320,560],[300,470],[330,380],[300,300],[250,240],[330,170],[420,140]];
+  const distPath=(x,y)=>{let best=1e9;for(let i=0;i<path.length-1;i++){const[ax,ay]=path[i],[bx,by]=path[i+1];const vx=bx-ax,vy=by-ay;let t=((x-ax)*vx+(y-ay)*vy)/(vx*vx+vy*vy);t=Math.max(0,Math.min(1,t));best=Math.min(best,Math.hypot(x-ax-vx*t,y-ay-vy*t));}return best;};
+  for(let y=0;y<WH;y++)for(let x=0;x<WW;x++){
+    const a=Math.atan2(y-cy,x-cx), r=Math.hypot(x-cx,y-cy), R=islandR(a), i=(y*WW+x)*4, n=rnd(); let c;
+    if(r>R+10){ c = n<.04?[79,149,216]:n<.08?[47,95,154]:[58,118,184]; }
+    else if(r>R){ c = n<.3?[143,208,240]:[79,149,216]; }                       // shallow / foam
+    else if(r>R-9){ c = n<.15?[216,176,96]:[232,200,128]; land[y*WW+x]=1; }       // sand
+    else { land[y*WW+x]=1;
+      const p=distPath(x,y);
+      if(p<9){ c = n<.2?[138,90,58]:n<.3?[110,72,46]:[160,112,72]; }
+      else { c = n<.7?[106,168,79]:n<.9?[100,160,74]:n<.97?[114,176,85]:[84,146,64]; if(rnd()<.004) c=[255,211,90]; else if(rnd()<.003) c=[245,138,160]; }
+    }
+    d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2];d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // stacked props: trees and rocks (procedural voxel discs, same camera as characters)
+  const spots=[[120,300],[160,200],[210,140],[440,250],[480,330],[430,460],[200,460],[150,390],[380,520],[520,240],[260,340],[390,330],[350,230],[470,190],[230,530],[100,250]];
+  for(const [x,y] of spots){ if(!land[(y|0)*WW+(x|0)])continue; props.push({x,y,kind:rnd()<.72?'tree':'rock',r:rnd()}); }
+}
+function makeTree(seed){
+  const X=30,Y=30,H=42, c=document.createElement('canvas'); c.width=H*(X+1); c.height=Y; const g=c.getContext('2d');
+  for(let z=0;z<H;z++){ const ox=z*(X+1);
+    if(z<14){ g.fillStyle=z<2?'#5a3a2a':'#8a5a3a'; g.fillRect(ox+13,13,4,4); g.fillStyle='#5a3a2a'; g.fillRect(ox+13,16,4,1); }
+    else { const t=(z-14)/(H-14), rad=Math.max(1.5, 13.5*Math.sin(Math.PI*Math.min(1,t*1.15+.12)));
+      for(let y=0;y<Y;y++)for(let x=0;x<X;x++){ const dx=x-14.5,dy=y-14.5,dd=Math.hypot(dx,dy); if(dd>rad)continue;
+        const h=((x*7+y*13+z*5+seed*31)%11); g.fillStyle = dd>rad-1.2 ? '#2c5a3a' : (dy<-2&&dx<0 && z>H-8 ? '#a3d16a' : h<3 ? '#3f7a3a' : '#6aa84f'); g.fillRect(ox+x,y,1,1);} }
+  }
+  return {X,Y,H,pad:1,img:c,shadow:disc(X,Y,12)};
+}
+function makeRock(seed){
+  const X=14,Y=12,H=7, c=document.createElement('canvas'); c.width=H*(X+1); c.height=Y; const g=c.getContext('2d');
+  for(let z=0;z<H;z++){ const ox=z*(X+1), rx=6.5*(1-z/H*.6), ry=5.5*(1-z/H*.6);
+    for(let y=0;y<Y;y++)for(let x=0;x<X;x++){ const v=((x-6.5)/rx)**2+((y-5.5)/ry)**2; if(v>1)continue;
+      g.fillStyle = v>.7?'#6b6b7a':(z>=H-2?'#c8c8d0':'#9a9aa8'); g.fillRect(ox+x,y,1,1);} }
+  return {X,Y,H,pad:1,img:c,shadow:disc(X,Y,6)};
+}
+function disc(X,Y,r){const c=document.createElement('canvas');c.width=X;c.height=Y;const g=c.getContext('2d');g.fillStyle='#173018';for(let y=0;y<Y;y++)for(let x=0;x<X;x++)if(Math.hypot(x-X/2+.5,y-Y/2+.5)<=r)g.fillRect(x,y,1,1);return c;}
+const walkable=(x,y)=>x>8&&y>8&&x<WW-8&&y<WH-8&&land[(y|0)*WW+(x|0)]===1&&!props.some(p=>Math.hypot((p.x-x),(p.y-y)*1.4)<(p.kind==='tree'?9:7));
+
+// ---------------- entities ----------------
+const DR=[ // home spots + temperament (curious hop toward / shy hop away)
+  {k:'ember',x:180,y:250,mood:1},{k:'moss',x:440,y:400,mood:-1},{k:'tide',x:500,y:470,mood:1},{k:'dusk',x:400,y:170,mood:-1}];
+let boy, dragons, sparks, found, won, rings=[];
+function reset(){
+  boy={x:320,y:530,a:Math.PI/2,ta:Math.PI/2,dist:0,t:0,moving:false};
+  dragons=DR.map((d,i)=>({...d,hx:d.x,hy:d.y,a:rnd()*6.28,ta:0,st:'idle',t:0,dur:1+rnd()*2,frame:0,anim:'idle',lift:0,found:false,tx:d.x,ty:d.y,idx:i}));
+  sparks=[]; rings=[]; found=0; won=false; document.getElementById('win').style.display='none'; updHud();
+}
+const keys={up:0,down:0,left:0,right:0,act:0}; let joy={x:0,y:0}, actPressed=false;
+const KM={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'act',Enter:'act'};
+addEventListener('keydown',e=>{const k=KM[e.code]; if(k){ if(k==='act'&&!keys.act) actPressed=true; keys[k]=1; e.preventDefault(); }});
+addEventListener('keyup',e=>{const k=KM[e.code]; if(k){keys[k]=0;e.preventDefault();}});
+// touch joystick (floating) + action
+const jz=document.getElementById('joy'), ring=document.getElementById('ring'), knob=document.getElementById('knob'); let jid=null, jo=null;
+jz.addEventListener('pointerdown',e=>{jid=e.pointerId;jz.setPointerCapture(e.pointerId);jo={x:e.clientX,y:e.clientY};ring.style.display=knob.style.display='block';ring.style.left=knob.style.left=e.clientX+'px';ring.style.top=knob.style.top=e.clientY+'px';e.preventDefault();});
+jz.addEventListener('pointermove',e=>{if(e.pointerId!==jid)return;let dx=e.clientX-jo.x,dy=e.clientY-jo.y;const l=Math.hypot(dx,dy),M=48;if(l>M){dx*=M/l;dy*=M/l;}joy={x:dx/M,y:dy/M};knob.style.left=(jo.x+dx)+'px';knob.style.top=(jo.y+dy)+'px';});
+const jend=e=>{if(e.pointerId!==jid)return;jid=null;joy={x:0,y:0};ring.style.display=knob.style.display='none';};
+jz.addEventListener('pointerup',jend); jz.addEventListener('pointercancel',jend);
+const act=document.getElementById('act');
+act.addEventListener('pointerdown',e=>{e.preventDefault();actPressed=true;act.classList.add('on');});
+['pointerup','pointercancel','pointerleave'].forEach(t=>act.addEventListener(t,()=>act.classList.remove('on')));
+document.getElementById('again').addEventListener('click',reset);
+addEventListener('contextmenu',e=>e.preventDefault());
+
+const angLerp=(a,b,t)=>{let d=((b-a+Math.PI*3)%(Math.PI*2))-Math.PI;return a+d*t;};
+const toRot=(dx,dy)=>Math.atan2(dy/SQ,dx);          // screen heading -> footprint angle (camera squash)
+let demo=Q.has('demo');
+function step(dt){
+  // ---- boy
+  let ix=(keys.right-keys.left)+joy.x, iy=(keys.down-keys.up)+joy.y;
+  if(demo){ const tgt=dragons.find(d=>!d.found); if(tgt){ const dx=tgt.x-boy.x, dy=tgt.y-boy.y, l=Math.hypot(dx,dy); if(l>22){ix=dx/l;iy=dy/l;} else {ix=iy=0; actPressed=true;} } }
+  const il=Math.hypot(ix,iy); if(il>1){ix/=il;iy/=il;}
+  const sp=52; boy.moving=il>.15;
+  if(boy.moving){
+    const nx=boy.x+ix*sp*dt, ny=boy.y+iy*sp*dt;
+    if(walkable(nx,boy.y)) boy.x=nx; if(walkable(boy.x,ny)) boy.y=ny;
+    boy.dist+=Math.hypot(ix,iy)*sp*dt; boy.ta=toRot(ix,iy);
+  }
+  boy.a=angLerp(boy.a,boy.ta,Math.min(1,dt*10)); boy.t+=dt;
+  // ---- dragons
+  let near=null;
+  for(const d of dragons){
+    d.t+=dt; const pd=Math.hypot(boy.x-d.x,boy.y-d.y);
+    if(!d.found && pd<34 && (!near||pd<near.pd)) near={d,pd};
+    if(d.st==='idle'){ d.anim='idle'; if(d.t>d.dur){ d.t=0;
+        const r=rnd();
+        if(d.found){ d.st='walk'; }
+        else if(pd<70){ d.st='hop'; const ang=Math.atan2(boy.y-d.y,boy.x-d.x)*(1)+(d.mood<0?Math.PI:0)+ (rnd()-.5); d.tx=d.x+Math.cos(ang)*18; d.ty=d.y+Math.sin(ang)*18; }
+        else if(r<.55){ d.st='walk'; const a=rnd()*6.28, rr=8+rnd()*26; d.tx=d.hx+Math.cos(a)*rr; d.ty=d.hy+Math.sin(a)*rr; }
+        else if(r<.75){ d.st='hop'; d.tx=d.x; d.ty=d.y; }
+        else d.dur=1+rnd()*2; } }
+    if(d.found){ // follows the boy in a little line
+      const lead = d.followIdx===0?boy:dragons.find(o=>o.found&&o.followIdx===d.followIdx-1)||boy;
+      const dx=lead.x-d.x, dy=lead.y-d.y, l=Math.hypot(dx,dy);
+      if(d.st!=='hop'){ if(l>22){ d.st='walk'; d.tx=lead.x-dx/l*18; d.ty=lead.y-dy/l*18; } else if(d.st==='walk'&&l<20){ d.st='idle'; d.t=0; d.dur=.4; } }
+    }
+    if(d.st==='walk'||d.st==='hop'){
+      const dx=d.tx-d.x, dy=d.ty-d.y, l=Math.hypot(dx,dy), spd=d.st==='hop'?40:(d.found?50:20);
+      if(l>1){ d.ta=toRot(dx,dy); const nx=d.x+dx/l*Math.min(l,spd*dt), ny=d.y+dy/l*Math.min(l,spd*dt); if(walkable(nx,ny)){d.x=nx;d.y=ny;} else { d.tx=d.x; d.ty=d.y; } }
+      d.anim=d.st==='hop'?'flap':'walk';
+      if(d.st==='walk' && l<=1){ d.st='idle'; d.t=0; d.dur=1+rnd()*2.5; }
+      if(d.st==='hop' && d.t>0.6){ d.st='idle'; d.t=0; d.dur=.8+rnd()*2; }
+    }
+    d.a=angLerp(d.a, d.st==='idle'&&!d.found&&pd<80 ? toRot(boy.x-d.x,boy.y-d.y) : d.ta, Math.min(1,dt*(d.st==='idle'?2:6)));
+  }
+  act.classList.toggle('near',!!near);
+  if(actPressed){ actPressed=false; if(near) discover(near.d); }
+  for(const s of sparks){ s.x+=s.vx*dt; s.y+=s.vy*dt; s.z+=s.vz*dt; s.vz-=40*dt; s.life-=dt; }
+  sparks=sparks.filter(s=>s.life>0); for(const r of rings) r.t+=dt; rings=rings.filter(r=>r.t<.6);
+}
+function discover(d){
+  d.found=true; d.followIdx=found; found++; d.st='hop'; d.t=0; d.tx=d.x; d.ty=d.y; d.flash=1.2;
+  const C=['#ffd35a','#ffffff','#f59a3a','#8fd0f0','#f58aa0'];
+  for(let i=0;i<34;i++){ const a=rnd()*6.28, s=25+rnd()*45; sparks.push({x:d.x,y:d.y,z:12+rnd()*10,vx:Math.cos(a)*s,vy:Math.sin(a)*s*SQ,vz:25+rnd()*35,life:.7+rnd()*.7,c:C[i%C.length],big:i%3===0}); }
+  rings.push({x:d.x,y:d.y,t:0});
+  updHud(true); showPop(d.k);
+  if(found===dragons.length) setTimeout(()=>{won=true;showWin();},900);
+}
+
+// ---------------- HUD icons (rendered from the same stacks) ----------------
+function iconOf(k,size=36){ const c=document.createElement('canvas'); c.width=size;c.height=size; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  const m=A[k]; drawChar(g,m,m.frames.idle[0],size/2,size-5,0,0,false); return c; }
+function updHud(pop){ const h=document.getElementById('hud'); h.innerHTML='';
+  dragons.forEach(d=>{const c=iconOf(d.k); if(d.found)c.className='got'; h.appendChild(c);});
+  const b=document.createElement('b'); b.textContent=found+'/'+dragons.length; h.appendChild(b); }
+function showPop(k){ const p=document.getElementById('pop'); p.innerHTML=''; p.appendChild(iconOf(k,36)); p.classList.remove('show'); void p.offsetWidth; p.classList.add('show'); }
+function showWin(){ const r=document.getElementById('winrow'); r.innerHTML=''; dragons.forEach(d=>{const c=iconOf(d.k,40); r.appendChild(c);}); document.getElementById('win').style.display='flex'; }
+
+// ---------------- render ----------------
+function resize(){
+  const dpr=window.devicePixelRatio||1, pw=Math.floor(innerWidth*dpr), ph=Math.floor(innerHeight*dpr);
+  SCALE=Math.max(2,Math.floor(Math.min(pw,ph)/190)); LW=Math.ceil(pw/SCALE); LH=Math.ceil(ph/SCALE);
+  low.width=LW; low.height=LH; view.width=LW*SCALE; view.height=LH*SCALE;
+  view.style.width=(LW*SCALE/dpr)+'px'; view.style.height=(LH*SCALE/dpr)+'px'; ctx.imageSmoothingEnabled=false; vctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize);
+let TREE=[],ROCK=[], clock=0;
+function frameOf(m,anim,t,fps){ const [s,n]=m.frames[anim]; return s+(Math.floor(t*fps)%n); }
+function render(){
+  ctx.imageSmoothingEnabled=false;
+  const cl=(v,lo,hi)=>hi<lo?((lo+hi)/2|0):Math.max(lo,Math.min(hi,v));
+  const camX=cl(Math.floor(boy.x-LW/2),0,WW-LW), camY=cl(Math.floor(boy.y-LH/2-10),0,WH-LH);
+  ctx.fillStyle='#3a76b8'; ctx.fillRect(0,0,LW,LH); ctx.drawImage(ground,-camX,-camY);
+  // water shimmer
+  ctx.fillStyle='#8fd0f0'; for(let i=0;i<40;i++){ const x=(i*97+Math.floor(clock*6)*13)%WW, y=(i*61)%WH; if(!land[y*WW+x]) ctx.fillRect(x-camX,y-camY,2,1); }
+  const list=[];
+  props.forEach((p,i)=>list.push({y:p.y,draw:()=>drawStack(ctx,p.kind==='tree'?TREE[i%TREE.length]:ROCK[i%ROCK.length],0,Math.floor(p.x)-camX,Math.floor(p.y)-camY,p.r*6.28)}));
+  // boy: walk frames advance with distance (stride), idle uses the bible cadence 400/250/400/150 ms
+  const bm=A.boy; let bf;
+  if(boy.moving) bf=bm.frames.walk[0]+(Math.floor(boy.dist/3.2)%bm.frames.walk[1]);
+  else { const cyc=[.4,.25,.4,.15]; let tt=boy.t%1.2, k=0; while(tt>cyc[k]){tt-=cyc[k];k++;} bf=bm.frames.idle[0]+k; }
+  list.push({y:boy.y,draw:()=>drawChar(ctx,bm,bf,Math.floor(boy.x)-camX,Math.floor(boy.y)-camY,boy.a-Math.PI/2)});
+  for(const d of dragons){
+    const m=A[d.k]; let f, lift=0;
+    if(d.anim==='flap'){ const k=Math.floor(d.t*10)%6; f=m.frames.flap[0]+k; lift=m.hop[k]; }
+    else if(d.anim==='walk') f=frameOf(m,'walk',d.t,10); else f=frameOf(m,'idle',d.t+d.idx,6);
+    list.push({y:d.y,draw:()=>{ drawChar(ctx,m,f,Math.floor(d.x)-camX,Math.floor(d.y)-camY,d.a-Math.PI/2,lift);
+      if(!d.found){ const bob=Math.floor(clock*3+d.idx)%2; ctx.fillStyle='#ffd35a'; const qx=Math.floor(d.x)-camX, qy=Math.floor(d.y)-camY-m.H-10-bob; ctx.fillRect(qx-1,qy,3,1);ctx.fillRect(qx+1,qy+1,1,2);ctx.fillRect(qx,qy+3,1,1);ctx.fillRect(qx,qy+5,1,1); } }});
+  }
+  list.sort((a,b)=>a.y-b.y).forEach(o=>o.draw());
+  for(const r of rings){ const rad=6+r.t*60, cx=Math.floor(r.x)-camX, cy=Math.floor(r.y)-camY; ctx.fillStyle=r.t<.3?'#ffffff':'#ffd35a';
+    for(let k=0;k<28;k++){ const a=k/28*6.283; ctx.fillRect(Math.floor(cx+Math.cos(a)*rad), Math.floor(cy+Math.sin(a)*rad*SQ),1,1);} }
+  for(const s of sparks){ ctx.fillStyle=s.c; const x=Math.floor(s.x)-camX, y=Math.floor(s.y-s.z)-camY; ctx.fillRect(x,y,1,1);
+    if(s.big||s.life>.6){ctx.fillRect(x-1,y,3,1);ctx.fillRect(x,y-1,1,3);} if(s.big&&s.life>.8){ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);} }
+  vctx.imageSmoothingEnabled=false; vctx.drawImage(low,0,0,LW*SCALE,LH*SCALE);
+}
+let last=0,acc=0; const DT=1/120;
+function loop(t){ const f=Math.min(.1,(t-last)/1000||0); last=t; acc+=f; while(acc>=DT){step(DT);clock+=DT;acc-=DT;} render(); requestAnimationFrame(loop); }
+(async()=>{
+  resize(); buildWorld(); await loadAssets();
+  for(let i=0;i<3;i++){TREE.push(makeTree(i));ROCK.push(makeRock(i));}
+  reset();
+  if(Q.has('sim')){ const n=parseFloat(Q.get('sim'))*120; for(let i=0;i<n;i++){step(DT);clock+=DT;} }   // test hook: pre-run sim (headless rAF doesn't tick)
+  if(Q.has('stop')) demo=false;
+  window.__state=()=>({boy:[boy.x|0,boy.y|0],found,sparks:sparks.length,dr:dragons.map(d=>[d.k,d.st,d.found,d.x|0,d.y|0])});
+  document.title='DE '+found+' '+sparks.length;
+  requestAnimationFrame(loop);
+})();
+</script></body></html>
