@@ -1,0 +1,86 @@
+{
+ "tree_oak": {
+  "w": 64,
+  "h": 60
+ },
+ "tree_round": {
+  "w": 44,
+  "h": 52
+ },
+ "tree_fruit": {
+  "w": 51,
+  "h": 54
+ },
+ "bush_a": {
+  "w": 28,
+  "h": 24
+ },
+ "bush_b": {
+  "w": 25,
+  "h": 22
+ },
+ "bush_flower": {
+  "w": 30,
+  "h": 24
+ },
+ "rock_big": {
+  "w": 22,
+  "h": 20
+ },
+ "rock_mid": {
+  "w": 18,
+  "h": 16
+ },
+ "rock_small": {
+  "w": 17,
+  "h": 15
+ },
+ "flower_yellow": {
+  "w": 14,
+  "h": 14
+ },
+ "flower_pink": {
+  "w": 15,
+  "h": 14
+ },
+ "flower_white": {
+  "w": 15,
+  "h": 14
+ },
+ "flower_blue": {
+  "w": 16,
+  "h": 14
+ },
+ "grass_a": {
+  "w": 15,
+  "h": 14
+ },
+ "grass_b": {
+  "w": 13,
+  "h": 12
+ },
+ "mushrooms": {
+  "w": 14,
+  "h": 16
+ },
+ "tile_grass": {
+  "w": 96,
+  "h": 96
+ },
+ "tile_path": {
+  "w": 96,
+  "h": 96
+ },
+ "tile_sand": {
+  "w": 96,
+  "h": 96
+ },
+ "tile_shallow": {
+  "w": 96,
+  "h": 96
+ },
+ "tile_deep": {
+  "w": 96,
+  "h": 96
+ }
+}
