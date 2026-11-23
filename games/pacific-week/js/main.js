@@ -1,10 +1,12 @@
-import * as G from './state.js?v=8g3';
-import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js';
-import { icon, unitIcon, UNIT_NAMES } from './icons.js';
-import { createSpaceAudio } from './audio.js';
-import { computeTerrain } from './terrain.js';
-import { openBoard } from './battle.js';
-import { STRONG, WEAK, cardKey } from './matchups.js';
+import * as G from './state.js?v=9';
+import { SIDE_COL, drawFlag, portrait, shipSide, armySymbol, planeTop, crateIcon, star, arrowCurve, curvePt, drawArrow, secIcon, unitGlyph } from './art.js?v=9';
+import { icon, unitIcon, UNIT_NAMES } from './icons.js?v=9';
+import { createSpaceAudio } from './audio.js?v=9';
+import { computeTerrain } from './terrain.js?v=9';
+import { openBoard } from './battle.js?v=9';
+import { STRONG, WEAK, cardKey } from './matchups.js?v=9';
+import * as R9 from './r9ui.js?v=9';
+import { soldier, bunker } from './art.js?v=9';
 
 const params = new URLSearchParams(location.search);
 let speed = params.has('fast') ? 12 : 1;
@@ -25,6 +27,9 @@ let planeSel = null, airOpen = false; // r7: the plane picked in the air tray, a
 let strip = null; // r8: the place whose cards are open in the bottom strip { kind, isl, side, sec, fleets }
 let foeSel = null; // r8b: the enemy kind picked (army / fleet / fort / plane type): your cards that beat it glow
 let drag = null; // r8b: an army card being dragged onto another leader card
+let reorg = null; // r9: a picked company { k: 'co', u, co } or battalion { k: 'bn', u, bn } waiting for a target
+let cancelMarks = []; // r9: the X on each planned Blue move this frame (screen px)
+let menuView = null; // r9: what the Menu sheet shows
 let fx;
 const resetFx = () => { fx = { moving: null, stayArrows: null, pops: [], pulses: [], reveals: {}, flight: null, flashes: [], strike: null, marks: [], scout: null }; };
 resetFx();
@@ -38,7 +43,7 @@ window.addEventListener('error', (e) => errors.push(String(e.message)));
 function newGame(seed = Date.now() % 100000) {
   S = G.createGame(seed);
   view = snapshotView();
-  sel = null; busy = false; reconMode = false; strip = null;
+  sel = null; busy = false; reconMode = false; strip = null; reorg = null;
   resetFx();
   zseen = G.zoneVision(S, 'blue'); seen = G.vision(S, 'blue', zseen);
   $('end').hidden = true;
@@ -545,7 +550,7 @@ function placeTokens() {
       const numSide = arm.length ? arm[0].side : planes.length ? planes[0].side : up.length ? up[0].side : null;
       const next = ev ? (x.kind === 'hq' && ev.troops ? ev.troops : 0) + (x.kind === 'port' && ev.ships ? ev.ships : 0) + (x.kind === 'air' && ev.planes ? ev.planes : 0) : 0;
       out.push({ kind: 'zone', isl: isl.id, sec: x.id, secKind: x.kind, side: null, own, x: p.x, y: p.y, r: p.r, show: x.kind, count, numSide, gar,
-        armySide: arm.length ? arm[0].side : null, units: arm.map((u) => u.id), planes: [...planes, ...up].map((q) => q.id), up: up.map((q) => q.id), upSide: up.length ? up[0].side : null, fort: gar > 0, unknown: !known, next });
+        armySide: arm.length ? arm[0].side : null, dock: !!x.dock, field: !!x.field, units: arm.map((u) => u.id), planes: [...planes, ...up].map((q) => q.id), up: up.map((q) => q.id), upSide: up.length ? up[0].side : null, fort: gar > 0, unknown: !known, next });
     }
   }
   const zones = out.slice();
@@ -673,6 +678,7 @@ function drawToken(t, hi = false, c = g, zz = cam.z) {
   const k = Math.SQRT1_2 * r * 1.02;
   if (t.count > 1 || (t.count > 0 && (t.kind === 'air' || t.kind === 'carrier' || t.fort))) badge(t.x + k, t.y - k, (bx, by, br) => { c.fillStyle = '#fff'; c.font = `900 ${br * 1.45}px "Barlow Condensed", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(t.count), bx, by + br * 0.08); });
   if (t.carrying) badge(t.x - k, t.y - k, (bx, by, br) => armySymbol(c, bx, by, br * 1.2, '#f5c518'));
+  if (t.kind === 'fleet') R9.drawKindBadge(c, 'fleet', t.x - k, t.y + k, Math.max(r * 0.46, 7.5 / zz)); // r9: kind badge on the fleet marker
   if (t.kind === 'fleet' && t.planes && t.planes.length) badge(t.x + k, t.y + k, (bx, by, br) => planeTop(c, bx, by, br * 1.5, '#e6ebf0', -Math.PI / 2)); // r8e: a carrier's planes ride in its fleet
   c.restore();
 }
@@ -718,6 +724,10 @@ function drawZone(t, hi, c, zz) {
   // bottom right: a garrison fort (not a unit; a small mark so the zone still reads as defended)
   if (t.gar > 0) { c.save(); c.translate(t.x + k, t.y + k); c.scale(br / 9, br / 9); fortAt(c, 0, 0, t.own); c.restore(); }
   if (t.next) arriveGlyph(c, t.x - k, t.y + k, br); // r8b arrivals land in this zone next week
+  // r9 ask 1 + 2: what is here at a glance: army (with regiment lines III) or air, on the zone's left edge
+  if (t.armySide) R9.drawKindBadge(c, 'army', t.x - r * 1.02, t.y + r * 0.2, br * 0.95, 3);
+  else if ((t.planes || []).length) R9.drawKindBadge(c, 'air', t.x - r * 1.02, t.y + r * 0.2, br * 0.95);
+  if (t.dock || t.field) { c.save(); const bx = t.x + r * 1.02, by = t.y + r * 0.2, rr = br * 0.8; c.fillStyle = '#0d1116'; c.beginPath(); c.arc(bx, by, rr, 0, 7); c.fill(); c.lineWidth = Math.max(1, rr * 0.18); c.strokeStyle = '#f5c518'; c.stroke(); secIcon(c, t.dock ? 'port' : 'air', bx, by, rr * 1.5, '#f5c518'); c.restore(); }
   c.restore();
   if (c === g) { const p = toScreen(t.x, t.y); zoneLog.push({ isl: t.isl, sec: t.sec, line: cl ? cl.line : SEC_GREY, tint: cl ? cl.fill : null, known: !t.unknown, open: !t.unknown && !cl, owner: t.own, x: p.x, y: p.y, r: r * zz, wx: t.x, wy: t.y, wr: r, show: t.show, count: t.count, next: t.next, up: (t.up || []).length, gar: t.gar || 0, numSide: t.numSide || null }); }
 }
@@ -797,9 +807,18 @@ function groupCards(grp, list) {
   const u = G.unit(S, grp.id) || list.find((x) => x.id === grp.id);
   if (!u) return cards;
   cards.push({ t: 'g', u, head: true });
+  const bnCards = [];
   if (u.kind === 'fleet') { G.syncOob(u); u.ships.forEach((t, i) => cards.push({ t: 's', u, ship: t, i })); }
-  else G.battalions(u).forEach((b) => cards.push({ t: 'bn', u, b }));
-  return cards;
+  else G.battalions(u).forEach((b) => bnCards.push({ t: 'bn', u, b }));
+  // r9 reorganize: with a company / battalion picked, the places it can go (same island only)
+  if (reorg && reorg.u === u.id && u.side === 'blue' && u.kind === 'army') {
+    if (reorg.k === 'co') cards.push({ t: 'newbn' });
+    S.units.filter((t) => t !== u && t.side === 'blue' && t.kind === 'army' && t.at === u.at && !t.aboard && t.sec && (reorg.k === 'bn' ? G.canMoveBn(S, u.id, reorg.bn, t.id) : true)).forEach((t) => cards.push({ t: 'rt', u: t }));
+    if (reorg.k === 'bn') cards.push({ t: 'newreg' });
+  }
+  // the picked one first, then the targets (slots), then the other battalions: what you need stays on screen
+  if (reorg && reorg.u === u.id) { const pk = bnCards.filter((c) => c.b.n === reorg.bn); return [...cards.slice(0, 2), ...pk, ...cards.slice(2), ...bnCards.filter((c) => c.b.n !== reorg.bn)]; }
+  return [...cards, ...bnCards];
 }
 const ordersOf = (id) => !!(S.orders[id] || S.secOrders[id] || S.landOrd[id] || S.embark[id]);
 // r8b strong / weak row: a green up arrow + what this card beats, a red down arrow + what beats it (real rules only)
@@ -823,29 +842,31 @@ function cardHtml(c) {
   const mine = c.t === 'pl' ? c.p.side === 'blue' : c.t === 'f' ? c.own === 'blue' : c.u.side === 'blue';
   const foeOn = !mine && foeSel === k ? ' foe-on' : '';
   // inject the key, the highlight class and the matchup row into the card's opening tag / before its close
-  return h.replace(/^<(button|div) class="sc/, `<$1 data-key="${k}" class="sc${mine ? matchCls(k) : foeOn}`).replace(/<\/(button|div)>$/, `${matchRow(k)}</$1>`);
+  return h.replace(/^<(button|div) class="sc/, `<$1 data-key="${k}" class="sc${mine ? matchCls(k) : foeOn}`).replace(/<\/(button|div)>$/, '</$1>'); // r9: the matchup row lives in the selected unit's info bar only
 }
 // r8g2: "spent this week" mark: a plane-down arrow onto a runway bar inside a clock-like ring (no words)
 const SPENT_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><polyline points="7.5 10 12 14.5 16.5 10"/><line x1="5" y1="19" x2="19" y2="19"/></svg>';
 function cardHtml0(c) {
   if (c.t === 'n') {
-    const inner = c.k === 'army' ? `<canvas class="sc-p" data-side="blue" data-cmd="${c.cmd}" data-k="army" width="96" height="96"></canvas><b class="sc-add">+${c.add}</b>`
-      : `${unitIcon(c.type, 34)}<b class="sc-add">+1</b>`;
+    const inner = c.k === 'army' ? `<canvas class="sc-p" data-side="blue" data-cmd="${c.cmd}" data-k="army" data-only="1" data-rank="col" width="96" height="96"></canvas><b class="sc-add">+${c.add}</b>${R9.kindBadge('army', { ech: 3, word: false, cls: 'sm' })}`
+      : `${unitIcon(c.type, 34)}<b class="sc-add">+1</b>${R9.kindBadge(c.k === 'ship' ? 'fleet' : 'air', { word: false, cls: 'sm' })}`;
     return `<div class="sc next blue" data-n="${c.k}"${c.type ? ` data-t="${c.type}"` : ''}${c.id ? ` data-u0="${c.id}"` : ''}><i class="sc-nx"><img alt="" src="${arriveImg()}" width="22" height="22"></i>${inner}</div>`;
   }
   if (c.t === 'back') return `<button class="sc back" data-back="1" aria-label="Back">${icon('back', { size: 28 })}</button>`;
   if (c.t === 'g') { // officer only: the group's leading officer portrait (+ a small move mark if it has an order)
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
-    const inner = `<canvas class="sc-p" data-side="${u.side}" data-cmd="${u.cmd}" data-k="${u.kind}" data-only="1" width="96" height="96"></canvas>${mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
+    const kb = c.head ? R9.kindBadge('cmd', { ech: u.kind === 'army' ? 3 : 0 }) : R9.kindBadge(u.kind === 'fleet' ? 'fleet' : 'army', { ech: u.kind === 'army' ? 3 : 0 });
+    const inner = `<canvas class="sc-p" data-side="${u.side}" data-cmd="${u.cmd}" data-k="${u.kind}" data-only="1" data-rank="col" width="96" height="96"></canvas>${kb}${mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
     const attrs = `data-g="${u.id}" data-u="${u.id}" data-cmd="${u.cmd}" data-army="${u.kind === 'army' && !c.head ? 1 : ''}"`;
     return mine ? `<button class="sc grp ${u.side}${on ? ' on' : ''}${c.head ? ' head' : ''}" ${attrs} aria-label="Group">${inner}</button>` : `<div class="sc grp ${u.side} foe${c.head ? ' head' : ''}" data-g="${u.id}">${inner}</div>`;
   }
   if (c.t === 'ga') { // an air wing: its pilot officer, a small plane mark (gold when some are in the air)
-    const inner = `<canvas class="sc-p" data-side="${c.side}" data-cmd="${wingCmd(c.key)}" data-only="1" width="96" height="96"></canvas><i class="sc-w${c.up ? ' up' : ''}">${unitIcon('fighter', 16)}</i>`;
+    const inner = `<canvas class="sc-p" data-side="${c.side}" data-cmd="${wingCmd(c.key)}" data-only="1" data-rank="maj" width="96" height="96"></canvas>${R9.kindBadge('air')}${c.up ? `<i class="sc-w up">${unitIcon('fighter', 16)}</i>` : ''}`;
     return `<button class="sc grp wing ${c.side}${c.side === 'blue' ? '' : ' foe'}" data-ga="${c.key}" aria-label="Air wing">${inner}</button>`;
   }
   if (c.t === 'bn') { // a battalion: its commander + its companies (the real units) with their pips
-    return `<div class="sc bn ${c.u.side}" data-bn="${c.b.n}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" width="44" height="44"></canvas><span class="bn-cos">${c.b.cos.map((q) => `<i class="co" data-t="${q.type}">${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
+    const pk = reorg && reorg.u === c.u.id, bnOn = pk && reorg.k === 'bn' && reorg.bn === c.b.n, tgt = pk && reorg.k === 'co' && reorg.bn !== c.b.n;
+    return `<div class="sc bn ${c.u.side}${bnOn ? ' pick' : ''}${tgt ? ' tgt' : ''}" data-bn="${c.b.n}" data-bu="${c.u.id}"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.b.cmd}" data-rank="maj" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 2, word: false, cls: 'xs' })}<span class="bn-cos">${c.b.cos.map((q) => `<i class="co${pk && reorg.k === 'co' && reorg.co === q.id ? ' pick' : ''}" data-t="${q.type}" data-co="${q.id}"><span class="ech1"></span>${unitIcon(q.type, 22)}${pipsHtml(q.pips)}</i>`).join('')}</span></div>`;
   }
   if (c.t === 'u') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
@@ -853,15 +874,18 @@ function cardHtml0(c) {
     const inner = `<canvas class="sc-p" data-side="${u.side}" data-cmd="${u.cmd}" data-k="${u.kind}" width="96" height="96"></canvas>${pips}${u.aboard ? `<i class="sc-b">${toastImg('ship')}</i>` : ''}${mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
     return mine ? `<button class="sc ${u.side}${on ? ' on' : ''}" data-u="${u.id}" data-cmd="${u.cmd}" data-army="${u.kind === 'army' ? 1 : ''}" aria-label="Army">${inner}</button>` : `<div class="sc ${u.side} foe">${inner}</div>`;
   }
+  if (c.t === 'newbn') return `<button class="sc slot" data-slot="newbn" aria-label="New battalion">${icon('plus', { size: 22 })}${R9.echHtml(2)}${R9.rankChip('maj', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
+  if (c.t === 'newreg') return `<button class="sc slot" data-slot="newreg" aria-label="New regiment">${icon('plus', { size: 22 })}${R9.echHtml(3)}${R9.rankChip('col', 16)}${R9.coinHtml(G.COST.cmd)}</button>`;
+  if (c.t === 'rt') return `<button class="sc slot rt" data-rt="${c.u.id}" aria-label="Regiment"><canvas class="sc-c" data-side="${c.u.side}" data-cmd="${c.u.cmd}" data-rank="col" width="56" height="56"></canvas>${R9.kindBadge('army', { ech: 3, word: false, cls: 'xs' })}<b class="rt-n">${R9.ord(c.u.cmd)}</b></button>`;
   if (c.t === 's') {
     const u = c.u, mine = u.side === 'blue', on = u.id === sel;
-    const inner = `${unitIcon(c.ship, 34)}<canvas class="sc-c" data-side="${u.side}" data-cmd="${u.cmd}" width="44" height="44"></canvas>${c.i === 0 && mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
+    const inner = `${unitIcon(c.ship, 34)}<canvas class="sc-c" data-side="${u.side}" data-cmd="${u.cmd}" data-rank="col" width="56" height="56"></canvas>${R9.kindBadge('fleet', { word: false, cls: 'xs' })}${c.i === 0 && mine && ordersOf(u.id) ? `<i class="sc-o">${icon('move', { size: 14 })}</i>` : ''}`;
     return mine ? `<button class="sc ship ${u.side}${on ? ' on' : ''}" data-u="${u.id}" data-t="${c.ship}" aria-label="${UNIT_NAMES[c.ship]}">${inner}</button>` : `<div class="sc ship ${u.side} foe" data-t="${c.ship}">${inner}</div>`;
   }
   if (c.t === 'pl') {
     const p = c.p, mine = p.side === 'blue', st = p.used ? ' used' : S.strikes[p.id] || (S.flyOrd && S.flyOrd[p.id]) || (S.landPl && S.landPl[p.id]) || (S.reconOrd && S.reconOrd[p.id]) ? ' set' : '';
     const mark = S.strikes[p.id] ? icon('crosshair', { size: 14 }) : S.flyOrd && S.flyOrd[p.id] ? icon('move', { size: 14 }) : S.landPl && S.landPl[p.id] ? icon('anchor', { size: 14 }) : S.reconOrd && S.reconOrd[p.id] ? icon('target', { size: 14 }) : '';
-    const inner = `${unitIcon(p.type, 34)}${mark ? `<i class="sc-o">${mark}</i>` : ''}${p.air ? '<i class="sc-up"></i>' : ''}${p.used || p.air ? `<i class="sc-spent${p.air ? ' air' : ''}">${SPENT_SVG}</i>` : ''}`; // r8g2 fix 3: spent this week (flew / landed) or up now = must come down, cannot go up this week
+    const inner = `${unitIcon(p.type, 34)}${R9.kindBadge('air', { word: false, cls: 'xs' })}${mark ? `<i class="sc-o">${mark}</i>` : ''}${p.air ? '<i class="sc-up"></i>' : ''}${p.used || p.air ? `<i class="sc-spent${p.air ? ' air' : ''}">${SPENT_SVG}</i>` : ''}`; // r8g2 fix 3: spent this week (flew / landed) or up now = must come down, cannot go up this week
     return mine ? `<button class="sc pl ${p.side}${st}${p.air ? ' air' : ''}${p.id === planeSel ? ' on' : ''}" data-p="${p.id}" data-t="${p.type}" aria-label="${UNIT_NAMES[p.type]}">${inner}</button>` : `<div class="sc pl ${p.side} foe${p.air ? ' air' : ''}" data-t="${p.type}">${inner}</div>`;
   }
   if (c.t === 'f') return `<div class="sc fort ${c.own || 'none'}${c.own === 'blue' ? '' : ' foe'}"><canvas class="sc-f" data-own="${c.own || ''}" width="96" height="96"></canvas><b class="sc-n">${c.n}</b></div>`;
@@ -870,12 +894,161 @@ function cardHtml0(c) {
   if (c.t === 'e') return `<div class="sc base none"><img alt="" src="${toastImg('air')}" width="40" height="40" style="opacity:.45"></div>`;
   return `<div class="sc none"><b class="sc-q">?</b></div>`;
 }
+// ---------- r9: the selected unit's info bar (kind + name + echelon + rank + cohesion + perk + strong/weak + cancel + buy) ----------
+const mostType = (list) => { const m = {}; list.forEach((t) => { m[t] = (m[t] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0] || 'inf'; };
+const coSeed = (u, id) => u.cmd * 100 + [...id].reduce((n, ch) => n * 7 + ch.charCodeAt(0), 3) % 97;
+function infoTarget() {
+  if (!strip || busy || S.over) return null;
+  if (reorg) { const u = G.unit(S, reorg.u); if (u) return { k: 'reorg', u }; reorg = null; }
+  const pl = planeSel && G.plane(S, planeSel); if (pl) return { k: 'plane', p: pl };
+  const id = sel || (strip.grp && strip.grp.k === 'u' ? strip.grp.id : null);
+  const u = id && G.unit(S, id); if (u && (u.side === 'blue' || !u.unknown)) return { k: 'unit', u };
+  if (strip.kind === 'zone' && !strip.grp && zKnown(strip.isl, strip.sec)) { const x = G.section(G.island(S, strip.isl), strip.sec); if (x && x.owner === 'blue') return { k: 'zone', x }; }
+  return null;
+}
+const perkHtml = (u) => { const k = G.perkOf(u); const p = k && R9.PERK_INFO[k]; return p ? `<span class="perk" data-perk="${k}">${icon(p.ic, { size: 15 })}<b>${p.w}</b></span>` : ''; };
+const cancelBtn = (id) => (G.hasOrder(S, id) ? `<button class="in-x" data-cancel="${id}" aria-label="Cancel order">${icon('x', { size: 22 })}<b>CANCEL</b></button>` : '');
+const buyBtn = (attr, ic, cost, ok) => `<button class="buy" ${attr} ${ok ? '' : 'disabled'}>${ic}${R9.coinHtml(cost)}</button>`;
+function infoHtml() {
+  const t = infoTarget(); if (!t) return '';
+  let pic = '', kb = '', name = '', extra = '', side = 'blue', mk = null, rows = '';
+  const portraitCv = (u, cmd, rank) => `<canvas class="in-p" data-side="${u.side}" data-cmd="${cmd}" data-rank="${rank}" width="104" height="104"></canvas>`;
+  if (t.k === 'reorg') {
+    const u = t.u, b = u.oob.bns.find((q) => q.n === reorg.bn);
+    if (!b) { reorg = null; return ''; }
+    if (reorg.k === 'co') {
+      const c = b.cos.find((q) => q.id === reorg.co); if (!c) { reorg = null; return ''; }
+      pic = portraitCv(u, coSeed(u, c.id), 'capt'); kb = R9.kindBadge('army', { ech: 1 });
+      name = `${R9.typeWord(c.type)} company - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`;
+      extra = `${R9.rankChip('capt')}${R9.starsHtml(G.cohStars(c.w))}`;
+      rows = `<div class="in-hint">${icon('hand', { size: 20 })}${icon('back', { size: 18, className: 'sc-ico flip' })}${R9.echHtml(2)}<span class="or">/</span>${icon('plus', { size: 16 })}${R9.echHtml(2)}${R9.coinHtml(G.COST.cmd)}</div>`;
+    } else {
+      pic = portraitCv(u, b.cmd, 'maj'); kb = R9.kindBadge('army', { ech: 2 });
+      name = `${R9.typeWord(mostType(b.cos.filter((q) => q.pips > 0).map((q) => q.type)))} battalion - ${R9.ord(b.n)} Bn, ${R9.ord(u.cmd)} Regt`;
+      extra = `${R9.rankChip('maj')}${R9.starsHtml(G.cohStars(b.w))}`;
+      rows = `<div class="in-hint">${icon('hand', { size: 20 })}${icon('back', { size: 18, className: 'sc-ico flip' })}${R9.echHtml(3)}<span class="or">/</span>${icon('plus', { size: 16 })}${R9.echHtml(3)}${R9.coinHtml(G.COST.cmd)}</div>`;
+    }
+    mk = 'army';
+    return `<div class="st-info reorg">${pic}<div class="in-body"><div class="in-top">${kb}${extra}<button class="in-x un" data-unpick="1" aria-label="Put back">${icon('x', { size: 20 })}</button></div><div class="in-name">${name}</div>${R9.matchWords(mk, keyImg)}${rows}</div></div>`;
+  }
+  if (t.k === 'unit') {
+    const u = t.u; side = u.side;
+    if (u.kind === 'army') {
+      pic = portraitCv(u, u.cmd, 'col'); kb = R9.kindBadge('army', { ech: 3 }); mk = 'army';
+      name = `${R9.typeWord(mostType(G.companies(u).map((c) => c.type)))} regiment - ${R9.ord(u.cmd)} Regt`;
+      extra = `${R9.rankChip('col')}${R9.starsHtml(Math.round(G.regCohesion(u)))}${perkHtml(u)}`;
+      const x = u.sec && !u.aboard && G.section(G.island(S, u.at), u.sec);
+      if (side === 'blue' && x && x.owner === 'blue' && G.BUY_ZONES.includes(x.kind)) rows = `<div class="in-buy">${G.CO_TYPES.map((ty) => buyBtn(`data-buyco="${ty}" aria-label="Buy ${R9.typeWord(ty)} company"`, unitIcon(ty, 22), G.COST[ty], G.canBuyCo(S, u.id, ty))).join('')}</div>`;
+    } else {
+      pic = portraitCv(u, u.cmd, 'col'); kb = R9.kindBadge('fleet'); mk = 'fleet';
+      G.syncOob(u); name = `Fleet - ${u.ships.length} ship${u.ships.length === 1 ? '' : 's'}, ${R9.ord(u.cmd)} Fleet`;
+      extra = `${R9.rankChip('col')}${perkHtml(u)}`;
+    }
+    if (side === 'blue') extra += cancelBtn(u.id);
+  } else if (t.k === 'plane') {
+    const p = t.p, b = G.planeBase(S, p);
+    pic = `<span class="in-u">${unitIcon(p.type, 40)}</span>`; kb = R9.kindBadge('air'); mk = p.type;
+    name = `${R9.typeWord(p.type)} plane - ${b && b.fleet ? 'carrier' : b ? G.island(S, b.isl).name.charAt(0) + G.island(S, b.isl).name.slice(1).toLowerCase() : 'no'} air wing`;
+    extra = cancelBtn(p.id);
+  } else if (t.k === 'zone') {
+    const x = t.x, isl = strip.isl, rowsB = [];
+    rowsB.push(buyBtn(`data-build="fort" aria-label="Build fort"`, `<img alt="" src="${fortImg()}" width="22" height="22">`, G.COST.fort, G.canBuild(S, 'blue', isl, x.id, 'fort')));
+    if (x.kind === 'beach') rowsB.push(buyBtn(`data-build="dock" aria-label="Build dock"`, icon('anchor', { size: 22 }), G.COST.dock, G.canBuild(S, 'blue', isl, x.id, 'dock')));
+    if (['ridge', 'jungle', 'depot'].includes(x.kind)) rowsB.push(buyBtn(`data-build="airfield" aria-label="Build airfield"`, `${icon('plane', { size: 22 })}`, G.COST.airfield, G.canBuild(S, 'blue', isl, x.id, 'airfield')));
+    if (x.kind === 'air' || x.field) for (const ty of G.PLANE_TYPES) rowsB.push(buyBtn(`data-buypl="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canBuyPlane(S, 'blue', isl, x.id, ty)));
+    if (x.kind === 'port' || x.dock) for (const ty of G.SHIP_TYPES) rowsB.push(buyBtn(`data-buysh="${ty}" aria-label="Buy ${ty}"`, unitIcon(ty, 22), G.COST[ty], G.canBuyShip(S, 'blue', isl, ty)));
+    return `<div class="st-info zone"><div class="in-sup">${icon('coins', { size: 18 })}<b>${S.supply.blue}</b></div><div class="in-buy">${rowsB.join('')}</div></div>`;
+  }
+  return `<div class="st-info ${side}">${pic}<div class="in-body"><div class="in-top">${kb}${extra}</div><div class="in-name">${name}</div>${R9.matchWords(mk, keyImg)}${rows}</div></div>`;
+}
+const fortImg = () => { if (fortImg.v) return fortImg.v; const c = document.createElement('canvas'); c.width = c.height = 44; const q = c.getContext('2d'); q.translate(22, 22); q.scale(2.4, 2.4); fortAt(q, 0, 0, 'blue'); return (fortImg.v = c.toDataURL()); };
+// r9: info-bar / reorganize taps inside the strip. Returns true when handled.
+function stripR9Tap(e) {
+  const at = (sel_) => e.target.closest(sel_);
+  const done = (ok, what) => { if (ok) { view = snapshotView(); tokCache = null; sfx.hit(); } else noGoStrip(what); updateHud(); return true; };
+  let b;
+  if ((b = at('[data-cancel]'))) { if (G.cancelOrder(S, b.dataset.cancel)) { sfx.pew(); toast(`${icon('xcircle', { size: 30 })}`, 700); } updateHud(); return true; }
+  if (at('[data-unpick]')) { reorg = null; sfx.pew(); updateHud(); return true; }
+  if ((b = at('[data-buyco]'))) return done(!!(sel && G.buyCo(S, sel, b.dataset.buyco)), unitIcon(b.dataset.buyco, 28));
+  if ((b = at('[data-build]'))) return done(G.build(S, 'blue', strip.isl, strip.sec, b.dataset.build), icon('coins', { size: 28 }));
+  if ((b = at('[data-buypl]'))) return done(!!G.buyPlane(S, 'blue', strip.isl, strip.sec, b.dataset.buypl), unitIcon(b.dataset.buypl, 28));
+  if ((b = at('[data-buysh]'))) return done(!!G.buyShip(S, 'blue', strip.isl, b.dataset.buysh), unitIcon(b.dataset.buysh, 28));
+  // reorganize: tap-pick a company (its icon) or a battalion (its card), then tap where it goes
+  const u = strip.grp && strip.grp.k === 'u' && G.unit(S, strip.grp.id);
+  if (!u || u.side !== 'blue' || u.kind !== 'army') return false;
+  const co = at('.sc.bn .co[data-co]'), bn = at('.sc.bn[data-bn]'), slot = at('[data-slot]'), rt = at('[data-rt]');
+  if (reorg && (bn || slot || rt)) {
+    if (reorg.k === 'co' && co && +bn.dataset.bn === reorg.bn && co.dataset.co === reorg.co) { reorg = null; sfx.pew(); updateHud(); return true; }
+    if (reorg.k === 'bn' && bn && !co && +bn.dataset.bn === reorg.bn) { reorg = null; sfx.pew(); updateHud(); return true; }
+    if (reorg.k === 'co' && co && +bn.dataset.bn === reorg.bn) { reorg = { k: 'co', u: u.id, bn: +bn.dataset.bn, co: co.dataset.co }; sfx.pew(); updateHud(); return true; } // another company of the same battalion: pick that one
+    let ok = false;
+    if (reorg.k === 'co') {
+      if (slot && slot.dataset.slot === 'newbn') ok = G.moveCo(S, reorg.u, reorg.co, reorg.u, 'new');
+      else if (bn) ok = G.moveCo(S, reorg.u, reorg.co, reorg.u, +bn.dataset.bn);
+      else if (rt) { const t = G.unit(S, rt.dataset.rt), tb = G.battalions(t).sort((a, c) => a.cos.length - c.cos.length)[0]; ok = !!tb && G.moveCo(S, reorg.u, reorg.co, t.id, tb.n); }
+    } else {
+      if (slot && slot.dataset.slot === 'newreg') ok = !!G.moveBn(S, reorg.u, reorg.bn, 'new');
+      else if (rt) ok = !!G.moveBn(S, reorg.u, reorg.bn, rt.dataset.rt);
+      else if (bn) { reorg = { k: 'bn', u: u.id, bn: +bn.dataset.bn }; sfx.pew(); updateHud(); return true; }
+    }
+    if (ok) { lastReorg = { ...reorg, t: performance.now() }; reorg = null; }
+    return done(ok, R9.kindBadge('army', { ech: reorg && reorg.k === 'bn' ? 2 : 1, word: false, cls: 'sm' }));
+  }
+  if (co && bn) { reorg = { k: 'co', u: u.id, bn: +bn.dataset.bn, co: co.dataset.co }; sfx.pew(); updateHud(); return true; }
+  if (bn) { reorg = { k: 'bn', u: u.id, bn: +bn.dataset.bn }; sfx.pew(); updateHud(); return true; }
+  return false;
+}
+let lastReorg = null, lastCancel = null;
+function noGoStrip(what) { toast(`${what}${icon('x', { size: 28 })}`, 1200); sfx.alarm(); }
+// ---------- r9 ask 4 + 5: Menu -> Tutorial (Battle / Campaign map, picture-first) and Matchups ----------
+const picCv = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2; const q = c.getContext('2d'); q.scale(2, 2); fn(q); return `<img alt="" src="${c.toDataURL()}" width="${w}" height="${h}">`; };
+const tapIc = () => `<span class="tp-hand">${icon('hand', { size: 34 })}</span>`;
+const arrowR = () => icon('back', { size: 30, className: 'sc-ico flip tp-ar' });
+const portraitImg = (cmd, rank, sz = 56) => picCv(sz, sz, (q) => q.drawImage(portrait('blue', cmd, sz * 2, rank), 0, 0, sz, sz));
+function tutSteps(which) {
+  const zone = (show, own, count, armySide) => `<img alt="" width="56" height="56" src="${tokenImg({ kind: 'zone', isl: 'x', sec: 'x', secKind: show, show, own, count, numSide: armySide, armySide, units: [], planes: [], up: [], gar: 0, r: 19 })}">`;
+  const fleet = () => `<img alt="" width="56" height="56" src="${tokenImg({ kind: 'fleet', isl: 'x', side: 'blue', own: 'blue', count: 3, fleets: [], units: [], planes: [], carrying: 0, r: 19 })}">`;
+  const card = (kind, ech, rank) => `<span class="tp-card">${portraitImg(1, rank, 46)}${R9.kindBadge(kind, { ech })}</span>`;
+  const xMark = `<span class="tp-x">${icon('x', { size: 26 })}</span>`;
+  if (which === 'map') return [
+    { pic: `${zone('beach', 'blue', 1, 'blue')}${tapIc()}${arrowR()}${card('army', 3, 'col')}`, cap: 'Tap a zone' },
+    { pic: `${card('army', 3, 'col')}${tapIc()}${arrowR()}${zone('jungle', null, 0, null)}`, cap: 'Pick, then tap where' },
+    { pic: `<span class="tp-arrow"></span>${xMark}${tapIc()}`, cap: 'X = cancel' },
+    { pic: `${fleet()}${arrowR()}${zone('beach', 'red', 0, null)}`, cap: 'Ships carry troops' },
+    { pic: `${R9.kindBadge('army', { ech: 3 })}${R9.kindBadge('army', { ech: 2 })}${R9.kindBadge('army', { ech: 1 })}`, cap: 'III regiment · II bn · I company' },
+    { pic: `<span class="tp-big">${icon('coins', { size: 44 })}</span>${arrowR()}<span class="tp-buy">${unitIcon('armor', 30)}${R9.coinHtml(G.COST.armor)}</span>`, cap: 'Islands give supply' },
+    { pic: `<span class="tp-end">${icon('skip', { size: 30 })}</span>${tapIc()}`, cap: 'End week' },
+  ];
+  return [
+    { pic: picCv(220, 90, (q) => { for (let i = 0; i < 3; i++) soldier(q, 30 + i * 26, 70, 46, '#8fb4ff', 1); bunker(q, 170, 66, 56, '#d6c7b0', '#b3201f'); q.strokeStyle = '#f5c518'; q.lineWidth = 3; q.setLineDash([6, 5]); q.beginPath(); q.moveTo(95, 45); q.lineTo(140, 45); q.stroke(); }), cap: 'Both sides fire' },
+    { pic: R9.matchWords('fighter', keyImg), cap: 'Strong vs / Weak vs' },
+    { pic: `${R9.starsHtml(1)}${arrowR()}${R9.starsHtml(3)}`, cap: 'Stay together = better' },
+    { pic: `${portraitImg(4, 'col')}<span class="perk">${icon('sword', { size: 18 })}<b>ATK+</b></span><span class="perk">${icon('shield', { size: 18 })}<b>DEF+</b></span>`, cap: 'Commander perk' },
+    { pic: `${R9.rankChip('capt', 26)}<i class="lt">&lt;</i>${R9.rankChip('maj', 26)}<i class="lt">&lt;</i>${R9.rankChip('col', 26)}`, cap: 'Captain · Major · Colonel' },
+    { pic: `<span class="tp-ret">${icon('back', { size: 30 })}</span>${tapIc()}`, cap: 'Retreat saves troops' },
+  ];
+}
+function renderMenu() {
+  const m = $('menu'), card = $('menu-card');
+  m.hidden = !menuView; if (!menuView) return;
+  let html = '';
+  if (menuView.k === 'root') html = `<div class="sheet-h">${icon('menu', { size: 26 })}<b>MENU</b></div><div class="menu-grid">
+      <button class="btn mbtn" data-m="tut">${icon('book', { size: 40 })}<b>TUTORIAL</b></button>
+      <button class="btn mbtn" data-m="match">${icon('swords', { size: 40 })}<b>MATCHUPS</b></button>
+      <button class="btn mbtn" data-m="help">${icon('help', { size: 40 })}<b>KEY</b></button></div>`;
+  else if (menuView.k === 'tut') html = R9.tutorialPick();
+  else if (menuView.k === 'step') html = R9.tutorialStep(tutSteps(menuView.which), menuView.i, menuView.which);
+  else if (menuView.k === 'match') html = R9.matchupsSheet(keyImg);
+  card.innerHTML = `${html}<button class="btn ico m-x" data-mx="1" aria-label="Close">${icon('x', { size: 24 })}</button>`;
+}
+function openMenu(v) { menuView = v; renderMenu(); sfx.pew(); }
 function renderStrip() {
   const box = $('strip');
   if (strip && (busy || S.over)) strip = null;
   if (!strip) { if (!box.hidden) { box.hidden = true; box.dataset.key = ''; $('app').classList.remove('strip-open'); measurePanel(); } return; }
   const cards = stripCards();
-  const key = JSON.stringify([tokKey(strip), strip.grp, sel, planeSel, foeSel, cards.map((c) => [c.t, c.u && c.u.id, c.u && c.u.str, c.u && c.u.cmd, c.u && ordersOf(c.u.id), c.p && c.p.id, c.p && c.p.used, c.p && S.strikes[c.p.id], c.p && S.flyOrd && S.flyOrd[c.p.id], c.p && S.landPl && S.landPl[c.p.id], c.p && S.reconOrd && S.reconOrd[c.p.id], c.p && !!c.p.air, c.n, c.cmd, c.add, c.type, c.key, c.b && c.b.cos.map((q) => q.pips).join()])]);
+  const info = infoHtml();
+  const key = JSON.stringify([info, tokKey(strip), strip.grp, sel, planeSel, foeSel, reorg, cards.map((c) => [c.t, c.u && c.u.id, c.u && c.u.str, c.u && c.u.cmd, c.u && ordersOf(c.u.id), c.p && c.p.id, c.p && c.p.used, c.p && S.strikes[c.p.id], c.p && S.flyOrd && S.flyOrd[c.p.id], c.p && S.landPl && S.landPl[c.p.id], c.p && S.reconOrd && S.reconOrd[c.p.id], c.p && !!c.p.air, c.n, c.cmd, c.add, c.type, c.key, c.b && c.b.cos.map((q) => q.pips).join()])]);
   const wasHidden = box.hidden;
   box.hidden = false; $('app').classList.add('strip-open');
   box.classList.toggle('lv2', !!strip.grp); // r8g2 fix 2: level 2 is one low row (scrolls sideways) so the map stays usable
@@ -883,13 +1056,14 @@ function renderStrip() {
     box.dataset.key = key;
     const sc = box.querySelector('.st-cards'), left = sc && !wasHidden ? sc.scrollLeft : 0;
     const head = placeTokens().find((t) => tokKey(t) === tokKey(strip)) || strip;
-    box.innerHTML = `<img class="st-head" alt="" src="${tokenImg(head)}" width="48" height="48"><div class="st-cards">${cards.map(cardHtml).join('')}</div>`
+    box.classList.toggle('has-info', !!info);
+    box.innerHTML = `${info}<img class="st-head" alt="" src="${tokenImg(head)}" width="48" height="48"><div class="st-cards">${cards.map(cardHtml).join('')}</div>`
       + `<button class="btn ico" id="st-x" aria-label="Close" title="Close">${icon('x', { size: 24 })}</button>`;
     box.querySelectorAll('canvas.sc-p').forEach((cv) => {
-      const q = cv.getContext('2d'); q.drawImage(portrait(cv.dataset.side, +cv.dataset.cmd, 192), 0, 0, 96, 96);
+      const q = cv.getContext('2d'); q.drawImage(portrait(cv.dataset.side, +cv.dataset.cmd, 192, cv.dataset.rank || null), 0, 0, 96, 96);
       if (!cv.dataset.only) { q.fillStyle = 'rgba(10,13,18,.85)'; q.fillRect(52, 66, 42, 28); armySymbol(q, 73, 80, 30, '#fff'); }
     });
-    box.querySelectorAll('canvas.sc-c').forEach((cv) => cv.getContext('2d').drawImage(portrait(cv.dataset.side, +cv.dataset.cmd, 88), 0, 0, 44, 44));
+    box.querySelectorAll('canvas.sc-c, canvas.in-p').forEach((cv) => cv.getContext('2d').drawImage(portrait(cv.dataset.side, +cv.dataset.cmd, cv.width * 2, cv.dataset.rank || null), 0, 0, cv.width, cv.height));
     box.querySelectorAll('canvas.sc-f').forEach((cv) => { const q = cv.getContext('2d'); q.save(); q.translate(48, 48); q.scale(3.2, 3.2); fortAt(q, 0, 0, cv.dataset.own || null); q.restore(); });
     box.querySelector('.st-cards').scrollLeft = left;
   }
@@ -897,6 +1071,7 @@ function renderStrip() {
   if (wasHidden || box.dataset.h !== String(box.offsetHeight)) { box.dataset.h = String(box.offsetHeight); measurePanel(); }
 }
 function openStrip(t) {
+  reorg = null;
   if (t.kind === 'fleet' && t.side === 'blue') shipHintSeen();
   strip = { kind: t.kind, isl: t.isl, side: t.side, sec: t.sec || null, fleets: t.fleets || null, grp: null };
   // r8b: opening an enemy place picks its kind, so your counters glow (on the map, in the tray, in your strips)
@@ -980,17 +1155,20 @@ function render() {
   if (sel && !busy) drawRange();
   if (reconMode && !busy) drawReconTargets();
   if (planeSel && !reconMode && !busy) drawStrikeTargets();
+  cancelMarks = [];
+  const cmark = (id, a, b) => { if (a && b) cancelMarks.push({ id, wx: (a.x + b.x) / 2, wy: (a.y + b.y) / 2, dx: b.x - a.x, dy: b.y - a.y }); };
   if (!busy) {
     Object.entries(S.orders).forEach(([id, to]) => {
       const u = G.unit(S, id);
       if (u && u.side === 'blue') {
+        { const cv = curveFor(u.at, to, u.kind), m = curvePt(cv, 0.5), q = curvePt(cv, 0.55); cancelMarks.push({ id, wx: m.x, wy: m.y, dx: q.x - m.x, dy: q.y - m.y }); }
         drawArrowBetween(u.at, to, 'blue', 1, 0.5 + 0.2 * Math.sin(tNow / 260), u.kind);
         if (u.kind === 'army' && ks > 0 && S.landAt[id]) { const b = vSec(to, S.landAt[id]); if (b) targetRing(b.x, b.y, SEC_R + 9, ks); }
       }
     });
     Object.entries(S.secOrders).forEach(([id, to]) => {
       const u = G.unit(S, id);
-      if (u && u.side === 'blue') drawSecArrow(u.at, u.sec, to, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260));
+      if (u && u.side === 'blue') { drawSecArrow(u.at, u.sec, to, 'blue', 1, 0.6 + 0.25 * Math.sin(tNow / 260)); cmark(id, vSec(u.at, u.sec), vSec(u.at, to)); }
     });
     const pulse = 0.6 + 0.25 * Math.sin(tNow / 260);
     // r7 sealift: beach -> ship (embark) and ship -> beach (land) arrows
@@ -998,10 +1176,10 @@ function render() {
       const ft = strat() && placeTokens().find((t) => t.kind === 'fleet' && t.fleets.includes(fid)); // r8e: the arrow ends on that fleet's token
       let sp = null;
       if (ft) { const zp = secPos(vIsl(u.at), vSec(u.at, u.sec)), d = Math.hypot(ft.x - zp.x, ft.y - zp.y) || 1, k = Math.max(0, d - ft.r - 4 / cam.z) / d; sp = { x: zp.x + (ft.x - zp.x) * k, y: zp.y + (ft.y - zp.y) * k }; }
-      drawShoreArrow(u.at, u.sec, 'blue', 1, pulse, true, sp); });
-    Object.entries(S.landOrd).forEach(([id, o]) => { const u = G.unit(S, id); if (u && u.side === 'blue') { drawShoreArrow(o.isl, o.sec, 'blue', 1, pulse, false, landFrom(u, o)); const x = vSec(o.isl, o.sec), q = secPos(vIsl(o.isl), x); targetRing(q.x, q.y, q.r * 1.3 + 3 / cam.z, 0.9); if (G.landingRisk(S, 'blue', o.isl).risk) riskMark(q); } });
-    Object.entries(S.strikes).forEach(([pid, to], i) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') drawStrikeLine(b, vIsl(to), p.type, i, pulse); });
-    Object.entries(S.reconOrd || {}).forEach(([pid, to]) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') drawReconOrder(b, vIsl(to)); });
+      drawShoreArrow(u.at, u.sec, 'blue', 1, pulse, true, sp); const sh = shorePts(u.at, u.sec); cmark(id, sh.b, sp || sh.a); });
+    Object.entries(S.landOrd).forEach(([id, o]) => { const u = G.unit(S, id); if (u && u.side === 'blue') { drawShoreArrow(o.isl, o.sec, 'blue', 1, pulse, false, landFrom(u, o)); { const sh = shorePts(o.isl, o.sec); cmark(id, sh.b, landFrom(u, o) || sh.a); } const x = vSec(o.isl, o.sec), q = secPos(vIsl(o.isl), x); targetRing(q.x, q.y, q.r * 1.3 + 3 / cam.z, 0.9); if (G.landingRisk(S, 'blue', o.isl).risk) riskMark(q); } });
+    Object.entries(S.strikes).forEach(([pid, to], i) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') { drawStrikeLine(b, vIsl(to), p.type, i, pulse); cmark(pid, b, vIsl(to)); } });
+    Object.entries(S.reconOrd || {}).forEach(([pid, to]) => { const p = G.plane(S, pid); const b = p && G.planeBase(S, p); if (b && p.side === 'blue') { drawReconOrder(b, vIsl(to)); cmark(pid, b, vIsl(to)); } });
   }
   if (fx.stayArrows) fx.stayArrows.forEach((m) => drawMoveArrow(m, 1, 0.85));
   if (fx.moving) fx.moving.list.forEach((m) => drawMoveArrow(m, fx.moving.t, 0.9));
@@ -1018,6 +1196,7 @@ function render() {
   }));
   if (fx.scout) drawScout(fx.scout);
   if (fx.hop) drawHop(fx.hop);
+  if (!busy) drawCancelMarks();
   // r7: with an army on a beach selected, the ships it can board get a pulsing dashed frame
   const cu = sel && !busy && G.unit(S, sel);
   if (cu && cu.kind === 'army' && !cu.aboard && strat()) placeTokens().filter((t) => t.kind === 'fleet' && t.isl === cu.at && t.fleets.some((id) => G.canEmbark(S, cu, id))).forEach((t) => {
@@ -1060,6 +1239,24 @@ function render() {
   g.fillStyle = vg; g.fillRect(0, 0, vw, vh);
   if (hintTarget) placeHint();
 }
+// r9 ask 3: a red X on every planned Blue move; one tap cancels it (marks kept apart so two never overlap)
+const CANCEL_PX = 15;
+function drawCancelMarks() {
+  const put = [];
+  for (const m of cancelMarks) {
+    let p = toScreen(m.wx, m.wy);
+    const d = Math.hypot(m.dx || 0, m.dy || 0); if (d) { p = { x: p.x - (m.dy / d) * CANCEL_PX * 1.9, y: p.y + (m.dx / d) * CANCEL_PX * 1.9 }; } // beside the arrow, so the arrow still shows
+    for (let k = 0; k < 6 && put.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANCEL_PX * 2.2); k++) p = { x: p.x + CANCEL_PX * 1.4, y: p.y };
+    m.sx = p.x; m.sy = p.y; put.push(p);
+    const w = toWorld(p.x, p.y), r = CANCEL_PX / cam.z;
+    g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 6;
+    g.fillStyle = '#c4271f'; g.beginPath(); g.arc(w.x, w.y, r, 0, 7); g.fill(); g.shadowColor = 'transparent';
+    g.lineWidth = 2.2 / cam.z; g.strokeStyle = '#fff'; g.stroke();
+    g.lineWidth = 3.4 / cam.z; g.lineCap = 'round'; const k = r * 0.42;
+    g.beginPath(); g.moveTo(w.x - k, w.y - k); g.lineTo(w.x + k, w.y + k); g.moveTo(w.x + k, w.y - k); g.lineTo(w.x - k, w.y + k); g.stroke(); g.restore();
+  }
+}
+const cancelAt = (sx, sy) => cancelMarks.find((m) => m.sx != null && Math.hypot(m.sx - sx, m.sy - sy) <= CANCEL_PX + 9);
 const ease = (t) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 const arrowVisible = (a) => a.side === 'blue' || seen.has(a.from) || seen.has(a.to);
 
@@ -1610,7 +1807,8 @@ function toggleHoldings(force) {
   }
 }
 function updateHud() {
-  if (!strip || busy) foeSel = null;
+  if (!strip || busy) { foeSel = null; reorg = null; }
+  const sp = $('c-sup'); if (sp && S.supply) { sp.querySelector('b').textContent = S.supply.blue; sp.querySelector('small').textContent = `+${G.income(S, 'blue')}`; }
   renderHoldings();
   const ids = new Set([...Object.keys(S.orders), ...Object.keys(S.secOrders), ...Object.keys(S.embark), ...Object.keys(S.landOrd)]);
   const pids = new Set([...Object.keys(S.strikes), ...Object.keys(S.flyOrd || {}), ...Object.keys(S.landPl || {}), ...Object.keys(S.reconOrd || {})]); // r8g3: a queued recon counts
@@ -1630,12 +1828,12 @@ function updateHud() {
   p.hidden = false;
   $('app').classList.add('sel-open');
   $('app').classList.toggle('island-view', secK() > 0.5);
-  const pg = $('sel-portrait').getContext('2d'); pg.clearRect(0, 0, 112, 112); pg.drawImage(portrait(u.side, u.cmd, 224), 0, 0, 112, 112);
+  const pg = $('sel-portrait').getContext('2d'); pg.clearRect(0, 0, 112, 112); pg.drawImage(portrait(u.side, u.cmd, 224, 'col'), 0, 0, 112, 112);
   const fg = $('sel-flag').getContext('2d'); drawFlag(fg, u.side, 1, 1, 40, 26);
   const kg = $('sel-kind').getContext('2d'); kg.clearRect(0, 0, 44, 30);
   if (u.kind === 'fleet') shipSide(kg, 22, 17, 38, '#e9edf1'); else armySymbol(kg, 22, 15, 30, '#e9edf1');
   renderOob(u);
-  $('sel-x').hidden = !S.orders[u.id] && !S.secOrders[u.id];
+  $('sel-x').hidden = !G.hasOrder(S, u.id);
   $('sel-z').innerHTML = icon(secK() > 0.5 ? 'fit' : 'zoom', { size: 24 });
   measurePanel();
   if (wasHidden || p.dataset.unit !== u.id) { p.dataset.unit = u.id; keepClear(u.at); }
@@ -1748,7 +1946,7 @@ function renderOob(u) {
   $('sel-str').innerHTML = `<i class="pip"></i><b>${G.regPips(u)}</b>`;
   box.innerHTML = G.battalions(u).map((b) => `<div class="bn" data-bn="${b.n}"><canvas class="bn-p" data-cmd="${b.cmd}" width="88" height="88"></canvas>
     <div class="cos">${b.cos.map((c) => `<div class="co" data-t="${c.type}" title="${UNIT_NAMES[c.type]}">${unitIcon(c.type, 24)}${pipsHtml(c.pips)}</div>`).join('')}</div></div>`).join('');
-  box.querySelectorAll('canvas.bn-p').forEach((c) => c.getContext('2d').drawImage(portrait(u.side, +c.dataset.cmd, 176), 0, 0, 88, 88));
+  box.querySelectorAll('canvas.bn-p').forEach((c) => c.getContext('2d').drawImage(portrait(u.side, +c.dataset.cmd, 176, 'maj'), 0, 0, 88, 88));
 }
 // keep the selected unit's island clear of the panel and the HUD (same nudge loop as the island-view placer)
 function keepClear(islId) {
@@ -2017,6 +2215,8 @@ function confirmWarn() {
 function tapAt(sx, sy) {
   if (busy || S.over) return;
   if (warnPending) { hideWarn(); return; } // a tap on the map cancels the landing card
+  const cx = cancelAt(sx, sy), tk0 = cx && tokenAt(sx, sy); // r9: the X on a planned move = cancel it (a tap nearer a zone's centre stays a zone tap)
+  if (cx && !(tk0 && Math.hypot(toScreen(tk0.x, tk0.y).x - sx, toScreen(tk0.x, tk0.y).y - sy) < Math.hypot(cx.sx - sx, cx.sy - sy)) && G.cancelOrder(S, cx.id)) { lastCancel = { id: cx.id, t: performance.now() }; sfx.pew(); toast(`${icon('xcircle', { size: 30 })}`, 700); updateHud(); return; }
   const w = toWorld(sx, sy);
   const tk = tokenAt(sx, sy); // r8: map zoom taps land on tokens
   if (reconMode || planeSel) {
@@ -2237,7 +2437,7 @@ function zoomAt(sx, sy, f) {
 }
 window.addEventListener('keydown', (e) => {
   if (!$('title').hidden) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startPlay(); } return; }
-  if (e.key === 'Escape') { hideWarn(); $('help').hidden = true; sel = null; reconMode = false; planeSel = null; airOpen = false; strip = null; updateHud(); }
+  if (e.key === 'Escape') { hideWarn(); $('help').hidden = true; openMenu(null); sel = null; reconMode = false; planeSel = null; airOpen = false; strip = null; updateHud(); }
   else if ((e.key === 'Enter' || e.key === ' ') && $('end').hidden && $('help').hidden) { e.preventDefault(); doEndWeek(); }
   else if (e.key === 'Tab') {
     e.preventDefault(); if (busy) return;
@@ -2533,7 +2733,8 @@ function startPlay() {
 }
 function icons() {
   $('b-restart').innerHTML = icon('refresh', { size: 24 });
-  $('b-help').innerHTML = icon('help', { size: 24 });
+  $('b-menu').innerHTML = icon('menu', { size: 24 });
+  $('c-sup').querySelector('.si').innerHTML = icon('coins', { size: 18 });
   $('b-sound').innerHTML = icon('volume', { size: 24 });
   $('z-in').innerHTML = icon('plus', { size: 24 });
   $('z-out').innerHTML = icon('minus', { size: 24 });
@@ -2645,7 +2846,7 @@ function wire() {
   $('strip').onclick = (e) => {
     if (busy || !strip) return;
     // r8g ask 3: back to level 1 / open an air wing / open an enemy group (and pick its kind so your counters glow)
-    if (e.target.closest('[data-back]')) { strip.grp = null; sel = null; planeSel = null; reconMode = false; sfx.pew(); updateHud(); return; }
+    if (e.target.closest('[data-back]')) { strip.grp = null; sel = null; reorg = null; planeSel = null; reconMode = false; sfx.pew(); updateHud(); return; }
     const ga = e.target.closest('[data-ga]');
     if (ga) { strip.grp = { k: 'air', key: ga.dataset.ga }; sel = null; planeSel = null; reconMode = false; sfx.pew(); updateHud(); keepAboveStrip(strip.isl); return; }
     const fg = e.target.closest('.sc.foe[data-g]:not(.head)');
@@ -2653,8 +2854,9 @@ function wire() {
     // r8b: tap an enemy card = pick its kind; your cards / tokens / tray planes that beat it glow, the ones it beats dim
     const f = e.target.closest('.sc.foe[data-key]');
     if (f) { foeSel = foeSel === f.dataset.key ? null : f.dataset.key; sfx.pew(); updateHud(); return; }
+    if (stripR9Tap(e)) return; // r9: cancel, buy / build, reorganize
     const b = e.target.closest('button'); if (!b) return;
-    if (b.id === 'st-x') { strip = null; foeSel = null; sel = null; planeSel = null; reconMode = false; updateHud(); return; }
+    if (b.id === 'st-x') { strip = null; foeSel = null; sel = null; reorg = null; planeSel = null; reconMode = false; updateHud(); return; }
     if (b.dataset.p) { pickPlane(b.dataset.p); return; }
     if (b.dataset.g && !b.classList.contains('head')) { strip.grp = { k: 'u', id: b.dataset.g }; select(b.dataset.g); if (strip) keepAboveStrip(strip.isl); return; }
     if (b.classList.contains('head')) return;
@@ -2662,7 +2864,18 @@ function wire() {
   };
   wireDrag();
   $('b-restart').onclick = () => { if (!busy) { newGame(); refreshHint(); } };
-  $('b-help').onclick = () => { $('help').hidden = false; };
+  $('b-menu').onclick = () => openMenu({ k: 'root' });
+  $('menu').onclick = (e) => {
+    if (e.target === $('menu') || e.target.closest('[data-mx]')) { openMenu(null); return; }
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.m === 'tut') openMenu({ k: 'tut' });
+    else if (b.dataset.m === 'match') openMenu({ k: 'match' });
+    else if (b.dataset.m === 'help') { openMenu(null); $('help').hidden = false; }
+    else if (b.dataset.tut) openMenu({ k: 'step', which: b.dataset.tut, i: 0 });
+    else if (b.dataset.tstep != null) openMenu({ ...menuView, i: +b.dataset.tstep });
+    else if (b.dataset.tdone) openMenu({ k: 'tut' });
+  };
+  $('c-sup').onclick = () => toast(`${icon('coins', { size: 28 })}<b>${S.supply.blue}</b><span class="t-sm">+${G.income(S, 'blue')}</span>`, 1200);
   $('c-blue').onclick = () => toggleHoldings();
   $('c-red').onclick = () => toggleHoldings();
   $('sel-oob').onclick = (e) => { const c = e.target.closest('.co'); if (c) toast(`${unitIcon(c.dataset.t, 28)}<span>${UNIT_NAMES[c.dataset.t]}</span>`, 900); };
@@ -2672,7 +2885,7 @@ function wire() {
   $('z-in').onclick = () => zoomAt(vw / 2, vh / 2, 1.3);
   $('z-out').onclick = () => zoomAt(vw / 2, vh / 2, 1 / 1.3);
   $('z-fit').onclick = () => { cam.z = contain(); cam.x = WW / 2; cam.y = WH / 2; clampCam(); updateHud(); };
-  $('sel-x').onclick = () => { if (sel) { const u = G.unit(S, sel); G.issueOrder(S, sel, u.at); updateHud(); } };
+  $('sel-x').onclick = () => { if (sel && G.cancelOrder(S, sel)) { sfx.pew(); updateHud(); } };
   $('sel-z').onclick = () => {
     const u = sel && G.unit(S, sel); if (!u) return;
     if (cam.z > zRef() * 1.6) { const c0 = { ...cam }, z1 = zRef(); tween(400, (k) => { cam.z = c0.z + (z1 - c0.z) * ease(k); clampCam(); }).then(updateHud); } // r8f: in / out only, same look
@@ -2795,5 +3008,8 @@ window.__PW__ = {
     foe: e.classList.contains('foe'), beat: e.classList.contains('beat'), risk: e.classList.contains('risk'), next: e.classList.contains('next'), up: (e.querySelector('.mu.up') || {}).dataset?.k || '', dn: (e.querySelector('.mu.dn') || {}).dataset?.k || '', x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; }); },
   airChips() { return [...document.querySelectorAll('#air .pl')].map((e) => ({ p: e.dataset.p, t: e.dataset.t, beat: e.classList.contains('beat'), risk: e.classList.contains('risk') })); },
   zones: () => zoneLog.map((z) => ({ ...z })), get SIDE_COL() { return SIDE_COL; }, secHex,
+  // r9 QA
+  get reorg() { return reorg ? { ...reorg } : null; }, get lastReorg() { return lastReorg; }, get lastCancel() { return lastCancel; }, get menuView() { return menuView; },
+  cancelMarks: () => cancelMarks.map((m) => ({ id: m.id, x: m.sx, y: m.sy })), openMenu(v) { openMenu(v); }, info: () => infoHtml(),
   tokenBeats() { tokCache = null; return placeTokens().filter((t) => !t.ghost && tokenBeats(t)).map((t) => tokKey(t)); },
 };

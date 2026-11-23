@@ -1,6 +1,6 @@
 // Hand-drawn canvas art: invented flags, fictional commander portraits, unit symbols, KG-style front arrows.
-import { rng } from './state.js?v=8g3';
-import { UNIT_PATHS } from './icons.js';
+import { rng } from './state.js?v=9';
+import { UNIT_PATHS } from './icons.js?v=9';
 
 const unitPath2D = {};
 // company / ship class icon on a canvas, same shapes as the panel's svg icons
@@ -51,8 +51,10 @@ export function star(g, cx, cy, r, col) {
 
 const portraitCache = new Map();
 // Painted-photo style fictional officer, muted sepia-ish tones like archive photos.
-export function portrait(side, seed, size = 96) {
-  const key = `${side}:${seed}:${size}`;
+// r9: `rank` adds shoulder boards: 'capt' (company, 1 star) < 'maj' (battalion, 2 stars + a gold stripe) <
+// 'col' (regiment, 3 stars + gold boards). The face code above the boards is unchanged.
+export function portrait(side, seed, size = 96, rank = null) {
+  const key = `${side}:${seed}:${size}:${rank || ''}`;
   if (portraitCache.has(key)) return portraitCache.get(key);
   const c = document.createElement('canvas'); c.width = c.height = size;
   const g = c.getContext('2d');
@@ -122,12 +124,33 @@ export function portrait(side, seed, size = 96) {
   for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${0.03 + r() * 0.03})`; g.fillRect(r() * 96, r() * 96, 0.6, 0.6); }
   const vg = g.createRadialGradient(48, 44, 26, 48, 48, 50); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.32)');
   g.fillStyle = vg; g.fillRect(0, 0, 96, 96);
+  if (rank) shoulderBoards(g, rank);
   g.restore();
   // ring
   g.lineWidth = 5; g.strokeStyle = SIDE_COL[side].fill; g.beginPath(); g.arc(48, 48, 45, 0, Math.PI * 2); g.stroke();
   g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(48, 48, 47, 0, Math.PI * 2); g.stroke();
   portraitCache.set(key, c);
   return c;
+}
+
+export const RANK_STARS = { capt: 1, maj: 2, col: 3 };
+// one board in a 0..W x 0..H box (used on the portrait shoulders and as a stand-alone rank chip)
+export function rankBoard(g, rank, x, y, W, H, ang = 0) {
+  const n = RANK_STARS[rank] || 0; if (!n) return;
+  g.save(); g.translate(x + W / 2, y + H / 2); g.rotate(ang);
+  const col = rank === 'col';
+  g.fillStyle = col ? '#c99a2e' : rank === 'maj' ? '#2b2f36' : '#3a3f47';
+  g.strokeStyle = '#f3d77a'; g.lineWidth = Math.max(0.8, H * 0.12);
+  g.beginPath(); g.moveTo(-W / 2, -H / 2); g.lineTo(W / 2 - H * 0.45, -H / 2); g.quadraticCurveTo(W / 2, 0, W / 2 - H * 0.45, H / 2); g.lineTo(-W / 2, H / 2); g.closePath(); g.fill(); g.stroke();
+  if (rank === 'maj') { g.fillStyle = '#f3d77a'; g.fillRect(-W / 2, -H * 0.08, W - H * 0.3, H * 0.16); }
+  const sr = H * (n === 3 ? 0.3 : 0.34), gap = (W - H * 0.5) / (n + 1);
+  for (let i = 0; i < n; i++) star(g, -W / 2 + gap * (i + 1), 0, sr, col ? '#fff6d0' : '#f3d77a');
+  g.restore();
+}
+function shoulderBoards(g, rank) {
+  // left shoulder points left, right shoulder points right; drawn big enough to read on a 48 px card portrait
+  rankBoard(g, rank, 8, 76, 30, 12, Math.PI + 0.32);
+  rankBoard(g, rank, 58, 76, 30, 12, -0.32);
 }
 
 function shade(hex, amt) {

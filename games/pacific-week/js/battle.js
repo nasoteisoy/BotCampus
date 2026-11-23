@@ -1,8 +1,8 @@
 // Combat board for sea and land fights, driven round by round by the week generator.
 // Losses fade out (no health bars). A RETREAT button pulls Blue survivors out at a cost.
 // Grown from the r1/r2 naval board (js/naval.js), same dark KG look.
-import { shipTop, planeTop, drawFlag, SIDE_COL, soldier, bunker, secIcon } from './art.js';
-import { icon } from './icons.js';
+import { shipTop, planeTop, drawFlag, SIDE_COL, soldier, bunker, secIcon } from './art.js?v=9';
+import { icon } from './icons.js?v=9';
 
 const $ = (id) => document.getElementById(id);
 export const navalLog = [];

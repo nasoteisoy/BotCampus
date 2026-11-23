@@ -321,3 +321,99 @@ i.q { font-style: normal; font-weight: 900; font-size: 15px; color: #c9ced6; wid
 /* r8g2: companies inside a strip battalion card are plain icons (the drill panel's boxed .co style must not leak in) */
 #strip .bn-cos .co { width: auto; height: auto; background: none; border: 0; border-radius: 0; padding: 0; cursor: default; }
 #toast .t-gap { display: inline-block; width: 1px; height: 26px; background: rgba(255,255,255,.35); margin: 0 8px; }
+
+/* ===================== r9 ===================== */
+/* supply chip (top right) */
+.chip.sup { color: #ffd23f; gap: 4px; }
+.chip.sup .si { display: grid; place-items: center; }
+.chip.sup small { font-size: 13px; color: #9be3a6; font-weight: 800; }
+/* ask 1: big kind badge (army / fleet / air / commander) with echelon lines over it (ask 2) */
+.kb { position: relative; display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 6px 0 3px; border-radius: 6px; background: var(--kb); border: 2px solid var(--kr); color: #fff; font: 900 12px "Barlow Condensed", sans-serif; letter-spacing: .5px; line-height: 1; box-sizing: border-box; white-space: nowrap; }
+.kb .kb-i { display: grid; place-items: center; width: 17px; height: 17px; }
+.kb .kb-i svg { width: 17px; height: 17px; }
+.kb .ech { position: absolute; left: 50%; top: -12px; transform: translateX(-50%); fill: #fff; stroke: #0b0e13; stroke-width: 1; paint-order: stroke; height: 11px; }
+.ech { fill: #fff; vertical-align: middle; }
+.kb.sm, .kb.xs { padding: 0 2px; }
+.kb.xs { height: 18px; border-width: 1.5px; } .kb.xs .kb-i, .kb.xs .kb-i svg { width: 13px; height: 13px; }
+.kb.xs .ech { top: -10px; height: 9px; }
+#strip .sc .kb { margin-top: 8px; }
+#strip .sc.grp .sc-p { width: 56px; height: 56px; }
+#strip .sc.bn { padding-top: 30px; }
+#strip .sc.bn .sc-c, #strip.lv2 .sc.bn .sc-c { width: 28px; height: 28px; border-radius: 14px; top: 2px; left: 2px; }
+#strip .sc.bn .kb { position: absolute; top: 9px; right: 4px; margin: 0; }
+#strip .sc.ship .sc-c, #strip .sc.ship .kb, #strip .sc.pl .kb { position: absolute; }
+#strip .sc.ship .kb, #strip .sc.pl .kb { bottom: 3px; right: 3px; margin: 0; }
+#strip .sc.ship .sc-c { width: 26px; height: 26px; border-radius: 13px; }
+#strip .bn-cos .co { position: relative; cursor: pointer; border-radius: 6px; padding: 1px 2px; }
+#strip .bn-cos .co .ech1 { display: block; width: 3px; height: 6px; background: #fff; border-radius: 1px; margin-bottom: 1px; }
+#strip .bn-cos .co.pick { background: rgba(245,197,24,.35); outline: 2px solid #f5c518; }
+#strip .sc.bn.pick { border-color: #f5c518; box-shadow: 0 0 0 3px rgba(245,197,24,.6); }
+#strip .sc.bn.tgt, #strip .sc.slot { border-style: dashed; border-color: #5fd17a; box-shadow: 0 0 0 2px rgba(95,209,122,.5); cursor: pointer; }
+#strip .sc.slot { width: 64px; gap: 2px; background: rgba(23,40,30,.7); }
+#strip .sc.slot .ech { height: 12px; }
+#strip .sc.slot .sc-c { position: static; width: 30px; height: 30px; border-radius: 15px; }
+#strip .rt-n { font: 900 13px "Barlow Condensed", sans-serif; }
+.cost { display: inline-flex; align-items: center; gap: 1px; color: #ffd23f; font: 900 15px "Barlow Condensed", sans-serif; }
+.cost svg { width: 13px; height: 13px; }
+.rk { display: inline-block; vertical-align: middle; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+/* info bar for the selected unit (asks 1, 2, 3, 5, 6, 7, 8, 9) */
+#strip { flex-wrap: wrap; }
+#strip .st-info { flex: 0 0 100%; order: -1; display: flex; gap: 8px; align-items: flex-start; padding: 2px 2px 6px; border-bottom: 1px solid rgba(255,255,255,.14); color: #f2f5f8; }
+#strip .st-info .in-p { width: 52px; height: 52px; flex: none; }
+#strip .st-info .in-u { flex: none; width: 52px; height: 52px; display: grid; place-items: center; background: #17202c; border-radius: 10px; }
+#strip .in-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#strip .in-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 10px; }
+#strip .in-top .kb { height: 26px; font-size: 14px; } #strip .in-top .kb .kb-i, #strip .in-top .kb .kb-i svg { width: 20px; height: 20px; }
+#strip .in-name { font: 800 15px "Barlow Condensed", sans-serif; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coh { display: inline-flex; gap: 0; } .coh i { color: rgba(255,255,255,.25); display: grid; } .coh i.on { color: #ffd23f; } .coh i.on svg { fill: #ffd23f; }
+.perk { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px; border-radius: 10px; background: rgba(79,209,255,.18); border: 1px solid rgba(79,209,255,.6); color: #bfeaff; font: 900 12px "Barlow Condensed", sans-serif; }
+#strip .in-x { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 12px; border-radius: 10px; background: #c4271f; border: 2px solid #ffb3ab; color: #fff; font: 900 15px "Barlow Condensed", sans-serif; cursor: pointer; }
+#strip .in-x.un { background: #2a3442; border-color: rgba(255,255,255,.4); padding: 0 8px; }
+.mwrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.mw { display: inline-flex; align-items: center; gap: 3px; border-radius: 6px; padding: 2px 5px; font: 800 12px "Barlow Condensed", sans-serif; }
+.mw.up { background: rgba(60,170,90,.28); } .mw.dn { background: rgba(220,70,60,.28); }
+.mw .ar { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+.mw.up .ar { border-bottom: 8px solid #5fd17a; } .mw.dn .ar { border-top: 8px solid #ff6b5e; }
+.mw b { margin-right: 2px; } .mwk { display: inline-flex; align-items: center; gap: 1px; } .mwk img, .mwk svg { width: 16px; height: 16px; }
+.mw small { font-size: 12px; } .mw small.none { opacity: .6; }
+#strip .in-buy { display: flex; gap: 5px; flex-wrap: wrap; }
+#strip .buy { display: inline-flex; align-items: center; gap: 3px; min-height: 40px; padding: 0 7px; border-radius: 10px; background: #1d2a3b; border: 2px solid #ffd23f; color: #f2f5f8; cursor: pointer; }
+#strip .buy:disabled { opacity: .38; border-color: rgba(255,255,255,.3); cursor: default; }
+#strip .in-hint { display: flex; align-items: center; gap: 4px; color: #bff2cc; } #strip .in-hint .or { opacity: .6; }
+#strip .st-info.zone { align-items: center; } #strip .in-sup { display: inline-flex; align-items: center; gap: 3px; color: #ffd23f; font: 900 20px "Barlow Condensed", sans-serif; }
+/* Menu sheets (gold-dark panel look from the parts library) */
+#menu .sheet { width: min(420px, 100%); background: #0e1420; border: 2px solid rgba(255,210,63,.45); color: #f2f5f8; padding: 16px 14px 14px; }
+.sheet-h { display: flex; align-items: center; gap: 8px; justify-content: center; color: #ffd23f; font: 900 22px "Barlow Condensed", sans-serif; letter-spacing: 1px; margin-bottom: 12px; }
+.sheet-h .tut-n { color: #9fb0d9; font-size: 16px; }
+.m-x { position: absolute; top: 8px; right: 8px; }
+.menu-grid, .tut-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.mbtn, .tut-b { flex-direction: column; min-height: 110px; gap: 6px; font: 900 17px "Barlow Condensed", sans-serif; color: #ffd23f; border: 2px solid rgba(255,210,63,.5); }
+.tut-pic { min-height: 130px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; background: #151d2b; border-radius: 14px; padding: 12px; }
+.tut-cap { font: 900 22px "Barlow Condensed", sans-serif; margin: 10px 0; }
+.tut-nav { display: flex; align-items: center; justify-content: space-between; }
+.tut-dots { display: flex; gap: 5px; } .tut-dots i { width: 8px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.25); } .tut-dots i.on { background: #ffd23f; }
+.tp-hand { color: #ffd23f; } .tp-ar { color: #9fb0d9; } .tp-big { color: #ffd23f; }
+.tp-card { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px; border: 2px solid #8fb0d8; border-radius: 10px; background: #17202c; }
+.tp-x { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: #c4271f; border: 2px solid #fff; color: #fff; }
+.tp-arrow { width: 90px; height: 16px; background: linear-gradient(90deg, #2c5aa8, #8fb4ff); clip-path: polygon(0 30%, 80% 30%, 80% 0, 100% 50%, 80% 100%, 80% 70%, 0 70%); }
+.tp-end, .tp-ret { display: grid; place-items: center; width: 64px; height: 48px; border-radius: 12px; background: linear-gradient(160deg, #d9480f, #8a1c0a); color: #fff; }
+.tp-ret { background: #2a3442; }
+.tp-buy { display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; border: 2px solid #ffd23f; border-radius: 10px; }
+.tut-pic .lt { font: 900 24px "Barlow Condensed", sans-serif; color: #9fb0d9; font-style: normal; }
+.tut-pic .coh svg { width: 26px; height: 26px; }
+.mtab { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.mt-row { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 10px; background: #151d2b; }
+.mt-k { flex: 0 0 74px; display: inline-flex; align-items: center; gap: 4px; font: 900 15px "Barlow Condensed", sans-serif; }
+.mt-k img, .mt-k svg { width: 22px; height: 22px; }
+@media (max-width: 500px) {
+  #strip.lv2 .sc.bn { width: 80px; padding-top: 30px; }
+  #strip.lv2 .sc.grp .sc-p { width: 40px; height: 40px; }
+  #strip.lv2 .sc .kb { margin-top: 6px; }
+  #strip.lv2 .sc.grp .kb b { display: none; }
+  #strip.lv2 .sc { height: 84px; }
+  #strip.has-info { align-items: flex-start; }
+  #strip .sc.grp:not(.head) .kb b { font-size: 11px; }
+}
+#strip .st-cards { min-width: 0; flex: 1 1 0; }
+#strip .buy { min-height: 38px; padding: 0 4px; gap: 1px; } #strip .buy svg.u-ico { width: 19px; height: 19px; }
+@media (max-width: 500px) { #strip.lv2 .sc.bn { height: auto; min-height: 84px; padding-bottom: 4px; } #strip.lv2 .st-cards { align-items: flex-start; } }

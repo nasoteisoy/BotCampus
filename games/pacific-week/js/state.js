@@ -40,7 +40,7 @@ function makeOob(u) {
   const set = BN_SETS[u.cmd % 2], rot = u.cmd % 3;
   const bns = [0, 1, 2].map((i) => {
     const types = set[(i + rot) % 3];
-    return { n: i + 1, cmd: u.cmd * 10 + i + 1, cos: types.map((type, j) => ({ id: `${i + 1}${'abcd'[j]}`, type, pips: 0 })) };
+    return { n: i + 1, cmd: u.cmd * 10 + i + 1, w: COH_START, cos: types.map((type, j) => ({ id: `${i + 1}${'abcd'[j]}`, type, pips: 0, w: COH_START })) };
   });
   return { bns };
 }
@@ -82,13 +82,13 @@ export function syncOob(u) {
 // living companies (pips > 0) as a flat list, for the panel, tags and battle reports
 export function companies(u) {
   syncOob(u);
-  return u.oob ? allCos(u.oob).filter((x) => x.c.pips > 0).map((x) => ({ id: x.c.id, type: x.c.type, pips: x.c.pips, bn: x.b.n })) : [];
+  return u.oob ? allCos(u.oob).filter((x) => x.c.pips > 0).map((x) => ({ id: x.c.id, type: x.c.type, pips: x.c.pips, bn: x.b.n, w: x.c.w || 0 })) : [];
 }
 // battalions with their living companies (a battalion with none left drops out)
 export function battalions(u) {
   syncOob(u);
   if (!u.oob) return [];
-  return u.oob.bns.map((b) => ({ n: b.n, cmd: b.cmd, cos: b.cos.filter((c) => c.pips > 0).map((c) => ({ ...c })) })).filter((b) => b.cos.length);
+  return u.oob.bns.map((b) => ({ n: b.n, cmd: b.cmd, w: b.w || 0, cos: b.cos.filter((c) => c.pips > 0).map((c) => ({ ...c })) })).filter((b) => b.cos.length);
 }
 // what each unit had before a fight, so the week report can say which companies or ships were lost
 function oobSnapshot(units) {
@@ -177,6 +177,7 @@ export function createGame(seed = 1) {
     known: { blue: [], red: [] }, reconOrd: {}, // r8g3: known = zones a side has discovered for good (recon, or a unit that went there); reconOrd = queued recon flights
     stats: { navalWon: 0, navalFought: 0, landWon: 0, landFought: 0, lost: { blue: 0, red: 0 }, sunk: { blue: 0, red: 0 }, retreats: { blue: 0, red: 0 }, recon: { blue: 0, red: 0 }, coLost: { blue: 0, red: 0 } },
     lastArrows: [],
+    supply: { blue: START_SUPPLY, red: START_SUPPLY }, lastIncome: { blue: 0, red: 0 }, // r9: supply points
   };
   addUnit(s, BLUE, 'army', 'kestra', 4, 'b2');
   addUnit(s, BLUE, 'army', 'kestra', 3, 'hq');
@@ -238,7 +239,7 @@ export function planeBase(s, p) {
     return { x: i.x, y: i.y, isl: i.id, fleet: f.id };
   }
   const i = island(s, p.base.isl), x = i && section(i, p.base.sec);
-  if (!x || x.kind !== 'air' || x.owner !== p.side) return null;
+  if (!x || (x.kind !== 'air' && !x.field) || x.owner !== p.side) return null; // r9: a built airfield (x.field) is a base too
   return { x: x.x, y: x.y, isl: i.id, sec: x.id };
 }
 const baseKey = (b) => (b.fleet ? `f:${b.fleet}` : `a:${b.isl}:${b.sec}`);
@@ -414,6 +415,7 @@ export function zoneVision(s, side) {
     if (u.side !== side) continue;
     if (u.kind === 'army' && u.sec) z.add(zkey(u.at, u.sec));
     if (u.kind === 'fleet') { z.add(zkey(u.at)); const sp = fleetSpot(s, u); if (sp) z.add(zkey(u.at, sp)); }
+    if (perkOf(u) === 'scout' && !u.aboard) scoutZones(s, u).forEach((k) => z.add(k)); // r9: a 'scout' commander sees the next zones too
   }
   for (const p of s.planes || []) if (p.side === side && p.air) z.add(zkey(p.air.isl, p.air.sec));
   return z;
@@ -478,7 +480,7 @@ export function canOrder(s, u, toId) {
 // plain distance reach (fleets sail this far in a week; the AI also uses it to pick army targets)
 export function inReach(s, u, toId) {
   const a = island(s, u.at), b = island(s, toId);
-  return !!a && !!b && toId !== u.at && dist(a, b) <= RANGE[u.kind];
+  return !!a && !!b && toId !== u.at && dist(a, b) <= RANGE[u.kind] + (perkOf(u) === 'move' ? MOVE_PERK : 0); // r9: a 'move' commander sails further
 }
 export function reachable(s, u) {
   return s.islands.filter((i) => i.id !== u.at && canOrder(s, u, i.id)).map((i) => i.id);
@@ -863,7 +865,7 @@ function makeNaval(s, isl) {
     for (let i = 0; i < planes; i++) arr.push({ side, kind: 'plane', alive: true, idx: arr.length });
     icons[side] = arr;
   }
-  const b = { kind: 'naval', island: isl.id, icons, round: 0, done: false, winner: null, retreated: null, shotsAll: [], canRetreat: {}, snap };
+  const b = { kind: 'naval', island: isl.id, icons, round: 0, done: false, winner: null, retreated: null, shotsAll: [], canRetreat: {}, snap, bon: bonusMap([...blueF, ...redF]) };
   for (const side of [BLUE, RED]) b.canRetreat[side] = !!nearestOwnIsland(s, side, isl, RANGE.fleet);
   return b;
 }
@@ -890,7 +892,7 @@ function makeLand(s, isl, sec, atkSide, blind) {
   for (let i = 0; i < (sec.owner === atkSide ? 0 : sec.gar); i++) icons[defSide].push({ side: defSide, kind: 'fort', neutral: !garSide, alive: true, idx: icons[defSide].length });
   defUnits.forEach((u) => { for (let i = 0; i < u.str; i++) icons[defSide].push({ side: defSide, kind: 'inf', unit: u.id, alive: true, idx: icons[defSide].length }); });
   const b = { kind: 'land', island: isl.id, sec: sec.id, secKind: sec.kind, atk: atkSide, def: defSide, defOwner: sec.owner, icons, round: 0, done: false, winner: null,
-    retreated: null, blind: !!blind, support, transportLoss, shotsAll: [], canRetreat: {}, snap };
+    retreated: null, blind: !!blind, support, transportLoss, shotsAll: [], canRetreat: {}, snap, bon: bonusMap([...atkUnits, ...defUnits]) };
   b.canRetreat[atkSide] = atkUnits.length > 0;
   b.canRetreat[defSide] = defUnits.length > 0 && sec.links.some((id) => section(isl, id).owner === defSide && !armiesIn(s, isl.id, id, atkSide).length);
   b.atk0 = icons[atkSide].filter((i) => i.kind === 'inf').length; b.def0 = icons[defSide].length;
@@ -913,6 +915,7 @@ export function battleRound(s, b) {
       let p;
       if (b.kind === 'naval') p = sh.kind === 'plane' ? (t.kind === 'ship' ? 0.5 : 0.35) : (t.kind === 'plane' ? 0.25 : 0.4);
       else p = sh.kind === 'fort' ? 0.5 : sh.kind === 'support' ? 0.45 : side === b.def ? 0.42 : 0.4;
+      if (b.bon) { const ba = sh.unit && b.bon[sh.unit], bt = t.unit && b.bon[t.unit]; p += (ba ? ba.atk : 0) - (bt ? bt.def : 0); } // r9: commander perk + cohesion
       const hit = s.rand() < p;
       shots.push({ round: b.round, from: { side, idx: sh.idx }, to: { side: t.side, idx: t.idx }, hit });
       if (hit) pending.push(t);
@@ -1182,7 +1185,8 @@ export function* weekSteps(s, { ai = true } = {}) {
   const kh = island(s, 'kestra'), vh = island(s, 'voruna');
   if (vh.owner === BLUE) s.over = { winner: BLUE, week: s.week };
   else if (kh.owner === RED) s.over = { winner: RED, week: s.week };
-  if (!s.over) { for (const e of reinforce(s)) yield e; mergeStacks(s); }
+  if (!s.over) { collectIncome(s); for (const e of reinforce(s)) yield e; mergeStacks(s); }
+  tickCohesion(s); // r9: a week more under the same command
   s.units.forEach((u) => { delete u.moved; delete u.landed; delete u.blind; delete u.from; delete u.underFire; syncOob(u); });
   // planes whose airfield fell or whose carrier sank fly to the nearest free base in range, else they are lost
   const rb = rebase(s); if (rb.moved.length || rb.lost.length) yield { type: 'rebase', ...rb };
@@ -1295,27 +1299,35 @@ function rebase(s) {
   return { moved, lost };
 }
 
+// r9: reinforcements are paid from supply (both sides, the AI too): each troop point COST.troop, the ship its class
+// cost, the plane its type cost. What a side cannot pay for does not arrive (cheapest first: troops, then ship, then plane).
 function reinforce(s) {
   const out = [];
+  ensureSupply(s);
   for (const side of [BLUE, RED]) {
     const home = island(s, side === BLUE ? 'kestra' : 'voruna');
     const hq = section(home, 'hq');
     if (hq.owner !== side) continue; // no HQ, no reinforcements
-    let troops = 1 + ownedSecs(s, side, 'depot');
+    let spent = 0;
+    let troops = Math.min(1 + ownedSecs(s, side, 'depot'), Math.floor(s.supply[side] / COST.troop));
     let gained = 0;
     while (troops > 0) {
       const here = armiesIn(s, home.id, 'hq', side);
-      let a = here.find((u) => u.str < MAX_STR.army);
+      let a = here.find((u) => u.str < MAX_STR.army && !u.org);
       if (!a && here.length >= HOME_STACK) break;
       if (!a) a = addUnit(s, side, 'army', home.id, 0, 'hq');
       const add = Math.min(troops, MAX_STR.army - a.str);
       a.str += add; troops -= add; gained += add;
     }
+    s.supply[side] -= gained * COST.troop; spent += gained * COST.troop;
     let ships = 0;
     if (s.week % 2 === 0 && section(home, 'port').owner === side) {
       let f = unitsAt(s, home.id, side, 'fleet').find((u) => u.str < MAX_STR.fleet);
-      if (!f && unitsAt(s, home.id, side, 'fleet').length < 1) f = addUnit(s, side, 'fleet', home.id, 0);
-      if (f) { f.str += 1; ships = 1; }
+      const type = f ? SHIP_ORDER[syncOob(f).ships.length % SHIP_ORDER.length] : SHIP_ORDER[0];
+      if (s.supply[side] >= COST[type]) {
+        if (!f && unitsAt(s, home.id, side, 'fleet').length < 1) f = addUnit(s, side, 'fleet', home.id, 0);
+        if (f) { f.str += 1; ships = 1; s.supply[side] -= COST[type]; spent += COST[type]; }
+      }
     }
     // a new plane every third week at the home airfield (the type the side has fewest of)
     let planes = 0, planeType = null;
@@ -1323,9 +1335,9 @@ function reinforce(s) {
     if (s.week % 3 === 0 && validBase(s, side, hb) && baseRoom(s, hb) > 0) {
       const order = ['fighter', 'bomber', 'torpedo', 'recon'];
       planeType = order.map((t) => [t, s.planes.filter((p) => p.side === side && p.type === t).length]).sort((a, b) => a[1] - b[1])[0][0];
-      if (addPlane(s, side, planeType, hb)) planes = 1;
+      if (s.supply[side] >= COST[planeType] && addPlane(s, side, planeType, hb)) { planes = 1; s.supply[side] -= COST[planeType]; spent += COST[planeType]; }
     }
-    out.push({ type: 'reinforce', side, island: home.id, troops: gained, ships, planes, planeType });
+    out.push({ type: 'reinforce', side, island: home.id, troops: gained, ships, planes, planeType, spent });
   }
   return out;
 }
@@ -1334,7 +1346,7 @@ function mergeStacks(s) {
   for (const isl of s.islands) {
     for (const side of [BLUE, RED]) {
       const groups = {};
-      unitsAt(s, isl.id, side).forEach((u) => { const k = `${u.kind}:${u.sec}:${u.aboard || ''}`; (groups[k] = groups[k] || []).push(u); });
+      unitsAt(s, isl.id, side).forEach((u) => { const k = `${u.kind}:${u.sec}:${u.aboard || ''}${u.org ? `:${u.id}` : ''}`; (groups[k] = groups[k] || []).push(u); }); // r9: a reorganized regiment keeps its own make-up
       for (const [k, list] of Object.entries(groups)) {
         if (list.length < 2) continue;
         const kind = k.split(':')[0];
@@ -1384,6 +1396,7 @@ export function battleEvent(b) {
 // Exact when the holdings it reads (HQ, port, airfield, depots, the HQ stack) do not change before the week ends.
 export function previewReinforce(s) {
   const c = JSON.parse(JSON.stringify({ ...s, rand: null }));
+  collectIncome(c);
   const before = new Map(c.units.map((u) => [u.id, u.str]));
   return reinforce(c).map((e) => {
     const armies = c.units.filter((u) => u.side === e.side && u.kind === 'army' && u.at === e.island && u.sec === 'hq')
@@ -1402,5 +1415,244 @@ export function reassignCmd(s, unitId, toUnitId) {
   if (!u || !t || u === t || u.side !== t.side || u.kind !== 'army' || t.kind !== 'army' || u.cmd === t.cmd) return false;
   syncOob(u); // the OOB is built once from the first commander; keep it
   u.cmd = t.cmd;
+  return true;
+}
+
+// ======================= r9: supply + costs, cohesion, commanders, reorganize, cancel =======================
+// Supply points: every held island pays its type's income at End Week (before reinforcements, which now cost).
+export const START_SUPPLY = 15;
+export const INCOME = { home: 8, supply: 5, air: 4, plain: 3 };
+// Every unit type and every building has its own price (different types cost different amounts).
+export const COST = {
+  troop: 3, // one strength point of the free-of-choice HQ reinforcement
+  inf: 2, eng: 3, aa: 3, art: 4, armor: 5, // a company you buy for a regiment
+  dd: 5, bb: 9, cv: 10, // a ship
+  recon: 3, fighter: 5, torpedo: 6, bomber: 7, // a plane
+  fort: 4, dock: 6, airfield: 8, // buildings on a zone you hold
+  cmd: 4, // a new commander (a new battalion or a new regiment needs one)
+};
+export const BUILDINGS = ['fort', 'dock', 'airfield'];
+export const FORT_MAX = 3;
+export const BUY_ZONES = ['hq', 'depot', 'port']; // where a regiment can take on a bought company
+export function ensureSupply(s) { if (!s.supply) s.supply = { blue: START_SUPPLY, red: START_SUPPLY }; if (!s.lastIncome) s.lastIncome = { blue: 0, red: 0 }; return s.supply; }
+export const income = (s, side) => s.islands.filter((i) => i.owner === side).reduce((n, i) => n + (INCOME[i.type] || 0), 0);
+export function collectIncome(s) {
+  ensureSupply(s);
+  for (const side of [BLUE, RED]) { const n = income(s, side); s.supply[side] += n; s.lastIncome[side] = n; }
+}
+function pay(s, side, n) { ensureSupply(s); if (s.supply[side] < n) return false; s.supply[side] -= n; return true; }
+export const canPay = (s, side, n) => (ensureSupply(s)[side] || 0) >= n;
+
+// ---- cohesion: weeks under the same command; +1 star every COH_WEEKS weeks, capped at COH_MAX. A move resets it. ----
+export const COH_WEEKS = 2;
+export const COH_MAX = 3;
+export const COH_START = 2; // the starting regiments have served together a little (1 star)
+export const COH_HIT = 0.02; // per average battalion star: a better hit chance in land battles
+export const cohStars = (w) => Math.max(0, Math.min(COH_MAX, Math.floor((w || 0) / COH_WEEKS)));
+export function regCohesion(u) {
+  if (!u || u.kind !== 'army') return 0;
+  const bns = battalions(u); if (!bns.length) return 0;
+  return bns.reduce((n, b) => n + cohStars(b.w), 0) / bns.length;
+}
+function tickCohesion(s) {
+  for (const u of s.units) if (u.kind === 'army' && u.oob) for (const b of u.oob.bns) { b.w = (b.w || 0) + 1; for (const c of b.cos) c.w = (c.w || 0) + 1; }
+}
+
+// ---- commander perks: a regiment's / fleet's commander has one (fixed by who they are) ----
+export const PERKS = { atk: 0.05, def: 0.05, move: 150, scout: 1 };
+export const MOVE_PERK = 150;
+const ARMY_PERKS = ['atk', 'def', 'scout'];
+const FLEET_PERKS = ['atk', 'def', 'move', 'scout'];
+export function perkOf(u) {
+  if (!u || u.cmd == null || (u.kind !== 'army' && u.kind !== 'fleet')) return null;
+  const list = u.kind === 'fleet' ? FLEET_PERKS : ARMY_PERKS;
+  return list[(u.cmd * 7 + 3) % list.length];
+}
+function scoutZones(s, u) {
+  const isl = island(s, u.at); if (!isl) return [];
+  if (u.kind === 'army') { const x = u.sec && section(isl, u.sec); return x ? x.links.map((id) => zkey(u.at, id)) : []; }
+  return isl.secs.filter((x) => shipZone(x)).map((x) => zkey(u.at, x.id));
+}
+// per-unit battle modifiers: attack perk + cohesion add to its hit chance; defence perk takes from shots at it
+function bonusMap(units) {
+  const m = {};
+  for (const u of units) {
+    const k = perkOf(u);
+    m[u.id] = { atk: (k === 'atk' ? PERKS.atk : 0) + (u.kind === 'army' ? COH_HIT * regCohesion(u) : 0), def: k === 'def' ? PERKS.def : 0 };
+  }
+  return m;
+}
+export const unitBonus = (u) => bonusMap([u])[u.id];
+
+// ---- echelon: regiment III, battalion II, company I (and the rank of each one's commander) ----
+export const ECHELON = { regiment: 3, battalion: 2, company: 1 };
+export const RANK = { regiment: 'col', battalion: 'maj', company: 'capt' };
+
+// ---- buying (player) ----
+export function canBuyCo(s, unitId, type) {
+  const u = unit(s, unitId);
+  if (!u || s.over || u.kind !== 'army' || u.aboard || !u.sec || !CO_TYPES.includes(type)) return false;
+  const x = section(island(s, u.at), u.sec);
+  if (!x || x.owner !== u.side || !BUY_ZONES.includes(x.kind)) return false;
+  return u.str < MAX_STR.army && canPay(s, u.side, COST[type]);
+}
+// a new full company of that type joins the battalion with the fewest companies; the regiment gains one strength point
+export function buyCo(s, unitId, type) {
+  if (!canBuyCo(s, unitId, type)) return null;
+  const u = unit(s, unitId); syncOob(u);
+  const live = (b) => b.cos.filter((c) => c.pips > 0).length;
+  const bn = u.oob.bns.filter((b) => live(b) > 0).sort((a, b) => live(a) - live(b))[0] || u.oob.bns[0];
+  const c = { id: newCoId(u, bn), type, pips: CO_MAX, w: 0 };
+  bn.cos.push(c);
+  pay(s, u.side, COST[type]);
+  u.str += 1; syncOob(u);
+  return c;
+}
+const shipYard = (s, side, isl) => isl.secs.some((x) => x.owner === side && (x.kind === 'port' || x.dock));
+export function canBuyShip(s, side, islId, type) {
+  const isl = island(s, islId);
+  if (!isl || s.over || !SHIP_TYPES.includes(type) || !shipYard(s, side, isl)) return false;
+  return canPay(s, side, COST[type]);
+}
+export function buyShip(s, side, islId, type) {
+  if (!canBuyShip(s, side, islId, type)) return null;
+  let f = unitsAt(s, islId, side, 'fleet').filter((u) => u.str < MAX_STR.fleet && !s.orders[u.id]).sort((a, b) => b.str - a.str)[0];
+  if (!f) f = addUnit(s, side, 'fleet', islId, 0);
+  syncOob(f); f.ships.push(type); f.str += 1;
+  pay(s, side, COST[type]);
+  return f;
+}
+export function canBuyPlane(s, side, islId, secId, type) {
+  if (s.over || !PLANE_TYPES.includes(type)) return false;
+  const base = { isl: islId, sec: secId };
+  return validBase(s, side, base) && baseRoom(s, base) > 0 && canPay(s, side, COST[type]);
+}
+export function buyPlane(s, side, islId, secId, type) {
+  if (!canBuyPlane(s, side, islId, secId, type)) return null;
+  const p = addPlane(s, side, type, { isl: islId, sec: secId });
+  if (p) { pay(s, side, COST[type]); p.used = true; } // a new plane is ready next week
+  return p;
+}
+// buildings: fort (+1 garrison, up to FORT_MAX), dock (a beach where ships can be bought), airfield (a land zone planes can base at)
+export function canBuild(s, side, islId, secId, what) {
+  const isl = island(s, islId), x = isl && section(isl, secId);
+  if (!x || s.over || x.owner !== side || !BUILDINGS.includes(what) || !canPay(s, side, COST[what])) return false;
+  if (what === 'fort') return x.gar < FORT_MAX;
+  if (what === 'dock') return x.kind === 'beach' && !x.dock;
+  return ['ridge', 'jungle', 'depot'].includes(x.kind) && !x.field;
+}
+export function build(s, side, islId, secId, what) {
+  if (!canBuild(s, side, islId, secId, what)) return false;
+  const x = section(island(s, islId), secId);
+  if (what === 'fort') x.gar += 1; else if (what === 'dock') x.dock = true; else x.field = true;
+  pay(s, side, COST[what]);
+  return true;
+}
+
+// ---- reorganize (same island only) ----
+function newCoId(u, bn) {
+  const used = new Set(u.oob.bns.flatMap((b) => b.cos.map((c) => c.id)));
+  for (const ch of 'abcdefghijklmnopqrstuvwxyz') { const id = `${bn.n}${ch}`; if (!used.has(id)) return id; }
+  return `${bn.n}z${used.size}`;
+}
+const livePips = (u) => allCos(u.oob).reduce((n, x) => n + x.c.pips, 0);
+// after pips moved between two regiments: split their total strength so it matches the pips (no strength made or lost)
+function resplit(a, b, total) {
+  const pa = livePips(a), pb = livePips(b);
+  let sa = Math.floor(pa / PIPS_PER_STR), sb = Math.floor(pb / PIPS_PER_STR);
+  if (sa + sb < total) { if (pa % PIPS_PER_STR >= pb % PIPS_PER_STR) sa++; else sb++; }
+  return [sa, sb];
+}
+const sameGround = (u, t) => u && t && u.side === t.side && u.kind === 'army' && t.kind === 'army' && u.at === t.at && !u.aboard && !t.aboard && u.sec && t.sec;
+const bnOf = (u, n) => u.oob.bns.find((b) => b.n === n);
+// move one company to another battalion (of this or another regiment on the same island) or to a new battalion ('new')
+export function canMoveCo(s, unitId, coId, toUnitId, toBn) {
+  const u = unit(s, unitId), t = unit(s, toUnitId);
+  if (s.over || !sameGround(u, t)) return false;
+  syncOob(u); syncOob(t);
+  const src = u.oob.bns.find((b) => b.cos.some((c) => c.id === coId && c.pips > 0)); if (!src) return false;
+  const c = src.cos.find((q) => q.id === coId);
+  if (toBn === 'new') return t.oob.bns.length < 5 && canPay(s, u.side, COST.cmd) && (u !== t || src.cos.filter((q) => q.pips > 0).length > 1);
+  const dst = bnOf(t, toBn); if (!dst || dst.cos.filter((q) => q.pips > 0).length === 0) return false;
+  if (u === t) return dst !== src;
+  if (companies(u).length < 2) return false; // a regiment keeps at least one company
+  const tot = u.str + t.str;
+  const pa = livePips(u) - c.pips, pb = livePips(t) + c.pips;
+  let sa = Math.floor(pa / PIPS_PER_STR), sb = Math.floor(pb / PIPS_PER_STR);
+  if (sa + sb < tot) { if (pa % PIPS_PER_STR >= pb % PIPS_PER_STR) sa++; else sb++; }
+  return sa >= 1 && sb <= MAX_STR.army;
+}
+export function moveCo(s, unitId, coId, toUnitId, toBn) {
+  if (!canMoveCo(s, unitId, coId, toUnitId, toBn)) return false;
+  const u = unit(s, unitId), t = unit(s, toUnitId);
+  const src = u.oob.bns.find((b) => b.cos.some((c) => c.id === coId && c.pips > 0));
+  const c = src.cos.find((q) => q.id === coId);
+  src.cos.splice(src.cos.indexOf(c), 1);
+  let dst;
+  if (toBn === 'new') {
+    pay(s, u.side, COST.cmd);
+    const n = Math.max(0, ...t.oob.bns.map((b) => b.n)) + 1;
+    dst = { n, cmd: s.nextCmd++, w: 0, cos: [] }; t.oob.bns.push(dst);
+  } else dst = bnOf(t, toBn);
+  c.id = newCoId(t, dst); c.w = 0; // a new command: its cohesion starts again
+  dst.cos.push(c);
+  if (u !== t) { const [sa, sb] = resplit(u, t, u.str + t.str); u.str = sa; t.str = sb; syncOob(u); syncOob(t); }
+  u.org = true; t.org = true;
+  return true;
+}
+// move a whole battalion to another regiment on the same island, or make it a new regiment ('new', needs a new commander)
+export function canMoveBn(s, unitId, bnN, toUnitId) {
+  const u = unit(s, unitId); if (!u || s.over) return false;
+  syncOob(u);
+  const b = bnOf(u, bnN); if (!b || !b.cos.some((c) => c.pips > 0)) return false;
+  if (battalions(u).length < 2) return false; // a regiment keeps at least one battalion
+  const bp = b.cos.reduce((n, c) => n + c.pips, 0), pa = livePips(u) - bp;
+  if (toUnitId === 'new') {
+    if (!u.sec || u.aboard || !canPay(s, u.side, COST.cmd)) return false;
+    let sa = Math.floor(pa / PIPS_PER_STR), sb = Math.floor(bp / PIPS_PER_STR);
+    if (sa + sb < u.str) { if (pa % PIPS_PER_STR >= bp % PIPS_PER_STR) sa++; else sb++; }
+    return sa >= 1 && sb >= 1;
+  }
+  const t = unit(s, toUnitId); if (!sameGround(u, t) || t === u) return false;
+  syncOob(t);
+  if (t.oob.bns.filter((q) => q.cos.some((c) => c.pips > 0)).length >= 5) return false;
+  const pb = livePips(t) + bp, tot = u.str + t.str;
+  let sa = Math.floor(pa / PIPS_PER_STR), sb = Math.floor(pb / PIPS_PER_STR);
+  if (sa + sb < tot) { if (pa % PIPS_PER_STR >= pb % PIPS_PER_STR) sa++; else sb++; }
+  return sa >= 1 && sb <= MAX_STR.army;
+}
+export function moveBn(s, unitId, bnN, toUnitId) {
+  if (!canMoveBn(s, unitId, bnN, toUnitId)) return null;
+  const u = unit(s, unitId), b = bnOf(u, bnN);
+  u.oob.bns.splice(u.oob.bns.indexOf(b), 1);
+  b.cos = b.cos.filter((c) => c.pips > 0);
+  let t;
+  if (toUnitId === 'new') {
+    pay(s, u.side, COST.cmd);
+    t = addUnit(s, u.side, 'army', u.at, 0, u.sec); // a new regiment commander (s.nextCmd)
+    t.oob = { bns: [] };
+  } else t = unit(s, toUnitId);
+  const ids = new Set(t.oob.bns.flatMap((q) => q.cos.map((c) => c.id)));
+  b.n = Math.max(0, ...t.oob.bns.map((q) => q.n)) + 1; b.w = 0; // under a new regiment: cohesion starts again
+  b.cos.forEach((c, j) => { c.id = `${b.n}${'abcdefghijklmnop'[j]}`; if (ids.has(c.id)) c.id += 'x'; });
+  t.oob.bns.push(b);
+  const [sa, sb] = resplit(u, t, u.str + t.str); u.str = sa; t.str = sb; syncOob(u); syncOob(t);
+  u.org = true; t.org = true;
+  return t;
+}
+
+// ---- cancel: one call clears every order a unit or plane has this week ----
+const UNIT_ORD = ['orders', 'secOrders', 'landAt', 'embark', 'landOrd', 'spotOrd'];
+const PLANE_ORD = ['strikes', 'strikeZ', 'flyOrd', 'landPl', 'reconOrd'];
+export function hasOrder(s, id) {
+  if (unit(s, id)) return UNIT_ORD.some((k) => s[k] && s[k][id] !== undefined);
+  return PLANE_ORD.some((k) => s[k] && s[k][id] !== undefined);
+}
+export function cancelOrder(s, id) {
+  const u = unit(s, id);
+  const keys = u ? UNIT_ORD : plane(s, id) ? PLANE_ORD : null;
+  if (!keys || !hasOrder(s, id)) return false;
+  for (const k of keys) if (s[k]) delete s[k][id];
+  if (u && u.kind === 'fleet') for (const a of carried(s, u)) if (s.landOrd[a.id] && s.landOrd[a.id].isl !== u.at) delete s.landOrd[a.id]; // it stays: landings elsewhere go too
   return true;
 }
