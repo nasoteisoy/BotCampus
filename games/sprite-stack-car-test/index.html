@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Sprite-stack car test</title>
+<style>
+html,body{margin:0;height:100%;background:#1b1f24;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,sans-serif}
+canvas#view{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#hud{position:absolute;left:10px;top:calc(8px + env(safe-area-inset-top));color:#fff;font-size:12px;text-shadow:0 1px 2px #000;pointer-events:none;opacity:.85}
+#pad{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
+.grp{display:flex;gap:12px;pointer-events:auto}
+.btn{width:72px;height:72px;border-radius:18px;background:rgba(20,24,30,.55);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;touch-action:none}
+.btn.on{background:rgba(255,210,80,.45);border-color:#ffd250}
+.btn svg{width:34px;height:34px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+@media (pointer:fine) and (min-width:900px){#pad{opacity:.5}}
+</style></head><body>
+<canvas id="view"></canvas>
+<div id="hud">Sprite-stack car test · 12 slices · WASD / arrows · touch pads</div>
+<div id="pad">
+  <div class="grp">
+    <div class="btn" data-k="left"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="btn" data-k="right"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+  </div>
+  <div class="grp">
+    <div class="btn" data-k="down"><svg viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></div>
+    <div class="btn" data-k="up"><svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></div>
+  </div>
+</div>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const view = document.getElementById('view'), vctx = view.getContext('2d');
+const low = document.createElement('canvas'), ctx = low.getContext('2d');
+let SCALE = 3, LW = 200, LH = 200;
+
+// ---------- slices (built from AI reference views by tools/build_stack.py) ----------
+let META, slices = [], shadow;
+async function loadSlices(){
+  META = await (await fetch('slices/sheet.json?v=1')).json();
+  const img = new Image(); img.src = 'slices/sheet.png?v=1'; await img.decode();
+  const {L,W,H,pad} = META;
+  const uni = document.createElement('canvas'); uni.width=L; uni.height=W; const u=uni.getContext('2d');
+  for (let z=0; z<H; z++){
+    const c=document.createElement('canvas'); c.width=L; c.height=W;
+    c.getContext('2d').drawImage(img,0,z*(W+pad),L,W,0,0,L,W); slices.push(c); u.drawImage(c,0,0);
+  }
+  // shadow = union silhouette, flat dark green
+  u.globalCompositeOperation='source-in'; u.fillStyle='#16301a'; u.fillRect(0,0,L,W); shadow=uni;
+}
+
+// ---------- world: pixel grass + asphalt loop (environment only) ----------
+const WW=760, WH=640; const world=document.createElement('canvas'); world.width=WW; world.height=WH;
+let roadMask;
+function buildWorld(){
+  const w=world.getContext('2d'); const id=w.createImageData(WW,WH); const d=id.data;
+  let s=1234567; const rnd=()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};
+  const cx=WW/2, cy=WH/2, rx=250, ry=180, half=34;
+  roadMask=new Uint8Array(WW*WH);
+  const grass=[[78,140,62],[70,128,56],[88,152,68],[62,116,52]];
+  for(let y=0;y<WH;y++)for(let x=0;x<WW;x++){
+    // distance to ellipse ring (approx) -> road, curb, grass
+    const nx=(x-cx)/rx, ny=(y-cy)/ry, r=Math.hypot(nx,ny);
+    const dist=Math.abs(r-1)/ (Math.hypot(nx/rx,ny/ry)/Math.max(r,1e-3) || 1);
+    const i=(y*WW+x)*4; let c;
+    if(dist<half){ roadMask[y*WW+x]=1;
+      const n=rnd(); c = n<.08?[70,72,80]:n<.16?[52,54,60]:[60,62,70];
+      // dashed centre line
+      const ang=Math.atan2(ny,nx); if(dist<1.5 && (Math.floor((ang+Math.PI)*40)%2===0)) c=[230,220,170];
+    } else if(dist<half+4){ const ang=Math.atan2(ny,nx); c=(Math.floor((ang+Math.PI)*28)%2)?[220,60,50]:[235,235,235]; roadMask[y*WW+x]=2; }
+    else { const n=rnd(); c=grass[n<.6?0:n<.8?1:n<.93?2:3]; if(rnd()<.006) c=[230,210,90]; }
+    d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2];d[i+3]=255;
+  }
+  w.putImageData(id,0,0);
+  // a few tufts / rocks for motion reference
+  for(let n=0;n<120;n++){const x=rnd()*WW|0,y=rnd()*WH|0; if(roadMask[y*WW+x])continue; w.fillStyle=n%3?'#3f7a36':'#8a8f86'; w.fillRect(x,y,2,1); w.fillRect(x+ (n%2),y-1,1,1);}
+}
+
+// ---------- car physics (floats) ----------
+const car={x:WW/2+250, y:WH/2, a:-Math.PI/2, v:0, steerVis:0};
+const keys={up:0,down:0,left:0,right:0};
+const KM={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+addEventListener('keydown',e=>{if(KM[e.code]){keys[KM[e.code]]=1;e.preventDefault();}});
+addEventListener('keyup',e=>{if(KM[e.code]){keys[KM[e.code]]=0;e.preventDefault();}});
+document.querySelectorAll('.btn').forEach(b=>{
+  const k=b.dataset.k, on=e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);keys[k]=1;b.classList.add('on');},
+        off=e=>{keys[k]=0;b.classList.remove('on');};
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off); b.addEventListener('lostpointercapture',off);
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+});
+const skid=[];
+function step(dt){
+  const onRoad = roadMask[(car.y|0)*WW+(car.x|0)]===1;
+  const maxV = onRoad?95:55, acc=onRoad?120:80;
+  if(keys.up) car.v+=acc*dt; else if(keys.down) car.v-= (car.v>0?170:70)*dt;
+  else car.v-=Math.sign(car.v)*Math.min(Math.abs(car.v),40*dt);
+  car.v=Math.max(-35,Math.min(maxV,car.v));
+  const steer=(keys.right-keys.left);
+  car.steerVis += (steer-car.steerVis)*Math.min(1,dt*8);           // eased steering = smooth turn
+  const grip=Math.min(1,Math.abs(car.v)/30);
+  car.a += car.steerVis*2.6*grip*Math.sign(car.v||1)*dt;
+  car.x+=Math.cos(car.a)*car.v*dt; car.y+=Math.sin(car.a)*car.v*dt;
+  car.x=Math.max(20,Math.min(WW-20,car.x)); car.y=Math.max(20,Math.min(WH-20,car.y));
+  if(Math.abs(car.steerVis)>.7 && Math.abs(car.v)>70){ // skid dots at rear wheels
+    for(const sd of [-6,6]){const bx=car.x-Math.cos(car.a)*14 - Math.sin(car.a)*sd, by=car.y-Math.sin(car.a)*14+Math.cos(car.a)*sd; skid.push([bx|0,by|0]);}
+    if(skid.length>900) skid.splice(0,skid.length-900);
+  }
+}
+
+// ---------- render (all at low res, integer upscale) ----------
+function resize(){
+  const dpr=window.devicePixelRatio||1, pw=Math.floor(innerWidth*dpr), ph=Math.floor(innerHeight*dpr);
+  SCALE=Math.max(2, Math.floor(Math.min(pw,ph)/170));             // ~170 logical px on the short side
+  LW=Math.ceil(pw/SCALE); LH=Math.ceil(ph/SCALE);
+  low.width=LW; low.height=LH; view.width=LW*SCALE; view.height=LH*SCALE;
+  view.style.width=(LW*SCALE/dpr)+'px'; view.style.height=(LH*SCALE/dpr)+'px';
+  ctx.imageSmoothingEnabled=false; vctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize);
+function drawStack(sx,sy,ang){
+  const {L,W,H}=META;
+  ctx.save(); ctx.globalAlpha=.45; ctx.translate(sx+2,sy+2); ctx.rotate(ang); ctx.drawImage(shadow,-L/2,-W/2); ctx.restore();
+  for(let z=0;z<H;z++){ ctx.save(); ctx.translate(sx, sy-z); ctx.rotate(ang); ctx.drawImage(slices[z],-L/2,-W/2); ctx.restore(); }
+}
+function render(){
+  ctx.imageSmoothingEnabled=false;
+  const cl=(v,lo,hi)=>hi<lo?(lo+hi)/2|0:Math.max(lo,Math.min(hi,v));
+  const camX=cl(Math.floor(car.x-LW/2),0,WW-LW), camY=cl(Math.floor(car.y-LH/2+(LW<LH?18:0)),0,WH-LH);
+  ctx.fillStyle='#4e8c3e'; ctx.fillRect(0,0,LW,LH);
+  ctx.drawImage(world,-camX,-camY);
+  ctx.fillStyle='rgba(25,25,28,.55)'; for(const [x,y] of skid) ctx.fillRect(x-camX,y-camY,1,1);
+  drawStack(Math.floor(car.x)-camX, Math.floor(car.y)-camY, car.a);
+  vctx.imageSmoothingEnabled=false; vctx.drawImage(low,0,0,LW*SCALE,LH*SCALE);
+}
+let last=0, accT=0; const DT=1/120;
+function loop(t){ const f=Math.min(.1,(t-last)/1000||0); last=t; accT+=f; while(accT>=DT){step(DT);accT-=DT;} render(); requestAnimationFrame(loop); }
+(async()=>{
+  resize(); buildWorld(); await loadSlices();
+  if(Q.has('shot')){ car.a=parseFloat(Q.get('shot'))*Math.PI/180; car.x=WW/2+200; car.y=WH/2+120; }
+  if(Q.has('auto')){ keys.up=1; keys.left=1; }   // demo: drive in a circle
+  if(Q.has('sim')){ const n=parseFloat(Q.get('sim'))*120; for(let i=0;i<n;i++) step(DT); } // test hook: pre-run physics
+  requestAnimationFrame(loop);
+})();
+</script></body></html>
