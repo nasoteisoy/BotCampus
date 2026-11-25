@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>2 Shifts · top-down demo</title>
+<link rel="icon" href="data:,">
+<style>
+html,body{margin:0;height:100%;background:#1d2b1f;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font-family:system-ui,sans-serif}
+#c{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#tog{position:absolute;right:calc(12px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px;background:rgba(20,24,30,.62);border:3px solid rgba(255,255,255,.45);border-radius:18px;padding:6px 12px 6px 8px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.5px;cursor:pointer;touch-action:manipulation}
+#tog svg{width:34px;height:34px;display:block}
+#tog.flat{border-color:#f7c69c}
+#joy{position:absolute;left:0;bottom:0;width:60%;height:50%;touch-action:none}
+#knob,#ring{position:absolute;border-radius:50%;pointer-events:none;display:none;transform:translate(-50%,-50%)}
+#ring{width:108px;height:108px;border:3px solid rgba(255,255,255,.45);background:rgba(20,24,30,.25)}
+#knob{width:50px;height:50px;background:rgba(255,255,255,.75)}
+#keys{position:absolute;left:14px;bottom:12px;display:none;gap:4px;opacity:.7;pointer-events:none}
+#keys span{display:inline-block;min-width:22px;padding:3px 5px;border:2px solid #fff;border-radius:6px;color:#fff;font-size:12px;font-weight:700;text-align:center}
+@media (hover:hover) and (pointer:fine){#keys{display:flex}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="joy"></div><div id="ring"></div><div id="knob"></div>
+<button id="tog" aria-label="Flat vs 2 Shifts"><svg id="ico" viewBox="0 0 34 34"></svg><span id="lab">2 SHIFTS</span></button>
+<div id="keys"><span>W</span><span>A</span><span>S</span><span>D</span><span>←↑↓→</span></div>
+<script>
+'use strict';
+const ICON_CUBE='<path d="M17 4 L30 10 L17 16 L4 10 Z" fill="#f6d6a0" stroke="#5a3020" stroke-width="2"/><path d="M4 10 L17 16 L17 30 Q10 29 4 24 Z" fill="#d8b060" stroke="#5a3020" stroke-width="2"/><path d="M30 10 L17 16 L17 30 Q24 29 30 24 Z" fill="#b1854d" stroke="#5a3020" stroke-width="2"/>';
+const ICON_FLAT='<rect x="6" y="6" width="22" height="22" fill="#d8b060" stroke="#5a3020" stroke-width="2"/>';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const T=16, MW=40, MH=32; // world tiles
+let Z=3, VW=130, VH=280;
+function resize(){
+  const W=innerWidth,H=innerHeight;
+  Z=Math.max(2,Math.min(5,Math.floor(Math.min(W/120,H/170))));
+  VW=Math.ceil(W/Z); VH=Math.ceil(H/Z);
+  cv.width=VW; cv.height=VH; cv.style.width=VW*Z+'px'; cv.style.height=VH*Z+'px';
+  ctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize); resize();
+function img(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src;});}
+// ---------- world layout (approved dragon-game tiles: grass + stone path) ----------
+const map=[]; for(let y=0;y<MH;y++){map.push(new Array(MW).fill(0));}
+function pathLine(x0,y0,x1,y1){const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let i=0;i<=n;i++){const x=Math.round(x0+(x1-x0)*i/n),y=Math.round(y0+(y1-y0)*i/n);for(let a=0;a<2;a++)for(let b=0;b<2;b++)if(map[y+b]&&map[y+b][x+a]!==undefined)map[y+b][x+a]=1;}}
+pathLine(4,16,15,16);pathLine(15,16,15,7);pathLine(15,7,28,7);pathLine(28,7,28,22);pathLine(28,22,10,22);pathLine(10,22,10,27);pathLine(15,16,28,16);pathLine(28,16,36,16);
+const PROPS=[['rock',8,12],['bush',12,10],['stump',20,11],['egg',21,13],['bush',24,12],['rock',32,10],['stump',33,20],['bush',6,20],['rock',18,19],['egg',13,25],['bush',22,26],['stump',7,8],['rock',35,26],['bush',31,4],['egg',33,13],['bush',19,4],['rock',4,27],['stump',25,28]];
+let props=[];
+// ---------- input ----------
+const keys={up:0,down:0,left:0,right:0}; let joy={x:0,y:0};
+const KM={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+addEventListener('keydown',e=>{const k=KM[e.code];if(k){keys[k]=1;e.preventDefault();} if(e.code==='KeyF'||e.code==='Space'){toggle();e.preventDefault();}});
+addEventListener('keyup',e=>{const k=KM[e.code];if(k){keys[k]=0;e.preventDefault();}});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=0;});
+const jz=document.getElementById('joy'),ring=document.getElementById('ring'),knob=document.getElementById('knob');let jid=null,jo=null;
+jz.addEventListener('pointerdown',e=>{jid=e.pointerId;jz.setPointerCapture(e.pointerId);jo={x:e.clientX,y:e.clientY};ring.style.display=knob.style.display='block';ring.style.left=knob.style.left=e.clientX+'px';ring.style.top=knob.style.top=e.clientY+'px';e.preventDefault();});
+jz.addEventListener('pointermove',e=>{if(e.pointerId!==jid)return;let dx=e.clientX-jo.x,dy=e.clientY-jo.y;const l=Math.hypot(dx,dy),M=48;if(l>M){dx*=M/l;dy*=M/l;}joy={x:dx/M,y:dy/M};knob.style.left=(jo.x+dx)+'px';knob.style.top=(jo.y+dy)+'px';});
+const jend=e=>{if(e.pointerId!==jid)return;jid=null;joy={x:0,y:0};ring.style.display=knob.style.display='none';};
+jz.addEventListener('pointerup',jend);jz.addEventListener('pointercancel',jend);
+// ---------- flat vs 2 shifts ----------
+let mode='td';
+const tog=document.getElementById('tog'),ico=document.getElementById('ico'),lab=document.getElementById('lab');
+function paintTog(){ico.innerHTML=mode==='td'?ICON_CUBE:ICON_FLAT;lab.textContent=mode==='td'?'2 SHIFTS':'FLAT';tog.classList.toggle('flat',mode!=='td');}
+function toggle(){mode=mode==='td'?'flat':'td';paintTog();}
+tog.addEventListener('click',e=>{toggle();tog.blur();});paintTog();
+if(/[?&]mode=flat/.test(location.search))toggle();
+// ---------- boy ----------
+const SPEED=40; // native px / s
+const boy={x:12*T+8,y:17*T+10,dir:'down',moving:false,dist:0,idleT:0,frame:0};
+let meta,sheet,P={},tiles={};
+function solidAt(x,y){if(x<6||y<10||x>MW*T-6||y>MH*T-2)return true;for(const p of props){const dx=(x-p.x)/p.rx,dy=(y-p.y)/p.ry;if(dx*dx+dy*dy<1)return true;}return false;}
+let last=0,cam={x:0,y:0},eggT=0;
+function update(dt){
+  let ix=(keys.right-keys.left)+joy.x, iy=(keys.down-keys.up)+joy.y;
+  const l=Math.hypot(ix,iy); if(l>1){ix/=l;iy/=l;}
+  boy.moving=l>0.2;
+  if(boy.moving){
+    if(Math.abs(ix)>Math.abs(iy)*1.05) boy.dir=ix<0?'left':'right'; else if(Math.abs(iy)>Math.abs(ix)*1.05) boy.dir=iy<0?'up':'down';
+    const sp=SPEED*Math.min(1,l);
+    const nx=boy.x+ix*sp*dt, ny=boy.y+iy*sp*dt;
+    const ox=boy.x,oy=boy.y;
+    if(!solidAt(nx,boy.y))boy.x=nx; if(!solidAt(boy.x,ny))boy.y=ny;
+    boy.dist+=Math.hypot(boy.x-ox,boy.y-oy);
+    boy.idleT=0;
+  } else { boy.idleT+=dt; }
+  eggT+=dt;
+}
+function rowKey(){return (mode==='td'?'td_':'flat_')+boy.dir+(boy.moving?'':'_idle');}
+function boyFrame(){
+  const k=rowKey(), r=meta.rows[k];
+  if(!boy.moving) return [k,Math.floor(boy.idleT/0.7)%2];
+  if(mode==='td'){ // frame advances by distance walked = stance foot stays planted (no foot slide)
+    const ppf=meta.pxPerFrame['td_'+boy.dir]; return [k,Math.floor(boy.dist/ppf)%r.n]; }
+  return [k,Math.floor(performance.now()/125)%r.n];
+}
+function shadow(x,y,w,h){ctx.fillStyle='rgba(20,40,20,.35)';ctx.beginPath();ctx.ellipse(x,y,w,h,0,0,Math.PI*2);ctx.fill();}
+function draw(){
+  const tx=Math.round(boy.x-VW/2), ty=Math.round(boy.y-12-VH/2);
+  cam.x+= (tx-cam.x)*0.18; cam.y+=(ty-cam.y)*0.18;
+  const cx=Math.round(Math.max(0,Math.min(MW*T-VW,cam.x))), cy=Math.round(Math.max(0,Math.min(MH*T-VH,cam.y)));
+  ctx.fillStyle='#1d2b1f';ctx.fillRect(0,0,VW,VH);
+  const x0=Math.floor(cx/T),y0=Math.floor(cy/T);
+  for(let y=y0;y<=y0+Math.ceil(VH/T)+1;y++)for(let x=x0;x<=x0+Math.ceil(VW/T)+1;x++){if(y<0||x<0||y>=MH||x>=MW)continue;ctx.drawImage(map[y][x]?tiles.stone:tiles.grass,x*T-cx,y*T-cy);}
+  // depth-sorted sprites
+  const list=props.map(p=>({y:p.y,f:()=>{const im=P[p.k];shadow(p.x-cx,p.y-cy,p.rx+1,p.ry+1);
+    let dx=0; if(p.k==='egg'){const near=Math.hypot(boy.x-p.x,boy.y-p.y)<34; if(near) dx=(Math.floor(eggT*8+p.x)%4<2)?1:-1;
+      if(dx){ // wobble: top half of the egg pixels shift 1px (moving part)
+        const h=im.height, bx=Math.round(p.x-im.width/2-cx), by=Math.round(p.y-h+2-cy);
+        ctx.drawImage(im,0,0,im.width,Math.floor(h/2),bx+dx,by,im.width,Math.floor(h/2));
+        ctx.drawImage(im,0,Math.floor(h/2),im.width,h-Math.floor(h/2),bx,by+Math.floor(h/2),im.width,h-Math.floor(h/2)); return;}}
+    ctx.drawImage(im,Math.round(p.x-im.width/2-cx),Math.round(p.y-im.height+2-cy));}}));
+  list.push({y:boy.y,f:()=>{const [k,i]=boyFrame(),r=meta.rows[k],[CW,CH]=meta.cell;boy.frame=i;
+    shadow(Math.round(boy.x-cx),Math.round(boy.y-cy),8,3);
+    ctx.drawImage(sheet,i*CW,r.row*CH,CW,CH,Math.round(boy.x-16-cx),Math.round(boy.y-r.foot-cy),CW,CH);}});
+  list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+}
+function loop(t){const dt=Math.min(0.05,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop);}
+window.__state=()=>({boy:{x:+boy.x.toFixed(1),y:+boy.y.toFixed(1),dir:boy.dir,moving:boy.moving,frame:boy.frame,dist:+boy.dist.toFixed(1)},mode,zoom:Z,view:[VW,VH]});
+window.__toggle=toggle;
+(async()=>{
+  const v='?v=2';
+  meta=await (await fetch('sprites/boy_sheet.json'+v)).json();
+  meta.pxPerFrame.td_left=meta.pxPerFrame.td_right=6;
+  sheet=await img('sprites/boy_sheet.png'+v);
+  for(const k of ['rock','bush','stump','egg'])P[k]=await img('sprites/prop_'+k+'.png'+v);
+  tiles.grass=await img('sprites/tile_grass.png'+v); tiles.stone=await img('sprites/tile_stone.png'+v);
+  props=PROPS.map(([k,tx,ty])=>{const im=P[k];return {k,x:tx*T+8,y:ty*T+12,rx:Math.max(4,im.width/2-2),ry:Math.max(3,im.width/5)};});
+  document.title='2S ready';
+  cam.x=boy.x-VW/2;cam.y=boy.y-12-VH/2;
+  requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
