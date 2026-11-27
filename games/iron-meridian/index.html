@@ -571,6 +571,18 @@ canvas#map,.mapwrap{touch-action:none}
 }
 @media (pointer:coarse) and (max-height:520px){.waitpill{bottom:calc(64px + env(safe-area-inset-bottom,0px))}body.g15 .layout{flex-direction:row}body.g15 .board{flex:0 0 58%}}
 
+/* ===== IM8c: nothing wider than the phone; the map scrolls inside its own window ===== */
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  .layout,.layout>*,.board,.mapbox,.side{min-width:0!important;max-width:100%}
+  .board,.mapbox{width:100%;overflow:hidden}
+  .mapwrap{width:100%!important;max-width:100%;overflow:auto!important}
+  body.g15 .board{width:100%!important}
+  .dlg,.overlay>.dlg{max-width:calc(100vw - 16px)!important;box-sizing:border-box}
+  .overlay{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+}
+body.g15 .layout{align-items:stretch!important}
+@media (pointer:coarse) and (max-height:520px){body.g15 .layout{height:100%;min-height:0;box-sizing:border-box;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}body.g15 .side{padding-bottom:12px!important}body.g15 .board{width:58%!important;flex:0 0 58%;height:auto!important;max-height:100%}body.g15 .side{flex:1 1 42%;height:auto!important;max-height:100%}}
+
 </style>
 
 <div class="app">
