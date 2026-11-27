@@ -635,11 +635,12 @@ body.g15 .layout{align-items:stretch!important}
         <li><b>Battle</b>: every battle rolls the dice <i>once</i> per turn. Each unit hits on its attack value (or defense value, if it holds the land) or lower. Battles carry on turn after turn until one side is gone or pulls out.</li>
         <li><b>Deploy</b> new units at a factory, then collect income. A nation without its capital earns nothing.</li>
         <li data-adv><b>Infrastructure</b> replaces buying units: every switched-on infrastructure line builds one unit of its type in its territory each turn while your PP last (cheapest work first, in map order). Switch lines off to save PP, buy new lines, and capture the enemy’s.</li>
-        <li data-adv><b>Officers</b> fight with the units around them. A major raises the number 3 units hit on by 1 (an attack of 1 becomes 2). A colonel adds 1 more for the units of up to 3 majors, and a general 1 more for the units of up to 3 colonels.</li>
+        <li data-adv data-off><b>Officers</b> fight with the units around them. A major raises the number 3 units hit on by 1 (an attack of 1 becomes 2). A colonel adds 1 more for the units of up to 3 majors, and a general 1 more for the units of up to 3 colonels.</li>
         <li data-adv><b>Air war</b> comes before each ground battle. Fighters only fight planes. AA guns fire up to 3 shots each at enemy planes and hit on a 1. Bombers that get through hit either the troops or the infrastructure there, then fly home; they never join the ground battle.</li>
         <li data-fig hidden><b>Up close</b>: zoom in past 200% (the + button, Ctrl + scroll or the + key) and the unit counts turn into the units themselves, one figure per unit. Tap a row of figures to pick those units up, just like a unit icon.</li>
-        <li data-fig hidden><b>Five kinds of infrastructure</b>: infantry, artillery (artillery or AA guns), armor (light, medium or heavy), plane (fighters, bombers or recon planes) and officer (majors). In a territory’s window, pick what each kind builds there. Switching costs 75% of a new line’s price for each line switched, and while a switch is in progress nothing in that territory is built that turn. A territory holds only as many lines as its income value, and every nation starts with only a few lines.</li>
-        <li data-fig hidden><b>Officers</b> in this game can’t be bought. Officer infrastructure lines build majors. Promote a major to colonel (3 PP) or a colonel to general (4 PP) in the window of the territory where it stands.</li>
+        <li data-batonly hidden><b>Four kinds of infrastructure</b>: infantry, artillery (artillery or AA guns), armor (light, medium or heavy) and plane (fighters, bombers or recon planes).</li>
+        <li data-fig data-off hidden><b>Five kinds of infrastructure</b>: infantry, artillery (artillery or AA guns), armor (light, medium or heavy), plane (fighters, bombers or recon planes) and officer (majors). In a territory’s window, pick what each kind builds there. Switching costs 75% of a new line’s price for each line switched, and while a switch is in progress nothing in that territory is built that turn. A territory holds only as many lines as its income value, and every nation starts with only a few lines.</li>
+        <li data-fig data-off hidden><b>Officers</b> in this game can’t be bought. Officer infrastructure lines build majors. Promote a major to colonel (3 PP) or a colonel to general (4 PP) in the window of the territory where it stands.</li>
         <li data-fig hidden><b>Handling units</b>: click a unit to pick up all of that kind, click again to drop one, right-click to put them down. Units that already have orders sit on yellow dashes; click them to change the order, right-click to cancel it. Click an arrow to change how many units it carries. The mouse wheel zooms. Battles are striped in the attacker’s colour and each side is labelled, and units lost last turn stay on the map, greyed out, for one turn.</li>
         <li data-adv><b>Fog of war</b>: you only see enemy units next to your own land and troops. Recon planes see 2 territories around them, and a recon flight shows you its target for the next turn.</li>
         <li id="navalRule"><b>At sea</b>: ships stay in sea zones and are built at a port (a factory on the coast). A transport that stays put lets 2 land units a turn cross its sea zone to any shore it touches, unless enemy warships are there. Fighters fly over water but can’t stop on it.</li>
@@ -1152,8 +1153,9 @@ MAPS[6]={...MAPS[5],name:'IRON MERIDIAN 6',sub:'The war up close',figs:true,zmax
   // balance: scattered infrastructure favours the Concord, so its capitals start with fewer extra troops than in game 5
   terr:MAPS[4].terr.map(d=>d[6].includes('cap')?[...d.slice(0,7),d[7]+' aag1 rcn1 bmb1 maj1'+({A:' inf5 tnk1',S:' inf5 tnk1'}[d[5]]||'')]:d),
   blurb:'Game 5 with a closer look: zoom in past 200% and every soldier, gun, tank, plane and officer stands on the map as its own figure. 25 turns.'};
-MAPS[8]={...MAPS[6],name:'IRON MERIDIAN 8',sub:'Battalions, officers, support',bat:true,
-  blurb:'Every fight is a battalion battle: 🪖 soldiers and ❤️ morale, 10 secret orders (⚔️ › 🔀 › 🛡️ › ⚔️), officers with perks, ✈️💣🪖 support. Rounds until one side breaks. Solo or online. 25 turns.'};
+MAPS[8]={...MAPS[6],name:'IRON MERIDIAN 8',sub:'Battalion combat',bat:true,
+  terr:MAPS[6].terr.map(d=>[...d.slice(0,7),d[7].replace(/ ?maj1/,'')]), // no officers in game 8
+  blurb:'Every fight is a battalion battle: 🪖 soldiers and ❤️ morale, 6 combat orders in 3 families (⚔️ › 🔀 › 🛡️ › ⚔️) and 4 supporting orders, picked in secret each turn. Solo or online. 25 turns.'};
 // IRON MERIDIAN 6 demo: four capitals, set up any battle you like and give both alliances' orders
 MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territories',demo:true,W:800,H:520,maxr:99,minw:600,zs:1,zmax:6,xinf:{},land:null,proj:null,wrap:false,
   opening:'Demo: place units for either side, then give both alliances their orders.',
@@ -1164,7 +1166,7 @@ MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territorie
 MAPS[9]={...MAPS[7],name:'IRON MERIDIAN 8 · Demo',bat:true,blurb:'The 4-territory sandbox with game 8 battalion combat. Set up any battle and try every order.'};
 let V=0,TERR=[],L=0,LAND=0,SEA=[],ADJ=[],MAP=null;
 function loadVariant(v){
-  V=v;const M=MAPS[v],P=M.proj||(p=>p);PROD=M.figs?['inf','art','tnk','ftr','maj']:['inf','art','tnk','aag','ftr','bmb','rcn'];UNITS.tnk.name=M.figs?'Medium armor':'Armor';W=M.W;H=M.H;BW=Math.round(W*RES);BH=Math.round(H*RES);MAXR=M.maxr;SEA=M.sea||[];
+  V=v;const M=MAPS[v],P=M.proj||(p=>p);PROD=M.figs?(M.bat?['inf','art','tnk','ftr']:['inf','art','tnk','ftr','maj']):['inf','art','tnk','aag','ftr','bmb','rcn'];UNITS.tnk.name=M.figs?'Medium armor':'Armor';W=M.W;H=M.H;BW=Math.round(W*RES);BH=Math.round(H*RES);MAXR=M.maxr;SEA=M.sea||[];
   TERR=M.terr.map((d,i)=>({i,id:d[0],name:d[1],x:P([d[2],d[3]])[0],y:P([d[2],d[3]])[1],val:d[4],owner0:d[5],cap:d[6].includes('cap'),fac:d[6].includes('fac'),sea:d[6].includes('sea'),units0:d[7],at:d[8]?P(d[8]):null}));
   L=TERR.length;LAND=TERR.filter(t=>!t.sea).length;MAP=null;ADJ=TERR.map(()=>[]);}
 function buildMap(){
@@ -1411,7 +1413,7 @@ const warship=t=>UNITS[t].sea&&UNITS[t].atk>0;
 const shipyard=(n,fac)=>coasts(fac).length?fac:(factories(n).find(f=>coasts(f).length)??null);
 const cost=p=>ORDER.reduce((s,k)=>s+p[k]*UNITS[k].cost,0);
 const count=p=>ORDER.reduce((s,k)=>s+p[k],0);
-const mkUnit=(t,o)=>{const u={t,o,ord:-1,fr:-1};if(UNITS[t]&&UNITS[t].off)u.pk=['ra','am','bb','wd'][Math.floor(Math.random()*4)];return u;};
+const mkUnit=(t,o)=>({t,o,ord:-1,fr:-1});
 function parseUnits(s,o){const out=[];if(s.includes(':')){[o,s]=s.split(':');}s.split(' ').filter(Boolean).forEach(tok=>{const t=tok.slice(0,3),c=+tok.slice(3);for(let k=0;k<c;k++)out.push(mkUnit(t,o));});return out;}
 // land is hostile if someone else owns it or enemy troops stand on it; a sea zone only if enemy ships are in it
 function hostile(i,a){const t=G.t[i];if(!isSea(i)&&al(t.owner)!==a)return true;return t.units.some(u=>al(u.o)!==a&&grounded(u));}
@@ -1505,7 +1507,7 @@ function settle(i){
   if(present.length!==1||isSea(i))return null;
   const s=present[0];if(s===al(t.owner)||s==='N')return null;
   const land=t.units.filter(u=>!UNITS[u.t].air&&!UNITS[u.t].nc);
-  if(adv()&&!land.length){t.units.filter(grounded).forEach(u=>sendHome(u,i));return `Officers and AA guns can’t take ${TERR[i].name} on their own and fall back.`;}
+  if(adv()&&!land.length){t.units.filter(grounded).forEach(u=>sendHome(u,i));return `${bat()?'AA guns':'Officers and AA guns'} can’t take ${TERR[i].name} on their own and fall back.`;}
   if(land.length){const c={};land.forEach(u=>c[u.o]=(c[u.o]||0)+1);
     const n=Object.keys(c).sort((x,y)=>c[y]-c[x])[0],prev=t.owner,to=capture(i,n);
     return `${NAT[n].short} takes ${TERR[i].name}${prev!=='N'?` from ${NAT[prev].short}`:''}${to!==n?` and returns it to ${NAT[to].short}`:''}.`;}
@@ -1650,7 +1652,7 @@ function newGame(mode){
   // IRON MERIDIAN 5: the old factory sites start with infrastructure (ib: built, io: switched on)
   if(adv())G.t.forEach((t,i)=>{if(isSea(i))return;const T=TERR[i];t.ib=Object.fromEntries(PROD.map(k=>[k,0]));
     if(T.fac)Object.assign(t.ib,MAPS[V].figs?(T.cap?{inf:2,art:1,tnk:1,ftr:1}:{inf:1,art:1}):T.cap?{inf:4,art:2,tnk:2,ftr:1}:{inf:3,art:1});
-    if(MAPS[V].figs&&T.cap)t.ib.maj=1; // every capital starts with an officer line
+    if(MAPS[V].figs&&!MAPS[V].bat&&T.cap)t.ib.maj=1; // every capital starts with an officer line
     if(MAPS[V].figs)t.it={};
     const x=T.cap&&(MAPS[V].xinf||{})[T.owner0];if(x)for(const k in x)t.ib[k]+=x[k]; // per-nation balance
     t.io={...t.ib};});
@@ -1781,7 +1783,7 @@ function gameOver(a,why){
 }
 function chipsHTML(g){return Object.keys(g).map(o=>ORDER.filter(k=>g[o][k]).map(k=>`<span class="chip" style="background:${rgb(NAT[o].rgb,.62)}">${svg(k)}${g[o][k]}</span>`).join('')).join('');}
 function repBat(f){const h=f.hist||[];return `<div class="rep"><div class="rep-h"><b>${esc(TERR[f.i].name)}</b><span class="${f.ongoing?'tag live':'tag'}">${f.ongoing?'🔁':'🏁'} ${h.length}R</span></div>
-  ${f.keys.map(k=>`<div class="rep-side" style="--nc:${rgb(ALRGB[k])}"><div class="k">${k===f.own?'⛨':'⚔'} ${ALLY[k]} · 🪖${(f.s0||{})[k]||0}→${(f.sa||{})[k]||0} · ❤️${(f.m0||{})[k]||0}→${(f.ma||{})[k]||0}%${(f.offL||{})[k]?' · 🎖️❌':''}</div><div class="mini">${chipsHTML((f.before||{})[k]||{})}</div>
+  ${f.keys.map(k=>`<div class="rep-side" style="--nc:${rgb(ALRGB[k])}"><div class="k">${k===f.own?'⛨':'⚔'} ${ALLY[k]} · 🪖${(f.s0||{})[k]||0}→${(f.sa||{})[k]||0} · ❤️${(f.m0||{})[k]||0}→${(f.ma||{})[k]||0}%</div><div class="mini">${chipsHTML((f.before||{})[k]||{})}</div>
     <div class="rhist">${h.map(x=>x.O&&x.O[k]?`<span class="rh" style="--fc:${FAMC[BO[x.O[k]].f]}" data-tell="${BO[x.O[k]].i} ${BO[x.O[k]].n} · ${OUT[(x.out||{})[k]||'even'].n}">${BO[x.O[k]].i}<i class="${OUT[(x.out||{})[k]||'even'].c}">${OUT[(x.out||{})[k]||'even'].a}</i></span>`:'').join('')}</div></div>`).join('')}
   <p class="blog">${esc(f.result||'')}</p></div>`;}
 function showReport(rep){
@@ -1983,7 +1985,7 @@ function aiEconomy(n,a,p,tr,th,dist,f){
     const want={maj:Math.floor(army/6),col:Math.floor(has('maj')/3),gen:Math.floor(has('col')/3)};
     for(const k of ['gen','col','maj'])if(has(k)<want[k]&&tr>=UNITS[k].cost+cap()*0.6&&Math.random()<0.7){p[k]++;tr-=UNITS[k].cost;break;}}
   // new lines when production can't use the PP coming in
-  const inc=income(n),mix=MAPS[V].figs?[['inf',36],['art',22],['tnk',24],['ftr',13],['maj',5]]:[['inf',36],['art',20],['tnk',22],['aag',5],['ftr',7],['bmb',6],['rcn',4]];
+  const inc=income(n),mix=MAPS[V].figs?[['inf',36],['art',22],['tnk',24],['ftr',13]].concat(MAPS[V].bat?[]:[['maj',5]]):[['inf',36],['art',20],['tnk',22],['aag',5],['ftr',7],['bmb',6],['rcn',4]];
   if(MAPS[V].figs){const pick=w=>{let r=Math.random()*w.reduce((s,x)=>s+x[1],0);for(const [x,v] of w)if((r-=v)<0)return x;return w[0][0];};
     own.forEach(i=>{const t=G.t[i];if(t.aiSet||!infraOf(i))return;t.aiSet=1;t.it=t.it||{};
       for(const [k,w] of [['art',[['art',80],['aag',20]]],['tnk',[['ltk',25],['tnk',50],['htk',25]]],['ftr',[['ftr',50],['bmb',35],['rcn',15]]]]){const r=setLine(t,k,pick(w));if(r>0)tr-=r;}});}
@@ -2397,8 +2399,8 @@ function prodCard(){
     const made=ORDER.filter(k=>p.made[k]).map(k=>`<span class="chip" style="background:${rgb(NAT[n].rgb,.62)}">${svg(k)}${p.made[k]}</span>`).join('');
     const zones=G.t.map((t,i)=>i).filter(i=>G.t[i].owner===n&&infraOf(i)>0);
     return `<div class="nbuy" style="--nc:${rgb(NAT[n].rgb)}"><div class="nbuy-h"><span class="dot"></span><b>${esc(NAT[n].short)}</b><span class="spacer"></span><span class="v">${MAPS[V].figs?'':tr-sp+' PP'}</span></div>${MAPS[V].figs?ppSum(n):''}
-      <div class="plan">This turn: ${made?`<div class="mini" style="margin:4px 0">${made}</div>`:'<b>nothing</b> · '}<b>${p.spent} PP</b> spent, <b>${p.left} PP</b> saved${p.short?`<br><span class="warn">${p.short} line${p.short>1?'s':''} will stand idle for lack of PP.</span>`:''}${p.retool?`<br><span class="warn">${p.retool} line${p.retool>1?'s':''} idle while their territory switches production.</span>`:''}${sp?`<br>${sp} PP already set aside for officers and new lines.`:''}</div>`+
-      (MAPS[V].figs?'<p class="sub" style="margin:8px 0 0">Officers can’t be bought: officer lines build majors. Promote a major to colonel, or a colonel to general, in the window of the territory where they stand.</p>':      ['maj','col','gen'].map(k=>{const U=UNITS[k],what={maj:'+1 for 3 units',col:'+1 for 3 majors’ units',gen:'+1 for 3 colonels’ units'}[k];
+      <div class="plan">This turn: ${made?`<div class="mini" style="margin:4px 0">${made}</div>`:'<b>nothing</b> · '}<b>${p.spent} PP</b> spent, <b>${p.left} PP</b> saved${p.short?`<br><span class="warn">${p.short} line${p.short>1?'s':''} will stand idle for lack of PP.</span>`:''}${p.retool?`<br><span class="warn">${p.retool} line${p.retool>1?'s':''} idle while their territory switches production.</span>`:''}${sp?`<br>${sp} PP already set aside for ${MAPS[V].bat?'':'officers and '}new lines.`:''}</div>`+
+      (MAPS[V].figs?MAPS[V].bat?'':'<p class="sub" style="margin:8px 0 0">Officers can’t be bought: officer lines build majors. Promote a major to colonel, or a colonel to general, in the window of the territory where they stand.</p>':      ['maj','col','gen'].map(k=>{const U=UNITS[k],what={maj:'+1 for 3 units',col:'+1 for 3 majors’ units',gen:'+1 for 3 colonels’ units'}[k];
         return `<div class="urow"><span class="uic">${svg(k)}</span><div class="uinfo"><b>${U.name}</b><span>${what} · Move ${U.mv}</span></div><span class="cost">${U.cost}</span>${stepper('buy',n+':'+k,o.buy[k],o.buy[k]>0,f.length&&sp+U.cost<=tr,U.name)}</div>`;}).join('')+
       (f.length?`<label class="fac">Officers report to <select data-fac="${n}" id="fac-${n}">${f.map(i=>`<option value="${i}" ${i===o.fac?'selected':''}>${esc(TERR[i].name)}</option>`).join('')}</select></label>`:'<p class="sub">No infrastructure left to take in officers.</p>'))+
       `<div class="olh">Infrastructure (${zones.length} territor${zones.length===1?'y':'ies'})</div><ul class="zl5">${zones.map(i=>{const t=G.t[i],on=PROD.reduce((s,k)=>s+t.io[k],0),all=infraOf(i);
@@ -2433,7 +2435,7 @@ function demoHTML(i){if(!MAPS[V].demo||!G.planner||G.busy)return '';
   const pn=G.ui.pn||TURN.find(n=>NAT[n].al===G.planner),us=G.t[i].units,tag=n=>`<span class="dot" style="background:${rgb(NAT[n].rgb)}"></span>${esc(NAT[n].short)}`;
   return `<div class="olh">Demo · place units</div><p class="sub" style="margin:0 0 6px">Pick a nation, then add or take away its units here. Both alliances’ units in one territory fight when the turn plays out.</p>
     <div class="dmrow">${TURN.map(n=>`<button class="btn small ${n===pn?'on':''}" data-act="dpn" data-arg="${n}" aria-pressed="${n===pn}">${tag(n)}</button>`).join('')}</div>`+
-    DEMOU.map(k=>{const c=us.filter(u=>u.o===pn&&u.t===k).length;
+    DEMOU.filter(k=>!(bat()&&UNITS[k].off)).map(k=>{const c=us.filter(u=>u.o===pn&&u.t===k).length;
       return `<div class="irow"><span class="uic">${svg(k)}</span><div class="uinfo"><b>${UNITS[k].name}</b><span>${esc(NAT[pn].short)} · ${ALLY[NAT[pn].al]}</span></div>${stepper('dpu',i+':'+k,c,c>0,c<60,UNITS[k].name)}<span></span></div>`;}).join('')+
     `<div class="olh">Demo · owner and PP</div><div class="dmrow">${TURN.map(n=>`<button class="btn small ${G.t[i].owner===n?'on':''}" data-act="down" data-arg="${i}:${n}" aria-pressed="${G.t[i].owner===n}" title="Hand ${esc(TERR[i].name)} to ${esc(NAT[n].short)}">${tag(n)}</button>`).join('')}</div>
     <div class="dmrow"><button class="btn small" data-act="dpp" data-arg="${pn}">+20 PP for ${esc(NAT[pn].short)}</button><span class="sub" style="align-self:center">${esc(NAT[pn].short)} has ${G.nat[pn].tr} PP</span></div>`;}
@@ -2500,7 +2502,7 @@ function renderPanel(){
   else if(!planning)hint.innerHTML=`<b>${{move:'Move',battle:'Battle',deploy:'Deploy'}[G.phase]||'Resolving'}</b>: orders from every nation are running.`;
   else if(G.ui.redir)hint.innerHTML=`Tap a <b>highlighted territory</b> to redirect the order from ${esc(TERR[G.ui.redir.from].name)}. Tap anywhere else to keep it.`;
   else if(G.ui.sel>=0)hint.innerHTML=`Tap a <b>highlighted territory</b> to send troops from ${esc(TERR[G.ui.sel].name)}. Tap it again to cancel the selection.`;
-  else if(adv())hint.innerHTML=`Tap a territory or a unit icon to move troops, planes and officers. Dimmed land is in fog. Tap your own territory to manage its infrastructure. Then press <b>Submit orders</b>. Zoom with + and −, or Ctrl + scroll; drag to pan.${MAPS[V].figs?' Zoom past 200% to see every unit.':''}`;
+  else if(adv())hint.innerHTML=`Tap a territory or a unit icon to move troops${bat()?' and planes':', planes and officers'}. Dimmed land is in fog. Tap your own territory to manage its infrastructure. Then press <b>Submit orders</b>. Zoom with + and −, or Ctrl + scroll; drag to pan.${MAPS[V].figs?' Zoom past 200% to see every unit.':''}`;
   else hint.innerHTML=`Tap a territory or a unit icon to move troops. Gold arrows are moves, red are attacks; tap one to change or cancel it. Then press <b>Submit orders</b>. Zoom with + and −, or Ctrl + scroll; drag to pan.`;
 }
 function refresh(){if(!G)return;G.vis=sight(viewer());renderBase();draw();renderPanel();netBadge();fxKick();}
@@ -2604,7 +2606,7 @@ function showMenu(){$('#battle').hidden=true;$('#setup').hidden=false;$('#pickGa
 function showModes(){const M=MAPS[V];$('#pickGame').hidden=true;$('#pickMode').hidden=false;
   $('#modeEyebrow').textContent=M.name;
   $('#modeIntro').textContent=`Two alliances split the map corner to corner. Take enemy capitals, plunder their treasuries, and hold the most land after ${MAXR} turns.`;
-  $('#navalRule').hidden=!M.naval;document.querySelectorAll('[data-adv]').forEach(e=>e.hidden=!M.adv);$('#optLogRow').hidden=!M.adv;document.querySelectorAll('[data-fig]').forEach(e=>e.hidden=!M.figs);$('#netHostBox').hidden=!!M.demo;const f=$('#pickMode [data-mode]');if(f)f.focus();}
+  $('#navalRule').hidden=!M.naval;document.querySelectorAll('[data-adv]').forEach(e=>e.hidden=!M.adv);$('#optLogRow').hidden=!M.adv;document.querySelectorAll('[data-fig]').forEach(e=>e.hidden=!M.figs);document.querySelectorAll('[data-off]').forEach(e=>{if(M.bat)e.hidden=true;});document.querySelectorAll('[data-batonly]').forEach(e=>e.hidden=!M.bat);$('#netHostBox').hidden=!!M.demo;const f=$('#pickMode [data-mode]');if(f)f.focus();}
 // swap in the other war's map; building it takes a moment
 function switchVariant(v,keep){
   loadVariant(v);buildMap();if(!(keep&&G&&G.mode))newGame(null);
@@ -2691,7 +2693,7 @@ document.querySelectorAll('[data-host]').forEach(b=>b.addEventListener('click',(
 $('#netJoinForm').addEventListener('submit',e=>{e.preventDefault();joinOnline($('#netCode').value);});
 /* ---------- help ---------- */
 function helpHTML(){
-  const M=MAPS[V]||{},A=!!M.adv,N=!!M.naval,FG=!!M.figs,MX=MAXR;
+  const M=MAPS[V]||{},A=!!M.adv,OF=!!M.adv&&!M.bat,N=!!M.naval,FG=!!M.figs,MX=MAXR;
   const notes={
     inf:'Cheap. Defends better than it attacks, so it is best for holding ground.',
     art:'Hits as hard as it defends.',
@@ -2708,16 +2710,16 @@ function helpHTML(){
     dst:'Warship. Stops enemy transports carrying troops across its sea zone.',
     bat:'The strongest warship.',
     trn:'Doesn’t fight. When it stays put, 2 land units a turn can cross its sea zone.'};
-  const keys=ORDER.filter(k=>(A||!UNITS[k].adv)&&(FG||!UNITS[k].fig)&&(N||!UNITS[k].sea));
+  const keys=ORDER.filter(k=>(A||!UNITS[k].adv)&&!(M.bat&&UNITS[k].off)&&(FG||!UNITS[k].fig)&&(N||!UNITS[k].sea));
   const unitRows=keys.map(k=>{const U=UNITS[k],nc=U.nc||(A&&U.air&&k!=='ftr')||U.atk+U.def===0;
     return `<tr><td><span class="uic">${svg(k)}</span><b>${U.name}</b></td><td class="n">${nc?'–':U.atk}</td><td class="n">${nc?'–':U.def}</td><td class="n">${U.mv}</td><td class="n">${U.cost}</td><td class="hide-s">${notes[k]||''}</td></tr>`;}).join('');
-  const toc=[['turn','A turn'],['start','How battles start'],['fight','How a battle is fought'],['units','Units'],A&&['air','Air war'],A&&['off','Officers'],['prod',A?'Infrastructure':'Buying units'],A&&['fog','Fog of war'],N&&['sea','At sea'],['win','Winning'],['ctl','Controls']].filter(Boolean);
+  const toc=[['turn','A turn'],['start','How battles start'],['fight','How a battle is fought'],['units','Units'],A&&['air','Air war'],OF&&['off','Officers'],['prod',A?'Infrastructure':'Buying units'],A&&['fog','Fog of war'],N&&['sea','At sea'],['win','Winning'],['ctl','Controls']].filter(Boolean);
   return `<div class="hhd"><button class="sb hx" id="helpX" aria-label="Close help">×</button><div class="eyebrow">${esc(M.name||'Iron Meridian')}</div><h2 id="helpTitle">How to play</h2>
     <nav class="toc">${toc.map(([id,t])=>`<button data-go="h-${id}">${t}</button>`).join('')}</nav></div>
   <div class="hbody">
   <section id="h-turn"><h3>A turn</h3>
     <p>Every nation gives its orders <b>at the same time</b>, and nobody sees anyone else’s orders. When you press <b>Submit orders</b> the turn plays out in order:</p>
-    <ol><li><b>Plan</b>: ${A?'buy officers and new infrastructure lines, switch lines on or off,':'buy new units,'} and order your moves.</li>
+    <ol><li><b>Plan</b>: ${A?(OF?'buy officers and new':'put up new')+' infrastructure lines, switch lines on or off,':'buy new units,'} and order your moves.</li>
       <li><b>Move</b>: every nation’s moves run together, one step at a time.</li>
       <li><b>${A?'Air war and battle':'Battle'}</b>: ${A?'the air war in each battle zone, then ':''}one round of dice in every battle.</li>
       <li><b>${A?'Produce':'Deploy'}</b>: ${A?'your infrastructure builds new units':'new units appear at your factory'}, then each nation that still holds its capital collects income.</li></ol>
@@ -2727,9 +2729,9 @@ function helpHTML(){
       <li>Armies march one territory at a time. A column that walks into a territory holding enemy troops <b>stops there</b> and fights, even if its order was to go further.</li>
       <li>If two enemy columns try to cross the same border in opposite directions, they <b>clash on the border</b> and roll one round of dice there.</li>${FG?`
       <li><b>Caught while leaving</b>: if your units leave a territory just as enemy units move in, the enemy catches any of your units that are slower than its fastest unit. They stay and fight there. Faster units get away.</li>`:''}
-      <li>Moving into empty enemy or neutral land with land units takes it without a fight. Only land units can take territory${A?'; officers and AA guns can’t take it on their own':''}.</li>
+      <li>Moving into empty enemy or neutral land with land units takes it without a fight. Only land units can take territory${A?(OF?'; officers and AA guns':'; AA guns')+' can’t take it on their own':''}.</li>
       <li>Because everyone moves at once, two attackers can arrive in the same place, and the land you leave can be attacked behind your back.</li></ul></section>
-  <section id="h-fight"><h3>How a battle is fought</h3>
+  <section id="h-fight"><h3>How a battle is fought</h3>${M.bat?`<p>A <b>battalion battle</b>, no dice: each turn both sides secretly pick an order card. See <b>Battalion battles</b>.</p><ul><li>The side that owns the territory defends. When only one side is left, it holds or takes the territory.</li><li>If two enemy columns try to cross the same border in opposite directions, they clash there with one round of dice.</li></ul>`:`
     <ul><li>Each turn every battle gets <b>one round</b> of dice. Each fighting unit rolls one six-sided die.</li>
       <li>The side that owns the territory is the <b>defender</b> and hits on its <b>defence</b> number or lower. The other side is the <b>attacker</b> and hits on its <b>attack</b> number or lower.${A?' Officers raise these numbers.':''}</li>
       <li>Both sides roll at the same time, so units that die still get to shoot this round.</li>
@@ -2738,7 +2740,7 @@ function helpHTML(){
       <li>When only the attacker is left, it takes the territory and everything in it${A?', including its infrastructure, which switches on for the new owner':''}.</li>
       ${A?'<li>A side with only officers and AA guns left is wiped out if the enemy still has fighting units.</li><li>A territory with a battle in it produces nothing.</li>':''}</ul>
     <div class="ex"><b>Example</b>: 3 armor attack 4 infantry. The armor hit on 3 or less (half the time), the infantry hit on 2 or less (a third of the time). On average the armor score 1.5 hits and the infantry 1.3, so both sides lose 1 or 2 units and the fight goes on next turn.</div>
-    ${FG?'<p>On the map, a battle is striped in the attacker’s colour, its label says who attacks, and each side’s units are marked <b>Attacking</b> or <b>Defending</b>.</p>':''}</section>
+    ${FG?'<p>On the map, a battle is striped in the attacker’s colour, its label says who attacks, and each side’s units are marked <b>Attacking</b> or <b>Defending</b>.</p>':''}`}</section>
   <section id="h-units"><h3>Units</h3>
     <p>Attack and defence are the numbers a unit hits on, rolling a six-sided die. Move is how many territories it goes per turn. Cost is in PP${A?' per unit built by an infrastructure line':''}.</p>
     <table><thead><tr><th>Unit</th><th class="n">Att</th><th class="n">Def</th><th class="n">Move</th><th class="n">Cost</th><th class="hide-s">Notes</th></tr></thead><tbody>${unitRows}</tbody></table></section>
@@ -2749,12 +2751,12 @@ function helpHTML(){
       <li><b>Bombers</b> that get through strike either the troops or the infrastructure. You choose which when you give the order.</li>
       <li><b>Recon planes</b> that survive light up that territory for next turn.</li>
       <li>Then all the planes fly home. Planes never fight in the ground battle.</li></ol></section>
-  <section id="h-off"><h3>Officers</h3>
+  ${OF?`<section id="h-off"><h3>Officers</h3>
     <p>${FG?'Officers can’t be bought. <b>Officer infrastructure lines</b> build a major each turn. To get higher ranks, click the territory where an officer stands and <b>promote</b> a major to colonel (3 PP) or a colonel to general (4 PP). You can undo a promotion in the same turn.':'Officers are bought on the Production card and report to one of your territories.'} They move like troops but never roll dice.</p>
     <ul><li>A <b>major</b> adds 1 to the number up to 3 units hit on: an attack of 1 becomes 2.</li>
       <li>A <b>colonel</b> adds 1 more for the units of up to 3 majors.</li>
       <li>A <b>general</b> adds 1 more for the units of up to 3 colonels.</li>
-      <li>Your strongest units get the bonus first, on attack and on defence. Nothing hits on more than 6. In the battle report, boosted dice have a gold ring.</li></ul></section>`:''}
+      <li>Your strongest units get the bonus first, on attack and on defence. Nothing hits on more than 6. In the battle report, boosted dice have a gold ring.</li></ul></section>`:''}</ul></section>`:''}
   <section id="h-prod"><h3>${A?'Infrastructure':'Buying units'}</h3>
     ${A?`<ul><li>Each infrastructure <b>line</b> builds one unit of its type in its territory every turn, as long as your PP last. Lines are worked in map order, and leftover PP are saved.</li>
 ${FG?`<li><b>Your PP</b> are shown in four parts above the map: <b class="pp-t">total</b> PP you have, PP <b class="pp-l">for lines</b> (what your switched-on lines will spend this turn), PP your income will <b class="pp-a">add to saved next turn</b>, and <b class="pp-s">current saved</b> PP (total minus lines). New lines, switching and promotions are paid from the saved PP. Switch a line off and its PP move to saved. If there isn’t enough for every line, random lines are switched off and shown in <b class="bad">red</b>; they come back on next turn if there is enough.</li>`:''}
@@ -2773,22 +2775,22 @@ ${FG?`<li><b>Your PP</b> are shown in four parts above the map: <b class="pp-t">
       <li>Land units can be sent <b>further than they move in a turn</b>: faintly highlighted territories take more than one turn. A dotted line shows the rest of the way and how many turns it takes. Each turn they march on by themselves; right-click them to stop.</li>
       <li>When a turn ends the next one starts by itself. The <b>Turn report</b> button above the map (gold when new) opens what happened.</li>
       <li>Clicking a territory or unit opens a side window next to the map with its details and your choices. Close it with × or Esc.</li>
-      <li>Infrastructure and officer promotions are changed only by clicking the <b>territory itself</b> (not a unit in it), or <b>Open</b> next to it in Production.</li>
+      <li>${M.bat?'Infrastructure is':'Infrastructure and officer promotions are'} changed only by clicking the <b>territory itself</b> (not a unit in it), or <b>Open</b> next to it in Production.</li>
       <li><b>Orders</b>, <b>Production</b>, <b>Powers</b> and <b>Dispatches</b> drop down from the buttons above the map.</li>
       <li>The <b>mouse wheel</b> zooms; drag to pan. Past 200% you see every unit as its own figure. Units lost last turn stay greyed out for one turn.</li>`
       :`<li>Click a territory or unit icon to pick up troops, set how many go, then click a highlighted territory. Gold arrows are moves, red are attacks; click one to change or cancel it.</li>
       <li>Zoom with + and −, or Ctrl + scroll; drag to pan.</li>`}
       <li><b>Undo</b> takes back your last order, and <b>Clear all</b> takes back every order. Nothing happens until you press <b>Submit orders</b>.</li></ul></section>
       ${M.bat?`<section><h3>Battalion battles</h3><ul>
-      <li>🪖 soldiers · ❤️ morale · 📦 supply. ❤️ 0 = the battalion breaks 💔 and runs; its officer is captured.</li>
-      <li>Each round both sides secretly pick a card. Up to ${RMAX} rounds a turn, until one side breaks, withdraws or is wiped.</li>
-      <li>⚔️ › 🔀 › 🛡️ › ⚔️ &nbsp; ▲ Advantage 125% 💀 150% 💔 · ＝ Even 100% · ▼ Disadvantage 75% 50% · ⏸ Stalemate (🛡️ vs 🛡️) 50%</li>
-      <li style="--fc:#d4573b">⚔️ Assault · 🔄 Counterattack (best on your land)</li><li>🛡️ Defend (readies 🎯) · 🎯 Ambush (needs ⏳ prep)</li><li>🔀 Maneuver (big 💔) · 💥 Bombard (uses 📦📦)</li>
-      <li>🚩 Rally +❤️ · 🏳️ Withdraw (🐎 can chase) · 🐎 Pursue (vs 🏳️ or shaken) · 🔧 Reorganize +📦 +❤️</li>
+      <li>🪖 soldiers · ❤️ morale · 📦 supply. ❤️ 0 = the battalion breaks 💔 and falls back.</li>
+      <li>Each turn both sides secretly pick one order and the result shows after the turn. The battle goes on while both stay, until one breaks, withdraws or is wiped.</li>
+      <li>⚔️ › 🔀 › 🛡️ › ⚔️ &nbsp; ▲ Advantage 125% 💀 150% 💔 · ＝ Even 100% · ▼ Disadvantage 75% 50% · ⏸ Stalemate (🛡️ vs 🛡️)</li>
+      <li>⚔️ Assault · 🔄 Counterattack · beat 🔀💥 · lose to 🛡️🎯</li><li>🛡️ Defend · 🎯 Ambush · beat ⚔️🔄 · lose to 🔀💥</li><li>🔀 Maneuver · 💥 Bombard · beat 🛡️🎯 · lose to ⚔️🔄</li>
+      <li>🎯 Ambush needs preparation: a 🛡️ Defend the turn before. 💥 Bombard needs ammunition 📦📦.</li>
+      <li>🚩 Rally +❤️, no attack · 🏳️ Withdraw: organized retreat · 🐎 Pursue: stops a retreat, best vs shaken foes · 🔧 Reorganize: +📦📦</li>
       <li>Card bars: 💀 soldier damage · 💔 morale damage · 🛡 protection · 📦 supply use</li>
-      <li>🎖️ Officers (Majors ★, Colonels ★★, Generals ★★★): 📯 Rally+ · 🦉 Ambush ready · 🧨 +📦 · 🐾 safer Withdraw</li>
-      <li>Support: ✈️ fighter cover · 💣 guns next door · 🪖 reserves next door. 📦 refills each turn, more on your land.</li>
-      <li>Tap anything to see what it is. ⚡ lets the staff pick the rest of the turn.</li></ul></section>`:''}
+      <li>✈ on the map shows fighter coverage. It is a map view only.</li>
+      <li>Tap anything to see what it is. ⚡ lets the staff pick for you.</ul></section>`:''}
       
   </div>`;}
 function openHelp(){const o=$('#help');$('#hdlg').innerHTML=helpHTML();o.hidden=false;$('#hdlg').scrollTop=0;$('#helpX').focus();}
@@ -2830,20 +2832,20 @@ window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-dra
 window.addEventListener('pointerup',()=>{drag=null;cv.classList.remove('panning');});
 cv.addEventListener('click',e=>{if(dragged){dragged=false;e.stopImmediatePropagation();}},true);
 
-/* ---------- IRON MERIDIAN 8: battalion combat · soldiers, morale, 10 orders, officers, support ---------- */
+/* ---------- IRON MERIDIAN 8: battalion combat, only what the design chat describes: soldiers, morale, 6+4 orders, 3 families ---------- */
 const bat=()=>!!(MAPS[V]&&MAPS[V].bat);
 // c casualty damage, mo morale damage, p protection, su supply use (1-5 ratings, shown as bars on the cards)
 const BO={
   as:{i:'⚔️',f:'A',n:'Assault',c:4,mo:3,p:1,su:3,t:'Overwhelm them'},
-  ca:{i:'🔄',f:'A',n:'Counterattack',c:3,mo:4,p:2,su:3,t:'Hit back · best on your land'},
+  ca:{i:'🔄',f:'A',n:'Counterattack',c:3,mo:4,p:2,su:3,t:'Hit back'},
   df:{i:'🛡️',f:'D',n:'Defend',c:2,mo:1,p:5,su:1,t:'Dig in · readies 🎯'},
   am:{i:'🎯',f:'D',n:'Ambush',c:5,mo:5,p:3,su:3,t:'Deadly trap · needs ⏳ prep'},
   mv:{i:'🔀',f:'M',n:'Maneuver',c:2,mo:5,p:3,su:3,t:'Outflank · big ❤️ hits'},
   bb:{i:'💥',f:'M',n:'Bombard',c:4,mo:3,p:4,su:5,t:'Shell them · uses 📦📦'},
   ra:{i:'🚩',f:'S',n:'Rally',c:0,mo:0,p:2,su:1,t:'+❤️ morale · no attack'},
-  wd:{i:'🏳️',f:'S',n:'Withdraw',c:0,mo:0,p:3,su:1,t:'Retreat · 🐎 can chase you'},
-  pu:{i:'🐎',f:'S',n:'Pursue',c:3,mo:3,p:1,su:3,t:'Crush fleeing or shaken foes'},
-  ro:{i:'🔧',f:'S',n:'Reorganize',c:1,mo:0,p:3,su:1,t:'+📦 +❤️ · some 🪖 back · readies 🎯'}};
+  wd:{i:'🏳️',f:'S',n:'Withdraw',c:0,mo:0,p:3,su:1,t:'Organized retreat · 🐎 Pursue stops it'},
+  pu:{i:'🐎',f:'S',n:'Pursue',c:3,mo:3,p:1,su:3,t:'Stops a retreat · crushes shaken foes'},
+  ro:{i:'🔧',f:'S',n:'Reorganize',c:1,mo:0,p:3,su:1,t:'Regroup · +📦📦 supply back'}};
 const BOK=Object.keys(BO),PRI=['as','ca','df','am','mv','bb'],SUPO=['ra','wd','pu','ro'];
 const FAMC={A:'#d4573b',D:'#4f8fd8',M:'#6cae5e',S:'#8d958f'},FAMI={A:'⚔️',D:'🛡️',M:'🔀',S:'🚩'},BEATS={A:'M',D:'A',M:'D'},LOSES={A:'D',D:'M',M:'A'};
 const SUC={as:1,ca:1,df:0,am:1,mv:1,bb:2,ra:0,wd:0,pu:1,ro:0};
@@ -2851,40 +2853,25 @@ const OUT={adv:{d:1.25,m:1.5,n:'Advantage',a:'▲',c:'up'},even:{d:1,m:1,n:'Even
 function outOf(a,b){const fa=BO[a].f,fb=BO[b].f;if(fa==='S'||fb==='S')return 'even';if(fa===fb)return fa==='D'?'stal':'even';return BEATS[fa]===fb?'adv':'dis';}
 const SOLD={inf:100,ltk:100,art:80,tnk:120,htk:150,ftr:40,bmb:40,dst:150,bat:250,trn:0};
 const solOf=u=>combat(u.t)?(SOLD[u.t]==null?100:SOLD[u.t]):0;
-// officers: each major/colonel/general carries one perk; the highest rank leads the battalion
-const OFFP={ra:{i:'📯',n:'Rallier',t:'🚩 Rally +15 ❤️'},am:{i:'🦉',n:'Ambusher',t:'🎯 Ambush always ready'},bb:{i:'🧨',n:'Gunner',t:'+2 📦 · 💥 uses only 1'},wd:{i:'🐾',n:'Pathfinder',t:'🏳️ Withdraw takes half'}};
-const PKS=Object.keys(OFFP),RANK={maj:1,col:2,gen:3},RSTAR={1:'★',2:'★★',3:'★★★'};
-const RMAX=5; // rounds of fighting per turn; a battle that is still going carries on next turn
+const RMAX=1; // the design: one order each per turn, the result after each turn, and the battle goes on while both stay
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const batOwn=i=>isSea(i)?null:al(G.t[i].owner);
 const batSides=i=>[...new Set(G.t[i].units.filter(grounded).map(u=>al(u.o)))];
 const batUnits=(i,k)=>G.t[i].units.filter(u=>al(u.o)===k&&grounded(u));
 function tgtOf(k,keys,own){const o=keys.filter(x=>x!==k);return k!==own&&o.includes(own)?own:o[0];}
-function leader(i,k){const os=G.t[i].units.filter(u=>al(u.o)===k&&UNITS[u.t].off);if(!os.length)return null;
-  os.sort((a,b)=>RANK[b.t]-RANK[a.t]);const u=os[0];if(!OFFP[u.pk])u.pk=PKS[Math.floor(Math.random()*PKS.length)];return u;}
-const perk=(i,k,p)=>{const u=leader(i,k);return u&&u.pk===p?RANK[u.t]:0;};
 const soldiers=(i,k)=>Math.max(0,batUnits(i,k).reduce((s,u)=>s+solOf(u),0)-((G.bt&&G.bt[i]&&G.bt[i][k])?G.bt[i][k].pool:0));
-// support from next door: fighters overhead, artillery and reserves in friendly land around the battle
-function supOf(i,k){const r={ftr:0,art:0,res:0};if(isSea(i))return r;
-  const mine=j=>!isSea(j)&&al(G.t[j].owner)===k&&!contested(j);
-  if(G.t[i].units.some(u=>u.t==='ftr'&&al(u.o)===k))r.ftr=1;
-  ADJ[i].forEach(j=>{if(!mine(j))return;const us=G.t[j].units.filter(u=>al(u.o)===k);
-    if(us.some(u=>u.t==='ftr'))r.ftr=1;r.art+=us.filter(u=>u.t==='art').length;r.res+=us.filter(u=>combat(u.t)&&u.t!=='art'&&!UNITS[u.t].air).length;});
-  r.art=Math.min(2,r.art);r.res=r.res>=2?1:0;return r;}
-const SUPI={ftr:{i:'✈️',t:'Fighter cover · +10% hits · −20% ❤️ loss'},art:{i:'💣',t:'Guns next door · +10% hits each'},res:{i:'🪖',t:'Reserves next door · +3 ❤️ a round'}};
 // per-battle state of each battalion
 function bst(i,k){G.bt=G.bt||{};const b=G.bt[i]=G.bt[i]||{};
-  if(!b[k]){const gun=batUnits(i,k).filter(u=>u.t==='art').length;
-    b[k]={m:100,sp:Math.min(6,3+Math.min(2,gun)+(perk(i,k,'bb')?2:0)),pr:k===batOwn(i)?1:0,pool:0,s0:0,lo:null,ls:0};
+  if(!b[k]){b[k]={m:100,sp:4,pr:0,pool:0,s0:0,lo:null,ls:0};
     b[k].s0=soldiers(i,k);}
   return b[k];}
-function boLock(o,i,k){const s=bst(i,k);if(o==='bb'&&s.sp<(perk(i,k,'bb')?1:2))return '🪫';if(o==='am'&&!s.pr&&!perk(i,k,'am'))return '⏳';if(o==='wd'&&k==='N')return '🚫';return '';}
+function boLock(o,i,k){const s=bst(i,k);if(o==='bb'&&s.sp<SUC.bb)return '🪫';if(o==='am'&&!s.pr)return '⏳';if(o==='wd'&&k==='N')return '🚫';return '';}
 const sidePow=(i,k)=>power(batUnits(i,k).map(u=>u.t),k!==batOwn(i))+0.5;
 // the AI: weighted random that reacts to morale, supply, the odds and what the enemy did last round
 function aiBO(i,k,e){const s=bst(i,k),es=e!=null?bst(i,e):{m:100,lo:null},own=batOwn(i),r=e!=null?sidePow(i,k)/sidePow(i,e):2;
   const w={as:3+(r>1.4?2:0),ca:k===own?3:1.5,df:3+(r<0.8?2:0),am:4,mv:3,bb:3,
     ra:s.m<35?5:s.m<60?1.5:0.15,wd:k==='N'?0:(s.m<25&&r<0.9?5:s.m<45&&r<0.5?2:0.05),
-    pu:es.lo==='wd'||es.m<30?5:0.3,ro:s.sp<=1||!s.pr?1.4:0.3};
+    pu:es.lo==='wd'||es.m<30?5:0.3,ro:s.sp<=1?1.4:0.3};
   if(es.lo&&BO[es.lo].f!=='S'){const fam=LOSES[BO[es.lo].f];PRI.forEach(o=>{if(BO[o].f===fam)w[o]*=1.7;});} // guess they repeat
   BOK.forEach(o=>{if(boLock(o,i,k))w[o]=0;});
   let x=Math.random()*BOK.reduce((t,o)=>t+w[o],0);for(const o of BOK)if((x-=w[o])<0)return o;return 'df';}
@@ -2895,43 +2882,39 @@ function bleed(i,k,s){const t=G.t[i];let n=0;
   if(!batUnits(i,k).some(u=>solOf(u)>0)){const rest=batUnits(i,k);n+=rest.length;t.units=t.units.filter(u=>!rest.includes(u));s.pool=0;}
   return n;}
 // one round of battalion combat in territory i with the given orders
-function batRound(i,O,rd){const own=batOwn(i),keys=batSides(i).sort((x,y)=>(x===own)-(y===own)),tg={},S={},sup={},off={};
-  keys.forEach(k=>{S[k]=bst(i,k);sup[k]=supOf(i,k);const u=leader(i,k);off[k]=u?{pk:u.pk,r:RANK[u.t]}:null;tg[k]=tgtOf(k,keys,own);});
+function batRound(i,O,rd){const own=batOwn(i),keys=batSides(i).sort((x,y)=>(x===own)-(y===own)),tg={},S={};
+  keys.forEach(k=>{S[k]=bst(i,k);tg[k]=tgtOf(k,keys,own);});
   keys.forEach(k=>{if(!O[k]||!BO[O[k]]||boLock(O[k],i,k))O[k]=aiBO(i,k,tg[k]);});
   const sb={},mb={},pw={},out={},dmg={},mdm={},before={},lostU={};
   keys.forEach(k=>{sb[k]=soldiers(i,k);mb[k]=S[k].m;pw[k]=sidePow(i,k);dmg[k]=0;mdm[k]=0;before[k]=byNation(batUnits(i,k));});
   keys.forEach(k=>{const e=tg[k];if(e==null)return;const o=O[k],eo=O[e],b=BO[o],oc=out[k]=outOf(o,eo);
     let d=b.c/3*OUT[oc].d,m=b.mo/3*OUT[oc].m;
-    if(o==='ca'&&k===own)d*=1.25;
-    if(o==='pu'){if(eo==='wd'){d*=2;m*=1.5;}else if(S[e].m<30){d*=1.5;m*=1.5;}else{d*=.7;m*=.7;}}
-    if(SUC[o]>0&&S[k].sp<=0)d*=.6;
-    if(sup[k].ftr){d*=1.1;m*=1.1;}d*=1+.1*sup[k].art;
-    let prot=1.25-BO[eo].p*.1;if(eo==='wd'){prot=o==='pu'?1:.5;if(perk(i,e,'wd'))prot*=.5;}
+    if(o==='pu'){if(eo==='wd'||S[e].m<30){d*=1.5;m*=1.5;}else{d*=.75;m*=.75;}} // Pursue: most effective against withdrawing or broken battalions
+    if(SUC[o]>0&&S[k].sp<=0)d*=.6; // out of supply
+    let prot=1.25-BO[eo].p*.1;if(eo==='wd'&&o!=='pu')prot=.5; // an organized retreat, unless pursued
     dmg[e]+=Math.round(pw[k]*7*d*prot*rnd(.85,1.15));
-    if(m>0){let mm=16*m*Math.sqrt(clamp(pw[k]/pw[e],.5,2))*rnd(.85,1.15);if(sup[e].ftr)mm*=.8;if(sup[e].res)mm*=.9;mdm[e]+=mm;}});
-  const res={},offL={},gain={};
+    if(m>0)mdm[e]+=16*m*Math.sqrt(clamp(pw[k]/pw[e],.5,2))*rnd(.85,1.15);});
+  const res={},gain={};
   keys.forEach(k=>{const s=S[k],o=O[k];dmg[k]=Math.min(dmg[k],sb[k]);
     mdm[k]=Math.round(mdm[k]+50*dmg[k]/Math.max(1,sb[k]));
-    let g=sup[k].res?3:0;if(o==='ra')g+=20+15*perk(i,k,'ra');if(o==='ro'){g+=8;s.sp=Math.min(6,s.sp+2);s.pr=1;s.pool=Math.max(0,s.pool-Math.round(.08*s.s0));}
+    let g=0;if(o==='ra')g=20;if(o==='ro')s.sp=Math.min(6,s.sp+2);
     gain[k]=g;s.m=Math.round(clamp(s.m-mdm[k]+g,0,100));
-    s.sp=Math.max(0,s.sp-(o==='bb'&&perk(i,k,'bb')?1:SUC[o]));if(o==='df')s.pr=1;if(o==='am')s.pr=0;s.lo=o;
+    s.sp=Math.max(0,s.sp-SUC[o]);s.pr=o==='df'?1:0;s.lo=o; // Ambush needs the preparation of a Defend the turn before
     s.pool+=dmg[k];s.ls+=dmg[k];lostU[k]=bleed(i,k,s);});
   const sa={},ma={},go=[];
   keys.forEach(k=>{const s=S[k],left=batUnits(i,k);ma[k]=s.m;
     if(!left.length){res[k]='wp';sa[k]=0;return;}
-    if(s.m<=0){res[k]='br';s.pool+=Math.round(.15*soldiers(i,k));lostU[k]+=bleed(i,k,s);
-      const u=leader(i,k);if(u&&G.t[i].units.includes(u)){G.t[i].units.splice(G.t[i].units.indexOf(u),1);offL[k]=1;lostU[k]++;}
-      sa[k]=soldiers(i,k);go.push(...batUnits(i,k));return;}
-    sa[k]=soldiers(i,k);if(O[k]==='wd'){res[k]='wd';go.push(...left);}});
+    if(s.m<=0){res[k]='br';sa[k]=soldiers(i,k);go.push(...batUnits(i,k));return;}
+    sa[k]=soldiers(i,k);if(O[k]==='wd'&&O[tg[k]]!=='pu'){res[k]='wd';go.push(...left);}else if(O[k]==='wd')res[k]='st';});
   go.forEach(u=>{if(G.t[i].units.includes(u))sendHome(u,i);});
-  return{i,rd,keys,own,tg,O:{...O},out,sb,sa,mb,ma,res,offL,gain,sup,off,lostU,before,bx:1};}
+  return{i,rd:(G.bt[i]&&G.bt[i].n)||rd,keys,own,tg,O:{...O},out,sb,sa,mb,ma,res,gain,lostU,before,bx:1};}
 // who picks orders on this screen
 function batLocal(){return G.online?[G.side]:G.mode==='C'||G.mode==='P'?[G.mode]:G.mode==='H'||G.mode==='D'?['P','C']:[];}
-function sideInfo(i,k){const s=bst(i,k),u=leader(i,k);
-  return{k,s:soldiers(i,k),s0:s.s0,m:s.m,sp:s.sp,pr:s.pr||perk(i,k,'am')?1:0,lo:s.lo,chips:chipsHTML(byNation(batUnits(i,k))),off:u?{pk:u.pk,r:RANK[u.t]}:null,sup:supOf(i,k)};}
+function sideInfo(i,k){const s=bst(i,k);
+  return{k,s:soldiers(i,k),s0:s.s0,m:s.m,sp:s.sp,pr:s.pr?1:0,lo:s.lo,chips:chipsHTML(byNation(batUnits(i,k)))};}
 function batItem(i,k,rd){const ks=batSides(i),own=batOwn(i),f=tgtOf(k,ks,own),me=sideInfo(i,k);
   me.lk={};BOK.forEach(o=>{const l=boLock(o,i,k);if(l)me.lk[o]=l;});
-  return{i,k,f,rd,name:TERR[i].name,def:k===own,me,foe:f!=null?sideInfo(i,f):null};}
+  return{i,k,f,rd:(G.bt[i]&&G.bt[i].n)||rd,name:TERR[i].name,def:k===own,me,foe:f!=null?sideInfo(i,f):null};}
 const batEl=()=>$('#bat'),batDlg=()=>$('#batdlg');
 var G_BA={}; // ⚡ auto: the staff picks for this side for the rest of the turn
 async function batOrders(list,rd,prev){const O={};list.forEach(i=>O[i]={});
@@ -2947,7 +2930,7 @@ async function batOrders(list,rd,prev){const O={};list.forEach(i=>O[i]={});
 async function batBattles(rep){G_BA={};const all=G.t.map((t,i)=>i).filter(i=>contested(i));if(!all.length)return;
   const rec={};
   all.forEach(i=>{const old=G.bt&&G.bt[i];batSides(i).forEach(k=>{const had=old&&old[k],s=bst(i,k);
-    if(had){s.sp=Math.min(6,s.sp+(k===batOwn(i)?2:1));s.m=Math.min(100,s.m+5);s.s0=Math.max(s.s0,soldiers(i,k));}});
+    if(had)s.s0=Math.max(s.s0,soldiers(i,k));});G.bt[i].n=(G.bt[i].n||0)+1; // battle turn, as in the design's card
     rec[i]={i,keys:batSides(i),own:batOwn(i),before:{},s0:{},m0:{},hist:[]};batSides(i).forEach(k=>{rec[i].before[k]=byNation(batUnits(i,k));rec[i].s0[k]=soldiers(i,k);rec[i].m0[k]=bst(i,k).m;});});
   let list=all.slice(),prev=null;
   for(let rd=1;rd<=RMAX&&list.length;rd++){
@@ -2973,14 +2956,12 @@ function batHand(k){return new Promise(res=>{batDlg().innerHTML=`<div class="bt-
 const bars=(v,ic,tl)=>`<span class="ob" data-tell="${ic} ${tl} ${'▮'.repeat(v)}${'▯'.repeat(5-v)}"><em>${ic}</em><i style="--v:${v}"></i></span>`;
 const pips=(n,mx,on,offc)=>Array.from({length:mx},(_,j)=>`<i class="${j<n?on:offc}"></i>`).join('');
 function sideHTML(x,me,nc){if(!x)return '<div class="bt-side foe"></div>';const lo=x.lo?BO[x.lo]:null;
-  const off=x.off?`<b class="tok off" data-tell="🎖️${RSTAR[x.off.r]} ${OFFP[x.off.pk].n} · ${OFFP[x.off.pk].t}">🎖️${OFFP[x.off.pk].i}</b>`:`<b class="tok off none" data-tell="🎖️ No officer · buy a Major">🎖️</b>`;
-  const sup=Object.keys(SUPI).filter(s=>x.sup[s]).map(s=>`<b class="tok" data-tell="${SUPI[s].i} ${SUPI[s].t}">${SUPI[s].i}${s==='art'&&x.sup.art>1?'²':''}</b>`).join('');
   return `<div class="bt-side ${me?'me':'foe'}" style="--nc:${nc}">
     <div class="bt-num"><span data-tell="🪖 Soldiers · ${x.s} of ${x.s0}">🪖<b>${x.s}</b></span><span data-tell="❤️ Morale ${x.m}% · 0 = they break 💔" class="${x.m<30?'low':''}">❤️<b>${x.m}%</b></span></div>
     <div class="mbar" data-tell="❤️ Morale ${x.m}%"><i style="width:${x.m}%"></i></div>
     <div class="mini" data-tell="🪖 Units in this battalion">${x.chips}</div>
-    <div class="bt-st">${me?`<span class="sp" data-tell="📦 Supply ${x.sp}/6 · orders use it · refills on your land">📦${pips(x.sp,6,'on','')}</span><span data-tell="${x.pr?'🎯 Ambush ready':'⏳ Ambush needs a 🛡️ Defend first'}">${x.pr?'🎯':'⏳'}</span>`:`<span data-tell="${lo?`👁 Last round: ${lo.i} ${lo.n}`:'❓ Their order is secret'}">${lo?'👁'+lo.i:'❓'}</span>`}</div>
-    <div class="bt-sup">${off}${sup}</div></div>`;}
+    <div class="bt-st">${me?`<span class="sp" data-tell="📦 Supply ${x.sp}/6 · orders use it · 🔧 Reorganize refills">📦${pips(x.sp,6,'on','')}</span><span data-tell="${x.pr?'🎯 Ambush ready':'⏳ Ambush needs a 🛡️ Defend first'}">${x.pr?'🎯':'⏳'}</span>`:`<span data-tell="${lo?`👁 Last round: ${lo.i} ${lo.n}`:'❓ Their order is secret'}">${lo?'👁'+lo.i:'❓'}</span>`}</div>
+    </div>`;}
 // big icon order cards, one battle at a time: tap = see what it does, tap again or ✔ = go
 function pickOrders(items,k){return new Promise(res=>{const out={};let x=0,sel=null,busy=false;
   const card=(o,it,n)=>{const lk=it.me.lk&&it.me.lk[o],b=BO[o];
@@ -2991,7 +2972,7 @@ function pickOrders(items,k){return new Promise(res=>{const out={};let x=0,sel=n
     return `<b class="ti" style="--fc:${FAMC[f]}">${b.i}</b><span class="tt"><b>${b.n}</b> ${lk?(lk==='🪫'?'🪫 needs 📦📦':lk==='⏳'?'⏳ needs a 🛡️ Defend first':'🚫'):esc(b.t)}</span>${sw}
       <span class="tb">${bars(b.c,'💀','Soldier damage')}${bars(b.mo,'💔','Morale damage')}${bars(b.p,'🛡','Protection')}${bars(b.su,'📦','Supply use')}</span>`;};
   const show=()=>{const it=items[x];sel=null;busy=false;
-    batDlg().innerHTML=`<div class="bt-h"><span class="bt-role ${it.def?'def':'atk'}" data-tell="${it.def?'⛨ You defend this land':'⚔ You attack this land'}">${it.def?'⛨':'⚔'}</span><span>${esc(it.name)}</span><span class="bt-rd" data-tell="🔁 Round ${it.rd} of ${RMAX} this turn">R${it.rd}</span><span class="bt-n">${items.map((_,j)=>`<i class="${j<x?'d':j===x?'c':''}"></i>`).join('')}</span></div>
+    batDlg().innerHTML=`<div class="bt-h"><span class="bt-role ${it.def?'def':'atk'}" data-tell="${it.def?'⛨ You defend this land':'⚔ You attack this land'}">${it.def?'⛨':'⚔'}</span><span>${esc(it.name)}</span><span class="bt-rd" data-tell="🔁 Battle turn ${it.rd}">T${it.rd}</span><span class="bt-n">${items.map((_,j)=>`<i class="${j<x?'d':j===x?'c':''}"></i>`).join('')}</span></div>
       <div class="bt-sides">${sideHTML(it.me,1,rgb(ALRGB[it.k]))}<div class="bt-vs">VS</div>${sideHTML(it.foe,0,it.f?rgb(ALRGB[it.f]):'#555')}</div>
       <div class="bt-tri" data-tell="⚔️ beats 🔀 · 🔀 beats 🛡️ · 🛡️ beats ⚔️"><b style="--fc:${FAMC.A}">⚔️</b>›<b style="--fc:${FAMC.M}">🔀</b>›<b style="--fc:${FAMC.D}">🛡️</b>›<b style="--fc:${FAMC.A}">⚔️</b></div>
       <div class="ocards fam">${['as','df','mv','ca','am','bb'].map((o,n)=>card(o,it,n)).join('')}</div>
@@ -3018,11 +2999,11 @@ function vsHTML(f,me,n){const foe=f.tg?f.tg[me]:null;if(foe==null||!f.O[me])retu
   const ocw=k=>{const oc=OUT[f.out[k]||'even'];return `<span class="ocw ${oc.c}">${oc.n}</span>`;};
   const num=k=>{const ds=f.sa[k]-f.sb[k],dm=f.ma[k]-f.mb[k];
     return `<div class="vn" style="--nc:${rgb(ALRGB[k])}"><span data-tell="🪖 Soldiers left (change)">🪖<b>${f.sa[k]}</b><small class="${ds<0?'neg':''}">(${ds<0?'−'+(-ds):'+'+ds})</small></span><span data-tell="❤️ Morale (change)">❤️<b>${f.ma[k]}%</b><small class="${dm<0?'neg':'pos'}">(${dm<0?'−'+(-dm):'+'+dm})</small></span></div>`;};
-  const tag=k=>(f.res[k]==='wd'?'<span class="tg wd" data-tell="🏳️ Withdrew">🏳️</span>':f.res[k]==='br'?'<span class="tg br" data-tell="💔 Broke and ran">💔</span>':f.res[k]==='wp'?'<span class="tg" data-tell="☠️ Wiped out">☠️</span>':'')
-    +(f.offL[k]?'<span class="tg" data-tell="🎖️ Officer captured">🎖️❌</span>':'')+(f.O[k]==='ra'?'<span class="tg ra" data-tell="🚩 Rallied">🚩</span>':'')+(f.O[k]==='ro'?'<span class="tg rc" data-tell="🔧 Reorganized">🔧</span>':'');
+  const tag=k=>(f.res[k]==='wd'?'<span class="tg wd" data-tell="🏳️ Withdrew">🏳️</span>':f.res[k]==='br'?'<span class="tg br" data-tell="💔 Broke and ran">💔</span>':f.res[k]==='wp'?'<span class="tg" data-tell="☠️ Wiped out">☠️</span>':f.res[k]==='st'?'<span class="tg" data-tell="🐎 Retreat stopped">🐎🚫</span>':'')
+    +(f.O[k]==='ra'?'<span class="tg ra" data-tell="🚩 Rallied">🚩</span>':'')+(f.O[k]==='ro'?'<span class="tg rc" data-tell="🔧 Reorganized">🔧</span>':'');
   const tr=f.out[me],arr=`<b class="arr ${OUT[tr||'even'].c}">${OUT[tr||'even'].a}</b>`;
   const mid=f.done?(f.win===me?'<span class="tg win" data-tell="🏁 You won this battle">🏁</span>':f.win?'<span class="tg" data-tell="🏴 Lost this battle">🏴</span>':''):'<span class="tg" data-tell="🔁 Fight goes on">🔁</span>';
-  return `<div class="vs" style="--k:${n||0}"><div class="vs-n">${esc(TERR[f.i].name)} · R${f.rd}</div><div class="vs-r">${ic(me,'l')}${arr}${ic(foe,'r')}</div>
+  return `<div class="vs" style="--k:${n||0}"><div class="vs-n">${esc(TERR[f.i].name)} · T${f.rd}</div><div class="vs-r">${ic(me,'l')}${arr}${ic(foe,'r')}</div>
     <div class="vs-w">${ocw(me)}<span></span>${ocw(foe)}</div><div class="vs-nums">${num(me)}${num(foe)}</div>
     <div class="vs-t"><span>${tag(me)}</span><span>${mid}</span><span>${tag(foe)}</span></div></div>`;}
 function batShow(frames,side,final){return new Promise(res=>{const local=side?[side]:batLocal();
@@ -3037,7 +3018,7 @@ function batWait(rp){let done=false;const t=setTimeout(()=>{if(done)return;batDl
   return rp.then(r=>{done=true;clearTimeout(t);batEl().hidden=true;return r;});}
 function netBatHost(code,other){netListen(code,'bo/'+other,d=>{const o=G.online;if(!o||!d||d.r!==o.boKey||!o.boRes)return;const f=o.boRes;o.boRes=null;f(d.o||{});});}
 function netBatGuest(code){netListen(code,'bat',d=>{const o=G.online;if(!o||!d||Math.floor(d.r/10)!==G.round||o.batR===d.r)return;o.batR=d.r;
-  const items=(d.items||[]).map(it=>({...it,me:{lk:{},...it.me,chips:it.me&&it.me.chips||'',sup:{...(it.me&&it.me.sup||{})}},foe:it.foe?{chips:'',...it.foe,sup:{...(it.foe.sup||{})}}:null}));
+  const items=(d.items||[]).map(it=>({...it,me:{lk:{},...it.me,chips:it.me&&it.me.chips||''},foe:it.foe?{chips:'',...it.foe}:null}));
   const go=()=>{if(o.batAuto===G.round){netPut(code,'bo/'+G.side,{r:d.r,o:{}}).catch(netFail);return;}
     pickOrders(items,G.side).then(out=>{if(out.auto)o.batAuto=G.round;netPut(code,'bo/'+G.side,{r:d.r,o:out.o}).catch(netFail);});};
   if(d.prev&&o.batAuto!==G.round){batDlg().innerHTML=`<div class="vsl">${d.prev}</div><div class="acts"><button class="btn primary bt-go" id="batGo" data-tell="▶ Next">▶</button></div>`;batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;go();};}
@@ -3056,7 +3037,6 @@ function tell(s){const t=$('#tell');if(!t||!s)return;t.innerHTML=s;t.hidden=fals
 document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('[data-tell],button[title],button[aria-label],[role=button][title]');if(!el||el.id==='map'||el.classList.contains('oc'))return;
   if(el.closest('#coach'))return;const s=el.dataset.tell||el.getAttribute('title')||el.getAttribute('aria-label');if(s&&s.length<90)tell(esc(s).replace(/&amp;/g,'&'));},true);
 const unitTell=(t,o,n)=>{const U=UNITS[t],u=`${n>1?n+'× ':''}<b>${U.name}</b>`;
-  if(U.off)return `🎖️ ${u} · officer · leads a battalion`;
   return `${U.air?'✈️':U.sea?'⚓':'🪖'} ${u} · ⚔${U.atk} 🛡${U.def} 👣${U.mv}${SOLD[t]?` · 🪖${SOLD[t]}`:''}`;};
 function terrTell(i){if(i<0)return '';const t=G.t[i],T=TERR[i];if(isSea(i))return `🌊 <b>${esc(T.name)}</b> · sea`;
   const a=al(t.owner),us=t.units.filter(u=>al(u.o)===a&&combat(u.t)).length;
@@ -3065,7 +3045,7 @@ cv.addEventListener('click',e=>{if(!G||!MAP||(typeof pinchEnd!=='undefined'&&Dat
   if(ch){const n=G.t[ch.i].units.filter(u=>u.o===ch.o&&u.t===ch.t).length;tell(unitTell(ch.t,ch.o,n)+(G.ui.sel===ch.i&&G.planner?' · 👆 tap a lit land':''));return;}
   const i=hit(e);if(i<0)return;tell(terrTell(i)+(G.ui.sel===i&&G.planner?' · 👆 tap a lit land to send':''));},0);});
 // first battle: short coach bubbles; tap to go on
-const COACH={pick:[['.bt-side.me','🪖 Soldiers · ❤️ Morale<br>❤️ 0 = they break 💔'],['.bt-tri','Colors beat colors<br>⚔️ › 🔀 › 🛡️ › ⚔️'],['.ocards.fam','Tap a card = see it<br>Tap again = go'],['.ocards.sup','🚩 Rally · 🏳️ Retreat<br>🐎 Chase · 🔧 Fix'],['.bt-side.me .bt-sup','🎖️ Officer + ✈️💣🪖 help<br>Tap any icon to learn']],
+const COACH={pick:[['.bt-side.me','🪖 Soldiers · ❤️ Morale<br>❤️ 0 = they break 💔'],['.bt-tri','Colors beat colors<br>⚔️ › 🔀 › 🛡️ › ⚔️'],['.ocards.fam','Tap a card = see it<br>Tap again = go'],['.ocards.sup','🚩 Rally · 🏳️ Withdraw<br>🐎 Pursue · 🔧 Reorganize']],
   vs:[['.vs-r','▲ Advantage 125% 💀 150% 💔<br>▼ Disadvantage 75% 50%'],['.vs-nums','🪖 left (−lost) · ❤️ (−lost)']]};
 function coach(k){let seen={};try{seen=JSON.parse(localStorage.getItem('im8coach')||'{}');}catch(e){}if(seen[k]||!COACH[k])return;
   seen[k]=1;try{localStorage.setItem('im8coach',JSON.stringify(seen));}catch(e){}
