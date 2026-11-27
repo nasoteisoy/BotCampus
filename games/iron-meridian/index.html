@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#141a1e">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Iron Meridian 7</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23f6dc9a%22/%3E%3Cstop offset=%221%22 stop-color=%22%23946a28%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=%22M32 3l25 9v18c0 16-11 26-25 31C18 56 7 46 7 30V12z%22 fill=%22url(%23g)%22 stroke=%22%231b2126%22 stroke-width=%223%22/%3E%3Cpath d=%22M32 14l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z%22 fill=%22%231b2126%22/%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -403,6 +405,97 @@ body{background:
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-delay:0s!important;transition:none!important}}
 
+/* ===== IM7c phone-first ===== */
+html,body{overscroll-behavior:none}
+canvas#map{touch-action:pan-x pan-y}
+.mapwrap{overscroll-behavior:contain}
+.mt .mi{font-size:16px;margin-right:6px;vertical-align:-2px}
+#mtSubmit .mi{margin-right:6px}
+.ppc{display:inline-flex;align-items:center;gap:7px;padding:3px 9px;margin-right:6px;border-radius:999px;background:rgba(10,13,15,.72);border:1px solid #4b5961;font:600 12px var(--f-mono);white-space:nowrap}
+.ppc .nd{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+.ppc b{font-weight:700}.ppc .t{color:var(--brass-2)}.ppc .l{color:#f0a070}.ppc .a{color:#7fd06e}.ppc .s{color:#8fc3ff}
+.help .toc button.on{border-color:var(--brass);color:var(--brass)}
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  html,body{height:100%;overflow:hidden;touch-action:manipulation;margin:0}
+  .app,.board,.mtools,.top{box-sizing:border-box}
+  .app{height:100dvh;max-width:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);gap:0;display:flex;flex-direction:column}
+  .top{flex:none;height:52px;align-items:center;padding:0 10px;gap:8px;flex-wrap:nowrap;background:linear-gradient(180deg,#1d252a,#141a1e);border-bottom:1px solid #3e4a52;box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:6}
+  .brand{font-size:21px;white-space:nowrap}.brand small{display:none}
+  .ibtn{width:44px;height:44px}.netb{max-width:38vw;font-size:11px;padding:5px 7px}
+  .layout{flex:1;min-height:0;display:block;gap:0}
+  .board{height:100%;padding:0 0 calc(66px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;box-shadow:none;background:#0d1114;display:flex;flex-direction:column;min-width:0}
+  .mapbox{flex:1;min-height:0;border-radius:0;box-shadow:none}
+  .mapbox::after{border-radius:0}
+  .mapwrap{height:100%!important;border-radius:0}
+  .hint,.legend{display:none!important}
+  /* bottom thumb bar */
+  .mtools{position:fixed;left:0;right:0;bottom:0;z-index:7;margin:0;flex-wrap:nowrap;justify-content:space-around;gap:4px;height:calc(66px + env(safe-area-inset-bottom,0px));padding:7px max(8px,env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+    background:linear-gradient(180deg,#2b353c,#161c20);border-top:2px solid rgba(226,180,92,.55);box-shadow:0 -8px 24px rgba(0,0,0,.5)}
+  .mtools .spacer{display:none}
+  .mt{width:52px;height:52px;min-width:48px;padding:0!important;border-radius:16px!important;display:grid!important;place-items:center;position:relative;font-size:0!important}
+  .mt::after{display:none!important}
+  .mt .mi{font-size:24px;margin:0}.mt .ml{display:none}
+  .mt.new::before{content:"";position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:#ff5a3c;box-shadow:0 0 8px #ff5a3c;animation:vsP 1.2s infinite}
+  #mtSubmit{width:64px;height:52px;min-width:56px;padding:0!important;border-radius:16px;font-size:0}
+  #mtSubmit .mi{font-size:26px;margin:0}#mtSubmit .ml{display:none}
+  .mtpp{position:fixed;left:8px;right:8px;top:calc(58px + env(safe-area-inset-top,0px));z-index:5;pointer-events:none;overflow:visible;display:flex;gap:4px;flex-wrap:wrap}
+  .mtpp .ppc{pointer-events:auto}
+  /* bottom sheets */
+  .g6 .mapbox .ddp,.g6 .mapbox .dock,.ddp,.dock{position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:calc(66px + env(safe-area-inset-bottom,0px))!important;width:auto!important;max-height:min(52dvh,500px)!important;overflow:auto;z-index:6;
+    border-radius:20px 20px 0 0!important;border:1px solid #56646d!important;border-bottom:0!important;background:linear-gradient(180deg,#2e3940,#1a2025)!important;box-shadow:0 -12px 34px rgba(0,0,0,.6)!important;padding:20px 12px 12px!important;
+    animation:sheetUp .24s cubic-bezier(.2,1,.4,1) both;transition:transform .2s;overscroll-behavior:contain}
+  .ddp::before,.dock::before{content:"";position:absolute;top:7px;left:50%;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:#6b7a83}
+  .g6 .mapbox.ddon .dock{display:none!important}
+  .g6 .mapbox .dock,.dock{max-height:min(36dvh,320px)!important}
+  .mapbox.dkon .mapwrap{padding-bottom:36dvh}.mapbox.ddon .mapwrap{padding-bottom:52dvh}
+  .g6 .mapbox.dkon,.g6 .mapbox.ddon{padding:0!important}
+  .g6 .mapbox.dkon .zoom{right:10px}
+  @keyframes sheetUp{from{transform:translateY(100%)}}
+  .ddp .dlg{padding:6px 2px!important;background:none!important;border:0!important}
+  .ddp .card,.dock .card{font-size:14px}
+  .btn,.sb{min-height:44px}
+  /* floating map controls */
+  .zoom{top:auto!important;bottom:12px;right:10px!important}
+  .zoom #zin,.zoom #zout,.zoom .zl{display:none!important}
+  .zoom button{width:48px!important;height:48px!important;font-size:20px!important}
+  .covleg{top:auto;bottom:12px;left:10px}
+  .tip{max-width:78vw;font-size:13px}
+  /* overlays */
+  .overlay{padding:max(8px,env(safe-area-inset-top,0px)) 8px max(8px,env(safe-area-inset-bottom,0px))}
+  .dlg{max-height:calc(100dvh - 16px)}
+  .bdl{padding:14px 12px!important}
+  .bt-sides{margin:6px 0 4px;gap:6px}.bt-side{padding:6px}
+  .bt-tri{margin:2px 0 6px}
+  .ocards{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
+  .oc{aspect-ratio:auto!important;height:min(9.5dvh,74px);max-height:none;font-size:34px}
+  .ocards.sup{grid-template-columns:repeat(4,1fr)!important}
+  .ocards.sup .oc{height:min(8dvh,60px);font-size:28px}
+  .acts{margin-top:8px}
+  #batAuto{width:48px;height:48px}
+  .vsl{max-height:calc(100dvh - 120px);overflow:auto}
+  /* help: swipeable bottom sheet */
+  #help{align-items:end;padding:0}
+  .dlg.help{max-width:none;width:100%;height:82dvh;max-height:82dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px);animation:sheetUp .26s cubic-bezier(.2,1,.4,1) both!important}
+  .help .hhd{position:relative;padding:20px 14px 8px!important;flex:none;touch-action:none}
+  .help .hhd::before{content:"";position:absolute;top:7px;left:50%;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:#6b7a83}
+  .help .hhd h2{font-size:22px}
+  .help .toc{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .help .toc button{flex:none;min-height:36px;font-size:12px}
+  .help .hbody{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:0!important;scrollbar-width:none;overscroll-behavior-x:contain}
+  .help .hbody>section{flex:0 0 100%;box-sizing:border-box;scroll-snap-align:start;overflow-y:auto;padding:4px 14px 18px}
+  .help .hbody>:not(section){display:none}
+}
+@media (pointer:coarse) and (max-height:520px){
+  .top{height:44px}.ibtn{width:40px;height:40px}.brand{font-size:18px}
+  .board{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+  .mtools{height:calc(56px + env(safe-area-inset-bottom,0px));padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+  .mt,#mtSubmit{height:48px}
+  .mtpp{top:calc(48px + env(safe-area-inset-top,0px))}
+  .oc{height:min(13dvh,56px)!important;font-size:28px}.ocards.sup .oc{height:min(11dvh,48px)!important}
+  .ocards{grid-template-columns:repeat(6,1fr)!important}
+  .bt-sides{grid-template-columns:1fr auto 1fr}
+  .ddp,.dock,.g6 .mapbox .ddp,.g6 .mapbox .dock{left:auto!important;width:min(420px,60vw)!important;bottom:calc(56px + env(safe-area-inset-bottom,0px))!important;max-height:calc(100dvh - 144px)!important}
+}
 </style>
 
 <div class="app">
@@ -415,7 +508,7 @@ body{background:
   </header>
   <main class="layout">
     <section class="board">
-      <div class="mtools" id="mtools" hidden><button class="mt" data-dd="orders" id="ddOrders" aria-expanded="false">Orders</button><button class="mt" data-dd="prod" aria-expanded="false">Production</button><button class="mt" data-dd="powers" aria-expanded="false">Powers</button><button class="mt" data-dd="log" id="ddLog" aria-expanded="false">Dispatches</button><button class="mt" data-dd="rep" id="ddRep" aria-expanded="false" hidden>Report</button><span class="mtpp" id="mtPP"></span><span class="spacer"></span><button class="btn primary" id="mtSubmit" style="padding:7px 12px">Submit orders</button></div>
+      <div class="mtools" id="mtools" hidden><button class="mt" data-dd="orders" id="ddOrders" aria-expanded="false" aria-label="Orders" title="Orders"><span class="mi">📋</span><span class="ml">Orders</span></button><button class="mt" data-dd="prod" aria-expanded="false" aria-label="Production" title="Production"><span class="mi">🏭</span><span class="ml">Production</span></button><button class="mt" data-dd="powers" aria-expanded="false" aria-label="Powers" title="Powers"><span class="mi">📊</span><span class="ml">Powers</span></button><button class="mt" data-dd="log" id="ddLog" aria-expanded="false" aria-label="Dispatches" title="Dispatches"><span class="mi">📜</span><span class="ml">Dispatches</span></button><button class="mt" data-dd="rep" id="ddRep" aria-expanded="false" aria-label="Turn report" title="Turn report" hidden><span class="mi">📰</span><span class="ml">Report</span></button><span class="mtpp" id="mtPP"></span><span class="spacer"></span><button class="btn primary" id="mtSubmit" style="padding:7px 12px" aria-label="Submit orders" title="Submit orders"><span class="mi">✔</span><span class="ml">Submit orders</span></button></div>
       <div class="mapbox"><div class="ddp" id="ddp" hidden></div><div class="tip" id="tip" hidden></div><div class="mapwrap"><canvas id="map" width="1000" height="640" aria-label="Map of Varrow"></canvas></div><div class="zoom" role="group" aria-label="Map zoom"><button id="zin" title="Zoom in (+ or Ctrl + scroll)" aria-label="Zoom in">+</button><button id="zout" title="Zoom out (−)" aria-label="Zoom out">−</button><button id="zfit" title="Fit the whole map (0)" aria-label="Fit the whole map">⤢</button><div class="zl" id="zlev" aria-live="polite">100%</div><button id="zcov" title="Fighter coverage" aria-label="Fighter coverage" aria-pressed="false">✈</button></div><div class="covleg" id="covleg" hidden>✈ <span><i style="background:repeating-linear-gradient(135deg,rgb(255,110,70) 0 4px,transparent 4px 8px)"></i>Pact</span><span><i style="background:repeating-linear-gradient(45deg,rgb(80,200,255) 0 4px,transparent 4px 8px)"></i>Concord</span><span><i style="background:rgb(255,214,60)"></i>⚔</span></div><div class="dock" id="dock" hidden></div></div>
       <div class="hint" id="hint">Surveying the continent…</div>
       <div class="legend" id="legend"></div>
@@ -1921,7 +2014,7 @@ function draw(){
   ctx.drawImage(baseCanvas,0,0,W,H);
   drawCovFx();vignette();
   const z=Math.min(1.35,Math.max(1,ZOOM/scale))*(MAPS[V].zs||1)/Math.pow(ZOOM,0.8);
-  HITS={chips:[],arrows:[]};
+  HITS={chips:[],arrows:[]};labelPrep();
   ctx.textAlign='center';ctx.textBaseline='middle';
   TERR.forEach((T,i)=>{
     const cx=MAP.cx[i],cy=MAP.cy[i],t=G.t[i];
@@ -1930,9 +2023,9 @@ function draw(){
       haloText(T.name,Math.max(hw,Math.min(W-hw,cx)),ny,sf,'#a9cadb'); // keep names at the map's edge readable
       if(contested(i)){ctx.font=`700 ${9*z}px "IBM Plex Sans Condensed",sans-serif`;haloText('⚔ BATTLE',cx,ny-13*z,ctx.font,'#ffb4a0');}}
     else{
-    const font=`600 ${10.5*z}px "IBM Plex Sans Condensed","Arial Narrow",sans-serif`;
-    ctx.font=font;const tw=ctx.measureText(T.name.toUpperCase()).width;
-    haloText(T.name.toUpperCase(),cx,ny,font,'#f4efe4');
+    const lbl=labelOn(i),font=`600 ${10.5*Math.max(z,LBLMIN)}px "IBM Plex Sans Condensed","Arial Narrow",sans-serif`;
+    ctx.font=font;const tw=lbl?ctx.measureText(T.name.toUpperCase()).width:0;
+    if(lbl)haloText(T.name.toUpperCase(),cx,ny,font,'#f4efe4');
     const vx=cx+tw/2+8*z;ctx.beginPath();ctx.arc(vx,ny,6.2*z,0,Math.PI*2);{const cg=ctx.createRadialGradient(vx-2*z,ny-2*z,0.5,vx,ny,6.5*z);cg.addColorStop(0,'#ffeec0');cg.addColorStop(.6,'#d6a84e');cg.addColorStop(1,'#8a6224');ctx.fillStyle=cg;}ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='rgba(16,20,24,.8)';ctx.stroke();
     ctx.font=`600 ${8.5*z}px "IBM Plex Mono",monospace`;ctx.fillStyle='#1f1a10';ctx.fillText(T.val,vx,ny+0.5);
     let lx=cx-tw/2-8*z;
@@ -2080,7 +2173,7 @@ function rolePill(tag,x,y,hh){const t={atk:'⚔ ATTACKING',def:'⛨ DEFENDING',l
 function dashBox(x,y,w,hh,rad,lw){ctx.beginPath();ctx.roundRect(x,y,w,hh,rad);ctx.fillStyle='rgba(112,116,120,.72)';ctx.fill();
   ctx.setLineDash([lw*2.6,lw*1.8]);ctx.lineWidth=lw;ctx.strokeStyle='#f2d58f';ctx.stroke();ctx.setLineDash([]);}
 function drawChips6(i,ps,cx,cy,z){
-  const d=19*z,gap=2.5*z,dp=cv.width/W;let yy=cy+1*z;
+  const d=19*Math.max(z,(COARSE()?20:15)/(19*(scale||1))),gap=2.5*z,dp=cv.width/W;let yy=cy+1*z;
   ps.forEach(p=>{const w=p.rows.length*(d+gap)-gap,x0=cx-w/2;
     if(p.tag)tagBadge(p.tag,x0-d*0.5-2*z,yy+d/2,d*0.36);
     p.rows.forEach((q,ix)=>{const x=x0+ix*(d+gap),sc=selOf(i,q),xm=x+d/2,ym=yy+d/2;
@@ -2167,13 +2260,15 @@ function arrowSteppers(rd,us){const free=controllable(rd.from).filter(u=>reachFo
 
 function evPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H};}
 function terrAt(x,y){if(!MAP||x<0||y<0||x>=W||y>=H)return -1;return MAP.zid[Math.floor(y*RES)*BW+Math.floor(x*RES)];}
-function hit(e){const p=evPos(e);return terrAt(p.x,p.y);}
+function hit(e){const p=evPos(e);let i=terrAt(p.x,p.y);if(i>=0)return i;const r0=(COARSE()?14:5)/(scale||1);
+  for(const r of [r0*0.4,r0*0.75,r0])for(let k=0;k<8;k++){const a=k*Math.PI/4,j=terrAt(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r);if(j>=0)return j;}return -1;}
 function arrowAt(x,y){
   for(let k=HITS.arrows.length-1;k>=0;k--){const a=HITS.arrows[k];
     if(Math.hypot(x-a.bx,y-a.by)<=a.r+3)return a;
     if(a.pts.some(([px,py])=>Math.hypot(x-px,y-py)<=a.tol))return a;}
   return null;}
-const chipAt=(x,y)=>HITS.chips.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)||null;
+const chipAt=(x,y)=>{const c=HITS.chips.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);if(c||!COARSE())return c||null;const pad=9/(scale||1);let best=null,bd=1e9;
+  HITS.chips.forEach(c=>{const d=Math.hypot(Math.max(c.x-x,0,x-c.x-c.w),Math.max(c.y-y,0,y-c.y-c.h));if(d<=pad&&d<bd){bd=d;best=c;}});return best;};
 
 /* ---------- panel ---------- */
 function addLog(msg,n,als){if(!G)return;G.log.unshift({r:G.round,msg,n,als});if(G.log.length>100)G.log.pop();}
@@ -2239,7 +2334,7 @@ function renderDock(){
       <div class="dk-a"><button class="btn small" data-act="keep">Close</button></div>`;}
   d.innerHTML=pop?ph(rd?'Order':'Your selection')+h+inspectCard(rd||G.ui.lite):h;d.hidden=false;dk(!!pop);}
 // when a side panel opens on a zoomed map, scroll so the territory it is about stays in sight
-function keepInView(i){if(i==null||i<0||!MAP||ZOOM<=1)return;const x=MAP.cx[i]*scale,y=MAP.cy[i]*scale,m=60;
+function keepInView(i){if(i==null||i<0||!MAP||(ZOOM<=1&&!PHONE()))return;const x=MAP.cx[i]*scale,y=MAP.cy[i]*scale,m=60;
   if(x<wrapEl.scrollLeft+m||x>wrapEl.scrollLeft+wrapEl.clientWidth-m)wrapEl.scrollTo({left:x-wrapEl.clientWidth/2,behavior:'smooth'});
   if(y<wrapEl.scrollTop+m||y>wrapEl.scrollTop+wrapEl.clientHeight-m)wrapEl.scrollTo({top:y-wrapEl.clientHeight/2,behavior:'smooth'});}
 const DEMOU=['inf','art','aag','ltk','tnk','htk','ftr','bmb','rcn','maj','col','gen'];
@@ -2295,13 +2390,13 @@ function renderPanel(){
   const logCard=G.showLog===false?'':`<div class="card"><h3>Dispatches</h3><ul class="log">${G.log.filter(e=>!e.als||!viewer()||e.als.includes(viewer())).map(e=>`<li><span class="r">T${e.r}</span>${e.n?`<span class="dot" style="background:${rgb(NAT[e.n].rgb)}"></span>`:''}${esc(e.msg)}</li>`).join('')}</ul></div>`;
   const mt=$('#mtools'),dp=$('#ddp');document.body.classList.toggle('g6',ux6());
   if(ux6()){const cards={orders:head,prod:body,powers:powersCard(),log:logCard};
-    mt.hidden=false;$('#ddOrders').textContent=planning?`${ALLY[a]} orders`:'Orders';$('#ddLog').hidden=!logCard;$('#mtSubmit').disabled=!planning;
+    mt.hidden=false;$('#ddOrders .ml').textContent=planning?`${ALLY[a]} orders`:'Orders';$('#ddLog').hidden=!logCard;$('#mtSubmit').disabled=!planning;
     mt.querySelectorAll('[data-dd]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.dd===G.ui.dd)));
     if(G.repHTML)cards.rep=G.repHTML;if(!cards[G.ui.dd])G.ui.dd=null;if(G.ui.dd==='rep')G.repNew=false;
-    const rb=$('#ddRep');rb.hidden=!G.repHTML;rb.textContent=G.repHTML?`Turn ${G.repRound} report`:'Report';rb.classList.toggle('new',!!G.repNew);
+    const rb=$('#ddRep');rb.hidden=!G.repHTML;rb.querySelector('.ml').textContent=G.repHTML?`Turn ${G.repRound} report`:'Report';rb.classList.toggle('new',!!G.repNew);
     rb.setAttribute('aria-expanded',String(G.ui.dd==='rep'));
     dp.hidden=!G.ui.dd;dp.innerHTML=G.ui.dd?cards[G.ui.dd]:'';$('.mapbox').classList.toggle('ddon',!!G.ui.dd);
-    $('#mtPP').innerHTML=planning?mine().map(n=>`<span>${esc(NAT[n].short)}: ${ppLine(n)}</span>`).join(''):'';
+    $('#mtPP').innerHTML=planning?mine().map(n=>{const p=ppParts(n);return `<span class="ppc" title="${esc(NAT[n].short)}: ${p.tot} PP total · ${p.need} for lines · +${p.add} next turn · ${p.s} saved"><i class="nd" style="background:${rgb(NAT[n].rgb)}"></i><b class="t">💰${p.tot}</b><b class="l">🏗${p.need}</b><b class="a">+${p.add}</b><b class="s">🏦${p.s}</b></span>`;}).join(''):'';
     $('#mtSubmit').disabled=!planning;
     $('#side').innerHTML=inspectCard()||`<div class="card"><h3>Territory</h3><p class="sub" style="margin:0">Tap a territory to see what stands there. Orders, production, powers and dispatches open from the buttons above the map.</p></div>`;}
   else{mt.hidden=true;dp.hidden=true;$('.mapbox').classList.remove('ddon','dkon');
@@ -2383,7 +2478,7 @@ cv.addEventListener('contextmenu',e=>{if(!G||!ux6())return;e.preventDefault();if
   if(G.ui.sel>=0||G.ui.redir){clearSel();refresh();}});
 cv.addEventListener('mousemove',showTip);
 cv.addEventListener('mouseleave',()=>{$('#tip').hidden=true;});
-cv.addEventListener('click',e=>setTimeout(()=>showTip(e),0));
+cv.addEventListener('click',e=>{if(lastPT!=='touch')setTimeout(()=>showTip(e),0);});
 $('#dock').addEventListener('click',onAct);
 $('#side').addEventListener('change',e=>{const s=e.target.closest('[data-fac]');if(!s||!G||!G.planner)return;const n=s.dataset.fac,o=G.orders[n];o.fac=+s.value;
   renderPanel();$('#fac-'+n).focus();});
@@ -2605,7 +2700,7 @@ function openHelp(){const o=$('#help');$('#hdlg').innerHTML=helpHTML();o.hidden=
 function closeHelp(){$('#help').hidden=true;$('#helpBtn').focus();}
 $('#helpBtn').addEventListener('click',openHelp);
 $('#help').addEventListener('click',e=>{if(e.target.id==='help'||e.target.closest('#helpX')){closeHelp();return;}
-  const g=e.target.closest('[data-go]');if(g){const s=document.getElementById(g.dataset.go);if(s){const d=$('#hdlg');d.scrollTo({top:s.offsetTop-d.querySelector('.hhd').offsetHeight-6,behavior:'smooth'});}}});
+  const g=e.target.closest('[data-go]');if(g){const s=document.getElementById(g.dataset.go);if(s){const d=$('#hdlg');if(PHONE())s.scrollIntoView({behavior:'smooth',inline:'start',block:'nearest'});else d.scrollTo({top:s.offsetTop-d.querySelector('.hhd').offsetHeight-6,behavior:'smooth'});}}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#help').hidden){e.stopImmediatePropagation();closeHelp();}},true);
 $('#newBtn').addEventListener('click',()=>{if(G&&G.busy&&!G.online)return;netClose();showMenu();});
 new ResizeObserver(()=>requestAnimationFrame(()=>{sizeCanvas();draw();})).observe(cv);
@@ -2616,10 +2711,10 @@ function applyZoom(nz,cx,cy){
   const r=cv.getBoundingClientRect(),wr=wrapEl.getBoundingClientRect();
   if(cx==null){cx=wr.left+wrapEl.clientWidth/2;cy=wr.top+wrapEl.clientHeight/2;}
   const fx=r.width?(cx-r.left)/r.width:0.5,fy=r.height?(cy-r.top)/r.height:0.5;
-  ZOOM=nz;const base=Math.max(wr.width,MINW);
-  if(nz===1){cv.style.width='';cv.style.minWidth=MINW+'px';wrapEl.style.height='';}
+  ZOOM=nz;const cover=PHONE()?Math.ceil(wrapEl.clientHeight*W/H):0,base=Math.max(wr.width,MINW,cover);
+  if(nz===1){cv.style.width='';cv.style.minWidth=Math.max(MINW,cover)+'px';wrapEl.style.height='';}
   else{cv.style.minWidth='';cv.style.width=Math.round(base*nz)+'px';
-    const bar=wrapEl.offsetHeight-wrapEl.clientHeight;wrapEl.style.height=Math.round(base*H/W+Math.max(bar,0))+'px';}
+    const bar=wrapEl.offsetHeight-wrapEl.clientHeight;wrapEl.style.height=PHONE()?'':Math.round(base*H/W+Math.max(bar,0))+'px';}
   sizeCanvas();draw();
   wrapEl.scrollLeft=fx*cv.clientWidth-(cx-wr.left);wrapEl.scrollTop=fy*cv.clientHeight-(cy-wr.top);
   $('#zin').disabled=nz>=ZMAX;$('#zout').disabled=nz<=1;$('#zfit').disabled=nz<=1;$('#zlev').textContent=Math.round(nz*100)+'%';}
@@ -2628,7 +2723,7 @@ $('#zout').addEventListener('click',()=>zoomTo(ZOOM/1.4));
 $('#zfit').addEventListener('click',()=>zoomTo(1));
 // Ctrl + scroll (and trackpad pinch) zooms around the pointer; plain scrolling still scrolls
 wrapEl.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey||ux6()))return;$('#tip').hidden=true;e.preventDefault();applyZoom(ZOOM*Math.exp(-e.deltaY*(e.deltaMode?0.05:0.0025)),e.clientX,e.clientY);},{passive:false});
-window.addEventListener('resize',()=>{if(ZOOM>1)applyZoom(ZOOM);});
+window.addEventListener('resize',()=>{applyZoom(ZOOM);});
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||!$('#setup').hidden||!$('#help').hidden||!$('#battle').hidden)return;
   if(e.key==='+'||e.key==='=')applyZoom(ZOOM*1.4);else if(e.key==='-'||e.key==='_')applyZoom(ZOOM/1.4);else if(e.key==='0')applyZoom(1);});
 // drag with the mouse to pan; a drag is never taken as a click on the map
@@ -2813,12 +2908,61 @@ function drawFx(){if(!FX.length)return;const now=performance.now();FX=FX.filter(
     const x=p.x+p.vx*s,y=p.y+p.vy*s+40*s*s;ctx.beginPath();ctx.arc(x,y,p.r*(1-a*0.6),0,7);ctx.fillStyle=`rgba(${p.c.join(',')},${1-a})`;ctx.fill();});}
 function vignette(){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.hypot(W,H)*0.56);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(4,8,12,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
 const hasBattle=()=>G&&G.t&&G.t.length&&ux6()&&!figMode()&&G.t.some((t,i)=>!isSea(i)&&contested(i));
-function fxKick(){if(fxRun)return;fxRun=true;const step=now=>{if(!MAP||!(COVON||FX.length||hasBattle())){fxRun=false;draw();return;}
+let COVT=0;
+function fxKick(){if(COVON)COVT=performance.now()+5000;if(fxRun)return;fxRun=true;const step=now=>{if(!MAP||!((COVON&&now<COVT)||FX.length)){fxRun=false;draw();return;}
     if(now-fxLast>=(FX.length?16:50)){fxLast=now;draw();}requestAnimationFrame(step);};requestAnimationFrame(step);}
 // smooth button zoom
 let zAnim=0;
 function zoomTo(target){target=Math.max(1,Math.min(ZMAX,target));const from=ZOOM,t0=performance.now(),id=++zAnim;
   const step=now=>{if(id!==zAnim)return;const k=Math.min(1,(now-t0)/180),e=1-Math.pow(1-k,3);applyZoom(from*Math.pow(target/from,e));if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
+
+/* ---------- IM7c phone-first: touch, pinch, long-press, sheets, labels ---------- */
+const PHQ=matchMedia('(max-width:820px), (pointer:coarse) and (max-height:520px)'),CQ=matchMedia('(pointer:coarse)');
+function PHONE(){return PHQ.matches;}
+function COARSE(){return CQ.matches;}
+let LBLMIN=0,LBLSP=999;
+function labelPrep(){const s=scale||1;LBLMIN=12/(10.5*s);LBLSP=Math.sqrt(W*H/Math.max(1,LAND||L))*s;}
+function labelOn(i){const T=TERR[i];if(LBLSP>=95||T.cap||T.val>=3)return true;if(LBLSP>=62&&T.val>=2)return true;
+  return !!G&&(contested(i)||i===G.ui.sel||i===G.ui.inspect||G.ui.dests.has(i)||(G.ui.redir&&G.ui.redir.from===i));}
+function centerOn(i){if(i==null||i<0||!MAP)return;wrapEl.scrollLeft=MAP.cx[i]*scale-wrapEl.clientWidth/2;wrapEl.scrollTop=MAP.cy[i]*scale-wrapEl.clientHeight/2;}
+// pinch zoom with two fingers; one finger pans natively
+let PZ=null,pinchEnd=0;
+wrapEl.addEventListener('touchstart',e=>{if(e.touches.length===2){const [a,b]=e.touches;PZ={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,z:ZOOM};lpCancel();e.preventDefault();}},{passive:false});
+wrapEl.addEventListener('touchmove',e=>{if(!PZ||e.touches.length!==2)return;e.preventDefault();const [a,b]=e.touches,d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  $('#tip').hidden=true;applyZoom(PZ.z*d/PZ.d,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2);},{passive:false});
+wrapEl.addEventListener('touchend',e=>{if(PZ&&e.touches.length<2){PZ=null;pinchEnd=performance.now();}});
+// long-press for info
+let LP=null,lpFired=false,lastPT='mouse',tipT=0;
+function lpCancel(){if(LP){clearTimeout(LP.t);LP=null;}}
+cv.addEventListener('pointerdown',e=>{lastPT=e.pointerType;if(e.pointerType!=='touch')return;lpFired=false;lpCancel();
+  const x=e.clientX,y=e.clientY;LP={x,y,t:setTimeout(()=>{LP=null;if(PZ||!G||!MAP)return;lpFired=true;const ev={clientX:x,clientY:y},i=hit(ev);
+    if(i>=0){G.ui.inspect=i;renderPanel();}showTip(ev);clearTimeout(tipT);tipT=setTimeout(()=>{$('#tip').hidden=true;},2600);
+    try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}},460)};});
+cv.addEventListener('pointermove',e=>{if(LP&&Math.hypot(e.clientX-LP.x,e.clientY-LP.y)>10)lpCancel();});
+cv.addEventListener('pointerup',()=>{if(LP){clearTimeout(LP.t);LP=null;}});
+cv.addEventListener('pointercancel',lpCancel);
+cv.addEventListener('click',e=>{if(lpFired||performance.now()-pinchEnd<350){lpFired=false;e.stopImmediatePropagation();e.preventDefault();}},true);
+cv.addEventListener('contextmenu',e=>{if(lastPT==='touch'){e.preventDefault();e.stopImmediatePropagation();}},true);
+// bottom sheets: swipe down or tap the grab bar to close
+function sheetSwipe(el,close,handleOnly){let y0=null,dy=0;
+  el.addEventListener('touchstart',e=>{y0=null;if(!PHONE())return;const h=e.target.closest(handleOnly||'.pophd,.hhd');
+    if(handleOnly?!h:(!h&&el.scrollTop>0))return;y0=e.touches[0].clientY;dy=0;},{passive:true});
+  el.addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy>0){el.style.transition='none';el.style.transform=`translateY(${dy}px)`;}},{passive:true});
+  el.addEventListener('touchend',()=>{if(y0==null)return;el.style.transition='';el.style.transform='';if(dy>70)close();y0=null;});
+  el.addEventListener('click',e=>{if(PHONE()&&e.clientY-el.getBoundingClientRect().top<18&&!e.target.closest('button,select,input'))close();});}
+sheetSwipe($('#ddp'),()=>{if(G){G.ui.dd=null;renderPanel();}});
+sheetSwipe($('#dock'),()=>{const x=$('#dock [data-act="popx"]');if(x)x.click();else if(G){clearSel();G.ui.inspect=-1;refresh();}});
+sheetSwipe($('#hdlg'),()=>closeHelp(),'.hhd');
+// help: tabs follow the swipe
+$('#hdlg').addEventListener('scroll',e=>{const b=e.target;if(!b.classList||!b.classList.contains('hbody'))return;
+  const k=Math.round(b.scrollLeft/Math.max(1,b.clientWidth)),secs=[...b.querySelectorAll('section')],id=secs[k]&&secs[k].id;
+  $('#hdlg').querySelectorAll('.toc button').forEach(t=>t.classList.toggle('on',t.dataset.go===id));},true);
+// start a new game looking at your own capital
+{const sg=startGame;startGame=function(m){sg(m);requestAnimationFrame(()=>{applyZoom(1);if(PHONE()&&G){const n=TURN.find(x=>G.human[x])||'K';centerOn(capIdx(n));}});};}
+// on phones keep the picked territory in the open part of the map, above the sheet
+{const kv=keepInView;keepInView=function(i){if(!PHONE())return kv(i);if(i==null||i<0||!MAP)return;const sh=$('#dock'),dd=$('#ddp');
+  const cov=Math.max(sh&&!sh.hidden?sh.offsetHeight:0,dd&&!dd.hidden?dd.offsetHeight:0),vis=wrapEl.clientHeight-cov;
+  wrapEl.scrollTo({left:MAP.cx[i]*scale-wrapEl.clientWidth/2,top:MAP.cy[i]*scale-vis*0.45,behavior:'smooth'});};}
 
 loadVariant(8);newGame(null);sizeCanvas();draw();renderPanel();showMenu();
 setTimeout(()=>{switchVariant(8,true);
