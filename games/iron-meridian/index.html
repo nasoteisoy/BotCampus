@@ -583,6 +583,105 @@ canvas#map,.mapwrap{touch-action:none}
 body.g15 .layout{align-items:stretch!important}
 @media (pointer:coarse) and (max-height:520px){body.g15 .layout{height:100%;min-height:0;box-sizing:border-box;padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}body.g15 .side{padding-bottom:12px!important}body.g15 .board{width:58%!important;flex:0 0 58%;height:auto!important;max-height:100%}body.g15 .side{flex:1 1 42%;height:auto!important;max-height:100%}}
 
+/* ---- IM8f Dice Battles ---- */
+.g8 .tc8{display:flex;flex-direction:column;gap:6px;padding:2px 2px 8px}
+.g8 .tc-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:15px}
+.g8 .tc-h b{font-family:var(--f-body);letter-spacing:.02em}
+.g8 .rs{font:600 12px var(--f-mono);background:rgba(255,255,255,.06);border-radius:6px;padding:1px 5px;white-space:nowrap}
+.g8 .rs.inc{color:#cfe8b8}
+.g8 .sub8{color:var(--muted);margin:4px 0;font-size:13px}
+.g8 .bl8{display:flex;flex-direction:column;gap:5px}
+.g8 .bc8{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:6px 7px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-width:0}
+.g8 .bc8.pick{border-color:var(--brass-2);box-shadow:0 0 0 2px rgba(246,220,154,.35)}
+.g8 .bc8.moving{opacity:.82;border-style:dashed}
+.g8 .bc-top,.g8 .bc-mid,.g8 .bc-bot{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.g8 .bn{font:600 13px var(--f-body);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g8 .dz{font:600 12px var(--f-mono)}.g8 .dz small{opacity:.7}
+.g8 .ent{font-size:13px}
+.g8 .sym8{display:inline-flex;width:30px;height:20px;border:1.5px solid rgba(12,14,16,.9);background:var(--nc);border-radius:2px;position:relative;flex:none}
+.g8 .sym8 i{position:absolute;inset:3px 5px}
+.g8 .s-inf{background:linear-gradient(to top right,transparent calc(50% - 1px),#f6f1e4 calc(50% - 1px),#f6f1e4 calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(to bottom right,transparent calc(50% - 1px),#f6f1e4 calc(50% - 1px),#f6f1e4 calc(50% + 1px),transparent calc(50% + 1px))}
+.g8 .s-ltk,.g8 .s-mtk,.g8 .s-htk{border:1.6px solid #f6f1e4;border-radius:7px;inset:4px 5px!important}
+.g8 .s-mtk::after{content:'';position:absolute;left:50%;top:0;bottom:0;border-left:1.6px solid #f6f1e4}
+.g8 .s-htk{background:#f6f1e4}
+.g8 .s-ftr::before,.g8 .s-tbm::before,.g8 .s-nbm::before{content:'✈';position:absolute;inset:-4px 0;color:#f6f1e4;font-size:13px;text-align:center}
+.g8 .s-tbm::after,.g8 .s-nbm::after{content:'';position:absolute;left:0;right:0;bottom:-1px;border-bottom:1.6px solid #f6f1e4}
+.g8 .s-nbm{border-top:1.6px solid #f6f1e4}
+.g8 .s-trn{clip-path:polygon(0 45%,100% 45%,86% 100%,14% 100%);background:#f6f1e4}
+.g8 .s-qL::before,.g8 .s-qH::before{content:'?';position:absolute;inset:-4px 0;color:#f6f1e4;font:700 14px var(--f-body);text-align:center}
+.g8 .s-qH{border:1.4px solid #f6f1e4}
+.g8 .pips{display:inline-flex;gap:2px;flex-wrap:wrap}
+.g8 .pips i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+.g8 .pips i.on{background:#e9e2cf;border-color:#e9e2cf}
+.g8 .orgb{flex:1;min-width:60px;height:8px;border-radius:4px;background:rgba(0,0,0,.45);overflow:hidden;position:relative}
+.g8 .orgb i{display:block;height:100%;background:#7fd06e}
+.g8 .orgb.low i{background:#e0664b}
+.g8 .sps,.g8 .lc{display:inline-flex;gap:3px;align-items:center}
+.g8 .spi{min-width:22px;height:22px;display:inline-grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.08);font-size:13px}
+.g8 .spi.empty{color:var(--muted);border:1px dashed var(--line);background:none}
+.g8 .rk{color:var(--brass-2);font-size:12px;letter-spacing:-1px}.g8 .rk.vac{color:var(--muted)}
+.g8 .pk{font-size:14px;line-height:1}.g8 .pk.big small{font-size:10px;margin-left:2px}
+.g8 .mv8{font:600 12px var(--f-body);color:var(--brass-2);display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.g8 .sb8{min-width:30px;min-height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:14px;cursor:pointer;margin-left:auto}
+.g8 .sb8.x{min-width:26px;min-height:26px;margin-left:2px}
+.g8 .sb8:disabled{opacity:.35}
+.g8 .bc-hq{display:flex;flex-direction:column;gap:4px}
+.g8 .off8{display:flex;align-items:center;gap:6px;background:rgba(201,162,90,.1);border:1px solid rgba(201,162,90,.35);border-radius:7px;padding:3px 6px}
+.g8 .off8 .pks{display:inline-flex;gap:3px;flex-wrap:wrap}
+.g8 .xp{flex:1;min-width:40px;height:5px;border-radius:3px;background:rgba(0,0,0,.4);overflow:hidden}.g8 .xp i{display:block;height:100%;background:var(--brass)}
+.g8 .hqa{display:flex;gap:4px;justify-content:flex-end}
+.g8 .mg8{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:5px;cursor:default}
+.g8 .mgh{font-size:13px;color:var(--brass-2)}
+.g8 .spg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.g8 .spb{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;min-height:44px}
+.g8 .spb span{font-size:16px}.g8 .spb small{font:500 10px var(--f-mono);white-space:nowrap}
+.g8 .spb:disabled{opacity:.35}
+.g8 .oa{display:flex;gap:6px;flex-wrap:wrap}
+.g8 .pkg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.g8 .pkb{min-height:36px;border-radius:7px;border:1px solid var(--line);background:var(--panel);font-size:16px;cursor:pointer}
+.g8 .ord8{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:6px}
+.g8 .o8h{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:14px}
+.g8 .o8h .tri b{font-weight:700}
+.g8 .o8h .leg{margin-left:auto;display:inline-flex;gap:3px}.g8 .o8h .leg i{width:14px;height:6px;border-radius:3px}
+.g8 .obar .c,.g8 .leg .c{background:#d4573b}.g8 .obar .m,.g8 .leg .m{background:#d8a63a}.g8 .obar .p,.g8 .leg .p{background:#4f8fd8}
+.g8 .ocs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:4px}
+.g8 .ocs.sup{grid-template-columns:repeat(4,1fr)}
+.g8 .oc8{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px 6px;border-radius:9px;border:1.5px solid color-mix(in srgb,var(--fc) 60%,transparent);background:color-mix(in srgb,var(--fc) 16%,var(--panel));color:var(--ink);cursor:pointer;min-height:56px}
+.g8 .oc8 .oi{font-size:19px;line-height:1}.g8 .oc8 .on{font:600 10.5px var(--f-body);white-space:nowrap}
+.g8 .oc8.on{border-color:var(--brass-2);box-shadow:0 0 0 2px var(--brass-2);background:color-mix(in srgb,var(--fc) 34%,var(--panel))}
+.g8 .oc8.lock{opacity:.45}.g8 .oc8 .lk{position:absolute;top:1px;right:3px;font-size:10px}
+.g8 .obar{display:flex;flex-direction:column;gap:1px;width:80%}.g8 .obar i{display:block;height:3px;border-radius:2px}
+.g8 .fl8{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font:600 12px var(--f-mono)}
+.g8 .fu{display:inline-flex;align-items:center;gap:3px}
+.g8 .buy8 .b8h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.g8 .buy8 select{max-width:150px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px}
+.g8 .tabs8{display:flex;gap:5px;margin-bottom:6px}
+.g8 .b8l{display:flex;flex-direction:column;gap:4px}
+.g8 .b8u{display:flex;align-items:center;gap:6px;background:var(--panel-2);border-radius:8px;padding:4px 6px;min-width:0}
+.g8 .b8s{display:flex;flex-direction:column;flex:1;min-width:0}.g8 .b8s b{font:600 12.5px var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.g8 .b8s small{font:500 10.5px var(--f-mono);color:var(--muted)}
+.g8 .b8c{display:flex;gap:2px;flex-wrap:wrap;max-width:88px;justify-content:flex-end}
+.g8 .stp{display:inline-flex;align-items:center;gap:4px}.g8 .stp b{min-width:14px;text-align:center;font-family:var(--f-mono)}.g8 .stp .sb8{margin:0}
+.g8 .o8 .o8t{display:flex;align-items:center;gap:8px}.g8 .o8 .sw{width:12px;height:12px;border-radius:3px}
+.g8 .o8s{display:flex;gap:12px;margin:6px 0;font:600 14px var(--f-mono)}
+.g8 .o8b{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.g8 .pw8 .pwr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0;border-bottom:1px solid var(--line)}
+.g8 .ppc .t{font:600 12px var(--f-mono);margin-left:3px}
+.g8 .rp8 .rep8{background:var(--panel-2);border-radius:9px;padding:6px;margin:6px 0}
+.g8 .r8h{display:flex;justify-content:space-between;align-items:center}
+.g8 .r8s{border-left:3px solid var(--nc);padding:3px 0 3px 6px;margin-top:4px}
+.g8 .r8o{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.g8 .r8o .oi{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:color-mix(in srgb,var(--fc) 30%,var(--panel));border:1px solid var(--fc)}
+.g8 .r8o i.up{color:#7fd06e}.g8 .r8o i.dn{color:#e0664b}.g8 .r8o i{font-style:normal}
+.g8 .r8n{font:600 12px var(--f-mono)}
+.g8 .r8d{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.g8 .dg{display:inline-flex;gap:1px;padding:1px;border-radius:4px;background:rgba(0,0,0,.25)}
+.g8 .d8{width:15px;height:15px;display:inline-grid;place-items:center;font:600 10px var(--f-mono);font-style:normal;border-radius:3px;background:#e8e3d7;color:#222}
+.g8 .d8.hit{background:#d4573b;color:#fff}
+.g8 .r8l{font-size:12px;margin-top:2px}
+.g8 .caps8{font-size:13px;margin:6px 0;display:flex;flex-wrap:wrap;gap:6px}
+.help8 section{margin:8px 0}.help8 h3{margin:4px 0;font-size:15px}.help8 ul{margin:0;padding-left:18px}.help8 li{margin:2px 0;font-size:13px}
+.rules8{font-size:13px}.rules8 ul{padding-left:18px;margin:4px 0}
+
 </style>
 
 <div class="app">
@@ -627,6 +726,11 @@ body.g15 .layout{align-items:stretch!important}
         <div class="netrow"><button class="btn" data-host="C"><i class="nd" style="background:rgb(56,122,204)"></i>Host as the Concord</button><button class="btn" data-host="P"><i class="nd" style="background:rgb(200,74,48)"></i>Host as the Iron Pact</button></div></div>
       <button class="mode" data-mode="H"><span class="flags"><i style="background:rgb(56,122,204)"></i><i style="background:rgb(200,74,48)"></i></span><span><b>Hot-seat</b><span>Two players share this screen, one per alliance. Orders stay sealed until both have submitted.</span></span></button>
     </div>
+      <div class="rules8" hidden><b>Dice Battles</b><ul>
+        <li>⏳ Everyone gives orders at once: 🏭 buy · ⚙ supports + ★ officers · ➜ moves · 🎖️ combat orders → ✔</li>
+        <li>🪖 Battalions: ❤ HP = platoons, 🎲 a die per company. ⚡ ORG 0 = retreat. ⛏ Entrenched infantry hits 2/6.</li>
+        <li>🎖️ 6 + 4 orders: ⚔️ › 🔀 › 🛡️ › ⚔️. 🔭 Recon identifies enemy battalions. 🪙⛓️💎 from land.</li>
+        <li>❓ Tap anything to see what it is · full rules under ?</li></ul></div>
       <div class="rules">
       <b>How a turn works</b> (everyone at once)
       <ul>
@@ -1153,9 +1257,8 @@ MAPS[6]={...MAPS[5],name:'IRON MERIDIAN 6',sub:'The war up close',figs:true,zmax
   // balance: scattered infrastructure favours the Concord, so its capitals start with fewer extra troops than in game 5
   terr:MAPS[4].terr.map(d=>d[6].includes('cap')?[...d.slice(0,7),d[7]+' aag1 rcn1 bmb1 maj1'+({A:' inf5 tnk1',S:' inf5 tnk1'}[d[5]]||'')]:d),
   blurb:'Game 5 with a closer look: zoom in past 200% and every soldier, gun, tank, plane and officer stands on the map as its own figure. 25 turns.'};
-MAPS[8]={...MAPS[6],name:'IRON MERIDIAN 8',sub:'Battalion combat',bat:true,
-  terr:MAPS[6].terr.map(d=>[...d.slice(0,7),d[7].replace(/ ?maj1/,'')]), // no officers in game 8
-  blurb:'Every fight is a battalion battle: 🪖 soldiers and ❤️ morale, 6 combat orders in 3 families (⚔️ › 🔀 › 🛡️ › ⚔️) and 4 supporting orders, picked in secret each turn. Solo or online. 25 turns.'};
+MAPS[8]={...MAPS[2],name:'IRON MERIDIAN 8',sub:'Dice Battles',adv:true,figs:true,bat:true,zmax:6,maxr:25,xinf:{},
+  blurb:'Dice Battles: ❤ HP platoons, 🎲 company dice, ⚡ ORG, ★ officers and perks, 🧩 supports, 🪙⛓️💎, 🔭 recon, 🚢 transports, ✈ air. 6 + 4 combat orders. Solo or online. 25 turns.'};
 // IRON MERIDIAN 6 demo: four capitals, set up any battle you like and give both alliances' orders
 MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territories',demo:true,W:800,H:520,maxr:99,minw:600,zs:1,zmax:6,xinf:{},land:null,proj:null,wrap:false,
   opening:'Demo: place units for either side, then give both alliances their orders.',
@@ -1163,7 +1266,6 @@ MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territorie
   terr:[['aldhaven','Aldhaven',240,165,6,'A','cap fac','inf2 tnk1'],['kesh','Kesh',540,165,6,'K','cap fac','inf2 tnk1'],
     ['solvar','Solvar',300,365,6,'S','cap fac','inf2 tnk1'],['vyrnhold','Vyrnhold',600,365,6,'V','cap fac','inf2 tnk1']],
   sea:frame(800,520,50)};
-MAPS[9]={...MAPS[7],name:'IRON MERIDIAN 8 · Demo',bat:true,blurb:'The 4-territory sandbox with game 8 battalion combat. Set up any battle and try every order.'};
 let V=0,TERR=[],L=0,LAND=0,SEA=[],ADJ=[],MAP=null;
 function loadVariant(v){
   V=v;const M=MAPS[v],P=M.proj||(p=>p);PROD=M.figs?(M.bat?['inf','art','tnk','ftr']:['inf','art','tnk','ftr','maj']):['inf','art','tnk','aag','ftr','bmb','rcn'];UNITS.tnk.name=M.figs?'Medium armor':'Armor';W=M.W;H=M.H;BW=Math.round(W*RES);BH=Math.round(H*RES);MAXR=M.maxr;SEA=M.sea||[];
@@ -2120,14 +2222,15 @@ function draw(){
     ctx.font=font;const tw=lbl?ctx.measureText(T.name.toUpperCase()).width:0;
     if(lbl)haloText(T.name.toUpperCase(),cx,ny,font,'#f4efe4');
     const vx=cx+tw/2+8*z;ctx.beginPath();ctx.arc(vx,ny,6.2*z,0,Math.PI*2);{const cg=ctx.createRadialGradient(vx-2*z,ny-2*z,0.5,vx,ny,6.5*z);cg.addColorStop(0,'#ffeec0');cg.addColorStop(.6,'#d6a84e');cg.addColorStop(1,'#8a6224');ctx.fillStyle=cg;}ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='rgba(16,20,24,.8)';ctx.stroke();
-    ctx.font=`600 ${8.5*z}px "IBM Plex Mono",monospace`;ctx.fillStyle='#1f1a10';ctx.fillText(T.val,vx,ny+0.5);
+    ctx.font=`600 ${8.5*z}px "IBM Plex Mono",monospace`;ctx.fillStyle='#1f1a10';ctx.fillText(bat()?incOf(i)[0]:T.val,vx,ny+0.5);if(bat()&&(kindOf(i)==='metal'||kindOf(i)==='tung')){ctx.font=`${9*z}px sans-serif`;ctx.fillText(KIND[kindOf(i)].i,vx+12*z,ny+0.5);}
     let lx=cx-tw/2-8*z;
     if(T.cap){star(lx,ny,6.5*z);ctx.fillStyle='#f2d58f';ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle='rgba(16,20,24,.85)';ctx.stroke();lx-=13*z;}
-    const fogged=G.vis&&!G.vis[i],ifr=adv()?infraOf(i):0;
-    if(adv()?ifr>0:T.fac){const s=5*z;ctx.fillStyle='#e8e3d7';ctx.strokeStyle='rgba(16,20,24,.85)';ctx.lineWidth=1;ctx.beginPath();
+    const fogged=G.vis&&!G.vis[i],ifr=adv()&&!bat()?infraOf(i):0;
+    if(bat()?false:adv()?ifr>0:T.fac){const s=5*z;ctx.fillStyle='#e8e3d7';ctx.strokeStyle='rgba(16,20,24,.85)';ctx.lineWidth=1;ctx.beginPath();
       ctx.moveTo(lx-s,ny+s);ctx.lineTo(lx-s,ny-s*0.2);ctx.lineTo(lx-s*0.3,ny+s*0.3);ctx.lineTo(lx-s*0.3,ny-s*0.2);ctx.lineTo(lx+s*0.4,ny+s*0.3);ctx.lineTo(lx+s*0.4,ny-s*1.2);ctx.lineTo(lx+s,ny-s*1.2);ctx.lineTo(lx+s,ny+s);ctx.closePath();ctx.fill();ctx.stroke();
       if(adv()){ctx.font=`700 ${8*z}px "IBM Plex Mono",monospace`;haloText(String(ifr),lx-s-5*z,ny+1*z,ctx.font,'#e8e3d7');}}
     if(contested(i)&&!fogged){const ak=ux6()&&attackerOf(i);battleBadge(cx,ny-15*z,z,ak);}}
+    if(bat()){d8Draw(i);return;}
     const groups={};t.units.forEach(u=>{if(G.vis&&!G.vis[i]&&al(u.o)!==viewer())return;(groups[u.o]=groups[u.o]||[]).push(u);});
     if(bat()||!ux6()){drawCounters(i,groups);return;}
     if(ux6()){const ps=panelsAt(i);if(figMode())drawFigures(i,ps,cx,cy,z);else drawChips6(i,ps,cx,cy,z);return;}
@@ -2147,7 +2250,7 @@ function draw(){
   if(G.planner&&!G.busy){const agg=new Map();
     G.t.forEach((t,i)=>t.units.forEach(u=>{if(u.ord>=0&&NAT[u.o].al===G.planner&&G.human[u.o]){const k=i+'>'+u.ord,e=agg.get(k)||{n:0,t:u.t};e.n++;if(UNITS[e.t].air&&!UNITS[u.t].air)e.t=u.t;agg.set(k,e);}}));
     agg.forEach((e,k)=>{const [a,b]=k.split('>').map(Number),rd=G.ui.redir;
-      const route=routeFor(a,b,e.t,G.planner).map(j=>[MAP.cx[j],MAP.cy[j]]); // land route when the order has land units in it
+      const route=bat()?d8Route(a,b):routeFor(a,b,e.t,G.planner).map(j=>[MAP.cx[j],MAP.cy[j]]); // land route when the order has land units in it
       // on a wrapping map a route that crosses the edge runs off one side and is drawn again coming in on the other
       if(MAPS[V].wrap)for(let k=1;k<route.length;k++){const d=route[k][0]-route[k-1][0];if(d>W/2)route[k][0]-=W;else if(d<-W/2)route[k][0]+=W;}
       const off=route.some(p=>p[0]<0)?W:route.some(p=>p[0]>W)?-W:0;
@@ -2373,7 +2476,7 @@ function drawFigures(i,ps,cx,cy,z){
     y+=(p.h+0.12)*s;});
 }
 // hover help for unit rows and arrows
-function showTip(e){const tip=$('#tip');if(!G||!ux6()||!MAP){tip.hidden=true;return;}
+function showTip(e){const tip=$('#tip');if(!G||!ux6()||!MAP||bat()){tip.hidden=true;return;}
   const p=evPos(e),ch=chipAt(p.x,p.y);let s='';
   const plan=!!G.planner&&!G.busy;
   if(ch){const U=UNITS[ch.t],nm=n=>n===1||['inf','art','tnk'].includes(ch.t)?U.name:U.name+'s',who=NAT[ch.o].short,stats=`<span class="m">Attack ${U.atk} · Defence ${U.def} · Move ${U.mv}</span>`;
@@ -2612,7 +2715,7 @@ $('#mtools').addEventListener('click',e=>{if(!G)return;const b=e.target.closest(
   if(b){G.ui.dd=G.ui.dd===b.dataset.dd?null:b.dataset.dd;renderPanel();return;}
   if(e.target.closest('#mtSubmit')&&G.planner&&!G.busy)submitOrders();});
 // right-click puts a picked-up kind of unit back down, or cancels the orders of units that have them
-cv.addEventListener('contextmenu',e=>{if(!G||!ux6())return;e.preventDefault();if(G.busy||!G.planner)return;
+cv.addEventListener('contextmenu',e=>{if(!G||!ux6()||bat())return;e.preventDefault();if(G.busy||!G.planner)return;
   const p=evPos(e),ch=chipAt(p.x,p.y);
   if(ch&&ch.ord){G.t[ch.i].units.forEach(u=>{if(u.o===ch.o&&u.t===ch.t&&isOrd(u)){u.ord=-1;delete u.goal;}});clearSel();refresh();showTip(e);return;}
   if(ch&&!ch.lost&&G.ui.sel===ch.i){G.ui.counts[ch.o+':'+ch.t]=0;if(!Object.values(G.ui.counts).some(v=>v>0))clearSel();else computeDests();refresh();showTip(e);return;}
@@ -2624,6 +2727,7 @@ $('#dock').addEventListener('click',onAct);
 $('#side').addEventListener('change',e=>{const s=e.target.closest('[data-fac]');if(!s||!G||!G.planner)return;const n=s.dataset.fac,o=G.orders[n];o.fac=+s.value;
   renderPanel();$('#fac-'+n).focus();});
 cv.addEventListener('click',e=>{
+  if(G&&bat()){d8Tap(e);return;}
   if(!G||!MAP)return;const i=hit(e);
   if(G.busy||G.over||!G.planner){G.ui.inspect=i;renderPanel();return;}
   const p=evPos(e),ar=arrowAt(p.x,p.y);
@@ -2654,7 +2758,7 @@ function showMenu(){$('#battle').hidden=true;$('#setup').hidden=false;$('#pickGa
 function showModes(){const M=MAPS[V];$('#pickGame').hidden=true;$('#pickMode').hidden=false;
   $('#modeEyebrow').textContent=M.name;
   $('#modeIntro').textContent=`Two alliances split the map corner to corner. Take enemy capitals, plunder their treasuries, and hold the most land after ${MAXR} turns.`;
-  $('#navalRule').hidden=!M.naval;document.querySelectorAll('[data-adv]').forEach(e=>e.hidden=!M.adv);$('#optLogRow').hidden=!M.adv;document.querySelectorAll('[data-fig]').forEach(e=>e.hidden=!M.figs);document.querySelectorAll('[data-off]').forEach(e=>{if(M.bat)e.hidden=true;});document.querySelectorAll('[data-batonly]').forEach(e=>e.hidden=!M.bat);$('#netHostBox').hidden=!!M.demo;const f=$('#pickMode [data-mode]');if(f)f.focus();}
+  $('#navalRule').hidden=!M.naval;document.querySelectorAll('[data-adv]').forEach(e=>e.hidden=!M.adv);$('#optLogRow').hidden=!M.adv;document.querySelectorAll('[data-fig]').forEach(e=>e.hidden=!M.figs);document.querySelectorAll('[data-off]').forEach(e=>{if(M.bat)e.hidden=true;});document.querySelectorAll('[data-batonly]').forEach(e=>e.hidden=!M.bat);$('#pickMode .rules').hidden=!!M.bat;$('#pickMode .rules8').hidden=!M.bat;$('#netHostBox').hidden=!!M.demo;const f=$('#pickMode [data-mode]');if(f)f.focus();}
 // swap in the other war's map; building it takes a moment
 function switchVariant(v,keep){
   loadVariant(v);buildMap();if(!(keep&&G&&G.mode))newGame(null);
@@ -2662,7 +2766,7 @@ function switchVariant(v,keep){
   MINW=MAPS[v].minw||760;ZMAX=MAPS[v].zmax||4;ZOOM=1;applyZoom(1); // bigger maps need more room before they scroll
   cv.setAttribute('aria-label','Map of '+(MAPS[v].place||(MAPS[v].naval?'the Shattered Sea':'Varrow')));
   $('#legend').innerHTML=['K','V','A','S','N'].map(n=>`<span><i style="background:${rgb(NAT[n].rgb)}"></i>${NAT[n].short}${n!=='N'?` · ${ALLY[NAT[n].al]}`:''}</span>`).join('')+
-    '<span>★ capital</span>'+(MAPS[v].figs?'<span><i style="background:repeating-linear-gradient(135deg,#c06a4e 0 4px,#3a4a5a 4px 8px)"></i>battle, striped in the attacker’s colour</span><span><i style="background:#6e7276;outline:1px dashed #f2d58f"></i>units with orders</span><span>✕ lost last turn</span>':'')+(MAPS[v].adv?'<span>▮ infrastructure (lines)</span><span><i style="background:#3d4247"></i>fog of war</span>':'<span>▮ factory</span>')+'<span>● income value</span><span>⚔ battle in progress</span>'+(MAPS[v].naval?'<span><i style="background:#3a5866;outline:1px dashed #a9cadb"></i>sea zone</span>':'');
+    '<span>★ capital</span>'+(MAPS[v].figs?'<span><i style="background:repeating-linear-gradient(135deg,#c06a4e 0 4px,#3a4a5a 4px 8px)"></i>battle, striped in the attacker’s colour</span><span><i style="background:#6e7276;outline:1px dashed #f2d58f"></i>units with orders</span><span>✕ lost last turn</span>':'')+(MAPS[v].adv?(MAPS[v].bat?'':'<span>▮ infrastructure (lines)</span>')+'<span><i style="background:#3d4247"></i>fog of war</span>':'<span>▮ factory</span>')+(MAPS[v].bat?'<span>🪙 ⛓️ 💎 income</span><span>❔ unidentified enemy</span>':'<span>● income value</span>')+'<span>⚔ battle in progress</span>'+(MAPS[v].naval?'<span><i style="background:#3a5866;outline:1px dashed #a9cadb"></i>sea zone</span>':'');
   sizeCanvas();renderBase();draw();renderPanel();}
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-game]');if(!b||b.getAttribute('aria-busy'))return;const v=+b.dataset.game;
   if(MAPS[v].demo){const go=()=>{switchVariant(v);startGame('D');};if(v===V)go();else{b.setAttribute('aria-busy','true');b.querySelector('b').textContent='Charting the map…';setTimeout(go,30);}return;}
@@ -2730,7 +2834,7 @@ function joinOnline(raw){const code=String(raw||'').toUpperCase().replace(/[^A-Z
   }).catch(netFail).finally(()=>{btn.disabled=false;btn.textContent='Join';});}
 // the other player loads each new state the host sends
 function netApply(d){const o=G.online,side=G.side,first=!o.seq;o.seq=d.seq;
-  const s=JSON.parse(d.s);G=Object.assign(s,{ui:{sel:-1,counts:{},dests:new Map(),inspect:-1},undo:[],online:o,side,mode:'O',queue:[side],pending:[],busy:false});
+  const s=JSON.parse(d.s);G=Object.assign(s,{ui:{sel:-1,counts:{},dests:new Map(),inspect:-1,pick:[],exp:-1},undo:[],online:o,side,mode:'O',queue:[side],pending:[],busy:false});
   TURN.forEach(n=>G.human[n]=true);
   if(G.over){G.planner=null;refresh();gameOver(G.over==='draw'?null:G.over,G.overWhy||'');return;}
   G.planner=side;G.phase='buy';
@@ -2880,203 +2984,323 @@ window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-dra
 window.addEventListener('pointerup',()=>{drag=null;cv.classList.remove('panning');});
 cv.addEventListener('click',e=>{if(dragged){dragged=false;e.stopImmediatePropagation();}},true);
 
-/* ---------- IRON MERIDIAN 8: battalion combat, only what the design chat describes: soldiers, morale, 6+4 orders, 3 families ---------- */
+/* ---------- IRON MERIDIAN 8f: Dice Battles. Only what the design chats say:
+   "Designing Dice Battles" (HP platoons, company dice, units, support, entrenchment, ORG, officers, resources, recon, transport, air)
+   + "Design Battalion Combat" (the 6 primary + 4 supporting orders, their 3 families, modifiers and characteristic bars) ---------- */
 const bat=()=>!!(MAPS[V]&&MAPS[V].bat);
-// c casualty damage, mo morale damage, p protection, su supply use (1-5 ratings, shown as bars on the cards)
+// battalions: HP = platoons, strikes = companies = ⌈HP/per⌉, a strike hits on a d6 roll ≤ hit (ent when entrenched); c = [🪙 production, ⛓️ metal, 💎 tungsten]
+const BT={
+  inf:{n:'Infantry',hp:9,per:3,hit:1,ent:2,mv:1,c:[3,0,0],cls:'L'},
+  ltk:{n:'Light armor',hp:6,per:2,hit:3,ent:3,mv:3,c:[5,1,0],cls:'H',arm:1},
+  mtk:{n:'Medium armor',hp:6,per:2,hit:3,ent:3,mv:2,c:[6,2,1],cls:'H',arm:1},
+  htk:{n:'Heavy armor',hp:6,per:2,hit:4,ent:4,mv:1,c:[8,3,2],cls:'H',arm:1},
+  ftr:{n:'Fighter',hp:3,per:1,hit:3,mv:1,c:[8,0,1],air:1,t:'Hits planes only · own + next lands'},
+  tbm:{n:'Tactical bomber',hp:3,per:1,hit:2,mv:1,c:[12,0,2],air:1,t:'Hits ground units · own + next lands'},
+  nbm:{n:'Naval bomber',hp:3,per:1,hit:2,mv:1,c:[12,0,2],air:1,t:'Hits ships · next sea zones'},
+  trn:{n:'Transport',hp:3,per:0,hit:0,mv:2,c:[3,1,0],sea:1,t:'Carries 1 battalion · no strikes'}};
+const BUY8=['inf','ltk','mtk','htk','ftr','tbm','nbm','trn'];
+// support attachments: 1 HP each, max 2 a battalion (+1 Coordinator)
+const SP={
+  mec:{n:'Mechanized',i:'🚚',c:[2,1,0],t:'+1 👣 move · infantry only'},
+  art:{n:'Artillery',i:'💥',c:[2,1,0],t:'+1 🎲 strike · hits 2/6'},
+  at:{n:'Anti-tank',i:'🎯',c:[2,0,1],t:'+1 🎲 vs armor · hits 2/6'},
+  rec:{n:'Recon',i:'🔭',c:[1,0,0],t:'+1 👁 identifies 1 enemy battalion'},
+  eng:{n:'Engineers',i:'⛏',c:[1,0,0],t:'⛏ Entrenches at once'},
+  med:{n:'Medical',i:'🩹',c:[2,0,0],t:'+2 HP a turn instead of +1'},
+  hq:{n:'Headquarters',i:'📡',c:[2,0,0],t:'+25 ORG recovery a turn'},
+  aa:{n:'Anti-air',i:'🛡',c:[2,0,0],t:'+1 🎲 vs aircraft · hits 2/6'}};
+const SPK=Object.keys(SP);
+// officer perks (final list: morale became ORG)
+const PK={
+  agg:['⚔️','Aggressive','+1/6 hit when attacking'],dfn:['🛡️','Defensive','+1/6 hit when entrenched'],
+  ins:['❤️','Inspiring','+33 max ORG'],dis:['🎖️','Disciplined','−11 ORG damage a round'],
+  rel:['🔥','Relentless','No low-ORG strike penalty'],tac:['🎲','Tactician','Rerolls 1 missed strike a turn'],
+  frt:['🏰','Fortifier','Entrenches at once'],sco:['👁️','Scout','+1 vision'],
+  mob:['🐎','Mobile','+1 move outside combat'],cau:['🏳️','Cautious','Withdraws without losses'],
+  org:['🔄','Organizer','+25 ORG recovery a turn'],coo:['🤝','Coordinator','+1 support slot'],
+  arx:['🎆','Artillery Expert','+1/6 on the artillery strike'],amx:['🛞','Armor Expert','+1/6 hit for armor'],
+  ahu:['🔩','Armor Hunter','Our hits find armor more'],ihu:['🪖','Infantry Hunter','Our hits find infantry more'],
+  cbt:['📍','Counter Battery','Our hits find artillery more'],sab:['🧨','Saboteur','Our hits find support more'],
+  apr:['🧱','Armor Protection','Our armor is hit less'],spr:['☂️','Support Protection','Our support is hit less'],
+  ipr:['🪨','Infantry Protection','Our infantry is hit less']};
+const PKK=Object.keys(PK);
+const RK={lc:{n:'Lt. Colonel',s:'★',t:'Own battalion'},col:{n:'Colonel',s:'★★',t:'Every friendly battalion in this territory',c:5,need:2},gen:{n:'General',s:'★★★',t:'This territory + every neighbour',c:10,need:3}};
+const XPL=[0,10,25,50,100]; // XP for 1..5 perks
+// the 6 + 4 orders (bars from the chat: c casualty damage, mo morale/ORG damage, p protection, 0-5)
 const BO={
-  as:{i:'⚔️',f:'A',n:'Assault',c:4,mo:3,p:1,su:3,t:'Overwhelm them'},
-  ca:{i:'🔄',f:'A',n:'Counterattack',c:3,mo:4,p:2,su:3,t:'Hit back'},
-  df:{i:'🛡️',f:'D',n:'Defend',c:2,mo:1,p:5,su:1,t:'Dig in · readies 🎯'},
-  am:{i:'🎯',f:'D',n:'Ambush',c:5,mo:5,p:3,su:3,t:'Deadly trap · needs ⏳ prep'},
-  mv:{i:'🔀',f:'M',n:'Maneuver',c:2,mo:5,p:3,su:3,t:'Outflank · big ❤️ hits'},
-  bb:{i:'💥',f:'M',n:'Bombard',c:4,mo:3,p:4,su:5,t:'Shell them · uses 📦📦'},
-  ra:{i:'🚩',f:'S',n:'Rally',c:0,mo:0,p:2,su:1,t:'+❤️ morale · no attack'},
-  wd:{i:'🏳️',f:'S',n:'Withdraw',c:0,mo:0,p:3,su:1,t:'Organized retreat · 🐎 Pursue stops it'},
-  pu:{i:'🐎',f:'S',n:'Pursue',c:3,mo:3,p:1,su:3,t:'Stops a retreat · crushes shaken foes'},
-  ro:{i:'🔧',f:'S',n:'Reorganize',c:1,mo:0,p:3,su:1,t:'Regroup · +📦📦 supply back'}};
+  as:{i:'⚔️',f:'A',n:'Assault',c:5,mo:4,p:1,t:'Overwhelm them'},
+  ca:{i:'🔄',f:'A',n:'Counterattack',c:4,mo:3,p:3,t:'Hit back'},
+  df:{i:'🛡️',f:'D',n:'Defend',c:2,mo:2,p:5,t:'Heavy losses for attackers'},
+  am:{i:'🪤',f:'D',n:'Ambush',c:4,mo:5,p:2,t:'Needs preparation: ⛏ entrenched'},
+  mv:{i:'🔀',f:'M',n:'Maneuver',c:3,mo:5,p:2,t:'Outflank · big ORG damage'},
+  bb:{i:'💣',f:'M',n:'Bombard',c:4,mo:5,p:3,t:'Shell them'},
+  ra:{i:'🚩',f:'S',n:'Rally',c:0,mo:0,p:2,t:'+25 ORG · no attack'},
+  wd:{i:'🏳️',f:'S',n:'Withdraw',c:0,mo:0,p:2,t:'Organized retreat · 🐎 Pursue stops it'},
+  pu:{i:'🐎',f:'S',n:'Pursue',c:4,mo:4,p:1,t:'Stops a retreat · best vs withdrawing or broken'},
+  ro:{i:'🔧',f:'S',n:'Reorganize',c:0,mo:0,p:3,t:'+15 ORG · more protection'}};
 const BOK=Object.keys(BO),PRI=['as','ca','df','am','mv','bb'],SUPO=['ra','wd','pu','ro'];
-const FAMC={A:'#d4573b',D:'#4f8fd8',M:'#6cae5e',S:'#8d958f'},FAMI={A:'⚔️',D:'🛡️',M:'🔀',S:'🚩'},BEATS={A:'M',D:'A',M:'D'},LOSES={A:'D',D:'M',M:'A'};
-const SUC={as:1,ca:1,df:0,am:1,mv:1,bb:2,ra:0,wd:0,pu:1,ro:0};
+const FAMC={A:'#d4573b',D:'#4f8fd8',M:'#e0a43a',S:'#8d958f'},BEATS={A:'M',D:'A',M:'D'},LOSES={A:'D',D:'M',M:'A'};
 const OUT={adv:{d:1.25,m:1.5,n:'Advantage',a:'▲',c:'up'},even:{d:1,m:1,n:'Even',a:'＝',c:'eq'},dis:{d:.75,m:.5,n:'Disadvantage',a:'▼',c:'dn'},stal:{d:.5,m:.5,n:'Stalemate',a:'⏸',c:'eq'}};
 function outOf(a,b){const fa=BO[a].f,fb=BO[b].f;if(fa==='S'||fb==='S')return 'even';if(fa===fb)return fa==='D'?'stal':'even';return BEATS[fa]===fb?'adv':'dis';}
-const SOLD={inf:100,ltk:100,art:80,tnk:120,htk:150,ftr:40,bmb:40,dst:150,bat:250,trn:0};
-const solOf=u=>combat(u.t)?(SOLD[u.t]==null?100:SOLD[u.t]):0;
-const RMAX=1; // the design: one order each per turn, the result after each turn, and the battle goes on while both stay
-const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const batOwn=i=>isSea(i)?null:al(G.t[i].owner);
-const batSides=i=>[...new Set(G.t[i].units.filter(grounded).map(u=>al(u.o)))];
-const batUnits=(i,k)=>G.t[i].units.filter(u=>al(u.o)===k&&grounded(u));
+// territory income: [🪙,⛓️,💎]
+const KIND={wild:{n:'Wilderness',i:'🌲',r:[0,0,0]},rural:{n:'Rural',i:'🌾',r:[1,0,0]},town:{n:'Town',i:'🏘️',r:[2,0,0]},city:{n:'City',i:'🏙️',r:[4,0,0]},
+  cap:{n:'Capital',i:'⭐',r:[6,0,0]},metal:{n:'Metal mining region',i:'⛓️',r:[1,2,0]},tung:{n:'Tungsten mining region',i:'💎',r:[1,0,1]}};
+const RSI=['🪙','⛓️','💎'],RESN=['Production','Metal','Tungsten'];
+const MAXORG=100,SHAKEN=33;
+const rnd6=()=>1+Math.floor(Math.random()*6),pick=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sround=x=>Math.floor(x)+(Math.random()<x-Math.floor(x)?1:0); // keep fractions fair: 1.25 hits is 1 hit, or 2 one time in 4
+const isBat=u=>!!(BT[u.t]&&!BT[u.t].air&&!BT[u.t].sea);
+const isArm=u=>!!(BT[u.t]&&BT[u.t].arm);
+const firstNat=a=>TURN.find(n=>NAT[n].al===a);
+const costTxt=c=>c.map((v,k)=>v?`${RSI[k]}${v}`:'').filter(Boolean).join(' ');
+const canPay=(n,c)=>{const r=avail8(n);return c.every((v,k)=>r[k]>=v);};
+const pay=(n,c,s=1)=>{const r=G.nat[n].r;c.forEach((v,k)=>r[k]-=v*s);};
+function avail8(n){const r=G.nat[n].r.slice(),b=(G.orders[n]||{}).buy||{};for(const k in b)BT[k].c.forEach((v,x)=>r[x]-=v*b[k]);return r;}
+function d8Kinds(){const kinds=TERR.map(T=>T.sea?null:T.cap?'cap':T.val>=5?'city':T.val>=3?'town':'rural');
+  TURN.forEach(n=>{const j=TERR.findIndex(T=>!T.sea&&!T.cap&&T.owner0===n&&kinds[T.i]==='rural');if(j>=0)kinds[j]='metal';});
+  TERR.filter(T=>!T.sea&&T.owner0==='N').forEach((T,x)=>{kinds[T.i]=x%3===0?'tung':x%3===1?'metal':kinds[T.i];});
+  return kinds;}
+const kindOf=i=>G.kind?G.kind[i]:null;
+const incOf=i=>{const k=kindOf(i);return k?KIND[k].r:[0,0,0];};
+// officers
+const lvlOf=xp=>XPL.filter(x=>xp>=x).length;
+function newPerk(have){const free=PKK.filter(k=>!have.includes(k));return free.length?pick(free):null;}
+function mkOff(r,p){return{r,p,xp:XPL[Math.max(0,p.length-1)]};}
+function mkBat(t,o){const u={id:++G.nid,t,o,hp:BT[t].hp,org:MAXORG,ent:0,att:0,sp:[],hq:[],ord:-1};
+  if(isBat(u))u.lc=mkOff('lc',[pick(PKK)]); // every battalion comes with its Lt. Colonel
+  return u;}
+// the officers whose command covers battalion u standing in territory i, and the perks they give (identical perks don't stack)
+function offsOver(u,i){const a=al(u.o),o=[];if(u.lc)o.push(u.lc);
+  const near=(j,r)=>G.t[j].units.forEach(v=>{if(al(v.o)!==a)return;(v.hq||[]).forEach(h=>{if(h.r==='gen'||(r==='col'&&j===i))o.push(h);});});
+  near(i,'col');ADJ[i].forEach(j=>G.t[j].units.forEach(v=>{if(al(v.o)!==a)return;(v.hq||[]).forEach(h=>{if(h.r==='gen')o.push(h);});}));
+  return o;}
+function perksOf(u,i){const s=new Set();if(i==null||i<0)i=whereIs(u);offsOver(u,i).forEach(h=>h.p.forEach(p=>s.add(p)));return s;}
+function whereIs(u){for(let i=0;i<L;i++)if(G.t[i].units.includes(u))return i;return -1;}
+const maxOrg=(u,P)=>MAXORG+((P||perksOf(u)).has('ins')?33:0);
+const slots=(u,P)=>2+((P||perksOf(u)).has('coo')?1:0);
+function strikes(u,P){const T=BT[u.t];if(!T.per)return 0;let n=Math.ceil(u.hp/T.per);if(isBat(u)&&u.org<=SHAKEN&&!P.has('rel'))n=Math.max(1,n-1);return n;}
+function hitOf(u,P){const T=BT[u.t];let h=u.ent?T.ent:T.hit;if(P.has('agg')&&u.att)h++;if(P.has('dfn')&&u.ent)h++;if(P.has('amx')&&T.arm)h++;return Math.min(6,h);}
+function moveOf(u,P){let m=BT[u.t].mv;if(u.t==='inf'&&u.sp.includes('mec'))m++;if(isBat(u)&&P.has('mob'))m++;return m;}
+const vis8=(u,P)=>u.sp.filter(s=>s==='rec').length+(P.has('sco')?1:0);
+const hpOf=us=>us.reduce((s,u)=>s+u.hp+(u.sp?u.sp.length:0),0);
+/* ---- setup ---- */
+function d8New(mode){
+  G={mode,human:{K:false,A:false,V:false,S:false},round:1,phase:'buy',planner:null,queue:[],nat:{},orders:{},t:[],log:[],undo:[],nid:0,idn:{P:{},C:{}},
+     ui:{sel:-1,counts:{},dests:new Map(),inspect:-1,pick:[],exp:-1},over:null,busy:false,lost:[],scout:{},showLog:true,repHTML:null};
+  if(mode==='C')G.queue=['C'];else if(mode==='P')G.queue=['P'];else if(mode==='H')G.queue=['P','C'];
+  TURN.forEach(n=>G.human[n]=G.queue.includes(NAT[n].al));
+  G.kind=d8Kinds();
+  G.t=TERR.map(T=>({owner:T.owner0,units:[],cr:0}));
+  // the starting armies: infantry and armor become battalions (armor = medium), artillery attaches to an infantry battalion, fighters stay fighters
+  TERR.forEach((T,i)=>{const o=T.owner0;if(!T.units0)return;const art=[];
+    T.units0.split(' ').filter(Boolean).forEach(tok=>{const k=tok.slice(0,3),c=+tok.slice(3);for(let x=0;x<c;x++){
+      if(k==='inf')G.t[i].units.push(mkBat('inf',o));else if(k==='tnk')G.t[i].units.push(mkBat('mtk',o));else if(k==='ftr')G.t[i].units.push(mkBat('ftr',o));else if(k==='art')art.push(1);}});
+    art.forEach(()=>{const u=G.t[i].units.find(u=>u.t==='inf'&&u.sp.length<2&&!u.sp.includes('art'));if(u)u.sp.push('art');});
+    G.t[i].units.forEach(u=>{if(isBat(u))u.ent=1;});});
+  TURN.forEach(n=>{G.nat[n]={r:[0,0,0]};const inc=d8Income(n);G.nat[n].r=inc.slice();});
+  d8Intel();}
+function d8Income(n){const r=[0,0,0];G.t.forEach((t,i)=>{if(t.owner!==n||isSea(i)||contested(i)||t.cr>=G.round)return;incOf(i).forEach((v,k)=>r[k]+=v);});return r;}
+function d8StartRound(){
+  G.t.forEach(t=>t.units.forEach(u=>{u.ord=-1;u.path=null;}));
+  TURN.forEach(n=>{const o=G.orders[n]||{};G.orders[n]={buy:{},at:d8Sites(n).includes(o.at)?o.at:(d8Sites(n)[0]??-1),bo:{}};});
+  G.undo=[];G.pending=G.queue.filter(a=>TURN.some(n=>NAT[n].al===a&&alive(n)));
+  nextPlanner(true);}
+// new units arrive at an owned, calm capital or city
+const d8Sites=n=>G.t.map((t,i)=>i).filter(i=>G.t[i].owner===n&&!isSea(i)&&!contested(i)&&(kindOf(i)==='cap'||kindOf(i)==='city'));
+/* ---- movement ---- */
+const inBattle=i=>!isSea(i)&&contested(i);
+const safe=(j,a)=>!isSea(j)&&al(G.t[j].owner)===a&&!G.t[j].units.some(v=>isBat(v)&&al(v.o)!==a);
+function transOf(u,i){return u.on?G.t[i].units.find(v=>v.id===u.on):null;}
+function carried(tr,i){return G.t[i].units.filter(v=>v.on===tr.id);}
+function seatFree(j,a,skip){return G.t[j].units.find(v=>v.t==='trn'&&al(v.o)===a&&v.ord<0&&!G.t[j].units.some(w=>w.on===v.id)&&!d8AllUnits().some(w=>w!==skip&&w.ord===j&&w.board===v.id));}
+function d8AllUnits(){const a=[];G.t.forEach(t=>t.units.forEach(u=>a.push(u)));return a;}
+// where unit u standing in i may be sent this turn: Map(dest -> path)
+function d8Dests(u,i){const a=al(u.o),d=new Map(),T=BT[u.t];if(!T)return d;const P=perksOf(u,i);
+  if(T.sea){const q=[[i,[i]]],seen=new Set([i]);while(q.length){const [c,p]=q.shift();if(p.length-1>=T.mv)continue;
+      ADJ[c].forEach(j=>{if(seen.has(j)||!isSea(j))return;seen.add(j);d.set(j,p.concat(j));q.push([j,p.concat(j)]);});}return d;}
+  if(T.air){ADJ[i].forEach(j=>{if(safe(j,a))d.set(j,[i,j]);});return d;}
+  if(isSea(i)){const tr=transOf(u,i);if(tr&&tr.ord<0)ADJ[i].forEach(j=>{if(!isSea(j))d.set(j,[i,j]);});return d;} // unload
+  if(inBattle(i))return d; // in a battle: only the Withdraw order takes you out
+  const mv=moveOf(u,P),q=[[i,[i]]],seen=new Set([i]);
+  while(q.length){const [c,p]=q.shift();if(p.length-1>=mv)continue;if(c!==i&&!safe(c,a))continue;
+    ADJ[c].forEach(j=>{if(seen.has(j)||isSea(j))return;seen.add(j);d.set(j,p.concat(j));q.push([j,p.concat(j)]);});}
+  ADJ[i].forEach(j=>{if(isSea(j)&&seatFree(j,a,u))d.set(j,[i,j]);}); // board a waiting transport
+  return d;}
+/* ---- recon: each vision point identifies one enemy battalion; vision of nearby friendly battalions adds up ---- */
+function d8Intel(){['P','C'].forEach(a=>{const keep=G.idn[a]||{},nw={};
+  G.t.forEach((t,j)=>{const foes=t.units.filter(u=>isBat(u)&&al(u.o)!==a);if(!foes.length)return;
+    let v=0;[j,...ADJ[j]].forEach(k=>G.t[k].units.forEach(u=>{if(isBat(u)&&al(u.o)===a)v+=vis8(u,perksOf(u,k));}));
+    if(!v)return;const ids=foes.map(u=>u.id),had=(keep[j]||[]).filter(x=>ids.includes(x)).slice(0,v);
+    const rest=ids.filter(x=>!had.includes(x)).sort(()=>Math.random()-0.5);while(had.length<v&&rest.length)had.push(rest.pop());nw[j]=had;});
+  G.idn[a]=nw;});}
+// what viewer a sees of territory i: own side in full; enemies only next to own land or troops, battalions as light/heavy unless identified
+function seen8(i){const a=viewer(),t=G.t[i];if(!a)return{units:t.units,unk:[]};
+  if(G.vis&&!G.vis[i])return{units:t.units.filter(u=>al(u.o)===a),unk:[]};
+  const idn=(G.idn[a]||{})[i]||[],units=[],unk=[];
+  t.units.forEach(u=>{if(al(u.o)===a||!isBat(u)||idn.includes(u.id))units.push(u);else unk.push(u);});
+  return{units,unk};}
+/* ---- combat ---- */
+// one hit lands on a random eligible HP: every platoon and every attachment (1 HP) is equally likely, bent by officer targeting perks
+function allocHit(foes,Ps,armOnly){const pool=[];
+  foes.forEach(v=>{if(v.hp<=0)return;const Pv=v._P||new Set();
+    if(!armOnly||isArm(v)){let w=1;if(isArm(v)){if(Ps.has('ahu'))w*=2;if(Pv.has('apr'))w*=.5;}else if(v.t==='inf'){if(Ps.has('ihu'))w*=2;if(Pv.has('ipr'))w*=.5;}
+      pool.push({v,w:w*v.hp});}
+    if(!armOnly)v.sp.forEach((s,x)=>{let w=1;if(Ps.has('sab'))w*=2;if(s==='art'&&Ps.has('cbt'))w*=2;if(Pv.has('spr'))w*=.5;pool.push({v,s:x,w});});});
+  const tot=pool.reduce((s,p)=>s+p.w,0);if(!tot)return null;let x=Math.random()*tot;for(const p of pool)if((x-=p.w)<0)return p;return pool[pool.length-1];}
+function applyHit(h){if(!h)return null;if(h.s!=null){const k=h.v.sp.splice(h.s,1)[0];return{v:h.v,sp:k};}h.v.hp--;return{v:h.v};}
+function rollSet(n,need,tac){const r=[];for(let k=0;k<n;k++)r.push(rnd6());let rr=-1;if(tac){rr=r.findIndex(x=>x>need);if(rr>=0)r[rr]=rnd6();}return{r,need,hits:r.filter(x=>x<=need).length,rr};}
 function tgtOf(k,keys,own){const o=keys.filter(x=>x!==k);return k!==own&&o.includes(own)?own:o[0];}
-const soldiers=(i,k)=>Math.max(0,batUnits(i,k).reduce((s,u)=>s+solOf(u),0)-((G.bt&&G.bt[i]&&G.bt[i][k])?G.bt[i][k].pool:0));
-// per-battle state of each battalion
-function bst(i,k){G.bt=G.bt||{};const b=G.bt[i]=G.bt[i]||{};
-  if(!b[k]){b[k]={m:100,sp:4,pr:0,pool:0,s0:0,lo:null,ls:0};
-    b[k].s0=soldiers(i,k);}
-  return b[k];}
-function boLock(o,i,k){const s=bst(i,k);if(o==='bb'&&s.sp<SUC.bb)return '🪫';if(o==='am'&&!s.pr)return '⏳';if(o==='wd'&&k==='N')return '🚫';return '';}
-const sidePow=(i,k)=>power(batUnits(i,k).map(u=>u.t),k!==batOwn(i))+0.5;
-// the AI: weighted random that reacts to morale, supply, the odds and what the enemy did last round
-function aiBO(i,k,e){const s=bst(i,k),es=e!=null?bst(i,e):{m:100,lo:null},own=batOwn(i),r=e!=null?sidePow(i,k)/sidePow(i,e):2;
-  const w={as:3+(r>1.4?2:0),ca:k===own?3:1.5,df:3+(r<0.8?2:0),am:4,mv:3,bb:3,
-    ra:s.m<35?5:s.m<60?1.5:0.15,wd:k==='N'?0:(s.m<25&&r<0.9?5:s.m<45&&r<0.5?2:0.05),
-    pu:es.lo==='wd'||es.m<30?5:0.3,ro:s.sp<=1?1.4:0.3};
-  if(es.lo&&BO[es.lo].f!=='S'){const fam=LOSES[BO[es.lo].f];PRI.forEach(o=>{if(BO[o].f===fam)w[o]*=1.7;});} // guess they repeat
-  BOK.forEach(o=>{if(boLock(o,i,k))w[o]=0;});
+function boLock(o,i,a){const us=G.t[i].units.filter(u=>isBat(u)&&al(u.o)===a);if(o==='am'&&!us.some(u=>u.ent))return '⛏';if(o==='wd'&&a==='N')return '🚫';return '';}
+function aiBO(i,a,e,hum){const us=G.t[i].units.filter(u=>isBat(u)&&al(u.o)===a),es=G.t[i].units.filter(u=>isBat(u)&&al(u.o)===e);
+  const org=us.reduce((s,u)=>s+u.org,0)/Math.max(1,us.length),eorg=es.reduce((s,u)=>s+u.org,0)/Math.max(1,es.length),r=(hpOf(us)+.5)/(hpOf(es)+.5);
+  const last=(G.lastBo||{})[i]||{},elo=last[e];
+  const w={as:3+(r>1.4?2:0),ca:2.5,df:3+(r<.8?2:0),am:4,mv:3,bb:3,ra:org<35?4:org<60?1:.1,wd:a==='N'||hum?0:(org<25&&r<.9?5:.05),pu:elo==='wd'||eorg<30?5:.3,ro:org<45?2:.2};
+  if(elo&&BO[elo].f!=='S'){const fam=LOSES[BO[elo].f];PRI.forEach(o=>{if(BO[o].f===fam)w[o]*=1.7;});}
+  BOK.forEach(o=>{if(boLock(o,i,a))w[o]=0;});
   let x=Math.random()*BOK.reduce((t,o)=>t+w[o],0);for(const o of BOK)if((x-=w[o])<0)return o;return 'df';}
-// remove whole units once enough soldiers are lost; cheapest fall first
-function bleed(i,k,s){const t=G.t[i];let n=0;
-  for(;;){const us=batUnits(i,k).filter(u=>solOf(u)>0).sort((a,b)=>ORDER.indexOf(a.t)-ORDER.indexOf(b.t));
-    if(!us.length)break;const v=solOf(us[0]);if(s.pool<v)break;s.pool-=v;t.units.splice(t.units.indexOf(us[0]),1);n++;}
-  if(!batUnits(i,k).some(u=>solOf(u)>0)){const rest=batUnits(i,k);n+=rest.length;t.units=t.units.filter(u=>!rest.includes(u));s.pool=0;}
-  return n;}
-// one round of battalion combat in territory i with the given orders
-function batRound(i,O,rd){const own=batOwn(i),keys=batSides(i).sort((x,y)=>(x===own)-(y===own)),tg={},S={};
-  keys.forEach(k=>{S[k]=bst(i,k);tg[k]=tgtOf(k,keys,own);});
-  keys.forEach(k=>{if(!O[k]||!BO[O[k]]||boLock(O[k],i,k))O[k]=aiBO(i,k,tg[k]);});
-  const sb={},mb={},pw={},out={},dmg={},mdm={},before={},lostU={};
-  keys.forEach(k=>{sb[k]=soldiers(i,k);mb[k]=S[k].m;pw[k]=sidePow(i,k);dmg[k]=0;mdm[k]=0;before[k]=byNation(batUnits(i,k));});
-  keys.forEach(k=>{const e=tg[k];if(e==null)return;const o=O[k],eo=O[e],b=BO[o],oc=out[k]=outOf(o,eo);
-    let d=b.c/3*OUT[oc].d,m=b.mo/3*OUT[oc].m;
-    if(o==='pu'){if(eo==='wd'||S[e].m<30){d*=1.5;m*=1.5;}else{d*=.75;m*=.75;}} // Pursue: most effective against withdrawing or broken battalions
-    if(SUC[o]>0&&S[k].sp<=0)d*=.6; // out of supply
-    let prot=1.25-BO[eo].p*.1;if(eo==='wd'&&o!=='pu')prot=.5; // an organized retreat, unless pursued
-    dmg[e]+=Math.round(pw[k]*7*d*prot*rnd(.85,1.15));
-    if(m>0)mdm[e]+=16*m*Math.sqrt(clamp(pw[k]/pw[e],.5,2))*rnd(.85,1.15);});
-  const res={},gain={};
-  keys.forEach(k=>{const s=S[k],o=O[k];dmg[k]=Math.min(dmg[k],sb[k]);
-    mdm[k]=Math.round(mdm[k]+50*dmg[k]/Math.max(1,sb[k]));
-    let g=0;if(o==='ra')g=20;if(o==='ro')s.sp=Math.min(6,s.sp+2);
-    gain[k]=g;s.m=Math.round(clamp(s.m-mdm[k]+g,0,100));
-    s.sp=Math.max(0,s.sp-SUC[o]);s.pr=o==='df'?1:0;s.lo=o; // Ambush needs the preparation of a Defend the turn before
-    s.pool+=dmg[k];s.ls+=dmg[k];lostU[k]=bleed(i,k,s);});
-  const sa={},ma={},go=[];
-  keys.forEach(k=>{const s=S[k],left=batUnits(i,k);ma[k]=s.m;
-    if(!left.length){res[k]='wp';sa[k]=0;return;}
-    if(s.m<=0){res[k]='br';sa[k]=soldiers(i,k);go.push(...batUnits(i,k));return;}
-    sa[k]=soldiers(i,k);if(O[k]==='wd'&&O[tg[k]]!=='pu'){res[k]='wd';go.push(...left);}else if(O[k]==='wd')res[k]='st';});
-  go.forEach(u=>{if(G.t[i].units.includes(u))sendHome(u,i);});
-  return{i,rd:(G.bt[i]&&G.bt[i].n)||rd,keys,own,tg,O:{...O},out,sb,sa,mb,ma,res,gain,lostU,before,bx:1};}
-// who picks orders on this screen
-function batLocal(){return G.online?[G.side]:G.mode==='C'||G.mode==='P'?[G.mode]:G.mode==='H'||G.mode==='D'?['P','C']:[];}
-function sideInfo(i,k){const s=bst(i,k);
-  return{k,s:soldiers(i,k),s0:s.s0,m:s.m,sp:s.sp,pr:s.pr?1:0,lo:s.lo,chips:chipsHTML(byNation(batUnits(i,k)))};}
-function batItem(i,k,rd){const ks=batSides(i),own=batOwn(i),f=tgtOf(k,ks,own),me=sideInfo(i,k);
-  me.lk={};BOK.forEach(o=>{const l=boLock(o,i,k);if(l)me.lk[o]=l;});
-  return{i,k,f,rd:(G.bt[i]&&G.bt[i].n)||rd,name:TERR[i].name,def:k===own,me,foe:f!=null?sideInfo(i,f):null};}
-const batEl=()=>$('#bat'),batDlg=()=>$('#batdlg');
-var G_BA={}; // ⚡ auto: the staff picks for this side for the rest of the turn
-async function batOrders(list,rd,prev){const O={};list.forEach(i=>O[i]={});
-  const local=batLocal(),remote=G.online?G.online.other:null;let rp=null;
-  if(remote){const items=list.filter(i=>batSides(i).includes(remote)).map(i=>batItem(i,remote,rd));
-    if(items.length)rp=netBatAsk(items,G.round*10+rd,prev?prev.filter(f=>f.keys.includes(remote)).map((f,n)=>vsHTML(f,remote,n)).join(''):'');}
-  for(const k of local){const items=list.filter(i=>batSides(i).includes(k)).map(i=>batItem(i,k,rd));if(!items.length||G_BA[k])continue;
-    if(G.mode==='H')await batHand(k);
-    const res=await pickOrders(items,k);if(res.auto)G_BA[k]=1;Object.keys(res.o).forEach(i=>{O[i][k]=res.o[i];});}
-  if(rp){const res=await batWait(rp);Object.keys(res||{}).forEach(i=>{if(O[i]&&BO[res[i]])O[i][remote]=res[i];});}
-  return O;}
-// every contested territory fights up to RMAX rounds this turn, all battles side by side
-async function batBattles(rep){G_BA={};const all=G.t.map((t,i)=>i).filter(i=>contested(i));if(!all.length)return;
-  const rec={};
-  all.forEach(i=>{const old=G.bt&&G.bt[i];batSides(i).forEach(k=>{const had=old&&old[k],s=bst(i,k);
-    if(had)s.s0=Math.max(s.s0,soldiers(i,k));});G.bt[i].n=(G.bt[i].n||0)+1; // battle turn, as in the design's card
-    rec[i]={i,keys:batSides(i),own:batOwn(i),before:{},s0:{},m0:{},hist:[]};batSides(i).forEach(k=>{rec[i].before[k]=byNation(batUnits(i,k));rec[i].s0[k]=soldiers(i,k);rec[i].m0[k]=bst(i,k).m;});});
-  let list=all.slice(),prev=null;
-  for(let rd=1;rd<=RMAX&&list.length;rd++){
-    const O=await batOrders(list,rd,prev),fr=list.map(i=>batRound(i,O[i],rd));
-    fr.forEach(f=>{const r=rec[f.i];r.hist.push({O:f.O,out:f.out});r.last=f;f.done=!contested(f.i);
-      if(f.done){const s=settle(f.i);const left=new Set(G.t[f.i].units.filter(grounded).map(u=>al(u.o)));
-        f.result=s||(left.size===1?`${ALLY[[...left][0]]} holds ${TERR[f.i].name}.`:left.size?'':'Both sides are gone.');f.win=left.size===1?[...left][0]:null;}});
-    refresh();prev=fr;
-    const local=batLocal().filter(k=>!G_BA[k]);
-    if(local.length&&fr.some(f=>local.some(k=>f.keys.includes(k))))await batShow(fr,null);
-    list=list.filter(i=>contested(i));}
-  all.forEach(i=>{const r=rec[i],f=r.last;if(!f)return;const ongoing=contested(i);
-    const lost={};r.keys.forEach(k=>{lost[k]=0;});r.hist.length;
-    Object.assign(f,{before:r.before,s0:r.s0,m0:r.m0,hist:r.hist,ongoing,keys:r.keys,own:r.own});
-    r.keys.forEach(k=>{const n0=Object.values(r.before[k]||{}).reduce((s,g)=>s+Object.values(g).reduce((a,b)=>a+b,0),0);lost[k]=Math.max(0,n0-batUnits(i,k).length);});
-    f.lost=lost;if(ongoing)f.result='Battle goes on next turn.';
-    rep.battles.push(f);addLog(`${TERR[i].name}: ${r.keys.map(k=>`${ALLY[k]} 🪖${f.sa[k]||0} ❤️${f.ma[k]||0}%`).join(' · ')}. ${f.result||''}`,null,r.keys);});
-  Object.keys(G.bt||{}).forEach(i=>{if(!contested(+i))delete G.bt[i];});
-  // a quick summary for sides that let the staff fight
-  const auto=batLocal().filter(k=>G_BA[k]);if(auto.length)await batShow(rep.battles,null,true);G_BA={};}
-function batHand(k){return new Promise(res=>{batDlg().innerHTML=`<div class="bt-big">🤝</div><div class="bt-h" style="justify-content:center"><i class="nd" style="background:${rgb(ALRGB[k])}"></i>${ALLY[k]}</div><div class="acts"><button class="btn primary bt-go" id="batGo" data-tell="▶ Pass the screen, then pick">▶</button></div>`;
-  batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;res();};});}
-const bars=(v,ic,tl)=>`<span class="ob" data-tell="${ic} ${tl} ${'▮'.repeat(v)}${'▯'.repeat(5-v)}"><em>${ic}</em><i style="--v:${v}"></i></span>`;
-const pips=(n,mx,on,offc)=>Array.from({length:mx},(_,j)=>`<i class="${j<n?on:offc}"></i>`).join('');
-function sideHTML(x,me,nc){if(!x)return '<div class="bt-side foe"></div>';const lo=x.lo?BO[x.lo]:null;
-  return `<div class="bt-side ${me?'me':'foe'}" style="--nc:${nc}">
-    <div class="bt-num"><span data-tell="🪖 Soldiers · ${x.s} of ${x.s0}">🪖<b>${x.s}</b></span><span data-tell="❤️ Morale ${x.m}% · 0 = they break 💔" class="${x.m<30?'low':''}">❤️<b>${x.m}%</b></span></div>
-    <div class="mbar" data-tell="❤️ Morale ${x.m}%"><i style="width:${x.m}%"></i></div>
-    <div class="mini" data-tell="🪖 Units in this battalion">${x.chips}</div>
-    <div class="bt-st">${me?`<span class="sp" data-tell="📦 Supply ${x.sp}/6 · orders use it · 🔧 Reorganize refills">📦${pips(x.sp,6,'on','')}</span><span data-tell="${x.pr?'🎯 Ambush ready':'⏳ Ambush needs a 🛡️ Defend first'}">${x.pr?'🎯':'⏳'}</span>`:`<span data-tell="${lo?`👁 Last round: ${lo.i} ${lo.n}`:'❓ Their order is secret'}">${lo?'👁'+lo.i:'❓'}</span>`}</div>
-    </div>`;}
-// big icon order cards, one battle at a time: tap = see what it does, tap again or ✔ = go
-function pickOrders(items,k){return new Promise(res=>{const out={};let x=0,sel=null,busy=false;
-  const card=(o,it,n)=>{const lk=it.me.lk&&it.me.lk[o],b=BO[o];
-    return `<button class="oc${lk?' lock':''}" data-o="${o}" style="--fc:${FAMC[b.f]};--n:${n}" aria-label="${b.n}"><span class="oc-art"></span><span class="ic">${b.i}</span>${lk?`<span class="lk">${lk}</span>`:''}
-      <span class="obs"><i style="--v:${b.c}" class="c"></i><i style="--v:${b.mo}" class="m"></i><i style="--v:${b.p}" class="p"></i><i style="--v:${b.su}" class="s"></i></span></button>`;};
-  const tellO=(o,it)=>{const b=BO[o],lk=it.me.lk&&it.me.lk[o],f=b.f;
-    const sw=f==='S'?'':`<span class="tw">💪${PRI.filter(p=>BO[p].f===BEATS[f]).map(p=>BO[p].i).join('')}</span><span class="tw">😰${PRI.filter(p=>BO[p].f===LOSES[f]).map(p=>BO[p].i).join('')}</span>`;
-    return `<b class="ti" style="--fc:${FAMC[f]}">${b.i}</b><span class="tt"><b>${b.n}</b> ${lk?(lk==='🪫'?'🪫 needs 📦📦':lk==='⏳'?'⏳ needs a 🛡️ Defend first':'🚫'):esc(b.t)}</span>${sw}
-      <span class="tb">${bars(b.c,'💀','Soldier damage')}${bars(b.mo,'💔','Morale damage')}${bars(b.p,'🛡','Protection')}${bars(b.su,'📦','Supply use')}</span>`;};
-  const show=()=>{const it=items[x];sel=null;busy=false;
-    batDlg().innerHTML=`<div class="bt-h"><span class="bt-role ${it.def?'def':'atk'}" data-tell="${it.def?'⛨ You defend this land':'⚔ You attack this land'}">${it.def?'⛨':'⚔'}</span><span>${esc(it.name)}</span><span class="bt-rd" data-tell="🔁 Battle turn ${it.rd}">T${it.rd}</span><span class="bt-n">${items.map((_,j)=>`<i class="${j<x?'d':j===x?'c':''}"></i>`).join('')}</span></div>
-      <div class="bt-sides">${sideHTML(it.me,1,rgb(ALRGB[it.k]))}<div class="bt-vs">VS</div>${sideHTML(it.foe,0,it.f?rgb(ALRGB[it.f]):'#555')}</div>
-      <div class="bt-tri" data-tell="⚔️ beats 🔀 · 🔀 beats 🛡️ · 🛡️ beats ⚔️"><b style="--fc:${FAMC.A}">⚔️</b>›<b style="--fc:${FAMC.M}">🔀</b>›<b style="--fc:${FAMC.D}">🛡️</b>›<b style="--fc:${FAMC.A}">⚔️</b></div>
-      <div class="ocards fam">${['as','df','mv','ca','am','bb'].map((o,n)=>card(o,it,n)).join('')}</div>
-      <div class="ocards sup">${SUPO.map((o,n)=>card(o,it,n+6)).join('')}</div>
-      <div class="otell" id="otell"><span class="hint">👆 ${'⚔️🛡️🔀'}</span></div>
-      <div class="acts"><button class="btn ibtn" id="batAuto" data-tell="⚡ Staff picks for you the rest of this turn" aria-label="Auto">⚡</button><button class="btn primary bt-go" id="batOk" disabled data-tell="✔ Lock in this order" aria-label="Go">✔</button></div>`;
-    batEl().hidden=false;
-    const pick=o=>{if(busy)return;busy=true;out[it.i]=o;const b=batDlg().querySelector(`.oc[data-o="${o}"]`);b.classList.add('pick');
-      batDlg().querySelectorAll('.oc').forEach(c=>{if(c!==b)c.classList.add('dim');});
-      setTimeout(()=>{x++;x<items.length?show():done(false);},260);};
-    batDlg().querySelectorAll('.oc').forEach(b=>b.onclick=e=>{e.stopPropagation();const o=b.dataset.o;
-      $('#otell').innerHTML=tellO(o,it);$('#otell').style.setProperty('--fc',FAMC[BO[o].f]);
-      if(b.classList.contains('lock')){batDlg().querySelectorAll('.oc').forEach(c=>c.classList.remove('sel'));sel=null;$('#batOk').disabled=true;return;}
-      if(sel===o){pick(o);return;}sel=o;batDlg().querySelectorAll('.oc').forEach(c=>c.classList.toggle('sel',c===b));$('#batOk').disabled=false;});
-    $('#batOk').onclick=()=>{if(sel)pick(sel);};
-    $('#batAuto').onclick=()=>done(true);
-    coach('pick');};
-  const done=a=>{batEl().hidden=true;res({o:out,auto:a});};
-  show();});}
-// round result, like the dispatch in the design: order + outcome, soldiers and morale with the change
-function vsHTML(f,me,n){const foe=f.tg?f.tg[me]:null;if(foe==null||!f.O[me])return '';
-  const ic=(k,side)=>{const b=BO[f.O[k]],oc=OUT[f.out[k]||'even'],hurt=(f.sb[k]-f.sa[k])>(f.sb[k===me?foe:me]-f.sa[k===me?foe:me]);
-    return `<div class="flip ${side}${hurt?' hurt':''}" data-tell="${b.i} ${b.n} · ${oc.n} ${Math.round(oc.d*100)}% 💀 ${Math.round(oc.m*100)}% 💔"><div class="fi"><div class="ff back" style="--nc:${rgb(ALRGB[k])}">✪</div><div class="ff front" style="--fc:${FAMC[b.f]};--nc:${rgb(ALRGB[k])}"><span>${b.i}</span></div></div><i class="hitf"></i></div>`;};
-  const ocw=k=>{const oc=OUT[f.out[k]||'even'];return `<span class="ocw ${oc.c}">${oc.n}</span>`;};
-  const num=k=>{const ds=f.sa[k]-f.sb[k],dm=f.ma[k]-f.mb[k];
-    return `<div class="vn" style="--nc:${rgb(ALRGB[k])}"><span data-tell="🪖 Soldiers left (change)">🪖<b>${f.sa[k]}</b><small class="${ds<0?'neg':''}">(${ds<0?'−'+(-ds):'+'+ds})</small></span><span data-tell="❤️ Morale (change)">❤️<b>${f.ma[k]}%</b><small class="${dm<0?'neg':'pos'}">(${dm<0?'−'+(-dm):'+'+dm})</small></span></div>`;};
-  const tag=k=>(f.res[k]==='wd'?'<span class="tg wd" data-tell="🏳️ Withdrew">🏳️</span>':f.res[k]==='br'?'<span class="tg br" data-tell="💔 Broke and ran">💔</span>':f.res[k]==='wp'?'<span class="tg" data-tell="☠️ Wiped out">☠️</span>':f.res[k]==='st'?'<span class="tg" data-tell="🐎 Retreat stopped">🐎🚫</span>':'')
-    +(f.O[k]==='ra'?'<span class="tg ra" data-tell="🚩 Rallied">🚩</span>':'')+(f.O[k]==='ro'?'<span class="tg rc" data-tell="🔧 Reorganized">🔧</span>':'');
-  const tr=f.out[me],arr=`<b class="arr ${OUT[tr||'even'].c}">${OUT[tr||'even'].a}</b>`;
-  const mid=f.done?(f.win===me?'<span class="tg win" data-tell="🏁 You won this battle">🏁</span>':f.win?'<span class="tg" data-tell="🏴 Lost this battle">🏴</span>':''):'<span class="tg" data-tell="🔁 Fight goes on">🔁</span>';
-  return `<div class="vs" style="--k:${n||0}"><div class="vs-n">${esc(TERR[f.i].name)} · T${f.rd}</div><div class="vs-r">${ic(me,'l')}${arr}${ic(foe,'r')}</div>
-    <div class="vs-w">${ocw(me)}<span></span>${ocw(foe)}</div><div class="vs-nums">${num(me)}${num(foe)}</div>
-    <div class="vs-t"><span>${tag(me)}</span><span>${mid}</span><span>${tag(foe)}</span></div></div>`;}
-function batShow(frames,side,final){return new Promise(res=>{const local=side?[side]:batLocal();
-  const cards=(frames||[]).filter(f=>f.bx&&f.O&&local.some(k=>f.keys.includes(k))).map((f,n)=>vsHTML(f,local.find(k=>f.keys.includes(k)),n)).join('');
-  if(!cards){res();return;}batDlg().innerHTML=`<div class="vsl">${cards}</div><div class="acts"><button class="btn primary bt-go" id="batGo" aria-label="Continue" data-tell="▶ Next">▶</button></div>`;
-  batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;res();};$('#batGo').focus();coach('vs');});}
-function batReveal(rep,side){if(rep&&rep.battles)batShow(rep.battles,side,true);}
-/* online: the host asks the guest for its battle orders and waits; same room path as before (bat, bo/<side>) */
-function netBatAsk(items,key,prev){const o=G.online;return new Promise(res=>{o.boRes=res;o.boKey=key;netPut(o.code,'bat',{r:key,items,prev:prev||''}).catch(e=>{netFail(e);o.boRes=null;res({});});});}
-function batWait(rp){let done=false;const t=setTimeout(()=>{if(done)return;batDlg().innerHTML=`<div class="bt-big">⏳</div><div class="acts"><button class="btn" id="batSkip" data-tell="⏩ Let the AI pick for them">⏩</button></div>`;batEl().hidden=false;
-    $('#batSkip').onclick=()=>{const o=G.online;if(o&&o.boRes){const f=o.boRes;o.boRes=null;f({});}};},300);
-  return rp.then(r=>{done=true;clearTimeout(t);batEl().hidden=true;return r;});}
-function netBatHost(code,other){netListen(code,'bo/'+other,d=>{const o=G.online;if(!o||!d||d.r!==o.boKey||!o.boRes)return;const f=o.boRes;o.boRes=null;f(d.o||{});});}
-function netBatGuest(code){netListen(code,'bat',d=>{const o=G.online;if(!o||!d||Math.floor(d.r/10)!==G.round||o.batR===d.r)return;o.batR=d.r;
-  const items=(d.items||[]).map(it=>({...it,me:{lk:{},...it.me,chips:it.me&&it.me.chips||''},foe:it.foe?{chips:'',...it.foe}:null}));
-  const go=()=>{if(o.batAuto===G.round){netPut(code,'bo/'+G.side,{r:d.r,o:{}}).catch(netFail);return;}
-    pickOrders(items,G.side).then(out=>{if(out.auto)o.batAuto=G.round;netPut(code,'bo/'+G.side,{r:d.r,o:out.o}).catch(netFail);});};
-  if(d.prev&&o.batAuto!==G.round){batDlg().innerHTML=`<div class="vsl">${d.prev}</div><div class="acts"><button class="btn primary bt-go" id="batGo" data-tell="▶ Next">▶</button></div>`;batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;go();};}
-  else go();});}
-/* fighter coverage: a fighter covers its own territory and every land territory next to it */
+function boOf(a,i){const n=firstNat(a),o=n&&G.orders[n]&&G.orders[n].bo?G.orders[n].bo[i]:null;return o;}
+function gainXP(h,base){if(!h)return;h.xp+=base/Math.max(1,h.p.length);while(h.p.length<5&&lvlOf(h.xp)>h.p.length){const p=newPerk(h.p);if(!p)break;h.p.push(p);h.up=1;}}
+function offsIn(us){const o=[];us.forEach(u=>{if(u.lc)o.push(u.lc);(u.hq||[]).forEach(h=>o.push(h));});return o;}
+// a destroyed battalion's Colonel or General moves to another friendly battalion here, or is lost
+function rehome(u,i,rep){(u.hq||[]).forEach(h=>{const v=G.t[i].units.find(w=>w!==u&&isBat(w)&&w.hp>0&&al(w.o)===al(u.o));if(v)v.hq.push(h);else rep.push(`${RK[h.r].s} ${NAT[u.o].short} ${RK[h.r].n} lost at ${TERR[i].name}`);});u.hq=[];}
+function retreatTo(i,a){const c=ADJ[i].filter(j=>safe(j,a));return c.length?c.sort((x,y)=>(G.t[y].owner===G.t[i].owner)-(G.t[x].owner===G.t[i].owner))[0]:null;}
+function d8Battle(i,rep){const t=G.t[i],own=al(t.owner),keys=[...new Set(t.units.filter(isBat).map(u=>al(u.o)))].sort((x,y)=>(x===own)-(y===own));
+  if(keys.length<2)return null;const S={},O={},tg={},out={},dice={},hb={},ob={},lost={},spl={};
+  keys.forEach(k=>{tg[k]=tgtOf(k,keys,own);S[k]=t.units.filter(u=>isBat(u)&&al(u.o)===k);S[k].forEach(u=>{u._P=perksOf(u,i);});
+    let o=boOf(k,i);if(!G.human[firstNat(k)]||!o||!BO[o]||boLock(o,i,k))o=G.human[firstNat(k)]&&o&&BO[o]&&!boLock(o,i,k)?o:aiBO(i,k,tg[k],G.human[firstNat(k)]);O[k]=o;
+    hb[k]=hpOf(S[k]);ob[k]=S[k].map(u=>u.org);lost[k]=0;spl[k]=[];});
+  // every battalion rolls its strikes at the same time
+  const hits={};keys.forEach(k=>{hits[k]=[];dice[k]=[];const e=tg[k],o=O[k],B=BO[o],oc=out[k]=outOf(o,O[e]);if(!B.c)return;
+    const eArm=S[e].some(isArm);let mult=B.c/3*OUT[oc].d*(1.3-BO[O[e]].p*.1);
+    if(o==='pu'){const broke=S[e].reduce((s,u)=>s+u.org,0)/Math.max(1,S[e].length)<=SHAKEN;mult*=O[e]==='wd'||broke?1.5:.75;}
+    S[k].forEach(u=>{const P=u._P,tac=P.has('tac');const rs=rollSet(strikes(u,P),hitOf(u,P),tac);dice[k].push({t:u.t,...rs});
+      let h=rs.hits,a=0;
+      if(u.sp.includes('art')){const ar=rollSet(1,2+(P.has('arx')?1:0),false);dice[k].push({t:'art',...ar});h+=ar.hits;}
+      if(u.sp.includes('at')&&eArm){const at=rollSet(1,2,false);dice[k].push({t:'at',...at});a=at.hits;}
+      hits[k].push({u,n:sround(h*mult),a:sround(a*mult)});});});
+  // a Withdraw that is not pursued: Cautious battalions take no losses while they pull out
+  keys.forEach(k=>{const e=tg[k];hits[k].forEach(({u,n,a})=>{const foes=S[e].filter(v=>!(O[e]==='wd'&&O[k]!=='pu'&&v._P.has('cau')));
+    for(let x=0;x<n;x++){const r=applyHit(allocHit(foes,u._P,false));if(r){lost[e]++;if(r.sp)spl[e].push(r.sp);}}
+    for(let x=0;x<a;x++){const r=applyHit(allocHit(foes,u._P,true));if(r)lost[e]++;}});});
+  // ORG: every friendly battalion loses (HP lost ÷ HP before) × 100, scaled by the enemy order's morale damage
+  const res=[];keys.forEach(k=>{const e=tg[k],B=BO[O[e]],m=B.c?B.mo/3*OUT[out[e]].m:1,dmg=hb[k]?lost[k]/hb[k]*100*m:0;
+    S[k].forEach(u=>{let d=dmg;if(u._P.has('dis'))d=Math.max(0,d-11);u.org=Math.max(0,u.org-d);
+      if(O[k]==='ra')u.org+=25;if(O[k]==='ro')u.org+=15;u.org=Math.round(Math.min(maxOrg(u,u._P),u.org));});});
+  // the fallen, then retreats: Withdraw (unless pursued) and ORG 0 (forced)
+  keys.forEach(k=>S[k].forEach(u=>{if(u.hp<=0){rehome(u,i,res);t.units.splice(t.units.indexOf(u),1);}}));
+  keys.forEach(k=>{const e=tg[k],go=t.units.filter(u=>isBat(u)&&al(u.o)===k&&((O[k]==='wd'&&O[e]!=='pu')||u.org<=0));if(!go.length)return;
+    const to=retreatTo(i,k);go.forEach(u=>{t.units.splice(t.units.indexOf(u),1);if(to==null){rehome(u,i,res);res.push(`${NAT[u.o].short} ${BT[u.t].n} surrenders`);return;}
+      u.ent=0;u.att=0;G.t[to].units.push(u);});
+    res.push(to==null?'':`${ALLY[k]} ${O[k]==='wd'?'withdraws':'is routed'} → ${TERR[to].name}`);});
+  // officer experience: fighting a round, and winning the battle
+  const left=new Set(t.units.filter(isBat).map(u=>al(u.o)));
+  keys.forEach(k=>{const us=t.units.filter(u=>isBat(u)&&al(u.o)===k);offsIn(us).forEach(h=>gainXP(h,2));if(left.size===1&&left.has(k))offsIn(us).forEach(h=>gainXP(h,5));});
+  t.units.forEach(u=>{delete u._P;});S&&keys.forEach(k=>S[k].forEach(u=>delete u._P));
+  return{i,keys,own,O,out,dice,lost,spl,hb,ob,oa:Object.fromEntries(keys.map(k=>[k,t.units.filter(u=>isBat(u)&&al(u.o)===k).map(u=>u.org)])),res:res.filter(Boolean),ongoing:left.size>1};}
+/* ---- air: fighters only fight planes in their own and next territories; bombers strike in range 1 ---- */
+function d8Air(rep){const planes=[];G.t.forEach((t,i)=>t.units.forEach(u=>{if(BT[u.t]&&BT[u.t].air)planes.push({u,i});}));
+  if(!planes.length)return;const near=(i,j)=>i===j||ADJ[i].includes(j);
+  // fighters first, all at once
+  const fh=[];planes.filter(p=>p.u.t==='ftr').forEach(p=>{const foes=planes.filter(q=>al(q.u.o)!==al(p.u.o)&&al(q.u.o)!=='N'&&near(p.i,q.i));if(!foes.length)return;
+    const rs=rollSet(p.u.hp,BT.ftr.hit,false);for(let x=0;x<rs.hits;x++)fh.push(pick(foes));
+    rep.air.push({als:[al(p.u.o)],msg:`✈ ${NAT[p.u.o].short} fighter over ${TERR[p.i].name}: ${rs.r.join(' ')} → ${rs.hits} hit${rs.hits===1?'':'s'}`});});
+  fh.forEach(q=>{q.u.hp--;});
+  const down=planes.filter(p=>p.u.hp<=0);down.forEach(p=>{const a=G.t[p.i].units;a.splice(a.indexOf(p.u),1);rep.air.push({als:['P','C'],msg:`💥 ${NAT[p.u.o].short} ${BT[p.u.t].n} shot down`});});
+  // bombers that are still flying
+  planes.filter(p=>p.u.hp>0&&(p.u.t==='tbm'||p.u.t==='nbm')).forEach(p=>{const a=al(p.u.o),naval=p.u.t==='nbm';
+    const cand=(naval?ADJ[p.i].filter(isSea):[p.i,...ADJ[p.i]].filter(j=>!isSea(j))).map(j=>({j,foes:G.t[j].units.filter(v=>al(v.o)!==a&&(naval?v.t==='trn':isBat(v)))})).filter(c=>c.foes.length);
+    if(!cand.length)return;const own=c=>G.t[c.j].units.some(v=>isBat(v)&&al(v.o)===a);
+    const c=cand.sort((x,y)=>(own(y)-own(x))||hpOf(y.foes)-hpOf(x.foes))[0];
+    // anti-air attachments under the bomber fire first
+    let aaHits=0;if(!naval)c.foes.forEach(v=>{if(v.sp.includes('aa'))aaHits+=rollSet(1,2,false).hits;});
+    p.u.hp-=aaHits;if(p.u.hp<=0){const us=G.t[p.i].units;us.splice(us.indexOf(p.u),1);rep.air.push({als:['P','C'],msg:`🛡 Anti-air downs a ${NAT[p.u.o].short} bomber at ${TERR[c.j].name}`});return;}
+    const P=new Set(),rs=rollSet(p.u.hp,BT[p.u.t].hit,false),before=hpOf(c.foes);let n=0;
+    for(let x=0;x<rs.hits;x++){const r=naval?(()=>{const v=pick(c.foes.filter(v=>v.hp>0));if(!v)return null;v.hp--;return{v};})():applyHit(allocHit(c.foes,P,false));if(r)n++;}
+    if(!naval&&n&&before){const d=n/before*100;c.foes.forEach(v=>{v.org=Math.max(0,Math.round(v.org-(perksOf(v,c.j).has('dis')?Math.max(0,d-11):d)));});}
+    G.t[c.j].units.slice().forEach(v=>{if(v.hp<=0&&c.foes.includes(v)){if(v.t==='trn'){const lostP=carried(v,c.j);lostP.forEach(w=>G.t[c.j].units.splice(G.t[c.j].units.indexOf(w),1));}
+      rehome(v,c.j,[]);G.t[c.j].units.splice(G.t[c.j].units.indexOf(v),1);}});
+    rep.air.push({als:[a,...new Set(c.foes.map(v=>al(v.o)))],msg:`${naval?'⚓':'💣'} ${NAT[p.u.o].short} bomber → ${TERR[c.j].name}: ${rs.r.join(' ')} → ${n} hit${n===1?'':'s'}`});});}
+/* ---- the turn ---- */
+async function d8Resolve(){
+  G.busy=true;G.planner=null;clearSel();
+  TURN.forEach(n=>{if(!G.human[n]&&alive(n))d8AI(n);});
+  const rep={round:G.round,moves:[],battles:[],deploy:[],income:[],air:[],caps:[]};
+  G.phase='move';G.lastBo={};
+  // MOVE: transports (with their battalion) first, then everyone else at once
+  const all=[];G.t.forEach((t,i)=>t.units.forEach(u=>{if(u.ord>=0&&u.ord!==i)all.push({u,i});}));
+  const moved=new Set();
+  const go=(u,i,j)=>{const a=G.t[i].units;if(!a.includes(u))return;a.splice(a.indexOf(u),1);G.t[j].units.push(u);moved.add(u);u.ent=0;
+    if(isBat(u)&&!isSea(j)&&(al(G.t[j].owner)!==al(u.o)||G.t[j].units.some(v=>isBat(v)&&al(v.o)!==al(u.o))))u.att=1;};
+  all.filter(m=>m.u.t==='trn').forEach(({u,i})=>{carried(u,i).forEach(w=>go(w,i,u.ord));go(u,i,u.ord);});
+  all.filter(m=>m.u.t!=='trn').forEach(({u,i})=>{const j=u.ord;
+    if(isSea(j)){const tr=G.t[j].units.find(v=>v.id===u.board&&!G.t[j].units.some(w=>w.on===v.id));if(!tr)return;go(u,i,j);u.on=tr.id;return;}
+    if(isSea(i))delete u.on;go(u,i,j);});
+  G.t.forEach(t=>t.units.forEach(u=>{delete u.board;}));
+  // empty enemy land is taken at once
+  G.t.forEach((t,i)=>{if(isSea(i))return;const as=new Set(t.units.filter(isBat).map(u=>al(u.o)));
+    if(as.size===1){const a=[...as][0];if(al(t.owner)!==a)d8Take(i,a,rep);}});
+  G.t.forEach((t,i)=>{if(inBattle(i))rep.moves.push(`⚔️ ${TERR[i].name}`);});
+  G.t.forEach((t,i)=>t.units.forEach(u=>{if(isBat(u))u.org=Math.min(maxOrg(u,perksOf(u,i)),u.org);}));d8Intel();refresh();await sleep(500);
+  // AIR then GROUND (ground strikes are simultaneous in every battle)
+  G.phase='battle';d8Air(rep);
+  const fought=new Set();
+  G.t.forEach((t,i)=>{if(!inBattle(i))return;t.units.forEach(u=>{if(isBat(u))fought.add(u);});const f=d8Battle(i,rep);if(!f)return;G.lastBo[i]=f.O;rep.battles.push(f);
+    const as=new Set(t.units.filter(isBat).map(u=>al(u.o)));if(as.size===1){const a=[...as][0];if(al(t.owner)!==a)d8Take(i,a,rep);}});
+  // outside combat: entrench, recover HP (+1, medical +2) and ORG (+25, headquarters and Organizer +25 each)
+  G.t.forEach((t,i)=>t.units.forEach(u=>{if(!isBat(u)||fought.has(u)||inBattle(i))return;const P=perksOf(u,i);
+    if(!moved.has(u)||u.sp.includes('eng')||P.has('frt'))u.ent=isSea(i)?0:1;u.att=0;
+    u.hp=Math.min(BT[u.t].hp,u.hp+(u.sp.includes('med')?2:1));
+    u.org=Math.min(maxOrg(u,P),u.org+25+(u.sp.includes('hq')?25:0)+(P.has('org')?25:0));}));
+  G.t.forEach((t,i)=>t.units.forEach(u=>{if(isBat(u))u.org=Math.min(maxOrg(u,perksOf(u,i)),u.org);}));// an Inspiring officer who left takes his bonus with him
+  refresh();await sleep(500);
+  // DEPLOY + income
+  G.phase='deploy';
+  TURN.forEach(n=>{const o=G.orders[n];if(!o||!o.buy)return;const ks=Object.keys(o.buy).filter(k=>o.buy[k]>0);if(!ks.length)return;
+    const sites=d8Sites(n);let at=sites.includes(o.at)?o.at:sites[0];
+    if(at==null){rep.deploy.push(`${NAT[n].short}: no capital or city to deploy`);o.buy={};return;}
+    const made=[];ks.forEach(k=>{for(let c=0;c<o.buy[k];c++){if(!BT[k].c.every((v,x)=>G.nat[n].r[x]>=v))continue;
+      if(BT[k].sea){const yard=[at,...sites].find(s=>coasts(s).length);if(yard==null)continue;pay(n,BT[k].c);G.t[coasts(yard)[0]].units.push(mkBat(k,n));made.push(k);continue;}
+      pay(n,BT[k].c);G.t[at].units.push(mkBat(k,n));made.push(k);}});
+    if(made.length)rep.deploy.push({n,at,made});o.buy={};});
+  TURN.forEach(n=>{if(!alive(n))return;const r=d8Income(n);r.forEach((v,k)=>G.nat[n].r[k]+=v);rep.income.push([n,r]);});
+  d8Intel();refresh();
+  if(checkWin()){G.busy=false;return;}
+  G.busy=false;
+  if(G.queue.length)showReport(rep);else{await sleep(300);nextRound();}}
+// a territory changes hands; planes caught there fly to a friendly neighbour or are lost
+function d8Take(i,a,rep){const t=G.t[i],o0=TERR[i].owner0,n=o0!=='N'&&NAT[o0].al===a?o0:(t.units.find(u=>isBat(u)&&al(u.o)===a)||{}).o;if(!n)return;
+  t.owner=n;t.cr=G.round;rep.caps.push([i,n]);
+  t.units.slice().forEach(u=>{if(al(u.o)===a||!(BT[u.t]&&BT[u.t].air))return;const to=ADJ[i].find(j=>safe(j,al(u.o)));t.units.splice(t.units.indexOf(u),1);if(to!=null)G.t[to].units.push(u);});}
+/* ---- the AI: simple, uses the same rules ---- */
+function d8AI(n){const a=NAT[n].al,o=G.orders[n];
+  // buy what the stock allows: armor when metal/tungsten are there, otherwise infantry
+  o.buy={};const sites=d8Sites(n);o.at=sites.includes(capIdx(n))?capIdx(n):sites[0];
+  if(o.at!=null)for(let g=0;g<12;g++){const r=avail8(n),opts=['mtk','ltk','inf','inf'].filter(k=>BT[k].c.every((v,x)=>r[x]>=v));if(!opts.length)break;const k=opts[0]==='mtk'&&Math.random()<.5?'mtk':opts.includes('ltk')&&Math.random()<.3?'ltk':'inf';
+    if(!BT[k].c.every((v,x)=>r[x]>=v))break;o.buy[k]=(o.buy[k]||0)+1;}
+  // artillery on infantry, and promote a strong Lt. Colonel now and then
+  G.t.forEach((t,i)=>t.units.forEach(u=>{if(u.o!==n||!isBat(u)||inBattle(i))return;
+    if(u.t==='inf'&&u.sp.length<slots(u)&&!u.sp.includes('art')&&canPay(n,SP.art.c)&&Math.random()<.3){u.sp.push('art');pay(n,SP.art.c);}
+    if(u.lc&&u.lc.p.length>=2&&canPay(n,[5,0,0])&&Math.random()<.3){u.hq.push({r:'col',p:u.lc.p,xp:u.lc.xp});u.lc=null;pay(n,[5,0,0]);}
+    if(!u.lc&&canPay(n,[1,0,0])){u.lc={r:'lc',p:[pick(PKK)],xp:0};pay(n,[1,0,0]);}}));
+  // moves: attack a weaker neighbour, otherwise drift toward the nearest enemy land
+  const dist=new Map(),q=[];G.t.forEach((t,i)=>{if(!isSea(i)&&al(t.owner)!==a&&al(t.owner)!=='N'){dist.set(i,0);q.push(i);}});
+  while(q.length){const c=q.shift();ADJ[c].forEach(j=>{if(!dist.has(j)&&!isSea(j)){dist.set(j,dist.get(c)+1);q.push(j);}});}
+  G.t.forEach((t,i)=>{if(isSea(i)||inBattle(i))return;const mine=t.units.filter(u=>u.o===n&&isBat(u)&&u.ord<0);if(!mine.length)return;
+    const myHP=hpOf(mine),threat=ADJ[i].some(j=>G.t[j].units.some(v=>isBat(v)&&al(v.o)!==a&&al(v.o)!=='N'));
+    const tgt=ADJ[i].filter(j=>!isSea(j)&&al(G.t[j].owner)!==a).map(j=>({j,hp:hpOf(G.t[j].units.filter(v=>isBat(v)&&al(v.o)!==a))})).filter(c=>myHP>=c.hp*1.4+3).sort((x,y)=>x.hp-y.hp)[0];
+    const keep=(TERR[i].cap&&threat)?1:0;
+    mine.slice(keep).forEach(u=>{const d=d8Dests(u,i);
+      if(tgt&&d.has(tgt.j)){u.ord=tgt.j;u.path=d.get(tgt.j);return;}
+      if(threat||Math.random()<.35)return;
+      let best=null;d.forEach((p,j)=>{if(isSea(j)||!safe(j,a))return;if(dist.has(j)&&(best==null||dist.get(j)<dist.get(best)))best=j;});
+      if(best!=null&&dist.get(best)<(dist.get(i)??99)){u.ord=best;u.path=d.get(best);}});});
+  o.bo={};}
+/* ---- kept from IM8: fighter coverage view, tap telling (all games) ---- */
 let COVON=false;
 function fighterCov(){const c=new Uint8Array(L),v=G.vis,me=viewer();
   G.t.forEach((t,i)=>{if(isSea(i))return;['P','C'].forEach((a,b)=>{if(v&&!v[i]&&a!==me)return;
     if(!t.units.some(u=>u.t==='ftr'&&al(u.o)===a))return;const bit=b?2:1;c[i]|=bit;
-    if(contested(i))return;
+
     ADJ[i].forEach(j=>{if(!isSea(j))c[j]|=bit;});});});
   return c;}
 /* ---------- IM8 tap telling: every tappable thing says what it is, plus first-battle coach ---------- */
@@ -3085,23 +3309,224 @@ function tell(s){const t=$('#tell');if(!t||!s)return;t.innerHTML=s;t.hidden=fals
 document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('[data-tell],button[title],button[aria-label],[role=button][title]');if(!el||el.id==='map'||el.classList.contains('oc'))return;
   if(el.closest('#coach'))return;const s=el.dataset.tell||el.getAttribute('title')||el.getAttribute('aria-label');if(s&&s.length<90)tell(esc(s).replace(/&amp;/g,'&'));},true);
 const unitTell=(t,o,n)=>{const U=UNITS[t],u=`${n>1?n+'× ':''}<b>${U.name}</b>`;
-  return `${U.air?'✈️':U.sea?'⚓':'🪖'} ${u} · ⚔${U.atk} 🛡${U.def} 👣${U.mv}${SOLD[t]?` · 🪖${SOLD[t]}`:''}`;};
+  return `${U.air?'✈️':U.sea?'⚓':'🪖'} ${u} · ⚔${U.atk} 🛡${U.def} 👣${U.mv}`;};
 function terrTell(i){if(i<0)return '';const t=G.t[i],T=TERR[i];if(isSea(i))return `🌊 <b>${esc(T.name)}</b> · sea`;
   const a=al(t.owner),us=t.units.filter(u=>al(u.o)===a&&combat(u.t)).length;
   return `${contested(i)?'⚔️':T.cap?'⭐':'📍'} <b>${esc(T.name)}</b> · <i class="nd" style="background:${rgb(ALRGB[a])}"></i>${ALLY[a]} · 🪖${us}${T.val?` · 💰${T.val}`:''}${contested(i)?' · battle!':''}`;}
-cv.addEventListener('click',e=>{if(!G||!MAP||(typeof pinchEnd!=='undefined'&&Date.now()-pinchEnd<350))return;setTimeout(()=>{const p=evPos(e),ch=chipAt(p.x,p.y);
+cv.addEventListener('click',e=>{if(bat()||!G||!MAP||(typeof pinchEnd!=='undefined'&&Date.now()-pinchEnd<350))return;setTimeout(()=>{const p=evPos(e),ch=chipAt(p.x,p.y);
   if(ch){const n=G.t[ch.i].units.filter(u=>u.o===ch.o&&u.t===ch.t).length;tell(unitTell(ch.t,ch.o,n)+(G.ui.sel===ch.i&&G.planner?' · 👆 tap a lit land':''));return;}
   const i=hit(e);if(i<0)return;tell(terrTell(i)+(G.ui.sel===i&&G.planner?' · 👆 tap a lit land to send':''));},0);});
-// first battle: short coach bubbles; tap to go on
-const COACH={pick:[['.bt-side.me','🪖 Soldiers · ❤️ Morale<br>❤️ 0 = they break 💔'],['.bt-tri','Colors beat colors<br>⚔️ › 🔀 › 🛡️ › ⚔️'],['.ocards.fam','Tap a card = see it<br>Tap again = go'],['.ocards.sup','🚩 Rally · 🏳️ Withdraw<br>🐎 Pursue · 🔧 Reorganize']],
-  vs:[['.vs-r','▲ Advantage 125% 💀 150% 💔<br>▼ Disadvantage 75% 50%'],['.vs-nums','🪖 left (−lost) · ❤️ (−lost)']]};
-function coach(k){let seen={};try{seen=JSON.parse(localStorage.getItem('im8coach')||'{}');}catch(e){}if(seen[k]||!COACH[k])return;
-  seen[k]=1;try{localStorage.setItem('im8coach',JSON.stringify(seen));}catch(e){}
-  const steps=COACH[k].filter(([s])=>batDlg().querySelector(s));let n=0;const c=document.createElement('div');c.id='coach';c.className='coach';batDlg().appendChild(c);
-  const step=()=>{if(n>=steps.length){c.remove();return;}const [s,txt]=steps[n],el=batDlg().querySelector(s),r=el.getBoundingClientRect(),d=batDlg().getBoundingClientRect();
-    c.innerHTML=`<div class="ring" style="left:${r.left-d.left-4}px;top:${r.top-d.top+batDlg().scrollTop-4}px;width:${r.width+8}px;height:${r.height+8}px"></div><div class="bub" style="top:${Math.max(4,r.bottom-d.top+batDlg().scrollTop+8)}px">${txt}<small>${n+1}/${steps.length} 👆</small></div>`;
-    const bub=c.querySelector('.bub');if(r.bottom-d.top+bub.offsetHeight+14>d.height)bub.style.top=Math.max(4,r.top-d.top+batDlg().scrollTop-bub.offsetHeight-8)+'px';n++;};
-  c.onclick=e=>{e.stopPropagation();step();};setTimeout(step,650);}
+const netBatHost=()=>{},netBatGuest=()=>{},batReveal=()=>{};
+/* ---- map: one HOI4 counter per nation, inside its own territory ---- */
+function natoSym8(k,x,y,w,h){const lw=Math.max(0.6,w*0.07);ctx.lineWidth=lw;ctx.strokeStyle='#f6f1e4';ctx.fillStyle='#f6f1e4';ctx.beginPath();
+  const l=x+w*0.18,r=x+w*0.82,t=y+h*0.2,b=y+h*0.8,mx=x+w/2,my=y+h/2;
+  if(k==='?L'||k==='?H'){ctx.font=`700 ${h*0.8}px "IBM Plex Sans Condensed",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',mx,my+h*0.04);
+    if(k==='?H'){ctx.strokeRect(l,t,r-l,b-t);}return;}
+  if(k==='trn'){ctx.moveTo(l,my);ctx.lineTo(r,my);ctx.lineTo(r-w*0.1,b);ctx.lineTo(l+w*0.1,b);ctx.closePath();ctx.fill();return;}
+  if(BT[k]&&BT[k].air){ctx.ellipse(mx-w*0.14,my,w*0.14,h*0.18,0,0,7);ctx.moveTo(mx+w*0.28,my);ctx.ellipse(mx+w*0.14,my,w*0.14,h*0.18,0,0,7);ctx.stroke();
+    if(k!=='ftr'){ctx.beginPath();ctx.moveTo(l,b);ctx.lineTo(r,b);ctx.stroke();}if(k==='nbm'){ctx.beginPath();ctx.moveTo(l,t);ctx.lineTo(r,t);ctx.stroke();}return;}
+  if(BT[k]&&BT[k].arm){ctx.roundRect(l,t+h*0.08,r-l,b-t-h*0.16,(b-t)*0.3);if(k==='htk')ctx.fill();else ctx.stroke();if(k==='mtk'){ctx.beginPath();ctx.moveTo(mx,t+h*0.08);ctx.lineTo(mx,b-h*0.08);ctx.stroke();}return;}
+  ctx.moveTo(x,y);ctx.lineTo(x+w,y+h);ctx.moveTo(x+w,y);ctx.lineTo(x,y+h);ctx.stroke();} // infantry: the X
+function d8Draw(i){const sv=seen8(i),me=viewer(),by={};
+  sv.units.forEach(u=>{(by[u.o]=by[u.o]||{k:[],u:[]}).k.push(u);});sv.unk.forEach(u=>{(by[u.o]=by[u.o]||{k:[],u:[]}).u.push(u);});
+  const sides=Object.keys(by);if(!sides.length)return;
+  const P=poles(),ax=P.x[i],ay=P.y[i],room=P.s[i]*0.9,n=sides.length,gap=1.5/scale;
+  let cw=Math.min(26/scale,(2*room-(n-1)*gap)/(n*1.24),2*room/1.2);const ch=cw*0.62,bh=Math.max(0.8/scale,cw*0.1);
+  const x0=ax-(n*cw+(n-1)*gap)/2-cw*0.02,y0=ay-cw*0.56+cw*0.14;
+  sides.forEach((o,k)=>{const g=by[o],x=x0+k*(cw+gap),y=y0,col=NAT[o]?NAT[o].rgb:[150,150,150],full=!me||al(o)===me;
+    const bats=g.k.filter(isBat),cnt=g.k.length+g.u.length;
+    let mk=bats.length?bats.slice().sort((a,b)=>BT[b.t].c[0]-BT[a.t].c[0])[0].t:g.u.length?(g.u.filter(isArm).length*2>g.u.length?'?H':'?L'):g.k[0].t;
+    const sel=i===G.ui.sel&&g.k.some(u=>(G.ui.pick||[]).includes(u.id)),ord=g.k.some(u=>isOrd(u));
+    if(cw*scale<7){ctx.beginPath();ctx.arc(ax+(k-(n-1)/2)*(cw+gap),ay,cw*0.45,0,7);ctx.fillStyle=rgb(col);ctx.fill();ctx.lineWidth=0.8/scale;ctx.strokeStyle='rgba(12,14,16,.9)';ctx.stroke();return;}
+    const st=cnt>4?2:cnt>1?1:0,o2=cw*0.07;
+    for(let s2=st;s2>0;s2--){ctx.beginPath();ctx.rect(x+s2*o2,y-s2*o2,cw,ch);ctx.fillStyle=rgb(col.map(v=>v*0.6));ctx.fill();ctx.lineWidth=0.8/scale;ctx.strokeStyle='rgba(12,14,16,.9)';ctx.stroke();}
+    if(sel){ctx.beginPath();ctx.rect(x-cw*0.1,y-cw*0.1,cw*1.2,ch+bh*2.6+cw*0.2);ctx.fillStyle='rgba(255,222,140,.45)';ctx.fill();}
+    ctx.beginPath();ctx.rect(x,y,cw,ch);ctx.fillStyle=rgb(col);ctx.fill();
+    ctx.lineWidth=Math.max(1/scale,cw*0.05);ctx.strokeStyle=sel?'#ffe08a':'rgba(12,14,16,.92)';ctx.stroke();
+    if(ord){ctx.setLineDash([cw*0.12,cw*0.08]);ctx.lineWidth=Math.max(1/scale,cw*0.06);ctx.strokeStyle='#f2d58f';ctx.stroke();ctx.setLineDash([]);}
+    ctx.save();ctx.beginPath();ctx.rect(x,y,cw,ch);ctx.clip();natoSym8(mk,x,y,cw,ch);ctx.restore();
+    // HOI4 bars, no numbers: green = ORG, light = HP (only for your own side)
+    if(full&&bats.length){const org=bats.reduce((s,u)=>s+u.org/maxOrg(u),0)/bats.length,hp=bats.reduce((s,u)=>s+u.hp,0)/bats.reduce((s,u)=>s+BT[u.t].hp,0);
+      [[org,'#7fd06e'],[hp,'#e9e2cf']].forEach(([f,c],r)=>{const by2=y+ch+bh*(0.3+r*1.15);ctx.fillStyle='rgba(12,14,16,.9)';ctx.fillRect(x,by2,cw,bh);ctx.fillStyle=c;ctx.fillRect(x,by2,cw*Math.max(0.06,Math.min(1,f)),bh);});}});}
+function d8Route(a,b){for(const u of G.t[a].units)if(u.ord===b&&u.path)return u.path.map(j=>[MAP.cx[j],MAP.cy[j]]);return [[MAP.cx[a],MAP.cy[a]],[MAP.cx[b],MAP.cy[b]]];}
+/* ---- panels: icons first, tap anything to see what it is ---- */
+const tl=s=>esc(s).replace(/"/g,'&quot;');
+const nd=o=>`<i class="nd" style="background:${rgb((NAT[o]||NAT.N).rgb)}"></i>`;
+const resHTML=(r,cls='')=>r.map((v,k)=>v?`<b class="rs ${cls}" data-tell="${RSI[k]} ${RESN[k]}">${RSI[k]}${v}</b>`:'').join('');
+const pips=(hp,max)=>`<span class="pips" data-tell="HP ${hp}/${max} · platoons">${Array.from({length:max},(_,k)=>`<i class="${k<hp?'on':''}"></i>`).join('')}</span>`;
+const orgBar=(u,P)=>{const m=maxOrg(u,P),f=u.org/m;return `<span class="orgb ${u.org<=SHAKEN?'low':''}" data-tell="ORG ${u.org}/${m} · 0 = forced retreat${u.org<=SHAKEN?' · shaken: −1 🎲':''}"><i style="width:${Math.round(f*100)}%"></i></span>`;};
+const symHTML=(t,o)=>`<span class="sym8" style="--nc:${rgb((NAT[o]||NAT.N).rgb)}" data-tell="${tl(BT[t]?BT[t].n:t)}"><i class="s-${t.replace('?','q')}"></i></span>`;
+const perkHTML=(p,big)=>`<span class="pk${big?' big':''}" data-tell="${PK[p][0]} ${PK[p][1]}: ${PK[p][2]}">${PK[p][0]}${big?`<small>${PK[p][1]}</small>`:''}</span>`;
+const myAl=()=>G.planner;
+const isMine=u=>!!G.planner&&al(u.o)===G.planner&&G.human[u.o];
+function saveUndo(){G.undo.push(JSON.stringify({t:G.t,nat:G.nat,orders:G.orders}));if(G.undo.length>40)G.undo.shift();}
+function d8Undo(){const s=G.undo.pop();if(!s)return;const o=JSON.parse(s);G.t=o.t;G.nat=o.nat;G.orders=o.orders;clearSel();}
+function d8Clear(){saveUndo();G.t.forEach(t=>t.units.forEach(u=>{if(isMine(u)){u.ord=-1;u.path=null;delete u.board;}}));mine().forEach(n=>{G.orders[n].buy={};G.orders[n].bo={};});clearSel();}
+function orderCard(i){const a=myAl(),cur=boOf(a,i)||(al(G.t[i].owner)===a?'df':'as'),locks=Object.fromEntries(BOK.map(o=>[o,boLock(o,i,a)]));
+  const card=o=>{const B=BO[o];return `<button class="oc8${cur===o?' on':''}${locks[o]?' lock':''}" style="--fc:${FAMC[B.f]}" data-d8="bo" data-a="${i}:${o}" data-tell="${B.i} ${B.n}: ${tl(B.t)}${locks[o]?' · 🔒 '+locks[o]:''}"><span class="oi">${B.i}</span><span class="on">${B.n}</span>
+    ${B.c?`<span class="obar"><i class="c" style="width:${B.c*20}%"></i><i class="m" style="width:${B.mo*20}%"></i><i class="p" style="width:${B.p*20}%"></i></span>`:`<span class="obar"><i class="p" style="width:${B.p*20}%"></i></span>`}${locks[o]?`<span class="lk">🔒${locks[o]}</span>`:''}</button>`;};
+  return `<div class="ord8"><div class="o8h"><span data-tell="Your combat order here, picked in secret">🎖️</span><span class="tri" data-tell="⚔️ beats 🔀 · 🔀 beats 🛡️ · 🛡️ beats ⚔️ · ▲125% 💀150% ⚡ · ▼75% 50%"><b style="color:${FAMC.A}">⚔️</b>›<b style="color:${FAMC.M}">🔀</b>›<b style="color:${FAMC.D}">🛡️</b>›<b style="color:${FAMC.A}">⚔️</b></span>
+    <span class="leg" data-tell="Bars: red casualties · gold ORG damage · blue protection"><i class="c"></i><i class="m"></i><i class="p"></i></span></div>
+    <div class="ocs">${PRI.map(card).join('')}</div><div class="ocs sup">${SUPO.map(card).join('')}</div></div>`;}
+function offCard(h,u,i,x){const nx=XPL[h.p.length],n=NAT[u.o].short;
+  return `<div class="off8" data-tell="${RK[h.r].s} ${RK[h.r].n}: ${tl(RK[h.r].t)}"><span class="rk">${RK[h.r].s}</span><span class="pks">${h.p.map(p=>perkHTML(p)).join('')}</span>
+    ${nx!=null?`<span class="xp" data-tell="XP ${Math.floor(h.xp)}/${nx} → next perk · gain ÷ perks"><i style="width:${Math.min(100,h.xp/nx*100)}%"></i></span>`:''}</div>`;}
+function batCard(u,i){const T=BT[u.t],P=perksOf(u,i),mineU=isMine(u)&&G.planner&&!G.busy,picked=(G.ui.pick||[]).includes(u.id),exp=G.ui.exp===u.id,bat8=isBat(u);
+  const st=strikes(u,P),hit=bat8?hitOf(u,P):T.hit,dest=u.ord>=0?TERR[u.ord].name:null,tr=u.on?' 🚢':'';
+  let h=`<div class="bc8${picked?' pick':''}${u.ord>=0?' moving':''}" ${mineU&&!inBattle(i)?`data-d8="pick" data-a="${u.id}"`:''}>
+    <div class="bc-top">${symHTML(u.t,u.o)}<span class="bn" data-tell="${tl(T.n)}${T.t?' · '+tl(T.t):''}">${T.n}${tr}</span>
+      ${bat8&&u.ent?'<span class="ent" data-tell="⛏ Entrenched · infantry hits 2/6">⛏</span>':''}
+      ${T.per?`<span class="dz" data-tell="${st} 🎲 strikes · each hits on ${hit} or less (${hit}/6)">🎲${st}<small>·${hit}/6</small></span>`:''}
+      ${mineU?`<button class="sb8" data-d8="exp" data-a="${u.id}" data-tell="Supports and officers">${exp?'▴':'⚙'}</button>`:''}</div>
+    <div class="bc-mid">${pips(u.hp,T.hp)}${bat8?orgBar(u,P):''}</div>`;
+  if(bat8){const sl=slots(u,P);h+=`<div class="bc-bot"><span class="sps">${u.sp.map(s=>`<span class="spi" data-tell="${SP[s].i} ${SP[s].n}: ${tl(SP[s].t)} · 1 HP">${SP[s].i}</span>`).join('')}${Array.from({length:Math.max(0,sl-u.sp.length)},()=>`<span class="spi empty" data-tell="Free support slot">＋</span>`).join('')}</span>
+      <span class="lc">${u.lc?`<span class="rk" data-tell="★ Lt. Colonel">★</span>${u.lc.p.map(p=>perkHTML(p)).join('')}`:`<span class="rk vac" data-tell="No Lt. Colonel · replace for 🪙1">★?</span>`}</span>
+      ${dest?`<span class="mv8" data-tell="Moving to ${tl(dest)}">➜${esc(dest)}${mineU?`<button class="sb8 x" data-d8="cancel" data-a="${u.id}" aria-label="Cancel move">✖</button>`:''}</span>`:''}</div>`;
+    if(u.hq&&u.hq.length)h+=`<div class="bc-hq">${u.hq.map((o,x)=>offCard(o,u,i,x)+(mineU?`<span class="hqa">${o.r==='col'?`<button class="btn small" data-d8="promg" data-a="${u.id}:${x}" ${o.p.length>=3&&canPay(u.o,[10,0,0])?'':'disabled'} data-tell="Promote to General · 🪙10 · needs 3 perks">⬆★★★ 🪙10</button>`:''}${G.t[i].units.some(v=>v!==u&&isBat(v)&&v.o===u.o)?`<button class="btn small" data-d8="xfer" data-a="${u.id}:${x}" data-tell="Move this officer to another battalion here">⇄</button>`:''}</span>`:'')).join('')}</div>`;
+    if(exp&&mineU)h+=manageHTML(u,i,P);}
+  else if(dest&&mineU)h+=`<div class="bc-bot"><span class="mv8">➜${esc(dest)}<button class="sb8 x" data-d8="cancel" data-a="${u.id}" aria-label="Cancel move">✖</button></span></div>`;
+  return h+'</div>';}
+function manageHTML(u,i,P){const free=slots(u,P)-u.sp.length,calm=!inBattle(i)&&!isSea(i);
+  let h=`<div class="mg8"><div class="mgh" data-tell="Supports attach to this battalion · lost ones must be bought again">🧩</div><div class="spg">${SPK.map(k=>{const ok=calm&&free>0&&!u.sp.includes(k)&&!(k==='mec'&&u.t!=='inf')&&canPay(u.o,SP[k].c);
+    return `<button class="spb" data-d8="sp" data-a="${u.id}:${k}" ${ok?'':'disabled'} data-tell="${SP[k].i} ${SP[k].n}: ${tl(SP[k].t)} · ${costTxt(SP[k].c)}"><span>${SP[k].i}</span><small>${costTxt(SP[k].c)}</small></button>`;}).join('')}</div>`;
+  h+=`<div class="mgh" data-tell="Lt. Colonel · perks grow with XP">★</div>`;
+  if(u.lc)h+=offCard(u.lc,u,i,-1);
+  h+=`<div class="oa">${u.lc?`<button class="btn small" data-d8="prom" data-a="${u.id}" ${u.lc.p.length>=2&&canPay(u.o,[5,0,0])?'':'disabled'} data-tell="Promote to Colonel · 🪙5 · needs 2 perks · leaves a vacancy">⬆★★ 🪙5</button>`:''}
+    <button class="btn small" data-d8="rpl" data-a="${u.id}" ${canPay(u.o,[1,0,0])?'':'disabled'} data-tell="New Lt. Colonel · 🪙1 · you pick the perk">♻★ 🪙1</button></div>`;
+  if(G.ui.pp===u.id)h+=`<div class="pkg">${PKK.map(p=>`<button class="pkb" data-d8="rpk" data-a="${u.id}:${p}" data-tell="${PK[p][0]} ${PK[p][1]}: ${PK[p][2]}">${PK[p][0]}</button>`).join('')}</div>`;
+  return h+'</div>';}
+function terrCard8(i){if(i<0)return '';const t=G.t[i],T=TERR[i],sv=seen8(i),a=myAl(),k=kindOf(i),fog=G.vis&&!G.vis[i];
+  let h=`<div class="tc8"><div class="tc-h">${isSea(i)?'<span data-tell="Sea zone">🌊</span>':`<span data-tell="${KIND[k].n}">${KIND[k].i}</span>`}<b>${esc(T.name)}</b>${isSea(i)?'':nd(t.owner)}${isSea(i)?'':resHTML(incOf(i),'inc')}${inBattle(i)&&!fog?'<span class="tag live" data-tell="Battle! Both sides fight each turn">⚔️</span>':''}${fog?'<span data-tell="Fog: too far from your troops">🌫️</span>':''}</div>`;
+  const mineHere=t.units.filter(isMine),incoming=a?G.t.some((s,j)=>s.units.some(u=>isMine(u)&&u.ord===i)):false;
+  if(a&&!G.busy&&!isSea(i)&&((inBattle(i)&&mineHere.some(isBat))||(incoming&&hostile(i,a))))h+=orderCard(i);
+  const own=sv.units.filter(u=>!a||al(u.o)===a),foe=sv.units.filter(u=>a&&al(u.o)!==a);
+  if(own.length)h+=`<div class="bl8">${own.map(u=>batCard(u,i)).join('')}</div>`;
+  if(foe.length||sv.unk.length){const L=sv.unk.filter(u=>!isArm(u)).length,H=sv.unk.length-L;
+    h+=`<div class="fl8">${foe.map(u=>`<span class="fu" data-tell="${tl(NAT[u.o].short)} ${tl(BT[u.t].n)} · identified">${symHTML(u.t,u.o)}</span>`).join('')}
+      ${L?`<span class="fu" data-tell="${L} light enemy battalion${L>1?'s':''} · type unknown · 🔭 recon identifies">${symHTML('?L',sv.unk.find(u=>!isArm(u)).o)}×${L}</span>`:''}
+      ${H?`<span class="fu" data-tell="${H} heavy enemy battalion${H>1?'s':''} · type unknown · 🔭 recon identifies">${symHTML('?H',sv.unk.find(isArm).o)}×${H}</span>`:''}</div>`;}
+  if(!own.length&&!foe.length&&!sv.unk.length)h+=`<p class="sub8">${fog?'🌫️':'∅'}</p>`;
+  return h+'</div>';}
+function buyCard8(){const ms=mine();if(!ms.length)return '';const n=G.ui.pn&&ms.includes(G.ui.pn)?G.ui.pn:ms[0],o=G.orders[n],r=avail8(n),sites=d8Sites(n);
+  return `<div class="card buy8">${ms.length>1?`<div class="tabs8">${ms.map(m=>`<button class="btn small${m===n?' primary':''}" data-d8="pn" data-a="${m}">${nd(m)}${NAT[m].short}</button>`).join('')}</div>`:''}
+    <div class="b8h"><span data-tell="Left to spend this turn">${resHTML(r.map(v=>Math.max(0,v)))||'🪙0'}</span>
+    <label data-tell="New units arrive here: an owned capital or city">📍<select data-d8sel="at" data-a="${n}">${sites.map(s=>`<option value="${s}" ${s===o.at?'selected':''}>${esc(TERR[s].name)}</option>`).join('')||'<option>—</option>'}</select></label></div>
+    <div class="b8l">${BUY8.map(k=>{const T=BT[k],ok=T.c.every((v,x)=>r[x]>=v)&&sites.length&&(!T.sea||sites.some(s=>coasts(s).length)),c=o.buy[k]||0;
+      return `<div class="b8u">${symHTML(k,n)}<span class="b8s"><b data-tell="${tl(T.n)}${T.t?' · '+tl(T.t):''}">${T.n}</b><small>${T.per?`<span data-tell="HP ${T.hp} · strikes ⌈HP/${T.per}⌉">❤${T.hp} 🎲${Math.ceil(T.hp/T.per)}</span> <span data-tell="Hits on ${T.hit}/6${T.ent&&T.ent!==T.hit?' · '+T.ent+'/6 entrenched':''}">🎯${T.hit}${T.ent&&T.ent!==T.hit?'→'+T.ent:''}/6</span> `:`❤${T.hp} `}<span data-tell="Move ${T.mv}">👣${T.mv}</span></small></span>
+        <span class="b8c">${resHTML(T.c)}</span><span class="stp"><button class="sb8" data-d8="buy-" data-a="${n}:${k}" ${c?'':'disabled'} aria-label="Fewer">−</button><b>${c}</b><button class="sb8" data-d8="buy+" data-a="${n}:${k}" ${ok?'':'disabled'} aria-label="More">＋</button></span></div>`;}).join('')}</div></div>`;}
+function ordersCard8(){const a=myAl(),planning=!!a&&!G.busy;
+  const bs=G.t.map((t,i)=>i).filter(i=>inBattle(i)&&G.t[i].units.some(u=>isBat(u)&&isMine(u)));
+  const mv=d8AllUnits().filter(u=>isMine(u)&&u.ord>=0).length;
+  return `<div class="card o8"><div class="o8t"><span class="sw" style="background:${rgb(ALRGB[a||'P'])}"></span><b>${a?ALLY[a]:'—'}</b><span data-tell="Turn ${Math.min(G.round,MAXR)} of ${MAXR}">⏳${Math.min(G.round,MAXR)}/${MAXR}</span></div>
+    ${planning?`<div class="o8s"><span data-tell="Move orders given">➜${mv}</span><span data-tell="Your battles: tap one to pick its order">⚔️${bs.length}</span></div>
+    ${bs.length?`<div class="o8b">${bs.map(i=>{const o=boOf(a,i)||'df';return `<button class="btn small" data-d8="goto" data-a="${i}" data-tell="${tl(TERR[i].name)} · order ${BO[o].n}">${BO[o].i} ${esc(TERR[i].name)}</button>`;}).join('')}</div>`:''}
+    <div class="acts"><button class="btn" data-d8="undo" ${G.undo.length?'':'disabled'} aria-label="Undo" title="Undo">↶</button><button class="btn" data-d8="clear" aria-label="Clear all orders" title="Clear all orders">🧹</button><button class="btn primary" data-d8="submit">✔</button></div>`:'<p class="sub8">⚔️ …</p>'}</div>`;}
+function powersCard8(){return `<div class="card pw8">${TURN.map(n=>{const own=G.t.filter(t=>t.owner===n).length,mineN=G.planner&&NAT[n].al===G.planner||!viewer()||NAT[n].al===viewer();
+  return `<div class="pwr">${nd(n)}<b>${NAT[n].short}</b><span data-tell="Territories held">🗺${own}</span>${mineN?`<span data-tell="Stock">${resHTML(G.nat[n].r)||'🪙0'}</span><span class="inc" data-tell="Income next turn">+${resHTML(d8Income(n),'inc')||'0'}</span>`:''}</div>`;}).join('')}</div>`;}
+function d8RenderPanel(){
+  const planning=!!G.planner&&!G.busy&&!G.over,a=G.planner||viewer()||'P';document.body.classList.add('g6','g8');
+  const mt=$('#mtools'),dp=$('#ddp');mt.hidden=false;
+  const logCard=`<div class="card"><ul class="log">${G.log.filter(e=>!e.als||!viewer()||e.als.includes(viewer())).map(e=>`<li><span class="r">T${e.r}</span>${esc(e.msg)}</li>`).join('')}</ul></div>`;
+  const cards={orders:ordersCard8(),prod:planning?buyCard8():'<div class="card"><p class="sub8">⏳</p></div>',powers:powersCard8(),log:logCard};
+  if(G.repHTML)cards.rep=G.repHTML;if(!cards[G.ui.dd])G.ui.dd=null;if(G.ui.dd==='rep')G.repNew=false;
+  $('#ddOrders .ml').textContent=planning?ALLY[a]:'Orders';
+  mt.querySelectorAll('[data-dd]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.dd===G.ui.dd)));
+  const rb=$('#ddRep');rb.hidden=!G.repHTML;rb.querySelector('.ml').textContent=G.repHTML?`T${G.repRound}`:'Report';rb.classList.toggle('new',!!G.repNew);
+  dp.hidden=!G.ui.dd;dp.innerHTML=G.ui.dd?cards[G.ui.dd]:'';$('.mapbox').classList.toggle('ddon',!!G.ui.dd);
+  $('#mtPP').innerHTML=(planning?mine():[]).map(n=>{const r=avail8(n);return `<span class="ppc" data-tell="${tl(NAT[n].short)}: left to spend · income next turn"><i class="nd" style="background:${rgb(NAT[n].rgb)}"></i>${r.map((v,k)=>`<b class="t">${RSI[k]}${Math.max(0,v)}</b>`).join('')}</span>`;}).join('');
+  $('#mtSubmit').disabled=!planning;
+  $('#side').innerHTML='';
+  // the territory sheet
+  const d=$('#dock'),i=G.ui.sel>=0?G.ui.sel:G.ui.inspect,was=$('.mapbox').classList.contains('dkon');
+  if(i>=0&&MAP&&!G.over){d.innerHTML=`<div class="pophd"><span>${G.ui.sel>=0?'👆 Tap a lit land to send':'📍'}</span><button class="sb" data-d8="close" aria-label="Close" title="Close (Esc)">×</button></div>`+terrCard8(i);d.hidden=false;$('.mapbox').classList.add('dkon');if(!was)requestAnimationFrame(()=>keepInView(i));}
+  else{d.hidden=true;d.innerHTML='';$('.mapbox').classList.remove('dkon');}
+  const hint=$('#hint');
+  hint.innerHTML=!MAP?'…':G.over?'🏁':!planning?'⚔️ Turn playing…':G.ui.sel>=0?'👆 Tap a lit land to send them · tap a card to leave it':'👆 Tap your units · lit land = go · ✔ Submit';}
+function d8Pick(i){const a=G.planner;G.ui.sel=i;G.ui.inspect=-1;G.ui.pick=G.t[i].units.filter(u=>isMine(u)&&u.ord<0&&d8Dests(u,i).size).map(u=>u.id);d8Dests8();}
+function d8Dests8(){const i=G.ui.sel;G.ui.dests=new Map();if(i<0)return;const us=G.t[i].units.filter(u=>(G.ui.pick||[]).includes(u.id));if(!us.length)return;
+  let s=null;us.forEach(u=>{const d=d8Dests(u,i);s=s?new Set([...s].filter(j=>d.has(j))):new Set(d.keys());});s.forEach(j=>G.ui.dests.set(j,'near'));}
+function d8Send(i,j){saveUndo();G.t[i].units.filter(u=>(G.ui.pick||[]).includes(u.id)).forEach(u=>{const d=d8Dests(u,i);if(!d.has(j))return;
+    if(isSea(j)&&!isSea(i)){const tr=seatFree(j,al(u.o),u);if(!tr)return;u.board=tr.id;}u.ord=j;u.path=d.get(j);});
+  clearSel();G.ui.pick=[];G.ui.inspect=j;}
+function terrTell8(i){if(i<0)return '';const T=TERR[i],t=G.t[i];if(isSea(i))return `🌊 <b>${esc(T.name)}</b>`;
+  const k=kindOf(i);return `${KIND[k].i} <b>${esc(T.name)}</b> ${nd(t.owner)} ${resHTML(incOf(i))}${inBattle(i)?' · ⚔️':''}`;}
+function d8Tap(e){if(!G||!MAP||(typeof pinchEnd!=='undefined'&&Date.now()-pinchEnd<350))return;const i=hit(e);
+  if(G.busy||G.over||!G.planner){G.ui.inspect=i;if(i>=0)tell(terrTell8(i));refresh();return;}
+  if(G.ui.sel>=0&&i>=0&&i!==G.ui.sel&&G.ui.dests.has(i)){d8Send(G.ui.sel,i);tell(`➜ <b>${esc(TERR[i].name)}</b>${hostile(i,G.planner)?' · ⚔️':''}`);refresh();return;}
+  if(i<0){clearSel();G.ui.inspect=-1;refresh();return;}
+  if(i===G.ui.sel){clearSel();G.ui.inspect=i;refresh();return;}
+  if(G.t[i].units.some(u=>isMine(u)&&u.ord<0&&d8Dests(u,i).size))d8Pick(i);else{clearSel();G.ui.inspect=i;}
+  tell(terrTell8(i));refresh();}
+function d8Act(b){const act=b.dataset.d8,arg=b.dataset.a||'';if(!G)return;
+  if(act==='close'){clearSel();G.ui.inspect=-1;G.ui.exp=-1;refresh();return;}
+  if(act==='goto'){const i=+arg;G.ui.dd=null;clearSel();G.ui.inspect=i;centerOn&&centerOn(i);refresh();return;}
+  if(G.busy||!G.planner)return;
+  const unit=id=>{for(let i=0;i<L;i++){const u=G.t[i].units.find(v=>v.id===+id);if(u)return[u,i];}return[null,-1];};
+  if(act==='pick'){const id=+arg,[u,i]=unit(id);if(!u)return;if(G.ui.sel!==i){G.ui.sel=i;G.ui.inspect=-1;G.ui.pick=[];}
+    const p=G.ui.pick||(G.ui.pick=[]);if(p.includes(id))p.splice(p.indexOf(id),1);else if(u.ord<0&&d8Dests(u,i).size)p.push(id);if(!p.length){G.ui.inspect=i;G.ui.sel=-1;}d8Dests8();}
+  else if(act==='exp'){G.ui.exp=G.ui.exp===+arg?-1:+arg;G.ui.pp=null;}
+  else if(act==='cancel'){const [u]=unit(arg);if(u){saveUndo();u.ord=-1;u.path=null;delete u.board;}}
+  else if(act==='sp'){const [id,k]=arg.split(':'),[u,i]=unit(id);if(u&&!inBattle(i)&&u.sp.length<slots(u,perksOf(u,i))&&!u.sp.includes(k)&&canPay(u.o,SP[k].c)){saveUndo();u.sp.push(k);pay(u.o,SP[k].c);tell(`${SP[k].i} ${SP[k].n} attached`);}}
+  else if(act==='prom'){const [u]=unit(arg);if(u&&u.lc&&u.lc.p.length>=2&&canPay(u.o,[5,0,0])){saveUndo();u.hq.push({r:'col',p:u.lc.p,xp:u.lc.xp});u.lc=null;pay(u.o,[5,0,0]);tell('★★ Colonel · this battalion needs a new ★ Lt. Colonel');}}
+  else if(act==='promg'){const [id,x]=arg.split(':'),[u]=unit(id),h=u&&u.hq[+x];if(h&&h.r==='col'&&h.p.length>=3&&canPay(u.o,[10,0,0])){saveUndo();h.r='gen';pay(u.o,[10,0,0]);tell('★★★ General');}}
+  else if(act==='rpl'){G.ui.pp=G.ui.pp===+arg?null:+arg;}
+  else if(act==='rpk'){const [id,p]=arg.split(':'),[u]=unit(id);if(u&&canPay(u.o,[1,0,0])){saveUndo();u.lc={r:'lc',p:[p],xp:0};pay(u.o,[1,0,0]);G.ui.pp=null;tell(`★ New Lt. Colonel · ${PK[p][0]} ${PK[p][1]}`);}}
+  else if(act==='xfer'){const [id,x]=arg.split(':'),[u,i]=unit(id);if(!u)return;const others=G.t[i].units.filter(v=>v!==u&&isBat(v)&&v.o===u.o);if(!others.length)return;saveUndo();others[0].hq.push(u.hq.splice(+x,1)[0]);tell('⇄ Officer moved');}
+  else if(act==='bo'){const [i,o]=arg.split(':');if(boLock(o,+i,G.planner)){tell(`🔒 ${BO[o].n}: ${BO[o].t}`);return;}saveUndo();G.orders[firstNat(G.planner)].bo[+i]=o;tell(`${BO[o].i} <b>${BO[o].n}</b> · ${esc(BO[o].t)}`);}
+  else if(act==='buy+'||act==='buy-'){const [n,k]=arg.split(':'),o=G.orders[n];saveUndo();if(act==='buy+'){if(BT[k].c.every((v,x)=>avail8(n)[x]>=v))o.buy[k]=(o.buy[k]||0)+1;}else o.buy[k]=Math.max(0,(o.buy[k]||0)-1);}
+  else if(act==='pn'){G.ui.pn=arg;}
+  else if(act==='undo'){d8Undo();}
+  else if(act==='clear'){d8Clear();}
+  else if(act==='submit'){submitOrders();return;}
+  refresh();}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-d8]');if(!b||b.disabled||!bat())return;e.stopPropagation();d8Act(b);});
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('[data-d8sel]');if(!s||!G||!G.planner)return;G.orders[s.dataset.a].at=+s.value;refresh();});
+/* ---- the turn report: per battle, both orders, the dice, HP and ORG ---- */
+function d8Report(rep){if(G.online&&G.online.host)G.lastRep=rep;const who=viewer(),seen=f=>!who||f.keys.includes(who);
+  const die=(x,need)=>`<i class="d8 ${x<=need?'hit':''}">${x}</i>`;
+  const b=rep.battles.filter(seen).map(f=>`<div class="rep8"><div class="r8h"><b>${esc(TERR[f.i].name)}</b><span class="tag${f.ongoing?' live':''}" data-tell="${f.ongoing?'Battle goes on next turn':'Battle over'}">${f.ongoing?'🔁':'🏁'}</span></div>
+    ${f.keys.map(k=>{const o=f.O[k],oc=OUT[f.out[k]||'even'],ob=f.ob[k]||[],oa=f.oa[k]||[],av=x=>x.length?Math.round(x.reduce((s,v)=>s+v,0)/x.length):0;
+      return `<div class="r8s" style="--nc:${rgb(ALRGB[k])}"><div class="r8o"><span class="oi" style="--fc:${FAMC[BO[o].f]}" data-tell="${BO[o].i} ${BO[o].n}">${BO[o].i}</span><b>${ALLY[k]}</b><i class="${oc.c}" data-tell="${oc.n}">${oc.a}</i>
+        <span class="r8n" data-tell="HP lost (platoons + supports)">❤−${f.lost[k]}</span><span class="r8n" data-tell="ORG, average">⚡${av(ob)}→${av(oa)}</span></div>
+        <div class="r8d">${(f.dice[k]||[]).map(d=>`<span class="dg" data-tell="${tl(BT[d.t]?BT[d.t].n:SP[d.t].n)} · hits on ${d.need}/6">${d.r.map(x=>die(x,d.need)).join('')}</span>`).join('')||'<span class="sub8">—</span>'}</div>
+        ${f.spl[k]&&f.spl[k].length?`<div class="r8l">${f.spl[k].map(s=>`<span data-tell="${SP[s].n} support lost">${SP[s].i}✖</span>`).join('')}</div>`:''}</div>`;}).join('')}
+    ${f.res.length?`<p class="blog">${f.res.map(esc).join(' · ')}</p>`:''}</div>`).join('');
+  const air=rep.air.filter(f=>!who||f.als.includes(who));
+  const caps=rep.caps.map(([i,n])=>`<span>${nd(n)}${esc(TERR[i].name)}</span>`).join(' ');
+  const dep=rep.deploy.filter(d=>typeof d==='string'?true:!who||NAT[d.n].al===who).map(d=>typeof d==='string'?`<li>${esc(d)}</li>`:`<li>${nd(d.n)}📍${esc(TERR[d.at].name)} ${d.made.map(k=>symHTML(k,d.n)).join('')}</li>`).join('');
+  const inc=rep.income.filter(([n])=>!who||NAT[n].al===who).map(([n,r])=>`<span>${nd(n)}+${resHTML(r)||'0'}</span>`).join('');
+  G.repHTML=`<div class="dlg rp8"><div class="eyebrow">T${rep.round}/${MAXR}</div>${b||'<p class="sub8">⚔️ ∅</p>'}
+    ${air.length?`<ul class="rl">${air.map(f=>`<li>${esc(f.msg)}</li>`).join('')}</ul>`:''}${caps?`<div class="caps8" data-tell="Territories taken">🚩 ${caps}</div>`:''}
+    ${dep?`<ul class="rl">${dep}</ul>`:''}<div class="incs">${inc}</div></div>`;
+  G.repRound=rep.round;G.repNew=true;
+  if(G.online&&!G.online.host){refresh();return;}nextRound();}
+/* ---- help ---- */
+function d8Help(){return `<div class="hhd"><button class="sb hx" id="helpX" aria-label="Close help">×</button><div class="eyebrow">IRON MERIDIAN 8</div><h2 id="helpTitle">Dice Battles</h2></div><div class="help8">
+  <section><h3>⏳ A turn (everyone at once)</h3><ul><li>🏭 Buy · ⚙ supports + officers · ➜ moves · 🎖️ combat orders → ✔</li><li>Then: moves → ✈ air → 🎲 battles → 📍 new units → 🪙 income</li><li>Battles last turn after turn while both sides stay.</li></ul></section>
+  <section><h3>🪖 Battalions</h3><ul><li>❤ HP = platoons · 🎲 strikes = companies: infantry ⌈HP/3⌉, armor ⌈HP/2⌉</li>
+    <li>${BUY8.filter(k=>isBat({t:k})).map(k=>`${BT[k].n}: ❤${BT[k].hp} 🎯${BT[k].hit}${BT[k].ent!==BT[k].hit?'→'+BT[k].ent:''}/6 👣${BT[k].mv} ${costTxt(BT[k].c)}`).join(' · ')}</li>
+    <li>Every hit removes 1 HP, picked at random among all HP (supports have 1 HP). Strikes are simultaneous.</li></ul></section>
+  <section><h3>⛏ Entrenchment</h3><ul><li>Stay put outside a battle for a turn = entrenched: infantry hits 2/6. Moving loses it. ⛏ Engineers / 🏰 Fortifier: at once.</li></ul></section>
+  <section><h3>⚡ ORG</h3><ul><li>Start 100. Each round every battalion loses (HP lost ÷ HP before) × 100 of its side there.</li><li>≤33: −1 🎲 (min 1). 0: forced retreat.</li><li>Outside battle: ❤ +1 a turn (🩹 +2), ⚡ +25 (📡 +25, 🔄 +25).</li></ul></section>
+  <section><h3>🎖️ Combat orders</h3><ul><li><b style="color:${FAMC.A}">⚔️ Assault · 🔄 Counterattack</b> › <b style="color:${FAMC.M}">🔀 Maneuver · 💣 Bombard</b> › <b style="color:${FAMC.D}">🛡️ Defend · 🪤 Ambush</b> › ⚔️</li>
+    <li>▲ Advantage 125% hits · 150% ORG damage · ＝ 100% · ▼ 75% · 50% · ⏸ 🛡️ vs 🛡️</li><li>🚩 Rally · 🏳️ Withdraw · 🐎 Pursue · 🔧 Reorganize</li><li>🪤 Ambush needs ⛏ preparation. 🐎 Pursue stops a 🏳️ Withdraw.</li></ul></section>
+  <section><h3>🧩 Supports (max 2)</h3><ul>${SPK.map(k=>`<li>${SP[k].i} ${SP[k].n}: ${esc(SP[k].t)} · ${costTxt(SP[k].c)}</li>`).join('')}</ul></section>
+  <section><h3>★ Officers</h3><ul><li>★ Lt. Colonel (every battalion, 1 perk) · ★★ Colonel: this territory (needs 2 perks, 🪙5) · ★★★ General: + neighbours (needs 3 perks, 🪙10) · ♻ new Lt. Colonel 🪙1</li>
+    <li>XP from battles; perks at ${XPL.slice(1).join(' / ')} XP; XP gain ÷ perks. Same perk twice doesn't stack.</li><li>${PKK.map(p=>`${PK[p][0]} ${PK[p][1]}`).join(' · ')}</li></ul></section>
+  <section><h3>👁 Recon</h3><ul><li>Next to your land/troops you see enemy battalions as ❔ light / ❔ heavy. Each 🔭 Recon or 👁️ Scout identifies 1, and they add up.</li></ul></section>
+  <section><h3>🪙 Resources</h3><ul><li>${Object.values(KIND).map(K=>`${K.i} ${K.n} ${costTxt(K.r)||'0'}`).join(' · ')}</li><li>Battles stop income there. Taken land pays from the next turn.</li></ul></section>
+  <section><h3>🚢 ✈ Sea and air</h3><ul><li>🚢 Transport: 1 battalion, 👣2, ❤3, no strikes. Board from a coast, unload next to it. Sunk = passengers lost.</li><li>✈ Fighter ❤3 🎯3/6: only planes, own + next lands. Tactical bomber 🎯2/6: ground. Naval bomber 🎯2/6: ships. 🛡 Anti-air shoots bombers.</li></ul></section></div>`;}
+/* ---- wiring: game 8 runs on these, every other game is unchanged ---- */
+Object.assign(UNITS,{mtk:{name:'Medium armor',cost:6,atk:3,def:3,mv:2},tbm:{name:'Tactical bomber',cost:12,atk:0,def:0,mv:1,air:true},nbm:{name:'Naval bomber',cost:12,atk:0,def:0,mv:1,air:true}});
+{const f=newGame;newGame=function(m){if(bat())return d8New(m);return f.apply(this,arguments);};}
+{const f=startRound;startRound=function(){if(bat())return d8StartRound();return f.apply(this,arguments);};}
+{const f=submitOrders;submitOrders=function(){if(bat()){if(G.online){netSend();return;}nextPlanner(false);return;}return f.apply(this,arguments);};}
+{const f=resolveTurn;resolveTurn=function(){if(bat())return d8Resolve();return f.apply(this,arguments);};}
+{const f=renderPanel;renderPanel=function(){if(G&&bat())return d8RenderPanel();document.body.classList.remove('g8');return f.apply(this,arguments);};}
+{const f=renderDock;renderDock=function(){if(G&&bat())return;return f.apply(this,arguments);};}
+{const f=showReport;showReport=function(r){if(bat())return d8Report(r);return f.apply(this,arguments);};}
+{const f=clearSel;clearSel=function(){f.apply(this,arguments);if(G&&G.ui){G.ui.pick=[];G.ui.exp=-1;G.ui.pp=null;}};}
+{const f=helpHTML;helpHTML=function(){if(bat())return d8Help();return f.apply(this,arguments);};}
 
 /* ---------- IM7b visuals: unit tokens, coverage sweep, capture bursts, vignette ---------- */
 function tokSprite(k,o,px,st){px=Math.max(10,Math.round(px));const key='T'+k+o+px+st;if(FIGC[key])return FIGC[key];if(++FIGN>900){FIGC={};FIGN=1;}
