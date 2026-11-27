@@ -407,7 +407,7 @@ body{background:
 
 /* ===== IM7c phone-first ===== */
 html,body{overscroll-behavior:none}
-canvas#map{touch-action:pan-x pan-y}
+canvas#map,.mapwrap{touch-action:none}
 .mapwrap{overscroll-behavior:contain}
 .mt .mi{font-size:16px;margin-right:6px;vertical-align:-2px}
 #mtSubmit .mi{margin-right:6px}
@@ -1975,7 +1975,7 @@ function renderBase(){
   buildCovMask(COV);
 }
 function sizeCanvas(){
-  const w=cv.clientWidth||1000,dpr=Math.min(window.devicePixelRatio||1,2.5,9000/w);
+  const w=cv.clientWidth||1000,cap=(typeof COARSE==='function'&&COARSE())?9e6:2.4e7,dpr=Math.min(window.devicePixelRatio||1,2.5,9000/w,Math.sqrt(cap/(w*w*H/W))); // keep the canvas within what phones can draw
   cv.style.height=(w*H/W)+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(w*H/W*dpr);scale=w/W;}
 function haloText(t,x,y,font,fill){ctx.font=font;ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='rgba(16,20,24,.8)';ctx.strokeText(t,x,y);ctx.fillStyle=fill;ctx.fillText(t,x,y);}
 function star(x,y,r){ctx.beginPath();for(let k=0;k<10;k++){const rr=k%2?r*0.45:r,an=-Math.PI/2+k*Math.PI/5;ctx.lineTo(x+rr*Math.cos(an),y+rr*Math.sin(an));}ctx.closePath();}
@@ -2925,12 +2925,42 @@ function labelPrep(){const s=scale||1;LBLMIN=12/(10.5*s);LBLSP=Math.sqrt(W*H/Mat
 function labelOn(i){const T=TERR[i];if(LBLSP>=95||T.cap||T.val>=3)return true;if(LBLSP>=62&&T.val>=2)return true;
   return !!G&&(contested(i)||i===G.ui.sel||i===G.ui.inspect||G.ui.dests.has(i)||(G.ui.redir&&G.ui.redir.from===i));}
 function centerOn(i){if(i==null||i<0||!MAP)return;wrapEl.scrollLeft=MAP.cx[i]*scale-wrapEl.clientWidth/2;wrapEl.scrollTop=MAP.cy[i]*scale-wrapEl.clientHeight/2;}
-// pinch zoom with two fingers; one finger pans natively
+// IM7d touch controller: every finger tracked by id; one finger pans, two pinch.
+// Pinching only scales the canvas with a CSS transform; the real zoom (canvas resize + redraw) happens once, when the pinch ends.
+// Going from two fingers to one re-anchors the pan on the finger that stays. touchcancel resets everything.
 let PZ=null,pinchEnd=0;
-wrapEl.addEventListener('touchstart',e=>{if(e.touches.length===2){const [a,b]=e.touches;PZ={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,z:ZOOM};lpCancel();e.preventDefault();}},{passive:false});
-wrapEl.addEventListener('touchmove',e=>{if(!PZ||e.touches.length!==2)return;e.preventDefault();const [a,b]=e.touches,d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-  $('#tip').hidden=true;applyZoom(PZ.z*d/PZ.d,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2);},{passive:false});
-wrapEl.addEventListener('touchend',e=>{if(PZ&&e.touches.length<2){PZ=null;pinchEnd=performance.now();}});
+const TC={pts:new Map(),mode:null,a:null,p:null,vx:0,vy:0,lt:0,moved:false,inert:0};
+function tcRead(e){TC.pts.clear();for(const t of e.touches)TC.pts.set(t.identifier,{x:t.clientX,y:t.clientY});}
+function tcPinchCommit(){const p=TC.p;if(!p)return;TC.p=null;PZ=null;
+  cv.style.transform='';cv.style.transformOrigin='';cv.style.willChange='';
+  const z=Math.max(1,Math.min(ZMAX,p.z0*p.k));applyZoom(z,p.m0x,p.m0y);
+  wrapEl.scrollLeft-=p.m1x-p.m0x;wrapEl.scrollTop-=p.m1y-p.m0y;pinchEnd=performance.now();}
+function tcAnchor(){cancelAnimationFrame(TC.inert);const ids=[...TC.pts.keys()];
+  if(ids.length>=2){const a=TC.pts.get(ids[0]),b=TC.pts.get(ids[1]),r=cv.getBoundingClientRect(),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    TC.mode='pinch';TC.p={ids:ids.slice(0,2),d0:Math.hypot(a.x-b.x,a.y-b.y)||1,z0:ZOOM,m0x:mx,m0y:my,m1x:mx,m1y:my,k:1};PZ=TC.p;
+    cv.style.transformOrigin=`${mx-r.left}px ${my-r.top}px`;cv.style.willChange='transform';lpCancel();$('#tip').hidden=true;}
+  else if(ids.length===1){const a=TC.pts.get(ids[0]);TC.mode='pan';TC.a={id:ids[0],x:a.x,y:a.y,sl:wrapEl.scrollLeft,st:wrapEl.scrollTop};TC.vx=TC.vy=0;TC.lt=performance.now();}
+  else{TC.mode=null;TC.a=null;}}
+function tcInertia(){let vx=TC.vx,vy=TC.vy,last=performance.now();if(Math.hypot(vx,vy)<0.25)return;
+  const step=now=>{const dt=Math.min(40,now-last);last=now;wrapEl.scrollLeft-=vx*dt;wrapEl.scrollTop-=vy*dt;const f=Math.pow(0.93,dt/16);vx*=f;vy*=f;
+    if(Math.hypot(vx,vy)>0.03)TC.inert=requestAnimationFrame(step);};TC.inert=requestAnimationFrame(step);}
+wrapEl.addEventListener('touchstart',e=>{if(TC.p)tcPinchCommit();tcRead(e);if(TC.pts.size===1)TC.moved=false;tcAnchor();if(TC.pts.size>=2)e.preventDefault();},{passive:false});
+wrapEl.addEventListener('touchmove',e=>{tcRead(e);if(!TC.mode)return;e.preventDefault();
+  if(TC.mode==='pinch'&&TC.p){const p=TC.p,a=TC.pts.get(p.ids[0]),b=TC.pts.get(p.ids[1]);if(!a||!b){tcPinchCommit();tcAnchor();return;}
+    p.k=Math.max(1/p.z0,Math.min(ZMAX/p.z0,Math.hypot(a.x-b.x,a.y-b.y)/p.d0));p.m1x=(a.x+b.x)/2;p.m1y=(a.y+b.y)/2;TC.moved=true;
+    cv.style.transform=`translate(${p.m1x-p.m0x}px,${p.m1y-p.m0y}px) scale(${p.k})`;return;}
+  const A=TC.a,c=A&&TC.pts.get(A.id);if(!c){tcAnchor();return;}
+  const dx=c.x-A.x,dy=c.y-A.y;if(!TC.moved&&Math.hypot(dx,dy)<8)return;TC.moved=true;lpCancel();
+  const nsl=A.sl-dx,nst=A.st-dy,now=performance.now(),dt=Math.max(1,now-TC.lt);
+  TC.vx=0.8*((wrapEl.scrollLeft-nsl)/dt)+0.2*TC.vx;TC.vy=0.8*((wrapEl.scrollTop-nst)/dt)+0.2*TC.vy;TC.lt=now;
+  wrapEl.scrollLeft=nsl;wrapEl.scrollTop=nst;},{passive:false});
+function tcEnd(e,cancel){const wasPan=TC.mode==='pan'&&TC.moved;if(TC.p){if(cancel){cv.style.transform='';TC.p=null;PZ=null;}else tcPinchCommit();}
+  tcRead(e);if(cancel)TC.pts.clear();if(TC.moved)pinchEnd=performance.now();
+  if(!TC.pts.size){TC.mode=null;TC.a=null;if(wasPan&&!cancel&&performance.now()-TC.lt<80)tcInertia();return;}
+  tcAnchor();}
+wrapEl.addEventListener('touchend',e=>tcEnd(e,false),{passive:true});
+wrapEl.addEventListener('touchcancel',e=>tcEnd(e,true),{passive:true});
+window.addEventListener('blur',()=>{if(TC.p){cv.style.transform='';TC.p=null;PZ=null;}TC.pts.clear();TC.mode=null;});
 // long-press for info
 let LP=null,lpFired=false,lastPT='mouse',tipT=0;
 function lpCancel(){if(LP){clearTimeout(LP.t);LP=null;}}
