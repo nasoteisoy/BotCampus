@@ -2129,6 +2129,7 @@ function draw(){
       if(adv()){ctx.font=`700 ${8*z}px "IBM Plex Mono",monospace`;haloText(String(ifr),lx-s-5*z,ny+1*z,ctx.font,'#e8e3d7');}}
     if(contested(i)&&!fogged){const ak=ux6()&&attackerOf(i);battleBadge(cx,ny-15*z,z,ak);}}
     const groups={};t.units.forEach(u=>{if(G.vis&&!G.vis[i]&&al(u.o)!==viewer())return;(groups[u.o]=groups[u.o]||[]).push(u);});
+    if(bat()||!ux6()){drawCounters(i,groups);return;}
     if(ux6()){const ps=panelsAt(i);if(figMode())drawFigures(i,ps,cx,cy,z);else drawChips6(i,ps,cx,cy,z);return;}
     let yy=cy+1*z;
     Object.keys(groups).forEach(o=>{
@@ -2238,6 +2239,53 @@ function paintFig(g,t,col,dk,lt){
 function terrRad(i){if(!MAP.rad){const c=new Float32Array(L);for(let k=0;k<MAP.zid.length;k++){const v=MAP.zid[k];if(v>=0&&v<L)c[v]++;}
     MAP.rad=Array.from(c,a=>Math.sqrt(a/(RES*RES)/Math.PI));}
   return MAP.rad[i]||20;}
+/* ---------- IM8e: HOI4-style unit counters, one per side, always inside the territory ---------- */
+// distance from every map pixel to the nearest other territory, then for each territory the roomiest point
+// at or below its label point, and how big a box fits around it (map units)
+function poles(){if(MAP.pole)return MAP.pole;const w=BW,h=BH,z=MAP.zid,n=w*h,d=new Float32Array(n),D=1; // chessboard distance = the biggest square that fits
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,v=z[k];
+    d[k]=(x===0||y===0||x===w-1||y===h-1||v<0||z[k-1]!==v||z[k+1]!==v||z[k-w]!==v||z[k+w]!==v)?0:1e9;}
+  for(let y=1;y<h;y++)for(let x=1;x<w-1;x++){const k=y*w+x;if(!d[k])continue;
+    d[k]=Math.min(d[k],d[k-1]+1,d[k-w]+1,d[k-w-1]+D,d[k-w+1]+D);}
+  for(let y=h-2;y>=0;y--)for(let x=w-2;x>0;x--){const k=y*w+x;if(!d[k])continue;
+    d[k]=Math.min(d[k],d[k+1]+1,d[k+w]+1,d[k+w+1]+D,d[k+w-1]+D);}
+  const px=new Float32Array(L),py=new Float32Array(L),ps=new Float32Array(L),best=new Float32Array(L).fill(-1);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,v=z[k];if(v<0||v>=L||!d[k])continue;
+    const mx=(x+0.5)/RES,my=(y+0.5)/RES,r=(d[k]-1)/RES,s=Math.min(r,my-MAP.cy[v]+2),sc=s-Math.abs(mx-MAP.cx[v])*0.04; // stay near the label, below it
+    if(sc>best[v]){best[v]=sc;px[v]=mx;py[v]=my;ps[v]=Math.max(0.5,s);}}
+  for(let i=0;i<L;i++)if(best[i]<0){px[i]=MAP.cx[i];py[i]=MAP.cy[i]+4;ps[i]=3;}
+  return MAP.pole={x:px,y:py,s:ps};}
+// NATO-style symbol inside the box
+function natoSym(k,x,y,w,h){const lw=Math.max(0.6,w*0.07);ctx.lineWidth=lw;ctx.strokeStyle='#f6f1e4';ctx.fillStyle='#f6f1e4';ctx.beginPath();
+  const l=x+w*0.18,r=x+w*0.82,t=y+h*0.2,b=y+h*0.8,mx=x+w/2,my=y+h/2;
+  if(UNITS[k].sea){ctx.moveTo(l,my);ctx.lineTo(r,my);ctx.lineTo(r-w*0.1,b);ctx.lineTo(l+w*0.1,b);ctx.closePath();ctx.fill();return;}
+  if(UNITS[k].air){ctx.ellipse(mx-w*0.14,my,w*0.14,h*0.18,0,0,7);ctx.moveTo(mx+w*0.28,my);ctx.ellipse(mx+w*0.14,my,w*0.14,h*0.18,0,0,7);ctx.stroke();return;}
+  if(k==='art'){ctx.arc(mx,my,Math.min(w,h)*0.14,0,7);ctx.fill();return;}
+  if(k==='aag'){ctx.moveTo(l,b);ctx.lineTo(mx,t);ctx.lineTo(r,b);ctx.stroke();return;}
+  if(k==='tnk'||k==='ltk'||k==='htk'){ctx.roundRect(l,t+h*0.08,r-l,b-t-h*0.16,(b-t)*0.3);ctx.stroke();return;}
+  if(UNITS[k].off){const R=Math.min(w,h)*0.3;for(let j=0;j<10;j++){const a=-Math.PI/2+j*Math.PI/5,q=j%2?R*0.45:R;ctx.lineTo(mx+q*Math.cos(a),my+q*Math.sin(a));}ctx.closePath();ctx.fill();return;}
+  ctx.moveTo(x,y);ctx.lineTo(x+w,y+h);ctx.moveTo(x+w,y);ctx.lineTo(x,y+h);ctx.stroke();} // infantry: the X
+// the unit kind the counter shows: the side's most valuable fighting kind
+function mainKind(us){const c={};us.forEach(u=>{const s=UNITS[u.t];c[u.t]=(c[u.t]||0)+(s.nc?0.01:s.cost);});return Object.keys(c).sort((a,b)=>c[b]-c[a])[0];}
+function drawCounters(i,groups){const sides=Object.keys(groups).filter(o=>groups[o].length);if(!sides.length)return;
+  const P=poles(),ax=P.x[i],ay=P.y[i],room=P.s[i]*0.9,n=sides.length,gap=1.5/scale;
+  // about 26 screen px wide when there is room, smaller when the territory is small
+  let cw=Math.min(26/scale,(2*room-(n-1)*gap)/(n*1.24),2*room/1.1);const ch=cw*0.62,bh=Math.max(1/scale,cw*0.12);
+  const x0=ax-(n*cw+(n-1)*gap)/2-cw*0.02,y0=ay-cw*0.525+cw*0.14;
+  sides.forEach((o,k)=>{const us=groups[o],x=x0+k*(cw+gap),y=y0,mk=mainKind(us),col=NAT[o]?NAT[o].rgb:ALRGB[al(o)]||[150,150,150];
+    const sel=i===G.ui.sel&&us.some(u=>G.ui.counts[u.o+':'+u.t]>0),ord=us.some(u=>isOrd(u)),cnt=us.length;
+    if(cw*scale<7){ctx.beginPath();ctx.arc(ax+(k-(n-1)/2)*(cw+gap),ay,cw*0.45,0,7);ctx.fillStyle=rgb(col);ctx.fill();ctx.lineWidth=0.8/scale;ctx.strokeStyle='rgba(12,14,16,.9)';ctx.stroke();return;}
+    // stacked units show as cards behind the counter
+    const st=cnt>4?2:cnt>1?1:0,o2=cw*0.07;
+    for(let s2=st;s2>0;s2--){ctx.beginPath();ctx.rect(x+s2*o2,y-s2*o2,cw,ch);ctx.fillStyle=rgb(col.map(v=>v*0.6));ctx.fill();ctx.lineWidth=0.8/scale;ctx.strokeStyle='rgba(12,14,16,.9)';ctx.stroke();}
+    if(sel){ctx.beginPath();ctx.rect(x-cw*0.1,y-cw*0.1,cw*1.2,ch+bh*1.6+cw*0.2);ctx.fillStyle='rgba(255,222,140,.45)';ctx.fill();}
+    ctx.beginPath();ctx.rect(x,y,cw,ch);ctx.fillStyle=rgb(col);ctx.fill();
+    ctx.lineWidth=Math.max(1/scale,cw*0.05);ctx.strokeStyle=sel?'#ffe08a':'rgba(12,14,16,.92)';ctx.stroke();
+    if(ord){ctx.setLineDash([cw*0.12,cw*0.08]);ctx.lineWidth=Math.max(1/scale,cw*0.06);ctx.strokeStyle='#f2d58f';ctx.stroke();ctx.setLineDash([]);}
+    ctx.save();ctx.beginPath();ctx.rect(x,y,cw,ch);ctx.clip();natoSym(mk,x,y,cw,ch);ctx.restore();
+    // strength bar, no numbers
+    const by=y+ch+bh*0.5,f=1-Math.exp(-us.filter(u=>!UNITS[u.t].nc).length/5);
+    ctx.fillStyle='rgba(12,14,16,.9)';ctx.fillRect(x,by,cw,bh);ctx.fillStyle=f>0.6?'#7fd06e':f>0.3?'#e2c25a':'#e0664b';ctx.fillRect(x,by,cw*Math.max(0.08,f),bh);});}
 const FIG_ROW=6,FIG_CAP=12;
 // one panel per nation, one rank (or a few ranks) of figures per unit type, shrunk to fit inside the territory
 const ux6=()=>!!(MAPS[V]&&MAPS[V].figs);
