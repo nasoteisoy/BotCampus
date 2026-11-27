@@ -2794,6 +2794,25 @@
    "extras": [],
    "note": "Smoother walk, turn, takeoff, and landing. Fly, breathe fire, and swap the red, green, and purple dragons.",
    "thumb": "thumbs/dragon-island.png"
+  },
+  {
+   "id": "iron-meridian",
+   "title": "Iron Meridian",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "IM6 by Claude (Chumi's PC); IM7 battalion orders, fighter coverage, online rooms by Lead: Dev; Dev A public push",
+   "section": "live",
+   "group": "Army HQ",
+   "feature": "Combat",
+   "kind": "Feature demo",
+   "stage": "Not rated yet",
+   "suggestedStage": "Halfway there",
+   "signedOff": false,
+   "updated": "2026-11-26",
+   "url": "games/iron-meridian/",
+   "extras": [],
+   "note": "Iron Meridian 7: war for Varrow. Every battle both sides secretly pick an order card (⚔️ beats 🔀 beats 🛡️ beats ⚔️). Fighter coverage map. Solo vs AI or online with a room code",
+   "thumb": "thumbs/iron-meridian.png"
   }
  ]
 }
