@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#141a1e">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Iron Meridian 7</title>
+<title>Iron Meridian 8</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23f6dc9a%22/%3E%3Cstop offset=%221%22 stop-color=%22%23946a28%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=%22M32 3l25 9v18c0 16-11 26-25 31C18 56 7 46 7 30V12z%22 fill=%22url(%23g)%22 stroke=%22%231b2126%22 stroke-width=%223%22/%3E%3Cpath d=%22M32 14l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z%22 fill=%22%231b2126%22/%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -496,11 +496,86 @@ canvas#map,.mapwrap{touch-action:none}
   .bt-sides{grid-template-columns:1fr auto 1fr}
   .ddp,.dock,.g6 .mapbox .ddp,.g6 .mapbox .dock{left:auto!important;width:min(420px,60vw)!important;bottom:calc(56px + env(safe-area-inset-bottom,0px))!important;max-height:calc(100dvh - 144px)!important}
 }
+/* ===== IM8 battalion battles, tap telling ===== */
+#batdlg{position:relative}
+.tell{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);transform:translateX(-50%);z-index:95;max-width:min(92vw,520px);padding:8px 16px;border-radius:999px;background:linear-gradient(180deg,#2d383f,#171d21);color:#f3ead2;box-shadow:inset 0 0 0 1.5px #c9a25a,0 8px 24px rgba(0,0,0,.55);font:500 14px/1.3 var(--f-body,system-ui);text-align:center;pointer-events:none}
+.tell.go{animation:tellP .22s cubic-bezier(.2,1.6,.4,1)}@keyframes tellP{from{opacity:0;transform:translate(-50%,-6px) scale(.92)}}
+.tell b{color:#ffd98a}.tell .nd,.tell i.nd{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:3px}
+.ocards.fam{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
+.ocards.fam .oc,.ocards.sup .oc{aspect-ratio:auto!important;max-height:none}
+.ocards.fam .oc{height:min(10dvh,80px)!important;font-size:34px}
+.ocards.sup{grid-template-columns:repeat(4,1fr)!important}.ocards.sup .oc{height:min(8dvh,62px)!important;font-size:28px}
+.oc .ic{margin-top:-8px}
+.oc .obs{position:absolute;left:7px;right:7px;bottom:5px;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;pointer-events:none}
+.oc .obs i{display:block;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--bc) calc(var(--v)*20%),rgba(0,0,0,.5) 0)}
+.obs .c,.ob .c{--bc:#ff6a4c}.obs .m{--bc:#ff8ab0}.obs .p{--bc:#7fb8ff}.obs .s{--bc:#e2b45c}
+.oc.sel{border-color:#ffe39a!important;transform:translateY(-3px);box-shadow:0 0 0 3px #e2b45c,0 0 22px rgba(226,180,92,.6)!important}
+.oc.lock .obs{opacity:.3}
+.otell{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-height:54px;margin-top:8px;padding:6px 10px;border-radius:12px;background:rgba(0,0,0,.25);box-shadow:inset 4px 0 0 var(--fc,#56646d);font-size:14px;color:#efe7d2}
+.otell .hint{opacity:.55;font-size:18px;margin:auto}
+.otell .ti{font-size:28px;font-weight:400;filter:drop-shadow(0 0 8px var(--fc))}.otell .tt b{color:#ffd98a;margin-right:4px}
+.otell .tw{font-size:15px;background:rgba(255,255,255,.06);border-radius:999px;padding:1px 8px}
+.otell .tb{display:flex;gap:10px;width:100%}
+.ob{display:inline-flex;align-items:center;gap:3px}.ob em{font-style:normal;font-size:12px}
+.ob i{display:block;width:34px;height:6px;border-radius:3px;background:linear-gradient(90deg,#e2b45c calc(var(--v)*20%),rgba(0,0,0,.55) 0)}
+.bt-num{display:flex;justify-content:space-between;gap:6px;font:600 15px var(--f-mono,monospace)}.bt-num b{margin-left:2px}.bt-num .low{color:#ff6a4c}
+.bt-side .mini{max-height:24px;overflow:hidden}
+.bt-st{align-items:center;justify-content:space-between}
+.bt-st .sp{display:inline-flex;align-items:center;gap:1px}.bt-st .sp i{display:inline-block;width:5px;height:11px;border-radius:2px;background:#2b3338}.bt-st .sp i.on{background:#e2b45c}
+.bt-sup{display:flex;gap:5px;flex-wrap:wrap;min-height:26px}
+.tok{display:inline-grid;place-items:center;min-width:28px;height:26px;padding:0 4px;border-radius:999px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1.5px #c9a25a;font-size:14px;font-weight:400;cursor:pointer}
+.tok.none{opacity:.35;box-shadow:inset 0 0 0 1px #56646d}
+.bt-rd{font:700 12px var(--f-mono,monospace);color:#1b1d1f;background:#e2b45c;border-radius:999px;padding:2px 7px}
+.vs-w{display:grid;grid-template-columns:1fr 40px 1fr;text-align:center;margin:-4px 0 6px}
+.ocw{font:700 12px var(--f-mono,monospace);letter-spacing:.06em;text-transform:uppercase}.ocw.up{color:#7fd06e}.ocw.dn{color:#ff6a4c}.ocw.eq{color:#b9b29c}
+.vs-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vn{display:flex;flex-direction:column;gap:2px;padding-left:8px;box-shadow:inset 3px 0 0 var(--nc);font:600 15px var(--f-mono,monospace)}
+.vn small{font-size:12px;margin-left:4px;opacity:.9}.vn .neg{color:#ff6a4c}.vn .pos{color:#7fd06e}
+.vs-r .eq{color:#b9b29c}
+.rhist{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.rh{display:inline-flex;align-items:center;gap:1px;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.3);box-shadow:inset 0 3px 0 var(--fc);font-size:16px}
+.rh i{font-style:normal;font-size:10px}.rh i.up{color:#7fd06e}.rh i.dn{color:#ff6a4c}.rh i.eq{color:#b9b29c}
+.coach{position:absolute;inset:0;z-index:6;cursor:pointer;border-radius:inherit}
+.coach .ring{position:absolute;border-radius:14px;box-shadow:0 0 0 3px #ffd76a,0 0 0 9999px rgba(0,0,0,.5),0 0 24px #ffd76a;animation:ringP 1.2s ease-in-out infinite;pointer-events:none}
+@keyframes ringP{50%{box-shadow:0 0 0 5px #ffd76a,0 0 0 9999px rgba(0,0,0,.5),0 0 34px #ffd76a}}
+.coach .bub{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:min(300px,86%);padding:10px 16px;border-radius:14px;background:#fff1c8;color:#1b1d1f;font:700 15px/1.35 var(--f-body,system-ui);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:tellP .25s both}
+.coach .bub small{display:block;font-size:11px;opacity:.6;margin-top:3px}
+@media (max-width:600px){
+  .ocards.fam .oc{height:min(8.6dvh,68px)!important;font-size:30px}
+  .ocards.sup .oc{height:min(7dvh,54px)!important;font-size:24px}
+  .ocards.sup .oc .ic{margin-top:-6px}
+  .otell{min-height:48px;font-size:13px;margin-top:6px;padding:5px 8px}.ob i{width:26px}
+  .bt-num{font-size:13px}.tok{min-width:24px;height:23px;font-size:12px}.bt-side{gap:4px!important}
+  .vn{font-size:13px}.tell{font-size:13px;top:calc(env(safe-area-inset-top,0px) + 54px)}
+}
+
+/* ===== IM8b: submit always visible, waiting pill ===== */
+.waitpill{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:8;max-width:92vw;padding:7px 16px;border-radius:999px;background:rgba(14,18,21,.92);color:#f3ead2;box-shadow:inset 0 0 0 1.5px #c9a25a,0 6px 18px rgba(0,0,0,.5);font:600 13px/1.25 var(--f-body,system-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.waitpill b{color:#ffd98a;font-family:var(--f-mono,monospace);letter-spacing:.1em}
+.waitpill.busy{animation:wpP 1.4s ease-in-out infinite}@keyframes wpP{50%{box-shadow:inset 0 0 0 1.5px #ffd76a,0 0 18px rgba(255,215,106,.45)}}
+#mtSubmit.go:not(:disabled){animation:subP 1.8s ease-in-out infinite}@keyframes subP{50%{box-shadow:0 0 0 3px rgba(255,215,106,.5),0 0 22px rgba(255,215,106,.6)}}
+#mtSubmit.wait{background:#2b3338!important;color:#e2b45c!important;border-color:#56646d!important;opacity:1}
+@media (min-width:821px){.waitpill{bottom:22px}}
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  .mt{flex:0 1 52px;min-width:40px!important}
+  #mtSubmit{flex:0 0 auto;width:auto!important;min-width:104px!important;padding:0 14px!important;display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  #mtSubmit .mi{font-size:24px!important;margin:0!important;line-height:1}
+  #mtSubmit .ml{display:block!important;font:800 11px/1 var(--f-mono,monospace)!important;letter-spacing:.08em;text-transform:uppercase}
+  body.g15 .mtools .mt,body.g15 .mtools .mtpp{display:none!important}
+  body.g15 .mtools{justify-content:center}
+  body.g15 #mtSubmit{min-width:min(70vw,260px)!important;flex-direction:row;gap:8px}
+  body.g15 #mtSubmit .ml{font-size:14px!important}
+  body.g15 .layout{display:flex!important;flex-direction:column}
+  body.g15 .board{flex:0 0 55%;height:auto!important;padding-bottom:0!important;min-height:0}
+  body.g15 .side{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:0;padding:8px 8px calc(84px + env(safe-area-inset-bottom,0px))!important;gap:8px}
+}
+@media (pointer:coarse) and (max-height:520px){.waitpill{bottom:calc(64px + env(safe-area-inset-bottom,0px))}body.g15 .layout{flex-direction:row}body.g15 .board{flex:0 0 58%}}
+
 </style>
 
 <div class="app">
   <header class="top">
-    <div class="brand"><span id="brandName">IRON MERIDIAN 7</span><small id="brandSub">A war for the continent of Varrow</small></div>
+    <div class="brand"><span id="brandName">IRON MERIDIAN 8</span><small id="brandSub">A war for the continent of Varrow</small></div>
     <div class="spacer"></div>
     <span class="netb" id="netBadge" hidden></span>
     <button class="btn ibtn" id="helpBtn" aria-haspopup="dialog" aria-label="Help" title="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
@@ -567,7 +642,7 @@ canvas#map,.mapwrap{touch-action:none}
   <div class="dlg" id="bdlg"></div>
 </div>
 <div class="overlay" id="bat" hidden><div class="dlg bdl" id="batdlg" role="dialog" aria-modal="true" aria-label="Battle orders"></div></div>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden></div><div class="tell" id="tell" hidden aria-live="polite"></div><div class="waitpill" id="waitPill" hidden aria-live="polite"></div>
 
 <script>
 /*MAPGEN-START*/
@@ -1065,8 +1140,8 @@ MAPS[6]={...MAPS[5],name:'IRON MERIDIAN 6',sub:'The war up close',figs:true,zmax
   // balance: scattered infrastructure favours the Concord, so its capitals start with fewer extra troops than in game 5
   terr:MAPS[4].terr.map(d=>d[6].includes('cap')?[...d.slice(0,7),d[7]+' aag1 rcn1 bmb1 maj1'+({A:' inf5 tnk1',S:' inf5 tnk1'}[d[5]]||'')]:d),
   blurb:'Game 5 with a closer look: zoom in past 200% and every soldier, gun, tank, plane and officer stands on the map as its own figure. 25 turns.'};
-MAPS[8]={...MAPS[6],name:'IRON MERIDIAN 7',sub:'Battalions at war',bat:true,
-  blurb:'Game 6 plus battalion orders: in every battle both sides secretly pick an order (⚔️ beats 🔀, 🔀 beats 🛡️, 🛡️ beats ⚔️). Fighter coverage map. Play solo or online. 25 turns.'};
+MAPS[8]={...MAPS[6],name:'IRON MERIDIAN 8',sub:'Battalions, officers, support',bat:true,
+  blurb:'Every fight is a battalion battle: 🪖 soldiers and ❤️ morale, 10 secret orders (⚔️ › 🔀 › 🛡️ › ⚔️), officers with perks, ✈️💣🪖 support. Rounds until one side breaks. Solo or online. 25 turns.'};
 // IRON MERIDIAN 6 demo: four capitals, set up any battle you like and give both alliances' orders
 MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territories',demo:true,W:800,H:520,maxr:99,minw:600,zs:1,zmax:6,xinf:{},land:null,proj:null,wrap:false,
   opening:'Demo: place units for either side, then give both alliances their orders.',
@@ -1074,7 +1149,7 @@ MAPS[7]={...MAPS[6],name:'IRON MERIDIAN 6 · Demo',sub:'Sandbox: four territorie
   terr:[['aldhaven','Aldhaven',240,165,6,'A','cap fac','inf2 tnk1'],['kesh','Kesh',540,165,6,'K','cap fac','inf2 tnk1'],
     ['solvar','Solvar',300,365,6,'S','cap fac','inf2 tnk1'],['vyrnhold','Vyrnhold',600,365,6,'V','cap fac','inf2 tnk1']],
   sea:frame(800,520,50)};
-MAPS[9]={...MAPS[7],name:'IRON MERIDIAN 7 · Demo',bat:true,blurb:'The 4-territory sandbox with game 7 battalion orders. Set up any battle and try the order cards.'};
+MAPS[9]={...MAPS[7],name:'IRON MERIDIAN 8 · Demo',bat:true,blurb:'The 4-territory sandbox with game 8 battalion combat. Set up any battle and try every order.'};
 let V=0,TERR=[],L=0,LAND=0,SEA=[],ADJ=[],MAP=null;
 function loadVariant(v){
   V=v;const M=MAPS[v],P=M.proj||(p=>p);PROD=M.figs?['inf','art','tnk','ftr','maj']:['inf','art','tnk','aag','ftr','bmb','rcn'];UNITS.tnk.name=M.figs?'Medium armor':'Armor';W=M.W;H=M.H;BW=Math.round(W*RES);BH=Math.round(H*RES);MAXR=M.maxr;SEA=M.sea||[];
@@ -1324,7 +1399,7 @@ const warship=t=>UNITS[t].sea&&UNITS[t].atk>0;
 const shipyard=(n,fac)=>coasts(fac).length?fac:(factories(n).find(f=>coasts(f).length)??null);
 const cost=p=>ORDER.reduce((s,k)=>s+p[k]*UNITS[k].cost,0);
 const count=p=>ORDER.reduce((s,k)=>s+p[k],0);
-const mkUnit=(t,o)=>({t,o,ord:-1,fr:-1});
+const mkUnit=(t,o)=>{const u={t,o,ord:-1,fr:-1};if(UNITS[t]&&UNITS[t].off)u.pk=['ra','am','bb','wd'][Math.floor(Math.random()*4)];return u;};
 function parseUnits(s,o){const out=[];if(s.includes(':')){[o,s]=s.split(':');}s.split(' ').filter(Boolean).forEach(tok=>{const t=tok.slice(0,3),c=+tok.slice(3);for(let k=0;k<c;k++)out.push(mkUnit(t,o));});return out;}
 // land is hostile if someone else owns it or enemy troops stand on it; a sea zone only if enemy ships are in it
 function hostile(i,a){const t=G.t[i];if(!isSea(i)&&al(t.owner)!==a)return true;return t.units.some(u=>al(u.o)!==a&&grounded(u));}
@@ -1622,14 +1697,14 @@ async function resolveTurn(){
   G.phase='battle';
   const before=ux6()?new Map():null;if(before)G.t.forEach((t,i)=>t.units.forEach(u=>before.set(u,i)));
   if(adv()){if(ux6())airCover(rep);else G.t.forEach((t,i)=>{if(!isSea(i))airWar(i,rep);});returnPlanes();}
-  if(bat())await batOrders();
-  G.t.forEach((t,i)=>{const f=fight(i);if(!f)return;
+  if(bat())await batBattles(rep);
+  else G.t.forEach((t,i)=>{const f=fight(i);if(!f)return;
     const r=settle(i);const left=new Set(G.t[i].units.map(u=>al(u.o)));
     f.result=r||(left.size>1?'Fighting continues next turn.':left.size===1?`${ALLY[[...left][0]]} holds ${TERR[i].name}.`:'Both sides are wiped out.');
     f.ongoing=left.size>1;rep.battles.push(f);
     addLog(`${TERR[i].name}: ${f.keys.map(k=>`${ALLY[k]} lost ${f.lost[k]}`).join(', ')}. ${f.result}`,null,f.keys);});
   if(adv())returnPlanes();
-  if(bat()){if(G.bt)Object.keys(G.bt).forEach(i=>{if(!contested(+i))delete G.bt[i];});G.bo=null;batReveal(rep);}
+  if(bat()){if(G.bt)Object.keys(G.bt).forEach(i=>{if(!contested(+i))delete G.bt[i];});G.bo=null;}
   if(before){const alive=new Set();G.t.forEach(t=>t.units.forEach(u=>alive.add(u)));const m={};
     before.forEach((i,u)=>{if(alive.has(u))return;const k=i+'|'+u.o+'|'+u.t;m[k]=(m[k]||0)+1;});
     G.lost=Object.entries(m).map(([k,n])=>{const [i,o,t]=k.split('|');return{i:+i,o,t,n};});}
@@ -1693,10 +1768,14 @@ function gameOver(a,why){
   $('#viewBtn').onclick=()=>{$('#battle').hidden=true;};
 }
 function chipsHTML(g){return Object.keys(g).map(o=>ORDER.filter(k=>g[o][k]).map(k=>`<span class="chip" style="background:${rgb(NAT[o].rgb,.62)}">${svg(k)}${g[o][k]}</span>`).join('')).join('');}
+function repBat(f){const h=f.hist||[];return `<div class="rep"><div class="rep-h"><b>${esc(TERR[f.i].name)}</b><span class="${f.ongoing?'tag live':'tag'}">${f.ongoing?'🔁':'🏁'} ${h.length}R</span></div>
+  ${f.keys.map(k=>`<div class="rep-side" style="--nc:${rgb(ALRGB[k])}"><div class="k">${k===f.own?'⛨':'⚔'} ${ALLY[k]} · 🪖${(f.s0||{})[k]||0}→${(f.sa||{})[k]||0} · ❤️${(f.m0||{})[k]||0}→${(f.ma||{})[k]||0}%${(f.offL||{})[k]?' · 🎖️❌':''}</div><div class="mini">${chipsHTML((f.before||{})[k]||{})}</div>
+    <div class="rhist">${h.map(x=>x.O&&x.O[k]?`<span class="rh" style="--fc:${FAMC[BO[x.O[k]].f]}" data-tell="${BO[x.O[k]].i} ${BO[x.O[k]].n} · ${OUT[(x.out||{})[k]||'even'].n}">${BO[x.O[k]].i}<i class="${OUT[(x.out||{})[k]||'even'].c}">${OUT[(x.out||{})[k]||'even'].a}</i></span>`:'').join('')}</div></div>`).join('')}
+  <p class="blog">${esc(f.result||'')}</p></div>`;}
 function showReport(rep){
   if(G.online&&G.online.host)G.lastRep=rep;
   const who=adv()?viewer():null,dep=G.mode==='O'?rep.deploy.filter(m=>TURN.some(n=>NAT[n].al===G.side&&m.includes(NAT[n].short))):rep.deploy,seen=f=>!who||f.keys.includes(who);
-  const b=rep.battles.filter(seen).map(f=>`<div class="rep"><div class="rep-h"><b>${esc(f.title||TERR[f.i].name)}</b><span class="${f.ongoing?'tag live':'tag'}">${f.clash?'Head-on clash':f.ongoing?'Ongoing':'Decided'}</span></div>
+  const b=rep.battles.filter(seen).map(f=>f.bx&&f.hist?repBat(f):`<div class="rep"><div class="rep-h"><b>${esc(f.title||TERR[f.i].name)}</b><span class="${f.ongoing?'tag live':'tag'}">${f.clash?'Head-on clash':f.ongoing?'Ongoing':'Decided'}</span></div>
     ${f.keys.map(k=>`<div class="rep-side" style="--nc:${rgb(ALRGB[k])}"><div class="k">${f.bx&&f.bx.O[k]?BO[f.bx.O[k]].i+' ':''}${ALLY[k]} · ${f.clash?'on the march':isSea(f.i)?'at sea':k===f.own?'defending':'attacking'} · ${f.rolls[k].hits} hit${f.rolls[k].hits===1?'':'s'}, lost ${f.lost[k]}</div>
       <div class="mini">${chipsHTML(f.before[k])}</div><div class="dice">${f.rolls[k].rolls.map(x=>`<span class="die ${x.hit?'hit':''}" title="${UNITS[x.t].name} hits on ${x.need} or less${x.b?` (officers +${x.b})`:''}" ${x.b?'style="box-shadow:0 0 0 2px var(--brass)"':''}>${x.v}</span>`).join('')}</div></div>`).join('')}
     <p class="blog">${esc(f.result)}</p></div>`).join('');
@@ -2508,7 +2587,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&G&&G.ui.dd){G.ui.dd
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.mode)));
 // title menu: pick the war first, then the command
 function showMenu(){$('#battle').hidden=true;$('#setup').hidden=false;$('#pickGame').hidden=false;$('#pickMode').hidden=true;
-  $('#games').innerHTML=Object.keys(MAPS).sort((a,b)=>(b>=8)-(a>=8)||a-b).map(v=>`<button class="mode" data-game="${v}"><span class="gmark">${({1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VI·D',8:'VII',9:'VII·D'})[v]}</span><span><b>${MAPS[v].name}</b><span>${esc(MAPS[v].blurb)}</span></span></button>`).join('');
+  $('#games').innerHTML=Object.keys(MAPS).sort((a,b)=>(b>=8)-(a>=8)||a-b).map(v=>`<button class="mode" data-game="${v}"><span class="gmark">${({1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VI·D',8:'VIII',9:'VIII·D'})[v]}</span><span><b>${MAPS[v].name}</b><span>${esc(MAPS[v].blurb)}</span></span></button>`).join('');
   const f=$('#games [data-game]');if(f)f.focus();}
 function showModes(){const M=MAPS[V];$('#pickGame').hidden=true;$('#pickMode').hidden=false;
   $('#modeEyebrow').textContent=M.name;
@@ -2688,12 +2767,16 @@ ${FG?`<li><b>Your PP</b> are shown in four parts above the map: <b class="pp-t">
       :`<li>Click a territory or unit icon to pick up troops, set how many go, then click a highlighted territory. Gold arrows are moves, red are attacks; click one to change or cancel it.</li>
       <li>Zoom with + and −, or Ctrl + scroll; drag to pan.</li>`}
       <li><b>Undo</b> takes back your last order, and <b>Clear all</b> takes back every order. Nothing happens until you press <b>Submit orders</b>.</li></ul></section>
-      ${M.bat?`<section><h3>Battalion orders</h3><p>Every battle, both sides secretly pick an order card, then they are revealed together.</p><ul>
-      <li>⚔️ › 🔀 › 🛡️ › ⚔️ — the winner deals 125% damage and 150% morale damage; the loser 75% and 50%. Strength still counts.</li>
-      <li>⚔️ Assault · 🔄 Counterattack (stronger on your own land) · 🛡️ Defend (takes less, readies 🎯) · 🎯 Ambush (needs ⏳ prep) · 🔀 Maneuver (more morale damage) · 💥 Bombard (uses ammo 🪫 from guns)</li>
-      <li>🚩 Rally (+morale) · 🏳️ Withdraw (leave the battle) · 🐎 Pursue (hits a fleeing or shaken enemy hard) · 🔧 Reorganize (+1 soldier back, readies 🎯)</li>
-      <li>Morale at zero: the battalion breaks 💔 and falls back. ⚡ lets the staff pick the rest.</li>
-      <li>✈ button on the map: fighter coverage. Each side's fighters cover their territory and the land next to it; gold = both sides.</li></ul></section>`:''}
+      ${M.bat?`<section><h3>Battalion battles</h3><ul>
+      <li>🪖 soldiers · ❤️ morale · 📦 supply. ❤️ 0 = the battalion breaks 💔 and runs; its officer is captured.</li>
+      <li>Each round both sides secretly pick a card. Up to ${RMAX} rounds a turn, until one side breaks, withdraws or is wiped.</li>
+      <li>⚔️ › 🔀 › 🛡️ › ⚔️ &nbsp; ▲ Advantage 125% 💀 150% 💔 · ＝ Even 100% · ▼ Disadvantage 75% 50% · ⏸ Stalemate (🛡️ vs 🛡️) 50%</li>
+      <li style="--fc:#d4573b">⚔️ Assault · 🔄 Counterattack (best on your land)</li><li>🛡️ Defend (readies 🎯) · 🎯 Ambush (needs ⏳ prep)</li><li>🔀 Maneuver (big 💔) · 💥 Bombard (uses 📦📦)</li>
+      <li>🚩 Rally +❤️ · 🏳️ Withdraw (🐎 can chase) · 🐎 Pursue (vs 🏳️ or shaken) · 🔧 Reorganize +📦 +❤️</li>
+      <li>Card bars: 💀 soldier damage · 💔 morale damage · 🛡 protection · 📦 supply use</li>
+      <li>🎖️ Officers (Majors ★, Colonels ★★, Generals ★★★): 📯 Rally+ · 🦉 Ambush ready · 🧨 +📦 · 🐾 safer Withdraw</li>
+      <li>Support: ✈️ fighter cover · 💣 guns next door · 🪖 reserves next door. 📦 refills each turn, more on your land.</li>
+      <li>Tap anything to see what it is. ⚡ lets the staff pick the rest of the turn.</li></ul></section>`:''}
       
   </div>`;}
 function openHelp(){const o=$('#help');$('#hdlg').innerHTML=helpHTML();o.hidden=false;$('#hdlg').scrollTop=0;$('#helpX').focus();}
@@ -2735,125 +2818,251 @@ window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-dra
 window.addEventListener('pointerup',()=>{drag=null;cv.classList.remove('panning');});
 cv.addEventListener('click',e=>{if(dragged){dragged=false;e.stopImmediatePropagation();}},true);
 
-/* ---------- IRON MERIDIAN 7: battalion orders, fighter coverage ---------- */
+/* ---------- IRON MERIDIAN 8: battalion combat · soldiers, morale, 10 orders, officers, support ---------- */
 const bat=()=>!!(MAPS[V]&&MAPS[V].bat);
-const BO={as:{i:'⚔️',f:'A',n:'Assault'},ca:{i:'🔄',f:'A',n:'Counterattack'},df:{i:'🛡️',f:'D',n:'Defend'},am:{i:'🎯',f:'D',n:'Ambush'},
-  mv:{i:'🔀',f:'M',n:'Maneuver'},bb:{i:'💥',f:'M',n:'Bombard'},ra:{i:'🚩',f:'S',n:'Rally'},wd:{i:'🏳️',f:'S',n:'Withdraw'},pu:{i:'🐎',f:'S',n:'Pursue'},ro:{i:'🔧',f:'S',n:'Reorganize'}};
-const BOK=Object.keys(BO),FAMC={A:'#d4573b',D:'#4f8fd8',M:'#6cae5e',S:'#8d958f'},BEATS={A:'M',D:'A',M:'D'};
-const TRI={'1':{d:1.25,m:1.5},'0':{d:1,m:1},'-1':{d:0.75,m:0.5}};
-function triOf(a,b){if(!a||!b)return 0;const fa=BO[a].f,fb=BO[b].f;if(fa==='S'||fb==='S'||fa===fb)return 0;return BEATS[fa]===fb?1:BEATS[fb]===fa?-1:0;}
-const rndI=x=>{const f=Math.floor(x);return f+(Math.random()<x-f?1:0);};
+// c casualty damage, mo morale damage, p protection, su supply use (1-5 ratings, shown as bars on the cards)
+const BO={
+  as:{i:'⚔️',f:'A',n:'Assault',c:4,mo:3,p:1,su:3,t:'Overwhelm them'},
+  ca:{i:'🔄',f:'A',n:'Counterattack',c:3,mo:4,p:2,su:3,t:'Hit back · best on your land'},
+  df:{i:'🛡️',f:'D',n:'Defend',c:2,mo:1,p:5,su:1,t:'Dig in · readies 🎯'},
+  am:{i:'🎯',f:'D',n:'Ambush',c:5,mo:5,p:3,su:3,t:'Deadly trap · needs ⏳ prep'},
+  mv:{i:'🔀',f:'M',n:'Maneuver',c:2,mo:5,p:3,su:3,t:'Outflank · big ❤️ hits'},
+  bb:{i:'💥',f:'M',n:'Bombard',c:4,mo:3,p:4,su:5,t:'Shell them · uses 📦📦'},
+  ra:{i:'🚩',f:'S',n:'Rally',c:0,mo:0,p:2,su:1,t:'+❤️ morale · no attack'},
+  wd:{i:'🏳️',f:'S',n:'Withdraw',c:0,mo:0,p:3,su:1,t:'Retreat · 🐎 can chase you'},
+  pu:{i:'🐎',f:'S',n:'Pursue',c:3,mo:3,p:1,su:3,t:'Crush fleeing or shaken foes'},
+  ro:{i:'🔧',f:'S',n:'Reorganize',c:1,mo:0,p:3,su:1,t:'+📦 +❤️ · some 🪖 back · readies 🎯'}};
+const BOK=Object.keys(BO),PRI=['as','ca','df','am','mv','bb'],SUPO=['ra','wd','pu','ro'];
+const FAMC={A:'#d4573b',D:'#4f8fd8',M:'#6cae5e',S:'#8d958f'},FAMI={A:'⚔️',D:'🛡️',M:'🔀',S:'🚩'},BEATS={A:'M',D:'A',M:'D'},LOSES={A:'D',D:'M',M:'A'};
+const SUC={as:1,ca:1,df:0,am:1,mv:1,bb:2,ra:0,wd:0,pu:1,ro:0};
+const OUT={adv:{d:1.25,m:1.5,n:'Advantage',a:'▲',c:'up'},even:{d:1,m:1,n:'Even',a:'＝',c:'eq'},dis:{d:.75,m:.5,n:'Disadvantage',a:'▼',c:'dn'},stal:{d:.5,m:.5,n:'Stalemate',a:'⏸',c:'eq'}};
+function outOf(a,b){const fa=BO[a].f,fb=BO[b].f;if(fa==='S'||fb==='S')return 'even';if(fa===fb)return fa==='D'?'stal':'even';return BEATS[fa]===fb?'adv':'dis';}
+const SOLD={inf:100,ltk:100,art:80,tnk:120,htk:150,ftr:40,bmb:40,dst:150,bat:250,trn:0};
+const solOf=u=>combat(u.t)?(SOLD[u.t]==null?100:SOLD[u.t]):0;
+// officers: each major/colonel/general carries one perk; the highest rank leads the battalion
+const OFFP={ra:{i:'📯',n:'Rallier',t:'🚩 Rally +15 ❤️'},am:{i:'🦉',n:'Ambusher',t:'🎯 Ambush always ready'},bb:{i:'🧨',n:'Gunner',t:'+2 📦 · 💥 uses only 1'},wd:{i:'🐾',n:'Pathfinder',t:'🏳️ Withdraw takes half'}};
+const PKS=Object.keys(OFFP),RANK={maj:1,col:2,gen:3},RSTAR={1:'★',2:'★★',3:'★★★'};
+const RMAX=5; // rounds of fighting per turn; a battle that is still going carries on next turn
+const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const batOwn=i=>isSea(i)?null:al(G.t[i].owner);
 const batSides=i=>[...new Set(G.t[i].units.filter(grounded).map(u=>al(u.o)))];
 const batUnits=(i,k)=>G.t[i].units.filter(u=>al(u.o)===k&&grounded(u));
 function tgtOf(k,keys,own){const o=keys.filter(x=>x!==k);return k!==own&&o.includes(own)?own:o[0];}
-// per-battle state for each side: morale, ammo, ambush prep, soldiers lost so far
+function leader(i,k){const os=G.t[i].units.filter(u=>al(u.o)===k&&UNITS[u.t].off);if(!os.length)return null;
+  os.sort((a,b)=>RANK[b.t]-RANK[a.t]);const u=os[0];if(!OFFP[u.pk])u.pk=PKS[Math.floor(Math.random()*PKS.length)];return u;}
+const perk=(i,k,p)=>{const u=leader(i,k);return u&&u.pk===p?RANK[u.t]:0;};
+const soldiers=(i,k)=>Math.max(0,batUnits(i,k).reduce((s,u)=>s+solOf(u),0)-((G.bt&&G.bt[i]&&G.bt[i][k])?G.bt[i][k].pool:0));
+// support from next door: fighters overhead, artillery and reserves in friendly land around the battle
+function supOf(i,k){const r={ftr:0,art:0,res:0};if(isSea(i))return r;
+  const mine=j=>!isSea(j)&&al(G.t[j].owner)===k&&!contested(j);
+  if(G.t[i].units.some(u=>u.t==='ftr'&&al(u.o)===k))r.ftr=1;
+  ADJ[i].forEach(j=>{if(!mine(j))return;const us=G.t[j].units.filter(u=>al(u.o)===k);
+    if(us.some(u=>u.t==='ftr'))r.ftr=1;r.art+=us.filter(u=>u.t==='art').length;r.res+=us.filter(u=>combat(u.t)&&u.t!=='art'&&!UNITS[u.t].air).length;});
+  r.art=Math.min(2,r.art);r.res=r.res>=2?1:0;return r;}
+const SUPI={ftr:{i:'✈️',t:'Fighter cover · +10% hits · −20% ❤️ loss'},art:{i:'💣',t:'Guns next door · +10% hits each'},res:{i:'🪖',t:'Reserves next door · +3 ❤️ a round'}};
+// per-battle state of each battalion
 function bst(i,k){G.bt=G.bt||{};const b=G.bt[i]=G.bt[i]||{};
-  if(!b[k]){const gun=batUnits(i,k).filter(u=>u.t==='art'||u.t==='aag').length;b[k]={m:100,am:gun?Math.min(3,1+gun):0,pr:k===batOwn(i)?1:0,lost:0};}
+  if(!b[k]){const gun=batUnits(i,k).filter(u=>u.t==='art').length;
+    b[k]={m:100,sp:Math.min(6,3+Math.min(2,gun)+(perk(i,k,'bb')?2:0)),pr:k===batOwn(i)?1:0,pool:0,s0:0,lo:null,ls:0};
+    b[k].s0=soldiers(i,k);}
   return b[k];}
-function boLock(o,s){if(o==='bb'&&s.am<=0)return '🪫';if(o==='am'&&!s.pr)return '⏳';return '';}
-// the AI picks with some randomness, weighted by its situation
-function aiBO(i,k,foe){const s=bst(i,k),e=foe!=null?bst(i,foe):{m:100},own=batOwn(i),
-    pk=power(batUnits(i,k).map(u=>u.t),k!==own)+1,pe=foe!=null?power(batUnits(i,foe).map(u=>u.t),foe!==own)+1:1,r=pk/pe;
-  const w={as:3+(r>1.4?2:0),ca:k===own?3:1,df:3+(r<0.8?2:0),am:s.pr?4:0,mv:3,bb:s.am>0?3:0,ra:s.m<50?4:0.4,
-    wd:k==='N'?0:(r<0.45&&s.m<45?4:0.15),pu:e.m<35?4:0.3,ro:(s.lost>0||!s.pr)?1.2:0.3};
-  BOK.forEach(o=>{if(boLock(o,s))w[o]=0;});
+function boLock(o,i,k){const s=bst(i,k);if(o==='bb'&&s.sp<(perk(i,k,'bb')?1:2))return '🪫';if(o==='am'&&!s.pr&&!perk(i,k,'am'))return '⏳';if(o==='wd'&&k==='N')return '🚫';return '';}
+const sidePow=(i,k)=>power(batUnits(i,k).map(u=>u.t),k!==batOwn(i))+0.5;
+// the AI: weighted random that reacts to morale, supply, the odds and what the enemy did last round
+function aiBO(i,k,e){const s=bst(i,k),es=e!=null?bst(i,e):{m:100,lo:null},own=batOwn(i),r=e!=null?sidePow(i,k)/sidePow(i,e):2;
+  const w={as:3+(r>1.4?2:0),ca:k===own?3:1.5,df:3+(r<0.8?2:0),am:4,mv:3,bb:3,
+    ra:s.m<35?5:s.m<60?1.5:0.15,wd:k==='N'?0:(s.m<25&&r<0.9?5:s.m<45&&r<0.5?2:0.05),
+    pu:es.lo==='wd'||es.m<30?5:0.3,ro:s.sp<=1||!s.pr?1.4:0.3};
+  if(es.lo&&BO[es.lo].f!=='S'){const fam=LOSES[BO[es.lo].f];PRI.forEach(o=>{if(BO[o].f===fam)w[o]*=1.7;});} // guess they repeat
+  BOK.forEach(o=>{if(boLock(o,i,k))w[o]=0;});
   let x=Math.random()*BOK.reduce((t,o)=>t+w[o],0);for(const o of BOK)if((x-=w[o])<0)return o;return 'df';}
-// before damage: turn the dice hits into battalion damage
-function batPre(i,keys,own,rolls){const O=G.bo[i]=G.bo[i]||{},h={},md={},tri={},tg={};
-  keys.forEach(k=>{if(!O[k]||boLock(O[k],bst(i,k)))O[k]=aiBO(i,k,tgtOf(k,keys,own));});
-  keys.forEach(k=>{const t=tg[k]=tgtOf(k,keys,own),o=O[k],e=O[t],s=bst(i,k),es=t!=null?bst(i,t):{m:100};
-    const tr=tri[k]=triOf(o,e);let d=TRI[tr].d,m=TRI[tr].m;
-    if(o==='ca'&&k===own)d*=1.25;if(o==='df')d*=0.9;if(o==='am'){d*=1.5;m*=1.5;}if(o==='mv')m*=1.25;if(o==='bb')d*=1.2;
-    if(o==='ra'||o==='ro')d*=0.5;
-    const fleeing=e==='wd'||es.m<35,meFlee=o==='wd'||s.m<35;
-    if(o==='pu'){if(fleeing){d*=1.5;m*=1.5;}else d*=0.75;}
-    if(o==='wd'){d=0;m=0;}
-    if(e==='df')d*=0.75;if(e==='bb')d*=0.8;if(e==='wd'&&o!=='pu')d*=0.5;if(e==='pu'&&!meFlee)d*=1.25;
-    h[k]=rndI(rolls[k].hits*d);md[k]={d,m};});
-  return{O:{...O},h,md,tri,tg,ml:{},res:{},rec:{}};}
-// after damage: morale, ammo, prep, recovery, withdrawal and broken battalions
-function batPost(i,keys,own,sides,lost,bx){const t=G.t[i],left=k=>t.units.filter(u=>sides[k].includes(u));
-  keys.forEach(k=>bx.ml[k]=0);
-  keys.forEach(k=>{const tg=bx.tg[k];if(tg==null||!bx.md[k].m)return;bx.ml[tg]+=Math.round((bx.h[k]*9+4)*bx.md[k].m);});
-  keys.forEach(k=>{const s=bst(i,k),o=bx.O[k];s.lost+=lost[k];
-    if(o==='ra')bx.ml[k]-=30;
-    if(o==='ro'){s.pr=1;bx.ml[k]-=10;if(left(k).some(u=>u.t==='art'||u.t==='aag'))s.am=Math.min(3,s.am+1);
-      const l=left(k);if(s.lost>0&&l.length){const u=mkUnit('inf',l[0].o);t.units.push(u);sides[k].push(u);s.lost--;bx.rec[k]=1;}}
-    if(o==='bb')s.am=Math.max(0,s.am-1);if(o==='am')s.pr=0;if(o==='df')s.pr=1;
-    s.m=Math.max(0,Math.min(100,s.m-bx.ml[k]));bx.m=bx.m||{};bx.m[k]=s.m;
-    const gone=o==='wd'?'wd':s.m<=0&&k!=='N'?'br':null;
-    if(gone&&left(k).length){bx.res[k]=gone;left(k).forEach(u=>sendHome(u,i));}});}
+// remove whole units once enough soldiers are lost; cheapest fall first
+function bleed(i,k,s){const t=G.t[i];let n=0;
+  for(;;){const us=batUnits(i,k).filter(u=>solOf(u)>0).sort((a,b)=>ORDER.indexOf(a.t)-ORDER.indexOf(b.t));
+    if(!us.length)break;const v=solOf(us[0]);if(s.pool<v)break;s.pool-=v;t.units.splice(t.units.indexOf(us[0]),1);n++;}
+  if(!batUnits(i,k).some(u=>solOf(u)>0)){const rest=batUnits(i,k);n+=rest.length;t.units=t.units.filter(u=>!rest.includes(u));s.pool=0;}
+  return n;}
+// one round of battalion combat in territory i with the given orders
+function batRound(i,O,rd){const own=batOwn(i),keys=batSides(i).sort((x,y)=>(x===own)-(y===own)),tg={},S={},sup={},off={};
+  keys.forEach(k=>{S[k]=bst(i,k);sup[k]=supOf(i,k);const u=leader(i,k);off[k]=u?{pk:u.pk,r:RANK[u.t]}:null;tg[k]=tgtOf(k,keys,own);});
+  keys.forEach(k=>{if(!O[k]||!BO[O[k]]||boLock(O[k],i,k))O[k]=aiBO(i,k,tg[k]);});
+  const sb={},mb={},pw={},out={},dmg={},mdm={},before={},lostU={};
+  keys.forEach(k=>{sb[k]=soldiers(i,k);mb[k]=S[k].m;pw[k]=sidePow(i,k);dmg[k]=0;mdm[k]=0;before[k]=byNation(batUnits(i,k));});
+  keys.forEach(k=>{const e=tg[k];if(e==null)return;const o=O[k],eo=O[e],b=BO[o],oc=out[k]=outOf(o,eo);
+    let d=b.c/3*OUT[oc].d,m=b.mo/3*OUT[oc].m;
+    if(o==='ca'&&k===own)d*=1.25;
+    if(o==='pu'){if(eo==='wd'){d*=2;m*=1.5;}else if(S[e].m<30){d*=1.5;m*=1.5;}else{d*=.7;m*=.7;}}
+    if(SUC[o]>0&&S[k].sp<=0)d*=.6;
+    if(sup[k].ftr){d*=1.1;m*=1.1;}d*=1+.1*sup[k].art;
+    let prot=1.25-BO[eo].p*.1;if(eo==='wd'){prot=o==='pu'?1:.5;if(perk(i,e,'wd'))prot*=.5;}
+    dmg[e]+=Math.round(pw[k]*7*d*prot*rnd(.85,1.15));
+    if(m>0){let mm=16*m*Math.sqrt(clamp(pw[k]/pw[e],.5,2))*rnd(.85,1.15);if(sup[e].ftr)mm*=.8;if(sup[e].res)mm*=.9;mdm[e]+=mm;}});
+  const res={},offL={},gain={};
+  keys.forEach(k=>{const s=S[k],o=O[k];dmg[k]=Math.min(dmg[k],sb[k]);
+    mdm[k]=Math.round(mdm[k]+50*dmg[k]/Math.max(1,sb[k]));
+    let g=sup[k].res?3:0;if(o==='ra')g+=20+15*perk(i,k,'ra');if(o==='ro'){g+=8;s.sp=Math.min(6,s.sp+2);s.pr=1;s.pool=Math.max(0,s.pool-Math.round(.08*s.s0));}
+    gain[k]=g;s.m=Math.round(clamp(s.m-mdm[k]+g,0,100));
+    s.sp=Math.max(0,s.sp-(o==='bb'&&perk(i,k,'bb')?1:SUC[o]));if(o==='df')s.pr=1;if(o==='am')s.pr=0;s.lo=o;
+    s.pool+=dmg[k];s.ls+=dmg[k];lostU[k]=bleed(i,k,s);});
+  const sa={},ma={},go=[];
+  keys.forEach(k=>{const s=S[k],left=batUnits(i,k);ma[k]=s.m;
+    if(!left.length){res[k]='wp';sa[k]=0;return;}
+    if(s.m<=0){res[k]='br';s.pool+=Math.round(.15*soldiers(i,k));lostU[k]+=bleed(i,k,s);
+      const u=leader(i,k);if(u&&G.t[i].units.includes(u)){G.t[i].units.splice(G.t[i].units.indexOf(u),1);offL[k]=1;lostU[k]++;}
+      sa[k]=soldiers(i,k);go.push(...batUnits(i,k));return;}
+    sa[k]=soldiers(i,k);if(O[k]==='wd'){res[k]='wd';go.push(...left);}});
+  go.forEach(u=>{if(G.t[i].units.includes(u))sendHome(u,i);});
+  return{i,rd,keys,own,tg,O:{...O},out,sb,sa,mb,ma,res,offL,gain,sup,off,lostU,before,bx:1};}
 // who picks orders on this screen
 function batLocal(){return G.online?[G.side]:G.mode==='C'||G.mode==='P'?[G.mode]:G.mode==='H'||G.mode==='D'?['P','C']:[];}
-function batItem(i,k){const ks=batSides(i),own=batOwn(i),f=tgtOf(k,ks,own),s=bst(i,k),e=f!=null?bst(i,f):{m:100};
-  return{i,k,f,name:TERR[i].name,me:chipsHTML(byNation(batUnits(i,k))),foe:f!=null?chipsHTML(byNation(batUnits(i,f))):'',m:s.m,am:s.am,pr:s.pr,em:e.m,def:k===own};}
-async function batOrders(){G.bo={};
-  const list=G.t.map((t,i)=>i).filter(i=>contested(i));if(!list.length)return;
-  list.forEach(i=>{G.bo[i]={};batSides(i).forEach(k=>bst(i,k));});
-  const local=batLocal(),remote=G.online?G.online.other:null;let rp=null;
-  if(remote){const items=list.filter(i=>batSides(i).includes(remote)).map(i=>batItem(i,remote));if(items.length)rp=netBatAsk(items);}
-  for(const k of local){const items=list.filter(i=>batSides(i).includes(k)).map(i=>batItem(i,k));if(!items.length)continue;
-    if(G.mode==='H')await batHand(k);
-    const res=await pickOrders(items,k);Object.keys(res).forEach(i=>{G.bo[i][k]=res[i];});}
-  if(rp){const res=await batWait(rp);Object.keys(res||{}).forEach(i=>{if(G.bo[i]&&BO[res[i]])G.bo[i][remote]=res[i];});}}
+function sideInfo(i,k){const s=bst(i,k),u=leader(i,k);
+  return{k,s:soldiers(i,k),s0:s.s0,m:s.m,sp:s.sp,pr:s.pr||perk(i,k,'am')?1:0,lo:s.lo,chips:chipsHTML(byNation(batUnits(i,k))),off:u?{pk:u.pk,r:RANK[u.t]}:null,sup:supOf(i,k)};}
+function batItem(i,k,rd){const ks=batSides(i),own=batOwn(i),f=tgtOf(k,ks,own),me=sideInfo(i,k);
+  me.lk={};BOK.forEach(o=>{const l=boLock(o,i,k);if(l)me.lk[o]=l;});
+  return{i,k,f,rd,name:TERR[i].name,def:k===own,me,foe:f!=null?sideInfo(i,f):null};}
 const batEl=()=>$('#bat'),batDlg=()=>$('#batdlg');
-function batHand(k){return new Promise(res=>{batDlg().innerHTML=`<div class="bt-big">🤝</div><div class="bt-h" style="justify-content:center"><i class="nd" style="background:${rgb(ALRGB[k])}"></i>${ALLY[k]}</div><div class="acts"><button class="btn primary bt-go" id="batGo">▶</button></div>`;
+var G_BA={}; // ⚡ auto: the staff picks for this side for the rest of the turn
+async function batOrders(list,rd,prev){const O={};list.forEach(i=>O[i]={});
+  const local=batLocal(),remote=G.online?G.online.other:null;let rp=null;
+  if(remote){const items=list.filter(i=>batSides(i).includes(remote)).map(i=>batItem(i,remote,rd));
+    if(items.length)rp=netBatAsk(items,G.round*10+rd,prev?prev.filter(f=>f.keys.includes(remote)).map((f,n)=>vsHTML(f,remote,n)).join(''):'');}
+  for(const k of local){const items=list.filter(i=>batSides(i).includes(k)).map(i=>batItem(i,k,rd));if(!items.length||G_BA[k])continue;
+    if(G.mode==='H')await batHand(k);
+    const res=await pickOrders(items,k);if(res.auto)G_BA[k]=1;Object.keys(res.o).forEach(i=>{O[i][k]=res.o[i];});}
+  if(rp){const res=await batWait(rp);Object.keys(res||{}).forEach(i=>{if(O[i]&&BO[res[i]])O[i][remote]=res[i];});}
+  return O;}
+// every contested territory fights up to RMAX rounds this turn, all battles side by side
+async function batBattles(rep){G_BA={};const all=G.t.map((t,i)=>i).filter(i=>contested(i));if(!all.length)return;
+  const rec={};
+  all.forEach(i=>{const old=G.bt&&G.bt[i];batSides(i).forEach(k=>{const had=old&&old[k],s=bst(i,k);
+    if(had){s.sp=Math.min(6,s.sp+(k===batOwn(i)?2:1));s.m=Math.min(100,s.m+5);s.s0=Math.max(s.s0,soldiers(i,k));}});
+    rec[i]={i,keys:batSides(i),own:batOwn(i),before:{},s0:{},m0:{},hist:[]};batSides(i).forEach(k=>{rec[i].before[k]=byNation(batUnits(i,k));rec[i].s0[k]=soldiers(i,k);rec[i].m0[k]=bst(i,k).m;});});
+  let list=all.slice(),prev=null;
+  for(let rd=1;rd<=RMAX&&list.length;rd++){
+    const O=await batOrders(list,rd,prev),fr=list.map(i=>batRound(i,O[i],rd));
+    fr.forEach(f=>{const r=rec[f.i];r.hist.push({O:f.O,out:f.out});r.last=f;f.done=!contested(f.i);
+      if(f.done){const s=settle(f.i);const left=new Set(G.t[f.i].units.filter(grounded).map(u=>al(u.o)));
+        f.result=s||(left.size===1?`${ALLY[[...left][0]]} holds ${TERR[f.i].name}.`:left.size?'':'Both sides are gone.');f.win=left.size===1?[...left][0]:null;}});
+    refresh();prev=fr;
+    const local=batLocal().filter(k=>!G_BA[k]);
+    if(local.length&&fr.some(f=>local.some(k=>f.keys.includes(k))))await batShow(fr,null);
+    list=list.filter(i=>contested(i));}
+  all.forEach(i=>{const r=rec[i],f=r.last;if(!f)return;const ongoing=contested(i);
+    const lost={};r.keys.forEach(k=>{lost[k]=0;});r.hist.length;
+    Object.assign(f,{before:r.before,s0:r.s0,m0:r.m0,hist:r.hist,ongoing,keys:r.keys,own:r.own});
+    r.keys.forEach(k=>{const n0=Object.values(r.before[k]||{}).reduce((s,g)=>s+Object.values(g).reduce((a,b)=>a+b,0),0);lost[k]=Math.max(0,n0-batUnits(i,k).length);});
+    f.lost=lost;if(ongoing)f.result='Battle goes on next turn.';
+    rep.battles.push(f);addLog(`${TERR[i].name}: ${r.keys.map(k=>`${ALLY[k]} 🪖${f.sa[k]||0} ❤️${f.ma[k]||0}%`).join(' · ')}. ${f.result||''}`,null,r.keys);});
+  Object.keys(G.bt||{}).forEach(i=>{if(!contested(+i))delete G.bt[i];});
+  // a quick summary for sides that let the staff fight
+  const auto=batLocal().filter(k=>G_BA[k]);if(auto.length)await batShow(rep.battles,null,true);G_BA={};}
+function batHand(k){return new Promise(res=>{batDlg().innerHTML=`<div class="bt-big">🤝</div><div class="bt-h" style="justify-content:center"><i class="nd" style="background:${rgb(ALRGB[k])}"></i>${ALLY[k]}</div><div class="acts"><button class="btn primary bt-go" id="batGo" data-tell="▶ Pass the screen, then pick">▶</button></div>`;
   batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;res();};});}
-const mbar=(v,c)=>`<div class="mbar" title="Morale ${v}"><i style="width:${Math.max(0,Math.min(100,v))}%;${c?'background:'+c:''}"></i></div>`;
-// big icon order cards, one battle at a time
-function pickOrders(items,k){return new Promise(res=>{const out={};let x=0,lockUI=false;
-  const card=(o,it,n)=>{const lk=boLock(o,it),b=BO[o];return `<button class="oc${lk?' lock':''}" data-o="${o}" style="--fc:${FAMC[b.f]};--n:${n}" title="${b.n}" aria-label="${b.n}" ${lk?'disabled':''}><span class="oc-art"></span><span class="ic">${b.i}</span>${lk?`<span class="lk">${lk}</span>`:''}</button>`;};
-  const show=()=>{const it=items[x];lockUI=false;
-    batDlg().innerHTML=`<div class="bt-h"><span class="bt-role ${it.def?'def':'atk'}">${it.def?'⛨':'⚔'}</span><span>${esc(it.name)}</span><span class="bt-n">${items.map((_,j)=>`<i class="${j<x?'d':j===x?'c':''}"></i>`).join('')}</span></div>
-      <div class="bt-sides"><div class="bt-side me" style="--nc:${rgb(ALRGB[it.k])}"><div class="mini">${it.me}</div>${mbar(it.m)}<div class="bt-st"><span title="Ammo">${it.am?'💥'.repeat(it.am):'🪫'}</span><span title="Ambush ready">${it.pr?'🎯':'⏳'}</span></div></div>
-      <div class="bt-vs">VS</div><div class="bt-side foe" style="--nc:${it.f?rgb(ALRGB[it.f]):'#555'}"><div class="mini">${it.foe}</div>${mbar(it.em)}<div class="bt-st"><span class="q">❓</span></div></div></div>
-      <div class="bt-tri" title="Assault beats Maneuver, Maneuver beats Defend, Defend beats Assault"><b style="--fc:${FAMC.A}">⚔️</b>›<b style="--fc:${FAMC.M}">🔀</b>›<b style="--fc:${FAMC.D}">🛡️</b>›<b style="--fc:${FAMC.A}">⚔️</b></div>
-      <div class="ocards">${['as','ca','df','am','mv','bb'].map((o,n)=>card(o,it,n)).join('')}</div>
-      <div class="ocards sup">${['ra','wd','pu','ro'].map((o,n)=>card(o,it,n+6)).join('')}</div>
-      <div class="acts"><button class="btn ibtn" id="batAuto" title="Let the staff pick the rest" aria-label="Auto">⚡</button></div>`;
+const bars=(v,ic,tl)=>`<span class="ob" data-tell="${ic} ${tl} ${'▮'.repeat(v)}${'▯'.repeat(5-v)}"><em>${ic}</em><i style="--v:${v}"></i></span>`;
+const pips=(n,mx,on,offc)=>Array.from({length:mx},(_,j)=>`<i class="${j<n?on:offc}"></i>`).join('');
+function sideHTML(x,me,nc){if(!x)return '<div class="bt-side foe"></div>';const lo=x.lo?BO[x.lo]:null;
+  const off=x.off?`<b class="tok off" data-tell="🎖️${RSTAR[x.off.r]} ${OFFP[x.off.pk].n} · ${OFFP[x.off.pk].t}">🎖️${OFFP[x.off.pk].i}</b>`:`<b class="tok off none" data-tell="🎖️ No officer · buy a Major">🎖️</b>`;
+  const sup=Object.keys(SUPI).filter(s=>x.sup[s]).map(s=>`<b class="tok" data-tell="${SUPI[s].i} ${SUPI[s].t}">${SUPI[s].i}${s==='art'&&x.sup.art>1?'²':''}</b>`).join('');
+  return `<div class="bt-side ${me?'me':'foe'}" style="--nc:${nc}">
+    <div class="bt-num"><span data-tell="🪖 Soldiers · ${x.s} of ${x.s0}">🪖<b>${x.s}</b></span><span data-tell="❤️ Morale ${x.m}% · 0 = they break 💔" class="${x.m<30?'low':''}">❤️<b>${x.m}%</b></span></div>
+    <div class="mbar" data-tell="❤️ Morale ${x.m}%"><i style="width:${x.m}%"></i></div>
+    <div class="mini" data-tell="🪖 Units in this battalion">${x.chips}</div>
+    <div class="bt-st">${me?`<span class="sp" data-tell="📦 Supply ${x.sp}/6 · orders use it · refills on your land">📦${pips(x.sp,6,'on','')}</span><span data-tell="${x.pr?'🎯 Ambush ready':'⏳ Ambush needs a 🛡️ Defend first'}">${x.pr?'🎯':'⏳'}</span>`:`<span data-tell="${lo?`👁 Last round: ${lo.i} ${lo.n}`:'❓ Their order is secret'}">${lo?'👁'+lo.i:'❓'}</span>`}</div>
+    <div class="bt-sup">${off}${sup}</div></div>`;}
+// big icon order cards, one battle at a time: tap = see what it does, tap again or ✔ = go
+function pickOrders(items,k){return new Promise(res=>{const out={};let x=0,sel=null,busy=false;
+  const card=(o,it,n)=>{const lk=it.me.lk&&it.me.lk[o],b=BO[o];
+    return `<button class="oc${lk?' lock':''}" data-o="${o}" style="--fc:${FAMC[b.f]};--n:${n}" aria-label="${b.n}"><span class="oc-art"></span><span class="ic">${b.i}</span>${lk?`<span class="lk">${lk}</span>`:''}
+      <span class="obs"><i style="--v:${b.c}" class="c"></i><i style="--v:${b.mo}" class="m"></i><i style="--v:${b.p}" class="p"></i><i style="--v:${b.su}" class="s"></i></span></button>`;};
+  const tellO=(o,it)=>{const b=BO[o],lk=it.me.lk&&it.me.lk[o],f=b.f;
+    const sw=f==='S'?'':`<span class="tw">💪${PRI.filter(p=>BO[p].f===BEATS[f]).map(p=>BO[p].i).join('')}</span><span class="tw">😰${PRI.filter(p=>BO[p].f===LOSES[f]).map(p=>BO[p].i).join('')}</span>`;
+    return `<b class="ti" style="--fc:${FAMC[f]}">${b.i}</b><span class="tt"><b>${b.n}</b> ${lk?(lk==='🪫'?'🪫 needs 📦📦':lk==='⏳'?'⏳ needs a 🛡️ Defend first':'🚫'):esc(b.t)}</span>${sw}
+      <span class="tb">${bars(b.c,'💀','Soldier damage')}${bars(b.mo,'💔','Morale damage')}${bars(b.p,'🛡','Protection')}${bars(b.su,'📦','Supply use')}</span>`;};
+  const show=()=>{const it=items[x];sel=null;busy=false;
+    batDlg().innerHTML=`<div class="bt-h"><span class="bt-role ${it.def?'def':'atk'}" data-tell="${it.def?'⛨ You defend this land':'⚔ You attack this land'}">${it.def?'⛨':'⚔'}</span><span>${esc(it.name)}</span><span class="bt-rd" data-tell="🔁 Round ${it.rd} of ${RMAX} this turn">R${it.rd}</span><span class="bt-n">${items.map((_,j)=>`<i class="${j<x?'d':j===x?'c':''}"></i>`).join('')}</span></div>
+      <div class="bt-sides">${sideHTML(it.me,1,rgb(ALRGB[it.k]))}<div class="bt-vs">VS</div>${sideHTML(it.foe,0,it.f?rgb(ALRGB[it.f]):'#555')}</div>
+      <div class="bt-tri" data-tell="⚔️ beats 🔀 · 🔀 beats 🛡️ · 🛡️ beats ⚔️"><b style="--fc:${FAMC.A}">⚔️</b>›<b style="--fc:${FAMC.M}">🔀</b>›<b style="--fc:${FAMC.D}">🛡️</b>›<b style="--fc:${FAMC.A}">⚔️</b></div>
+      <div class="ocards fam">${['as','df','mv','ca','am','bb'].map((o,n)=>card(o,it,n)).join('')}</div>
+      <div class="ocards sup">${SUPO.map((o,n)=>card(o,it,n+6)).join('')}</div>
+      <div class="otell" id="otell"><span class="hint">👆 ${'⚔️🛡️🔀'}</span></div>
+      <div class="acts"><button class="btn ibtn" id="batAuto" data-tell="⚡ Staff picks for you the rest of this turn" aria-label="Auto">⚡</button><button class="btn primary bt-go" id="batOk" disabled data-tell="✔ Lock in this order" aria-label="Go">✔</button></div>`;
     batEl().hidden=false;
-    batDlg().querySelectorAll('.oc').forEach(b=>b.onclick=()=>{if(lockUI)return;lockUI=true;out[it.i]=b.dataset.o;b.classList.add('pick');
+    const pick=o=>{if(busy)return;busy=true;out[it.i]=o;const b=batDlg().querySelector(`.oc[data-o="${o}"]`);b.classList.add('pick');
       batDlg().querySelectorAll('.oc').forEach(c=>{if(c!==b)c.classList.add('dim');});
-      setTimeout(()=>{x++;x<items.length?show():done();},260);});
-    $('#batAuto').onclick=done;};
-  const done=()=>{batEl().hidden=true;res(out);};
+      setTimeout(()=>{x++;x<items.length?show():done(false);},260);};
+    batDlg().querySelectorAll('.oc').forEach(b=>b.onclick=e=>{e.stopPropagation();const o=b.dataset.o;
+      $('#otell').innerHTML=tellO(o,it);$('#otell').style.setProperty('--fc',FAMC[BO[o].f]);
+      if(b.classList.contains('lock')){batDlg().querySelectorAll('.oc').forEach(c=>c.classList.remove('sel'));sel=null;$('#batOk').disabled=true;return;}
+      if(sel===o){pick(o);return;}sel=o;batDlg().querySelectorAll('.oc').forEach(c=>c.classList.toggle('sel',c===b));$('#batOk').disabled=false;});
+    $('#batOk').onclick=()=>{if(sel)pick(sel);};
+    $('#batAuto').onclick=()=>done(true);
+    coach('pick');};
+  const done=a=>{batEl().hidden=true;res({o:out,auto:a});};
   show();});}
-// VS reveal: cards slide in face down, flip, advantage arrow pops, the loser shakes, loss bars fill
-function vsHTML(f,me,n){const bx=f.bx;if(!bx)return '';const foe=bx.tg[me];if(foe==null)return '';
-  const tr=bx.tri[me],arr=tr>0?'<b class="arr up">▲</b>':tr<0?'<b class="arr dn">▼</b>':'<b class="arr eq">＝</b>';
-  const L=f.lost,ML=bx.ml,mx=Math.max(1,L[me]||0,L[foe]||0),mm=Math.max(1,Math.abs(ML[me]||0),Math.abs(ML[foe]||0));
-  const bar=(v,m,side)=>`<span class="vb ${side}"><i style="width:${Math.round(Math.abs(v)/m*100)}%"></i></span>`;
-  const tag=k=>(bx.res[k]==='wd'?'<span class="tg wd">🏳️</span>':bx.res[k]==='br'?'<span class="tg br">💔</span>':'')+(bx.rec[k]?'<span class="tg rc">🔧+1</span>':'')+(bx.O[k]==='ra'?'<span class="tg ra">🚩</span>':'');
-  const hurt=k=>(L[k]||0)+(ML[k]||0)/20>(L[k===me?foe:me]||0)+(ML[k===me?foe:me]||0)/20;
-  const mor=k=>{const a=bx.m?bx.m[k]:null;if(a==null)return '';const b=Math.max(0,Math.min(100,a+(ML[k]||0)));return `<span class="vm" title="Morale"><i style="--from:${b}%;--to:${a}%"></i></span>`;};
-  const ic=(k,side)=>{const b=BO[bx.O[k]];return `<div class="flip ${side}${hurt(k)?' hurt':''}" title="${b.n}"><div class="fi"><div class="ff back" style="--nc:${rgb(ALRGB[k])}">✪</div><div class="ff front" style="--fc:${FAMC[b.f]};--nc:${rgb(ALRGB[k])}"><span>${b.i}</span></div></div><i class="hitf"></i>${mor(k)}</div>`;};
-  return `<div class="vs" style="--k:${n||0}"><div class="vs-n">${esc(TERR[f.i].name)}</div><div class="vs-r">${ic(me,'l')}${arr}${ic(foe,'r')}</div>
-    <div class="vs-g"><span class="n">${L[me]||0}</span>${bar(L[me]||0,mx,'l')}<span class="k" title="Soldiers lost">💀</span>${bar(L[foe]||0,mx,'r')}<span class="n">${L[foe]||0}</span>
-    <span class="n">${ML[me]||0}</span>${bar(ML[me]||0,mm,'l mo')}<span class="k" title="Morale lost">💔</span>${bar(ML[foe]||0,mm,'r mo')}<span class="n">${ML[foe]||0}</span></div>
-    <div class="vs-t"><span>${tag(me)}</span><span>${f.ongoing?'<span class="tg">🔁</span>':f.result&&G.t[f.i]&&al(G.t[f.i].owner)===me?'<span class="tg win">🏁</span>':''}</span><span>${tag(foe)}</span></div></div>`;}
-function batReveal(rep,side){if(!rep||!rep.battles)return;const local=side?[side]:batLocal();
-  const cards=rep.battles.filter(f=>f.bx&&local.some(k=>f.keys.includes(k))).map((f,n)=>vsHTML(f,local.find(k=>f.keys.includes(k)),n)).join('');
-  if(!cards)return;batDlg().innerHTML=`<div class="vsl">${cards}</div><div class="acts"><button class="btn primary bt-go" id="batGo" aria-label="Continue">▶</button></div>`;
-  batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;};$('#batGo').focus();}
-/* online: the host asks the guest for its battle orders and waits */
-function netBatAsk(items){const o=G.online;return new Promise(res=>{o.boRes=res;netPut(o.code,'bat',{r:G.round,items}).catch(e=>{netFail(e);o.boRes=null;res({});});});}
-function batWait(rp){let done=false;const t=setTimeout(()=>{if(done)return;batDlg().innerHTML=`<div class="bt-big">⏳</div><div class="acts"><button class="btn" id="batSkip" title="Let the AI pick for your opponent">⏩</button></div>`;batEl().hidden=false;
+// round result, like the dispatch in the design: order + outcome, soldiers and morale with the change
+function vsHTML(f,me,n){const foe=f.tg?f.tg[me]:null;if(foe==null||!f.O[me])return '';
+  const ic=(k,side)=>{const b=BO[f.O[k]],oc=OUT[f.out[k]||'even'],hurt=(f.sb[k]-f.sa[k])>(f.sb[k===me?foe:me]-f.sa[k===me?foe:me]);
+    return `<div class="flip ${side}${hurt?' hurt':''}" data-tell="${b.i} ${b.n} · ${oc.n} ${Math.round(oc.d*100)}% 💀 ${Math.round(oc.m*100)}% 💔"><div class="fi"><div class="ff back" style="--nc:${rgb(ALRGB[k])}">✪</div><div class="ff front" style="--fc:${FAMC[b.f]};--nc:${rgb(ALRGB[k])}"><span>${b.i}</span></div></div><i class="hitf"></i></div>`;};
+  const ocw=k=>{const oc=OUT[f.out[k]||'even'];return `<span class="ocw ${oc.c}">${oc.n}</span>`;};
+  const num=k=>{const ds=f.sa[k]-f.sb[k],dm=f.ma[k]-f.mb[k];
+    return `<div class="vn" style="--nc:${rgb(ALRGB[k])}"><span data-tell="🪖 Soldiers left (change)">🪖<b>${f.sa[k]}</b><small class="${ds<0?'neg':''}">(${ds<0?'−'+(-ds):'+'+ds})</small></span><span data-tell="❤️ Morale (change)">❤️<b>${f.ma[k]}%</b><small class="${dm<0?'neg':'pos'}">(${dm<0?'−'+(-dm):'+'+dm})</small></span></div>`;};
+  const tag=k=>(f.res[k]==='wd'?'<span class="tg wd" data-tell="🏳️ Withdrew">🏳️</span>':f.res[k]==='br'?'<span class="tg br" data-tell="💔 Broke and ran">💔</span>':f.res[k]==='wp'?'<span class="tg" data-tell="☠️ Wiped out">☠️</span>':'')
+    +(f.offL[k]?'<span class="tg" data-tell="🎖️ Officer captured">🎖️❌</span>':'')+(f.O[k]==='ra'?'<span class="tg ra" data-tell="🚩 Rallied">🚩</span>':'')+(f.O[k]==='ro'?'<span class="tg rc" data-tell="🔧 Reorganized">🔧</span>':'');
+  const tr=f.out[me],arr=`<b class="arr ${OUT[tr||'even'].c}">${OUT[tr||'even'].a}</b>`;
+  const mid=f.done?(f.win===me?'<span class="tg win" data-tell="🏁 You won this battle">🏁</span>':f.win?'<span class="tg" data-tell="🏴 Lost this battle">🏴</span>':''):'<span class="tg" data-tell="🔁 Fight goes on">🔁</span>';
+  return `<div class="vs" style="--k:${n||0}"><div class="vs-n">${esc(TERR[f.i].name)} · R${f.rd}</div><div class="vs-r">${ic(me,'l')}${arr}${ic(foe,'r')}</div>
+    <div class="vs-w">${ocw(me)}<span></span>${ocw(foe)}</div><div class="vs-nums">${num(me)}${num(foe)}</div>
+    <div class="vs-t"><span>${tag(me)}</span><span>${mid}</span><span>${tag(foe)}</span></div></div>`;}
+function batShow(frames,side,final){return new Promise(res=>{const local=side?[side]:batLocal();
+  const cards=(frames||[]).filter(f=>f.bx&&f.O&&local.some(k=>f.keys.includes(k))).map((f,n)=>vsHTML(f,local.find(k=>f.keys.includes(k)),n)).join('');
+  if(!cards){res();return;}batDlg().innerHTML=`<div class="vsl">${cards}</div><div class="acts"><button class="btn primary bt-go" id="batGo" aria-label="Continue" data-tell="▶ Next">▶</button></div>`;
+  batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;res();};$('#batGo').focus();coach('vs');});}
+function batReveal(rep,side){if(rep&&rep.battles)batShow(rep.battles,side,true);}
+/* online: the host asks the guest for its battle orders and waits; same room path as before (bat, bo/<side>) */
+function netBatAsk(items,key,prev){const o=G.online;return new Promise(res=>{o.boRes=res;o.boKey=key;netPut(o.code,'bat',{r:key,items,prev:prev||''}).catch(e=>{netFail(e);o.boRes=null;res({});});});}
+function batWait(rp){let done=false;const t=setTimeout(()=>{if(done)return;batDlg().innerHTML=`<div class="bt-big">⏳</div><div class="acts"><button class="btn" id="batSkip" data-tell="⏩ Let the AI pick for them">⏩</button></div>`;batEl().hidden=false;
     $('#batSkip').onclick=()=>{const o=G.online;if(o&&o.boRes){const f=o.boRes;o.boRes=null;f({});}};},300);
   return rp.then(r=>{done=true;clearTimeout(t);batEl().hidden=true;return r;});}
-function netBatHost(code,other){netListen(code,'bo/'+other,d=>{const o=G.online;if(!o||!d||d.r!==G.round||!o.boRes)return;const f=o.boRes;o.boRes=null;f(d.o||{});});}
-function netBatGuest(code){netListen(code,'bat',d=>{const o=G.online;if(!o||!d||d.r!==G.round||o.batR===d.r)return;o.batR=d.r;
-  pickOrders(d.items||[],G.side).then(out=>netPut(code,'bo/'+G.side,{r:d.r,o:out}).catch(netFail));});}
+function netBatHost(code,other){netListen(code,'bo/'+other,d=>{const o=G.online;if(!o||!d||d.r!==o.boKey||!o.boRes)return;const f=o.boRes;o.boRes=null;f(d.o||{});});}
+function netBatGuest(code){netListen(code,'bat',d=>{const o=G.online;if(!o||!d||Math.floor(d.r/10)!==G.round||o.batR===d.r)return;o.batR=d.r;
+  const items=(d.items||[]).map(it=>({...it,me:{lk:{},...it.me,chips:it.me&&it.me.chips||'',sup:{...(it.me&&it.me.sup||{})}},foe:it.foe?{chips:'',...it.foe,sup:{...(it.foe.sup||{})}}:null}));
+  const go=()=>{if(o.batAuto===G.round){netPut(code,'bo/'+G.side,{r:d.r,o:{}}).catch(netFail);return;}
+    pickOrders(items,G.side).then(out=>{if(out.auto)o.batAuto=G.round;netPut(code,'bo/'+G.side,{r:d.r,o:out.o}).catch(netFail);});};
+  if(d.prev&&o.batAuto!==G.round){batDlg().innerHTML=`<div class="vsl">${d.prev}</div><div class="acts"><button class="btn primary bt-go" id="batGo" data-tell="▶ Next">▶</button></div>`;batEl().hidden=false;$('#batGo').onclick=()=>{batEl().hidden=true;go();};}
+  else go();});}
 /* fighter coverage: a fighter covers its own territory and every land territory next to it */
 let COVON=false;
 function fighterCov(){const c=new Uint8Array(L),v=G.vis,me=viewer();
   G.t.forEach((t,i)=>{if(isSea(i))return;['P','C'].forEach((a,b)=>{if(v&&!v[i]&&a!==me)return;
     if(!t.units.some(u=>u.t==='ftr'&&al(u.o)===a))return;const bit=b?2:1;c[i]|=bit;
-    if(contested(i))return; // fighters in a battle only cover the ground they stand on
+    if(contested(i))return;
     ADJ[i].forEach(j=>{if(!isSea(j))c[j]|=bit;});});});
   return c;}
+/* ---------- IM8 tap telling: every tappable thing says what it is, plus first-battle coach ---------- */
+let tellT=0;
+function tell(s){const t=$('#tell');if(!t||!s)return;t.innerHTML=s;t.hidden=false;t.classList.remove('go');void t.offsetWidth;t.classList.add('go');clearTimeout(tellT);tellT=setTimeout(()=>{t.hidden=true;},2300);}
+document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('[data-tell],button[title],button[aria-label],[role=button][title]');if(!el||el.id==='map'||el.classList.contains('oc'))return;
+  if(el.closest('#coach'))return;const s=el.dataset.tell||el.getAttribute('title')||el.getAttribute('aria-label');if(s&&s.length<90)tell(esc(s).replace(/&amp;/g,'&'));},true);
+const unitTell=(t,o,n)=>{const U=UNITS[t],u=`${n>1?n+'× ':''}<b>${U.name}</b>`;
+  if(U.off)return `🎖️ ${u} · officer · leads a battalion`;
+  return `${U.air?'✈️':U.sea?'⚓':'🪖'} ${u} · ⚔${U.atk} 🛡${U.def} 👣${U.mv}${SOLD[t]?` · 🪖${SOLD[t]}`:''}`;};
+function terrTell(i){if(i<0)return '';const t=G.t[i],T=TERR[i];if(isSea(i))return `🌊 <b>${esc(T.name)}</b> · sea`;
+  const a=al(t.owner),us=t.units.filter(u=>al(u.o)===a&&combat(u.t)).length;
+  return `${contested(i)?'⚔️':T.cap?'⭐':'📍'} <b>${esc(T.name)}</b> · <i class="nd" style="background:${rgb(ALRGB[a])}"></i>${ALLY[a]} · 🪖${us}${T.val?` · 💰${T.val}`:''}${contested(i)?' · battle!':''}`;}
+cv.addEventListener('click',e=>{if(!G||!MAP||(typeof pinchEnd!=='undefined'&&Date.now()-pinchEnd<350))return;setTimeout(()=>{const p=evPos(e),ch=chipAt(p.x,p.y);
+  if(ch){const n=G.t[ch.i].units.filter(u=>u.o===ch.o&&u.t===ch.t).length;tell(unitTell(ch.t,ch.o,n)+(G.ui.sel===ch.i&&G.planner?' · 👆 tap a lit land':''));return;}
+  const i=hit(e);if(i<0)return;tell(terrTell(i)+(G.ui.sel===i&&G.planner?' · 👆 tap a lit land to send':''));},0);});
+// first battle: short coach bubbles; tap to go on
+const COACH={pick:[['.bt-side.me','🪖 Soldiers · ❤️ Morale<br>❤️ 0 = they break 💔'],['.bt-tri','Colors beat colors<br>⚔️ › 🔀 › 🛡️ › ⚔️'],['.ocards.fam','Tap a card = see it<br>Tap again = go'],['.ocards.sup','🚩 Rally · 🏳️ Retreat<br>🐎 Chase · 🔧 Fix'],['.bt-side.me .bt-sup','🎖️ Officer + ✈️💣🪖 help<br>Tap any icon to learn']],
+  vs:[['.vs-r','▲ Advantage 125% 💀 150% 💔<br>▼ Disadvantage 75% 50%'],['.vs-nums','🪖 left (−lost) · ❤️ (−lost)']]};
+function coach(k){let seen={};try{seen=JSON.parse(localStorage.getItem('im8coach')||'{}');}catch(e){}if(seen[k]||!COACH[k])return;
+  seen[k]=1;try{localStorage.setItem('im8coach',JSON.stringify(seen));}catch(e){}
+  const steps=COACH[k].filter(([s])=>batDlg().querySelector(s));let n=0;const c=document.createElement('div');c.id='coach';c.className='coach';batDlg().appendChild(c);
+  const step=()=>{if(n>=steps.length){c.remove();return;}const [s,txt]=steps[n],el=batDlg().querySelector(s),r=el.getBoundingClientRect(),d=batDlg().getBoundingClientRect();
+    c.innerHTML=`<div class="ring" style="left:${r.left-d.left-4}px;top:${r.top-d.top+batDlg().scrollTop-4}px;width:${r.width+8}px;height:${r.height+8}px"></div><div class="bub" style="top:${Math.max(4,r.bottom-d.top+batDlg().scrollTop+8)}px">${txt}<small>${n+1}/${steps.length} 👆</small></div>`;
+    const bub=c.querySelector('.bub');if(r.bottom-d.top+bub.offsetHeight+14>d.height)bub.style.top=Math.max(4,r.top-d.top+batDlg().scrollTop-bub.offsetHeight-8)+'px';n++;};
+  c.onclick=e=>{e.stopPropagation();step();};setTimeout(step,650);}
 
-$('#zcov').addEventListener('click',()=>{COVON=!COVON;const b=$('#zcov');b.classList.toggle('on',COVON);b.setAttribute('aria-pressed',COVON);$('#covleg').hidden=!COVON;if(G&&G.t.length)refresh();fxKick();});
 /* ---------- IM7b visuals: unit tokens, coverage sweep, capture bursts, vignette ---------- */
 function tokSprite(k,o,px,st){px=Math.max(10,Math.round(px));const key='T'+k+o+px+st;if(FIGC[key])return FIGC[key];if(++FIGN>900){FIGC={};FIGN=1;}
   const pad=Math.ceil(px*0.18),c=document.createElement('canvas');c.width=c.height=px+pad*2;const g=c.getContext('2d'),R=px/2,cx=R+pad,cy=R+pad;
@@ -2993,6 +3202,26 @@ $('#hdlg').addEventListener('scroll',e=>{const b=e.target;if(!b.classList||!b.cl
 {const kv=keepInView;keepInView=function(i){if(!PHONE())return kv(i);if(i==null||i<0||!MAP)return;const sh=$('#dock'),dd=$('#ddp');
   const cov=Math.max(sh&&!sh.hidden?sh.offsetHeight:0,dd&&!dd.hidden?dd.offsetHeight:0),vis=wrapEl.clientHeight-cov;
   wrapEl.scrollTo({left:MAP.cx[i]*scale-wrapEl.clientWidth/2,top:MAP.cy[i]*scale-vis*0.45,behavior:'smooth'});};}
+
+/* ---------- IM8b: a big submit button and a waiting pill in every game, on every screen ---------- */
+function turnUI(){if(!G)return;const mt=$('#mtools'),s=$('#mtSubmit'),w=$('#waitPill'),o=G.online,ph=PHONE();
+  const planning=!!G.planner&&!G.busy&&!G.over;
+  // classic games keep Submit in the side panel, which sits below the map on a phone: give them the thumb bar too
+  const classic=!ux6();document.body.classList.toggle('g15',classic&&ph);if(classic)mt.hidden=!ph;
+  const sent=!!(G.busy&&G.planner),play=!!(G.busy&&!G.planner);
+  s.classList.toggle('wait',sent||play);s.classList.toggle('go',planning);
+  s.innerHTML=sent?'<span class="mi">⏳</span><span class="ml">Sent</span>':play?'<span class="mi">⚔️</span><span class="ml">Playing</span>':'<span class="mi">✔</span><span class="ml">Submit</span>';
+  s.disabled=!planning;s.title=planning?'Submit orders · end your turn':sent?'Orders sent · waiting':'Turn in play';s.setAttribute('aria-label',s.title);
+  let txt='';
+  if(o&&!G.over){const them=ALLY[o.other];
+    if(sent)txt=o.host&&!o.joined?`⏳ Waiting for opponent · code <b>${o.code}</b>`:`⏳ Waiting for the ${them}`;
+    else if(play)txt='⚔️ Turn playing…';
+    else if(planning&&o.host&&!o.joined)txt=`👤 Opponent not here yet · code <b>${o.code}</b>`;
+    else if(planning&&o.host&&o.theirs&&o.theirs.r===G.round)txt=`✅ ${them} is ready · your move`;
+    else if(planning)txt='👉 Your turn · tap ✔ when done';}
+  w.innerHTML=txt;w.hidden=!txt;w.classList.toggle('busy',sent||play);}
+{const rp=renderPanel;renderPanel=function(){rp.apply(this,arguments);try{turnUI();}catch(e){}};}
+{const nb=netBadge;netBadge=function(){nb.apply(this,arguments);try{turnUI();}catch(e){}};}
 
 loadVariant(8);newGame(null);sizeCanvas();draw();renderPanel();showMenu();
 setTimeout(()=>{switchVariant(8,true);
