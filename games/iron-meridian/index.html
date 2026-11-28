@@ -912,6 +912,37 @@ body.g8 #dock{max-height:min(62dvh,640px)!important}
   #setup .rules ul,#setup .rules8 ul{margin:4px 0}
 }
 
+
+/* ---- IM8i: fill phone map area, isthmus label offsets, desktop war-list scroll ---- */
+
+/* mapwrap padding should shrink the content box, not spill past mapbox */
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  body.g8 .mapwrap{box-sizing:border-box}
+}
+
+/* 3. Desktop war list: keep the dialog inside the viewport and scroll inside the panel */
+#setup{
+  overflow:hidden!important;
+  overscroll-behavior:contain;
+  display:flex;align-items:center;justify-content:center;
+  box-sizing:border-box;
+}
+#setup .dlg{
+  max-height:100%;
+  min-height:0;
+  width:min(560px,100%);
+}
+#setup .setup-body{
+  overflow-y:scroll;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+html.g8setup,html.g8setup body{overflow:hidden!important;height:100%;}
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  #setup{align-items:stretch}
+  #setup .dlg{width:100%;max-width:none;max-height:100%}
+}
+
 </style>
 
 <div class="app">
@@ -2452,10 +2483,12 @@ function draw(){
     else{
     const lbl=labelOn(i),font=`600 ${10.5*Math.max(z,LBLMIN)}px "IBM Plex Sans Condensed","Arial Narrow",sans-serif`;
     ctx.font=font;const tw=lbl?ctx.measureText(T.name.toUpperCase()).width:0;
-    if(lbl)haloText(T.name.toUpperCase(),cx,ny,font,'#f4efe4');
-    const vx=cx+tw/2+8*z;ctx.beginPath();ctx.arc(vx,ny,6.2*z,0,Math.PI*2);{const cg=ctx.createRadialGradient(vx-2*z,ny-2*z,0.5,vx,ny,6.5*z);cg.addColorStop(0,'#ffeec0');cg.addColorStop(.6,'#d6a84e');cg.addColorStop(1,'#8a6224');ctx.fillStyle=cg;}ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='rgba(16,20,24,.8)';ctx.stroke();
+    const lp=typeof g8Lab==='function'?g8Lab(i,cx,cy,z,ny):{x:cx,y:ny};
+    if(lbl&&lp.lead){ctx.save();ctx.beginPath();ctx.moveTo(cx,cy-2*z);ctx.lineTo(lp.x,lp.y);ctx.lineWidth=Math.max(0.9,1.2*z);ctx.strokeStyle='rgba(16,20,24,.8)';ctx.stroke();ctx.restore();}
+    if(lbl)haloText(T.name.toUpperCase(),lp.x,lp.y,font,'#f4efe4');
+    const markW=lp.lead?0:tw,vx=cx+markW/2+8*z;ctx.beginPath();ctx.arc(vx,ny,6.2*z,0,Math.PI*2);{const cg=ctx.createRadialGradient(vx-2*z,ny-2*z,0.5,vx,ny,6.5*z);cg.addColorStop(0,'#ffeec0');cg.addColorStop(.6,'#d6a84e');cg.addColorStop(1,'#8a6224');ctx.fillStyle=cg;}ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='rgba(16,20,24,.8)';ctx.stroke();
     ctx.font=`600 ${8.5*z}px "IBM Plex Mono",monospace`;ctx.fillStyle='#1f1a10';ctx.fillText(bat()?incOf(i)[0]:T.val,vx,ny+0.5);if(bat()&&(kindOf(i)==='metal'||kindOf(i)==='tung')){ctx.font=`${9*z}px sans-serif`;ctx.fillText(KIND[kindOf(i)].i,vx+12*z,ny+0.5);}
-    let lx=cx-tw/2-8*z;
+    let lx=cx-markW/2-8*z;
     if(T.cap){star(lx,ny,6.5*z);ctx.fillStyle='#f2d58f';ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle='rgba(16,20,24,.85)';ctx.stroke();lx-=13*z;}
     const fogged=G.vis&&!G.vis[i],ifr=adv()&&!bat()?infraOf(i):0;
     if(bat()?false:adv()?ifr>0:T.fac){const s=5*z;ctx.fillStyle='#e8e3d7';ctx.strokeStyle='rgba(16,20,24,.85)';ctx.lineWidth=1;ctx.beginPath();
@@ -4266,5 +4299,79 @@ document.addEventListener('click',e=>{if(e.target&&e.target.id==='setupX'){e.pre
 {const rp=renderPanel;renderPanel=function(){const r=rp.apply(this,arguments);try{g8LayoutStrip();}catch(err){}return r;};}
 {const az=applyZoom;applyZoom=function(){const r=az.apply(this,arguments);try{if(PHONE()&&typeof bat==='function'&&bat())g8LayoutStrip();}catch(err){}return r;};}
 window.addEventListener('resize',()=>{if(PHONE()&&typeof bat==='function'&&bat()&&G&&ZOOM===1)fitMapPhone();});
+
+
+/* ---------- IM8i: fill the phone map, offset isthmus names, lock war-list scroll ---------- */
+let G8_VIEW='',G8_FITTING=false;
+function g8StepH(){const st=$('#step8');if(!st||st.hidden||!st.offsetHeight)return 0;return st.offsetHeight+10;}
+function g8LockSetup(){document.documentElement.classList.toggle('g8setup',!!($('#setup')&&!$('#setup').hidden));}
+function g8LayoutStrip(){
+  if(!PHONE()||typeof bat!=='function'||!bat()||!wrapEl){if(wrapEl){wrapEl.style.paddingTop='';wrapEl.style.paddingBottom='';}return;}
+  const top=g8StripH()+4,bot=g8StepH();
+  wrapEl.style.paddingTop=top+'px';wrapEl.style.paddingBottom=bot+'px';
+  if(G8_VIEW==='fit'&&cv){
+    const avail=Math.max(80,wrapEl.clientHeight-top-bot),mh=cv.offsetHeight,extra=Math.max(0,avail-mh);
+    wrapEl.style.paddingTop=(top+Math.floor(extra/2))+'px';
+    wrapEl.style.paddingBottom=(bot+Math.ceil(extra/2))+'px';
+  }
+}
+function fitMapPhone(){
+  if(!PHONE()||!wrapEl||!cv||typeof bat!=='function'||!bat())return;
+  G8_FITTING=true;G8_VIEW='fill';
+  g8LayoutStrip();
+  const top=parseFloat(wrapEl.style.paddingTop)||g8StripH();
+  const bot=parseFloat(wrapEl.style.paddingBottom)||g8StepH();
+  const avail=Math.max(80,(wrapEl.clientHeight-top-bot)-12); // 12px for the horizontal scrollbar that appears once we fill
+  const wantW=avail*W/H, z=wantW/Math.max(1,wrapEl.clientWidth);
+  applyZoom(Math.max(1,Math.min(ZMAX,Math.round(z*100)/100)));
+  g8LayoutStrip();
+  wrapEl.scrollLeft=Math.max(0,(cv.clientWidth-wrapEl.clientWidth)/2);
+  wrapEl.scrollTop=0;
+  G8_FITTING=false;
+}
+function g8LabelK(){
+  if(!PHONE()||typeof bat!=='function'||!bat()||!scale)return 1;
+  const z0=Math.min(1.35,Math.max(1,ZOOM/scale))/Math.pow(Math.max(ZOOM,0.001),0.8);
+  const css=10.5*z0*scale;
+  if(css>=9)return 1;
+  return 9/(10.5*scale*z0); // keep names readable (~9px) at phone start zooms
+}
+function g8Lab(i,cx,cy,z,ny){
+  const n=TERR[i]&&TERR[i].name;
+  // CSS-pixel offsets: pull cramped isthmus names into the open water, leave counters at the centre
+  const tab={
+    'Meridian':[0,-26],
+    'Galen Pass':[-36,-18],
+    'Kettle Ford':[16,-30],
+    'Hollin':[0,26]
+  };
+  const o=tab[n];
+  if(!o||!PHONE()||typeof bat!=='function'||!bat())return {x:cx,y:ny};
+  const s=scale||1;
+  // only pull names out when there is enough screen space (height-fill / pinch); skip on tiny width-fit
+  if(s<0.55)return {x:cx,y:ny};
+  return {x:cx+o[0]/s,y:cy+o[1]/s,lead:true};
+}
+{const _lp=labelPrep;labelPrep=function(){_lp.apply(this,arguments);
+  if(PHONE()&&typeof bat==='function'&&bat()&&scale&&scale<0.55){LBLMIN=Math.min(LBLMIN,9/(10.5*scale));LBLSP=999;}
+};}
+function g8FwdSetupWheel(e){
+  const body=$('#setup .setup-body');if(!body||body.scrollHeight<=body.clientHeight+2)return;
+  if(body.contains(e.target))return;
+  body.scrollTop+=e.deltaY;e.preventDefault();
+}
+{const setup=$('#setup');if(setup)setup.addEventListener('wheel',g8FwdSetupWheel,{passive:false});}
+{const f=showMenu;showMenu=function(){const r=f.apply(this,arguments);g8LockSetup();return r;};}
+{const f=closeSetup;closeSetup=function(){const r=f.apply(this,arguments);g8LockSetup();return r;};}
+{const sg=startGame;startGame=function(m){const r=sg.apply(this,arguments);
+  requestAnimationFrame(()=>{g8LockSetup();if(PHONE()&&typeof bat==='function'&&bat())fitMapPhone();else g8LayoutStrip();});return r;};}
+{const az=applyZoom;applyZoom=function(nz){
+  if(!G8_FITTING){if(nz===1)G8_VIEW='fit';else if(G8_VIEW==='fill'&&nz!=null&&Math.abs(nz-ZOOM)>0.03)G8_VIEW='';}
+  const r=az.apply(this,arguments);
+  try{if(PHONE()&&typeof bat==='function'&&bat())g8LayoutStrip();}catch(err){}
+  return r;
+};}
+window.addEventListener('resize',()=>{if(PHONE()&&typeof bat==='function'&&bat()&&G&&(G8_VIEW==='fill'||G8_VIEW==='fit'||ZOOM===1)){if(G8_VIEW==='fill')fitMapPhone();else{applyZoom(1);g8LayoutStrip();}}});
+g8LockSetup();
 
 </script>
