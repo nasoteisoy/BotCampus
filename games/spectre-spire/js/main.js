@@ -141,6 +141,9 @@ function beginGame(sess) {
 function leaveGame(msg) {
   if (!S) return;
   const s = S; S = null;
+  s.quit = true;
+  stopAwayBeat();
+  showAway(false);
   s.stopFns.forEach((f) => f());
   if (s.role === 'host') { net.netPatch(s.code, 'meta', { phase: 'closed' }).catch(() => {}); setTimeout(() => net.netDelete(s.code).catch(() => {}), 4000); }
   if (s.role === 'guest') { net.netDelete(s.code, 'p/' + MY_ID).catch(() => {}); net.netDelete(s.code, 'lobby/' + MY_ID).catch(() => {}); }
@@ -257,9 +260,22 @@ $('#startBtn').onclick = async () => {
   const sim = new Sim({ runSeed: seed, tower, roster });
   const sess = newSession('host', { sim, code, sender: net.makeSender(code, 's'), lastSeen: new Map() });
   sess.sender.send(sim.snapshot());
-  await net.netPatch(code, 'meta', { phase: 'play', seed }).catch(() => {});
+  await net.netPatch(code, 'meta', { phase: 'play', seed, host: MY_ID, away: 0, drop: 0, hb: Date.now() }).catch(() => {});
+  attachHostNet(sess, code);
+  beginGame(sess);
+};
+
+function startGuest(code) {
+  const sess = newSession('guest', { code, sender: net.makeSender(code, 'p/' + MY_ID) });
+  attachGuestNet(sess, code);
+  beginGame(sess);
+}
+
+function attachHostNet(sess, code) {
+  sess.sender = sess.sender || net.makeSender(code, 's');
+  sess.lastSeen = sess.lastSeen || new Map();
   sess.stopFns.push(net.listen(code, 'p', (m) => {
-    if (!S || S !== sess || !m) return;
+    if (!S || S !== sess || !m || !sess.sim) return;
     for (const [pid, inp] of Object.entries(m)) {
       if (pid === MY_ID || !inp) continue;
       if (!sess.sim.hunters.has(pid)) continue;
@@ -268,7 +284,7 @@ $('#startBtn').onclick = async () => {
     }
   }));
   sess.stopFns.push(net.listen(code, 'lobby', (m) => { // late joiners and leavers
-    if (!S || S !== sess) return;
+    if (!S || S !== sess || !sess.sim) return;
     const lob = m || {};
     for (const [pid, p] of Object.entries(lob)) {
       if (pid === MY_ID || !p || sess.sim.hunters.has(pid) || Date.now() - (p.t || 0) > 20000) continue;
@@ -281,22 +297,154 @@ $('#startBtn').onclick = async () => {
     }
     for (const h of [...sess.sim.hunters.values()]) if (h.ctrl === 'remote' && !lob[h.pid]) sess.sim.removeHunter(h.pid);
   }));
-  const beat = setInterval(() => net.netPatch(code, 'lobby/' + MY_ID, { t: Date.now() }).catch(() => {}), 4000);
+  const beat = setInterval(() => {
+    if (!S || S !== sess) return;
+    net.netPatch(code, 'lobby/' + MY_ID, { t: Date.now() }).catch(() => {});
+    if (!document.hidden) net.netPatch(code, 'meta', { hb: Date.now(), away: 0, drop: 0 }).catch(() => {});
+  }, 4000);
   sess.stopFns.push(() => clearInterval(beat));
-  beginGame(sess);
-};
+  sess.stopFns.push(net.listen(code, 'meta', (m) => {
+    if (!S || S !== sess) return;
+    sess.meta = m;
+    if (!m || m.phase === 'closed') { leaveGame('The game ended.'); return; }
+    if (m.host && m.host !== MY_ID) demoteToGuest();
+  }));
+}
 
-function startGuest(code) {
-  const sess = newSession('guest', { code, sender: net.makeSender(code, 'p/' + MY_ID) });
+function attachGuestNet(sess, code) {
   sess.stopFns.push(net.listen(code, 's', (s) => {
     if (!S || S !== sess || !s || !s.h) return;
     sess.buf.push({ at: performance.now(), s }); if (sess.buf.length > 12) sess.buf.shift();
     sess.lastSnapAt = performance.now();
   }));
-  sess.stopFns.push(net.listen(code, 'meta', (m) => { if (S === sess && (!m || m.phase === 'closed')) leaveGame('The host ended the game.'); }));
+  sess.stopFns.push(net.listen(code, 'meta', (m) => {
+    if (S !== sess) return;
+    sess.meta = m;
+    if (!m || m.phase === 'closed') { leaveGame('The host ended the game.'); return; }
+    if (m.drop && m.host !== MY_ID) tryBecomeHost('drop');
+  }));
   const beat = setInterval(() => net.netPatch(code, 'lobby/' + MY_ID, { t: Date.now() }).catch(() => {}), 4000);
   sess.stopFns.push(() => clearInterval(beat));
-  beginGame(sess);
+}
+
+function showAway(on, title, text) {
+  const el = $('#away');
+  if (!on) { el.hidden = true; return; }
+  if (title) $('#awayTitle').textContent = title;
+  if (text) $('#awayText').textContent = text;
+  el.hidden = false;
+}
+
+let awayWorker = null;
+function stopAwayBeat() {
+  if (!awayWorker) return;
+  try { awayWorker.postMessage({ stop: 1 }); awayWorker.terminate(); } catch (e) { /* already dead */ }
+  awayWorker = null;
+}
+function startAwayBeat(code) {
+  stopAwayBeat();
+  try {
+    awayWorker = new Worker(new URL('./away-beat.js', import.meta.url));
+    awayWorker.postMessage({ url: net.roomUrl(code, 'meta') });
+  } catch (e) { /* workers unavailable */ }
+}
+
+function setHostAway(hidden) {
+  if (!S || S.role !== 'host' || !S.sim || !S.sender) return;
+  S.hostAway = !!hidden;
+  if (hidden) {
+    const snap = S.sim.snapshot(); snap.away = 1;
+    S.sender.send(snap);
+    net.netPatch(S.code, 'meta', { away: 1, hb: Date.now() }).catch(() => {});
+    startAwayBeat(S.code);
+  } else {
+    stopAwayBeat();
+    S.sender.send(S.sim.snapshot());
+    net.netPatch(S.code, 'meta', { away: 0, drop: 0, hb: Date.now() }).catch(() => {});
+    showAway(false);
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!S) return;
+  // Two Playwright pages share one browser, so ?qa=1 skips auto-away. Call __ss.setAway() to test it.
+  if (QA) return;
+  if (S.role === 'solo') {
+    if (document.hidden) { S.awayPause = true; S.paused = true; }
+    else if (S.awayPause && current() !== 'sPause') { S.awayPause = false; S.paused = false; }
+    return;
+  }
+  if (S.role === 'host') setHostAway(document.hidden);
+});
+window.addEventListener('pagehide', (e) => {
+  if (!S || S.quit || S.role !== 'host' || QA) return;
+  net.netBeaconPatch(S.code, 'meta', { away: 1, drop: e.persisted ? 0 : 1, hb: Date.now() });
+});
+window.addEventListener('pageshow', () => {
+  if (QA) return;
+  if (S?.role === 'host' && !document.hidden) setHostAway(false);
+});
+
+async function tryBecomeHost(why) {
+  if (!S || S.role !== 'guest' || S.claiming) return;
+  const snap = S.buf.length ? S.buf[S.buf.length - 1].s : null;
+  if (!snap) {
+    if (why === 'stale' && performance.now() - S.lastSnapAt > 15000) leaveGame('Lost the connection to the host.');
+    return;
+  }
+  S.claiming = true;
+  try {
+    const code = S.code;
+    const [meta, lobby] = await Promise.all([net.netGet(code, 'meta'), net.netGet(code, 'lobby')]);
+    if (!S || S.role !== 'guest') return;
+    if (!meta || meta.phase === 'closed') { leaveGame('The host ended the game.'); return; }
+    const hbAge = Date.now() - (meta.hb || 0);
+    const hostAlive = !meta.drop && ((meta.away && hbAge < 180000) || (!meta.away && hbAge < 15000 && meta.hb));
+    if (hostAlive && meta.host && meta.host !== MY_ID) { S.claiming = false; return; }
+    const live = Object.entries(snap.h)
+      .filter(([, h]) => !h[HI.bot])
+      .map(([pid]) => pid)
+      .filter((pid) => pid === MY_ID || (lobby && lobby[pid] && Date.now() - (lobby[pid].t || 0) < 20000))
+      .sort();
+    if (live[0] !== MY_ID) {
+      S.claiming = false;
+      if (performance.now() - S.lastSnapAt > 25000 && !snap.away) leaveGame('Lost the connection to the host.');
+      return;
+    }
+    await net.netPatch(code, 'meta', { host: MY_ID, drop: 0, away: 0, hb: Date.now() });
+    const confirm = await net.netGet(code, 'meta');
+    if (!confirm || confirm.host !== MY_ID) { S.claiming = false; return; }
+    promoteToHost(snap);
+  } catch (e) { if (S) S.claiming = false; }
+}
+
+function promoteToHost(snap) {
+  const sess = S; if (!sess) return;
+  const roster = Object.entries(snap.h).map(([pid, row]) => ({
+    pid, name: row[HI.name], h: row[HI.h], ctrl: row[HI.bot] ? 'bot' : (pid === MY_ID ? 'local' : 'remote'),
+  }));
+  const sim = new Sim({ runSeed: snap.seed, tower: snap.tot, roster, restore: snap });
+  const mine = sim.hunters.get(MY_ID); if (mine) { mine.ctrl = 'local'; mine.bot = null; }
+  sess.stopFns.forEach((f) => f()); sess.stopFns = [];
+  sess.role = 'host'; sess.sim = sim; sess.claiming = false; sess.hostAway = false;
+  sess.sender = net.makeSender(sess.code, 's');
+  sess.lastSeen = new Map();
+  for (const h of sim.hunters.values()) if (h.ctrl === 'remote') sess.lastSeen.set(h.pid, performance.now());
+  attachHostNet(sess, sess.code);
+  sess.sender.send(sim.snapshot());
+  showAway(false);
+  toast('You are hosting now. The previous host left.');
+}
+
+function demoteToGuest() {
+  const sess = S; if (!sess || sess.role !== 'host' || sess.quit) return;
+  stopAwayBeat();
+  sess.stopFns.forEach((f) => f()); sess.stopFns = [];
+  sess.sim = null; sess.hostAway = false; sess.sender = net.makeSender(sess.code, 'p/' + MY_ID);
+  sess.role = 'guest'; sess.buf = []; sess.lastSnapAt = performance.now();
+  attachGuestNet(sess, sess.code);
+  showAway(false);
+  toast('Another hunter is hosting now.');
 }
 
 // guests draw the world ~120 ms in the past, blending the two snapshots around that moment
@@ -457,7 +605,7 @@ function frame(now) {
   if (!S) { titleCam(rawDt); view.render(); return; }
 
   // 1. advance the authoritative game (solo / host)
-  if (S.sim && !S.paused) {
+  if (S.sim && !S.paused && !S.hostAway) {
     simAcc += realDt;
     while (simAcc >= 1 / 30) { S.sim.setInput(MY_ID, myInput()); S.sim.step(1 / 30); simAcc -= 1 / 30; }
     if (S.role === 'host') {
@@ -467,8 +615,19 @@ function frame(now) {
     }
   }
   const snap = S.sim ? S.sim.snapshot() : interpSnap(S);
-  if (!snap) { waitingScreen(now); view.render(); return; }
-  if (S.role === 'guest' && now - S.lastSnapAt > 15000) { leaveGame('Lost the connection to the host.'); return; }
+  if (!snap) {
+    if (S.role === 'guest' && now - S.lastSnapAt > 15000) { leaveGame('Lost the connection to the host.'); return; }
+    waitingScreen(now); view.render(); return;
+  }
+  if (S.waitingConnect) { S.waitingConnect = false; if (current() === 'sLift' && snap.ph !== 'lift') show(null); }
+  if (S.role === 'guest') {
+    if (snap.away) showAway(true, 'The host stepped away', 'The game is paused until they come back.');
+    else if (!$('#away').hidden && !S.claiming) showAway(false);
+    const stale = now - S.lastSnapAt;
+    const hbAge = Date.now() - ((S.meta && S.meta.hb) || 0);
+    if (snap.away) { if ((S.meta && S.meta.drop) || hbAge > 180000 || (!(S.meta && S.meta.hb) && stale > 180000)) tryBecomeHost('stale-away'); }
+    else if (stale > 12000) tryBecomeHost('stale');
+  }
   S.snap = snap;
   if (S.floorKey !== snap.n + ':' + snap.seed) { if (S.result) { S.result = null; } enterFloor(snap); }
 
@@ -562,7 +721,7 @@ function titleCam(dt) {
   view.camera.position.set(cx + Math.cos(titleT) * 5, 1.7, cz + Math.sin(titleT) * 5);
   view.camera.rotation.set(-0.08, -titleT + Math.PI / 2 + Math.PI, 0);
 }
-function waitingScreen() { if (!$('#sLift').hidden) return; show('sLift'); $('#liftTitle').textContent = 'Connecting…'; $('#liftText').textContent = 'Waiting for the host’s hotel.'; }
+function waitingScreen() { if (!S) return; S.waitingConnect = true; if (!$('#sLift').hidden) return; show('sLift'); $('#liftTitle').textContent = 'Connecting…'; $('#liftText').textContent = 'Waiting for the host’s hotel.'; }
 
 // vacuum particles: dust flies into my nozzle, ghosts stream in while being sucked
 function suckFx(snap, dt) {
@@ -620,14 +779,14 @@ function phaseScreens(snap) {
 let shopKey = '';
 function renderShopScreen(snap) {
   const busy = performance.now() < (S.shopBusyUntil || 0);
-  const key = JSON.stringify([snap.gold, snap.up, busy, S.readyFor, snap.shopT, Object.values(snap.h).map((h) => h[HI.ready])]);
+  const humans = Object.values(snap.h).filter((h) => !h[HI.bot]);
+  const ready = humans.filter((h) => h[HI.ready] === snap.n + 1).length;
+  $('#shopTimer').textContent = `Doors close in ${snap.shopT}s · ${ready}/${humans.length} ready`;
+  const key = JSON.stringify([snap.gold, snap.up, busy, S.readyFor, Object.values(snap.h).map((h) => h[HI.ready])]);
   if (key === shopKey) return; shopKey = key;
   $('#shopBank').textContent = '$' + snap.gold;
   $('#shopNote').textContent = `Next: floor ${snap.n + 1} of ${snap.tot}. Upgrades help the whole team. Anyone can buy with the shared bank.`;
   renderShop($('#shopItems'), { gold: snap.gold, up: snap.up, busy, onBuy: (id) => { S.buySeq++; S.buyItem = id; S.shopBusyUntil = performance.now() + 400; sfx.click(); setTimeout(() => { shopKey = ''; }, 420); } });
-  const humans = Object.values(snap.h).filter((h) => !h[HI.bot]);
-  const ready = humans.filter((h) => h[HI.ready] === snap.n + 1).length;
-  $('#shopTimer').textContent = `Doors close in ${snap.shopT}s · ${ready}/${humans.length} ready`;
   $('#shopReadyText').textContent = S.readyFor === snap.n + 1 ? 'Waiting for friends…' : 'Next floor';
   $('#shopReady').disabled = S.readyFor === snap.n + 1;
 }
@@ -675,5 +834,8 @@ if (QA) {
     pos: () => ({ x: player.x, z: player.z, yaw: player.yaw, pitch: player.pitch }),
     elevator: () => S.floor.elevator,
     sim: () => S && S.sim,
+    setAway: (on) => { if (S && S.role === 'host') setHostAway(!!on); else if (S) { S.paused = !!on; S.awayPause = !!on; } },
+    role: () => S && S.role,
+    meta: () => S && S.meta,
   };
 }

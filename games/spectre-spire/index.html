@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#150b1f">
 <title>Spectre Spire: Haunt Haulers</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath d=%22M12 60V30a20 20 0 0 1 40 0v30l-7-6-6 6-7-6-6 6-7-6z%22 fill=%22%237dffb2%22/%3E%3Ccircle cx=%2224%22 cy=%2230%22 r=%225%22 fill=%22%232b1238%22/%3E%3Ccircle cx=%2240%22 cy=%2230%22 r=%225%22 fill=%22%232b1238%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
 <body>
@@ -157,9 +157,15 @@
   </section>
 </div>
 
+<div id="away" hidden>
+  <div class="panel narrow center">
+    <h2 id="awayTitle">The host stepped away</h2>
+    <p class="note" id="awayText">The game is paused until they come back.</p>
+  </div>
+</div>
 <div id="tip" hidden></div>
 <div id="toast" hidden></div>
 <div id="loading">Loading the hotel…</div>
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

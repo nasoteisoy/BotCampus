@@ -8,6 +8,8 @@ const DB = 'https://chummy-games-default-rtdb.firebaseio.com/spectreSpire/rooms/
 const url = (code, path) => DB + code + (path ? '/' + path : '') + '.json';
 
 export const PROTOCOL = 1;
+export const roomUrl = url;
+
 
 async function req(method, code, path, body) {
   const r = await fetch(url(code, path), { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -18,6 +20,11 @@ export const netGet = (code, path) => req('GET', code, path);
 export const netPut = (code, path, v) => req('PUT', code, path, v);
 export const netPatch = (code, path, v) => req('PATCH', code, path, v);
 export const netDelete = (code, path) => req('DELETE', code, path);
+// Fire-and-forget patch that can run during page hide (keepalive).
+export function netBeaconPatch(code, path, v) {
+  try { fetch(url(code, path), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v), keepalive: true }); } catch (e) { /* tab is closing */ }
+}
+
 
 export function makeCode() {
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

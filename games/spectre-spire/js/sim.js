@@ -14,7 +14,7 @@ export function aimVector(yaw, pitch) {
 }
 
 export class Sim {
-  constructor({ runSeed, tower, roster }) {
+  constructor({ runSeed, tower, roster, restore }) {
     this.runSeed = runSeed;
     this.tower = tower;
     this.rng = makeRng(hashSeed(runSeed, 'sim'));
@@ -29,7 +29,8 @@ export class Sim {
     this.phase = 'play';
     this.result = null;
     this.flowCache = new Map();
-    this.startFloor(1);
+    if (restore) this.adoptSnapshot(restore);
+    else this.startFloor(1);
   }
 
   newHunter(p, i) {
@@ -588,6 +589,87 @@ export class Sim {
     this.emit({ k: win ? 'win' : 'lose', reason });
   }
 
+
+  // Rebuild this sim from a network snapshot so a guest can take over as host.
+  adoptSnapshot(snap) {
+    this.runSeed = snap.seed;
+    this.tower = snap.tot;
+    this.n = snap.n;
+    this.type = snap.ty;
+    this.prevType = snap.ty;
+    this.gold = snap.gold || 0;
+    this.up = { ...this.up, ...(snap.up || {}) };
+    this.phase = snap.ph;
+    this.result = snap.res || null;
+    this.shopT = snap.shopT || 0;
+    this.liftT = snap.liftT || 0;
+    this.lastFloor = snap.lf || null;
+    this.revealT = snap.rv || 0;
+    this.depart = snap.dep || 0;
+    this.bossDone = !!snap.boss;
+    this.floor = buildFloor({ runSeed: this.runSeed, n: this.n, type: this.type, extraTime: this.up.clock, players: Object.keys(snap.h || {}).length || this.hunters.size });
+    this.timeLeft = snap.tl;
+    this.flowCache.clear();
+    this.elevFlow = flowField(this.floor, this.floor.elevator.x, this.floor.elevator.z);
+
+    this.ghosts = (snap.g || []).map((row) => {
+      const [id, ki, x, y, z, face, flags, cap, hp, stunAcc] = row;
+      const g = this.newGhost(GHOST_KINDS[ki] || 'wisp', x, z, id);
+      g.y = y; g.face = face; g.cap = (cap || 0) / 100; g.hp = hp;
+      g.stunAcc = (stunAcc || 0) / 100; g.stunT = (flags & 1) ? Math.max(0.4, T.stunTime * 0.5) : 0;
+      g.mode = (flags & 8) ? 'swoop' : (flags & 4) ? 'wind' : 'idle';
+      g.needMore = !!(flags & 16);
+      return g;
+    });
+    this.nextGhostId = this.ghosts.reduce((m, g) => Math.max(m, g.id), -1) + 1;
+
+    const holding = {};
+    for (const [pid, row] of Object.entries(snap.h || {})) {
+      const lid = row[8];
+      if (lid >= 0) { (holding[lid] || (holding[lid] = [])).push(pid); }
+    }
+    const baseById = new Map(this.floor.loot.map((l) => [l.id, l]));
+    const seen = new Set();
+    this.loot = (snap.l || []).map((row) => {
+      const [id, x, y, z, ry, value, , inZone] = row;
+      seen.add(id);
+      const base = baseById.get(id) || { id, kind: 'vase', value };
+      return { ...base, x, y, z, ry, value, base: base.base ?? base.value, vx: 0, vy: 0, vz: 0,
+        holders: holding[id] || [], gone: false, inZone: !!inZone, bumpT: 0, last: (holding[id] || [])[0] || null };
+    });
+    for (const l of this.floor.loot) if (!seen.has(l.id)) this.loot.push({ ...l, base: l.value, vx: 0, vy: 0, vz: 0, holders: [], gone: true, inZone: false, bumpT: 0, last: null });
+
+    if (snap.bn != null || snap.sv != null) { this.bounty = snap.bn || 0; this.saved = snap.sv || 0; }
+    else {
+      const zone = this.loot.reduce((n, l) => n + (!l.gone && l.inZone ? l.value : 0), 0);
+      this.bounty = Math.max(0, (snap.col || 0) - zone); this.saved = 0;
+    }
+
+    const cageSnap = new Map((snap.c || []).map((c) => [c[0], c]));
+    this.cages = this.floor.cages.map((c) => {
+      const s = cageSnap.get(c.id);
+      return { ...c, prog: s ? s[1] / 100 : 0, freed: s ? !!s[2] : false };
+    });
+    this.guests = (snap.gu || []).map(([id, x, z, safe]) => ({ id, x, z, safe: !!safe }));
+    this.wards = (snap.w || []).map(([x, z, t, r]) => ({ x, z, t, r }));
+    this.quotaMetOnce = this.collected >= this.floor.quota && this.bossDone;
+
+    const seenH = new Set();
+    for (const [pid, row] of Object.entries(snap.h || {})) {
+      seenH.add(pid);
+      let h = this.hunters.get(pid);
+      if (!h) { this.addHunter({ pid, name: row[0], h: row[1], ctrl: row[2] ? 'bot' : 'remote' }); h = this.hunters.get(pid); }
+      const [name, hi, bot, hp, down, cd, turbo, revive, hold, slot, x, y, z, yaw, pitch, suck, ready, dash] = row;
+      Object.assign(h, { name, h: hi, ctrl: bot ? 'bot' : h.ctrl, bot: bot ? (h.bot || { think: 0, goal: null }) : null,
+        hp, down: !!down, cd, turbo: turbo ? 6 : 0, revive, hold, slot, x, y, z, yaw, pitch,
+        suck: !!suck, ready, dash: dash ? 2 : 0, want: hold, inv: 0 });
+    }
+    for (const pid of [...this.hunters.keys()]) if (!seenH.has(pid)) this.hunters.delete(pid);
+
+    this.events = (snap.e || []).slice();
+    this.eid = this.events.reduce((m, e) => Math.max(m, e.id || 0), 0);
+  }
+
   // ---------- the snapshot sent to guests (and read by the host's own renderer)
   // hunter rows in the snapshot are arrays; HI names each slot (see the export below)
   snapshot() {
@@ -597,7 +679,8 @@ export class Sim {
     return {
       ph: this.phase, n: this.n, tot: this.tower, ty: this.type, seed: this.runSeed, np: this.hunters.size,
       tl: Math.round(this.timeLeft * 10) / 10, col: this.collected, gold: this.gold, up: this.up, rv: r2(this.revealT), dep: r2(this.depart), boss: this.bossDone ? 1 : 0,
-      shopT: this.phase === 'shop' ? Math.round(this.shopT) : 0, lf: this.lastFloor || null, res: this.result,
+      shopT: this.phase === 'shop' ? Math.round(this.shopT) : 0, liftT: this.phase === 'lift' ? Math.round(this.liftT * 10) / 10 : 0,
+      bn: this.bounty, sv: this.saved, lf: this.lastFloor || null, res: this.result,
       h: hs,
       g: this.ghosts.map((g) => [g.id, GHOST_KINDS.indexOf(g.kind), r2(g.x), r2(g.y), r2(g.z), r2(g.face), (g.stunT > 0 ? 1 : 0) | (g.suckers ? 2 : 0) | (g.mode === 'wind' ? 4 : 0) | (g.mode === 'swoop' ? 8 : 0) | (g.needMore && g.suckers && g.suckers < g.needMore ? 16 : 0), Math.round(g.cap * 100), g.hp, Math.round(Math.min(1, g.stunAcc) * 100)]),
       l: this.loot.filter((l) => !l.gone).map((l) => [l.id, r2(l.x), r2(l.y), r2(l.z), r2(l.ry), l.value, l.holders.length, l.inZone ? 1 : 0]),
