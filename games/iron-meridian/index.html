@@ -682,6 +682,181 @@ body.g15 .layout{align-items:stretch!important}
 .help8 section{margin:8px 0}.help8 h3{margin:4px 0;font-size:15px}.help8 ul{margin:0;padding-left:18px}.help8 li{margin:2px 0;font-size:13px}
 .rules8{font-size:13px}.rules8 ul{padding-left:18px;margin:4px 0}
 
+
+/* ---- IM8g: labels, explain popups, Guide. Rules unchanged. ---- */
+body.g8 #helpBtn{width:auto;min-width:44px;padding:0 10px;gap:4px;display:inline-flex;align-items:center}
+body.g8 #helpBtn .glab{font:700 12px/1 var(--f-body);letter-spacing:.04em;color:var(--brass-2)}
+body.g8 .step8{position:absolute;left:8px;right:8px;bottom:8px;z-index:4;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:8px 10px;border-radius:12px;background:rgba(16,20,24,.92);border:1px solid rgba(226,180,92,.45);
+  color:#f3ead2;font:600 13px/1.35 var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+body.g8 .step8 .s8t{flex:1;min-width:0}
+body.g8 .step8 button{flex:none;min-height:32px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--brass-2);font:700 12px var(--f-body);cursor:pointer}
+body.g8 .mapbox.dkon .step8,body.g8 .mapbox.ddon .step8{display:none}
+body.g8 #zcov{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:16px;gap:1px}
+body.g8 #zcov small{font:700 8px/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:var(--brass-2)}
+body.g8 .covleg{display:flex;flex-wrap:wrap;max-width:min(70vw,420px);line-height:1.3;height:auto;border-radius:10px!important;gap:6px 10px;align-items:flex-start}
+body.g8 .covleg .covnote{flex-basis:100%;font:600 11px/1.3 var(--f-body);color:#f3ead2;opacity:.95}
+/* labeled chips */
+.g8 .lab{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
+.g8 .why{display:inline-flex;align-items:center;gap:3px;margin:0;padding:1px 4px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;border-radius:6px;text-align:left}
+.g8 .why:hover,.g8 .why:focus-visible{background:rgba(246,220,154,.16);outline:1px solid var(--brass-2)}
+.g8 .why .wlab{font:700 11px/1.1 var(--f-body);letter-spacing:.02em;color:var(--brass-2);white-space:nowrap}
+.g8 .why .wval{font:600 12px/1.1 var(--f-mono)}
+.g8 .hp8 .wlab{color:#e9e2cf}
+.g8 .org8 .wlab{color:#7fd06e}
+.g8 .org8.low .wlab{color:#e0664b}
+.g8 .sec8{display:flex;flex-direction:column;gap:6px;padding-top:8px;margin-top:4px;border-top:1px solid var(--line)}
+.g8 .sec8:first-child{border-top:0;padding-top:0;margin-top:0}
+.g8 .sec8 h4{margin:0;font:700 11px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--brass-2)}
+.g8 .pophd{align-items:flex-start;gap:8px}
+.g8 .pophd .nx{flex:1;font:600 13px/1.3 var(--f-body);letter-spacing:0;text-transform:none;color:#f3ead2}
+.g8 .pophd .sb.close8{min-height:36px;min-width:64px;padding:4px 10px;font:700 13px var(--f-body);letter-spacing:0;text-transform:none}
+.g8 .bn.why{font:600 14px var(--f-body);padding:0}
+.g8 .ent{display:inline-flex;align-items:center;gap:3px;font:700 11px var(--f-body);color:#cfe8b8}
+.g8 .dz{display:inline-flex;align-items:center;gap:4px}
+.g8 .sb8.mgbtn{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;min-width:0;font:700 11px var(--f-body);white-space:nowrap}
+.g8 .spi{flex-direction:column;min-width:36px;height:auto;padding:2px 4px;font-size:12px}
+.g8 .spi .sn{font:600 9px/1 var(--f-body);letter-spacing:0;color:var(--ink);max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g8 .rk, .g8 .lc{align-items:center}
+.g8 .rkn{font:700 11px var(--f-body);color:var(--brass-2);margin-right:2px}
+.g8 .pk.big, .g8 .pk{display:inline-flex;align-items:center;gap:2px}
+.g8 .pk small{font:600 10px var(--f-body)}
+.g8 .off8{flex-wrap:wrap}
+.g8 .xp{position:relative}
+.g8 .xpl{font:600 10px var(--f-mono);color:var(--muted)}
+.g8 .mgh{display:flex;align-items:center;gap:6px;font:700 12px var(--f-body);color:var(--brass-2)}
+.g8 .spg{grid-template-columns:repeat(2,1fr)}
+.g8 .spb{flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:6px 8px;min-height:48px;text-align:left}
+.g8 .spb .si{font-size:18px;flex:none}
+.g8 .spb .snm{display:flex;flex-direction:column;min-width:0;flex:1}
+.g8 .spb .snm b{font:700 12px/1.15 var(--f-body)}
+.g8 .spb .snm small{font:500 10px/1.2 var(--f-body);color:var(--muted);white-space:normal}
+.g8 .oa .btn{min-height:40px;font:700 12px var(--f-body)}
+.g8 .pkg{grid-template-columns:repeat(3,1fr)}
+.g8 .pkb{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;min-height:52px;font-size:16px}
+.g8 .pkb small{font:600 10px/1.1 var(--f-body)}
+.g8 .o8h{flex-wrap:wrap}
+.g8 .o8h .tri{font:700 12px var(--f-body)}
+.g8 .o8h .leg{gap:8px;flex-wrap:wrap}
+.g8 .o8h .leg i{width:10px;height:8px}
+.g8 .o8h .leg span{font:600 10px var(--f-body);color:var(--muted)}
+.g8 .oc8 .obar{width:90%}
+.g8 .oc8 .oi8{position:absolute;top:2px;left:3px;width:22px;height:22px;border:0;background:rgba(0,0,0,.25);border-radius:11px;color:var(--ink);font:700 11px var(--f-body);cursor:pointer}
+.g8 .fu{flex-direction:column;align-items:flex-start;background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:8px;padding:4px 6px;gap:2px}
+.g8 .fu .fn{font:600 11px/1.2 var(--f-body)}
+.g8 .b8s small{display:block;white-space:normal;color:var(--ink);font:500 11px/1.3 var(--f-body)}
+.g8 .b8h label{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--f-body)}
+.g8 .o8 .acts .btn{min-width:72px}
+.g8 .pwr .plab{font:600 11px var(--f-body);color:var(--muted)}
+.g8 .ppc{gap:6px}
+.g8 .ppc .t{display:inline-flex;align-items:center;gap:2px}
+.g8 .ppc .tn{font:700 9px/1 var(--f-body);letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin-right:1px}
+.g8 .r8o{align-items:flex-start}
+.g8 .r8txt{font:500 13px/1.35 var(--f-body);margin:2px 0 0;color:#f3ead2}
+.g8 .r8cap{font:600 11px var(--f-body);color:var(--muted);margin-top:4px}
+.g8 .rp8 .eyebrow{font:700 14px var(--f-body);letter-spacing:.04em}
+/* gloss popup */
+#gloss{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center;padding:0 8px calc(12px + var(--g8bar,0px));background:rgba(0,0,0,.45)}
+#gloss[hidden]{display:none!important}
+#gloss .gbox{width:min(560px,100%);max-height:min(70dvh,560px);overflow:auto;background:linear-gradient(180deg,#2e3940,#1a2025);border:1.5px solid var(--brass);border-radius:16px 16px 12px 12px;padding:16px 16px 14px;box-shadow:0 -12px 40px rgba(0,0,0,.55);color:#f3ead2}
+#gloss .gh{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+#gloss h3{margin:0;flex:1;font:700 18px/1.2 var(--f-head,var(--f-body));color:#ffd98a}
+#gloss .gx{min-width:64px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:700 13px var(--f-body);cursor:pointer}
+#gloss .gb{font:500 15px/1.45 var(--f-body);margin:0 0 8px}
+#gloss .gm{display:inline-flex;align-items:center;min-height:40px;padding:6px 12px;border-radius:10px;border:1px solid var(--brass);background:rgba(201,162,90,.15);color:var(--brass-2);font:700 14px var(--f-body);cursor:pointer}
+/* reference */
+.help8g .hhd .refq{width:100%;margin:8px 0 6px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:8px 12px;font:500 15px var(--f-body)}
+.help8g .toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.help8g .toc button{min-height:36px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:700 12px var(--f-body);cursor:pointer}
+.help8g .toc button.on{border-color:var(--brass);color:var(--brass-2)}
+.help8g .tipsb{min-height:36px;margin:4px 0 8px;padding:4px 12px;border-radius:10px;border:1px solid var(--brass);background:rgba(201,162,90,.12);color:var(--brass-2);font:700 13px var(--f-body);cursor:pointer}
+.help8g .hbody section{padding:8px 0 14px;border-bottom:1px solid var(--line)}
+.help8g .hbody section.hi{box-shadow:inset 0 0 0 2px var(--brass-2);border-radius:10px;padding:8px}
+.help8g .hbody h3{margin:0 0 6px;font:700 17px var(--f-head,var(--f-body));color:#ffd98a}
+.help8g .hbody p{margin:0 0 8px;font:500 14px/1.45 var(--f-body)}
+.help8g .hbody .meta{font:600 12px/1.4 var(--f-mono);color:#cfe8b8;margin-bottom:8px}
+.help8g .hide{display:none!important}
+/* first-time tips */
+#tips8{position:fixed;inset:0;z-index:130;display:flex;align-items:flex-end;justify-content:center;padding:0 10px calc(16px + var(--g8bar,0px));background:rgba(0,0,0,.55)}
+#tips8[hidden]{display:none!important}
+#tips8 .tbox{width:min(440px,100%);background:#fff1c8;color:#1b1d1f;border-radius:16px;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+#tips8 .tk{font:700 11px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;opacity:.6;margin-bottom:6px}
+#tips8 p{margin:0 0 12px;font:700 16px/1.35 var(--f-body)}
+#tips8 .ta{display:flex;gap:8px;justify-content:flex-end}
+#tips8 button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #6a5a2a;background:#1b1d1f;color:#ffd98a;font:700 14px var(--f-body);cursor:pointer}
+#tips8 button.ghost{background:transparent;color:#1b1d1f}
+/* phone: show bottom-bar words, keep the step bar, no sideways scroll */
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  body.g8{--g8bar:calc(74px + env(safe-area-inset-bottom,0px))}
+  body.g8 .board{padding-bottom:var(--g8bar)!important}
+  body.g8 .mtools{height:var(--g8bar)!important;padding-top:6px!important;align-items:flex-start}
+  body.g8 .mt,body.g8 #mtSubmit{height:60px!important;width:auto!important;min-width:0!important;flex:1 1 0;padding:4px 2px!important;border-radius:12px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:0!important}
+  body.g8 .mt .mi,body.g8 #mtSubmit .mi{font-size:20px!important;margin:0!important;line-height:1}
+  body.g8 .mt .ml,body.g8 #mtSubmit .ml{display:block!important;font:700 9px/1 var(--f-body)!important;letter-spacing:.03em;text-transform:uppercase;color:#f3ead2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.g8 #mtSubmit{flex:1.15 1 0}
+  body.g8 #mtSubmit .ml{color:#1b1d1f}
+  body.g8 .g6 .mapbox .ddp,body.g8 .g6 .mapbox .dock,body.g8 .ddp,body.g8 .dock{bottom:var(--g8bar)!important}
+  body.g8 .step8{left:6px;right:6px;bottom:6px;font-size:12px;padding:7px 8px}
+  body.g8 #helpBtn .glab{font-size:11px}
+  body.g8 .pkg{grid-template-columns:repeat(3,1fr)}
+  body.g8 .spg{grid-template-columns:1fr 1fr}
+  body.g8 .tc8,body.g8 .bc8,body.g8 .buy8,body.g8 .ord8{max-width:100%;overflow-x:hidden}
+  body.g8 .b8u{flex-wrap:wrap}
+  body.g8 .b8c{max-width:none}
+}
+@media (pointer:coarse) and (max-height:520px){
+  body.g8{--g8bar:calc(64px + env(safe-area-inset-bottom,0px))}
+  body.g8 .mt,body.g8 #mtSubmit{height:50px!important}
+}
+
+body.g8 .mt[hidden],body.g8 #ddRep[hidden],body.g8 #ddLog[hidden]{display:none!important}
+body.g8 .covleg{top:8px!important;bottom:auto!important;left:8px;z-index:5;max-width:min(92vw,420px)}
+.g8 .ppc{white-space:normal;gap:6px 10px;align-items:center}
+.g8 .ppc .t{margin-left:0}
+.g8 .ppc .why{padding:0 5px}
+.g8 .oc8{padding-top:18px}
+.g8 .oc8 .ocpick{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;cursor:pointer;background:none;border:0;color:inherit;font:inherit}
+.g8 .spb{position:relative}
+.g8 .spb .oi8{position:absolute;top:4px;right:4px}
+body.g8 #helpX,body.g8 .help .hx{position:absolute;right:8px;top:12px;width:auto!important;min-width:68px;height:40px;padding:0 12px;z-index:3;font:700 13px var(--f-body)!important}
+body.g8 .covleg{top:auto!important;bottom:70px!important;left:8px;right:auto;max-width:200px;flex-direction:column;gap:4px}
+body.g8 .covleg .covnote{flex-basis:auto;font-size:11px;line-height:1.25}
+body.g8 .mapbox.dkon .covleg,body.g8 .mapbox.ddon .covleg{top:8px!important;bottom:auto!important;left:auto;right:58px;max-width:42vw}
+.g8 .b8u{flex-wrap:nowrap;align-items:center}
+.g8 .b8s{flex:1;min-width:0}
+.g8 .b8c,.g8 .stp{flex:none}
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  body.g8 .g6 .mapbox .dock,body.g8 .dock{max-height:min(58dvh,560px)!important}
+  body.g8 .mapbox.dkon .mapwrap{padding-bottom:58dvh}
+  body.g8 .oc8{min-height:50px;padding:16px 2px 5px}
+  body.g8 .oc8 .on{font-size:10px}
+}
+body.g8 .mapbox.dkon .covleg,body.g8 .mapbox.ddon .covleg{display:none!important}
+body.g8 .covleg{flex-direction:row!important;flex-wrap:wrap;align-items:center;max-width:230px!important;bottom:70px!important;top:auto!important}
+.g8 .b8u{display:grid!important;grid-template-columns:34px minmax(0,1fr) auto;grid-template-areas:"ic nm st" "ic nm cs";align-items:center;column-gap:6px;row-gap:2px}
+.g8 .b8u .sym8,.g8 .b8u .why:has(.sym8){grid-area:ic}
+.g8 .b8s{grid-area:nm}
+.g8 .b8c{grid-area:cs;max-width:none;justify-content:flex-start}
+.g8 .stp{grid-area:st;justify-self:end}
+@media (max-width:820px), (pointer:coarse) and (max-height:520px){
+  body.g8 .oc8{min-height:46px;padding:14px 2px 4px}
+  body.g8 .oc8 .oi{font-size:16px}
+  body.g8 .ocs.sup .oc8{min-height:42px;padding:12px 2px 3px}
+  body.g8 .ord8 .sub8{display:none} /* the instruction is already in the dock header */
+}
+.g8 .b8u>:first-child{grid-area:ic}
+body.g8 #dock{max-height:min(62dvh,640px)!important}
+.g8 .b8u{display:flex!important;flex-wrap:nowrap!important;align-items:flex-start;gap:8px;grid-template-columns:unset!important;grid-template-areas:unset!important}
+.g8 .b8ic{flex:none;padding-top:2px}
+.g8 .b8s{flex:1 1 auto;min-width:0}
+.g8 .b8s small{white-space:normal;display:block}
+.g8 .b8right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.g8 .b8right .b8c{max-width:none;justify-content:flex-end}
+.g8 .b8s{flex:1 1 150px!important;min-width:140px!important}
+.g8 .b8right{flex:0 1 120px;min-width:90px}
+.g8 .b8c{flex-wrap:wrap;max-width:120px;justify-content:flex-end}
+.g8 .spb .oi8{position:absolute;top:4px;right:4px;width:22px;height:22px;display:inline-grid;place-items:center;border-radius:11px;background:rgba(0,0,0,.25);font:700 11px var(--f-body)}
+
 </style>
 
 <div class="app">
@@ -727,10 +902,10 @@ body.g15 .layout{align-items:stretch!important}
       <button class="mode" data-mode="H"><span class="flags"><i style="background:rgb(56,122,204)"></i><i style="background:rgb(200,74,48)"></i></span><span><b>Hot-seat</b><span>Two players share this screen, one per alliance. Orders stay sealed until both have submitted.</span></span></button>
     </div>
       <div class="rules8" hidden><b>Dice Battles</b><ul>
-        <li>⏳ Everyone gives orders at once: 🏭 buy · ⚙ supports + ★ officers · ➜ moves · 🎖️ combat orders → ✔</li>
-        <li>🪖 Battalions: ❤ HP = platoons, 🎲 a die per company. ⚡ ORG 0 = retreat. ⛏ Entrenched infantry hits 2/6.</li>
-        <li>🎖️ 6 + 4 orders: ⚔️ › 🔀 › 🛡️ › ⚔️. 🔭 Recon identifies enemy battalions. 🪙⛓️💎 from land.</li>
-        <li>❓ Tap anything to see what it is · full rules under ?</li></ul></div>
+        <li>Everyone gives orders at once, then Submit. Buy units, attach supports, send battalions, and pick a combat order in each battle.</li>
+        <li>HP are platoons. Each company rolls a die. Organization (ORG) is how together a battalion is — at 0 it retreats.</li>
+        <li>Fighter coverage only protects from air attacks, never from a ground fight.</li>
+        <li>Every icon and number is labeled. Tap it for a short explanation, or open the Guide (top right) any time.</li></ul></div>
       <div class="rules">
       <b>How a turn works</b> (everyone at once)
       <ul>
@@ -3527,6 +3702,314 @@ Object.assign(UNITS,{mtk:{name:'Medium armor',cost:6,atk:3,def:3,mv:2},tbm:{name
 {const f=showReport;showReport=function(r){if(bat())return d8Report(r);return f.apply(this,arguments);};}
 {const f=clearSel;clearSel=function(){f.apply(this,arguments);if(G&&G.ui){G.ui.pick=[];G.ui.exp=-1;G.ui.pp=null;}};}
 {const f=helpHTML;helpHTML=function(){if(bat())return d8Help();return f.apply(this,arguments);};}
+
+/* ---------- IM8g UI: labels, explain popups, Guide. Rules are unchanged. ---------- */
+const REF8G={
+  how:'How to play',units:'Units',fight:'Fighting',org:'Organization',orders:'Combat orders',
+  support:'Supports',officers:'Officers',intel:'Recon and fog',res:'Resources',air:'Air',sea:'Sea'
+};
+function costWords(c){return (c||[]).map((v,k)=>v?v+' '+RESN[k]:'').filter(Boolean).join(' and ')||'free';}
+function why(id,label,extra){return `<button type="button" class="why" data-ref="${id}">${label}${extra||''}</button>`;}
+function wlab(id,name,val){return why(id,`<span class="wlab">${name}</span>`+(val!=null?`<span class="wval">${val}</span>`:''));}
+function refEntries(){
+  const e=[],add=(id,g,t,s,body,meta)=>{e.push({id,g,t,s,body,meta});};
+  add('turn','how','How a turn works','Your turn',
+    'Everyone gives orders at the same time, in secret. On your turn you may buy new units, attach supports, promote or replace officers, send battalions to a new land, and pick a combat order in each battle you are in. When both sides have submitted, the turn plays out: units move, then aircraft fight, then ground battles, then new units arrive, then land pays its income. A battle in a land keeps going turn after turn until one side is gone or retreats.');
+  add('plan','how','Giving orders','Plan',
+    'Tap one of your counters on the map, then tap a glowing land to send those battalions there. Open Buy to raise new units, which arrive this turn at the capital or city you pick. In a land that is already fighting, pick one combat order for your whole side. Submit ends your planning. You can Undo or Clear before you submit.');
+  add('submit','how','Submit','Submit',
+    'Submit locks in your orders and ends your planning for this turn. In a solo game the other side then plans automatically and the turn resolves. Online, the turn waits until the other commander also submits. In hot-seat, you pass the device to the other commander first.');
+  add('hp','fight','Hit points and platoons','HP',
+    'A battalion\u2019s HP are its platoons. Each point of HP is one platoon. Every hit in combat removes 1 HP, chosen at random among all remaining platoons and all attached supports (each support is worth 1 HP). When HP reaches 0 the battalion is destroyed. Outside a battle, a battalion recovers 1 HP a turn, or 2 HP if it has a Medical support.');
+  add('dice','fight','Companies and dice','Dice',
+    'Each company in a battalion rolls one six-sided die when it fights. The number of companies \u2014 and so the number of dice \u2014 is HP divided by 3 for infantry, or HP divided by 2 for armor, rounded up. A die hits if it rolls its hit number or less. All strikes on both sides are rolled at the same time, so everyone shoots before losses are taken.');
+  add('ent','fight','Entrenchment','Entrenched',
+    'A battalion that stays put outside a battle for a turn becomes entrenched. Entrenched infantry hits on 2 in 6 instead of 1 in 6. Armor keeps the same hit chance when entrenched. Moving, or being forced to retreat, loses the entrenchment. Engineers and the Fortifier perk entrench the battalion at once, even after it has moved, as long as it is not at sea or in a fight.');
+  add('hits','fight','Hits and losses','Hits',
+    'Each successful die is one hit. Hits are then adjusted by the two sides\u2019 combat orders (advantage, even, disadvantage or stalemate) and by how much protection the enemy order gives. Each hit removes 1 HP from a random platoon or support on the other side. Officer targeting perks can make some kinds of HP more or less likely to be hit. Identical perks do not stack.');
+  add('org','org','Organization','ORG',
+    'Organization (ORG) is how together a battalion still is. Every battalion starts at 100. In a fight, every friendly battalion in that land loses Organization equal to (HP your side lost this round \u00f7 HP your side had before) \u00d7 100, then scaled by the enemy combat order\u2019s Organization damage. If Organization reaches 0, the battalion is forced to retreat. Outside a battle it recovers 25 Organization a turn, plus 25 if it has a Headquarters support, plus 25 if an officer with the Organizer perk covers it.');
+  add('shaken','org','Shaken battalions','Shaken',
+    'When Organization falls to 33 or below, the battalion is shaken and rolls one fewer die (it always keeps at least one). The Relentless perk ignores this penalty.');
+  add('retreat','org','Retreat and surrender','Retreat',
+    'A battalion whose Organization reaches 0 is forced to retreat into a neighbouring friendly, safe land. Withdraw does the same, unless the enemy chose Pursue. If there is no safe land to go to, the battalion surrenders and is lost. A Colonel or General riding with a destroyed or surrendering battalion moves to another friendly battalion in that land if one is there; otherwise that officer is lost.');
+  add('triangle','orders','The order triangle','Triangle',
+    'The six primary orders belong to three families. Assault and Counterattack are Aggressive. Maneuver and Bombard are Maneuver. Defend and Ambush are Defensive. Aggressive beats Maneuver, Maneuver beats Defensive, and Defensive beats Aggressive. The side whose family beats the other has the advantage: 125% hits and 150% Organization damage. The side that loses the triangle is at a disadvantage: 75% hits and 50% Organization damage. Matching families are even, except Defend against Defend, which is a stalemate (50% hits and 50% Organization damage). The four supporting orders (Rally, Withdraw, Pursue, Reorganize) do not use the triangle; against them the result is even.');
+  add('as','orders','Assault','Assault','An Aggressive order: overwhelm the enemy. It has very high casualty damage, high Organization damage, and low protection. It beats Maneuver orders and loses to Defensive orders.');
+  add('ca','orders','Counterattack','Counterattack','An Aggressive order: hit back. It has high casualty damage, moderate Organization damage, and moderate protection. It beats Maneuver orders and loses to Defensive orders.');
+  add('df','orders','Defend','Defend','A Defensive order: hold the line and make attackers pay. It has low casualty damage, low Organization damage, and very high protection. It beats Aggressive orders and loses to Maneuver orders. Defend against Defend is a stalemate.');
+  add('am','orders','Ambush','Ambush','A Defensive order: a prepared trap. It has high casualty damage, very high Organization damage, and low-to-moderate protection. It beats Aggressive orders and loses to Maneuver orders. Ambush can only be chosen if at least one of your battalions in that land is entrenched.');
+  add('mv','orders','Maneuver','Maneuver','A Maneuver order: outflank them. It has moderate casualty damage, very high Organization damage, and low-to-moderate protection. It beats Defensive orders and loses to Aggressive orders.');
+  add('bb','orders','Bombard','Bombard','A Maneuver order: shell them. It has high casualty damage, very high Organization damage, and moderate protection. It beats Defensive orders and loses to Aggressive orders.');
+  add('ra','orders','Rally','Rally','A supporting order: recover together. It does not attack. Each of your battalions in that land gains 25 Organization this round. It does not use the triangle.');
+  add('wd','orders','Withdraw','Withdraw','A supporting order: an organized retreat. Your battalions leave the land for a neighbouring safe land, unless the enemy chose Pursue. If they are not pursued, officers with the Cautious perk take no losses while pulling out. It does not use the triangle.');
+  add('pu','orders','Pursue','Pursue','A supporting order: run them down. It stops a Withdraw, so those battalions have to stay and fight. It is strongest against a withdrawing or shaken enemy, and weaker otherwise. It does not use the triangle.');
+  add('ro','orders','Reorganize','Reorganize','A supporting order: regroup. It does not attack. Each of your battalions in that land gains 15 Organization this round, and the order gives more protection than Rally. It does not use the triangle.');
+  add('bars','orders','Order bars','Hits, ORG, Protect','The three bars on an order are its characteristics: red is casualty (hit) damage, gold is Organization damage, and blue is protection (how much it reduces the hits you take). Longer bars are stronger in that characteristic.');
+  const unitBlurb={
+    inf:'Infantry is a battalion of foot soldiers. It is cheaper and holds more platoons than armor, but it hits less often and moves only 1 land a turn. Entrenching matters most for infantry, because then it hits on 2 in 6 instead of 1 in 6.',
+    ltk:'Light armor is a fast tank battalion. It has fewer platoons than infantry but hits much more often, and it can move 3 lands a turn. It needs Production and Metal to raise.',
+    mtk:'Medium armor is a balanced tank battalion. It hits as often as light armor but moves 2 lands a turn, and it costs Production, Metal and Tungsten.',
+    htk:'Heavy armor is a slow, hard-hitting tank battalion. It hits on 4 in 6, moves only 1 land a turn, and is the most expensive armor to raise.',
+    ftr:'A fighter is an aircraft. It only fights other aircraft \u2014 never infantry, armor or other ground units \u2014 in its own land and the lands next to it. Each point of HP is one strike, hitting on 3 in 6. The Air cover button on the map shows where your fighters can protect you from the sky, and only from the sky.',
+    tbm:'A tactical bomber strikes ground units in its own land and the lands next to it. It does not fight other aircraft itself; fighters can shoot it down, and Anti-air supports fire at it before it bombs. Each HP is one strike, hitting on 2 in 6.',
+    nbm:'A naval bomber strikes ships in the sea zones next to its land, including transports. A sunk transport loses the battalion it is carrying. Fighters can shoot the bomber down. Each HP is one strike, hitting on 2 in 6.',
+    trn:'A transport is a ship that carries one battalion across sea zones. It has 3 HP, moves 2 sea zones, and does not strike in combat. Board it from a coastal land, then unload onto a land next to the sea zone. If the transport is sunk, the battalion on board is lost.'
+  };
+  BUY8.forEach(k=>{const T=BT[k],dice=T.per?Math.ceil(T.hp/T.per):0;
+    const meta=T.per?(T.hp+' HP \u00b7 '+dice+(dice===1?' die':' dice')+' at full strength \u00b7 hits on '+T.hit+' in 6'+(T.ent&&T.ent!==T.hit?', or '+T.ent+' in 6 if entrenched':'')+' \u00b7 moves '+T.mv+' \u00b7 costs '+costWords(T.c))
+      :(T.hp+' HP \u00b7 no strikes \u00b7 moves '+T.mv+' \u00b7 costs '+costWords(T.c));
+    add(k,T.air?'air':T.sea?'sea':'units',T.n,T.n,unitBlurb[k],meta);});
+  add('cov','air','Fighter coverage','Air cover',
+    'Fighter coverage only protects you from air attacks. A fighter fights enemy planes in its own land and the lands next to it. It does nothing in a ground fight: it will not roll dice against infantry or armor, and turning coverage on does not give a ground-combat bonus. Use the Air cover button (the plane next to zoom) to see which lands your fighters can currently protect from the sky.');
+  add('aaatk','air','Air combat','Air combat',
+    'Aircraft act after movement and before ground battles. Fighters fire first, and only at enemy planes in range. Bombers that are still flying then strike: tactical bombers at ground units, naval bombers at ships. Anti-air supports under a tactical bomber roll 1 die each, hitting on 2 in 6, before the bomber drops its bombs.');
+  add('recon','intel','Recon and identification','Recon',
+    'Next to your own land or troops you can see that enemy battalions are there, but not which type \u2014 only whether they look light (infantry) or heavy (armor). Your base vision is 0. Each Recon support and each Scout perk identifies one enemy battalion, and vision from your battalions in a land and the lands next to it adds up. Once a battalion is identified, you keep that identity. Aircraft and transports are not hidden this way.');
+  add('fog','intel','Fog of war','Fog',
+    'Land too far from your troops is in fog. You cannot see the enemy units there. Stay next to a land, or put troops in it, to lift the fog.');
+  add('unk','intel','Unidentified enemy','Unknown',
+    'A question mark is an enemy battalion you have spotted but not identified. A plain ? is a light battalion (infantry). A ? on a boxed counter is a heavy battalion (armor). Attach a Recon support or get the Scout perk so you can tell exactly what it is.');
+  add('prod','res','Production','Production','Production is the basic resource, shown as a coin. You spend it to raise almost every unit and support, and to promote or replace officers. You collect it from the land you hold.');
+  add('metal','res','Metal','Metal','Metal is a scarcer resource, shown as a chain. Light and medium armor, transports, and some supports need it, and heavy armor needs even more.');
+  add('tung','res','Tungsten','Tungsten','Tungsten is the rarest resource, shown as a diamond. Heavy armor, anti-tank, fighters and bombers need it.');
+  add('income','res','Income from land','Income',
+    'Each land you hold pays income at the end of the turn, unless it is contested (both sides have battalions there) or you only captured it this turn \u2014 those pay starting next turn. Wilderness pays nothing. Rural land pays 1 Production, a town 2, a city 4, a capital 6. A metal-mining region pays 1 Production and 2 Metal. A tungsten-mining region pays 1 Production and 1 Tungsten.');
+  add('support','support','Supports','Supports',
+    'A support is a 1-HP attachment on a battalion. A battalion can hold 2 supports, or 3 with the Coordinator perk. You buy a support during planning and it attaches at once (you can undo before you submit). A support that is destroyed in combat is gone and must be bought again. Supports can be added in any land that is not in a battle.');
+  const spBody={
+    mec:'Mechanized can only attach to infantry. It gives that infantry +1 move, so it can go 2 lands a turn.',
+    art:'Artillery adds one extra strike to the battalion, hitting on 2 in 6. The Artillery Expert perk makes that strike hit on 3 in 6.',
+    at:'Anti-tank adds one extra strike that only fires if the enemy has armor, hitting on 2 in 6.',
+    rec:'Recon identifies one enemy battalion. Vision from your battalions in a land and next to it adds up.',
+    eng:'Engineers entrench the battalion at once, even after it has moved, as long as it is not at sea or in a fight.',
+    med:'Medical recovers 2 HP a turn outside combat, instead of the usual 1.',
+    hq:'Headquarters adds 25 Organization recovery a turn, on top of the usual 25 a battalion already recovers outside combat.',
+    aa:'Anti-air fires at tactical bombers over this land: one die, hitting on 2 in 6, before the bomber drops its bombs. It does not help in a ground fight.'
+  };
+  SPK.forEach(k=>{const S=SP[k];add(k,'support',S.n,S.n,spBody[k],'Costs '+costWords(S.c)+' \u00b7 1 HP');});
+  add('officer','officers','Officers','Officers',
+    'Every battalion starts with a Lieutenant Colonel, who has 1 perk and only commands that battalion. A Lieutenant Colonel with 2 perks can be promoted to Colonel for 5 Production; a Colonel with 3 perks can be promoted to General for 10 Production. Promotion leaves a vacancy, so that battalion needs a new Lieutenant Colonel. Replacing a Lieutenant Colonel costs 1 Production, and you pick the new perk. A Colonel or General rides with a host battalion and can be moved to another of your battalions in the same land.');
+  add('ranks','officers','Ranks and coverage','Ranks',
+    'A Lieutenant Colonel\u2019s perks only cover their own battalion. A Colonel covers every friendly battalion in the same land. A General covers that land and every neighbouring land. If two officers would give the same perk, it does not stack \u2014 you only get it once.');
+  add('xp','officers','Experience and perks','XP',
+    'Officers gain experience in battle: a little for fighting a round, more for winning the battle. The gain is divided by the number of perks the officer already has. New perks are unlocked at 10, 25, 50 and 100 XP, up to 5 perks. Starting ranks begin with 1, 2 or 3 perks (Lieutenant Colonel, Colonel, General). A new perk is chosen from those the officer does not already have.');
+  Object.keys(PK).forEach(p=>{const P=PK[p];add(p,'officers',P[1],P[1],'This officer perk: '+P[2]+'. An officer can have several perks. The same perk from two officers does not stack.',P[0]+' '+P[1]);});
+  add('buy','how','Raising units','Buy',
+    'Open Buy, pick the nation if you command more than one, pick the capital or city the new units will arrive at, and step the number up or down. You pay from what you have left this turn. Units arrive after battles, then land pays income. Transports arrive in a sea zone next to a coastal city or capital.');
+  add('nations','how','Nations and alliances','Nations',
+    'You command one alliance. The Concord is Aldmark and Sorvina; the Iron Pact is Kesh and Vyrn. A land\u2019s colour shows who holds it. Neutral land can be taken. After 25 turns, the alliance with more land value wins if neither side has taken every enemy capital.');
+  return e;}
+let REF8=null;
+const refOf=id=>{if(!REF8)REF8=refEntries();return REF8.find(x=>x.id===id);};
+function closeGloss(){const g=$('#gloss');if(g)g.hidden=true;}
+function openGloss(id){const E=refOf(id);if(!E)return;let g=$('#gloss');if(!g){g=document.createElement('div');g.id='gloss';g.addEventListener('click',e=>{if(e.target===g)closeGloss();});document.body.appendChild(g);}
+  g.innerHTML=`<div class="gbox" role="dialog" aria-modal="true" aria-labelledby="glossT"><div class="gh"><h3 id="glossT">${E.t}</h3><button type="button" class="gx" data-d8="glossx">Close</button></div>
+    ${E.meta?`<p class="meta" style="font:600 12px var(--f-mono);color:#cfe8b8;margin:0 0 8px">${esc(E.meta)}</p>`:''}
+    <p class="gb">${esc(E.body)}</p><button type="button" class="gm" data-d8="ref" data-a="${E.id}">More in the Guide</button></div>`;
+  g.hidden=false;const b=g.querySelector('.gx');if(b)b.focus();}
+function openRef(id){closeGloss();closeTips();if(typeof openHelp==='function')openHelp();
+  requestAnimationFrame(()=>{const box=$('#hdlg .hbody')||$('#hdlg');const s=id&&document.getElementById('ref-'+id);
+    if(s&&box){if(PHONE()&&s.scrollIntoView)s.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});else{try{box.scrollTop=s.offsetTop-80;}catch(err){s.scrollIntoView();}}s.classList.add('hi');setTimeout(()=>s.classList.remove('hi'),2400);}
+    const q=$('#refq');if(q&&!PHONE())q.focus();});}
+function filterRef(){const q=(($('#refq')||{}).value||'').trim().toLowerCase(),gbtn=$('#refg'),g=gbtn&&gbtn.dataset.g||'';
+  document.querySelectorAll('#hdlg .hbody section[id^="ref-"]').forEach(s=>{const e=refOf(s.id.slice(4));const hit=!e||((!g||e.g===g)&&(!q||(e.t+' '+e.s+' '+e.body+' '+(e.meta||'')).toLowerCase().includes(q)));s.classList.toggle('hide',!hit);});}
+function refHTML(){if(!REF8)REF8=refEntries();
+  const groups=[...new Map(REF8.map(e=>[e.g,REF8G[e.g]||e.g])).entries()];
+  const secs=REF8.map(e=>`<section id="ref-${e.id}" data-g="${e.g}"><h3>${e.t}</h3>${e.meta?`<div class="meta">${esc(e.meta)}</div>`:''}<p>${esc(e.body)}</p></section>`).join('');
+  return `<div class="hhd help8g"><button class="sb hx close8" id="helpX" aria-label="Close the Guide">Close</button>
+    <div class="eyebrow">IRON MERIDIAN 8</div><h2 id="helpTitle">Guide</h2>
+    <input class="refq" id="refq" type="search" placeholder="Search the Guide" aria-label="Search the Guide" autocomplete="off">
+    <div class="toc" id="refg">${groups.map(([k,n])=>`<button type="button" data-d8="refg" data-a="${k}">${n}</button>`).join('')}<button type="button" data-d8="refg" data-a="" class="on">All</button></div>
+    <button type="button" class="tipsb" data-d8="tips">Show the tips again</button></div>
+    <div class="hbody help8g">${secs}</div>`;}
+/* ---- labeled panel bits (override the icon-only 8f versions) ---- */
+const resHTML8=(r,cls='')=>r.map((v,k)=>v?why(['prod','metal','tung'][k],`<b class="rs ${cls}">${RSI[k]}${v} <span class="tn">${RESN[k]}</span></b>`):'').join('');
+const pips8=(hp,max)=>`<span class="lab hp8">${wlab('hp','HP',hp+'/'+max)}<span class="pips">${Array.from({length:max},(_,k)=>`<i class="${k<hp?'on':''}"></i>`).join('')}</span></span>`;
+const orgBar8=(u,P)=>{const m=maxOrg(u,P),f=u.org/m,low=u.org<=SHAKEN;return `<span class="lab org8${low?' low':''}">${wlab(low?'shaken':'org','ORG',u.org+'/'+m)}<span class="orgb${low?' low':''}"><i style="width:${Math.round(f*100)}%"></i></span></span>`;};
+const symHTML8=(t,o)=>why(t==='?L'||t==='?H'?'unk':t,`<span class="sym8" style="--nc:${rgb((NAT[o]||NAT.N).rgb)}"><i class="s-${t.replace('?','q')}"></i></span>`);
+const perkHTML8=(p,big)=>why(p,`<span class="pk${big?' big':''}">${PK[p][0]}${big||true?`<small>${PK[p][1]}</small>`:''}</span>`);
+function orderCard(i){const a=myAl(),cur=boOf(a,i)||(al(G.t[i].owner)===a?'df':'as'),locks=Object.fromEntries(BOK.map(o=>[o,boLock(o,i,a)]));
+  const card=o=>{const B=BO[o];return `<div class="oc8${cur===o?' on':''}${locks[o]?' lock':''}" style="--fc:${FAMC[B.f]}">
+    <button type="button" class="oi8" data-ref="${o}" aria-label="About ${B.n}">?</button>
+    <button type="button" class="ocpick" data-d8="bo" data-a="${i}:${o}" ${locks[o]?'disabled':''} style="all:unset;display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;cursor:pointer">
+      <span class="oi">${B.i}</span><span class="on">${B.n}</span>
+      ${B.c?`<span class="obar"><i class="c" style="width:${B.c*20}%"></i><i class="m" style="width:${B.mo*20}%"></i><i class="p" style="width:${B.p*20}%"></i></span>`:`<span class="obar"><i class="p" style="width:${B.p*20}%"></i></span>`}
+      ${locks[o]?`<span class="lk">Needs entrenched</span>`:''}</button></div>`;};
+  return `<div class="ord8"><div class="o8h">${why('triangle','<span class="tri"><b style="color:'+FAMC.A+'">Assault</b> beats <b style="color:'+FAMC.M+'">Maneuver</b> beats <b style="color:'+FAMC.D+'">Defend</b> beats Assault</span>')}
+    ${why('bars',`<span class="leg"><i class="c"></i><span>Hits</span><i class="m"></i><span>ORG</span><i class="p"></i><span>Protect</span></span>`)}</div>
+    <div class="ocs">${PRI.map(card).join('')}</div><div class="ocs sup">${SUPO.map(card).join('')}</div>
+    <p class="sub8">Your side has one secret order in this land. ${cur?BO[cur].n+' is selected.':''} Tap ? to read an order, or the order itself to choose it.</p></div>`;}
+function offCard(h,u,i,x){const nx=XPL[h.p.length];
+  return `<div class="off8">${why('ranks',`<span class="rk">${RK[h.r].s}</span><span class="rkn">${RK[h.r].n}</span>`)}<span class="pks">${h.p.map(p=>perkHTML8(p,true)).join('')}</span>
+    ${nx!=null?`<span class="lab">${wlab('xp','XP',Math.floor(h.xp)+'/'+nx)}<span class="xp"><i style="width:${Math.min(100,h.xp/nx*100)}%"></i></span></span>`:why('xp','<span class="xpl">Max perks</span>')}</div>`;}
+function batCard(u,i){const T=BT[u.t],P=perksOf(u,i),mineU=isMine(u)&&G.planner&&!G.busy,picked=(G.ui.pick||[]).includes(u.id),exp=G.ui.exp===u.id,bat8=isBat(u);
+  const st=strikes(u,P),hit=bat8?hitOf(u,P):(T.hit||0),dest=u.ord>=0?TERR[u.ord].name:null,tr=u.on?' aboard a transport':'';
+  let h=`<div class="bc8${picked?' pick':''}${u.ord>=0?' moving':''}" ${mineU&&!inBattle(i)?`data-d8="pick" data-a="${u.id}"`:''}>
+    <div class="bc-top">${symHTML8(u.t,u.o)}${why(u.t,`<span class="bn">${T.n}${tr}</span>`)}
+      ${bat8&&u.ent?why('ent','<span class="ent">⛏ Entrenched</span>'):''}
+      ${T.per?why('dice',`<span class="dz">${st} ${st===1?'die':'dice'} · hit ${hit}/6</span>`):why('trn','<span class="dz">No strikes</span>')}
+      ${mineU?`<button class="sb8 mgbtn" data-d8="exp" data-a="${u.id}">${exp?'Hide':'Manage'}</button>`:''}</div>
+    <div class="bc-mid">${pips8(u.hp,T.hp)}${bat8?orgBar8(u,P):''}</div>`;
+  if(bat8){const sl=slots(u,P);h+=`<div class="bc-bot"><span class="sps">${u.sp.map(s=>why(s,`<span class="spi">${SP[s].i}<span class="sn">${SP[s].n}</span></span>`)).join('')}${Array.from({length:Math.max(0,sl-u.sp.length)},()=>why('support','<span class="spi empty">＋<span class="sn">Empty</span></span>')).join('')}</span>
+      <span class="lc">${u.lc?why('officer',`<span class="rk">★</span><span class="rkn">Lt. Col</span>`)+u.lc.p.map(p=>perkHTML8(p,true)).join(''):why('officer','<span class="rk vac">★ No Lt. Col</span>')}</span>
+      ${dest?`<span class="mv8">Moving to ${esc(dest)}${mineU?`<button class="sb8 x" data-d8="cancel" data-a="${u.id}">Cancel</button>`:''}</span>`:''}</div>`;
+    if(u.hq&&u.hq.length)h+=`<div class="bc-hq">${u.hq.map((o,x)=>offCard(o,u,i,x)+(mineU?`<span class="hqa">${o.r==='col'?`<button class="btn small" data-d8="promg" data-a="${u.id}:${x}" ${o.p.length>=3&&canPay(u.o,[10,0,0])?'':'disabled'}>Promote to General · 10 Production</button>`:''}${G.t[i].units.some(v=>v!==u&&isBat(v)&&v.o===u.o)?`<button class="btn small" data-d8="xfer" data-a="${u.id}:${x}">Move officer</button>`:''}</span>`:'')).join('')}</div>`;
+    if(exp&&mineU)h+=manageHTML(u,i,P);}
+  else if(dest&&mineU)h+=`<div class="bc-bot"><span class="mv8">Moving to ${esc(dest)}<button class="sb8 x" data-d8="cancel" data-a="${u.id}">Cancel</button></span></div>`;
+  return h+'</div>';}
+function manageHTML(u,i,P){const free=slots(u,P)-u.sp.length,calm=!inBattle(i)&&!isSea(i);
+  let h=`<div class="mg8"><div class="mgh">${why('support','Supports')} · ${u.sp.length}/${slots(u,P)} attached</div><div class="spg">${SPK.map(k=>{const ok=calm&&free>0&&!u.sp.includes(k)&&!(k==='mec'&&u.t!=='inf')&&canPay(u.o,SP[k].c);
+    return `<button class="spb" data-d8="sp" data-a="${u.id}:${k}" ${ok?'':'disabled'}><span class="si">${SP[k].i}</span><span class="snm"><b>${SP[k].n}</b><small>${esc(SP[k].t)} · ${costWords(SP[k].c)}</small></span><span class="oi8" data-ref="${k}" role="button" aria-label="About ${SP[k].n}">?</span></button>`;}).join('')}</div>`;
+  h+=`<div class="mgh">${why('officer','Officers')}</div>`;
+  if(u.lc)h+=offCard(u.lc,u,i,-1);
+  h+=`<div class="oa">${u.lc?`<button class="btn small" data-d8="prom" data-a="${u.id}" ${u.lc.p.length>=2&&canPay(u.o,[5,0,0])?'':'disabled'}>Promote to Colonel · 5 Production</button>`:''}
+    <button class="btn small" data-d8="rpl" data-a="${u.id}" ${canPay(u.o,[1,0,0])?'':'disabled'}>New Lt. Colonel · 1 Production</button></div>`;
+  if(G.ui.pp===u.id)h+=`<p class="sub8">Pick the new Lieutenant Colonel\u2019s perk:</p><div class="pkg">${PKK.map(p=>`<button class="pkb" data-d8="rpk" data-a="${u.id}:${p}">${PK[p][0]}<small>${PK[p][1]}</small></button>`).join('')}</div>`;
+  return h+'</div>';}
+function terrCard8(i){if(i<0)return '';const t=G.t[i],T=TERR[i],sv=seen8(i),a=myAl(),k=kindOf(i),fog=G.vis&&!G.vis[i];
+  let h=`<div class="tc8"><div class="sec8"><h4>This land</h4><div class="tc-h">${isSea(i)?why('trn','<span>Sea zone</span>'):why('income',`<span>${KIND[k].i} ${KIND[k].n}</span>`)}<b>${esc(T.name)}</b>${isSea(i)?'':nd(t.owner)}
+    ${isSea(i)?'':why('income',`<span class="inc-l">Income ${resHTML8(incOf(i),'inc')||'none'}</span>`)}
+    ${inBattle(i)&&!fog?why('turn','<span class="tag live">Battle in progress</span>'):''}${fog?why('fog','<span>Fog of war</span>'):''}</div></div>`;
+  const mineHere=t.units.filter(isMine),incoming=a?G.t.some((s,j)=>s.units.some(u=>isMine(u)&&u.ord===i)):false;
+  if(a&&!G.busy&&!isSea(i)&&((inBattle(i)&&mineHere.some(isBat))||(incoming&&hostile(i,a))))h+=`<div class="sec8"><h4>Combat order</h4>`+orderCard(i)+`</div>`;
+  const own=sv.units.filter(u=>!a||al(u.o)===a),foe=sv.units.filter(u=>a&&al(u.o)!==a);
+  if(own.length)h+=`<div class="sec8"><h4>${a&&own.some(isMine)?'Your battalions':'Battalions here'}</h4><div class="bl8">${own.map(u=>batCard(u,i)).join('')}</div></div>`;
+  if(foe.length||sv.unk.length){const L=sv.unk.filter(u=>!isArm(u)).length,Hv=sv.unk.length-L;
+    h+=`<div class="sec8"><h4>Enemy here</h4><div class="fl8">${foe.map(u=>`<span class="fu">${symHTML8(u.t,u.o)}<span class="fn">${esc(NAT[u.o].short)} ${esc(BT[u.t].n)}</span></span>`).join('')}
+      ${L?why('unk',`<span class="fu">${symHTML8('?L',sv.unk.find(u=>!isArm(u)).o)}<span class="fn">${L} unidentified light battalion${L>1?'s':''}</span></span>`):''}
+      ${Hv?why('unk',`<span class="fu">${symHTML8('?H',sv.unk.find(isArm).o)}<span class="fn">${Hv} unidentified heavy battalion${Hv>1?'s':''}</span></span>`):''}</div></div>`;}
+  if(!own.length&&!foe.length&&!sv.unk.length)h+=`<p class="sub8">${fog?'This land is in fog \u2014 too far from your troops to see.':'No units here.'}</p>`;
+  return h+'</div>';}
+function buyCard8(){const ms=mine();if(!ms.length)return '';const n=G.ui.pn&&ms.includes(G.ui.pn)?G.ui.pn:ms[0],o=G.orders[n],r=avail8(n),sites=d8Sites(n);
+  return `<div class="card buy8"><div class="sec8"><h4>Buy units</h4>
+    ${ms.length>1?`<div class="tabs8">${ms.map(m=>`<button class="btn small${m===n?' primary':''}" data-d8="pn" data-a="${m}">${nd(m)}${NAT[m].short}</button>`).join('')}</div>`:''}
+    <div class="b8h"><span class="lab">${wlab('prod','Left to spend','')}${resHTML8(r.map(v=>Math.max(0,v)))||'0'}</span>
+    <label>${why('buy','<span>Arrives at</span>')}<select data-d8sel="at" data-a="${n}">${sites.map(s=>`<option value="${s}" ${s===o.at?'selected':''}>${esc(TERR[s].name)}</option>`).join('')||'<option>No city or capital</option>'}</select></label></div>
+    <div class="b8l">${BUY8.map(k=>{const T=BT[k],ok=T.c.every((v,x)=>r[x]>=v)&&sites.length&&(!T.sea||sites.some(s=>coasts(s).length)),c=o.buy[k]||0;
+      const stats=T.per?`${T.hp} HP \u00b7 ${Math.ceil(T.hp/T.per)} dice \u00b7 hits ${T.hit}/6${T.ent&&T.ent!==T.hit?', '+T.ent+'/6 entrenched':''} \u00b7 move ${T.mv}`:`${T.hp} HP \u00b7 no strikes \u00b7 move ${T.mv}`;
+      return `<div class="b8u"><div class="b8ic">${symHTML8(k,n)}</div><div class="b8s">${why(k,`<b>${T.n}</b>`)}<small>${stats}</small></div>
+        <div class="b8right"><span class="stp"><button class="sb8" data-d8="buy-" data-a="${n}:${k}" ${c?'':'disabled'} aria-label="Fewer">\u2212</button><b>${c}</b><button class="sb8" data-d8="buy+" data-a="${n}:${k}" ${ok?'':'disabled'} aria-label="Add one">+</button></span><span class="b8c">${T.c.map((v,k)=>v?why(["prod","metal","tung"][k],`<b class="rs">${RSI[k]}${v}</b>`):"").join("")}</span></div></div>`;}).join('')}</div></div></div>`;}
+function ordersCard8(){const a=myAl(),planning=!!a&&!G.busy;
+  const bs=G.t.map((t,i)=>i).filter(i=>inBattle(i)&&G.t[i].units.some(u=>isBat(u)&&isMine(u)));
+  const mv=d8AllUnits().filter(u=>isMine(u)&&u.ord>=0).length;
+  return `<div class="card o8"><div class="sec8"><h4>Your plan</h4>
+    <div class="o8t"><span class="sw" style="background:${rgb(ALRGB[a||'P'])}"></span><b>${a?ALLY[a]:'\u2014'}</b><span>Turn ${Math.min(G.round,MAXR)} of ${MAXR}</span></div>
+    ${planning?`<div class="o8s"><span>${mv} move${mv===1?'':'s'} set</span><span>${bs.length} battle${bs.length===1?'':'s'}</span></div>
+    ${bs.length?`<p class="sub8">Tap a battle to pick its combat order:</p><div class="o8b">${bs.map(i=>{const o=boOf(a,i)||'df';return `<button class="btn small" data-d8="goto" data-a="${i}">${BO[o].i} ${esc(TERR[i].name)} \u00b7 ${BO[o].n}</button>`;}).join('')}</div>`:'<p class="sub8">No battles of yours this turn. Send units into enemy land, or wait.</p>'}
+    <div class="acts"><button class="btn" data-d8="undo" ${G.undo.length?'':'disabled'}>Undo</button><button class="btn" data-d8="clear">Clear orders</button><button class="btn primary" data-d8="submit">Submit</button></div>`:'<p class="sub8">Waiting for the turn to finish.</p>'}</div></div>`;}
+function powersCard8(){return `<div class="card pw8"><div class="sec8"><h4>Nations</h4>${TURN.map(n=>{const own=G.t.filter(t=>t.owner===n).length,mineN=G.planner&&NAT[n].al===G.planner||!viewer()||NAT[n].al===viewer();
+  return `<div class="pwr">${nd(n)}<b>${NAT[n].short}</b> <span class="plab">${ALLY[NAT[n].al]||'Neutral'}</span>
+    <span>${own} lands</span>${mineN?`<span>Stock ${resHTML8(G.nat[n].r)||'0'}</span><span class="inc">Income next turn ${resHTML8(d8Income(n),'inc')||'0'}</span>`:''}</div>`;}).join('')}</div></div>`;}
+function dockHead(){const planning=!!G.planner&&!G.busy&&!G.over,picked=(G.ui.pick||[]).length,batI=G.ui.sel>=0?G.ui.sel:G.ui.inspect;
+  if(G.over)return 'The war is over.';
+  if(!planning)return G.busy?'The turn is playing out.':'Waiting.';
+  if(batI>=0&&inBattle(batI)&&G.t[batI].units.some(u=>isBat(u)&&isMine(u)))return 'This land is fighting. Pick a combat order for your side, then Submit.';
+  if(picked)return 'Tap a glowing land to send the selected battalion'+(picked>1?'s':'')+'. Tap a card again to leave it behind.';
+  if(G.ui.sel>=0)return 'Tap a battalion card to select it, then a glowing land to send it.';
+  return 'Tap a land to inspect it, or a counter of yours to give it orders.';}
+function stepText(){const planning=!!G.planner&&!G.busy&&!G.over,picked=(G.ui.pick||[]).length,mv=d8AllUnits().filter(u=>isMine(u)&&u.ord>=0).length;
+  const bs=G.t.filter((t,i)=>inBattle(i)&&t.units.some(u=>isBat(u)&&isMine(u))).length;
+  if(!MAP)return 'Loading the map\u2026';
+  if(G.over)return G.overWhy||'The war is over.';
+  if(G.online&&G.busy&&G.planner)return 'Orders sent. Waiting for the other commander.';
+  if(G.busy||!planning)return 'The turn is playing out \u2014 movement, then air, then battles.';
+  if(picked)return 'Tap a glowing land to send the selected battalion. Then Submit when you are ready.';
+  if(bs)return 'A battle needs your order. Open that land, pick Assault, Defend or another order, then Submit.';
+  if(mv)return mv+' move'+(mv===1?'':'s')+' set. Buy if you want, give any battle orders, then Submit.';
+  return 'Tap one of your counters, then a glowing land to send it. Or open Buy to raise units. Submit when ready.';}
+function bindCov(){const z=$('#zcov');if(!z||z.dataset.bound)return;z.dataset.bound='1';
+  z.addEventListener('click',()=>{COVON=!COVON;z.classList.toggle('on',COVON);z.setAttribute('aria-pressed',String(COVON));const l=$('#covleg');if(l)l.hidden=!COVON;if(G&&G.t&&G.t.length)refresh();if(typeof fxKick==='function')fxKick();if(bat()&&COVON){if(!G.ui.sawCov){G.ui.sawCov=1;openGloss('cov');}}});}
+function d8Chrome(){const z=$('#zcov');if(z){z.setAttribute('title','Fighter coverage: only protects from air attacks, not ground fights');z.setAttribute('aria-label','Show fighter coverage (air only)');if(!z.querySelector('small'))z.innerHTML='✈<small>Air</small>';bindCov();}
+  const l=$('#covleg');if(l&&!l.dataset.g8){l.dataset.g8=1;l.insertAdjacentHTML('beforeend','<span class="covnote">Air only — not a ground bonus. '+why('cov','<span>What is this?</span>')+'</span>');}
+  const hb=$('#helpBtn');if(hb&&!hb.querySelector('.glab')){hb.setAttribute('aria-label','Guide');hb.title='Open the Guide';const s=document.createElement('span');s.className='glab';s.textContent='Guide';hb.appendChild(s);}
+  const mo=$('#ddOrders .ml'),pr=document.querySelector('#mtools [data-dd="prod"] .ml'),pw=document.querySelector('#mtools [data-dd="powers"] .ml'),lg=$('#ddLog .ml');
+  if(mo)mo.textContent='Plan';if(pr)pr.textContent='Buy';if(pw)pw.textContent='Nations';if(lg)lg.textContent='Log';
+  [['#ddOrders','Plan \u2014 your moves and battles'],['#mtools [data-dd="prod"]','Buy \u2014 raise new units'],['#mtools [data-dd="powers"]','Nations \u2014 land, stock and income'],['#ddLog','Log \u2014 what happened'],['#ddRep','Report \u2014 last turn\u2019s battles']].forEach(([s,t])=>{const b=document.querySelector(s);if(b){b.setAttribute('title',t);b.setAttribute('aria-label',t);}});
+  const mt=$('#mtSubmit');if(mt&&!G.busy){mt.setAttribute('title','Submit orders and end your turn');}}
+function d8RenderPanel(){
+  const planning=!!G.planner&&!G.busy&&!G.over,a=G.planner||viewer()||'P';document.body.classList.add('g6','g8');
+  d8Chrome();
+  const mt=$('#mtools'),dp=$('#ddp');mt.hidden=false;
+  const logCard=`<div class="card"><div class="sec8"><h4>Log</h4><ul class="log">${G.log.filter(e=>!e.als||!viewer()||e.als.includes(viewer())).map(e=>`<li><span class="r">T${e.r}</span>${esc(e.msg)}</li>`).join('')||'<li>Nothing recorded yet.</li>'}</ul></div></div>`;
+  const cards={orders:ordersCard8(),prod:planning?buyCard8():'<div class="card"><p class="sub8">Buying is closed while the turn plays out.</p></div>',powers:powersCard8(),log:logCard};
+  if(G.repHTML)cards.rep=G.repHTML;if(!cards[G.ui.dd])G.ui.dd=null;if(G.ui.dd==='rep')G.repNew=false;
+  mt.querySelectorAll('[data-dd]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.dd===G.ui.dd)));
+  const rb=$('#ddRep');rb.hidden=!G.repHTML;rb.querySelector('.ml').textContent='Report';rb.classList.toggle('new',!!G.repNew);
+  dp.hidden=!G.ui.dd;dp.innerHTML=G.ui.dd?cards[G.ui.dd]:'';$('.mapbox').classList.toggle('ddon',!!G.ui.dd);
+  const RID=['prod','metal','tung'];
+  $('#mtPP').innerHTML=(planning?mine():[]).map(n=>{const r=avail8(n);return `<span class="ppc" data-ref="prod"><i class="nd" style="background:${rgb(NAT[n].rgb)}"></i><span class="tn">${esc(NAT[n].short)}</span>${r.map((v,k)=>`<b class="t">${why(RID[k],`<span class="tn">${['Prod','Metal','Tungsten'][k]}</span> ${Math.max(0,v)}`)}</b>`).join('')}</span>`;}).join('');
+  $('#mtSubmit').disabled=!planning;
+  $('#side').innerHTML='';
+  const d=$('#dock'),i=G.ui.sel>=0?G.ui.sel:G.ui.inspect,was=$('.mapbox').classList.contains('dkon');
+  if(i>=0&&MAP&&!G.over){d.innerHTML=`<div class="pophd"><span class="nx">${dockHead()}</span><button class="sb close8" data-d8="close">Close</button></div>`+terrCard8(i);d.hidden=false;$('.mapbox').classList.add('dkon');if(!was)requestAnimationFrame(()=>keepInView(i));}
+  else{d.hidden=true;d.innerHTML='';$('.mapbox').classList.remove('dkon');}
+  let st=$('#step8');if(!st){st=document.createElement('div');st.id='step8';st.className='step8';$('.mapbox').appendChild(st);}
+  st.innerHTML=`<span class="s8t">${stepText()}</span><button type="button" data-d8="guide">Guide</button>`;
+  const hint=$('#hint');if(hint)hint.innerHTML=stepText();
+  maybeTips();}
+function d8Report(rep){if(G.online&&G.online.host)G.lastRep=rep;const who=viewer(),seen=f=>!who||f.keys.includes(who);
+  const die=(x,need)=>`<i class="d8 ${x<=need?'hit':''}">${x}</i>`;
+  const b=rep.battles.filter(seen).map(f=>{
+    const sides=f.keys.map(k=>{const o=f.O[k],oc=OUT[f.out[k]||'even'],ob=f.ob[k]||[],oa=f.oa[k]||[],av=x=>x.length?Math.round(x.reduce((s,v)=>s+v,0)/x.length):0;
+      const txt=`${ALLY[k]} chose ${BO[o].n} and had the ${oc.n.toLowerCase()}. They lost ${f.lost[k]} HP (platoons or supports). Average Organization went from ${av(ob)} to ${av(oa)}.`;
+      return `<div class="r8s" style="--nc:${rgb(ALRGB[k])}"><div class="r8o">${why(o,`<span class="oi" style="--fc:${FAMC[BO[o].f]}">${BO[o].i}</span>`)}<b>${ALLY[k]}</b>${why(oc.n==='Advantage'||oc.n==='Disadvantage'||oc.n==='Stalemate'||oc.n==='Even'?'triangle':'triangle',`<i class="${oc.c}">${oc.n}</i>`)}
+        ${wlab('hp','HP lost',f.lost[k])} ${wlab('org','ORG',av(ob)+'\u2192'+av(oa))}</div>
+        <p class="r8txt">${esc(txt)}</p>
+        <div class="r8d">${(f.dice[k]||[]).map(d=>`<span class="dg">${d.r.map(x=>die(x,d.need)).join('')}</span>`).join('')||'<span class="sub8">No dice \u2014 this order does not attack.</span>'}</div>
+        ${(f.dice[k]&&f.dice[k].length)?`<div class="r8cap">Each square is a die. Red means a hit (the roll was ${f.dice[k][0].need} or less).</div>`:''}
+        ${f.spl[k]&&f.spl[k].length?`<div class="r8l">Supports lost: ${f.spl[k].map(s=>why(s,SP[s].i+' '+SP[s].n)).join(', ')}</div>`:''}</div>`;}).join('');
+    return `<div class="rep8"><div class="r8h"><b>${esc(TERR[f.i].name)}</b><span class="tag${f.ongoing?' live':''}">${f.ongoing?'Battle continues next turn':'Battle over'}</span></div>${sides}${f.res.length?`<p class="blog">${f.res.map(esc).join(' \u00b7 ')}</p>`:''}</div>`;}).join('');
+  const air=rep.air.filter(f=>!who||f.als.includes(who));
+  const caps=rep.caps.map(([i,n])=>`<span>${nd(n)}${esc(TERR[i].name)}</span>`).join(' ');
+  const dep=rep.deploy.filter(d=>typeof d==='string'?true:!who||NAT[d.n].al===who).map(d=>typeof d==='string'?`<li>${esc(d)}</li>`:`<li>${nd(d.n)} arrived at ${esc(TERR[d.at].name)}: ${d.made.map(k=>BT[k].n).join(', ')}</li>`).join('');
+  const inc=rep.income.filter(([n])=>!who||NAT[n].al===who).map(([n,r])=>`<span>${nd(n)} collected ${resHTML8(r)||'nothing'}</span>`).join('');
+  G.repHTML=`<div class="dlg rp8"><div class="sec8"><h4>Turn ${rep.round} of ${MAXR} \u2014 what happened</h4>${b||'<p class="sub8">No ground battles this turn.</p>'}
+    ${air.length?`<div class="sec8"><h4>Air</h4><ul class="rl">${air.map(f=>`<li>${esc(f.msg)}</li>`).join('')}</ul></div>`:''}${caps?`<div class="caps8">${why('income','<span>Lands taken</span>')} ${caps}</div>`:''}
+    ${dep?`<div class="sec8"><h4>New units</h4><ul class="rl">${dep}</ul></div>`:''}${inc?`<div class="incs">${inc}</div>`:''}</div></div>`;
+  G.repRound=rep.round;G.repNew=true;
+  if(G.online&&!G.online.host){refresh();return;}nextRound();}
+function d8Help(){return refHTML();}
+/* ---- first-time tips, easy to reopen from the Guide ---- */
+const TIPS8=[
+  'The coloured squares on the map are battalions. They stay inside their own land. Tap one of yours to open its card.',
+  'Every word, icon, number and bar is tappable. Try Infantry, HP or Organization \u2014 a short explanation stays on screen, with a link into the full Guide.',
+  'Organization is not hit points. It is how together a battalion still is. If it reaches 0, that battalion is forced to retreat.',
+  'The Air cover button (the plane) only shows protection from air attacks. Fighters do nothing in a ground fight.',
+  'Give move and buy orders, pick a combat order in any battle, then Submit. Everyone\u2019s orders happen at once. Reopen these tips any time from the Guide.'
+];
+function closeTips(){const t=$('#tips8');if(t)t.hidden=true;}
+function showTips(from){let t=$('#tips8');if(!t){t=document.createElement('div');t.id='tips8';t.addEventListener('click',e=>{if(e.target===t)closeTips();});document.body.appendChild(t);}
+  const i=G.ui.tip=(from==='restart'?0:(G.ui.tip||0));
+  t.innerHTML=`<div class="tbox" role="dialog" aria-modal="true" aria-labelledby="tipT"><div class="tk">Tip ${i+1} of ${TIPS8.length}</div><p id="tipT">${TIPS8[i]}</p>
+    <div class="ta"><button type="button" class="ghost" data-d8="tipx">Close</button><button type="button" data-d8="tipn">${i<TIPS8.length-1?'Next tip':'Done'}</button></div></div>`;
+  t.hidden=false;}
+function maybeTips(){if(!G||!G.planner||G.busy||G.over)return;if(localStorage.getItem('im8gTips'))return;if($('#tips8')&&!$('#tips8').hidden)return;if(G.online)return;if($('#setup')&&!$('#setup').hidden)return;if($('#battle')&&!$('#battle').hidden)return;G.ui.tip=0;showTips('start');}
+function rememberTips(){try{localStorage.setItem('im8gTips','1');}catch(err){}}
+/* ---- events: lasting popups instead of vanishing toasts; Guide; tips ---- */
+document.addEventListener('click',e=>{if(!bat())return;
+  const ref=e.target.closest&&e.target.closest('[data-ref]');
+  if(ref&&!e.target.closest('[data-d8="sp"],[data-d8="bo"],[data-d8="buy+"],[data-d8="buy-"],[data-d8="submit"],[data-d8="rpk"],[data-d8="prom"],[data-d8="promg"],[data-d8="xfer"]')){
+    // info chips open the explanation and do not also fire a parent action (e.g. selecting the battalion)
+    e.preventDefault();e.stopPropagation();openGloss(ref.dataset.ref);return;}
+  if(ref&&e.target.closest('[data-ref]')===ref&&(ref.classList.contains('oi8')||ref.classList.contains('why'))){e.preventDefault();e.stopPropagation();openGloss(ref.dataset.ref);return;}
+},true);
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='refq')filterRef();});
+document.addEventListener('keydown',e=>{if(!bat())return;if(e.key==='Escape'){if($('#gloss')&&!$('#gloss').hidden){closeGloss();e.preventDefault();return;}if($('#tips8')&&!$('#tips8').hidden){closeTips();rememberTips();e.preventDefault();}}});
+{const f=d8Act;d8Act=function(b){const act=b.dataset.d8;
+  if(act==='glossx'){closeGloss();return;}
+  if(act==='ref'){openRef(b.dataset.a||'');return;}
+  if(act==='guide'){openRef('');return;}
+  if(act==='refg'){const box=$('#refg');if(box)box.dataset.g=b.dataset.a||'';box&&box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));filterRef();return;}
+  if(act==='tips'){closeGloss();if(typeof closeHelp==='function')closeHelp();G.ui.tip=0;showTips('restart');return;}
+  if(act==='tipn'){G.ui.tip=(G.ui.tip||0)+1;if(G.ui.tip>=TIPS8.length){closeTips();rememberTips();return;}showTips();return;}
+  if(act==='tipx'){closeTips();rememberTips();return;}
+  return f.apply(this,arguments);};}
+{const f=tell;tell=function(s){if(bat())return;return f.apply(this,arguments);};}
+{const f=toast;toast=function(s){if(bat()&&/give your orders|(^Turn \d+ · .+ orders$)/.test(s||''))return;return f.apply(this,arguments);};}
+{const f=helpHTML;helpHTML=function(){if(bat())return d8Help();return f.apply(this,arguments);};}
+{const f=d8Tap;d8Tap=function(e){const t=tell;if(bat())tell=function(){};try{return f.apply(this,arguments);}finally{tell=t;}};}
+
 
 /* ---------- IM7b visuals: unit tokens, coverage sweep, capture bursts, vignette ---------- */
 function tokSprite(k,o,px,st){px=Math.max(10,Math.round(px));const key='T'+k+o+px+st;if(FIGC[key])return FIGC[key];if(++FIGN>900){FIGC={};FIGN=1;}
