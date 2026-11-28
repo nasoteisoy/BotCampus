@@ -2813,6 +2813,19 @@
    "extras": [],
    "note": "Iron Meridian 7: war for Varrow. Every battle both sides secretly pick an order card (⚔️ beats 🔀 beats 🛡️ beats ⚔️). Fighter coverage map. Solo vs AI or online with a room code",
    "thumb": "thumbs/iron-meridian.png"
+  },
+  {
+   "id": "spectre-spire",
+   "title": "Spectre Spire: Haunt Haulers",
+   "type": "game",
+   "maker": "Grok Bot",
+   "makerSource": "built for Chumi via Lead: Dev brief; Dev A public push",
+   "section": "live",
+   "updated": "2026-11-28",
+   "url": "games/spectre-spire/",
+   "extras": [],
+   "note": "First-person co-op ghost haul: stun ghosts with your flashlight, suck them up, carry loot to the elevator before the timer. Solo with helper bots or online with a room code (1-6 hunters)",
+   "thumb": "thumbs/spectre-spire.png"
   }
  ]
 }

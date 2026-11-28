@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#150b1f">
+<title>Spectre Spire: Haunt Haulers</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath d=%22M12 60V30a20 20 0 0 1 40 0v30l-7-6-6 6-7-6-6 6-7-6z%22 fill=%22%237dffb2%22/%3E%3Ccircle cx=%2224%22 cy=%2230%22 r=%225%22 fill=%22%232b1238%22/%3E%3Ccircle cx=%2240%22 cy=%2230%22 r=%225%22 fill=%22%232b1238%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css?v=2">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<!-- in-game HUD -->
+<div id="hud" hidden>
+  <div id="stickZone"></div>
+  <div id="lookZone"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <div class="topbar">
+    <button class="tbtn" id="pauseBtn" data-tip="Pause the game, change settings or leave.">ICON:pause<span>Pause</span></button>
+    <div class="floorchip" data-tip="Which floor you are on, and what kind of floor it is.">
+      <div class="fl"><b id="hFloor">Floor 1/5</b><span id="hType">Ghost Hunt</span></div>
+      <div class="timer" id="hTimer">2:45</div>
+    </div>
+    <div class="quota" data-tip="Quota: loot sitting in the elevator plus ghosts you bagged on this floor. Reach it, then everyone gets in the elevator.">
+      <div class="qtop"><span>Quota</span><b id="hQuota">$0 / $260</b></div>
+      <div class="qbar"><i id="hQbar"></i></div>
+      <div class="bank">ICON:coin<span id="hBank">Bank $0</span></div>
+    </div>
+    <button class="tbtn" id="helpBtn" data-tip="How to play.">ICON:help<span>Help</span></button>
+  </div>
+  <div id="team"></div>
+  <div id="cross"><i></i></div>
+  <div id="aimLabel"></div>
+  <div id="hearts"></div>
+  <div id="downNote" hidden>Spooked! Stay put. A friend standing next to you brings you back.</div>
+  <div id="labels"></div>
+  <div id="pops"></div>
+  <div id="flashOverlay"></div>
+  <div id="hint" hidden></div>
+  <button id="guideBtn" class="guide" data-tip="Shows a glowing trail to the elevator. When the quota is met, everyone standing must be inside it.">ICON:lift<span id="guideText">To elevator</span></button>
+  <div class="actions">
+    <button class="abtn suck" id="bSuck" data-tip="Hold to vacuum. Shine your flashlight on a ghost until it is dizzy (stars), then hold Suck. Big horned ghosts need two hunters.">ICON:vac<span>Suck</span><em class="key">Mouse L</em></button>
+    <button class="abtn grab" id="bGrab" data-tip="Pick up the loot you are aiming at, tap again to drop it. Heavy loot needs two hunters. Bumps lose value!">ICON:hand<span id="grabText">Grab</span><em class="key">E</em></button>
+    <button class="abtn skill" id="bSkill" data-tip="Your hunter's special ability. It recharges after use.">ICON:bolt<span id="skillText">Skill</span><em class="key">Q</em><svg class="cdring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18"/></svg></button>
+    <button class="abtn jump" id="bJump" data-tip="Hop. You can stand on furniture.">ICON:jump<span>Jump</span><em class="key">Space</em></button>
+  </div>
+  <div id="banner" hidden></div>
+  <div id="depart" hidden></div>
+</div>
+
+<!-- menus -->
+<div id="screens">
+  <section class="screen" id="sMenu">
+    <div class="titlebox">
+      <h1>SPECTRE SPIRE</h1>
+      <div class="sub">Haunt Haulers · co-op ghost hunting and loot hauling</div>
+    </div>
+    <div class="panel narrow">
+      <label class="field"><span>Your name</span><input id="nameIn" maxlength="14" autocomplete="off" placeholder="Hunter"></label>
+      <div class="menu-btns">
+        <button class="big" id="mSolo">ICON:play<span><b>Play solo</b><small>You plus helper hunters</small></span></button>
+        <button class="big" id="mHost">ICON:users<span><b>Create a room</b><small>Get a code for friends</small></span></button>
+        <button class="big" id="mJoin">ICON:door<span><b>Join a room</b><small>Type a friend's code</small></span></button>
+        <button class="big ghosty" id="mHelp">ICON:help<span><b>How to play</b><small>1 minute guide</small></span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="sSetup" hidden>
+    <header><button class="back" data-back>ICON:back<span>Back</span></button><div class="crumb" id="setupCrumb">Spectre Spire › Solo › Pick a hunter</div></header>
+    <div class="panel wide">
+      <h2>1 · Pick your hunter</h2>
+      <div class="hunters" id="hunterGrid"></div>
+      <div class="row2">
+        <div><h2>2 · Tower height</h2><div class="seg" id="towerSeg"></div><p class="note">Boss every 5th floor and at the top.</p></div>
+        <div id="botsBox"><h2>3 · Helper hunters</h2>
+          <div class="stepper"><button id="botMinus" aria-label="Fewer helpers">ICON:minus</button><b id="botCount">3</b><button id="botPlus" aria-label="More helpers">ICON:plus</button></div>
+          <p class="note">Computer hunters who hunt and haul with you.</p></div>
+      </div>
+    </div>
+    <footer><button class="primary" id="setupGo">ICON:play<span id="setupGoText">Start</span></button></footer>
+  </section>
+
+  <section class="screen" id="sJoin" hidden>
+    <header><button class="back" data-back>ICON:back<span>Back</span></button><div class="crumb">Spectre Spire › Join a room</div></header>
+    <div class="panel narrow">
+      <h2>Room code</h2>
+      <input id="codeIn" class="code" maxlength="4" autocomplete="off" placeholder="ABCD">
+      <p class="note">Ask the friend who made the room for the 4-letter code.</p>
+      <div id="joinErr" class="err"></div>
+    </div>
+    <footer><button class="primary" id="joinGo">ICON:door<span>Join</span></button></footer>
+  </section>
+
+  <section class="screen" id="sLobby" hidden>
+    <header><button class="back" id="lobbyLeave">ICON:back<span>Leave</span></button><div class="crumb">Spectre Spire › Room <b id="lobbyCode2"></b></div></header>
+    <div class="panel wide">
+      <div class="codebox"><div><small>Room code</small><b id="lobbyCode">----</b></div><button id="copyCode">ICON:copy<span>Copy</span></button></div>
+      <p class="note" id="lobbyNote">Friends open this game, tap Join a room and type the code.</p>
+      <h2>Hunters in the room <span id="lobbyCount"></span></h2>
+      <div id="lobbyList"></div>
+      <button id="addFriend" class="small" hidden>ICON:plus<span>Add a friend</span></button>
+      <h2>Your hunter</h2>
+      <div class="hunters compact" id="lobbyHunters"></div>
+      <p class="note" id="lobbyTower"></p>
+    </div>
+    <footer><button class="secondary" id="readyBtn">ICON:check<span>Ready</span></button><button class="primary" id="startBtn" hidden>ICON:play<span>Start</span></button></footer>
+  </section>
+
+  <section class="screen overlay" id="sPause" hidden>
+    <div class="panel narrow">
+      <h2>Paused</h2>
+      <p class="note" id="pauseNote"></p>
+      <div class="settings">
+        <label>Look speed <input type="range" id="setSens" min="0.3" max="2.5" step="0.1"></label>
+        <label>Field of view <input type="range" id="setFov" min="60" max="95" step="1"></label>
+        <label class="tog"><input type="checkbox" id="setInvert"> Invert look up/down</label>
+        <label class="tog"><input type="checkbox" id="setShake"> Screen shake</label>
+        <label class="tog"><input type="checkbox" id="setBob"> Head bob</label>
+        <label class="tog"><input type="checkbox" id="setSound"> Sound</label>
+      </div>
+      <div class="menu-btns">
+        <button class="primary" id="resumeBtn">ICON:play<span>Resume</span></button>
+        <button class="secondary" id="pauseHelp">ICON:help<span>How to play</span></button>
+        <button class="secondary danger" id="quitBtn">ICON:door<span>Leave game</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen overlay" id="sShop" hidden>
+    <div class="panel wide">
+      <div class="shophead"><h2>Elevator shop</h2><div class="bankbig">ICON:coin<b id="shopBank">$0</b></div></div>
+      <p class="note" id="shopNote"></p>
+      <div id="shopItems"></div>
+    </div>
+    <footer><div class="shoptimer" id="shopTimer"></div><button class="primary" id="shopReady">ICON:play<span id="shopReadyText">Next floor</span></button></footer>
+  </section>
+
+  <section class="screen overlay" id="sLift" hidden>
+    <div class="panel narrow center"><div class="liftico">ICON:lift</div><h2 id="liftTitle">Going up!</h2><p id="liftText"></p></div>
+  </section>
+
+  <section class="screen overlay" id="sResult" hidden>
+    <div class="panel wide">
+      <h1 id="resTitle">You topped the Spire!</h1>
+      <p class="note" id="resText"></p>
+      <table id="resTable"></table>
+    </div>
+    <footer><button class="secondary" id="resMenu">ICON:back<span>Menu</span></button><button class="primary" id="resAgain">ICON:play<span>Play again</span></button></footer>
+  </section>
+
+  <section class="screen overlay" id="sHelp" hidden>
+    <header><button class="back" id="helpClose">ICON:back<span>Back</span></button><div class="crumb">Spectre Spire › How to play</div></header>
+    <div class="panel wide helpbody" id="helpBody"></div>
+  </section>
+</div>
+
+<div id="tip" hidden></div>
+<div id="toast" hidden></div>
+<div id="loading">Loading the hotel…</div>
+<script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>
